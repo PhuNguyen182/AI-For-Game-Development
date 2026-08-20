@@ -14,7 +14,11 @@ description: >
   (`unity-urp-rendering`), the shader node-graph/HLSL content itself
   (`shader-authoring`), plain `Camera`/`Transform` scripting
   (`unity-camera-fundamentals`), Cinemachine (`unity-cinemachine-authoring`),
-  or particle graph structure (`vfx-particle-authoring`).
+  or particle graph structure (`vfx-particle-authoring`). Do not use this to
+  decide how ECS/DOTS entities render through HDRP (`BatchRendererGroup`,
+  DOTS Instancing shaders, material overrides) — that's
+  `unity-entities-graphics`; this skill still owns the HDRP Asset/Frame
+  Settings configuration that entity rendering depends on.
 ---
 
 # Unity HDRP Rendering — High Definition Render Pipeline Configuration
@@ -37,6 +41,7 @@ Act as the HDRP configuration specialist: you configure the HDRP Asset and per-c
 - Negative trigger: deciding *whether* the project should be on HDRP at all, or the shader Graph target/node-graph/HLSL content itself once the pipeline is settled — `render-pipeline-urp-hdrp` for the former, `shader-authoring` for the latter.
 - Negative trigger: any URP-specific system (Renderer Features, rendering paths, 2D Renderer, camera stacking, SRP Batcher) — `unity-urp-rendering`.
 - Negative trigger: plain `Camera`/`Transform` scripting with no HDRP-specific system involved — `unity-camera-fundamentals`; Cinemachine — `unity-cinemachine-authoring`; particle graph structure — `vfx-particle-authoring`.
+- Negative trigger: deciding how ECS/DOTS entities render (`BatchRendererGroup`, DOTS Instancing, material overrides) — that's `unity-entities-graphics`, which depends on this skill's HDRP Asset/Frame Settings configuration as its own prerequisite.
 
 ## 4. How to use this skill
 1. **Confirm HDRP is actually active** (HDRP Asset assigned in Graphics settings) before doing any work here — if the project is on URP or Built-in RP, this skill doesn't apply; route to `unity-urp-rendering` or flag the mismatch.

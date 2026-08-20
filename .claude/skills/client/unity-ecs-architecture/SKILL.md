@@ -30,7 +30,12 @@ description: >
   choose physics-specific components (`PhysicsCollider`/`PhysicsVelocity`/
   `PhysicsMass`), collider shapes, joints/motors, or spatial queries — that's
   `unity-physics`, even though those are themselves ordinary ECS components
-  modeled with this skill's own mechanics.
+  modeled with this skill's own mechanics. Do not use this to choose
+  rendering-specific components (`RenderMeshArray`/`MaterialMeshInfo`/
+  `RenderMeshDescription`), DOTS Instancing shader compatibility, material
+  overrides, or Companion Components — that's `unity-entities-graphics`,
+  even though those are themselves ordinary ECS components modeled with this
+  skill's own mechanics.
 ---
 
 # Unity ECS Architecture — Entities, Components, Systems & Queries
@@ -58,6 +63,7 @@ Act as the ECS data/system-architecture specialist inside Tech Lead – Performa
 - Negative trigger: choosing a collection type (`NativeArray`/`NativeList`/`NativeHashMap`/etc.), `FixedString`/`FixedList`, or an allocator strategy for data feeding an ECS job — that's `unity-collections`.
 - Negative trigger: choosing `Unity.Mathematics` vector/matrix/`Random`/`noise` types or functions — that's `unity-mathematics`, even though `float3`/`quaternion` are the everyday field types for ECS component data.
 - Negative trigger: choosing physics-specific ECS components (`PhysicsCollider`/`PhysicsVelocity`/`PhysicsMass`/etc.), collider shapes, joints/motors, or spatial queries — that's `unity-physics`, a specialist skill built on top of this skill's own component/baking mechanics, not a replacement for them.
+- Negative trigger: choosing rendering-specific ECS components (`RenderMeshArray`/`MaterialMeshInfo`/`RenderMeshDescription`/`RenderBounds`), DOTS Instancing shader compatibility, material property overrides, or Companion Components — that's `unity-entities-graphics`, another specialist skill built on top of this skill's own component/baking mechanics, not a replacement for them.
 
 ## 4. How to use this skill
 1. **Confirm the prerequisite before modeling a single entity.** State which architecture-level decision (per `performance-and-algorithms.md` and Tech Lead – Performance/Technical Architect) justified using ECS for this specific feature — this skill doesn't re-litigate whether ECS is warranted.

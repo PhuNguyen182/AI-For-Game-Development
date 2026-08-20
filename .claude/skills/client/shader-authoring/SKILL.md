@@ -11,7 +11,11 @@ description: >
   (VFX Graph / Shuriken graph structure) — that's `vfx-particle-authoring`.
   Do not use this when the task is pure performance tuning of an
   already-correct, unchanged shader with no visual delta requested — that
-  belongs to Tech Lead – Performance.
+  belongs to Tech Lead – Performance. Do not use this to decide whether a
+  shader needs to be DOTS Instancing compatible, or which properties need
+  "Hybrid Per Instance" declared for ECS/DOTS entity rendering — that's
+  `unity-entities-graphics`; this skill still owns the shader's actual
+  node-graph/HLSL content either way.
 ---
 
 # Shader Authoring
@@ -27,6 +31,7 @@ Act as a senior shader programmer. You choose the right authoring method (Shader
 - Negative trigger: a compute-shader simulation whose output feeds a shader (e.g. GPU particle positions) — build the compute pass under `compute-shader-vfx` first, then use this skill only for the shader that consumes its buffer.
 - Negative trigger: authoring the particle system/graph structure itself — use `vfx-particle-authoring`; this skill covers the shader a particle output stage renders with, not the emission/simulation graph.
 - Negative trigger: a request to make an existing, visually-unchanged shader faster with no new visual requirement — redirect to Tech Lead – Performance.
+- Negative trigger: deciding DOTS Instancing compatibility or "Hybrid Per Instance" property declarations for ECS/DOTS entity rendering — that's `unity-entities-graphics`; this skill still authors the shader's own node-graph/HLSL content once that requirement is known.
 
 ## 4. How to use this skill
 1. **Confirm the render pipeline target** (Built-in / URP / HDRP) before writing anything — shader structure, includes, and available lighting functions differ per pipeline. If the pipeline-specific setup itself is in question (Renderer Features, Volume-driven effects, master stack target), consult `render-pipeline-urp-hdrp` first.

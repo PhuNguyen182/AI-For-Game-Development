@@ -25,7 +25,11 @@ description: >
   Do not use this to choose physics components, colliders, joints/motors, or
   spatial queries — that's `unity-physics`, even though its entire
   `PhysicsSimulationGroup` and query code are Burst-compiled by default and
-  this skill's tuning applies to them unchanged.
+  this skill's tuning applies to them unchanged. Do not use this to choose
+  rendering components, DOTS Instancing shader compatibility, or material
+  overrides — that's `unity-entities-graphics`, even though its
+  material-override systems are expected to be Burst-compiled and this
+  skill's tuning applies to them unchanged.
 ---
 
 # Unity Burst Compiler — HPC# Compilation, Verification & Tuning
@@ -52,6 +56,7 @@ Act as the Burst compilation specialist inside Tech Lead – Performance's escal
 - Negative trigger: deciding whether to model a feature in ECS, or designing entities/components/systems/queries — that's `unity-ecs-architecture`. This skill applies unchanged whether the Burst target is a plain job or an ECS `IJobEntity`/`ISystem`.
 - Negative trigger: choosing a collection type or allocator strategy — that's `unity-collections`. Negative trigger: choosing `Unity.Mathematics` vector/matrix/`Random`/`noise` types or functions — that's `unity-mathematics`, even though this skill's Burst-eligibility and vectorization guidance is written around exactly those types.
 - Negative trigger: choosing physics components, colliders, joints/motors, or spatial queries — that's `unity-physics`, even though its simulation group and query code are Burst-compiled by default and follow this skill's rules unchanged once that choice is made.
+- Negative trigger: choosing rendering components, DOTS Instancing shader compatibility, or material overrides — that's `unity-entities-graphics`, even though its material-override systems are expected to be Burst-compiled and follow this skill's rules unchanged once that choice is made.
 
 ## 4. How to use this skill
 1. **Confirm the prerequisite.** State which already-justified Job System/Burst decision this tuning work sits on top of (same gate as `unity-job-system-and-burst` step 1) — this skill doesn't re-litigate whether Burst is warranted, it makes an already-approved target compile correctly.

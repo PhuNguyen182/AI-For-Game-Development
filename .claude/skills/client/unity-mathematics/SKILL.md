@@ -22,7 +22,10 @@ description: >
   component's fields are commonly typed with `float3`/`quaternion` from this
   library. Do not use this to choose physics components, collider shapes,
   joints/motors, or spatial queries — that's `unity-physics`, even though
-  every physics parameter is `float3`/`quaternion`-typed.
+  every physics parameter is `float3`/`quaternion`-typed. Do not use this to
+  choose rendering/material-override components — that's
+  `unity-entities-graphics`, even though override components are commonly
+  `float4`-typed.
 ---
 
 # Unity Mathematics — Vector/Matrix Types, math, Random & noise
@@ -47,6 +50,7 @@ Act as the math-library specialist: given code that needs vector/matrix/rotation
 - Negative trigger: Burst-specific compilation tuning (HPC# subset, `FloatMode`, intrinsics, AOT settings) — that's `unity-burst-compiler`, even when the code being tuned is full of `Unity.Mathematics` types.
 - Negative trigger: modeling ECS entities/components/systems/queries — that's `unity-ecs-architecture`, even when a component's fields are typed with `float3`/`quaternion`.
 - Negative trigger: choosing physics components, collider shapes, joints/motors, or spatial queries — that's `unity-physics`, even though every physics parameter here is `float3`/`quaternion`-typed.
+- Negative trigger: choosing rendering/material-override components — that's `unity-entities-graphics`, even though override components are commonly `float4`-typed.
 
 ## 4. How to use this skill
 1. **Identify the context first.** `Game.Core.*` Shared Core code, a Burst-compiled job/method, and an ECS component all require `Unity.Mathematics` types over their `UnityEngine` equivalents — for Shared Core specifically, this isn't a style preference, it's what `coding-principles.md`'s "no `UnityEngine` dependency in Shared Core" rule requires.

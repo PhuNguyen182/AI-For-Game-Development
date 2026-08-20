@@ -14,7 +14,11 @@ description: >
   `unity-urp-rendering`; HDRP's Frame Settings/Volume system/Custom Pass
   Volumes/Diffusion Profiles/APV/ray tracing are `unity-hdrp-rendering`. Do
   not use this for the Built-in Render Pipeline (legacy, no SRP) unless the
-  project is explicitly confirmed to still be on it.
+  project is explicitly confirmed to still be on it. Do not use this to
+  decide how ECS/DOTS entities get rendered (`BatchRendererGroup`, DOTS
+  Instancing shaders, material overrides) — that's `unity-entities-graphics`,
+  which still depends on this skill's platform/pipeline confirmation (URP
+  Forward+ only, or HDRP — never Built-in) as its own prerequisite.
 ---
 
 # Render Pipeline Targeting — URP & HDRP
@@ -32,6 +36,7 @@ Act as the render pipeline configuration specialist: you confirm which SRP is ac
 - Negative trigger: once the pipeline target is confirmed, the actual node-graph/HLSL authoring is `shader-authoring`'s job — use this skill only for the pipeline-level setup around it.
 - Negative trigger: once the pipeline target is confirmed, deep configuration of that pipeline's own systems (URP Renderer Features/passes, rendering paths, 2D Renderer, camera stacking; HDRP Frame Settings, the Volume system, Custom Pass Volumes, Diffusion Profiles, Adaptive Probe Volumes, Water System, ray/path tracing) belongs to `unity-urp-rendering`/`unity-hdrp-rendering` respectively — use this skill only for the initial targeting decision, not the deep-dive work.
 - Negative trigger: don't assume Built-in Render Pipeline; only treat the project as Built-in RP if that's explicitly confirmed — most current Unity projects run URP or HDRP.
+- Negative trigger: deciding how ECS/DOTS entities render (`BatchRendererGroup`, DOTS Instancing, material overrides) — that's `unity-entities-graphics`, a specialist skill that depends on this skill's URP/HDRP targeting decision as its own prerequisite (and further narrows it to URP Forward+ or HDRP only, never Built-in).
 
 ## 4. How to use this skill
 1. **Confirm the active pipeline asset first** — check the project's Graphics/Quality settings for the assigned Render Pipeline Asset (URP Asset vs HDRP Asset), or the Tech Spec if it states the target. Never assume.

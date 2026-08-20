@@ -14,7 +14,12 @@ description: >
   (`unity-hdrp-rendering`), the shader node-graph/HLSL content itself
   (`shader-authoring`), plain `Camera`/`Transform` scripting
   (`unity-camera-fundamentals`), Cinemachine (`unity-cinemachine-authoring`),
-  or particle graph structure (`vfx-particle-authoring`).
+  or particle graph structure (`vfx-particle-authoring`). Do not use this to
+  decide how ECS/DOTS entities render through URP (`BatchRendererGroup`,
+  DOTS Instancing shaders, material overrides) — that's
+  `unity-entities-graphics`; this skill still owns the URP Asset/Renderer
+  configuration (notably the Forward+ path, which Entities Graphics
+  specifically requires) that entity rendering depends on.
 ---
 
 # Unity URP Rendering — Universal Render Pipeline Configuration
@@ -37,6 +42,7 @@ Act as the URP configuration specialist: you build `ScriptableRendererFeature`/`
 - Negative trigger: deciding *whether* the project should be on URP at all, or the shader Graph target/node-graph/HLSL content itself once the pipeline is settled — `render-pipeline-urp-hdrp` for the former, `shader-authoring` for the latter.
 - Negative trigger: any HDRP-specific system (Frame Settings, HDRP Volumes-for-everything, Custom Pass Volume, Diffusion Profiles, Probe Volumes, ray/path tracing) — `unity-hdrp-rendering`.
 - Negative trigger: plain `Camera`/`Transform` scripting with no URP-specific system involved — `unity-camera-fundamentals`; Cinemachine — `unity-cinemachine-authoring`; particle graph structure — `vfx-particle-authoring`.
+- Negative trigger: deciding how ECS/DOTS entities render (`BatchRendererGroup`, DOTS Instancing, material overrides) — that's `unity-entities-graphics`, which depends on this skill's URP Asset/Renderer configuration (specifically, the Forward+ path) as its own prerequisite.
 
 ## 4. How to use this skill
 1. **Confirm URP is actually active** (URP Asset assigned in Graphics settings) before doing any work here — if the project is on HDRP or Built-in RP, this skill doesn't apply; route to `unity-hdrp-rendering` or flag the mismatch.

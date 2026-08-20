@@ -27,7 +27,10 @@ description: >
   `BlobAssetReference<Collider>`, or the `NativeStream`-shaped
   `CollisionEvents`/`TriggerEvents` streams — that's `unity-physics`; this
   skill still owns the general blob-asset/`NativeStream` mechanics those
-  types are built from.
+  types are built from. Do not use this to choose rendering-specific data
+  types — `RenderMeshArray`'s internal mesh/material lists — that's
+  `unity-entities-graphics`; this skill still owns the general shared-
+  component/container mechanics those types are conceptually built from.
 ---
 
 # Unity Collections — Native Containers, FixedString/FixedList & Allocators
@@ -52,6 +55,7 @@ Act as the Collections-package specialist: given a need for unmanaged, GC-free d
 - Negative trigger: modeling ECS components, `IBufferElementData`/`DynamicBuffer<T>`, or queries — that's `unity-ecs-architecture`, even though a `DynamicBuffer<T>` behaves conceptually like a `NativeList<T>` under the hood.
 - Negative trigger: `Unity.Mathematics` vector/matrix/quaternion/`Random`/`noise` types — that's `unity-mathematics`, a separate package with its own skill.
 - Negative trigger: choosing physics-specific data types — `PhysicsCollider`'s `BlobAssetReference<Collider>`, or reading `CollisionEvents`/`TriggerEvents` streams — that's `unity-physics`, even though both are built on this skill's own blob-asset and `NativeStream` concepts.
+- Negative trigger: choosing rendering-specific data types — `RenderMeshArray`'s internal mesh/material lists — that's `unity-entities-graphics`, even though it's conceptually built on this skill's own shared-component/container concepts.
 
 ## 4. How to use this skill
 1. **Confirm the actual access pattern before picking a type.** Sequential iteration/append → `NativeList<T>`; key-value lookup → `NativeHashMap`/`NativeParallelHashMap` (single-threaded vs. multithreaded write, per `collection-types.md`); uniqueness checks → `NativeHashSet<T>`; FIFO work items → `NativeQueue<T>`; per-thread append-only buffers → `NativeStream`; a single boxed value that needs to cross into a job → `NativeReference<T>`. Don't default to `NativeList<T>` for everything the way `List<T>` gets defaulted to in managed code.
