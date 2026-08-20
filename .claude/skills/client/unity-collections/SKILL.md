@@ -22,7 +22,12 @@ description: >
   designed to be Burst-compatible. Do not use this to model ECS components,
   buffers (`IBufferElementData`/`DynamicBuffer<T>`), or queries — that's
   `unity-ecs-architecture`. Do not use this for `Unity.Mathematics`
-  vector/matrix/random/noise types — that's `unity-mathematics`.
+  vector/matrix/random/noise types — that's `unity-mathematics`. Do not use
+  this to choose physics-specific data types — `PhysicsCollider`'s
+  `BlobAssetReference<Collider>`, or the `NativeStream`-shaped
+  `CollisionEvents`/`TriggerEvents` streams — that's `unity-physics`; this
+  skill still owns the general blob-asset/`NativeStream` mechanics those
+  types are built from.
 ---
 
 # Unity Collections — Native Containers, FixedString/FixedList & Allocators
@@ -46,6 +51,7 @@ Act as the Collections-package specialist: given a need for unmanaged, GC-free d
 - Negative trigger: Burst-specific compilation tuning (HPC# subset compliance, `FloatMode`, intrinsics, AOT settings) — that's `unity-burst-compiler`, even though every type here is Burst-eligible by design.
 - Negative trigger: modeling ECS components, `IBufferElementData`/`DynamicBuffer<T>`, or queries — that's `unity-ecs-architecture`, even though a `DynamicBuffer<T>` behaves conceptually like a `NativeList<T>` under the hood.
 - Negative trigger: `Unity.Mathematics` vector/matrix/quaternion/`Random`/`noise` types — that's `unity-mathematics`, a separate package with its own skill.
+- Negative trigger: choosing physics-specific data types — `PhysicsCollider`'s `BlobAssetReference<Collider>`, or reading `CollisionEvents`/`TriggerEvents` streams — that's `unity-physics`, even though both are built on this skill's own blob-asset and `NativeStream` concepts.
 
 ## 4. How to use this skill
 1. **Confirm the actual access pattern before picking a type.** Sequential iteration/append → `NativeList<T>`; key-value lookup → `NativeHashMap`/`NativeParallelHashMap` (single-threaded vs. multithreaded write, per `collection-types.md`); uniqueness checks → `NativeHashSet<T>`; FIFO work items → `NativeQueue<T>`; per-thread append-only buffers → `NativeStream`; a single boxed value that needs to cross into a job → `NativeReference<T>`. Don't default to `NativeList<T>` for everything the way `List<T>` gets defaulted to in managed code.

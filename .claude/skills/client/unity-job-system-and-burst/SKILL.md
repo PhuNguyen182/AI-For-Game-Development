@@ -31,7 +31,11 @@ description: >
   Persistent allocator lifetime choice and scheduling mechanics for a
   container once its type is already decided. Do not use this for
   `Unity.Mathematics` vector/matrix/`Random`/`noise` types — that's
-  `unity-mathematics`.
+  `unity-mathematics`. Do not use this to choose which physics-specific job
+  interface fits a need (`ICollisionEventsJob`/`ITriggerEventsJob`/
+  `IBodyPairsJob`/`IContactsJob`/`IJacobiansJob`) — that's `unity-physics`;
+  this skill still owns the actual scheduling/dependency/disposal mechanics
+  once that interface is chosen, exactly as for any other job type.
 ---
 
 # Unity Job System & Burst — Multithreaded CPU-Bound Work
@@ -54,6 +58,7 @@ Act as the Job System/Burst specialist inside Tech Lead – Performance's escala
 - Negative trigger: an ordinary hot-path fix — removing a per-frame allocation, pooling, picking the right collection — doesn't need the Job System at all; apply `performance-and-algorithms.md`'s baseline guidance directly instead of reaching for multithreading.
 - Negative trigger: designing entities/components/systems, the authoring→baking pipeline, or ECS-specific query/iteration design (`EntityQuery`/`SystemAPI.Query`/`IJobEntity`/`IJobChunk` choice) — that's `unity-ecs-architecture`. This skill only takes over once an ECS job is already being scheduled.
 - Negative trigger: choosing which collection type to use (`NativeArray` vs. `NativeList` vs. `NativeHashMap` vs. `NativeQueue`/`NativeStream`, `FixedString`/`FixedList`, `Unsafe-` variants, rewindable/custom allocators) — that's `unity-collections`. This skill only covers Temp/TempJob/Persistent allocator lifetime and scheduling mechanics once the container type is already chosen.
+- Negative trigger: choosing which physics-specific job interface fits a given need (`ICollisionEventsJob`/`ITriggerEventsJob`/`IBodyPairsJob`/`IContactsJob`/`IJacobiansJob`) — that's `unity-physics`. This skill schedules whichever interface is chosen exactly like any other job, but doesn't decide which one a physics task calls for.
 
 ## 4. How to use this skill
 1. **Confirm the prerequisite before writing a single job.** State the measurement that justified this (which Profiler capture, which system, what frame-time/CPU-time cost) — per `performance-and-algorithms.md`, Job System/Burst is not a default, it's a response to a demonstrated, genuinely parallelizable CPU-bound bottleneck.
