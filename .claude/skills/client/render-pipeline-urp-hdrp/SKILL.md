@@ -6,11 +6,15 @@ description: >
   HDRP (PC/console, high-fidelity) — so shaders, VFX, custom render passes,
   and lighting/post-processing setups match the project's actual configured
   pipeline. Use this before writing any pipeline-dependent shader or VFX, and
-  whenever asked to build a custom render feature/pass (URP Renderer Feature,
-  HDRP Custom Pass) for a visual effect. Do not use this for the shader graph
-  node logic itself once the pipeline target is already confirmed — that's
-  `shader-authoring`. Do not use this for the Built-in Render Pipeline (legacy,
-  no SRP) unless the project is explicitly confirmed to still be on it.
+  for the initial "which pipeline, and how do I target it" decision. Do not
+  use this for the shader graph node logic itself once the pipeline target is
+  already confirmed — that's `shader-authoring`. Do not use this for deep,
+  pipeline-specific configuration once the target is confirmed — URP's
+  Renderer Features/rendering paths/2D Renderer/camera stacking are
+  `unity-urp-rendering`; HDRP's Frame Settings/Volume system/Custom Pass
+  Volumes/Diffusion Profiles/APV/ray tracing are `unity-hdrp-rendering`. Do
+  not use this for the Built-in Render Pipeline (legacy, no SRP) unless the
+  project is explicitly confirmed to still be on it.
 ---
 
 # Render Pipeline Targeting — URP & HDRP
@@ -22,35 +26,26 @@ Make sure shader, VFX, and render-feature work actually matches the render pipel
 Act as the render pipeline configuration specialist: you confirm which SRP is active, structure pipeline-specific work (Renderer Features, Custom Passes, Volumes) correctly for that pipeline, and keep pipeline-specific branching clean rather than scattered.
 
 ## 3. When to invoke this skill
-- Before writing or modifying any shader/VFX that must integrate with the project's lighting, post-processing, or custom rendering feature set.
-- Whenever asked to build a custom render pass for a visual effect: a URP `ScriptableRendererFeature`/`ScriptableRenderPass` (outline pass, screen distortion, custom compositing, decals-in-URP), or an HDRP Custom Pass Volume.
-- Whenever a Volume-driven effect (HDRP) or Renderer Feature-driven effect (URP) is requested rather than a plain material shader.
+- Before writing or modifying any shader/VFX that must integrate with the project's lighting, post-processing, or custom rendering feature set — to confirm which pipeline it must target.
+- Deciding *whether* a project should be on URP or HDRP, or resolving which one is actually active before any pipeline-dependent work starts.
+- Mapping quality tiers to the right pipeline choice, or keeping pipeline branching clean when one asset must genuinely serve both.
 - Negative trigger: once the pipeline target is confirmed, the actual node-graph/HLSL authoring is `shader-authoring`'s job — use this skill only for the pipeline-level setup around it.
+- Negative trigger: once the pipeline target is confirmed, deep configuration of that pipeline's own systems (URP Renderer Features/passes, rendering paths, 2D Renderer, camera stacking; HDRP Frame Settings, the Volume system, Custom Pass Volumes, Diffusion Profiles, Adaptive Probe Volumes, Water System, ray/path tracing) belongs to `unity-urp-rendering`/`unity-hdrp-rendering` respectively — use this skill only for the initial targeting decision, not the deep-dive work.
 - Negative trigger: don't assume Built-in Render Pipeline; only treat the project as Built-in RP if that's explicitly confirmed — most current Unity projects run URP or HDRP.
 
 ## 4. How to use this skill
 1. **Confirm the active pipeline asset first** — check the project's Graphics/Quality settings for the assigned Render Pipeline Asset (URP Asset vs HDRP Asset), or the Tech Spec if it states the target. Never assume.
-2. **URP specifics**:
-   - Shader Graph target: "Universal" (Lit/Unlit/Sprite-Lit master stacks).
-   - Custom render passes: implement a `ScriptableRendererFeature` + `ScriptableRenderPass`, and register it on the URP Renderer asset actually used by the target quality tier.
-   - Rendering path matters: Forward, Forward+, and Deferred have different per-object light count budgets — confirm which path the project uses before assuming a light count is affordable.
-   - URP is the mobile-first/broad-platform default — keep shader instruction count and overdraw within a mobile-appropriate budget even when also targeting PC through the same pipeline.
-3. **HDRP specifics**:
-   - Shader Graph target: "HDRP" (Lit/Unlit/Decal/Fabric/Hair/StackLit master stacks depending on material need).
-   - Post-processing and environment settings live in the **Volume system** (Volume Profiles + Volume components with a blend region/priority) — not per-camera settings; author a Volume Profile for the effect rather than hardcoding per-camera post-process values.
-   - Custom rendering work goes through **Custom Pass Volumes**, not a hand-rolled `ScriptableRenderPass` (that's URP's model, not HDRP's).
-   - Diffusion Profiles drive subsurface-scattering-style materials (skin, wax, foliage) — assign the correct profile rather than approximating it in a Lit shader's base parameters.
-   - High-fidelity HDRP-only features (ray tracing, path tracing, volumetric fog/clouds) are PC/console-class only — never assume they're available if the project also ships a mobile build; confirm against the Tech Spec's platform scope before using one.
+2. **URP at a glance**: Shader Graph target "Universal" (Lit/Unlit/Sprite-Lit master stacks); mobile-first/broad-platform default — keep shader instruction count and overdraw within a mobile-appropriate budget even when also targeting PC through the same pipeline. Once the target is confirmed as URP, hand off Renderer Features/passes, rendering-path choice, 2D Renderer, camera stacking, and quality-tier asset settings to `unity-urp-rendering` — this skill doesn't own that configuration depth.
+3. **HDRP at a glance**: Shader Graph target "HDRP" (Lit/Unlit/Decal/Fabric/Hair/StackLit master stacks depending on material need); high-fidelity HDRP-only features (ray tracing, path tracing, volumetric fog/clouds, the Water System) are PC/console-class only — never assume they're available if the project also ships a mobile build; confirm against the Tech Spec's platform scope before using one. Once the target is confirmed as HDRP, hand off Frame Settings, the Volume system, Custom Pass Volumes, Diffusion Profiles, Adaptive Probe Volumes, and ray/path tracing/Water System configuration to `unity-hdrp-rendering` — this skill doesn't own that configuration depth.
 4. **Keep pipeline branching clean.** When one asset must genuinely serve both pipelines, prefer a per-pipeline Shader Graph target pair (a URP-target graph and an HDRP-target graph sharing subgraphs) over a single hand-written HLSL file riddled with `#if UNIVERSAL_PIPELINE`/`#if HDRP` branches — this mirrors the "clean abstraction, not scattered `#if`" platform rule in `performance-and-algorithms.md`, applied to pipeline instead of platform.
-5. **Map quality tiers deliberately.** URP render scale/shadow distance/shadow cascade settings, or HDRP Quality/Frame Settings overrides, should be assigned per the project's actual platform tiers — not left at whatever the template default was.
+5. **Map quality tiers deliberately at the targeting level.** Confirm which quality tiers map to which pipeline (or pipeline asset variant) — the actual per-setting tuning (URP render scale/shadow cascades, HDRP Frame Settings overrides) happens in the pipeline-specific skill, not here.
 6. **Verify on the real pipeline before calling it done.** Capture a scene view (or request a build check) on the actual configured pipeline — a shader/effect validated only against Built-in RP assumptions can silently render incorrectly, or not at all, under URP/HDRP.
 
 ## 5. Specific goals / tasks this skill performs
 - Confirming and targeting the project's actual SRP (URP or HDRP) for any pipeline-dependent shader/VFX work.
-- Authoring URP Renderer Features / HDRP Custom Pass Volumes for effects that need a custom render pass.
-- Authoring HDRP Volume Profiles for post-process or environment-driven visual effects.
-- Mapping render pipeline quality settings to the project's platform tiers.
-- Out of scope: the shader node-graph/HLSL content itself once the pipeline target is settled (`shader-authoring`), and particle graph structure (`vfx-particle-authoring`).
+- Keeping pipeline branching clean when a single asset must serve both URP and HDRP.
+- Mapping quality tiers to the right pipeline/asset variant at a targeting level.
+- Out of scope: the shader node-graph/HLSL content itself once the pipeline target is settled (`shader-authoring`); particle graph structure (`vfx-particle-authoring`); deep URP configuration — Renderer Features/passes, rendering paths, 2D Renderer, camera stacking (`unity-urp-rendering`); deep HDRP configuration — Frame Settings, Volume system, Custom Pass Volumes, Diffusion Profiles, Adaptive Probe Volumes, Water System, ray/path tracing (`unity-hdrp-rendering`).
 
 ## 6. Output format
 ```
@@ -67,14 +62,15 @@ Act as the render pipeline configuration specialist: you confirm which SRP is ac
 ## 7. Examples
 **Example 1**
 - Input: "Create a shader graph effect for the ultimate ability's screen distortion" on a URP mobile+PC project.
-- Output: confirmed URP Forward+ renderer, built as a `ScriptableRendererFeature` injecting a full-screen distortion pass, Shader Graph Universal Unlit target for the distortion sample, verified on both PC and a mid-tier Android device since the project ships both.
+- Output: confirmed the URP Asset is active and the project's actual Renderer/quality tiers, set the Shader Graph target to Universal Unlit for the distortion sample, and handed off the full-screen injection (which Renderer, which `RenderPassEvent`) to `unity-urp-rendering` for the `ScriptableRendererFeature` build-out.
 
 **Example 2**
 - Input: "Add volumetric fog for the boss arena's ability" on an HDRP PC-only project.
-- Output: confirmed HDRP, authored via a Volume Profile with a Fog override scoped to the arena's Volume trigger region, flagged as PC/console-only per the project's platform scope (no mobile fallback needed since the project doesn't ship one).
+- Output: confirmed HDRP is active and the project's platform scope is PC/console-only (no mobile fallback needed), flagged volumetric fog as a PC/console-class feature per that scope, and handed off the actual Volume Profile/Fog Override authoring to `unity-hdrp-rendering`.
 
 ## 8. Edge cases & guardrails
 - Never assume Built-in Render Pipeline defaults — confirm URP or HDRP explicitly.
 - Never claim a pipeline-dependent effect is finished without verifying it on the actually-configured pipeline.
-- Never use an HDRP-only high-fidelity feature (ray tracing, volumetrics) on a project that also targets mobile without explicit Tech Spec sign-off.
+- Never use an HDRP-only high-fidelity feature (ray tracing, volumetrics, Water System) on a project that also targets mobile without explicit Tech Spec sign-off.
 - Keep pipeline-specific branches behind clean per-pipeline authoring (separate Shader Graph targets/passes), not scattered `#if` directives through shared code.
+- Don't do the deep pipeline-specific configuration work here — confirm the target and platform scope, then hand off to `unity-urp-rendering` or `unity-hdrp-rendering` for the actual Renderer Feature/Custom Pass Volume/Volume Profile/etc. build-out.
