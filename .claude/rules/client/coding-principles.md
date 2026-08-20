@@ -106,6 +106,13 @@ Every method body should read at one consistent level of abstraction. Don't mix 
 
 Raw string literals, `required` properties, collection expressions (`[...]`), and primary constructors are all real Microsoft-recommended patterns, but they require a C# language version Unity's compiler toolchain (Mono or IL2CPP, depending on the target platform) must actually support. Confirm the project's configured C# version before using any of them — don't assume the latest syntax compiles on this project's Unity version.
 
+## Obsolete APIs
+
+- Never write new code that declares or consumes a class, struct, field, method, property, event, or any other member marked with `[Obsolete]` — including Unity API members Unity itself has marked obsolete (e.g. an old `UnityEngine.Networking` type, a deprecated `Input` API superseded by the new Input System, an old Addressables/Analytics call). This applies whether the `[Obsolete]` attribute lives in this project's own code, a first-party Unity API, or a third-party SDK.
+- Before using any API you're not certain is current, check whether it (or its containing type) carries `[Obsolete]` — in the IDE this shows as a strikethrough/deprecation warning — and if so, find the modern replacement the deprecation message or current documentation points to, and use that instead.
+- If a Tech Spec or existing surrounding code calls for behavior only reachable through an obsolete member with no direct replacement, don't silently keep using it — flag it back per the Handoff rule below instead of shipping new code against it.
+- This rule governs new usage going forward. It does not by itself mandate a standalone refactor of pre-existing obsolete-API call sites outside your current change — remove one only if it falls within the lines/method you're already touching (see Boy Scout Rule above); otherwise flag it separately rather than expanding the current submission's scope.
+
 ## Correctness boundaries
 
 - Validate only at real boundaries: user input, save-data deserialization, network messages (when the backend track is active), third-party SDK callbacks. Internal calls between your own classes can trust their contracts — don't defensive-check state that can't actually happen.
