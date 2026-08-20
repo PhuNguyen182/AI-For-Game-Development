@@ -29,9 +29,9 @@ description: >
   `TilemapCollider2D` itself generates — that's `unity-2d-physics`. Do not
   use this for URP 2D Lighting (`Light2D`, 2D Renderer Data) consuming a
   tile sprite's secondary textures — that's `unity-urp-rendering`. Do not
-  use this for Sprite Shape (a separate spline-based 2D authoring system,
-  no dedicated skill exists yet in this project — flag as out of scope). Do
-  not use this for gameplay rule logic that happens to decide tilemap
+  use this for Sprite Shape (a separate spline-based 2D authoring system)
+  — that's `unity-2d-spriteshape`, a separate skill. Do not use this for
+  gameplay rule logic that happens to decide tilemap
   content (procedural level generation, which tile a destructible-terrain
   rule should place) — that belongs in Shared Core per
   `coding-principles.md`'s Shared Core integrity rule; this skill only
@@ -60,11 +60,11 @@ Act as the built-in Tilemap authoring specialist: given a need for tile-based le
 - Negative trigger: authoring the underlying Sprite art (import settings, Sprite Editor slicing/outline/physics-shape/secondary-textures/atlas packing) that tile art is made from — that's `unity-2d-sprite`, a separate skill despite this skill consuming its output.
 - Negative trigger: configuring `Rigidbody2D`, standalone `Collider2D`, 2D joints, or 2D effectors beyond what `TilemapCollider2D` itself generates — that's `unity-2d-physics`.
 - Negative trigger: setting up `Light2D`, 2D Renderer Data, or any lighting-side consumption of tile sprites' secondary textures — that's `unity-urp-rendering`.
-- Negative trigger: Sprite Shape authoring — a separate spline-based 2D system; no dedicated skill exists yet in this project, flag explicitly as out of scope rather than guessing at a workflow.
+- Negative trigger: Sprite Shape authoring — a separate spline-based 2D system, covered by the sibling `unity-2d-spriteshape` skill.
 - Negative trigger: the actual gameplay decision that happens to be expressed through tilemap content (procedural level generation, a destructible-terrain rule deciding which tile replaces a broken wall) — that's `csharp-engineer`'s Shared Core, per `coding-principles.md`'s Shared Core integrity rule; this skill stops at placing/rendering/colliding whatever layout Core already decided.
 
 ## 4. How to use this skill
-1. **Confirm scope first.** This skill is the built-in Tilemap authoring pipeline (`Grid`/`Tilemap`/`TilemapRenderer`/`TilemapCollider2D`, Tile Palette, custom tiles/brushes). If the task is authoring the Sprite art itself, hand off to `unity-2d-sprite`. If it's 2D physics dynamics beyond collision generation, hand off to `unity-2d-physics`. If it's 2D lighting, hand off to `unity-urp-rendering`. If it's Sprite Shape, state explicitly that no dedicated skill covers it yet.
+1. **Confirm scope first.** This skill is the built-in Tilemap authoring pipeline (`Grid`/`Tilemap`/`TilemapRenderer`/`TilemapCollider2D`, Tile Palette, custom tiles/brushes). If the task is authoring the Sprite art itself, hand off to `unity-2d-sprite`. If it's 2D physics dynamics beyond collision generation, hand off to `unity-2d-physics`. If it's 2D lighting, hand off to `unity-urp-rendering`. If it's Sprite Shape, hand off to `unity-2d-spriteshape`.
 2. **Set up `Grid`/`Tilemap` deliberately**, per [grid-and-tilemap.md](references/grid-and-tilemap.md): one shared `Grid` per set of cell-aligned layers (ground/walls/decoration as separate `Tilemap` children), Cell Layout matched to the design (Rectangle by default, Hexagon/Isometric per [isometric-hexagonal.md](references/isometric-hexagonal.md)).
 3. **Build the Tile Palette the right way**, per [tile-palette-and-tiles.md](references/tile-palette-and-tiles.md): the auto-updating Tile Set Importer path for art still under iteration, manual drag-in only for a settled final palette. Set each Tile's Collider Type to `Grid` by default (cheapest) and `Sprite` only when the silhouette genuinely needs it.
 4. **Respect the Shared Core boundary.** Any gameplay decision that happens to manifest as tilemap content (procedural level layout, which tile a destructible-terrain event places) is decided in `Game.Core.*`; this skill's components only paint/render/collide whatever layout Core already resolved — they never decide it themselves, per `coding-principles.md`'s Shared Core integrity rule.
@@ -74,7 +74,7 @@ Act as the built-in Tilemap authoring specialist: given a need for tile-based le
 8. **Check the 2D Tilemap Extras package before writing anything custom** ([tilemap-extras-tiles.md](references/tilemap-extras-tiles.md), [tilemap-extras-brushes.md](references/tilemap-extras-brushes.md)) — confirm it's installed (Package Manager > Unity Registry), then reach for Rule Tile/Auto Tile/Animated Tile or the Line/Random/GameObject/Group brushes before writing a fully custom `TileBase`/`GridBrushBase`.
 9. **Reach for a fully custom Scriptable Tile/Brush only when a built-in one — core or Extras package — genuinely can't express the requirement** ([custom-tiles-and-brushes.md](references/custom-tiles-and-brushes.md)) — non-standard neighbor logic, non-standard painting; per YAGNI in `coding-principles.md`.
 10. **Use the batched `Tilemap` scripting API** ([scripting-api.md](references/scripting-api.md)) — `SetTiles`/`BoxFill`/`FloodFill` over a hand-rolled loop of `SetTile` calls, and never edit tiles from a per-frame hot path.
-11. **State the hand-off explicitly.** Sprite art authoring → `unity-2d-sprite`. 2D physics dynamics beyond collision generation → `unity-2d-physics`. 2D Lighting → `unity-urp-rendering`. Sprite Shape → flagged as uncovered, not improvised. Gameplay decisions behind tilemap content → `csharp-engineer`'s Shared Core.
+11. **State the hand-off explicitly.** Sprite art authoring → `unity-2d-sprite`. 2D physics dynamics beyond collision generation → `unity-2d-physics`. 2D Lighting → `unity-urp-rendering`. Sprite Shape → `unity-2d-spriteshape`. Gameplay decisions behind tilemap content → `csharp-engineer`'s Shared Core.
 
 ## 5. Specific goals / tasks this skill performs
 - Setting up `Grid`/`Tilemap` hierarchies and their cell-layout properties.
@@ -86,7 +86,7 @@ Act as the built-in Tilemap authoring specialist: given a need for tile-based le
 - Writing custom Scriptable Tiles (`TileBase`) and Scriptable Brushes (`GridBrushBase`).
 - Using the `Tilemap` scripting API for batched runtime tile edits.
 - Using the 2D Tilemap Extras package's Rule Tile/Auto Tile/Animated Tile, Rule/Advanced Rule Override Tile, Line/Random/GameObject/Group brushes, and `GridInformation`.
-- Out of scope: Sprite import/Sprite Editor/atlas authoring (`unity-2d-sprite`); `Rigidbody2D`/`Collider2D`/joint/effector configuration beyond `TilemapCollider2D`'s own generation (`unity-2d-physics`); `Light2D`/2D Renderer Data lighting setup (`unity-urp-rendering`); Sprite Shape (uncovered — flag explicitly); gameplay rule logic driving tilemap content (`csharp-engineer`'s Shared Core).
+- Out of scope: Sprite import/Sprite Editor/atlas authoring (`unity-2d-sprite`); `Rigidbody2D`/`Collider2D`/joint/effector configuration beyond `TilemapCollider2D`'s own generation (`unity-2d-physics`); `Light2D`/2D Renderer Data lighting setup (`unity-urp-rendering`); Sprite Shape (`unity-2d-spriteshape`); gameplay rule logic driving tilemap content (`csharp-engineer`'s Shared Core).
 
 ## 6. Output format
 ```
@@ -101,7 +101,7 @@ Act as the built-in Tilemap authoring specialist: given a need for tile-based le
 - 2D Tilemap Extras (if applicable): package installed <yes/no>, tile/brush type(s) used (Rule Tile/Auto Tile/Animated Tile/Line/Random/GameObject/Group/GridInformation)
 - Custom Tile/Brush (if applicable): why neither a core built-in nor an Extras-package tile/brush covered the requirement
 - Shared Core boundary: confirmed no gameplay decision made in tilemap-layer code
-- Hand-off: <sprite authoring → unity-2d-sprite / physics dynamics → unity-2d-physics / lighting → unity-urp-rendering / Sprite Shape → flagged uncovered / gameplay logic → csharp-engineer, as applicable>
+- Hand-off: <sprite authoring → unity-2d-sprite / physics dynamics → unity-2d-physics / lighting → unity-urp-rendering / Sprite Shape → unity-2d-spriteshape / gameplay logic → csharp-engineer, as applicable>
 - Known limitations: <...>
 ```
 
@@ -120,7 +120,7 @@ Act as the built-in Tilemap authoring specialist: given a need for tile-based le
 - Never assume this skill covers authoring the Sprite art tiles are made from — route Sprite import settings, Sprite Editor work, and atlas packing to `unity-2d-sprite`.
 - Never assume `Rigidbody2D`/standalone `Collider2D`/effector/joint configuration is this skill's territory, even on the same GameObject as `TilemapCollider2D` — route that to `unity-2d-physics`.
 - Never assume `Light2D`/2D Renderer Data lighting setup is this skill's territory — route that to `unity-urp-rendering`.
-- Sprite Shape is a separate spline-based 2D authoring system; this project has no dedicated skill for it yet — state that explicitly rather than stretching this skill's guidance to cover it.
+- Sprite Shape is a separate spline-based 2D authoring system, covered by the sibling `unity-2d-spriteshape` skill — don't stretch this skill's guidance to cover it.
 - Never make a gameplay decision (which tile a procedural generator or destructible-terrain rule should place) inside tilemap-layer code — resolve the decision in Shared Core and let `Tilemap`/`Tile`/brush code only carry out whatever layout Core already decided.
 - Manually drag-in Tile Palettes are **not** linked back to their source sprite/texture — a source-art edit silently doesn't propagate; use the Tile Set Importer path whenever the art is still iterating.
 - The isometric Cell Size y formula and Flat-Top's swapped x/y Cell Size axis semantics are common, easy-to-miss sources of misaligned tiles — verify both explicitly against the actual sprite/palette rather than reusing a value from another project without checking.
