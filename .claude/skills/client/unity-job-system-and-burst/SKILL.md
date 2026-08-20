@@ -24,7 +24,14 @@ description: >
   this skill covers only the underlying Job System mechanics that ECS's own
   job types build on top of once scheduled. The Job System and Burst work
   independently of ECS — most of this skill's guidance applies with zero
-  entities involved.
+  entities involved. Do not use this to choose which `NativeArray`/
+  `NativeList`/`NativeHashMap`/etc. container type to use, its `FixedString`/
+  `FixedList` alternative, or a rewindable/custom allocator strategy — that's
+  `unity-collections`; this skill covers only the routine Temp/TempJob/
+  Persistent allocator lifetime choice and scheduling mechanics for a
+  container once its type is already decided. Do not use this for
+  `Unity.Mathematics` vector/matrix/`Random`/`noise` types — that's
+  `unity-mathematics`.
 ---
 
 # Unity Job System & Burst — Multithreaded CPU-Bound Work
@@ -46,6 +53,7 @@ Act as the Job System/Burst specialist inside Tech Lead – Performance's escala
 - Negative trigger: the deliverable is a GPU-driven visual effect (particle simulation, mesh deformation) — that's `compute-shader-vfx`, not this skill, even though both involve "many elements processed in parallel."
 - Negative trigger: an ordinary hot-path fix — removing a per-frame allocation, pooling, picking the right collection — doesn't need the Job System at all; apply `performance-and-algorithms.md`'s baseline guidance directly instead of reaching for multithreading.
 - Negative trigger: designing entities/components/systems, the authoring→baking pipeline, or ECS-specific query/iteration design (`EntityQuery`/`SystemAPI.Query`/`IJobEntity`/`IJobChunk` choice) — that's `unity-ecs-architecture`. This skill only takes over once an ECS job is already being scheduled.
+- Negative trigger: choosing which collection type to use (`NativeArray` vs. `NativeList` vs. `NativeHashMap` vs. `NativeQueue`/`NativeStream`, `FixedString`/`FixedList`, `Unsafe-` variants, rewindable/custom allocators) — that's `unity-collections`. This skill only covers Temp/TempJob/Persistent allocator lifetime and scheduling mechanics once the container type is already chosen.
 
 ## 4. How to use this skill
 1. **Confirm the prerequisite before writing a single job.** State the measurement that justified this (which Profiler capture, which system, what frame-time/CPU-time cost) — per `performance-and-algorithms.md`, Job System/Burst is not a default, it's a response to a demonstrated, genuinely parallelizable CPU-bound bottleneck.

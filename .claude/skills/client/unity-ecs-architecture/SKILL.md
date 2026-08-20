@@ -20,7 +20,13 @@ description: >
   `FunctionPointer<T>`/`SharedStatic<T>`) — Burst also operates independently
   of ECS and that's `unity-burst-compiler`, whether the Burst target is a
   plain job or an ECS system. Do not use this for a GPU-driven visual effect
-  — that's `compute-shader-vfx`.
+  — that's `compute-shader-vfx`. Do not use this to choose a collection type
+  or allocator strategy for data feeding an ECS job — that's
+  `unity-collections`; this skill only decides how the data is modeled as
+  components/buffers, not the underlying container. Do not use this for
+  `Unity.Mathematics` vector/matrix/`Random`/`noise` type or function choice
+  — that's `unity-mathematics`, even though component fields are commonly
+  typed with `float3`/`quaternion` from that library.
 ---
 
 # Unity ECS Architecture — Entities, Components, Systems & Queries
@@ -45,6 +51,8 @@ Act as the ECS data/system-architecture specialist inside Tech Lead – Performa
 - Negative trigger: Burst-specific compilation tuning (HPC# subset compliance, `FloatMode`, intrinsics, AOT settings, `[NoAlias]`, `FunctionPointer<T>`/`SharedStatic<T>`) — that's `unity-burst-compiler`, whether the target is a plain job or a Burst-compiled ECS system.
 - Negative trigger: no prior architecture decision justifying ECS at all — per `performance-and-algorithms.md` this is escalation territory (Tech Lead – Performance / Technical Architect), not a routine default; don't convert an ordinary small-scale MonoBehaviour-driven feature to ECS "because it's faster" without that justification.
 - Negative trigger: the deliverable is a GPU-driven visual effect — that's `compute-shader-vfx`, not this skill.
+- Negative trigger: choosing a collection type (`NativeArray`/`NativeList`/`NativeHashMap`/etc.), `FixedString`/`FixedList`, or an allocator strategy for data feeding an ECS job — that's `unity-collections`.
+- Negative trigger: choosing `Unity.Mathematics` vector/matrix/`Random`/`noise` types or functions — that's `unity-mathematics`, even though `float3`/`quaternion` are the everyday field types for ECS component data.
 
 ## 4. How to use this skill
 1. **Confirm the prerequisite before modeling a single entity.** State which architecture-level decision (per `performance-and-algorithms.md` and Tech Lead – Performance/Technical Architect) justified using ECS for this specific feature — this skill doesn't re-litigate whether ECS is warranted.
