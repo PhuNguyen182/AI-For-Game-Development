@@ -17,7 +17,14 @@ description: >
   all — that's the baseline covered in `performance-and-algorithms.md`
   directly. Do not use this for deep Burst-specific compilation tuning (the
   HPC# language subset, `FloatMode`/intrinsics/AOT settings, `[NoAlias]`,
-  `FunctionPointer<T>`/`SharedStatic<T>`) — that's `unity-burst-compiler`.
+  `FunctionPointer<T>`/`SharedStatic<T>`) — that's `unity-burst-compiler`. Do
+  not use this to model entities/components/systems, design the
+  authoring→baking pipeline, or choose between `EntityQuery`/
+  `SystemAPI.Query`/`IJobEntity`/`IJobChunk` — that's `unity-ecs-architecture`;
+  this skill covers only the underlying Job System mechanics that ECS's own
+  job types build on top of once scheduled. The Job System and Burst work
+  independently of ECS — most of this skill's guidance applies with zero
+  entities involved.
 ---
 
 # Unity Job System & Burst — Multithreaded CPU-Bound Work
@@ -38,6 +45,7 @@ Act as the Job System/Burst specialist inside Tech Lead – Performance's escala
 - Negative trigger: no prior measurement, or the workload isn't clearly CPU-bound and parallelizable — don't reach for this as a first-pass "make it faster" default; that's exactly the case `performance-and-algorithms.md` warns against.
 - Negative trigger: the deliverable is a GPU-driven visual effect (particle simulation, mesh deformation) — that's `compute-shader-vfx`, not this skill, even though both involve "many elements processed in parallel."
 - Negative trigger: an ordinary hot-path fix — removing a per-frame allocation, pooling, picking the right collection — doesn't need the Job System at all; apply `performance-and-algorithms.md`'s baseline guidance directly instead of reaching for multithreading.
+- Negative trigger: designing entities/components/systems, the authoring→baking pipeline, or ECS-specific query/iteration design (`EntityQuery`/`SystemAPI.Query`/`IJobEntity`/`IJobChunk` choice) — that's `unity-ecs-architecture`. This skill only takes over once an ECS job is already being scheduled.
 
 ## 4. How to use this skill
 1. **Confirm the prerequisite before writing a single job.** State the measurement that justified this (which Profiler capture, which system, what frame-time/CPU-time cost) — per `performance-and-algorithms.md`, Job System/Burst is not a default, it's a response to a demonstrated, genuinely parallelizable CPU-bound bottleneck.
