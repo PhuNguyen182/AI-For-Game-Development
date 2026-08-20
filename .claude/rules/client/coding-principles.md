@@ -115,3 +115,4 @@ Raw string literals, `required` properties, collection expressions (`[...]`), an
 
 - Every submission to Code Reviewer includes a short note of assumptions/known limitations (per the Implementation Note handoff format in `TEAM_STRUCTURE.md`).
 - Stay scoped to what the Tech Spec asked for. Don't refactor unrelated code, don't add speculative extensibility, don't fix unrelated issues in the same submission — flag them separately instead.
+- When a Complex-tier feature (per Technical Architect's Triage) reaches completion, its handoff also includes the `README.md` required by `.claude/rules/client/feature-documentation.md`. Simple/Medium tier work is exempt from this.
