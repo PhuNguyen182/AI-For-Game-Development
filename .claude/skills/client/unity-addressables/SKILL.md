@@ -39,7 +39,7 @@ description: >
 
 # Unity Addressables — Runtime Asset & Scene Loading
 
-Sources: [Addressables Manual](https://docs.unity3d.com/Packages/com.unity.addressables@4.0/manual/index.html), [Addressables API reference](https://docs.unity3d.com/Packages/com.unity.addressables@4.0/api/index.html).
+Sources: see [references/](references/) for the Manual/API root links plus the specific sub-pages this skill was built from, split by topic — [root-links.md](references/root-links.md), [architecture-and-concepts.md](references/architecture-and-concepts.md) (content build system choice, addressing model, groups/profiles, dependency duplication, bundle packing), [loading-and-reference-counting.md](references/loading-and-reference-counting.md) (reference-counting contract, anti-patterns, UniTask awaiting), [build-workflow-and-best-practices.md](references/build-workflow-and-best-practices.md) (Play Mode Scripts vs. full content builds, Profiles, content updates, optimization tools).
 
 ## 1. Objective
 Load, instantiate, and release addressable assets/scenes correctly — right content-build-system choice, right reference-counting discipline, right pre-download strategy for remote content — awaited through UniTask instead of a raw callback or a blocking `WaitForCompletion()`, without leaking a handle, double-releasing one, or bypassing the reference count with a raw `Destroy()`.
@@ -54,6 +54,9 @@ Act as the asset-streaming specialist for the client track — the tool Unity En
 - Pre-downloading content before it's needed — `GetDownloadSizeAsync` to size a progress bar, `DownloadDependenciesAsync` to actually fetch it — ahead of a level transition or before showing a "download required" prompt.
 - Deciding between the two content build systems Addressables 4.0 offers: the newer **Content Directory** system (local-only content, simpler workflow, requires Unity 6.6+) vs. the classic **AssetBundle**-based system (required for remote content distribution, content updates post-launch, and pre-6.6 Unity) — this choice is made once per project and should not be mixed within the same project.
 - Checking/applying a remote content catalog update (`CheckForCatalogUpdates`/`UpdateCatalogs`) for a live game shipping content post-launch, when the project uses the AssetBundle content build system.
+- Organizing groups (concurrent-usage/logical-entity/type-based) and choosing a bundle-packing mode (Pack Together / Pack Separately / Pack Together by Label) for the AssetBundle system, per [architecture-and-concepts.md](references/architecture-and-concepts.md).
+- Auditing for the non-Addressable-dependency duplication pattern — a plain asset referenced by more than one Addressable silently duplicating into multiple bundles instead of being shared once.
+- Setting up Addressables Profiles for environment-specific build/load paths (Development/Staging/Production), or picking the right build-script tier (Play Mode Scripts vs. Update-a-Previous-Build vs. Default Build Script) for the moment — per [build-workflow-and-best-practices.md](references/build-workflow-and-best-practices.md).
 - Negative trigger: writing the generic cancellation/`.Preserve()`/`PlayerLoopTiming` mechanics around the await itself — that's `unitask-async-programming`.
 - Negative trigger: designing an object pool for the instantiated GameObjects — that's `performance-and-algorithms.md`'s pooling guidance; this skill only governs acquiring and releasing the underlying Addressable handle.
 - Negative trigger: texture/audio compression or import settings — that's `performance-and-algorithms.md`'s Assets & memory footprint section / Technical Artist.
@@ -71,6 +74,10 @@ Act as the asset-streaming specialist for the client track — the tool Unity En
 7. **Use merge modes (`Union`/`Intersection`/`Difference`) deliberately when loading by multiple labels/keys** — state which merge semantics the load actually needs rather than accepting the default and being surprised by which assets came back.
 8. **Treat a remote catalog update as a deliberate, user-visible step**, not a silent background swap — `CheckForCatalogUpdates` then `UpdateCatalogs` only for content build systems that support remote catalogs (the AssetBundle system), and surface the download/update state to the player rather than silently invalidating already-loaded content underneath a running session.
 9. **Verify with the Profiler / Addressables' own event viewer** when a memory or reference-count issue is suspected, rather than assuming a `Release` call alone fixed it — an asset with a still-outstanding reference elsewhere in the project won't actually unload just because one caller released its handle.
+10. **Avoid asset churn.** Releasing an asset and immediately reloading it (or another asset in the same bundle) triggers an avoidable unload/reload cycle — decide the real lifetime scope (per-level, per-session, per-app) up front per [loading-and-reference-counting.md](references/loading-and-reference-counting.md), rather than releasing reactively the moment something looks unused.
+11. **Make a shared non-Addressable asset Addressable in its own right** the moment more than one Addressable references it, instead of letting it silently duplicate into every referencing bundle — run the Analyze window to catch this before it ships, per [architecture-and-concepts.md](references/architecture-and-concepts.md).
+12. **Drive build/load paths from an Addressables Profile, never a hardcoded path or URL.** Keep one Profile per environment (Development/Staging/Production) so switching environments is a Profile selection, not a code or path edit.
+13. **Match the build-script tier to the moment.** Play Mode Scripts for day-to-day Editor iteration; a full Default Build Script content build before any real-device test, QA/Playtest handoff, or CI run — "works under Play Mode Scripts" is not sufficient verification, since that path bypasses the actual bundle/catalog resolution a shipped build depends on.
 
 ## 5. Specific goals / tasks this skill performs
 - Converting a `Resources.Load`/hard-referenced asset or scene to an addressed `AssetReference`/key-based load.
@@ -79,6 +86,8 @@ Act as the asset-streaming specialist for the client track — the tool Unity En
 - Choosing the content build system (Content Directory vs. AssetBundle) for a project's actual remote-content needs.
 - Checking and applying remote catalog updates for live content post-launch.
 - Auditing reference-counting correctness — no `Object.Destroy()` on an Addressables instance, no missing `Release`/`ReleaseInstance` on any code path.
+- Organizing groups/bundle-packing strategy and auditing for non-Addressable-dependency duplication via the Analyze window.
+- Setting up Profiles for environment-specific paths and picking the correct build-script tier for dev iteration vs. pre-ship verification vs. CI.
 - Out of scope: generic async/cancellation mechanics (`unitask-async-programming`), object pooling design (`performance-and-algorithms.md`), import/compression settings (`performance-and-algorithms.md`/Technical Artist), remote-config/economy infrastructure (`live-ops-content-pipeline`), CDN vendor selection (`tech-lead-sdk-platform`), any `Game.Core.*` usage.
 
 ## 6. Output format
@@ -91,6 +100,9 @@ Act as the asset-streaming specialist for the client track — the tool Unity En
 - Pre-download: GetDownloadSizeAsync + DownloadDependenciesAsync — yes/no, trigger point
 - Release path: Release / ReleaseInstance — confirmed on every code path (including early return/exception)
 - Remote catalog handling: CheckForCatalogUpdates/UpdateCatalogs — applicable/not applicable
+- Group/bundle strategy: <grouping principle, packing mode — or "not applicable, Content Directory system">
+- Shared-dependency check: <no non-Addressable asset duplicated across bundles — confirmed via Analyze window / not applicable>
+- Build-script tier used for verification: Play Mode Scripts (dev only) / Default Build Script (pre-ship/CI) — confirmed a full build was tested before handoff
 - Layer: Game.Client.* (never Game.Core.*)
 - Known limitations: <...>
 ```
@@ -108,6 +120,14 @@ Act as the asset-streaming specialist for the client track — the tool Unity En
 - Input: "just call `Object.Destroy()` on the Addressables-instantiated prop when it despawns, it's simpler."
 - Output: declined — `Object.Destroy()` bypasses Addressables' reference count entirely, leaking the underlying asset/bundle reference for the rest of the session; used `Addressables.ReleaseInstance(...)` instead, which both destroys the GameObject and correctly decrements the reference count.
 
+**Example 4**
+- Input: the Build Layout Report shows a shared UI font asset (not itself Addressable) duplicated across five separate UI-panel bundles, inflating build size.
+- Output: made the font asset Addressable in its own dedicated group instead of leaving it as an implicit non-Addressable dependency of each panel; re-ran the Analyze window's duplicate-dependency check to confirm the five copies collapsed to one shared bundle reference, per `architecture-and-concepts.md`'s dependency-model guidance.
+
+**Example 5**
+- Input: a feature that loads Addressable content "works fine" when tested only via the Editor's Play Mode Script (Asset Database-backed).
+- Output: flagged that this isn't sufficient verification — ran a full Default Build Script content build and re-tested against the actual bundles/catalog before marking the feature ready for `qa-automation-engineer`/`playtest-tester`, since Play Mode Scripts bypass the real bundle/catalog resolution path a shipped build depends on.
+
 ## 8. Edge cases & guardrails
 - Never call `Object.Destroy()` directly on a GameObject created via `Addressables.InstantiateAsync` — always `Addressables.ReleaseInstance(...)`, or the reference count leaks.
 - Never leave a `LoadAssetAsync`/`LoadAssetsAsync` handle un-released on any code path — including an early return or a caught exception — per the same discipline `coding-principles.md` already requires for coroutines and event subscriptions.
@@ -116,3 +136,8 @@ Act as the asset-streaming specialist for the client track — the tool Unity En
 - Never chain `LoadSceneAsync(...).ToUniTask()` without checking scene-activation timing — prefer awaiting the handle directly with `activateOnLoad: false` and an explicit `ActivateAsync()` call at the right moment.
 - Never silently swap a remote catalog under a running session — surface the update/download state to the player deliberately.
 - Never assume a single `Release` call frees the underlying asset if another caller still holds an outstanding reference to it — reference counting is per-handle, not per-asset-name.
+- Never release an asset reactively and reload it moments later "just in case it's not needed" — that's asset churn, an avoidable unload/reload cycle; decide the real lifetime scope up front.
+- Never leave a plain (non-Addressable) asset referenced by more than one Addressable — it silently duplicates into every referencing bundle instead of being shared once; make it Addressable itself and catch this class of bug with the Analyze window before it ships.
+- Never hardcode a build/load path or CDN URL in code — drive it from an Addressables Profile, one per environment.
+- Never treat "works under Play Mode Scripts" as sufficient verification for a shipped feature — it bypasses the real bundle/catalog resolution path; verify against a full Default Build Script content build before handoff to QA/Playtest or CI.
+- Never mix the AssetBundle system's remote catalog update workflow into a project using the Content Directory system — that update path doesn't exist there.
