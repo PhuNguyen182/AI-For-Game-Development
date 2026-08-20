@@ -8,13 +8,16 @@ This file governs **algorithm and data-structure selection, memory-lifetime disc
 
 ## Core principle — measured, practical performance over theoretical purity
 
-Big-O complexity is a starting filter, not the final answer. Real-world performance is dominated by cache locality, memory access patterns, branch prediction, allocation overhead, and constant factors — not asymptotic growth rate alone. When two approaches have comparable or close complexity, prefer the one that behaves better on real hardware, even if its asymptotic complexity looks worse on paper.
+Pick the algorithm that satisfies both requirements at once — good, stable Big-O **and** hardware-friendly execution (sequential/cache-friendly memory access, predictable branching, low constant factors) — not one traded off against the other. Big-O is a starting filter, not the final answer: when two approaches have comparable or close complexity, the tie-breaker is which one actually runs closer to the hardware.
+
+The cases below illustrate that reasoning applied to specific, recurring situations — they are worked examples of the principle, not an exhaustive or rigid checklist. Don't pattern-match a case onto one of these bullets by rote; apply the same reasoning (does it hold good/stable Big-O while running hardware-friendly?) to whatever the actual case in front of you is, including ones not listed here.
 
 - **Insertion sort vs. bubble sort**: both are O(n²) worst case, but insertion sort does far fewer writes and has better cache behavior — it consistently outperforms bubble sort in practice. Prefer it for small or nearly-sorted data.
 - **Quicksort vs. heapsort**: both average O(n log n), but quicksort's sequential, cache-friendly access pattern usually beats heapsort's array-index-jumping access pattern, despite heapsort's more consistent worst-case bound. In practice, prefer the runtime's built-in `Array.Sort`/`List<T>.Sort` (.NET's implementation is already an introspective sort — quicksort with a heapsort fallback and insertion sort for small partitions) over a hand-rolled sort, unless a specific, measured reason says otherwise.
 - **Small-N structures**: for small collections, a simple linear scan often beats a theoretically superior O(log n) or O(1) structure, because the fixed overhead of the "smarter" structure dominates at small N. Treat any specific size threshold as something to verify empirically for the actual case, not a fixed number to assume.
 - **Distance comparison**: `Vector3.Distance`/`Mathf.Sqrt` compute an actual square root, which is expensive relative to a multiply. When only comparing relative distances (e.g. "is this enemy within range?"), compare squared distances with `Vector3.sqrMagnitude`/`(a - b).sqrMagnitude` against a pre-squared threshold instead — same asymptotic cost, meaningfully cheaper per call, and it adds up fast across many entities checked every frame.
-- Never adopt a "faster in theory, slower in practice" (or vice versa) choice as production code on folklore alone — validate it with an actual measurement (Unity Profiler, BenchmarkDotNet, or equivalent) for the specific case, especially before overriding a standard library implementation.
+
+Whichever case it is — listed here or not — never adopt a "faster in theory, slower in practice" (or vice versa) choice as production code on folklore alone; validate it with an actual measurement (Unity Profiler, BenchmarkDotNet, or equivalent) for the specific case, especially before overriding a standard library implementation.
 
 ## Data structure selection
 
