@@ -15,7 +15,9 @@ description: >
   effect — that's `compute-shader-vfx`. Do not use this for ordinary hot-path
   allocation/pooling/data-structure fixes that don't need multithreading at
   all — that's the baseline covered in `performance-and-algorithms.md`
-  directly.
+  directly. Do not use this for deep Burst-specific compilation tuning (the
+  HPC# language subset, `FloatMode`/intrinsics/AOT settings, `[NoAlias]`,
+  `FunctionPointer<T>`/`SharedStatic<T>`) — that's `unity-burst-compiler`.
 ---
 
 # Unity Job System & Burst — Multithreaded CPU-Bound Work
