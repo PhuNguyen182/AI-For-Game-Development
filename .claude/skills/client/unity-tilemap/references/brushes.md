@@ -8,11 +8,13 @@ Set via the Tile Palette window's Brush Inspector dropdown (see [tile-palette-an
 
 | Brush | Behavior |
 |---|---|
-| Default | Standard single-tile paint/erase/fill — what most painting uses. |
+| Default | Standard single-tile paint/erase/fill — what most painting uses; ships with core Unity. |
 | Line | Paints a straight line of tiles between two points. |
-| Random | Paints a random tile from a weighted set each stroke. |
+| Random | Paints a randomly-selected tile set from a configured pool each stroke — equal chance, no per-tile weighting. |
 | GameObject | Paints by instantiating GameObjects/prefabs onto the grid instead of `Tile` assets. |
-| Group | Paints a fixed multi-tile arrangement as one unit. |
+| Group | Picks/paints a whole contiguous group of tiles as one unit. |
+
+Line, Random, GameObject, and Group brushes ship in the separate **2D Tilemap Extras** package (`com.unity.2d.tilemap.extras`), not core Unity — install via **Window > Package Manager > Unity Registry** first. Full Inspector reference and Scripting API for each: [tilemap-extras-brushes.md](tilemap-extras-brushes.md).
 
 For a brush type none of these cover, author a custom Scriptable Brush — see [custom-tiles-and-brushes.md](custom-tiles-and-brushes.md).
 

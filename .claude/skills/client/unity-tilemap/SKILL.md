@@ -7,16 +7,20 @@ description: >
   auto-updating Tile Set Importer), Tile asset properties (Sprite, Color,
   Collider Type, Flags, GameObject to Instantiate), the Tile Palette
   window's painting toolbar (Paint/Box Fill/Flood Fill/Eraser/Rotate/Flip),
-  built-in brush types (Default/Line/Random/GameObject/Group) and Brush
-  Picks, `TilemapRenderer` (Mode Chunk/Individual/SRP Batch, sorting, mask
-  interaction), `TilemapCollider2D` + `Composite Collider 2D` collision
-  generation, isometric tilemaps (Cell Size y, Isometric Z as Y, Custom
-  Axis transparency sorting) and hexagonal tilemaps (Point Top/Flat Top),
-  and custom Scriptable Tiles (`TileBase`/`TileData`) and Scriptable
-  Brushes (`GridBrushBase`). Use this for any task touching `Tilemap`,
-  `TilemapRenderer`, `TilemapCollider2D`, the Tile Palette window, `Tile`
-  assets, `Grid` (when its Cell Layout is set up for tilemap painting), or
-  custom `TileBase`/`GridBrushBase` scripting. Do not use this for
+  built-in brush types (Default plus the 2D Tilemap Extras package's
+  Line/Random/GameObject/Group) and Brush Picks, `TilemapRenderer` (Mode
+  Chunk/Individual/SRP Batch, sorting, mask interaction),
+  `TilemapCollider2D` + `Composite Collider 2D` collision generation,
+  isometric tilemaps (Cell Size y, Isometric Z as Y, Custom Axis
+  transparency sorting) and hexagonal tilemaps (Point Top/Flat Top), custom
+  Scriptable Tiles (`TileBase`/`TileData`) and Scriptable Brushes
+  (`GridBrushBase`), and the 2D Tilemap Extras package
+  (`com.unity.2d.tilemap.extras`: `RuleTile`, `AnimatedTile`, Auto Tile,
+  Rule/Advanced Rule Override Tile, `GridInformation`). Use this for any
+  task touching `Tilemap`, `TilemapRenderer`, `TilemapCollider2D`, the Tile
+  Palette window, `Tile` assets, `Grid` (when its Cell Layout is set up for
+  tilemap painting), custom `TileBase`/`GridBrushBase` scripting, or the 2D
+  Tilemap Extras package's brushes/tiles. Do not use this for
   authoring the underlying Sprite art (import settings, Sprite Editor
   slicing/outline/physics-shape/atlas packing) tiles are made from — that's
   `unity-2d-sprite`, a separate skill; this skill only consumes
@@ -36,7 +40,7 @@ description: >
 
 # Unity Tilemap — Built-in Grid/Tilemap Authoring, Rendering, Collision & Custom Tiles/Brushes
 
-Sources: see [references/](references/) for the Unity Manual root links, split by topic — [root-links.md](references/root-links.md), [grid-and-tilemap.md](references/grid-and-tilemap.md), [tile-palette-and-tiles.md](references/tile-palette-and-tiles.md), [brushes.md](references/brushes.md), [tilemap-renderer.md](references/tilemap-renderer.md), [tilemap-collider-2d.md](references/tilemap-collider-2d.md), [isometric-hexagonal.md](references/isometric-hexagonal.md), [custom-tiles-and-brushes.md](references/custom-tiles-and-brushes.md), [scripting-api.md](references/scripting-api.md).
+Sources: see [references/](references/) for the Unity Manual root links, split by topic — [root-links.md](references/root-links.md), [grid-and-tilemap.md](references/grid-and-tilemap.md), [tile-palette-and-tiles.md](references/tile-palette-and-tiles.md), [brushes.md](references/brushes.md), [tilemap-renderer.md](references/tilemap-renderer.md), [tilemap-collider-2d.md](references/tilemap-collider-2d.md), [isometric-hexagonal.md](references/isometric-hexagonal.md), [custom-tiles-and-brushes.md](references/custom-tiles-and-brushes.md), [scripting-api.md](references/scripting-api.md), [tilemap-extras-tiles.md](references/tilemap-extras-tiles.md), [tilemap-extras-brushes.md](references/tilemap-extras-brushes.md).
 
 ## 1. Objective
 Configure Unity's built-in Tilemap pipeline correctly — right `Grid`/`Tilemap` hierarchy, right Tile Palette creation path, right `TilemapRenderer`/`TilemapCollider2D` settings for the visual/collision requirement, right isometric/hexagonal layout math, right custom tile/brush only when the built-ins genuinely fall short — without drifting into sprite authoring, 2D physics dynamics, URP lighting, Sprite Shape, or gameplay rule logic that belong to sibling skills or roles.
@@ -52,6 +56,7 @@ Act as the built-in Tilemap authoring specialist: given a need for tile-based le
 - Adding **`TilemapCollider2D`** (+ `Composite Collider 2D`) to generate collision from tile data.
 - Setting up an **isometric** (Cell Size y math, Isometric vs. Isometric Z as Y, Custom Axis transparency sorting) or **hexagonal** (Point Top vs. Flat Top) tilemap.
 - Writing a **custom Scriptable Tile** (`TileBase`/`GetTileData`) or **Scriptable Brush** (`GridBrushBase`) when a built-in tile/brush can't express the requirement.
+- Using the **2D Tilemap Extras** package (`com.unity.2d.tilemap.extras`) — **Rule Tile**/**Auto Tile**/**Animated Tile**, Rule/Advanced Rule Override Tile variants, the Line/Random/GameObject/Group brushes, or `GridInformation` per-cell metadata storage.
 - Negative trigger: authoring the underlying Sprite art (import settings, Sprite Editor slicing/outline/physics-shape/secondary-textures/atlas packing) that tile art is made from — that's `unity-2d-sprite`, a separate skill despite this skill consuming its output.
 - Negative trigger: configuring `Rigidbody2D`, standalone `Collider2D`, 2D joints, or 2D effectors beyond what `TilemapCollider2D` itself generates — that's `unity-2d-physics`.
 - Negative trigger: setting up `Light2D`, 2D Renderer Data, or any lighting-side consumption of tile sprites' secondary textures — that's `unity-urp-rendering`.
@@ -66,9 +71,10 @@ Act as the built-in Tilemap authoring specialist: given a need for tile-based le
 5. **Configure `TilemapRenderer` deliberately**, per [tilemap-renderer.md](references/tilemap-renderer.md): Mode = Chunk by default, Individual only when tiles must depth-sort against other sprites; set Manual chunk culling bounds when tile content extends past the auto-estimated bounds.
 6. **Add `TilemapCollider2D` + `Composite Collider 2D` for level terrain**, per [tilemap-collider-2d.md](references/tilemap-collider-2d.md) — merge shapes rather than leaving hundreds of per-tile colliders; hand off the resulting body's `Rigidbody2D`/effector/joint configuration to `unity-2d-physics`.
 7. **Get isometric/hexagonal math right before painting**, per [isometric-hexagonal.md](references/isometric-hexagonal.md): verify the isometric Cell Size y formula against the actual imported sprite's pixel dimensions, and confirm Point Top vs. Flat Top's swapped Cell Size axis semantics before reusing settings across projects.
-8. **Reach for a custom Scriptable Tile/Brush only when a built-in one genuinely can't express the requirement** ([custom-tiles-and-brushes.md](references/custom-tiles-and-brushes.md)) — auto-tiling, procedural variation, or non-standard painting; a plain `Tile` + Default Brush covers most content (YAGNI in `coding-principles.md`).
-9. **Use the batched `Tilemap` scripting API** ([scripting-api.md](references/scripting-api.md)) — `SetTiles`/`BoxFill`/`FloodFill` over a hand-rolled loop of `SetTile` calls, and never edit tiles from a per-frame hot path.
-10. **State the hand-off explicitly.** Sprite art authoring → `unity-2d-sprite`. 2D physics dynamics beyond collision generation → `unity-2d-physics`. 2D Lighting → `unity-urp-rendering`. Sprite Shape → flagged as uncovered, not improvised. Gameplay decisions behind tilemap content → `csharp-engineer`'s Shared Core.
+8. **Check the 2D Tilemap Extras package before writing anything custom** ([tilemap-extras-tiles.md](references/tilemap-extras-tiles.md), [tilemap-extras-brushes.md](references/tilemap-extras-brushes.md)) — confirm it's installed (Package Manager > Unity Registry), then reach for Rule Tile/Auto Tile/Animated Tile or the Line/Random/GameObject/Group brushes before writing a fully custom `TileBase`/`GridBrushBase`.
+9. **Reach for a fully custom Scriptable Tile/Brush only when a built-in one — core or Extras package — genuinely can't express the requirement** ([custom-tiles-and-brushes.md](references/custom-tiles-and-brushes.md)) — non-standard neighbor logic, non-standard painting; per YAGNI in `coding-principles.md`.
+10. **Use the batched `Tilemap` scripting API** ([scripting-api.md](references/scripting-api.md)) — `SetTiles`/`BoxFill`/`FloodFill` over a hand-rolled loop of `SetTile` calls, and never edit tiles from a per-frame hot path.
+11. **State the hand-off explicitly.** Sprite art authoring → `unity-2d-sprite`. 2D physics dynamics beyond collision generation → `unity-2d-physics`. 2D Lighting → `unity-urp-rendering`. Sprite Shape → flagged as uncovered, not improvised. Gameplay decisions behind tilemap content → `csharp-engineer`'s Shared Core.
 
 ## 5. Specific goals / tasks this skill performs
 - Setting up `Grid`/`Tilemap` hierarchies and their cell-layout properties.
@@ -79,6 +85,7 @@ Act as the built-in Tilemap authoring specialist: given a need for tile-based le
 - Setting up isometric (including Z-as-Y height) and hexagonal (Point Top/Flat Top) tilemaps.
 - Writing custom Scriptable Tiles (`TileBase`) and Scriptable Brushes (`GridBrushBase`).
 - Using the `Tilemap` scripting API for batched runtime tile edits.
+- Using the 2D Tilemap Extras package's Rule Tile/Auto Tile/Animated Tile, Rule/Advanced Rule Override Tile, Line/Random/GameObject/Group brushes, and `GridInformation`.
 - Out of scope: Sprite import/Sprite Editor/atlas authoring (`unity-2d-sprite`); `Rigidbody2D`/`Collider2D`/joint/effector configuration beyond `TilemapCollider2D`'s own generation (`unity-2d-physics`); `Light2D`/2D Renderer Data lighting setup (`unity-urp-rendering`); Sprite Shape (uncovered — flag explicitly); gameplay rule logic driving tilemap content (`csharp-engineer`'s Shared Core).
 
 ## 6. Output format
@@ -91,7 +98,8 @@ Act as the built-in Tilemap authoring specialist: given a need for tile-based le
 - TilemapRenderer settings: Mode, sorting, mask interaction, chunk culling as applicable
 - TilemapCollider2D (if applicable): Composite Collider 2D pairing <yes/no>, Extrusion Factor, Use Delaunay Mesh, rationale
 - Isometric/Hexagonal (if applicable): Cell Size y calculation, sort mode/axis, Point Top vs Flat Top
-- Custom Tile/Brush (if applicable): why a built-in tile/brush didn't cover the requirement
+- 2D Tilemap Extras (if applicable): package installed <yes/no>, tile/brush type(s) used (Rule Tile/Auto Tile/Animated Tile/Line/Random/GameObject/Group/GridInformation)
+- Custom Tile/Brush (if applicable): why neither a core built-in nor an Extras-package tile/brush covered the requirement
 - Shared Core boundary: confirmed no gameplay decision made in tilemap-layer code
 - Hand-off: <sprite authoring → unity-2d-sprite / physics dynamics → unity-2d-physics / lighting → unity-urp-rendering / Sprite Shape → flagged uncovered / gameplay logic → csharp-engineer, as applicable>
 - Known limitations: <...>
@@ -117,5 +125,6 @@ Act as the built-in Tilemap authoring specialist: given a need for tile-based le
 - Manually drag-in Tile Palettes are **not** linked back to their source sprite/texture — a source-art edit silently doesn't propagate; use the Tile Set Importer path whenever the art is still iterating.
 - The isometric Cell Size y formula and Flat-Top's swapped x/y Cell Size axis semantics are common, easy-to-miss sources of misaligned tiles — verify both explicitly against the actual sprite/palette rather than reusing a value from another project without checking.
 - `Composite Operation`/`Composite Order` on `TilemapCollider2D` only take effect when paired with an actual `Composite Collider 2D` component — verify that component is present before assuming those settings do anything.
-- Don't reach for a custom `TileBase`/`GridBrushBase` when a built-in tile + Default/Line/Random/GameObject/Group brush already expresses the requirement — see YAGNI in `coding-principles.md`.
-- The `UnityEditor.Tilemaps.GridBrushBase`/`GridBrush` Scripting API pages were unreachable (404) at authoring time; this skill's custom-brush guidance is sourced from the Manual workflow page — verify current method signatures against the live Scripting API or the `com.unity.2d.tilemap.extras` package docs before implementing a custom brush.
+- Don't reach for a custom `TileBase`/`GridBrushBase` when a built-in tile + Default/Line/Random/GameObject/Group brush, or a 2D Tilemap Extras Rule Tile/Auto Tile/Animated Tile, already expresses the requirement — see YAGNI in `coding-principles.md`.
+- The Line/Random/GameObject/Group brushes and Rule Tile/Animated Tile/Auto Tile all require the separate **2D Tilemap Extras** package (`com.unity.2d.tilemap.extras`) to be installed (Package Manager > Unity Registry) — never assume they're available in a project without confirming the package is present.
+- The core `UnityEditor.Tilemaps.GridBrushBase`/`GridBrush` Scripting API pages, and the Extras package's `UnityEngine.Tilemaps.RuleTile<T>` page, were unreachable (404) at authoring time; this skill's `GridBrushBase` guidance is sourced from the Manual workflow page and its Rule Tile guidance from the Manual's Inspector reference — verify current method signatures against the live Scripting API or the `com.unity.2d.tilemap.extras` package source before implementing a custom brush or extending `RuleTile<T>`.

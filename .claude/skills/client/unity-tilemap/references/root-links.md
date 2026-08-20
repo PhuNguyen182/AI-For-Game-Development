@@ -34,6 +34,34 @@ Root Manual landing pages for Unity's built-in Tilemap authoring pipeline (`Unit
 | Tilemaps reference (index) | https://docs.unity3d.com/Manual/tilemaps/reference.html | (this file) |
 | Tilemap Renderer component reference | https://docs.unity3d.com/Manual/tilemaps/work-with-tilemaps/tilemap-renderer-reference.html | [tilemap-renderer.md](tilemap-renderer.md) |
 
+## 2D Tilemap Extras package (`com.unity.2d.tilemap.extras`)
+
+Separate installable package (Package Manager > Unity Registry) providing additional brushes and tile types beyond core Tilemap.
+
+| Topic | URL | Covered in |
+|---|---|---|
+| Package manual index | https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/index.html | (this file) |
+| Package API index | https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/api/index.html | (this file) |
+| Install | https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/install.html | [tilemap-extras-brushes.md](tilemap-extras-brushes.md) |
+| Built-in brushes (landing) | https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/Brushes.html | [tilemap-extras-brushes.md](tilemap-extras-brushes.md) |
+| Line Brush | https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/LineBrush.html | [tilemap-extras-brushes.md](tilemap-extras-brushes.md) |
+| Random Brush | https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/RandomBrush.html | [tilemap-extras-brushes.md](tilemap-extras-brushes.md) |
+| Group Brush | https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/GroupBrush.html | [tilemap-extras-brushes.md](tilemap-extras-brushes.md) |
+| GameObject Brush | https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/GameObjectBrush.html | [tilemap-extras-brushes.md](tilemap-extras-brushes.md) |
+| Grid Information | https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/GridInformation.html | [tilemap-extras-brushes.md](tilemap-extras-brushes.md) |
+| Built-in tiles (landing) | https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/Tiles.html | [tilemap-extras-tiles.md](tilemap-extras-tiles.md) |
+| Animated Tile | https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/AnimatedTile.html | [tilemap-extras-tiles.md](tilemap-extras-tiles.md) |
+| Rule Tile (landing) | https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/RuleTile-landing.html | [tilemap-extras-tiles.md](tilemap-extras-tiles.md) |
+| Rule Tile vs. Auto Tile introduction | https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/RuleTile-introduction.html | [tilemap-extras-tiles.md](tilemap-extras-tiles.md) |
+| Create a Rule Tile | https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/RuleTile.html | [tilemap-extras-tiles.md](tilemap-extras-tiles.md) |
+| Rule Tile Inspector reference | https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/RuleTile-Inspector.html | [tilemap-extras-tiles.md](tilemap-extras-tiles.md) |
+| Custom rules for Rule Tile (scripting) | https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/CustomRulesForRuleTile.html | [tilemap-extras-tiles.md](tilemap-extras-tiles.md) |
+| Rule Override Tile | https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/RuleOverrideTile.html | [tilemap-extras-tiles.md](tilemap-extras-tiles.md) |
+| Advanced Rule Override Tile | https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/AdvancedRuleOverrideTile.html | [tilemap-extras-tiles.md](tilemap-extras-tiles.md) |
+| Auto Tile | https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/AutoTile.html | [tilemap-extras-tiles.md](tilemap-extras-tiles.md) |
+| Auto Tile Inspector reference | https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/AutoTile-Inspector.html | [tilemap-extras-tiles.md](tilemap-extras-tiles.md) |
+| Sample projects | https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/sample-projects.html | [tilemap-extras-tiles.md](tilemap-extras-tiles.md) |
+
 ## Parent context
 
 | Page | URL |
@@ -53,5 +81,8 @@ Root Manual landing pages for Unity's built-in Tilemap authoring pipeline (`Unit
 | `UnityEngine.Tilemaps.TileData` | Struct describing a tile's render data (sprite, color, transform, gameObject, flags). See [custom-tiles-and-brushes.md](custom-tiles-and-brushes.md). |
 | `UnityEditor.Tilemaps.GridBrushBase` / `GridBrush` | Editor-only base class / default concrete brush type painting/erasing/filling tiles. See [custom-tiles-and-brushes.md](custom-tiles-and-brushes.md). |
 | `UnityEngine.Grid` | Non-Tilemaps-namespace component defining the cell layout (`Cell Size`, `Cell Gap`, `Cell Layout`, `Cell Swizzle`) that one or more `Tilemap`s under it share. See [grid-and-tilemap.md](grid-and-tilemap.md). |
+| `UnityEngine.Tilemaps.RuleTile<T>` / `AnimatedTile` | 2D Tilemap Extras package tile types — neighbor-conditional sprite selection / sprite-sequence animation. See [tilemap-extras-tiles.md](tilemap-extras-tiles.md). |
+| `UnityEditor.Tilemaps.LineBrush` / `RandomBrush` / `GroupBrush` / `GameObjectBrush` | 2D Tilemap Extras package brush types. See [tilemap-extras-brushes.md](tilemap-extras-brushes.md). |
+| `UnityEngine.GridInformation` | 2D Tilemap Extras package component storing keyed metadata per grid cell. See [tilemap-extras-brushes.md](tilemap-extras-brushes.md). |
 
 For authoring the sprite art tiles reference (import settings, Sprite Editor slicing, physics-shape outlines, atlas packing), see the sibling `unity-2d-sprite` skill — this skill consumes already-imported `Sprite` assets as tile art, it doesn't author them. For actual `Rigidbody2D`/`Collider2D` dynamics, effectors, or joints beyond what `TilemapCollider2D` itself generates, see `unity-2d-physics`. For URP 2D Lighting consuming tile sprites' secondary textures, see `unity-urp-rendering`. For level-generation/gameplay-rule logic that decides *which* tiles to place, see `csharp-engineer`'s Shared Core.

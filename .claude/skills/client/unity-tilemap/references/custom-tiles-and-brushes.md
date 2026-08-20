@@ -2,7 +2,9 @@
 
 Sources: https://docs.unity3d.com/Manual/tilemaps/custom-tiles-brushes.html, https://docs.unity3d.com/Manual/tilemaps/tiles-for-tilemaps/scriptable-tiles/scriptable-tiles.html, https://docs.unity3d.com/Manual/tilemaps/tile-palettes/brushes/create-scriptable-brush.html, https://docs.unity3d.com/Manual/tilemaps/tile-palettes/tile-template-asset.html, `UnityEngine.Tilemaps.TileBase`/`TileData` scripting API
 
-Note: the `UnityEditor.Tilemaps.GridBrushBase`/`GridBrush` Scripting API pages returned 404 at authoring time — this file's brush guidance is sourced from the Manual's workflow page instead; verify current method signatures against the live Scripting API or the `com.unity.2d.tilemap.extras` package docs before implementing.
+Note: the core `UnityEditor.Tilemaps.GridBrushBase`/`GridBrush` Scripting API pages, and the `com.unity.2d.tilemap.extras` package's `UnityEngine.Tilemaps.RuleTile<T>` page, returned 404 at authoring time — this file's `GridBrushBase` guidance is sourced from the Manual's workflow page instead. The package's `LineBrush`/`RandomBrush`/`GroupBrush`/`GameObjectBrush`/`AnimatedTile`/`GridInformation` API pages did resolve — see [tilemap-extras-brushes.md](tilemap-extras-brushes.md) and [tilemap-extras-tiles.md](tilemap-extras-tiles.md). Verify any signature not covered here against the live Scripting API or the package source before implementing.
+
+Before writing a fully custom `TileBase`/`GridBrushBase`, check whether the 2D Tilemap Extras package's ready-made **Rule Tile**, **Animated Tile**, or **Auto Tile** ([tilemap-extras-tiles.md](tilemap-extras-tiles.md)) already covers the need — most auto-tiling/terrain-blending/animation requirements are already solved there, per YAGNI in `coding-principles.md`.
 
 ## Custom Scriptable Tile
 
