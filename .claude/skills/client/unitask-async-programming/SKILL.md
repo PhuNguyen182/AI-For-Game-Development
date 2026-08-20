@@ -25,7 +25,11 @@ description: >
   calls into. Do not use this to await an RPC call's wire format or design
   the service contract — that's `magiconion-rpc-networking`; this skill
   covers awaiting the resulting `UnaryResult<T>` (a UniTask-shaped type), not
-  the contract itself. Never use this inside `Game.Core.*` — the UniTask
+  the contract itself. Do not use this to decide which Addressables call to
+  make, its content-build-system choice, or its reference-counting/release
+  discipline — that's `unity-addressables`; this skill only covers the
+  generic await/cancellation mechanics an Addressables `AsyncOperationHandle`
+  shares with any other UniTask-awaited operation. Never use this inside `Game.Core.*` — the UniTask
   package assembly references `UnityEngine` for its `PlayerLoop` integration,
   which violates the Shared Core's no-`UnityEngine`-dependency rule in
   `coding-principles.md`; a Core state machine or rule evaluator that needs
