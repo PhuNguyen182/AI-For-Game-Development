@@ -1,78 +1,51 @@
-# Execution Order, Setup & Cleanup
+# Execution Order, Setup and Cleanup — the pipeline and domain reloads
 
-Source: [Setup and cleanup at build time](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/manual/reference-setup-and-cleanup.html), [Actions outside tests](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/manual/reference-actions-outside-tests.html), [`IPrebuildSetup`](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.IPrebuildSetup.html), [`IPostBuildCleanup`](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.IPostBuildCleanup.html), [`IOuterUnityTestAction`](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.IOuterUnityTestAction.html).
+Sources: [Setup and cleanup at build time](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/manual/reference-setup-and-cleanup.html), [Actions outside tests](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/manual/reference-actions-outside-tests.html), [SetUp and TearDown](https://docs.nunit.org/articles/nunit/technical-notes/usage/SetUp-and-TearDown.html).
+Covers: SKILL.md §4 — **"Settle the execution order before debugging a setup interaction"**.
 
-## Build-time setup/cleanup — `IPrebuildSetup` / `IPostBuildCleanup`
+The exact order in which Unity's hooks and NUnit's own interleave, and what a
+domain reload does to each. Most reports of a fixture behaving unpredictably
+resolve here rather than in the code under test.
 
-Two equivalent ways to hook pre-build/post-build actions:
-1. Implement `IPrebuildSetup`/`IPostBuildCleanup` directly on the test class.
-2. Apply `[PrebuildSetup("ClassName")]` / `[PostBuildCleanup("ClassName")]` (or the `Type`-overload constructor) at class, method, or **assembly** level, pointing at a class that implements the corresponding interface.
+## Ordered pipeline around one test
 
-```csharp
-[PrebuildSetup("MyTestSceneSetup")]
-public class MyPlayModeTests
-{
-    // ...
-}
-```
+| Step | Hook | Source |
+|---|---|---|
+| 1 | NUnit context-applying attributes | [Actions outside tests](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/manual/reference-actions-outside-tests.html) |
+| 2 | Outer Unity test action, before phase | [Actions outside tests](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/manual/reference-actions-outside-tests.html) |
+| 3 | Unity setup methods | [Actions outside tests](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/manual/reference-actions-outside-tests.html) |
+| 4 | NUnit setup and teardown wrappers | [Actions outside tests](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/manual/reference-actions-outside-tests.html) |
+| 5 | NUnit setup methods | [Actions outside tests](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/manual/reference-actions-outside-tests.html) |
+| 6 | NUnit action attributes, before phase | [Actions outside tests](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/manual/reference-actions-outside-tests.html) |
+| 7 | NUnit test-method wrappers | [Actions outside tests](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/manual/reference-actions-outside-tests.html) |
+| 8 | The test method itself | [Actions outside tests](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/manual/reference-actions-outside-tests.html) |
+| 9 | NUnit action attributes, after phase | [Actions outside tests](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/manual/reference-actions-outside-tests.html) |
+| 10 | NUnit teardown methods | [Actions outside tests](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/manual/reference-actions-outside-tests.html) |
+| 11 | Unity teardown methods | [Actions outside tests](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/manual/reference-actions-outside-tests.html) |
+| 12 | Outer Unity test action, after phase | [Actions outside tests](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/manual/reference-actions-outside-tests.html) |
 
-- **`IPrebuildSetup.Setup()`** — actions to run as a pre-build step.
-- **`IPostBuildCleanup.Cleanup()`** — actions to run as a post-build step.
+| Rule | Consequence | Source |
+|---|---|---|
+| Unity setup runs before NUnit setup | Anything NUnit setup depends on must not be established by Unity setup after it, which is the opposite of the intuitive reading | [Actions outside tests](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/manual/reference-actions-outside-tests.html) |
+| Inheritance direction | NUnit setup runs base to derived and teardown derived to base, unchanged by this package | [SetUp and TearDown](https://docs.nunit.org/articles/nunit/technical-notes/usage/SetUp-and-TearDown.html) |
+| Outer actions bracket everything | They are the outermost pair, so they are where entering and leaving Play Mode around a whole test belongs | [Actions outside tests](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/manual/reference-actions-outside-tests.html) |
 
-**Execution order (verbatim):** "All setups run in a deterministic order one after another. The first to run are the setups defined with attributes. Then any test class implementing the interface runs, in alphabetical order inside their namespace, which is the same order tests run in."
+## Domain reloads
 
-**Cleanup timing (verbatim):** "Cleanup runs right away for a standalone test run, but only after related tests run in the Unity Editor." I.e. in-Editor, cleanup is deferred until after the whole related test run finishes; in a standalone Player run, it fires immediately.
+| Hook | Behaviour after a reload | Source |
+|---|---|---|
+| NUnit setup and one-time setup | Re-run before the code that triggered the reload continues | [Actions outside tests](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/manual/reference-actions-outside-tests.html) |
+| Unity setup | Does not re-run; if it was the hook that triggered the reload, only the code after its yield continues | [Actions outside tests](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/manual/reference-actions-outside-tests.html) |
 
-Both setup and cleanup only run if the associated test/class is actually included in the current filtered run, and if multiple tests reference the same setup/cleanup class, it runs only **once**, not once per test.
+**Critical caveat**: this asymmetry is the sharpest edge in the framework.
+State established before the yield in a Unity setup is gone after the reload
+and is not re-established, while an NUnit setup beside it runs again. A
+fixture that looks half-initialised is this, not a race.
 
-- Attribute constructors: `PrebuildSetupAttribute(string)` / `PrebuildSetupAttribute(Type)`, `PostBuildCleanupAttribute(string)` / `PostBuildCleanupAttribute(Type)`. Valid `AttributeTargets`: `Assembly | Class | Method`.
+## Build-time setup and cleanup
 
-## Actions outside tests — `IOuterUnityTestAction`, full execution order
-
-`IOuterUnityTestAction` lets a **custom attribute** (one that inherits `NUnitAttribute` and implements this interface) inject `BeforeTest`/`AfterTest` hooks around a test, with the same yielding ability as `[UnityTest]`:
-
-```csharp
-public class MyOuterActionAttribute : NUnitAttribute, IOuterUnityTestAction
-{
-    public IEnumerator BeforeTest(ITest test)
-    {
-        yield return new EnterPlayMode();
-    }
-
-    public IEnumerator AfterTest(ITest test)
-    {
-        yield return new ExitPlayMode();
-    }
-}
-```
-
-Compatible with both `[Test]` and `[UnityTest]`, and can be combined with NUnit's own `ITestAction`.
-
-### The full, ordered action pipeline (verbatim structure, 12 steps)
-
-1. `IApplyToContext` attributes (NUnit-provided extensibility point — not part of this package's own API surface, referenced only conceptually here)
-2. `IOuterUnityTestAction.BeforeTest`
-3. `[UnitySetUp]` methods
-4. `IWrapSetUpTearDown` attributes (NUnit)
-5. `[SetUp]` attributes (NUnit)
-6. Action attribute `BeforeTest` methods (NUnit `ITestAction`)
-7. `IWrapTestMethod` attributes (NUnit)
-8. **— test method executes —**
-9. Action attribute `AfterTest` methods (NUnit `ITestAction`)
-10. `[TearDown]` attributes (NUnit)
-11. `[UnityTearDown]` methods
-12. `IOuterUnityTestAction.AfterTest`
-
-Standard NUnit inheritance rule still applies: `[SetUp]` runs base → derived; `[TearDown]` runs derived → base.
-
-### Domain reload behavior — the sharpest edge case here
-
-In Edit Mode tests, a yielded instruction can trigger a **domain reload** (entering/exiting Play Mode is the common case). What survives that reload differs by which kind of setup fired it:
-
-> "When a domain reload happens, all non-Unity actions (such as `OneTimeSetup` and `Setup`) are rerun before the code that initiated the domain reload continues. Unity actions (such as `UnitySetup`) are not rerun. If the Unity action is the code that initiated the domain reload, then the rest of the code in the `UnitySetup` method runs after the domain reload."
-
-In short: plain NUnit `[SetUp]`/`[OneTimeSetUp]` re-run after a domain reload; `[UnitySetUp]` does **not** re-run (its remaining code after the reload-triggering `yield` just resumes). Design any `[UnitySetUp]` that enters/exits Play Mode with this in mind — don't assume it restarts from the top after the reload the way a plain `[SetUp]` would.
-
-## `[UnitySetUp]` / `[UnityTearDown]` recap
-
-See [attributes-reference.md](attributes-reference.md) for the attribute signatures and a basic example. The distinguishing behavior versus plain `[SetUp]`/`[TearDown]` is: (a) the method must return `IEnumerator`/support yielding `IEditModeTestYieldInstruction`s, and (b) the domain-reload survival rule above.
+| Interface and attribute | What it decides | Source |
+|---|---|---|
+| Prebuild setup | Runs before the test Player is built, which is the only place to stage assets or files a Player run will need | [Setup and cleanup at build time](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/manual/reference-setup-and-cleanup.html) |
+| Post-build cleanup | Runs after the build, and is what keeps a staged asset from being committed or shipped by accident | [Setup and cleanup at build time](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/manual/reference-setup-and-cleanup.html) |
+| Scope | Attached per test or per fixture, so an expensive stage can be limited to the tests that need it rather than every run | [Setup and cleanup at build time](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/manual/reference-setup-and-cleanup.html) |

@@ -1,110 +1,53 @@
-# Custom Attributes Reference
+# Attributes Reference — Unity's additions on top of NUnit
 
-Source: [Custom attributes](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/manual/reference-custom-attributes.html) (manual table), cross-checked against the [`UnityEngine.TestTools`](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.html) and [`UnityEditor.TestTools`](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEditor.TestTools.html) API namespace pages.
+Sources: [Custom attributes](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/manual/reference-custom-attributes.html), [UnityEngine.TestTools](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.html), [UnityEditor.TestTools](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEditor.TestTools.html), [UnityEngine.TestRunner](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestRunner.html), [UnityTestAttribute](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.UnityTestAttribute.html).
+Covers: SKILL.md §4 — **"Pick the attribute from Unity's own catalog rather than assuming an NUnit equivalent applies"**.
 
-## What's Unity-authored vs. plain NUnit
+What each Unity-authored attribute changes about how a test runs, and which
+NUnit attributes do not survive the crossing. Plain NUnit attributes that
+behave normally here are deliberately absent — consult NUnit's own docs for
+those, per [root-links.md](root-links.md).
 
-UTF layers a set of its own attributes on top of NUnit's own (`Test`, `TestCase`, `TestCaseSource`, `ValueSource`, `SetUp`, `TearDown`, `OneTimeSetUp`, `OneTimeTearDown`, `Ignore`, `Category`, `Timeout`). This project's manual/API pages only document Unity's additions — for NUnit's own attributes, consult [NUnit's documentation](https://docs.nunit.org/) directly rather than expecting Unity's site to re-explain them.
+## Test declaration
 
-## The manual's attribute table (verbatim, 13 rows, alphabetical)
-
-| Attribute | Namespace | Description (verbatim) |
+| Attribute | What it changes | Source |
 |---|---|---|
-| `ParameterizedIgnore` | `UnityEngine.TestTools` | A custom alternative to NUnit `Ignore` that allows ignoring tests based on parameters passed to the test method. |
-| `PostBuildCleanup` | `UnityEngine.TestTools` | Make changes to Unity or the file system after building. |
-| `PrebuildSetup` | `UnityEngine.TestTools` | Make changes to Unity or the file system before building. |
-| `PreservedValues` | `UnityEngine.TestTools` | Like NUnit `Values`, this is used to provide literal arguments for an individual test parameter. |
-| `RequirePlatformSupport` | `UnityEditor.TestTools` | Require Player build support for the specified platforms in order to run tests. |
-| `RequiresPlayMode` | `UnityEngine.TestTools` | Can be applied to an assembly, fixture, or individual test to indicate that tests under its scope should (or should not) run in the Editor's Play Mode. |
-| `TestMustExpectAllLogs` | `UnityEngine.TestTools` | Enforces that every log entry must be expected for a test to pass. |
-| `TestPlayerBuildModifier` | `UnityEditor.TestTools` | Modify Player build options or split build and run. |
-| `TestRunCallback` | `UnityEngine.TestRunner` | Assembly-level attribute used to subscribe a given type to updates on the test progress. |
-| `UnityPlatform` | `UnityEngine.TestTools` | Define which platforms tests should run on. |
-| `UnitySetUp` | `UnityEngine.TestTools` | Unity extension of NUnit `SetUp` to allow Unity yield instructions. |
-| `UnityTearDown` | `UnityEngine.TestTools` | Unity extension of NUnit `TearDown` to allow Unity yield instructions. |
-| `UnityTest` | `UnityEngine.TestTools` | Unity extension of NUnit `Test` to allow skipping frames and Unity yield instructions. |
+| `UnityTest` | Turns the test into a coroutine that can skip frames and yield Unity instructions — the only way an assertion spans more than one frame | [UnityTestAttribute](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.UnityTestAttribute.html) |
+| `UnitySetUp`, `UnityTearDown` | Setup and teardown that may yield; they interleave with NUnit's own hooks in a fixed order and do not survive a domain reload the same way — see [execution-order-and-setup-cleanup.md](execution-order-and-setup-cleanup.md) | [Custom attributes](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/manual/reference-custom-attributes.html) |
+| `RequiresPlayMode` | Declares, at assembly, fixture or test scope, whether the scope needs Play Mode — the mechanism that removed the need for separate assemblies per mode | [Custom attributes](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/manual/reference-custom-attributes.html) |
 
-**Important gap:** `ConditionalIgnoreAttribute` is a real, shipped attribute in `UnityEngine.TestTools` (see [assertions-logging-and-monobehaviour-testing.md](assertions-logging-and-monobehaviour-testing.md)) but it is **not listed in this manual table**. Don't treat the manual table as the exhaustive attribute list — cross-check the `UnityEngine.TestTools`/`UnityEditor.TestTools` namespace pages directly (linked in [root-links.md](root-links.md)) when auditing "every attribute this package offers."
+## Skipping
 
-## `[UnityTest]` — the core coroutine-test attribute
+| Attribute | Skips based on | Source |
+|---|---|---|
+| `ConditionalIgnore` | A condition registered at runtime, so the same test can be skipped on a machine or configuration that cannot support it | [ConditionalIgnoreAttribute](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.ConditionalIgnoreAttribute.html) |
+| `ParameterizedIgnore` | Specific argument values, so one case of a parameterized test is skipped while the rest run | [Custom attributes](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/manual/reference-custom-attributes.html) |
+| `UnityPlatform` | The platform the test is running on | [UnityPlatformAttribute](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.UnityPlatformAttribute.html) |
+| `RequirePlatformSupport` | Whether Player build support for a platform is installed — a different question from which platform is running | [RequirePlatformSupportAttribute](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEditor.TestTools.RequirePlatformSupportAttribute.html) |
 
-`UnityEngine.TestTools.UnityTestAttribute` — extends NUnit's `Test` to let a test method yield control back to the framework so background/async work can progress across frames. The test method returns `IEnumerator`.
+**Critical caveat**: the manual's own attribute table omits the runtime
+conditional-ignore attribute even though it ships in the API. Treat the
+namespace pages, not that table, as the authoritative catalog.
 
-- In **Play Mode**, a `[UnityTest]` method runs as an actual coroutine — ordinary coroutine yield instructions work (`WaitForFixedUpdate`, `WaitForSeconds`, `null` to skip a frame).
-- In **Edit Mode**, it runs inside the `EditorApplication.update` loop; `yield return null` skips one editor update.
+## Build and run hooks
 
-```csharp
-[UnityTest]
-public IEnumerator EditorUtility_WhenExecuted_ReturnsSuccess()
-{
-    var utility = RunEditorUtilityInTheBackground();
-    while (utility.isRunning)
-    {
-        yield return null;
-    }
-    Assert.IsTrue(utility.isSuccess);
-}
-```
+| Attribute | What it changes | Source |
+|---|---|---|
+| `PrebuildSetup`, `PostBuildCleanup` | Run code against the Editor or the file system around building the test Player — see [execution-order-and-setup-cleanup.md](execution-order-and-setup-cleanup.md) | [Custom attributes](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/manual/reference-custom-attributes.html) |
+| `TestPlayerBuildModifier` | Modifies the Player build options, or splits build from run; it lives in the Editor tools namespace rather than the runner API namespace, which is the usual lookup mistake | [TestPlayerBuildModifierAttribute](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEditor.TestTools.TestPlayerBuildModifierAttribute.html) |
+| `TestRunCallback` | Subscribes a type to test progress at assembly scope, through the callback interface that also works inside a Player — see [scripting-api-test-runner-api.md](scripting-api-test-runner-api.md) | [TestRunCallbackAttribute](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestRunner.TestRunCallbackAttribute.html) |
 
-```csharp
-[UnityTest]
-public IEnumerator GameObject_WithRigidBody_WillBeAffectedByPhysics()
-{
-    var go = new GameObject();
-    go.AddComponent<Rigidbody>();
-    var originalPosition = go.transform.position.y;
-    yield return new WaitForFixedUpdate();
-    Assert.AreNotEqual(originalPosition, go.transform.position.y);
-}
-```
+## Logging and values
 
-Known limits (see [getting-started-and-workflows.md](getting-started-and-workflows.md)): not supported on WSA; incompatible with `[Repeat]`; only `[ValueSource]` works for parameterization, not `[TestCase]`/`[TestCaseSource]` (see [async-coroutine-and-parameterized-tests.md](async-coroutine-and-parameterized-tests.md)).
+| Attribute | What it changes | Source |
+|---|---|---|
+| `TestMustExpectAllLogs` | Every log entry must be expected or the test fails, which converts stray logging into a failure instead of noise | [TestMustExpectAllLogsAttribute](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.TestMustExpectAllLogsAttribute.html) |
+| `PreservedValues` | Supplies literal arguments for one parameter, in a form that survives code stripping in a Player build where NUnit's own equivalent may not | [PreservedValuesAttribute](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.PreservedValuesAttribute.html) |
 
-## `[UnitySetUp]` / `[UnityTearDown]`
+## NUnit attributes that do not survive
 
-`UnityEngine.TestTools.UnitySetUpAttribute` / `UnityTearDownAttribute` — the yieldable equivalents of NUnit's `[SetUp]`/`[TearDown]`. The method must return `IEnumerator`.
-
-```csharp
-public class SetUpTearDownExample
-{
-    [UnitySetUp]
-    public IEnumerator SetUp()
-    {
-        yield return new EnterPlayMode();
-    }
-
-    [Test]
-    public void MyTest()
-    {
-        Debug.Log("This runs inside playmode");
-    }
-
-    [UnityTearDown]
-    public IEnumerator TearDown()
-    {
-        yield return new ExitPlayMode();
-    }
-}
-```
-
-See [execution-order-and-setup-cleanup.md](execution-order-and-setup-cleanup.md) for exactly where these fire relative to plain NUnit `SetUp`/`TearDown` and `IOuterUnityTestAction`, and for the domain-reload rule that specifically affects `UnitySetUp`.
-
-## `[RequiresPlayMode]`
-
-`UnityEngine.TestTools.RequiresPlayModeAttribute` — see [getting-started-and-workflows.md](getting-started-and-workflows.md)'s "Edit Mode vs. Play Mode" section for the full decision table. Can target an assembly, a fixture, or a single test.
-
-## `[UnityPlatform]` / `[RequirePlatformSupport]` / `[TestPlayerBuildModifier]`
-
-Covered in full in [platform-build-and-command-line.md](platform-build-and-command-line.md).
-
-## `[PrebuildSetup]` / `[PostBuildCleanup]`
-
-Covered in full in [execution-order-and-setup-cleanup.md](execution-order-and-setup-cleanup.md).
-
-## `[TestMustExpectAllLogs]` / `[PreservedValues]` / `[ConditionalIgnore]` / `[ParameterizedIgnore]`
-
-Covered in [assertions-logging-and-monobehaviour-testing.md](assertions-logging-and-monobehaviour-testing.md) and [async-coroutine-and-parameterized-tests.md](async-coroutine-and-parameterized-tests.md) respectively.
-
-## `[TestRunCallback]`
-
-`UnityEngine.TestRunner.TestRunCallbackAttribute` — assembly-level, subscribes a type implementing `ITestRunCallback` to raw test-progress notifications. Covered in [scripting-api-test-runner-api.md](scripting-api-test-runner-api.md).
+| Attribute | Behaviour here | Source |
+|---|---|---|
+| `Repeat` | Not supported in combination with the coroutine test attribute | [UnityTestAttribute](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.UnityTestAttribute.html) |
+| `Retry` | Throws in Play Mode rather than retrying | [UnityTestAttribute](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.UnityTestAttribute.html) |
+| `TestCase` and `TestCaseSource` | Unsupported on the coroutine test attribute, which accepts only the value-source form — see [async-coroutine-and-parameterized-tests.md](async-coroutine-and-parameterized-tests.md) | [Parameterized tests](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/manual/reference-tests-parameterized.html) |

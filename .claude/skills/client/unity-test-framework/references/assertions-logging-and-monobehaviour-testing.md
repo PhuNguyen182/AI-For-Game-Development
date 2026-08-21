@@ -1,97 +1,47 @@
-# Assertions, Log Expectations & MonoBehaviour Testing
+# Assertions, Logging and MonoBehaviour Testing — what to assert and how
 
-Source: [`LogAssert`](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.LogAssert.html), [`Constraints`](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.Constraints.html), [`Utils`](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.Utils.html), [`MonoBehaviourTest<T>`](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.MonoBehaviourTest-1.html), [`IMonoBehaviourTest`](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.IMonoBehaviourTest.html), [`ConditionalIgnoreAttribute`](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.ConditionalIgnoreAttribute.html), [`TestMustExpectAllLogsAttribute`](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.TestMustExpectAllLogsAttribute.html), [`PreservedValuesAttribute`](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.PreservedValuesAttribute.html).
+Sources: [LogAssert](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.LogAssert.html), [TestMustExpectAllLogsAttribute](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.TestMustExpectAllLogsAttribute.html), [Utils](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.Utils.html), [Constraints](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.Constraints.html), [MonoBehaviourTest](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.MonoBehaviourTest-1.html), [IMonoBehaviourTest](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.IMonoBehaviourTest.html).
+Covers: SKILL.md §4 — **"Expect a log before the code under test emits it"**, **"Compare Unity value types through the framework's own comparers"**, **"Gate a no-allocation claim with an allocation constraint rather than a review note"**.
 
-There is **no separate "assertions" manual page** in this package version (unlike 1.x, whose `reference-custom-assertion.html` 404s here) — `utf-features.html` links straight to the `LogAssert` API page, which is the authoritative source below. Plain `Assert.*`/`Assert.That` assertions are NUnit's own; this page covers only Unity's additions on top.
+The assertion surface this package adds over NUnit's: log expectations,
+tolerance-aware equality for Unity types, an allocation constraint, and a
+wrapper for MonoBehaviours whose completion is a condition rather than a
+frame count.
 
-## `LogAssert` — expecting Unity log messages
+## Log expectations
 
-`UnityEngine.TestTools.LogAssert` (static class): "LogAssert lets you expect Unity log messages that would otherwise cause the test to fail." Without it, `Debug.LogError`/`Debug.LogException`/a failed `Debug.Assert` inside the code under test would fail the test outright.
+| Member | Effect | Source |
+|---|---|---|
+| Expect a log | Registers that a matching entry is required; the entry is matched at frame end, so the call must come before the code that logs | [LogAssert](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.LogAssert.html) |
+| Ordering | Several expectations are matched in the order the entries were logged, so registering them out of order fails a test whose behaviour is correct | [LogAssert](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.LogAssert.html) |
+| Unexpected entries | An error-level log the test did not expect fails it on its own, which is what makes a silent error impossible to pass by accident | [LogAssert](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.LogAssert.html) |
+| No unexpected received | Asserts that nothing further was logged at the point it is called, for a test whose contract is silence | [LogAssert](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.LogAssert.html) |
+| Must expect all logs | Raises the bar for the whole test: every entry at any level must be expected, not only errors | [TestMustExpectAllLogsAttribute](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.TestMustExpectAllLogsAttribute.html) |
 
-- **`LogAssert.Expect(LogType logType, string message)`** — declares that a log of the given type and exact text is expected; the test fails if that message never actually appears.
-- **`LogAssert.Expect(LogType logType, Regex pattern)`** — same, but matched via regex instead of an exact string.
-- **Ordering rule:** if multiple `Expect` calls are made, the actual logs must appear in that same sequential order.
-- **Usage rule (verbatim guidance):** call `LogAssert.Expect` **before** running the code under test — the framework's check for expected logs happens at the end of each frame, not synchronously at the call site.
-- **`LogAssert.NoUnexpectedReceived()`** — fails the test if any log message was received that wasn't explicitly `Expect`-ed. Prefer `[TestMustExpectAllLogs]` (below) over sprinkling this call everywhere when the requirement is "every log across many tests must be expected."
-- **`LogAssert.ignoreFailingMessages`** (bool, default `false`) — set `true` to stop unexpected error-level logs from failing the test (use sparingly — it silences a real signal).
+## Equality for Unity value types
 
-```csharp
-[Test]
-public void DamageCalculation_WithInvalidTarget_LogsWarning()
-{
-    LogAssert.Expect(LogType.Warning, "Target is not damageable.");
-    DamageResolver.Resolve(attacker, invalidTarget);
-}
-```
+| Comparer | Why the default is not enough | Source |
+|---|---|---|
+| Float comparer | Floating-point results rarely match exactly, so the default equality fails on precision rather than on behaviour | [Utils](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.Utils.html) |
+| Vector comparers, two through four components | Per-component tolerance, so an accumulated transform result compares meaningfully instead of bit-exactly | [Utils](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.Utils.html) |
+| Quaternion comparer | Handles the tolerance a rotation needs, which a component-wise comparison of the same values does not | [Utils](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.Utils.html) |
+| Colour comparer | Compares channel values within a tolerance, for results that pass through a colour-space conversion | [Utils](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.Utils.html) |
 
-## `[TestMustExpectAllLogs]`
+**Critical caveat**: a hand-rolled epsilon check reimplements these comparers
+one assertion at a time, and each copy carries its own tolerance. Use the
+supplied comparer so the tolerance is one decision, not many.
 
-`UnityEngine.TestTools.TestMustExpectAllLogsAttribute` — "Enforces that every log entry must be expected for a test to pass." Apply this when a test (or fixture) should fail on *any* unlogged/unexpected message, without having to call `LogAssert.NoUnexpectedReceived()` manually in every test method.
+## Allocation constraint
 
-## `[ConditionalIgnore]`
+| Subject | What it decides | Source |
+|---|---|---|
+| Allocating-GC-memory constraint | Asserts whether a delegate allocates managed memory, turning a hot-path rule into a regression gate that a later refactor cannot quietly break | [Constraints](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.Constraints.html) |
+| Scope | It is a pass-or-fail correctness gate on one call, not a measurement — sizing and attribution belong to `unity-profiler-diagnostics` | [Constraints](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.Constraints.html) |
 
-`UnityEngine.TestTools.ConditionalIgnoreAttribute` — an alternative to NUnit's plain `[Ignore]` that skips a test only when a named condition evaluates true. The condition is checked during `OnLoad`, keyed by a string ID you register ahead of time.
+## MonoBehaviour condition tests
 
-- Constructor: `ConditionalIgnoreAttribute(string conditionKey, string reason)`.
-- Static registration: `ConditionalIgnoreAttribute.AddConditionalIgnoreMapping(string conditionKey, bool shouldIgnore)` — call this (typically from an `[InitializeOnLoad]` static hook) before the affected tests run.
-- Implements NUnit's `IApplyToTest` via `ApplyToTest(Test)` to perform the actual skip.
-
-```csharp
-[InitializeOnLoad]
-public static class ConditionalIgnoreSetup
-{
-    static ConditionalIgnoreSetup()
-    {
-        ConditionalIgnoreAttribute.AddConditionalIgnoreMapping(
-            "IgnoreOnMobile", Application.isMobilePlatform);
-    }
-}
-
-[ConditionalIgnore("IgnoreOnMobile", "Not relevant on mobile targets.")]
-[Test]
-public void DesktopOnlyBehavior_Test() { /* ... */ }
-```
-
-**Reminder:** `ConditionalIgnoreAttribute` is real and shipped, but is missing from the manual's `reference-custom-attributes.html` table (see [attributes-reference.md](attributes-reference.md)) — don't conclude it doesn't exist just because that table omits it.
-
-## `[PreservedValues]`
-
-`UnityEngine.TestTools.PreservedValuesAttribute` — like NUnit's `[Values]`, supplies literal arguments for one test parameter, but marked so the values survive aggressive managed-code stripping (relevant on IL2CPP builds with a high stripping level, where an un-preserved literal/reflection-discovered value could otherwise be stripped).
-
-## Custom equality comparers — `UnityEngine.TestTools.Utils`
-
-Provides `Assert.That`-compatible equality comparers for common Unity math/color types: `Color`, `Float` (an epsilon-based float comparer), `Quaternion`, `Vector2`, `Vector3`, `Vector4`. Use these instead of exact `==`/`Assert.AreEqual` on floating-point-derived types, since floating-point Vector/Quaternion/Color comparisons need a tolerance, not bit-exact equality.
-
-## Custom constraints — `UnityEngine.TestTools.Constraints`
-
-Extends NUnit's `Assert.That(...)` constraint model with Unity-specific constraints (e.g. an allocation-checking constraint used to assert a piece of code performs zero GC allocations — directly useful for enforcing `performance-and-algorithms.md`'s no-per-frame-allocation rule with an actual automated test rather than a manual Profiler check). Confirm the exact constraint names/usage against the live API page before depending on a specific one, since this class's member list wasn't independently re-verified line-by-line during this skill's research pass.
-
-## `MonoBehaviourTest<T>` / `IMonoBehaviourTest` — testing a MonoBehaviour via coroutine
-
-- **`IMonoBehaviourTest`** — implement this on the MonoBehaviour under test; it exposes a single member, `bool IsTestFinished { get; }`, that the framework polls to know when the behaviour's self-contained test logic is done.
-- **`MonoBehaviourTest<T>`** (where `T : MonoBehaviour, IMonoBehaviourTest`) — a `CustomYieldInstruction` that instantiates `T`, waits until `IsTestFinished` is true, and exposes `component` (the created instance) and `gameObject` (its container).
-
-```csharp
-public class MySelfTestingBehaviour : MonoBehaviour, IMonoBehaviourTest
-{
-    private int _frameCount;
-
-    public bool IsTestFinished => _frameCount > 2;
-
-    private void Update()
-    {
-        _frameCount++;
-    }
-}
-
-public class MonoBehaviourTests
-{
-    [UnityTest]
-    public IEnumerator MySelfTestingBehaviour_RunsForAFewFrames_ThenFinishes()
-    {
-        yield return new MonoBehaviourTest<MySelfTestingBehaviour>();
-    }
-}
-```
-
-Reach for `MonoBehaviourTest<T>` when the thing under test is genuinely a self-contained MonoBehaviour whose completion condition is naturally expressed as "keep running until `IsTestFinished`" — for anything that can be tested by driving a `[UnityTest]` coroutine directly with explicit `Assert` calls, prefer the plain coroutine test (simpler, per KISS in `coding-principles.md`) over wrapping it in `MonoBehaviourTest<T>`.
+| Subject | What it decides | Source |
+|---|---|---|
+| The interface | The component reports when it considers itself finished, so the test waits on a condition rather than a guessed number of frames | [IMonoBehaviourTest](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.IMonoBehaviourTest.html) |
+| The generic wrapper | Instantiates the component, runs until it reports completion, and cleans up — which is what makes the pattern shorter than an equivalent coroutine test | [MonoBehaviourTest](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.MonoBehaviourTest-1.html) |
+| When not to use it | An assertion expressible directly in a coroutine does not need the wrapper; the wrapper earns its place when completion is genuinely a condition | [MonoBehaviourTest](https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/api/UnityEngine.TestTools.MonoBehaviourTest-1.html) |

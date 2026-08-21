@@ -1,21 +1,47 @@
-# Root Links
+# Root Links — Input System 1.20
 
-Root/index pages this skill is built from (`com.unity.inputsystem` package version 1.20). Follow their own in-page navigation for anything not covered by the other files in this folder.
+Source: the root index pages listed below, as provided for this skill.
+Covers: the whole skill — provenance and version anchor for every file in
+this folder.
 
-- [Input System — Manual index](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/index.html) — landing page: package description ("a newer, more flexible system, which allows you to use any kind of Input Device to control your Unity content"), links to Installation, Concepts, Workflows, and the Warriors sample project on GitHub.
-- [Input System — Full manual table of contents](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/TableOfContents.html) — the complete left-nav tree (270+ entries); use this to locate any chapter this skill's reference files don't explicitly cite.
-- [Input System — API index](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/api/index.html) — chrome-only landing page; the real class listings are one level down, per namespace.
-- [API — UnityEngine.InputSystem namespace](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/api/UnityEngine.InputSystem.html) — the core namespace: `InputSystem`, `InputAction`, `InputActionAsset`, `InputActionMap`, `PlayerInput`, `PlayerInputManager`, all device classes (`Gamepad`, `Keyboard`, `Mouse`, `Pen`, `Touchscreen`, `Joystick`, sensors), `InputControl`, `InputDevice`, `InputBinding`, `InputValue`. Full breakdown in [scripting-api.md](scripting-api.md).
-- [Manual — Architecture](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/Architecture.html) — the native-backend → state-buffer → control/device → action pipeline. See [architecture-and-update-loop.md](architecture-and-update-loop.md).
-- [Manual — Concepts (understanding-input.html)](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/understanding-input.html) — the vocabulary this entire package is built on: Devices, Controls, Actions, Action Maps, Bindings.
-- [Manual — Workflows](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/Workflows.html) — the three ways to consume input this package supports (Actions, Actions+PlayerInput, Direct), and when each is the right choice.
-- [Manual — Known limitations](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/KnownLimitations.html) — a real, dated list of platform/feature gaps. See [migration-and-settings.md](migration-and-settings.md)'s guardrails.
-- [Manual — Migrate from the old input system](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/migrate-from-old-input-system.html) and [Enable the correct input system](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/enable-correct-input-system.html) — the `Active Input Handling` project setting and legacy-coexistence path. See [migration-and-settings.md](migration-and-settings.md).
+Anchors every link in this folder to `com.unity.inputsystem@1.20`. Unlike
+several other Unity subjects, this package has no built-in engine counterpart
+to reconcile — everything here lives in one package with one Manual tree. The
+one genuine split is this package against the legacy Input Manager that still
+ships with the Editor, which [migration-and-settings.md](migration-and-settings.md) owns.
 
-## How this doc set is organized (single tree, unlike some other Unity packages)
+## Roots
 
-Unlike NavMesh (built-in module + separate package) or Post-Processing (three parallel pipeline-specific systems), the Input System is **one self-contained package** (`com.unity.inputsystem`) with one Manual tree and one Scripting API tree, both versioned together at `@1.20`. There is no separate "built-in engine module" layer to reconcile — everything this skill covers (devices, actions, `PlayerInput`, rebinding, on-screen controls, UI integration) lives inside this one package.
+| Root | Holds | Source |
+|---|---|---|
+| Manual | Concepts, workflows, components, platform notes | [Input System Manual index](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/index.html) |
+| Full table of contents | The complete chapter tree, for anything no file here cites | [Table of contents](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/TableOfContents.html) |
+| Scripting API | Every type in `UnityEngine.InputSystem` and its sub-namespaces | [API index](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/api/UnityEngine.InputSystem.html) |
 
-The one genuine split to be aware of is **this package vs. the legacy, still-present built-in Input Manager** (`UnityEngine.Input`, `Edit > Project Settings > Input Manager`) — a completely separate, older system that predates this package and still ships with the Editor. The two are switched between (or run side by side) via the **Active Input Handling** project setting (`Input Manager (Old)` / `Input System Package (New)` / `Both`), covered in [migration-and-settings.md](migration-and-settings.md). This skill's guidance always targets the new package; route any task that's actually about the legacy `Input.GetKey`/`Input.GetAxis` API to the migration reference instead of treating it as in-scope new-system work.
+## Which file answers which question
 
-Page slugs are stable across nearby package versions; re-derive the exact `@1.20` segment if the installed package version differs.
+| Question | File | Source |
+|---|---|---|
+| Which backend is the project even running | [migration-and-settings.md](migration-and-settings.md) | [Enable the correct input system](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/enable-correct-input-system.html) |
+| How do I author what the player can do | [actions-bindings-and-assets.md](actions-bindings-and-assets.md) | [Actions](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/Actions.html) |
+| Why does this action never reach Performed | [interactions-and-processors.md](interactions-and-processors.md) | [Interactions](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/Interactions.html) |
+| Why do input and physics disagree | [architecture-and-update-loop.md](architecture-and-update-loop.md) | [Update Mode](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/update-mode.html) |
+| How do several local players work | [player-input-and-multiplayer.md](player-input-and-multiplayer.md) | [Player Input component](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/player-input-component.html) |
+| How does UI or a touch control receive input | [devices-and-ui-integration.md](devices-and-ui-integration.md) | [Input for user interfaces](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/ui-input.html) |
+| How do players change their own controls | [rebinding.md](rebinding.md) | [User rebinding at runtime](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/user-rebinding-runtime.html) |
+| Why is the binding not resolving at runtime | [editor-tooling-and-debugging.md](editor-tooling-and-debugging.md) | [Input debugger window](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/the-input-debugger-window.html) |
+
+## Core type index
+
+| Type | Source |
+|---|---|
+| `InputSystem` | [InputSystem](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/api/UnityEngine.InputSystem.InputSystem.html) |
+| `InputAction`, `InputActionMap`, `InputActionAsset` | [UnityEngine.InputSystem namespace](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/api/UnityEngine.InputSystem.html) |
+| `InputActionReference` | [InputActionReference](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/api/UnityEngine.InputSystem.InputActionReference.html) |
+| `PlayerInput`, `PlayerInputManager` | [PlayerInput](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/api/UnityEngine.InputSystem.PlayerInput.html) |
+| `InputDevice`, `InputControl\<TValue\>` | [InputDevice](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/api/UnityEngine.InputSystem.InputDevice.html) |
+| `InputActionRebindingExtensions` | [InputActionRebindingExtensions](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/api/UnityEngine.InputSystem.InputActionRebindingExtensions.html) |
+
+Keep the `@1.20` segment when following any link from this skill; page slugs
+are stable across nearby package versions, so substitute the installed
+version from `Packages/manifest.json` rather than assuming this one.

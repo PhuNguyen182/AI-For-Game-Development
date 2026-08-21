@@ -1,45 +1,37 @@
-# Animator Override Controller
+# Animator Override Controller — one graph, many clip sets
 
-Sources: `https://docs.unity3d.com/Manual/AnimatorOverrideController.html`, `https://docs.unity3d.com/ScriptReference/AnimatorOverrideController.html`, and sub-pages (see [root-links.md](root-links.md)).
+Sources: [Animator Override Controller](https://docs.unity3d.com/Manual/AnimatorOverrideController.html), [AnimatorOverrideController API](https://docs.unity3d.com/ScriptReference/AnimatorOverrideController.html), [Animation transition](https://docs.unity3d.com/Manual/class-Transition.html).
+Covers: SKILL.md §4 — **"Express transition timing in normalised time whenever clips can be overridden"**, **"Swap clips through an Override Controller instead of duplicating the controller"**.
 
-## Purpose
-An `AnimatorOverrideController` asset lets you override which `AnimationClip`s an Animator Controller plays "while retaining the structure, parameters, and logic of its state machine." It exists to avoid duplicating an entire Animator Controller graph just to swap the clips it plays.
+How several visual variants share one state machine, and the timing
+constraint that sharing imposes on every transition in it. The graph being
+shared is [animator-controller.md](animator-controller.md)'s.
 
-Canonical use case: multiple character variants (e.g. goblin, ogre, elf) that share identical state-machine logic (same states, transitions, parameters) but need different animation clips per variant. Build **one** base Animator Controller (see [animator-controller.md](animator-controller.md)), then create one Animator Override Controller per variant that only remaps clips.
+## What it does
 
-## Authoring workflow (Editor)
-1. **Assets > Create > Animation > Animator Override Controller**.
-2. Assign the base Animator Controller via the new asset's `Controller` field.
-3. The Inspector shows a two-column table (original clip → override clip); pick a replacement clip for each entry you want to override; leave others unset to keep the base clip.
-4. Assign the Animator Override Controller (instead of the base Animator Controller) to the target GameObject's `Animator` component — or set it via script at runtime (see API below).
-
-**Gotcha:** transition **Exit Time** should be authored in *normalized* time, not `Fixed Duration`/seconds, when the controller will be used with override clips of different lengths — an override clip shorter than a seconds-based exit time can cause that transition to be skipped/ignored entirely.
-
-## Scripting API (`UnityEngine.AnimatorOverrideController`)
-
-| Member | Signature | Description |
+| Subject | What it decides | Source |
 |---|---|---|
-| Constructor | `AnimatorOverrideController(RuntimeAnimatorController controller)` | Creates an override controller wrapping the given base controller. |
-| Indexer | `this[string name]` | Get/set the override for the original clip named `name` — returns the override clip if set, otherwise the original clip. |
-| `ApplyOverrides` | `ApplyOverrides(List<KeyValuePair<AnimationClip, AnimationClip>> overrides)` | Applies a batch of clip overrides in one call. **Preferred over the indexer for multiple changes** — each individual indexer assignment triggers a clip-binding reallocation, so batching via `ApplyOverrides` avoids repeated reallocation cost when changing several clips at once. |
-| `GetOverrides` | `GetOverrides(List<KeyValuePair<AnimationClip, AnimationClip>> overrides)` | Fills the passed list with the currently defined `(original, override)` clip pairs. |
-| `runtimeAnimatorController` | property | The base `RuntimeAnimatorController` this override controller wraps. |
-| `overridesCount` | property | Number of overrides currently defined. |
-| `animationClips` | property (inherited from `RuntimeAnimatorController`) | All `AnimationClip`s used by the (overridden) controller. |
+| Clip remapping | Replaces which clip each state plays while leaving states, transitions, parameters and layers untouched — one graph stays the single source of truth | [Animator Override Controller](https://docs.unity3d.com/Manual/AnimatorOverrideController.html) |
+| Against duplicating the controller | A duplicated graph drifts the first time a transition is edited in one copy and not the others, and the drift is invisible until it ships | [Animator Override Controller](https://docs.unity3d.com/Manual/AnimatorOverrideController.html) |
+| Chaining | An override controller can itself be overridden, so a species variant and an equipment variant compose instead of multiplying | [AnimatorOverrideController API](https://docs.unity3d.com/ScriptReference/AnimatorOverrideController.html) |
+| Empty overrides | A slot left empty falls back to the base controller's clip, so a partial variant only lists what actually differs | [Animator Override Controller](https://docs.unity3d.com/Manual/AnimatorOverrideController.html) |
 
-To apply at runtime, assign the `AnimatorOverrideController` instance to `Animator.runtimeAnimatorController` (see [animator-component.md](animator-component.md)) — the Animator will then play clips through the override mapping while running the base controller's state machine/transition/parameter logic unchanged.
+## Applying overrides at runtime
 
-```csharp
-AnimatorOverrideController overrideController = new(baseController);
-List<KeyValuePair<AnimationClip, AnimationClip>> overrides = new();
-overrideController.GetOverrides(overrides);
-// Replace entries in `overrides` as needed, then:
-overrideController.ApplyOverrides(overrides);
-this._animator.runtimeAnimatorController = overrideController;
-```
+| Member | Effect | Source |
+|---|---|---|
+| Batched override application | Applies a whole list of clip pairs in one call, which avoids re-resolving the controller once per individual assignment | [AnimatorOverrideController API](https://docs.unity3d.com/ScriptReference/AnimatorOverrideController.html) |
+| Indexer assignment | Replaces one clip; convenient, and the wrong shape for a full variant swap where every clip changes at once | [AnimatorOverrideController API](https://docs.unity3d.com/ScriptReference/AnimatorOverrideController.html) |
+| Reading the current overrides | Retrieves the current pairs, which is how a partial change is applied without discarding the others | [AnimatorOverrideController API](https://docs.unity3d.com/ScriptReference/AnimatorOverrideController.html) |
+| Assignment timing | Swapping the runtime controller resets state, so apply overrides on a deliberate event such as an equip change rather than per frame | [AnimatorOverrideController API](https://docs.unity3d.com/ScriptReference/AnimatorOverrideController.html) |
 
-## Practical guidance
-- Use an Animator Override Controller whenever multiple visual variants (skins, weapon sets, character races) need to share one state machine — this is the direct SOLID/KISS answer to "don't duplicate the whole controller per variant" (Open/Closed: extend by adding a new override asset, not by editing/branching the base controller).
-- Batch multiple clip swaps through `ApplyOverrides` rather than repeated indexer (`this[name] = clip`) assignments in the same frame — each indexer write causes its own clip-binding reallocation; per this project's performance rules, avoid that avoidable per-call cost when changing several clips together (verify with the Profiler if this is on a hot path).
-- Author transitions with `Has Exit Time`/durations in normalized time (not `Fixed Duration` seconds) whenever a controller is designed to be reused via override controllers with clips of varying length — otherwise a shorter override clip can silently skip a transition.
-- Keep override-controller assignment itself in `Game.Client.*` (it's a Unity-only API); if which variant to use is determined by gameplay state (e.g. equipped weapon type from Shared Core inventory data), read that decision from `Game.Core.*` and only perform the `runtimeAnimatorController` assignment in the Client layer, per `coding-principles.md`'s Shared Core integrity rule.
+**Critical caveat**: a transition authored with a fixed duration in seconds
+can be longer than an override clip that replaces a longer original. The
+transition then never completes visibly, and the symptom appears only on the
+variants with shorter clips. Author transition timing in normalised time on
+any graph that will be overridden.
+
+| Related setting | Why it matters here | Source |
+|---|---|---|
+| Exit time as a fraction | Normalised exit time scales with whatever clip is playing, so it survives a length change that a fixed value does not | [Animation transition](https://docs.unity3d.com/Manual/class-Transition.html) |
+| Transition offset | Also normalised, and therefore already variant-safe | [Animation transition](https://docs.unity3d.com/Manual/class-Transition.html) |

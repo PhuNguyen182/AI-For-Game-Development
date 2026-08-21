@@ -1,38 +1,48 @@
-# PlayerInput, Notification Behaviors & Local Multiplayer
+# PlayerInput and Local Multiplayer — notification behaviours, pairing, split-screen
 
-[Manual — The Player Input component](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/player-input-component.html) · [About the Player Input component](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/about-player-input-component.html) · [Select a notification behavior](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/select-notification-behavior.html) · [Device Assignments](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/device-assignments.html) · [The Player Input Manager component](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/player-input-manager-component.html) · [Set up split-screen local multiplayer](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/set-up-split-screen-local-multiplayer.html) · [API — PlayerInput](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/api/UnityEngine.InputSystem.PlayerInput.html)
+Sources: [Player Input component](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/player-input-component.html), [Select a notification behavior](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/select-notification-behavior.html), [Device assignments](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/device-assignments.html), [Player Input Manager component](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/player-input-manager-component.html), [Set up split-screen local multiplayer](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/set-up-split-screen-local-multiplayer.html), [PlayerInput API](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/api/UnityEngine.InputSystem.PlayerInput.html).
+Covers: SKILL.md §4 — **"Set `PlayerInput` to Invoke C# Events, never Send or Broadcast Messages"**.
 
-## `PlayerInput` — the per-player connection between devices, actions, and callbacks
+What `PlayerInput` adds over plain actions, which of its four dispatch modes
+this project permits, and how several local players are wired. The camera
+half of a split-screen feature is `unity-cinemachine-authoring`'s or
+`unity-camera-fundamentals`', and its UI layout is `ui-ux-programmer`'s.
 
-`PlayerInput` represents one player: it owns a private copy of an `InputActionAsset` (`actions`), tracks the `currentActionMap`/`defaultActionMap`, the player's paired `devices`, and (in multiplayer) a `playerIndex` and optional `camera` for split-screen. Switching maps/schemes must go through its own methods — `SwitchCurrentActionMap(string)`, `SwitchCurrentControlScheme(...)` — rather than calling `Enable()`/`Disable()` directly on the underlying `InputActionMap`, because `PlayerInput.currentActionMap` only tracks changes made through its own API (see Edge cases in the main SKILL.md).
+## What the component owns
 
-## Notification Behavior — the four dispatch modes, and this project's required choice
-
-[select-notification-behavior.html](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/select-notification-behavior.html) documents `PlayerInput.notificationBehavior` (`PlayerNotifications` enum), configured in the Inspector's "Behavior" dropdown:
-
-| Behavior | Mechanism | Notes |
+| Subject | What it decides | Source |
 |---|---|---|
-| **Send Messages** | `GameObject.SendMessage()` on the `PlayerInput`'s own GameObject, method name derived from the action name (`OnMove`, `OnJump`, …). | **Reflection-based, string-name-derived dispatch.** |
-| **Broadcast Messages** | `GameObject.BroadcastMessage()` down the entire GameObject hierarchy. | Same reflection mechanism as Send Messages, just propagated to children too. |
-| **Invoke Unity Events** | One `UnityEvent` per notification, wired in the Inspector's Events foldout. Callback argument matches the `started`/`performed`/`canceled` callback signature. | Inspector-wireable, not reflection-based — a normal `UnityEvent` invocation. |
-| **Invoke C# Events** | Plain C# events on the `PlayerInput` API: `onActionTriggered` (fires for every action), `onDeviceLost`, `onDeviceRegained`. | **Not Inspector-configurable** — subscribe in code. No reflection, no per-call name lookup. |
+| Its own asset copy | Each `PlayerInput` holds a private copy of the action asset, so binding overrides applied to one player do not reach another | [Player Input component](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/player-input-component.html) |
+| Current action map | Tracked only through its own switch method; enabling or disabling the underlying map directly desynchronises the component from reality | [PlayerInput API](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/api/UnityEngine.InputSystem.PlayerInput.html) |
+| Paired devices | Which physical devices belong to this player, so gameplay code never asks which gamepad it is reading | [Device assignments](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/device-assignments.html) |
+| Player index and camera | The identity and viewport a split-screen setup assigns per joined player | [Set up split-screen local multiplayer](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/set-up-split-screen-local-multiplayer.html) |
 
-**This project's rule**: `performance-and-algorithms.md` explicitly bans `SendMessage`/`BroadcastMessage`/string-keyed `Invoke("MethodName", ...)` for dispatch — "an order of magnitude slower than a direct method call, interface call, or `UnityEvent`/`Action`." `PlayerInput`'s "Send Messages" and "Broadcast Messages" behaviors are **literally** `GameObject.SendMessage`/`BroadcastMessage` under the hood, so they are the banned pattern wearing an Inspector dropdown, not an exception to it. **Default this project's `PlayerInput` components to `Invoke C# Events`** (subscribed via a named method per `coding-principles.md`'s Event handlers rule, unsubscribed in `OnDisable()`), or **skip `PlayerInput` entirely and consume the generated C# wrapper class / raw `InputAction` callbacks directly** when `PlayerInput`'s device-pairing/multiplayer machinery isn't actually needed. `Invoke Unity Events` is an acceptable middle ground when a UI/designer-facing wiring point in the Inspector is genuinely useful and the handler's lifetime is scoped correctly — it isn't reflection-based, only `Send`/`Broadcast Messages` are.
+## Notification behaviours
 
-Constants worth knowing if `Send`/`Broadcast Messages` is ever encountered in existing/legacy code being reviewed (not for new code): `PlayerInput.ControlsChangedMessage = "OnControlsChanged"`, `DeviceLostMessage = "OnDeviceLost"`, `DeviceRegainedMessage = "OnDeviceRegained"` — action-triggered messages derive their name from the action itself (`"On" + ActionName`), which means **renaming an action silently breaks a `SendMessage` handler with no compile error** — one more concrete argument for `Invoke C# Events` in this project.
+| Behaviour | Mechanism | Verdict | Source |
+|---|---|---|---|
+| Send Messages | Reflection dispatch on the component's own object, with the handler name derived from the action name | Banned by `performance-and-algorithms.md`; a renamed action breaks the handler with no compile error | [Select a notification behavior](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/select-notification-behavior.html) |
+| Broadcast Messages | The same reflection dispatch, propagated down the whole hierarchy | Banned for the same reason, and more expensive again | [Select a notification behavior](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/select-notification-behavior.html) |
+| Invoke Unity Events | One serialized event per notification, wired in the Inspector | Acceptable where Inspector wiring is genuinely wanted and the handler lifetime is scoped | [Select a notification behavior](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/select-notification-behavior.html) |
+| Invoke C# Events | Plain events on the component, subscribed in code | The default for this project — no reflection, and a rename is a compile error | [Select a notification behavior](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/select-notification-behavior.html) |
 
-## `InputValue` — the callback-context wrapper for message/UnityEvent style callbacks
+**Critical caveat**: the message behaviours are the Inspector's own default in
+some setups, which is why they appear in existing projects. Their presence is
+a finding in review, not an accepted exception.
 
-`InputValue` (passed to `OnMove(InputValue value)`-style handlers under Send Messages/Invoke Unity Events) wraps the same data an `InputAction.CallbackContext` carries, "shield[ing] the receiver from having to know about action callback specifics." `Get<TValue>()` reads the value typed as a struct (no allocation); the non-generic `Get()` boxes the value and **allocates GC garbage** — never call it in a hot path. **The `InputValue` instance is only valid during the callback** — storing the reference and calling `Get<T>()` from outside the callback "does not work correctly," the same caching pitfall `InputAction.CallbackContext` has (see [actions-bindings-and-assets.md](actions-bindings-and-assets.md) and the main SKILL.md's guardrails).
+## Callback data lifetime
 
-## `PlayerInputManager` — joining/leaving and split-screen
+| Subject | What it decides | Source |
+|---|---|---|
+| `InputValue` validity | Valid only inside the callback it was handed to; stored and read afterwards it returns wrong results with no error | [Player Input component](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/player-input-component.html) |
+| Typed versus untyped read | The generic read returns a struct with no allocation; the untyped one boxes, so it is a per-call allocation in whatever loop calls it | [Player Input component](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/player-input-component.html) |
 
-[player-input-manager-component.html](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/player-input-manager-component.html): `PlayerInputManager` "automatically manages the creation and lifetime of `PlayerInput` instances as players join and leave the game" — the orchestration layer above individual `PlayerInput`s for local co-op. It handles device-to-player pairing (which gamepad belongs to which joined player) so gameplay code doesn't have to.
+## Several local players
 
-**Split-screen setup** ([set-up-split-screen-local-multiplayer.html](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/set-up-split-screen-local-multiplayer.html)):
-1. Enable "Split-Screen" on the `PlayerInputManager`.
-2. Assign a `Camera` reference on the `PlayerInput` prefab it instantiates per joining player.
-3. `PlayerInputManager` automatically resizes/repositions each player's camera viewport — configurable via "Maintain Aspect Ratio," a fixed screen-rectangle count, or explicit screen rectangles.
-4. For split-screen **UI**, restrict each screen-space UI to its own player's camera (`InputSystemUIInputModule` + `MultiplayerEventSystem`, see [devices-and-ui-integration.md](devices-and-ui-integration.md)) — by default all players can interact with any UI, which is very rarely the intended behavior in split-screen.
-
-Sample project: "Simple Multiplayer" (installable via Package Manager samples) demonstrates a working `PlayerInputManager` setup end to end — prefer starting from it over re-deriving join/leave/pairing logic from scratch, consistent with this project's general "prefer the built-in, well-tested implementation" bias in `performance-and-algorithms.md`.
+| Subject | What it decides | Source |
+|---|---|---|
+| `PlayerInputManager` | Creates and destroys `PlayerInput` instances as players join and leave, and owns device-to-player pairing so gameplay code never does | [Player Input Manager component](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/player-input-manager-component.html) |
+| Join behaviour | Join on button press, on action, or manually — the choice decides whether an idle controller can claim a slot by accident | [Player Input Manager component](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/player-input-manager-component.html) |
+| Split-screen | Enabled on the manager, with a camera assigned on the player prefab; viewports are then sized and positioned automatically | [Set up split-screen local multiplayer](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/set-up-split-screen-local-multiplayer.html) |
+| Per-player UI | Without isolating each player's UI to its own event system and camera, every player can drive every player's menu — rarely the intent, and never reported as an error | [Set up split-screen local multiplayer](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/set-up-split-screen-local-multiplayer.html) |
+| Multiplayer sample | Ships with the package and demonstrates joining, pairing and split-screen end to end — a better starting point than re-deriving the flow | [Player Input Manager component](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/player-input-manager-component.html) |

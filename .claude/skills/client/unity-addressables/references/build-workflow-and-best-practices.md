@@ -1,43 +1,48 @@
-# Build Workflow & Standard-Process Best Practices
+# Build Workflow — Play Mode Scripts, Profiles, layout audits, CI
 
-Covers SKILL.md's "standard workflow" guidance — how Addressables content actually gets built, verified, and shipped, as distinct from the runtime loading API covered in `loading-and-reference-counting.md`.
+Sources: [Build Addressable assets](https://docs.unity3d.com/Packages/com.unity.addressables@4.0/manual/Builds.html), [Introduction to building](https://docs.unity3d.com/Packages/com.unity.addressables@4.0/manual/build-intro.html), [Addressables Profiles](https://docs.unity3d.com/Packages/com.unity.addressables@4.0/manual/AddressableAssetsProfiles.html), [Optimization tools](https://docs.unity3d.com/Packages/com.unity.addressables@4.0/manual/optimization-tools.html), [Build with continuous integration](https://docs.unity3d.com/Packages/com.unity.addressables@4.0/manual/ContinuousIntegration.html).
+Covers: SKILL.md §4 — **"Drive every build and load path from a Profile"**, **"Verify against a full content build before handing anything off"**.
 
-## The build-script spectrum — pick the right one for the moment
+How content actually gets built and what each Editor shortcut is not
+exercising. The runtime call surface is in
+[load-calls-and-awaiting.md](load-calls-and-awaiting.md); this file is about
+the build that has to exist before those calls resolve to anything.
 
-Addressables separates "how the Editor resolves your content right now" from "the actual shippable build," via three tiers:
+## Build-script tiers
 
-| Tier | Speed | Fidelity to shipped behavior | When to use |
+| Tier | Fidelity to a shipped build | Use when | Source |
 |---|---|---|---|
-| Play Mode Scripts | Fastest | Lowest — reads assets straight from the Asset Database, not from built bundles/content directories | Day-to-day iteration in the Editor while actively developing |
-| Update a Previous Build | Medium | Medium — incremental, rebuilds only what changed | Iterative verification once a baseline build exists, without paying full-rebuild cost every time |
-| Default Build Script (full content build) | Slowest | Highest — produces the actual catalog, bundles/content directory, and runtime settings that will ship | Before any real-device test, before handing a build to QA/Playtest, and always in CI |
+| Play Mode Scripts, Asset Database backed | Lowest — reads assets directly and never resolves a catalog or opens a bundle, so an entire class of failure is unreachable | Day-to-day iteration while the feature is still being written | [Introduction to building](https://docs.unity3d.com/Packages/com.unity.addressables@4.0/manual/build-intro.html) |
+| Play Mode Scripts, simulated groups | Medium — models group layout and dependencies without a full build, so duplication and packing problems become visible early | Checking layout consequences of a grouping change without waiting for a build | [Introduction to building](https://docs.unity3d.com/Packages/com.unity.addressables@4.0/manual/build-intro.html) |
+| Update a Previous Build | Medium to high — incremental against an existing baseline | Iterating on a build that already exists, without paying full rebuild cost | [Introduction to building](https://docs.unity3d.com/Packages/com.unity.addressables@4.0/manual/build-intro.html) |
+| Default Build Script, full content build | Highest — produces the catalog, the content, and the runtime settings that ship | Before any device test, any QA handoff, and every CI run | [Introduction to building](https://docs.unity3d.com/Packages/com.unity.addressables@4.0/manual/build-intro.html) |
 
-The practical implication: a bug that only reproduces after a full content build (a missing dependency, a group misconfiguration, a catalog resolution failure) will not show up under Play Mode Scripts, because Play Mode Scripts bypass the actual bundle/catalog resolution path entirely. Treat "it works in Play Mode" as necessary but not sufficient — a feature that touches Addressables is not considered verified until it has been checked against at least one real content build, per `qa-automation-engineer`'s and `playtest-tester`'s usual verification standard.
+**Critical caveat**: a missing dependency, a group excluded from the build, or
+a catalog resolution failure cannot reproduce under Asset Database Play Mode
+Scripts, because that path never consults the catalog. "It works in the
+Editor" is necessary and never sufficient for an Addressables feature.
 
-## Profiles — never hardcode an environment
+## Profiles
 
-Profiles hold the Local/Remote Build Path and Local/Remote Load Path variables that build scripts and runtime resolution both consume. Practical rules:
-- Maintain a separate Profile per environment (Development/Staging/Production) rather than editing path values in place before each build — switching environments should be a Profile selection, not a hand-edited path.
-- Never hardcode a CDN URL, bucket path, or local build path directly in gameplay code — if code ever needs to know a load path, it should be reading it through Addressables' own resolution, not duplicating a Profile's value independently.
-- Coordinate Profile setup with whoever owns the actual hosting/CDN vendor decision (`tech-lead-sdk-platform`) — this skill covers wiring the Profile variable correctly once a host exists, not choosing the host.
+| Subject | What it decides | Source |
+|---|---|---|
+| Path variables | Local and remote build and load paths live in the Profile, and both the build scripts and runtime resolution read them from there | [Addressables Profiles](https://docs.unity3d.com/Packages/com.unity.addressables@4.0/manual/AddressableAssetsProfiles.html) |
+| One Profile per environment | Development, staging, and production as separate Profiles, so switching is a selection rather than an edit somebody forgets to undo | [Addressables Profiles](https://docs.unity3d.com/Packages/com.unity.addressables@4.0/manual/AddressableAssetsProfiles.html) |
+| No path in code | Gameplay code that reconstructs a load path duplicates a value the Profile already owns, and the two drift the first time an environment changes | [Addressables Profiles](https://docs.unity3d.com/Packages/com.unity.addressables@4.0/manual/AddressableAssetsProfiles.html) |
 
-## Content update workflow (AssetBundle system only)
+## Audit tools
 
-For a live game shipping content post-launch:
-1. A content update build produces only the changed content plus an updated catalog, rather than a full rebuild of everything.
-2. At runtime, `Addressables.CheckForCatalogUpdates(...)` checks whether a newer catalog is available, and `Addressables.UpdateCatalogs(...)` applies it.
-3. Treat a catalog update as a deliberate, user-visible step (a "new content available" prompt, a download step before entering the affected area) rather than a silent swap underneath a session already in progress — an asset a running session already resolved against the old catalog can behave unexpectedly if the underlying content changes out from under it without a clear transition point.
-4. This workflow only applies to the AssetBundle content build system — the Content Directory system is local-only and has no equivalent remote catalog-update path per the current manual.
+| Tool | What it settles | Source |
+|---|---|---|
+| Analyze window | Finds duplicate bundle dependencies — the shared plain asset copied into several bundles — before a build ships with them | [Optimization tools](https://docs.unity3d.com/Packages/com.unity.addressables@4.0/manual/optimization-tools.html) |
+| Build Layout Report | Shows which asset landed in which bundle and why, which is the only way to explain a build larger than its contents suggest | [Optimization tools](https://docs.unity3d.com/Packages/com.unity.addressables@4.0/manual/optimization-tools.html) |
+| Build profile logs | Where the build step's own time is going, for when the build rather than the runtime is the problem | [Optimization tools](https://docs.unity3d.com/Packages/com.unity.addressables@4.0/manual/optimization-tools.html) |
+| Addressables Profiler module | Runtime reference-count behaviour across a session — see [loading-and-reference-counting.md](loading-and-reference-counting.md) | [Optimization tools](https://docs.unity3d.com/Packages/com.unity.addressables@4.0/manual/optimization-tools.html) |
 
-## Optimization tools — treat as a pre-ship gate, not optional tooling
+## Continuous integration
 
-- **Analyze window** — evaluates the Addressables layout for structural problems (most importantly, duplicate bundle dependencies from the non-Addressable-dependency pattern described in `architecture-and-concepts.md`). Run it whenever group structure changes meaningfully, not only when something is already visibly wrong.
-- **Build Layout Report** — inspect actual build output (which assets landed in which bundle/directory, and why) when a build's size or memory footprint doesn't match expectations, instead of guessing from group configuration alone.
-- **Build Profile Logs** — Chromium-viewable build performance data, useful when the build step itself (not the runtime result) is the bottleneck being investigated.
-- **Addressables Profiler module** — the runtime counterpart; use it to verify reference-counting behavior and catch asset churn per `loading-and-reference-counting.md`'s guidance, and to confirm a change actually improved load behavior rather than just appearing to in casual testing.
-
-Fold an Analyze pass and a Build Layout Report check into the same "feature-complete, ready for Code Review" gate that `coding-principles.md`'s Handoff section already requires — a duplicate-dependency finding caught here is far cheaper than one found after a live content update ships with bloated bundles.
-
-## CI
-
-For automated builds, drive the Addressables content build through `AddressableAssetSettings.BuildPlayerContent()`-based scripting rather than relying on manual Editor button clicks before every CI run — this keeps the content build reproducible and makes it a first-class step in the same pipeline as the player build itself, not a manual pre-step someone can forget.
+| Subject | What it decides | Source |
+|---|---|---|
+| Scripted content build | Driving the content build from script rather than an Editor button makes it a pipeline step instead of a manual pre-step someone can skip, which is the usual cause of a player shipped against stale content | [Build with continuous integration](https://docs.unity3d.com/Packages/com.unity.addressables@4.0/manual/ContinuousIntegration.html) |
+| Ordering | Content build precedes the player build; reversing them produces a player carrying the previous run's catalog | [Build with continuous integration](https://docs.unity3d.com/Packages/com.unity.addressables@4.0/manual/ContinuousIntegration.html) |
+| Content state file | Preserve it as a build artifact — a future content update cannot be produced without the state recorded by the build that shipped | [Distribute and update remote content](https://docs.unity3d.com/Packages/com.unity.addressables@4.0/manual/RemoteContentDistribution.html) |

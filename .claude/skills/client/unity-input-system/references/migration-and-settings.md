@@ -1,51 +1,54 @@
-# Migration, Project Settings & Known Limitations
+# Migration and Settings — Active Input Handling, InputSettings, documented gaps
 
-[Manual — Migrate from the old input system](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/migrate-from-old-input-system.html) · [Enable the correct input system](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/enable-correct-input-system.html) · [Manual — Input settings](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/input-settings.html) · [Update Mode](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/update-mode.html) · [Manual — Known limitations](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/KnownLimitations.html)
+Sources: [Enable the correct input system](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/enable-correct-input-system.html), [Migrate from the old input system](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/migrate-from-old-input-system.html), [Input settings](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/input-settings.html), [Known limitations](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/KnownLimitations.html).
+Covers: SKILL.md §4 — **"Confirm Active Input Handling before citing a single API"**, **"Check the feature against the package's documented gaps before promising it"**.
 
-## Active Input Handling — the project setting that decides which system runs
+What has to be true of the project before any API in this package runs, and
+the list of things the package documents as not working. Anything on the gap
+list is a constraint to design around, not a bug to fix here; the XR
+Interaction Toolkit surface named at the end has no owner in this project.
 
-**Location**: `Edit → Project Settings → Player → Other Settings → Active Input Handling`.
+## Active Input Handling
 
-| Setting | Effect |
-|---|---|
-| `Input Manager (Old)` | Only the legacy backend (`UnityEngine.Input`, `Input.GetKey`/`GetAxis`) is active. |
-| `Input System Package (New)` | Only this package's backend is active — the legacy `UnityEngine.Input` API stops receiving events. |
-| `Both` | Both backends run simultaneously; distinguish code paths with the compilation symbols `ENABLE_INPUT_SYSTEM` and `ENABLE_LEGACY_INPUT_MANAGER`. |
+Location: `Edit → Project Settings → Player → Other Settings → Active Input Handling`.
 
-`Both` is a deliberate coexistence/migration mode, not a "just leave it on to be safe" default — running both continuously has real overhead and doubles the input surface a bug could hide in. Set it to `Input System Package (New)` once a project has fully migrated, per this project's KISS principle.
+| Setting | Effect | Source |
+|---|---|---|
+| Input Manager (Old) | Only the legacy backend runs, so every API in this package is inert — a task on such a project is a migration question rather than an authoring one | [Enable the correct input system](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/enable-correct-input-system.html) |
+| Input System Package (New) | Only this package runs, and the legacy `UnityEngine.Input` API stops receiving events entirely | [Enable the correct input system](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/enable-correct-input-system.html) |
+| Both | Both backends run at once, distinguished in code by the `ENABLE_INPUT_SYSTEM` and `ENABLE_LEGACY_INPUT_MANAGER` symbols — a migration mode with real overhead, not a safe default to leave set | [Enable the correct input system](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/enable-correct-input-system.html) |
 
-## Migration guidance — don't just API-map
+## Migration approach
 
-[migrate-from-old-input-system.html](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/migrate-from-old-input-system.html) provides a table matching old `UnityEngine.Input` calls to new equivalents, but explicitly warns that the "directly corresponding API" is often "the quickest — but least flexible — solution." Read the Concepts/Workflows references first ([architecture-and-update-loop.md](architecture-and-update-loop.md), [actions-bindings-and-assets.md](actions-bindings-and-assets.md)) and design around Actions rather than mechanically replacing every `Input.GetAxis("Horizontal")` with the nearest single-line equivalent — a 1:1 API swap throws away rebinding, composite bindings, and control-scheme device matching that the new system exists to provide.
+| Subject | What it decides | Source |
+|---|---|---|
+| The API mapping table | Exists, and the Manual itself calls the direct swap the least flexible option — a one-to-one replacement of each legacy call discards rebinding, composites, and control-scheme matching, which is the reason to migrate at all | [Migrate from the old input system](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/migrate-from-old-input-system.html) |
+| Migration unit | Migrate a feature's input model, not a call site — the legacy axis name and the new action rarely correspond one to one once composites and schemes exist | [Migrate from the old input system](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/migrate-from-old-input-system.html) |
 
-## `InputSettings` — project-wide configuration
+## InputSettings
 
-Configured via a settings asset (Project Settings → Input System Package), covering (see [architecture-and-update-loop.md](architecture-and-update-loop.md) for Update Mode detail):
+| Setting | What it decides | Source |
+|---|---|---|
+| Update Mode | Whether events are processed on the dynamic frame, the fixed step, or only when a script asks — see [architecture-and-update-loop.md](architecture-and-update-loop.md) | [Input settings](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/input-settings.html) |
+| Background behaviour | Whether devices keep producing input while the application is unfocused, tied to the run-in-background player setting | [Input settings](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/input-settings.html) |
+| Default deadzone values | The project-wide fallback every stick and axis Processor uses; check this before adding a per-binding deadzone that duplicates or fights it | [Input settings](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/input-settings.html) |
+| Compensate orientation | Whether sensor readings are adjusted for the current screen orientation, which silently changes accelerometer axes if left unconsidered | [Input settings](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/input-settings.html) |
+| Supported devices | Restricts which device layouts the project builds support for, trimming unused device code out of the player | [Input settings](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/input-settings.html) |
 
-- **Update Mode** — `ProcessEventsInDynamicUpdate` / `ProcessEventsInFixedUpdate` / `ProcessEventsManually`.
-- **Background behavior** — whether devices keep processing input while the app is unfocused/backgrounded (tied to `Application.runInBackground` — see Known Limitations below).
-- **Compensate orientation** — auto-adjusts sensor readings (accelerometer/gyroscope) for the device's current screen orientation.
-- **Default value properties** — the project-wide default deadzone values Processors fall back to (see [interactions-and-processors.md](interactions-and-processors.md)).
-- **Supported devices / platform-specific settings** — restrict which device layouts the project cares about, trimming unused device support from builds.
+## Documented gaps
 
-## Known Limitations (as documented at package version 1.20 — verify against the live page for the installed version before relying on any of these long-term)
+| Gap | Consequence for a promise | Source |
+|---|---|---|
+| No IMGUI support | Editor-style immediate-mode UI cannot be driven by this package at all | [Known limitations](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/KnownLimitations.html) |
+| No text entry into uGUI or TextMesh Pro | Character input into a text field still needs the legacy path, so a project set to the new backend alone cannot type into one | [Known limitations](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/KnownLimitations.html) |
+| UI does not consume input | A pointer click on a UI button and a gameplay action bound to the same control both fire; suppressing one is an explicit check, not automatic | [Known limitations](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/KnownLimitations.html) |
+| Split-screen `PlayerInput` and Cinemachine | Documented as incompatible — surface it while the feature is being designed, and route the camera half to `unity-cinemachine-authoring` | [Known limitations](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/KnownLimitations.html) |
+| No state resync after focus loss | A key held while the app loses focus is not seen as held when focus returns; the player must press it again | [Known limitations](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/KnownLimitations.html) |
+| One touchscreen device on Android | Multiple physical touch surfaces are not separable there | [Known limitations](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/KnownLimitations.html) |
+| No multiple pointers or keyboards on desktop | Two mice or two keyboards cannot be told apart as separate devices | [Known limitations](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/KnownLimitations.html) |
+| No HID support in 32-bit players | HID-class controllers do not appear at all on a 32-bit build target | [Known limitations](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/KnownLimitations.html) |
+| Unity Remote unsupported | In-Editor mobile testing uses the Device Simulator instead — see [editor-tooling-and-debugging.md](editor-tooling-and-debugging.md) | [Known limitations](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/KnownLimitations.html) |
 
-[KnownLimitations.html](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/KnownLimitations.html):
-
-- Background input processing is tied to `Application.runInBackground`; a development Player always processes input even while backgrounded on supported platforms.
-- **`PlayerInput` split-screen is incompatible with Cinemachine virtual cameras** — relevant if a split-screen local-multiplayer feature also wants Cinemachine-driven per-player cameras; flag this conflict early rather than discovering it after both systems are wired up.
-- The Input System **cannot feed IMGUI** (`OnGUI`) at all.
-- UI Toolkit currently supports only pointer (mouse/pen/touch) and gamepad input through this system, and requires an `EventSystem` to be present.
-- After first enabling, UI won't react to pointer position until the pointer actually moves once.
-- **Text input cannot be routed into uGUI or TextMesh Pro** components through the new system — text fields still need the legacy input path for actual character entry.
-- UI does not "consume" input the way the old system's `Input.GetButtonDown` semantics implied — a click on a UI button and a simultaneous in-game action bound to the same control can both fire; don't assume UI interaction alone suppresses gameplay actions without an explicit check.
-- Devices that lose OS focus don't automatically resync their state when focus returns — a key held down before focus loss won't be seen as "still held" after; the player must physically re-press it.
-- Desktop platforms cannot distinguish between multiple simultaneous pointers or multiple keyboards as separate devices.
-- Windows Pen input requires "Windows Ink" support enabled for Wacom-brand devices specifically.
-- **HID input is not supported in 32-bit Players** — affects HID-class controllers (e.g. PS4 controllers on a 32-bit build target).
-- Android exposes only a single `Touchscreen` device system-wide.
-- Joy-Con controllers are only supported natively on Nintendo Switch.
-- PS4 controller sensor data (motion/gyro) only works when actually running on PS4 hardware.
-- Unity Remote does not currently support the Input System — mobile-device-in-Editor testing for this package uses the Device Simulator instead (see [editor-tooling-and-debugging.md](editor-tooling-and-debugging.md)), not Unity Remote.
-
-Treat this list as a set of concrete, currently-real gaps to check a feature against before promising cross-device/cross-platform behavior — not a historical curiosity. Re-verify against the live `KnownLimitations.html` page for whatever package version the project actually has installed, since entries are added/resolved across releases.
+**Critical caveat**: this list is versioned. Re-read the live page for the
+package version the project actually installs before committing a design to
+any entry here, since items are both added and resolved between releases.

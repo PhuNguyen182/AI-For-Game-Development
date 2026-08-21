@@ -1,45 +1,50 @@
-# Devices, Direct Polling & UI Integration
+# Devices and UI Integration — direct reads, the UI module, on-screen controls, XR boundary
 
-[Manual — Types of input devices](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/devices-overview.html) · [Read devices directly](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/read-devices-directly.html) · [Manual — Input for user interfaces](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/ui-input.html) · [Introduction to the UI Input Module](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/introduction-ui-input-module.html) · [Configure UI Input Actions](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/configure-ui-input-action-map.html) · [API — InputDevice](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/api/UnityEngine.InputSystem.InputDevice.html) · [API — InputControl\<TValue\>](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/api/UnityEngine.InputSystem.InputControl-1.html)
+Sources: [Types of input devices](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/devices-overview.html), [Read devices directly](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/read-devices-directly.html), [Input for user interfaces](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/ui-input.html), [Introduction to the UI Input Module](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/introduction-ui-input-module.html), [Configure UI Input Actions](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/configure-ui-input-action-map.html), [InputDevice API](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/api/UnityEngine.InputSystem.InputDevice.html).
+Covers: SKILL.md §4 — **"Drive UI through `InputSystemUIInputModule` on the scene's `EventSystem`"**.
+
+How input reaches a device read, a UI callback, or a touchscreen overlay. The
+Canvas hierarchy and widget design on the other side of the module belong to
+`ui-ux-programmer`; the XR surface named at the end has no owner here.
 
 ## Device categories
 
-[devices-overview.html](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/devices-overview.html):
+| Category | What it decides | Source |
+|---|---|---|
+| Pointer devices | Mouse, pen and touchscreen share one base, so pointer-position code written against that base works across all three without branching | [Types of input devices](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/devices-overview.html) |
+| Keyboard | Key input plus a separate text-input channel, which is not the same thing as a key binding | [Types of input devices](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/devices-overview.html) |
+| Gamepad and Joystick | Gamepad is the fixed two-stick layout; Joystick is the looser device with at least one stick and buttons, so a flight stick is not a gamepad | [Types of input devices](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/devices-overview.html) |
+| Sensors | Accelerometer, gyroscope and the rest; they must be enabled explicitly and are affected by the orientation-compensation setting | [Types of input devices](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/devices-overview.html) |
+| HID | The generic fallback for hardware with no dedicated class, and the route to a custom layout | [Types of input devices](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/devices-overview.html) |
+| Tracked devices | Raw pose and button input from XR hardware — the boundary of this skill, and no further | [Types of input devices](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/devices-overview.html) |
 
-- **Pointers** — devices that track a 2D screen position: `Mouse`, `Touchscreen`, `Pen` all derive from the common `Pointer` base.
-- **Keyboard** — `Keyboard`, key-based input, including raw text input capture (see the Keyboard-specific manual chapter for `onTextInput`).
-- **Joystick** — "at least one input stick and button," a more generic device than `Gamepad`.
-- **Gamepad** — the Xbox-style layout: two thumbsticks, D-pad, four face buttons, two shoulder buttons, two triggers. Sub-pages cover PlayStation/Switch/Xbox-specific gamepad layouts and haptics.
-- **Sensors** — accelerometer, gyroscope, gravity, attitude, light, humidity, pressure, proximity, step counter, and more — devices "measur[ing] environmental characteristics."
-- **HID (Human Interface Device)** — the generic USB/Bluetooth device specification; used to build a custom layout for a device with no dedicated Unity class.
-- **Tracked/XR devices** — `TrackedDevice` and XR-specific pose input; see [on-screen-controls-and-xr.md](on-screen-controls-and-xr.md) for the boundary this skill draws around XR.
+## Direct reads
 
-## `InputDevice` / `InputControl` — reading raw state
+| Subject | What it decides | Source |
+|---|---|---|
+| The current-device properties | Return the most recently used device of that type, or nothing when none is connected, so every read needs a null check | [Read devices directly](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/read-devices-directly.html) |
+| What direct reading forfeits | Rebinding, composites, Processors including deadzones, and control-scheme matching — the Manual states plainly that this is not the recommended workflow | [Read devices directly](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/read-devices-directly.html) |
+| Frame-scoped queries | The was-pressed and was-released queries account for event processing order; diffing a held state by hand does not, and misses same-frame pairs | [Read devices directly](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/read-devices-directly.html) |
 
-`InputDevice` (`deviceId`, `description`, `allControls` — a flattened, non-allocating read of every control on the device, `added`, `enabled`, `native`) is the root of a control hierarchy; `InputControl<TValue>` (`device`, `parent`, `name`, `path`, `children`, `ReadValue()`, `ReadUnprocessedValue()`) is the typed leaf/branch node. Concrete controls (`ButtonControl`, `AxisControl`, `Vector2Control`, …) derive from `InputControl<TValue>`. Full member tables: [scripting-api.md](scripting-api.md).
+## UI integration
 
-## Direct device polling — `Gamepad.current`, `Keyboard.current`, `Mouse.current`
+| Subject | What it decides | Source |
+|---|---|---|
+| `InputSystemUIInputModule` | Replaces the legacy standalone module on the scene's event system and feeds both uGUI and UI Toolkit | [Introduction to the UI Input Module](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/introduction-ui-input-module.html) |
+| Precedence | A module present in the scene takes priority over the UI map configured on the project-wide asset, so checking only one of the two explains nothing | [Configure UI Input Actions](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/configure-ui-input-action-map.html) |
+| UI action map | Navigate, submit, cancel, point and click are actions like any other, and gamepad menu navigation exists only because they are bound | [Configure UI Input Actions](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/configure-ui-input-action-map.html) |
+| Virtual mouse | Drives a UI cursor from a stick where no pointer device exists, which is what makes a controller-only build usable on a pointer-designed UI | [Input for user interfaces](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/ui-input.html) |
+| No input consumption | A UI click does not suppress a gameplay action bound to the same control; both fire, and suppression is an explicit decision | [Input for user interfaces](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/ui-input.html) |
 
-[read-devices-directly.html](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/read-devices-directly.html):
+## On-screen controls
 
-```csharp
-Gamepad gamepad = Gamepad.current;
-if (gamepad != null && gamepad.buttonSouth.wasPressedThisFrame)
-{
-    // ...
-}
-```
+| Subject | What it decides | Source |
+|---|---|---|
+| On-screen button and stick | Feed a virtual device created from the control path each component targets, so a touch control is indistinguishable from real hardware downstream | [Input for user interfaces](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/ui-input.html) |
+| Mixed control paths | Components on one screen targeting different device layouts create several virtual devices at once, which splits the input the actions expect to see together | [Input for user interfaces](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/ui-input.html) |
+| Stick behaviour mode | Whether the stick recentres, tracks exactly, or moves its origin to the first touch — the setting that decides whether a thumb sliding off the pad keeps steering | [Input for user interfaces](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/ui-input.html) |
 
-The `.current` static property returns the most recently active device of that type (or `null` if none is connected — **always null-check**). This is the "Direct" workflow from [Workflows.html](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/Workflows.html), explicitly **not the recommended default**: "This isn't generally the recommended workflow because it bypasses many of the Input System's useful features, such as actions and bindings." Concretely, direct polling loses rebinding support, composite bindings, deadzone/processor pipelines, and control-scheme device matching. Reserve it for fast prototyping or a genuinely fixed, single-platform input scheme — not for production multi-platform/rebindable input, which should go through Actions instead (see [actions-bindings-and-assets.md](actions-bindings-and-assets.md)).
-
-## UI integration — `InputSystemUIInputModule`
-
-[introduction-ui-input-module.html](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/introduction-ui-input-module.html): `InputSystemUIInputModule` is the Input-System-driven replacement for the legacy `StandaloneInputModule`, sitting on the scene's `EventSystem` GameObject and feeding both uGUI and UI Toolkit through the same `BaseInputModule` infrastructure. **Required** for uGUI/UI Toolkit input in Unity versions prior to 2023.2. A component-level `InputSystemUIInputModule` in the scene **takes priority over** the UI action-map settings baked into the project-wide actions asset — don't assume the project-wide asset's UI map is what's actually driving the UI once a scene-level module is present; check both.
-
-This skill's boundary here is deliberately narrow: it covers wiring the `InputSystemUIInputModule` itself (assigning its action references, `EventSystem` setup, per-camera restriction for split-screen via `MultiplayerEventSystem`) — it does **not** cover the actual screen layout, Canvas hierarchy, or visual widget design those input events eventually reach. That's `ui-ux-programmer`'s territory once input arrives at a UI event callback.
-
-**Known UI-integration limitations** (see [migration-and-settings.md](migration-and-settings.md) for the full Known Limitations list): the Input System cannot feed IMGUI (`OnGUI`) at all; UI Toolkit currently supports only pointer (mouse/pen/touch) and gamepad input, not full keyboard navigation; text input cannot be routed into uGUI/TextMesh Pro fields through the new system — those still need the legacy path for text entry.
-
-## Virtual Mouse (for UI cursor control without a real mouse)
-
-A `VirtualMouseInput` component lets a gamepad/keyboard drive a synthetic on-screen cursor for UI navigation on platforms with no physical pointer (consoles, some mobile setups) — see the Manual's "Use a Virtual Mouse for UI cursor control" chapter, reachable from [devices-overview.html](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/devices-overview.html)'s sibling nav. In scope for this skill as device/UI-module plumbing; the cursor's *visual* representation (the sprite/graphic it drags around) is `ui-ux-programmer`'s territory, same boundary as the rest of UI integration above.
+**Critical caveat**: raw tracked-device pose input is where this skill stops.
+XR rendering configuration and the XR Interaction Toolkit package are a much
+larger surface with no owning skill in this project — flag that gap rather
+than answering from general Input System knowledge.

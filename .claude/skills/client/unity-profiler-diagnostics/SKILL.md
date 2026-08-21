@@ -1,95 +1,120 @@
 ---
 name: unity-profiler-diagnostics
 description: >
-  Technique for measuring and diagnosing performance with Unity's Profiler
-  toolset — the Profiler window's CPU/GPU Usage, Rendering, Memory, and
-  Highlights modules, the Frame Debugger for per-draw-call inspection, the
-  Profile Analyzer package for multi-frame comparison, the Memory Profiler
-  package for snapshot-based memory analysis, custom instrumentation
-  (`ProfilerMarker`/`ProfilerRecorder`/`Profiler.BeginSample`), and
-  editor/development-build/remote-device profiling setup. Use this whenever a
-  performance claim needs a real measurement, or before/after any change
-  claimed to improve frame time, GC allocation, draw calls, or memory. Do not
-  use this to decide *what* optimization to apply — hot-path allocation
-  rules, pooling, batching, and algorithm/data-structure choice are
-  `performance-and-algorithms.md`; deep memory-leak/GPU-level/native-plugin
-  investigation once a measurement has already pinpointed the bottleneck is
-  `tech-lead-performance`'s escalation territory. Do not use this for
-  rendering-path/Renderer Feature configuration itself — `unity-urp-rendering`
-  / `unity-hdrp-rendering` own that, this skill only supplies the
-  measurement that justifies the choice.
+  Technique for measuring Unity performance before claiming it — the Profiler
+  window's CPU Usage, GPU Usage, Rendering, Memory and Highlights modules,
+  Timeline versus Hierarchy views, the GC Alloc column, Deep Profiling, the
+  Frame Debugger's batch-break attribution, the Profile Analyzer and Memory
+  Profiler packages, `ProfilerMarker`, `ProfilerRecorder`,
+  `Profiler.BeginSample`, and Development Build profiling over adb or WiFi
+  against a real device. Use when a frame hitch, GC spike, draw-call jump or
+  memory growth needs a number. Not for: choosing the fix
+  (`unity-engineer`); deep native, GPU or leak root-causing
+  (`tech-lead-performance`); rendering configuration itself
+  (`unity-urp-rendering`, `unity-hdrp-rendering`); job scheduling
+  (`unity-job-system-and-burst`); Burst output (`unity-burst-compiler`).
 ---
 
-# Unity Profiler Diagnostics — Measuring Before Claiming
+# Unity Profiler Diagnostics — Modules, Frame Debugger, Memory Snapshots, Custom Markers
 
-Sources: see [references/](references/) for the Unity Manual/Scripting API root links, split by topic — [root-links.md](references/root-links.md), [profiler-window-and-modules.md](references/profiler-window-and-modules.md), [frame-debugger-and-profile-analyzer.md](references/frame-debugger-and-profile-analyzer.md), [memory-profiler.md](references/memory-profiler.md), [custom-instrumentation.md](references/custom-instrumentation.md), [device-and-remote-profiling.md](references/device-and-remote-profiling.md).
+## Bundled resources
+
+### References
+Read-only context, loaded on demand so SKILL.md itself stays short.
+
+| File | Contents | Read when |
+|---|---|---|
+| [root-links.md](references/root-links.md) | Manual and package roots, version pins, which tool answers which class of question | Starting any measurement, or confirming which package the project actually installs |
+| [profiler-window-and-modules.md](references/profiler-window-and-modules.md) | Module inventory, Timeline/Hierarchy/Raw Hierarchy, GC Alloc, frame-buffer limit, `EditorLoop` | Picking a module, or a capture reads implausibly |
+| [device-and-remote-profiling.md](references/device-and-remote-profiling.md) | Development Build flags, adb and WiFi connection, Deep Profiling availability per backend | The number has to represent a real device rather than the Editor |
+| [frame-debugger-and-profile-analyzer.md](references/frame-debugger-and-profile-analyzer.md) | Draw-call stepping, the batch-break reason field, multi-frame aggregate comparison | Batching regressed, or a before-and-after claim needs evidence |
+| [memory-profiler.md](references/memory-profiler.md) | Snapshot capture and diff, Reserved versus Used, managed versus native breakdown | Memory grows over a session, or a leak is suspected |
+| [custom-instrumentation.md](references/custom-instrumentation.md) | `ProfilerMarker`, `ProfilerRecorder`, `CustomSampler`, counters, build-stripping behaviour | A cost is real but invisible in the default hierarchy |
 
 ## 1. Objective
-Turn a performance question ("is this fast enough? did this change help?") into an actual measurement using the right Profiler module or tool, read that measurement correctly, and attribute the cost to the right layer (CPU script, GC allocation, GPU/rendering, memory) instead of guessing from folklore or Big-O reasoning alone.
+Turn a performance question into a number that survives scrutiny, and attribute that number to the right layer — script CPU, GC allocation, GPU, draw calls, memory. The failures this prevents are all quiet ones: an Editor capture whose frame time is mostly `EditorLoop`, a Deep Profiling number quoted as the real cost, a GC spike blamed on the frame that stalled rather than the frames that allocated, a Reserved-memory chart read as a leak, and a single cherry-picked frame presented as a trend.
 
 ## 2. Role
-Act as the measurement specialist: you set up the right profiling session (Editor vs. Development Build vs. remote device, deep profiling on/off), pick the right module/tool for the question being asked, and report what the data actually shows — you don't decide the fix, you supply the evidence the fix decision (in `performance-and-algorithms.md`, `unity-engineer`, or `tech-lead-performance`) is based on.
+Act as the measurement specialist for the client track — the tool reached for whenever someone is about to assert that something is slow, or that a change made it faster. You produce evidence and attribution; you do not choose or apply the optimization, and you hand the finding to whoever owns the fix.
 
 ## 3. When to invoke this skill
-- Before adopting any performance-motivated change — a rendering-path switch, an algorithm/data-structure substitution, a pooling change — per `performance-and-algorithms.md`'s "no folklore, verify with a measurement" rule.
-- After applying a performance fix, to confirm it actually helped (frame time, GC alloc/frame, draw calls, memory) rather than assuming it did.
-- Diagnosing a reported frame hitch, GC spike, memory growth, or draw-call/batching regression — picking CPU Usage vs. GPU Usage vs. Rendering vs. Memory module by what's actually being asked.
-- Setting up a Development Build with Autoconnect/Deep Profiling, or connecting the Profiler to a remote Android/iOS device, when Editor-only profiling numbers aren't representative of the real target platform.
-- Adding custom instrumentation (`ProfilerMarker`, `ProfilerRecorder`, a custom Profiler module/counter) to make an otherwise-opaque system's cost visible in the Profiler window.
-- Negative trigger: once a bottleneck is measured and localized, applying the actual fix — allocation removal, pooling, algorithm/data-structure choice, LOD/batching/culling setup — is `performance-and-algorithms.md`'s and `unity-engineer`'s job, not this skill's.
-- Negative trigger: a bottleneck that's genuinely deep (native plugin, GPU-level intervention, a memory leak routine profiling can't localize) escalates to `tech-lead-performance` — this skill gets you the initial measurement that justifies that escalation, it doesn't do the deep fix itself.
-- Negative trigger: choosing or configuring a rendering path, Renderer Feature, or Custom Pass Volume is `unity-urp-rendering`/`unity-hdrp-rendering`'s scope — this skill only supplies the frame-time/GPU-time evidence those decisions should be based on.
+- A frame hitch, stutter, GC spike, memory growth, or draw-call/batching regression is reported and needs localizing.
+- Before adopting any performance-motivated change, and again after, per `performance-and-algorithms.md`'s Verification section.
+- Editor numbers look fine but the build on the target device does not, or a mobile claim needs a device-representative capture.
+- A system's cost is real but invisible in the Profiler hierarchy — a third-party plugin, a batch of similar calls, or work hidden inside a native call.
+- A runtime debug overlay needs to read a profiler counter back in the running game.
+- Negative trigger: applying the fix once the bottleneck is localized — allocation removal, pooling, data-structure choice, LOD and batching setup — that is `unity-engineer`'s work, guided by `performance-and-algorithms.md`.
+- Negative trigger: a bottleneck that stays unexplained after a competent capture — a native plugin, a GPU-level intervention, a leak the snapshot diff cannot localize — escalates to `tech-lead-performance`; this skill supplies the measurement that justifies the escalation.
+- Negative trigger: choosing a rendering path, Renderer Feature, or quality tier — that is `unity-urp-rendering` and `unity-hdrp-rendering`; this skill supplies the frame-time evidence those choices are argued from.
+- Negative trigger: job dependency chains, batch sizing, and scheduling overhead are `unity-job-system-and-burst`, and reading the Burst Inspector's generated assembly is `unity-burst-compiler` — this skill only establishes that worker threads are or are not the cost.
 
 ## 4. How to use this skill
-1. **Start from the actual question, not a module by default.** "Is a script spiking CPU time?" → CPU Usage module. "Is the GPU the bottleneck?" → GPU Usage module (Play Mode/build only, not in-Editor). "Are draw calls/batches too high?" → Rendering module, then Frame Debugger for the per-call breakdown. "Is memory growing or GC spiking?" → Memory module for the quick check, Memory Profiler package for a real snapshot comparison.
-2. **Profile in the right environment for the question.** Editor profiling includes Editor-only overhead and isn't representative of a real device's frame budget — for a platform-accurate number (especially mobile), use a Development Build with **Autoconnect Profiler** enabled, and connect over WiFi/ADB to the actual target device per `device-and-remote-profiling.md`. Never sign off a mobile performance claim on Editor-only numbers alone.
-3. **Use Deep Profiling deliberately, not by default.** Deep Profiling instruments every method call and gives fine-grained attribution, but adds significant overhead that skews absolute frame-time numbers — use it to *find* which function is expensive, then re-measure with it off to get the real cost.
-4. **CPU Usage module**: use the Timeline view to see per-frame spikes and which thread they're on (main thread vs. render thread vs. job worker); use the Hierarchy view, sorted by Total/Self time, to find the actual expensive call rather than guessing from the code's apparent complexity. A method that looks O(n²) in the code but is called with a tiny bounded N may not show up at all — trust the measurement over the Big-O guess, per `performance-and-algorithms.md`.
-5. **GC allocation tracking**: the CPU Usage module's GC Alloc column (and the Memory module's GC-related counters) show per-frame allocation — any non-zero, non-negligible number inside a hot path (`Update`/`FixedUpdate`/per-tick) is a violation of the no-per-frame-allocation rule in `coding-principles.md`/`performance-and-algorithms.md` and should be flagged even if the frame-time cost looks small, since GC pressure compounds over the session.
-6. **Rendering module + Frame Debugger**: use the Rendering module's batches/SetPass calls/triangles chart to spot a regression at a glance, then open the Frame Debugger from it to step through the actual draw call sequence and see exactly which object/material broke batching (a new material instance, an unbatched dynamic object, an unnecessary SetPass call).
-7. **Profile Analyzer for multi-frame claims.** A single-frame CPU Usage snapshot is noisy — for "did this change actually help on average," capture a comparable number of frames before and after the change with the Profile Analyzer package and compare the aggregated median/distribution, not one cherry-picked frame.
-8. **Memory Profiler package for real memory investigation.** The built-in Memory module's Simple view is a quick sanity check only; for an actual leak/growth investigation, take a Memory Profiler package snapshot (or two, before/after a suspected leak point) and diff them — the built-in module can't do that comparison.
-9. **Custom instrumentation for opaque systems.** When a suspected-expensive block doesn't show up clearly in the default hierarchy (e.g. inside a third-party plugin or a batch of similar calls worth isolating), wrap it in a `static readonly ProfilerMarker` (`Begin`/`End` or `.Auto()`) rather than `Profiler.BeginSample`/`EndSample` — `ProfilerMarker` is the lower-overhead, Burst/job-compatible option and is the currently-recommended API. Use `ProfilerRecorder` when the number needs to be read back at runtime (e.g. an in-game debug overlay), not just viewed in the Profiler window.
-10. **Attribute the result honestly, then hand off.** State what the data actually showed (which module, which frame range, Editor vs. device, Deep Profiling on/off) and where the cost lives — don't convert a measurement into a fix recommendation that belongs to a different skill/role; report the finding and route it (`performance-and-algorithms.md` for the fix pattern, `tech-lead-performance` if it's genuinely deep).
+1. **Name the question before opening a module** — module choice is determined by the question, not by habit, per [profiler-window-and-modules.md](references/profiler-window-and-modules.md). Script cost goes to CPU Usage, "is the GPU the limit" goes to GPU Usage or Highlights, batching goes to Rendering then the Frame Debugger, and growth over a session goes to a Memory Profiler snapshot pair. Opening CPU Usage for a GPU-bound frame produces a real number that answers nothing; [root-links.md](references/root-links.md) states which tool owns which class of question.
+2. **Profile a Development Build on the target device before quoting any number** — an in-Editor capture carries `EditorLoop` and Editor-only overhead in the same frame time it reports, and mobile thermal and memory behaviour has no Editor equivalent at all. [device-and-remote-profiling.md](references/device-and-remote-profiling.md) holds the build flags and the adb and WiFi connection steps. An Editor capture is a hypothesis; a device capture is evidence.
+3. **Capture the hitch inside the Profiler's frame buffer** — the window retains a bounded number of frames and discards the oldest, so a hitch noticed a few seconds late is already gone. Raise the retained frame count, or pause on the spike, rather than reproducing it repeatedly and hoping to catch it.
+4. **Use Deep Profiling to localize a cost, never to quote one** — it instruments every managed call and inflates the numbers it reports, so the culprit it names is trustworthy and its magnitude is not. Re-measure with it off before reporting a figure, and check [device-and-remote-profiling.md](references/device-and-remote-profiling.md) first when the target is a player build, where availability depends on the scripting backend.
+5. **Attribute a GC spike to the frame that allocated, not the frame that stalled** — the collection runs some frames after the allocations that caused it, so the stall frame is usually innocent. Sort the CPU Usage Hierarchy by GC Alloc across the surrounding frames and treat any non-trivial per-frame allocation in `Update`/`FixedUpdate` as a finding in its own right, per `coding-principles.md`'s Performance discipline section, even when its frame-time cost looks negligible.
+6. **Take a batching or draw-call regression to the Frame Debugger, not to a timing module** — it reports why a draw call could not be batched with the one before it, which is the actual answer, per [frame-debugger-and-profile-analyzer.md](references/frame-debugger-and-profile-analyzer.md). It gives no timings at all, so it identifies the cause and never the cost.
+7. **Back any before-and-after claim with the Profile Analyzer** — a single frame is noise, and median frame time across a comparable window is the only honest form of "this change helped", per [frame-debugger-and-profile-analyzer.md](references/frame-debugger-and-profile-analyzer.md). Capture both sides on the same device, in the same scene, over a similar frame count.
+8. **Diff two Memory Profiler snapshots rather than reading a single total** — a lone total says nothing about direction, and Reserved memory is what Unity holds from the operating system rather than what the game is using, so a rising Reserved chart is not by itself a leak, per [memory-profiler.md](references/memory-profiler.md).
+9. **Instrument an opaque system with a `static readonly ProfilerMarker`** — it is cheaper than `Profiler.BeginSample`, is Burst- and job-compatible, and strips itself from non-development builds, per [custom-instrumentation.md](references/custom-instrumentation.md). Reach for `ProfilerRecorder` instead when the value must be read back inside the running game rather than viewed in the window.
+10. **Report the attribution and route the fix** — state the module, the environment, the frame range, and whether Deep Profiling was on, then hand the finding to `unity-engineer` for an ordinary fix or `tech-lead-performance` for a deep one. A measurement converted into someone else's design decision stops being evidence.
 
 ## 5. Specific goals / tasks this skill performs
-- Picking the right Profiler module (CPU/GPU Usage, Rendering, Memory, Highlights) for a specific performance question.
-- Setting up Development Build + Autoconnect/Deep Profiling, and remote Android/iOS device profiling, when Editor-only numbers aren't representative.
-- Using the Frame Debugger to attribute a draw-call/batching regression to the specific object/material responsible.
-- Using the Profile Analyzer package to compare before/after performance across multiple frames instead of one noisy snapshot.
-- Using the Memory Profiler package to snapshot and diff memory usage for a real leak/growth investigation.
-- Adding `ProfilerMarker`/`ProfilerRecorder` instrumentation to make an opaque system's cost visible.
-- Out of scope: deciding and implementing the actual optimization (`performance-and-algorithms.md`, `unity-engineer`); deep native/GPU-level/leak root-causing once localized (`tech-lead-performance`); rendering-path/Renderer Feature/Volume configuration itself (`unity-urp-rendering`/`unity-hdrp-rendering`).
+- Choosing the module or tool that answers a specific performance question.
+- Setting up Development Build profiling and connecting to an Android or iOS device over adb or WiFi.
+- Localizing a CPU spike through Timeline and Hierarchy views, with Deep Profiling used only as a locator.
+- Attributing GC allocation to the code that allocated rather than the frame that collected.
+- Attributing a batching regression to the specific object, material, or state change through the Frame Debugger.
+- Proving or disproving a before-and-after performance claim with a Profile Analyzer comparison.
+- Investigating memory growth through a Memory Profiler snapshot diff.
+- Adding `ProfilerMarker`/`ProfilerRecorder` instrumentation and runtime counter readback.
+- Out of scope: applying the optimization (`unity-engineer`); deep native, GPU, or leak root-causing (`tech-lead-performance`); rendering configuration (`unity-urp-rendering`, `unity-hdrp-rendering`); job scheduling analysis (`unity-job-system-and-burst`); Burst compilation output (`unity-burst-compiler`).
 
 ## 6. Output format
 ```
 ## Profiler Session — <what was measured>
-- Question: <what claim/hypothesis this measurement is checking>
-- Environment: Editor / Development Build (device: <target>) — Autoconnect: yes/no, Deep Profiling: yes/no
-- Module/tool used: CPU Usage / GPU Usage / Rendering + Frame Debugger / Memory / Memory Profiler package / Profile Analyzer / custom marker
-- Frames captured: <count/range> — single-frame snapshot / multi-frame aggregate
-- Finding: <what the data actually shows — module, metric, value>
-- Attribution: <which system/call/object the cost belongs to>
-- Before/after comparison (if applicable): <numbers>
-- Routed to: <performance-and-algorithms.md fix pattern / tech-lead-performance escalation / unity-urp-rendering / n-a>
-- Known limitations: <e.g. Editor-only numbers not device-representative, single-frame noise>
+- Question: <the claim or hypothesis this capture tests>
+- Environment: <Editor / Development Build> — device: <model and tier>, connection: <adb / WiFi>
+- Deep Profiling: <on for localization only / off for the reported figure>
+- Module or tool: <CPU Usage / GPU Usage / Rendering + Frame Debugger / Memory Profiler / Profile Analyzer / custom marker>
+- Frames: <count and range — single capture or aggregate>
+- Finding: <metric, value, unit>
+- Attribution: <the system, call, object, or material the cost belongs to>
+- Before and after: <both figures and how they were made comparable — or "not applicable">
+- Routed to: <unity-engineer / tech-lead-performance / unity-urp-rendering / not applicable>
+- Layer: <Game.Client.* instrumentation, Editor-only capture, or both>
+- Known limitations: <...>
+```
+
+**Extended report — emit ONLY when the requester asks for it.** It replaces the one-line `Known limitations` above with all three fields:
+```
+- Known limitations: <what this measurement does not establish>
+- Latent concerns: <failure modes not yet triggered: assumptions that hold only on this device tier, thresholds not yet reached, trade-offs knowingly deferred>
+- Future remediation: <the concrete fix for each concern above, each with the condition that should trigger it>
 ```
 
 ## 7. Examples
 **Example 1**
-- Input: "The mobile build feels like it drops frames during the wave-spawn burst — is it actually a problem, and what's causing it?"
-- Output: built a Development Build with Autoconnect Profiler enabled, connected over ADB to the target mid-tier Android device, captured the CPU Usage Timeline across the spawn burst; Hierarchy view (sorted by Self time) showed a `List<T>.Contains` linear scan inside the spawn-validation loop dominating the spike, plus a non-zero GC Alloc column from a `new List<T>` per spawn call — routed the allocation-per-call finding to `performance-and-algorithms.md`'s data-structure and pooling guidance rather than fixing it here.
+- Input: "The mobile build stutters when a wave spawns. Is it real, and what is causing it?"
+- Output: built with Development Build and Autoconnect Profiler, connected over adb to the mid-tier Android target, and raised the retained frame count so the burst stayed in the buffer. Deep Profiling located a linear `List<T>.Contains` scan inside spawn validation, then a second capture with it off gave the honest cost. The GC Alloc column showed the allocation happening several frames before the stall, in the spawn loop rather than in the frame that visibly dropped. Reported both findings to `unity-engineer` and made no fix here.
 
 **Example 2**
-- Input: "We switched the boss arena from Forward to Forward+ — did it actually reduce frame time on the mid-tier device tier?"
-- Output: captured a comparable ~300-frame window on both the pre-change and post-change builds on the same physical device, compared the two captures in the Profile Analyzer package rather than eyeballing single frames; median CPU frame time dropped but GPU Usage module showed the GPU became the new bottleneck at high light counts — reported both numbers back to `unity-urp-rendering` instead of declaring the switch an unconditional win.
+- Input: "Frame time in the Editor is 8ms, so we are well inside budget on mobile."
+- Output: declined — the Editor capture attributes a large share of that frame to `EditorLoop` and Editor-only work that no build runs, and it says nothing about thermal throttling or memory pressure on the device. Rebuilt as a Development Build and captured on the actual low-tier handset, where the same scene sat well outside budget once the device had been running for two minutes.
+
+**Example 3**
+- Input: "Total memory is climbing all session, so something is leaking."
+- Output: captured two Memory Profiler snapshots twenty minutes apart from the player build and diffed them. Reserved memory had grown, which is Unity holding pages from the operating system rather than the game consuming them, but the managed heap diff showed a genuine growth: event handlers retained on destroyed objects, keeping their whole reference graph alive. Routed the unsubscribe fix to `unity-engineer`, per `performance-and-algorithms.md`'s Memory discipline section.
 
 ## 8. Edge cases & guardrails
-- Never sign off a performance claim — especially mobile — on Editor-only profiling numbers; profile on a Development Build against the real target device class.
-- Never leave Deep Profiling on when reporting an absolute frame-time number — it's for finding the culprit, not for the final measurement.
-- Never treat a single-frame CPU Usage snapshot as proof of a trend — use the Profile Analyzer package for any "did this help on average" claim.
-- A non-zero GC Alloc in a hot path is worth flagging even when the frame-time cost looks small — allocation pressure compounds over a session; don't dismiss it because one frame's cost looks negligible.
-- Don't convert a measurement into an optimization recommendation that belongs to `performance-and-algorithms.md`/`tech-lead-performance` — report the finding and route it, don't implement the fix inside this skill.
-- Prefer `ProfilerMarker` over `Profiler.BeginSample`/`EndSample` for new custom instrumentation — lower overhead and Burst/job-compatible.
-- The built-in Memory module's Simple view cannot diff two points in time — use the Memory Profiler package's snapshot comparison for any real leak investigation, not the Simple view alone.
-- GPU Usage module data is only available in Play Mode or an actual build, never in the plain Editor — don't expect GPU timing from an Editor-only CPU Usage capture.
+- Never quote a frame time captured with Deep Profiling on — it is a locator, and the number it reports includes its own instrumentation cost.
+- Never present an Editor capture as a mobile result — `EditorLoop` and Editor-only overhead sit inside the frame time it reports.
+- Never treat one frame as a trend — use the Profile Analyzer for any claim containing the words "faster" or "helped".
+- Never read rising Reserved memory as a leak — it is memory held from the operating system, not memory in use; the managed and native breakdowns are what move the argument.
+- Never assume the stalling frame is the allocating frame — collection lags the allocations that provoked it.
+- Never expect timings from the Frame Debugger — it explains why batching broke and nothing about cost.
+- Never expect GPU Usage data from a plain Editor session, or from every platform and graphics API — confirm availability before designing a measurement around it, per [profiler-window-and-modules.md](references/profiler-window-and-modules.md).
+- Never leave a `ProfilerRecorder` undisposed — it is `IDisposable`, and a leaked recorder keeps collecting, per `coding-principles.md`'s Exception handling section.
+- Never build new instrumentation on `Profiler.BeginSample` — it passes its label string on every call; `ProfilerMarker` is the current API.
+- Never convert a measurement into an optimization decision inside this skill — report the attribution and route it, or the evidence and the fix stop being separable.

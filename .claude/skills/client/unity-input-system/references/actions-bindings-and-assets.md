@@ -1,47 +1,50 @@
-# Actions, Bindings, Composites & Action Assets
+# Actions, Bindings and Assets — action types, composites, Control Schemes
 
-[Manual — Actions](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/Actions.html) · [Manual — Input action assets](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/action-assets.html) · [Manual — Action and control types](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/action-and-control-types.html) · [Manual — Bindings](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/bindings.html) · [Manual — Composite bindings](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/composite-bindings.html) · [Manual — Control schemes](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/control-schemes.html) · [Manual — About project-wide actions](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/about-project-wide-actions.html) · [Manual — Generate C# API from actions](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/generate-cs-api-from-actions.html)
+Sources: [Actions](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/Actions.html), [Input action assets](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/action-assets.html), [Action type reference](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/action-type-reference.html), [Bindings](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/bindings.html), [Composite bindings](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/composite-bindings.html), [Control schemes](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/control-schemes.html), [Project-wide actions](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/about-project-wide-actions.html), [Generate C# API from actions](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/generate-cs-api-from-actions.html).
+Covers: SKILL.md §4 — **"Author actions in the `.inputactions` asset rather than in code"**, **"Pick the action type from what the control produces"**, **"Express multi-control input as a composite binding rather than several actions"**.
 
-## Action Assets — the authored source of truth
+The authoring surface: what an asset holds, what each action type does to the
+value and its phases, and how several controls become one signal. Timing
+patterns and value transforms are next door in
+[interactions-and-processors.md](interactions-and-processors.md).
 
-An `.inputactions` file (backed by `InputActionAsset`) holds one or more `InputActionMap`s, each holding `InputAction`s with their `InputBinding`s, plus the asset's `InputControlScheme`s. Author it in the **Input Actions Editor** window (see [editor-tooling-and-debugging.md](editor-tooling-and-debugging.md)), not by hand-editing the underlying JSON, unless a task specifically calls for scripted/JSON-driven configuration (see "Configure input from code/JSON" further below).
+## The asset
 
-**Project-wide actions** ([about-project-wide-actions.html](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/about-project-wide-actions.html)): one designated `InputActionAsset` can be assigned as the project's default — it's preloaded at startup, kept alive for the app's lifetime, and enabled by default. Reach it anywhere via `InputSystem.actions.FindAction("Move")` without holding a manual reference. Unity's own guidance: use a single project-wide asset unless the project genuinely needs more than one — don't split into multiple assets speculatively (YAGNI, per `coding-principles.md`).
-
-**Generated C# wrapper class** ([generate-cs-api-from-actions.html](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/generate-cs-api-from-actions.html)): enabling "Generate C# Class" on the asset's Inspector produces a typed class exposing every action map/action as a property — no more string-keyed `FindAction()` lookups. Typical lifecycle: instantiate in `OnEnable()`, call `SetCallbacks(this)` to register a MonoBehaviour implementing the generated per-map interface (e.g. `IPlayerActions`), `Enable()`/`Disable()` paired with the MonoBehaviour's own `OnEnable()`/`OnDisable()`, and implement `OnMove(InputAction.CallbackContext)`-style methods. **Prefer this over raw string-keyed `FindAction()` calls in this project** — it's compile-time safe and avoids a hidden string-lookup cost if called repeatedly, consistent with `naming-convention.md`'s "no magic strings" spirit and `performance-and-algorithms.md`'s hot-path discipline.
-
-## Action Types — `InputActionType`
-
-[Manual — Action types reference](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/action-type-reference.html):
-
-| Type | Behavior | Use for |
+| Subject | What it decides | Source |
 |---|---|---|
-| `Value` | Continuously-changing input (stick, mouse delta, orientation); provides phase info and **conflict resolution** — when multiple bound controls are actuated, the most-actuated one drives the action. | Movement axes, look input, anything analog. |
-| `Button` | Discrete on/off controls; provides phase info and conflict resolution. | Jump, fire, interact — anything binary. |
-| `PassThrough` | Same control shapes as `Value`, but **no phase info and no conflict resolution** — every bound control's change is reported independently rather than picking one "winner." | Aggregating input from several controls that should all matter simultaneously (e.g. summing multiple analog sources), not for a single canonical "current value." |
+| `.inputactions` asset | Holds action maps, actions, bindings and Control Schemes together; it is what the editor, the generated wrapper, the rebinding API and the Debugger all read, so authoring anywhere else fragments the source of truth | [Input action assets](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/action-assets.html) |
+| Project-wide actions | One designated asset preloaded at startup, kept alive, and enabled by default, reachable through the static hub without a serialized reference — a manually created asset gets none of that and must be enabled by the code that owns it | [Project-wide actions](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/about-project-wide-actions.html) |
+| Action map | The enable and disable unit, which is what makes a Player map and a UI map swappable as a pair when a menu opens | [Actions](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/Actions.html) |
+| Generated C# class | A typed property per map and action, so a rename becomes a compile error instead of a runtime lookup that silently finds nothing | [Generate C# API from actions](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/generate-cs-api-from-actions.html) |
+| Scripted or JSON construction | Building actions and bindings from code, for the rare case where the set genuinely is not known until runtime; it forfeits the editor and the generated wrapper | [Actions](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/Actions.html) |
 
-## Bindings & Composite Bindings
+**Critical caveat**: an action that is never enabled produces its default
+value forever and raises nothing. Enabling is per map or per action, and a
+non project-wide asset starts disabled.
 
-A normal `InputBinding` targets one control path (`<Gamepad>/buttonSouth`). A **composite binding** synthesizes one value out of several **part bindings**, per [composite-bindings.html](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/composite-bindings.html):
+## Action types
 
-| Composite | Part bindings | Output | Notes |
+| Type | Phase and value behaviour | Use for | Source |
 |---|---|---|---|
-| **1D Axis** (Positive/Negative) | `positive`, `negative` (buttons) | `float` | Pulls the axis toward −1/+1. Has a **"which side wins"** property when both are pressed simultaneously — set it deliberately (last pressed wins by default in most templates; verify per-project rather than assuming). |
-| **2D Vector** (Up/Down/Left/Right) | four buttons | `Vector2` | The standard WASD/D-pad composite. Has a `Mode` property (Digital/Digital Normalized/Analog) controlling whether diagonal magnitude is normalized — leaving this unconfigured silently changes diagonal move speed on keyboard vs. stick. |
-| **3D Vector** (Up/Down/Left/Right/Forward/Backward) | six buttons | `Vector3` | Same digital/analog `Mode` concern as 2D Vector, one axis pair added. |
-| **One Modifier** | `modifier`, `binding` | Same type as the bound control | "Hold SHIFT + 1" style chords. |
-| **Two Modifiers** | `modifier1`, `modifier2`, `binding` | Same type as the bound control | "Hold SHIFT+CTRL + 1" style chords. |
+| `Button` | Performs once when actuation crosses the press point; resolves competing controls to the most actuated | Discrete intents — jump, fire, interact | [Action type reference](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/action-type-reference.html) |
+| `Value` | Performs continuously while actuated, with the same conflict resolution — a discrete intent authored here fires every frame it is held | Analog and continuous input — movement, look, triggers | [Action type reference](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/action-type-reference.html) |
+| `PassThrough` | No phase semantics and no conflict resolution; every bound control reports independently | Aggregating several sources that should all count, rather than picking one current value | [Action type reference](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/action-type-reference.html) |
 
-This is the mechanism behind a WASD/stick-driven `Move` action — one 2D Vector composite, not four separate actions manually summed in script.
+## Bindings and composites
+
+| Binding | Parts | Produces | Source |
+|---|---|---|---|
+| Plain binding | One control path such as a device layout plus a control name | The control's own value | [Bindings](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/bindings.html) |
+| 1D Axis | Positive and negative buttons | A float; its tie-breaking property decides what happens when both are held, and leaving it unset makes opposing keys behave arbitrarily | [Composite bindings](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/composite-bindings.html) |
+| 2D Vector | Four buttons | A `Vector2`; its mode decides whether a diagonal is normalised, which is why an unset mode makes keyboard diagonals faster than a stick | [Composite bindings](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/composite-bindings.html) |
+| 3D Vector | Six buttons | A `Vector3`, with the same normalisation question as the 2D form | [Composite bindings](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/composite-bindings.html) |
+| One Modifier | A modifier plus a binding | The bound control's value, only while the modifier is held — the chord mechanism | [Composite bindings](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/composite-bindings.html) |
+| Two Modifiers | Two modifiers plus a binding | The same, for a two-key chord | [Composite bindings](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/composite-bindings.html) |
 
 ## Control Schemes
 
-[Manual — Control schemes](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/control-schemes.html): a named set of device requirements (e.g. "Gamepad", "Keyboard&Mouse") that groups which bindings apply for which device type. A new scheme starts with an empty device-type list — it must have at least one device requirement before it does anything. Group bindings under the scheme they belong to in the Input Actions Editor so the same action can have a gamepad binding and a keyboard/mouse binding active only for the matching device, without runtime `if` branching on device type in game code.
-
-## Scripting an action asset directly (when authoring in the window isn't the right tool)
-
-For editor tooling, SDK/config code, or one-off Shared-Core-adjacent setup where a hand-authored `.inputactions` asset is overkill, the API supports building actions/bindings purely from code (`new InputAction(...)`, `InputActionSetupExtensions.AddBinding(...)`) or from a raw JSON string (`InputActionAsset.FromJson`/`.LoadFromJson`). Reach for this only when the declarative asset genuinely can't express the need (per KISS in `coding-principles.md`) — the Input Actions Editor is the default authoring path for anything a designer/engineer will tune more than once.
-
-## Related scripting types
-
-`InputActionReference` — a serializable reference to one specific `InputAction` inside an `InputActionAsset`, usable as an Inspector-exposed field (`[SerializeField] private InputActionReference jumpActionReference;`, per `naming-convention.md`'s Unity override for serialized fields) instead of a hard-coded string lookup. See [scripting-api.md](scripting-api.md) for the full class list (`InputAction`, `InputActionMap`, `InputActionAsset`, `InputBinding`, `InputBindingComposite`).
+| Subject | What it decides | Source |
+|---|---|---|
+| Device requirements | A scheme with an empty requirement list matches nothing and does nothing, which reads as bindings being ignored | [Control schemes](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/control-schemes.html) |
+| Binding groups | Which bindings belong to which scheme, so one action carries both a keyboard and a gamepad path without a device check in gameplay code | [Control schemes](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/control-schemes.html) |
+| `InputActionReference` | A serialized reference to one action inside an asset, so an Inspector field replaces a string lookup at the call site | [InputActionReference](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/api/UnityEngine.InputSystem.InputActionReference.html) |
