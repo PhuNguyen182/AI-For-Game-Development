@@ -1,21 +1,52 @@
-# Root Links
+# Root Links — Unity 6000.5 navigation module and AI Navigation 2.0
 
-Root/index pages this skill is built from (Unity 6000.5 Scripting API + `com.unity.ai.navigation` package version 2.0). Follow their own in-page navigation for anything not covered by the other files in this folder.
+Source: the root index pages listed below, as provided for this skill.
+Covers: the whole skill — provenance and version anchor for every file in
+this folder.
 
-- [Scripting API — UnityEngine.AIModule](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/UnityEngine.AIModule.html) — the built-in engine module's class/struct/enum landing page (namespace `UnityEngine.AI`, plus six new `Unity.AI.Navigation.LowLevel.*` types).
-- [AI Navigation package — Manual](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/index.html) — the package's conceptual documentation landing page (Navigation System overview, component reference, how-tos, samples, upgrade guide).
-- [AI Navigation package — API index](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/api/index.html) — chrome-only landing page; the real class listing is one level down.
-- [AI Navigation package — Unity.AI.Navigation namespace](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/api/Unity.AI.Navigation.html) — the actual 5-type API surface (`NavMeshSurface`, `NavMeshModifier`, `NavMeshModifierVolume`, `NavMeshLink`, `CollectObjects`).
-- [Scripting API — NavMesh](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMesh.html) — the core static query/pathfinding entry point.
-- [Scripting API — NavMeshAgent](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshAgent.html) — the per-character navigation component.
+Anchors every link in this folder to Unity 6000.5's Scripting API and
+`com.unity.ai.navigation@2.0`. Navigation is documented across two trees this
+skill treats as one system, and knowing which tree owns a question is the
+first decision in every task here.
 
-## How the two doc sets relate
+## The two layers
 
-Unity's navigation surface is split across **two separate documentation trees that this skill treats as one system**:
+| Layer | Owns | Source |
+|---|---|---|
+| Built-in `UnityEngine.AI` module | Runtime queries and simulation: static queries, the agent, the obstacle, the low-level builder, runtime link data — what a script actually calls | [UnityEngine.AIModule](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/UnityEngine.AIModule.html) |
+| `com.unity.ai.navigation` package | Authoring and baking: the surface, the modifiers, the authored link, the Navigation window, and every current conceptual page | [AI Navigation Manual](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/index.html) |
+| Package API surface | The five authoring types the package adds | [Unity.AI.Navigation namespace](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/api/Unity.AI.Navigation.html) |
 
-1. **`UnityEngine.AI` (built-in engine module, `UnityEngine.AIModule`)** — ships with the Editor itself, no package install needed. Owns the runtime *query and simulation* layer: `NavMesh` (static queries), `NavMeshAgent` (per-character steering), `NavMeshObstacle` (dynamic carving/avoidance), the low-level build types (`NavMeshBuilder`, `NavMeshData`, `NavMeshBuildSettings`, `NavMeshBuildSource`, …), and the runtime-scripted link API (`NavMeshLinkData`/`NavMeshLinkInstance`). This is what a script actually calls at runtime.
-2. **`com.unity.ai.navigation` (package, installed via Package Manager)** — the modern authoring/baking layer: `NavMeshSurface`, `NavMeshModifier`, `NavMeshModifierVolume`, `NavMeshLink` (the authored-in-the-Inspector component), the Navigation window (Agents/Areas tabs), and all current conceptual documentation (workflows, how-tos, samples, upgrade guide). **As of Unity 6000.5, every classic built-in Manual page for navigation (`nav-BuildingNavMesh.html`, `nav-CreateNavMeshAgent.html`, `OffMeshLinks.html`, etc.) 404s** — this package's manual is the sole current source of conceptual documentation; the `NavMeshAgent` scripting page itself now links out to the package manual instead of a built-in Manual page.
+**Critical caveat**: at this Editor version the classic built-in navigation
+Manual pages no longer resolve. The package manual is the only current
+conceptual source, and the built-in agent's scripting page links there rather
+than to a built-in page. A remembered Manual page title is not a source.
 
-Confirm which layer a task actually needs before citing a page: baking/placing a NavMesh in a scene, or configuring per-object area/link authoring → the **package** (`Unity.AI.Navigation.*`, Navigation window); a script doing pathfinding queries, driving an agent at runtime, or building `NavMeshData` procedurally from code → the **built-in module** (`UnityEngine.AI.*`). Most real features touch both.
+## Which file answers which question
 
-Page slugs are stable across nearby Unity versions; re-derive the exact version segment (`6000.5`, package `@2.0`) if the installed Editor/package version differs.
+| Question | File | Source |
+|---|---|---|
+| How do I bake, and how do I change what a bake sees | [navmesh-components-surface-and-modifiers.md](navmesh-components-surface-and-modifiers.md) | [NavMesh Surface](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavMeshSurface.html) |
+| How do I build from geometry that has no scene object | [navmesh-baking-low-level-api.md](navmesh-baking-low-level-api.md) | [NavMeshBuilder](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshBuilder.html) |
+| How are agent sizes and area costs defined | [agent-types-areas-and-navigation-window.md](agent-types-areas-and-navigation-window.md) | [Areas and costs](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/AreasAndCosts.html) |
+| Why does my character move like that, or stop short | [navmesh-agent.md](navmesh-agent.md) | [NavMeshAgent](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshAgent.html) |
+| How does something dynamic block agents | [navmesh-obstacles-and-avoidance.md](navmesh-obstacles-and-avoidance.md) | [About obstacles](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/AboutObstacles.html) |
+| How do I bridge a gap, and why is my link ignored | [navmesh-links.md](navmesh-links.md) | [NavMesh Link](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavMeshLink.html) |
+| What can I ask the mesh from code | [navmesh-queries-and-pathfinding-api.md](navmesh-queries-and-pathfinding-api.md) | [NavMesh](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMesh.html) |
+| How do I build at runtime, or migrate an old project | [runtime-building-samples-and-upgrade.md](runtime-building-samples-and-upgrade.md) | [Upgrade guide](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/UpgradeGuide.html) |
+
+## Core type index
+
+| Type | Source |
+|---|---|
+| `NavMesh` | [NavMesh](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMesh.html) |
+| `NavMeshAgent` | [NavMeshAgent](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshAgent.html) |
+| `NavMeshObstacle` | [NavMeshObstacle](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshObstacle.html) |
+| `NavMeshPath`, `NavMeshHit`, `NavMeshQueryFilter` | [UnityEngine.AIModule](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/UnityEngine.AIModule.html) |
+| `NavMeshBuilder`, `NavMeshData`, `NavMeshBuildSettings` | [NavMeshBuilder](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshBuilder.html) |
+| `NavMeshLinkData`, `NavMeshLinkInstance` | [NavMeshLinkData](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshLinkData.html) |
+| `NavMeshSurface`, `NavMeshModifier`, `NavMeshModifierVolume`, `NavMeshLink`, `CollectObjects` | [Unity.AI.Navigation namespace](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/api/Unity.AI.Navigation.html) |
+
+Keep the `6000.5` and `@2.0` segments when following any link. Page slugs are
+stable across nearby versions, so substitute the installed Editor and package
+versions rather than assuming these ones.

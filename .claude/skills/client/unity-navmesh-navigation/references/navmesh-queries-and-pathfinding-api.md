@@ -1,99 +1,47 @@
-# NavMesh Queries & Pathfinding — Core Static API
+# NavMesh Queries — static queries, filters, hits, paths
 
-The `UnityEngine.AI.NavMesh` static class plus its supporting query structs. This is the layer to reach for when a script needs to ask a question about the baked NavMesh (where's the nearest walkable point, can I get from A to B, is this line of sight blocked) without necessarily involving a `NavMeshAgent`.
+Sources: [NavMesh](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMesh.html), [NavMeshHit](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshHit.html), [NavMeshPath](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshPath.html), [NavMeshPathStatus](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshPathStatus.html), [NavMeshQueryFilter](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshQueryFilter.html), [NavMeshTriangulation](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshTriangulation.html).
+Covers: SKILL.md §4 — **"Read a NavMesh raycast's true as blocked, not as clear"**.
 
-## `NavMesh` (static class)
+What can be asked of the mesh without an agent, and the return conventions
+that read backwards. Deciding what to do with an answer — pick a target,
+abandon a chase — is `csharp-engineer`'s Shared Core.
 
-[Scripting API — NavMesh](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMesh.html) — "Singleton class to access the baked NavMesh." Namespace `UnityEngine.AI`. 100% static — no instance to construct.
+## Queries
 
-**Static properties**
-
-| Member | Type | Description |
+| Call | What it answers | Source |
 |---|---|---|
-| `AllAreas` | `int` (const) | Area mask constant including every NavMesh area — pass this when a query/agent shouldn't be area-restricted. |
-| `avoidancePredictionTime` | `float` | How far into the future agents predict collisions for local avoidance. |
-| `onPreUpdate` | `NavMesh.OnNavMeshPreUpdate` (delegate field) | Registers callback(s) invoked before the NavMesh system updates each frame. Note: this is a static delegate field, not a C# `event` — subscribe/unsubscribe like any multicast delegate. |
-| `pathfindingIterationsPerFrame` | `int` | Max pathfinding nodes processed per frame for async path requests — tune under load if async path completion is visibly stalling. |
+| Sample position | The nearest point on the mesh within a radius — the correct way to turn an arbitrary world point, such as a click, into a valid destination | [NavMesh](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMesh.html) |
+| Calculate path | A full path between two points into a caller-owned path object, without moving anything | [NavMesh](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMesh.html) |
+| Raycast | Whether a straight line across the mesh is obstructed | [NavMesh](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMesh.html) |
+| Find closest edge | The nearest mesh boundary and its normal, for keeping something away from a ledge | [NavMesh](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMesh.html) |
+| Calculate triangulation | The whole mesh as vertices and indices, for debug visualisation or an offline analysis | [NavMeshTriangulation](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshTriangulation.html) |
 
-**Static methods — queries** (most common entry points for scripted navigation logic)
+**Critical caveat**: the raycast returns true when the line is **blocked**,
+the inverse of the physics raycast it resembles. Code that reads it as the
+physics convention compiles, runs, and behaves exactly backwards.
 
-| Method | Signature | Notes |
+## Interpreting results
+
+| Type | What it decides | Source |
 |---|---|---|
-| `SamplePosition` | `bool SamplePosition(Vector3 sourcePosition, out NavMeshHit hit, float maxDistance, int areaMask)` (+ `NavMeshQueryFilter` overload) | Finds the nearest point on the NavMesh within `maxDistance` (a **vertical projection**, not a full 3D nearest-point search). `hit.normal` is always `(0,0,0)` for this call specifically. Keep `maxDistance` tight (≈2× agent height) — it's a real cost driver. |
-| `CalculatePath` | `bool CalculatePath(Vector3 sourcePosition, Vector3 targetPosition, int areaMask, NavMeshPath path)` (+ `NavMeshQueryFilter` overload) | Synchronous path computation into a caller-owned `NavMeshPath`. Returns `true` for both a **complete and a partial** path — always check `path.status` afterward, don't treat the bool return alone as "reached the destination". |
-| `Raycast` | `bool Raycast(Vector3 sourcePosition, Vector3 targetPosition, out NavMeshHit hit, int areaMask)` (+ `NavMeshQueryFilter` overload) | Traces a straight line along the NavMesh surface. **Counter-intuitive return value: `true` means the ray was BLOCKED before reaching the target; `false` means it arrived unobstructed.** If it terminates on the NavMesh's own outer edge, `hit.mask == 0`; otherwise `hit.mask` holds the blocking polygon's area mask. Good for line-of-sight-along-the-floor checks. |
-| `FindClosestEdge` | `bool FindClosestEdge(Vector3 sourcePosition, out NavMeshHit hit, int areaMask)` (+ `NavMeshQueryFilter` overload) | Locates the nearest NavMesh edge from a point — useful for "back away from the ledge" or edge-hugging behavior. |
-| `CalculateTriangulation` | `NavMeshTriangulation CalculateTriangulation()` | Triangulates every NavMesh currently present in the scene — expensive, call sparingly (debug visualization, one-off spatial analysis), never per-frame. |
+| Hit struct | Carries the position, the distance, the normal, the area, and a validity flag — a call that returns without a valid hit has produced a position that means nothing | [NavMeshHit](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshHit.html) |
+| Path object | Holds the corner list and the status; the corners are the actual route, and their count is what tells you whether a path exists at all | [NavMeshPath](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshPath.html) |
+| Path status | Complete, partial, or invalid — partial means a route toward the target that does not reach it, which is the status most code forgets to test | [NavMeshPathStatus](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshPathStatus.html) |
+| Reusing a path object | Path objects are reusable; allocating one per query in a per-frame check is avoidable garbage, per `performance-and-algorithms.md` | [NavMeshPath](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshPath.html) |
 
-**Static methods — global area/settings/link management**
+## Scoping a query
 
-| Method | Purpose |
-|---|---|
-| `GetAreaCost(int)` / `SetAreaCost(int areaIndex, float cost)` | Get/set an area's traversal cost. **`NavMesh.SetAreaCost` is global — it affects every agent.** For a per-agent or per-query override use `NavMeshAgent.SetAreaCost`/`NavMeshQueryFilter.SetAreaCost` instead (same method name, narrower scope — don't conflate the three). |
-| `GetAreaFromName(string)` / `GetAreaNames()` | Resolve an area's Inspector-configured name to its bitmask index, or list every area name — areas are project-configured (Navigation window Areas tab, or the package's per-agent-type area list), not fixed constants. |
-| `AddNavMeshData(NavMeshData)` → `NavMeshDataInstance` / `RemoveNavMeshData(NavMeshDataInstance)` / `RemoveAllNavMeshData()` | Attach/detach baked `NavMeshData` to/from the live navigation system — the mechanism behind streaming NavMesh chunks in and out at runtime. |
-| `AddLink(NavMeshLinkData)` → `NavMeshLinkInstance` / `RemoveLink(NavMeshLinkInstance)` | Add/remove a runtime-scripted link (see [navmesh-links.md](navmesh-links.md) for how this differs from the package's `NavMeshLink` component). |
-| `IsLinkValid` / `IsLinkActive` / `SetLinkActive` / `IsLinkOccupied` / `GetLinkOwner` / `SetLinkOwner` | Query/manage a `NavMeshLinkInstance`'s state. |
-| `CreateSettings()` → `NavMeshBuildSettings` / `GetSettingsByID(int)` / `GetSettingsByIndex(int)` / `GetSettingsCount()` / `GetSettingsNameFromID(int)` / `RemoveSettings(int)` | Manage the set of registered per-agent-type build settings entries — see [navmesh-baking-low-level-api.md](navmesh-baking-low-level-api.md). |
-
-## `NavMeshQueryFilter` (struct)
-
-[Scripting API — NavMeshQueryFilter](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshQueryFilter.html) — "Specifies which agent type and areas to consider when searching the NavMesh." Pass one to any `NavMesh.*` query overload that accepts it, instead of a bare `areaMask` int, when the query also needs to be scoped to a specific agent type or needs a per-query area cost override.
-
-| Member | Type | Description |
+| Scope | Reach | Source |
 |---|---|---|
-| `agentTypeID` | `int` | Which agent type's NavMesh to query. |
-| `areaMask` | `int` | Bitmask of traversable area types for this query. |
-| `GetAreaCost(int areaIndex)` | `float` | Per-filter area cost multiplier. |
-| `SetAreaCost(int areaIndex, float cost)` | — | Per-filter cost override — scoped to this filter instance only, unlike `NavMesh.SetAreaCost`'s global effect. |
+| Query filter | Area mask and per-area costs for one query only, leaving every agent and the project untouched | [NavMeshQueryFilter](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshQueryFilter.html) |
+| Agent cost setter | One agent, for the rest of its life — the right scope for a per-character preference | [NavMeshAgent](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshAgent.html) |
+| Static cost setter | Every agent and every query in the project — a global change that is easy to reach for and rarely what was meant | [NavMesh](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMesh.html) |
 
-## `NavMeshHit` (struct)
+## Link management from code
 
-[Scripting API — NavMeshHit](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshHit.html) — "Information about a position that is the result of a query ran on the NavMesh." Returned by `SamplePosition`, `FindClosestEdge`, `Raycast`, and the corresponding `NavMeshAgent` instance methods.
-
-| Member | Type | Description |
+| Call | Effect | Source |
 |---|---|---|
-| `position` | `Vector3` | The resulting hit position. |
-| `normal` | `Vector3` | Normal of the polygon edge the query terminated on. **Always `(0,0,0)` specifically for `SamplePosition` results** — meaningful for `Raycast`/`FindClosestEdge`. |
-| `distance` | `float` | Distance from the query's source to the hit point. |
-| `mask` | `int` | NavMesh area bitmask at the hit point. |
-| `hit` | `bool` | Set for a particular valid-result situation (check alongside the calling method's own bool return). |
-
-A result is only meaningful when both `distance` and `position` are finite — always check the calling method's `bool` return before trusting the `out NavMeshHit`.
-
-## `NavMeshPath` (class)
-
-[Scripting API — NavMeshPath](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshPath.html) — "A path as calculated by the navigation system," expressed as waypoints.
-
-| Member | Description |
-|---|---|
-| `corners` | `Vector3[]` (read-only) — the path's waypoints. |
-| `status` | [`NavMeshPathStatus`](#navmeshpathstatus-enum) (read-only). |
-| `ClearCorners()` | Removes all corners from the path. |
-| `GetCornersNonAlloc(Vector3[] results)` | Fetches corners into a caller-provided array — use this in any hot path instead of reading `corners` repeatedly, to avoid the array allocation `corners`'s getter implies each call. |
-
-Constructed via `new NavMeshPath()`; passed to `NavMesh.CalculatePath`, `NavMeshAgent.CalculatePath`, `NavMeshAgent.path`/`NavMeshAgent.SetPath`.
-
-### `NavMeshPathStatus` (enum)
-
-[Scripting API — NavMeshPathStatus](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshPathStatus.html)
-
-- `PathComplete` — the path terminates at the actual destination.
-- `PathPartial` — the path cannot reach the destination; it terminates at the closest reachable point instead. **Always check for this after a `CalculatePath`/`SetDestination` call that returned `true`** — a partial path is not a failure signal by itself, but silently treating it as "arrived" is a common bug.
-- `PathInvalid` — the path is not valid at all.
-
-## `NavMeshTriangulation` (struct)
-
-[Scripting API — NavMeshTriangulation](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshTriangulation.html) — "Contains data describing a triangulation of a navmesh." Returned by `NavMesh.CalculateTriangulation()`.
-
-| Member | Type | Description |
-|---|---|---|
-| `vertices` | `Vector3[]` | Triangulation vertices. |
-| `indices` | `int[]` | Triangle indices into `vertices`. |
-| `areas` | `uint[]` | NavMesh area index per triangle. |
-
-Use for debug visualization or one-off spatial analysis (e.g. custom minimap generation) — not a per-frame call, per the note under `CalculateTriangulation` above.
-
-## Scope note
-
-Everything on this page is **query/read-side** API — it answers "where can I go" and "how do I get there", it never decides *whether* an agent should go there. That decision (what to path toward, when to flee, target selection) is gameplay/AI logic and belongs in `Game.Core.*` per `coding-principles.md`'s Shared Core integrity rule — this skill's API only executes the already-decided move. See the Shared Core boundary guardrail in [SKILL.md](../SKILL.md).
+| Add and remove link | Creates a runtime link from link data and returns its handle, or removes it — see [navmesh-links.md](navmesh-links.md) | [NavMesh](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMesh.html) |
+| Link validity, activity, occupancy | Whether a handle still refers to a real link, whether pathfinding uses it, and whether an agent is on it right now | [NavMesh](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMesh.html) |
+| Area name and index lookup | Converts between the names shown in the Navigation window and the indices the API takes, so an area is not hardcoded as a magic number | [NavMesh](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMesh.html) |

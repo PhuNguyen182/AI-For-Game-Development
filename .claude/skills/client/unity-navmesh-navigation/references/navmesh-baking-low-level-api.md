@@ -1,122 +1,50 @@
-# NavMesh Baking — Low-Level Built-in API
+# Low-Level Baking — NavMeshBuilder, build settings, build sources
 
-The `UnityEngine.AI` types behind procedural/scripted NavMesh building — what `NavMeshSurface` (see [navmesh-components-surface-and-modifiers.md](navmesh-components-surface-and-modifiers.md)) calls internally, and what a fully custom runtime-generation pipeline would call directly instead of using the package component. Reach for this layer only when `NavMeshSurface`'s declarative Inspector workflow genuinely doesn't fit (highly custom procedural source geometry, a bespoke streaming scheme) — per KISS in `coding-principles.md`, prefer `NavMeshSurface` for anything an Inspector component can already express.
+Sources: [NavMeshBuilder](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshBuilder.html), [NavMeshData](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshData.html), [NavMeshBuildSettings](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshBuildSettings.html), [NavMeshBuildSource](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshBuildSource.html), [NavMeshBuildMarkup](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshBuildMarkup.html), [UnityEngine.AIModule](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/UnityEngine.AIModule.html).
+Covers: SKILL.md §4 — **"Bake through `NavMeshSurface` before reaching for the low-level builder"**, escalation branch.
 
-## `NavMeshBuilder` (static class)
+The escape hatch for source geometry that has no scene object to collect
+from. Everything here is more code and more lifetime management than the
+surface component in [navmesh-components-surface-and-modifiers.md](navmesh-components-surface-and-modifiers.md),
+so it earns its place only when that component cannot see the geometry at all.
 
-[Scripting API — NavMeshBuilder](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/UnityEngine.AI.NavMeshBuilder.html) — "Navigation mesh builder interface." All-static.
+## When this layer is actually needed
 
-| Method | Purpose |
-|---|---|
-| `CollectSources(...)` | Convenience method that builds a `List<NavMeshBuildSource>` from current scene geometry (render meshes or physics colliders, per [`NavMeshCollectGeometry`](#navmeshcollectgeometry-enum)) — the same collection step `NavMeshSurface` runs internally. |
-| `BuildNavMeshData(...)` | Builds a `NavMeshData` object from a list of build sources plus `NavMeshBuildSettings`. |
-| `UpdateNavMeshData(...)` | Synchronously, incrementally updates an existing `NavMeshData` from sources — cheaper than a full rebuild when only part of the world changed. |
-| `UpdateNavMeshDataAsync(...)` | Same as above, asynchronously — the primitive behind `NavMeshSurface.UpdateNavMesh()`'s `AsyncOperation` return. |
-| `Cancel(NavMeshData)` | Cancels an in-flight async update targeting the given `NavMeshData`. |
-
-## `NavMeshData` (class)
-
-[Scripting API — NavMeshData](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshData.html) — "Contains and represents NavMesh data." Add to the live system via `NavMesh.AddNavMeshData()`.
-
-| Member | Type | Description |
+| Case | Why the component does not fit | Source |
 |---|---|---|
-| `position` | `Vector3` | World position (get/set). |
-| `rotation` | `Quaternion` | Orientation (get/set). |
-| `sourceBounds` | `Bounds` (RO) | Bounding volume of the input geometry this data was built from. |
-| `NavMeshData()` | constructor | For the default agent type. |
+| Geometry generated at runtime with no GameObject | The collect modes all walk scene objects, so there is nothing for them to find | [NavMeshBuilder](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshBuilder.html) |
+| Sources assembled from several origins under custom rules | The component's filters are layer, volume, hierarchy and modifier; anything else has to build the source list itself | [NavMeshBuildSource](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshBuildSource.html) |
+| Data built off the main thread and applied later | The asynchronous update entry point takes a data object the caller owns | [NavMeshBuilder](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshBuilder.html) |
+| Anything a surface can already express | Not a case — this layer costs code and explicit data lifetime that the component handles, per KISS in `coding-principles.md` | [NavMeshBuilder](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshBuilder.html) |
 
-## `NavMeshDataInstance` (struct)
+## The pieces
 
-[Scripting API — NavMeshDataInstance](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshDataInstance.html) — represents an added `NavMeshData` inside the running navigation system, the handle used to remove it later.
-
-| Member | Description |
-|---|---|
-| `owner` | `Object`, get/set — owning object association. |
-| `valid` | `bool` (RO) — whether this instance is currently active in the system. |
-| `Remove()` | Removes this instance from the system. |
-
-This is the mechanism behind streaming a baked NavMesh chunk in/out at runtime: bake or load a `NavMeshData`, `NavMesh.AddNavMeshData()` it in (returns a `NavMeshDataInstance`), later `.Remove()` it (or `NavMesh.RemoveNavMeshData()`) when the chunk unloads.
-
-## `NavMeshBuildSettings` (struct)
-
-[Scripting API — NavMeshBuildSettings](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshBuildSettings.html) — per-agent-type build configuration; obtain a fresh one via `NavMesh.CreateSettings()` or read an existing agent type's via `NavMesh.GetSettingsByID()`.
-
-| Field | Type | Description |
+| Type | Role | Source |
 |---|---|---|
-| `agentTypeID` | `int` | Which agent type this settings entry bakes for. |
-| `agentRadius` / `agentHeight` | `float` | Agent dimensions, world units — mirrors the Navigation window's Agents tab. |
-| `agentSlope` | `float` | Max walkable slope angle, degrees. |
-| `agentClimb` | `float` | Max vertical step size. |
-| `ledgeDropHeight` | `float` | Max agent drop height (for auto-generated drop-down links). |
-| `maxJumpAcrossDistance` | `float` | Max agent jump-across distance (for auto-generated jump links). |
-| `minRegionArea` | `float` | Approx. minimum area for an individual NavMesh region — smaller disconnected islands below this are discarded. |
-| `overrideVoxelSize` / `voxelSize` | `bool` / `float` | Custom voxel size toggle + value, world units. Default is roughly ⅓ of agent radius; smaller = more accurate, slower bake. |
-| `overrideTileSize` / `tileSize` | `bool` / `float` | Custom tile size toggle + value, voxel units. Default 256 voxels/tile; affects memory and how well the build parallelizes. |
-| `preserveTilesOutsideBounds` | `bool` | Keep NavMesh sections outside the current build bounds instead of discarding them — relevant for incremental/partial rebuilds. |
-| `buildHeightMesh` | `bool` | Build supplementary height-mesh data for accurate placement on stairs/slopes — see [HeightMesh](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/HeightMesh.html) in the package manual. |
-| `maxJobWorkers` | `int` | Max worker threads used for the build. |
-| `debug` | [`NavMeshBuildDebugSettings`](#navmeshbuilddebugsettings-struct) | Debug-data collection options for this build. |
-| `ValidationReport()` | method | Validates the settings struct's own field combination. |
+| `NavMeshBuilder` | Static entry point: collects sources, builds data, and updates existing data synchronously or asynchronously | [NavMeshBuilder](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshBuilder.html) |
+| `NavMeshData` | The built mesh as an object the caller owns; it does nothing until it is added to the navigation system | [NavMeshData](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshData.html) |
+| `NavMeshDataInstance` | The handle returned when data is added, and the only way to remove it again — losing it leaks the mesh into the system | [UnityEngine.AIModule](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/UnityEngine.AIModule.html) |
+| `NavMeshBuildSettings` | Agent dimensions, voxel and tile size, region thresholds — the same knobs the surface exposes, as a struct | [NavMeshBuildSettings](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshBuildSettings.html) |
+| `NavMeshBuildSource` | One piece of source geometry: a mesh, a terrain, or a primitive shape, with its transform and area | [NavMeshBuildSource](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshBuildSource.html) |
+| `NavMeshBuildMarkup` | Per-object overrides applied during collection — the scripted equivalent of a modifier | [NavMeshBuildMarkup](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshBuildMarkup.html) |
 
-## `NavMeshBuildSource` (struct)
+## Constraints that bite
 
-[Scripting API — NavMeshBuildSource](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshBuildSource.html) — one entry in the input list the builder consumes.
-
-| Field | Type | Description |
+| Constraint | Consequence | Source |
 |---|---|---|
-| `shape` | [`NavMeshBuildSourceShape`](#navmeshbuildsourceshape-enum) | Mesh / Terrain / Box / Sphere / Capsule / ModifierBox. |
-| `sourceObject` | `Object` | The `Mesh` or `TerrainData` object, for those source types. |
-| `transform` | `Matrix4x4` | Local-to-world transform. |
-| `size` | `Vector3` | Shape dimensions. |
-| `area` | `int` | Surface area type assigned to this source. |
-| `component` | `Component` | Owning component if any, else `null`. |
-| `generateLinks` | `bool` | Whether automatic link generation runs for this source. |
+| Runtime mesh sources need read and write enabled on the asset | A mesh without it contributes nothing to the build, and the failure is silent rather than an exception | [NavMeshBuildSource](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshBuildSource.html) |
+| World-space bounds | Sources must stay within a large but finite distance of the world origin and within a finite extent per axis — a far-flung procedural world has to be built in shifted chunks | [NavMeshBuildSource](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshBuildSource.html) |
+| Data lifetime is manual | Built data must be explicitly added to be used and explicitly removed to be freed; nothing collects it for you | [NavMeshData](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshData.html) |
+| Settings validation | Build settings can express a combination that produces an empty mesh — validate them rather than assuming a build that returned produced anything | [NavMeshBuildSettings](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshBuildSettings.html) |
 
-**Constraint**: a runtime `Mesh` source must have read/write enabled, and mesh sources must stay within 100,000 units of the world origin and not exceed 100,000 units on any axis-aligned dimension. Build a source list manually, or via `NavMeshBuilder.CollectSources()`.
+**Critical caveat**: a build that completes and a mesh that exists are
+different things. An empty result from bad settings, an unreadable mesh
+source, or geometry outside the supported bounds all look like a successful
+build until an agent has nowhere to stand.
 
-### `NavMeshBuildSourceShape` (enum)
+## Geometry source selection
 
-[Scripting API — NavMeshBuildSourceShape](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshBuildSourceShape.html) — `Mesh`, `Terrain`, `Box`, `Sphere`, `Capsule`, `ModifierBox`.
-
-## `NavMeshBuildMarkup` (struct)
-
-[Scripting API — NavMeshBuildMarkup](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshBuildMarkup.html) — per-object treatment when collecting sources for a build; the scripted equivalent of what `NavMeshModifier` configures declaratively (see [navmesh-components-surface-and-modifiers.md](navmesh-components-surface-and-modifiers.md)).
-
-| Field | Type | Description |
+| Option | What it decides | Source |
 |---|---|---|
-| `root` | `GameObject` | Target object (+children) the markup applies to. |
-| `overrideArea` / `area` | `bool` / `int` | Enable an area-type override for target+children, and the area to use. |
-| `overrideIgnore` / `ignoreFromBuild` | `bool` / `bool` | Enable, and apply, exclusion of target+children from the build. |
-| `overrideGenerateLinks` / `generateLinks` | `bool` / `bool` | Enable, and apply, an override of the default link-generation condition. |
-| `applyToChildren` | `bool` | Whether children inherit these markup settings. |
-
-## `NavMeshBuildDebugSettings` (struct)
-
-[Scripting API — NavMeshBuildDebugSettings](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshBuildDebugSettings.html) — controls which intermediate build-stage data is retained for visualization. Build proceeds through 7 sequential stages (triangle decomposition through the final refined triangulated mesh); debug visualizations are session-only (not saved to disk), and debug data is **not** collected for local NavMesh patches recomputed due to `NavMeshObstacle` carving. Can be large despite internal compression — don't leave a verbose flag set enabled outside an active debugging session.
-
-| Field | Type | Description |
-|---|---|---|
-| `flags` | [`NavMeshBuildDebugFlags`](#navmeshbuilddebugflags-enum) | Which debug data types to collect. |
-
-### `NavMeshBuildDebugFlags` (enum, bitmask)
-
-[Scripting API — NavMeshBuildDebugFlags](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshBuildDebugFlags.html)
-
-- `None` — no debug data.
-- `InputGeometry` — triangles of all base geometry.
-- `Voxels` — voxelized walkable/unwalkable rasterization.
-- `Regions` — segmentation of traversable surfaces into smaller regions.
-- `RawContours` — contours precisely following each region's edges.
-- `SimplifiedContours` — same, simplified (fewer vertices, straighter edges).
-- `PolygonMeshes` — convex polygon meshes within unified adjacent-region contours.
-- `PolygonMeshesDetail` — triangulated meshes with height detail approximating source geometry.
-- `All` — everything above.
-
-## `NavMeshCollectGeometry` (enum)
-
-[Scripting API — NavMeshCollectGeometry](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshCollectGeometry.html) — used with `NavMeshBuilder.CollectSources` and as the type behind `NavMeshSurface.useGeometry` (the package reuses this built-in enum rather than defining its own).
-
-- `RenderMeshes` — collect from rendered geometry (MeshRenderers + Terrain).
-- `PhysicsColliders` — collect from the 3D physics collision representation (Colliders + Terrain).
-
-No Obsolete/Deprecated/Experimental markers on any type in this file as of Unity 6000.5.
+| Render meshes | Builds from what is drawn, which includes visual detail agents were never meant to walk on | [UnityEngine.AIModule](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/UnityEngine.AIModule.html) |
+| Physics colliders | Builds from what the player can actually collide with, which usually matches the intended walkable surface more closely | [UnityEngine.AIModule](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/UnityEngine.AIModule.html) |

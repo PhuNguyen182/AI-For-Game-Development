@@ -1,83 +1,47 @@
-# Package Components — NavMeshSurface, NavMeshModifier, NavMeshModifierVolume
+# Surface and Modifiers — the declarative baking layer
 
-The `com.unity.ai.navigation` package's declarative, Inspector-driven baking layer. Namespace `Unity.AI.Navigation`, assembly `Unity.AI.Navigation.dll`. This is the default, KISS-compliant way to bake a NavMesh — reach for [navmesh-baking-low-level-api.md](navmesh-baking-low-level-api.md)'s raw `NavMeshBuilder` API only when these components genuinely can't express what's needed.
+Sources: [NavMesh Surface](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavMeshSurface.html), [Create a NavMesh](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/CreateNavMesh.html), [NavMeshSurface API](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/api/Unity.AI.Navigation.NavMeshSurface.html), [NavMesh Modifier](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavMeshModifier.html), [NavMesh Modifier Volume](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavMeshModifierVolume.html), [CollectObjects](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/api/Unity.AI.Navigation.CollectObjects.html), [HeightMesh](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/HeightMesh.html).
+Covers: SKILL.md §4 — **"Bake through `NavMeshSurface` before reaching for the low-level builder"**, **"Override areas per object and per region with modifiers rather than by editing geometry"**.
 
-## `NavMeshSurface`
+The components that turn scene geometry into a navigable mesh, and the two
+ways to change what a bake sees without touching the art. Procedural geometry
+with no scene object goes to [navmesh-baking-low-level-api.md](navmesh-baking-low-level-api.md) instead.
 
-[Manual — NavMesh Surface](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavMeshSurface.html) · [Manual — Create a NavMesh](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/CreateNavMesh.html) · [API — Unity.AI.Navigation.NavMeshSurface](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/api/Unity.AI.Navigation.NavMeshSurface.html)
+## NavMeshSurface
 
-Bakes and holds one NavMesh for one agent type. `[ExecuteAlways]`, `[DefaultExecutionOrder(-102)]`. Workflow: Add Component → Navigation → NavMesh Surface → configure → **Bake** button. **Dynamic `NavMeshAgent`/`NavMeshObstacle` objects are excluded from the bake by design** — they're runtime actors on top of the mesh, not mesh geometry themselves.
-
-| Member | Type | Description |
+| Field | What it decides | Source |
 |---|---|---|
-| `agentTypeID` | `int` | Which agent type this surface's mesh serves. |
-| `defaultArea` | `int` | Area assigned to un-modified geometry (Walkable by default; up to 29 custom slots exist). |
-| `collectObjects` | [`CollectObjects`](#collectobjects-enum) | Which objects are considered as bake source geometry. |
-| `size` / `center` | `Vector3` (local) | Used when `collectObjects == Volume` to define the collection bounding box. |
-| `layerMask` | `LayerMask` | Include-layers filter for source geometry. |
-| `useGeometry` | `NavMeshCollectGeometry` | Render Meshes vs. Physics Colliders — this is the *built-in* `UnityEngine.AI` enum, reused rather than redefined by the package; see [navmesh-baking-low-level-api.md](navmesh-baking-low-level-api.md#navmeshcollectgeometry-enum). |
-| `ignoreNavMeshAgent` / `ignoreNavMeshObstacle` | `bool` | Exclude GameObjects carrying those components from the bake (on by default, per the dynamic-actor note above). |
-| `overrideVoxelSize` / `voxelSize` | `bool` / `float` | Default voxel size is ⅓ of agent radius; smaller = more accurate/slower bake. |
-| `overrideTileSize` / `tileSize` | `bool` / `int` | Default 256 voxels/tile; affects memory and parallel build behavior. |
-| `minRegionArea` | `float` | Discards disconnected NavMesh islands below this surface area. |
-| `buildHeightMesh` | `bool` | Generates a supplemental HeightMesh for accurate placement on stairs/slopes — see [HeightMesh.html](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/HeightMesh.html); Sample 8 ("Height Mesh") demonstrates the visible difference. |
-| `navMeshData` | `NavMeshData` (RO) | The baked asset this surface currently holds — shows "None"/"Missing" states in the Inspector before/after a bad bake. |
-| `activeSurfaces` | `List<NavMeshSurface>` (static) | Every active surface currently in the scene. |
+| Agent type | Which agent type this surface's mesh serves — one surface bakes one type, so several types mean several surfaces and several meshes | [NavMesh Surface](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavMeshSurface.html) |
+| Collect objects | Whether sources come from the whole scene, a bounding volume, the component's own children, or only objects carrying a modifier | [CollectObjects](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/api/Unity.AI.Navigation.CollectObjects.html) |
+| Use geometry | Render meshes or physics colliders as the source — colliders usually match what the player can actually walk on, render meshes match what they see | [NavMesh Surface](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavMeshSurface.html) |
+| Layer mask | Filters source geometry by layer before anything else is considered | [NavMesh Surface](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavMeshSurface.html) |
+| Default area | The area assigned to geometry no modifier claims | [NavMesh Surface](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavMeshSurface.html) |
+| Voxel size override | Defaults to a fraction of agent radius; smaller resolves narrow gaps and thin ledges at a directly higher bake cost | [NavMesh Surface](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavMeshSurface.html) |
+| Tile size override | Governs memory and how the build parallelises; it also decides how much has to be rebuilt when one region changes | [NavMesh Surface](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavMeshSurface.html) |
+| Minimum region area | Discards disconnected islands below this size — the setting that removes navigable slivers on top of props and behind decor | [NavMesh Surface](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavMeshSurface.html) |
+| Build Height Mesh | Adds a supplementary surface for accurate placement on stairs and slopes, where the flat mesh otherwise floats or sinks agents | [HeightMesh](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/HeightMesh.html) |
 
-**Methods**
-
-| Method | Signature | Notes |
+| Method | Effect | Source |
 |---|---|---|
-| `BuildNavMesh()` | `void` | Synchronous full (re)build + instantiate — what the Inspector's **Bake** button calls. |
-| `UpdateNavMesh(NavMeshData data)` | `AsyncOperation` | **Asynchronous, incremental** rebuild restricted to regions affected by scene changes — the entry point for runtime rebuilding without a hard frame stall; see [runtime-building-samples-and-upgrade.md](runtime-building-samples-and-upgrade.md). |
-| `AddData()` | `void` | Attaches/activates this surface's `NavMeshData` in the live navigation system. |
-| `RemoveData()` | `void` | Detaches the `NavMeshData` from the system **without deleting the asset** — the mechanism behind streaming a surface's mesh in/out. |
-| `GetBuildSettings()` | `NavMeshBuildSettings` | Snapshot of this surface's current build configuration. |
+| Build | Synchronous full rebuild — what the Inspector's bake button calls, and what a loading screen can afford | [NavMeshSurface API](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/api/Unity.AI.Navigation.NavMeshSurface.html) |
+| Update | Asynchronous incremental rebuild limited to affected regions — the runtime entry point, see [runtime-building-samples-and-upgrade.md](runtime-building-samples-and-upgrade.md) | [NavMeshSurface API](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/api/Unity.AI.Navigation.NavMeshSurface.html) |
+| Add and remove data | Attaches or detaches this surface's baked data from the live system without rebuilding it — the streaming mechanism | [NavMeshSurface API](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/api/Unity.AI.Navigation.NavMeshSurface.html) |
+| Get build settings | Snapshots the current configuration, for handing to the low-level builder | [NavMeshSurface API](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/api/Unity.AI.Navigation.NavMeshSurface.html) |
 
-The Inspector's **Clear** button deletes the stored NavMesh asset entirely — use it before removing the component, rather than leaving an orphaned asset behind.
+**Critical caveat**: agents and obstacles are excluded from the bake by
+design — they are actors on the mesh, not geometry in it. A character that
+should also be permanent level geometry needs real geometry, not a component.
 
-### `CollectObjects` (enum)
+## Modifiers
 
-[API — Unity.AI.Navigation.CollectObjects](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/api/Unity.AI.Navigation.CollectObjects.html) — backs `NavMeshSurface.collectObjects`.
-
-- `All` — every active object in the scene.
-- `Volume` — objects intersecting the surface's bounding volume (`size`/`center`).
-- `Children` — objects that are children of the `NavMeshSurface`'s own GameObject.
-- `MarkedWithModifier` — only objects carrying a `NavMeshModifier` component.
-
-## `NavMeshModifier`
-
-[Manual — NavMesh Modifier](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavMeshModifier.html) · [API — Unity.AI.Navigation.NavMeshModifier](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/api/Unity.AI.Navigation.NavMeshModifier.html)
-
-Per-GameObject override of how that object is treated during baking.
-
-| Member | Type | Description |
+| Component | What it decides | Source |
 |---|---|---|
-| `ignoreFromBuild` | `bool` | Excludes the object (+ children, if `applyToChildren`) from the build entirely — the "Remove Object" mode in the Inspector. |
-| `overrideArea` / `area` | `bool` / `int` (0–31; `1` = Not Walkable) | Enable and set an explicit area type for this object, instead of inheriting the surface's `defaultArea`. |
-| `applyToChildren` | `bool` | Recurses into child hierarchy, unless a deeper `NavMeshModifier` further down overrides it. |
-| `overrideGenerateLinks` / `generateLinks` | `bool` / `bool` | Enable and set an explicit link-generation override for this object. |
-| `AffectsAgentType(int agentTypeID)` | `bool` (method) | Whether this modifier applies to the given agent type — the Inspector's "Affected Agents: All/None" setting resolved for a specific type. |
-| `activeModifiers` | `List<NavMeshModifier>` (static) | Every active modifier currently in the scene. |
+| NavMesh Modifier | Overrides the area of one object and its children, or excludes it from the build entirely, optionally scoped to specific agent types | [NavMesh Modifier](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavMeshModifier.html) |
+| NavMesh Modifier Volume | Overrides the area inside a box that has no geometry of its own — the way to mark a hazard, a water line, or a preferred lane without modelling one | [NavMesh Modifier Volume](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavMeshModifierVolume.html) |
+| Per-agent-type scoping | Both modifiers can apply to one agent type only, which is how the same geometry is walkable for a small agent and excluded for a large one | [NavMesh Modifier](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavMeshModifier.html) |
+| Collect mode interaction | With the collect mode set to marked objects only, a modifier is what makes an object a source at all rather than merely changing its area | [CollectObjects](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/api/Unity.AI.Navigation.CollectObjects.html) |
 
-## `NavMeshModifierVolume`
-
-[Manual — NavMesh Modifier Volume](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavMeshModifierVolume.html) · [API — Unity.AI.Navigation.NavMeshModifierVolume](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/api/Unity.AI.Navigation.NavMeshModifierVolume.html)
-
-A **volumetric** (box) area-type override, applied to whatever NavMesh geometry falls inside the volume — independent of scene hierarchy, unlike `NavMeshModifier` which is attached to a specific object. Only affects NavMeshes built **after** the volume exists — it does not retroactively touch an already-baked mesh; re-bake after adding/moving one.
-
-| Member | Type | Description |
+| Rule | Consequence | Source |
 |---|---|---|
-| `size` / `center` | `Vector3` | Box dimensions and position, relative to the GameObject. |
-| `area` | `int` (0–31; `1` = Not Walkable) | Area type applied inside the volume — when overlapping volumes/modifiers disagree, the **higher-index** area generally wins the tie, except Not Walkable always wins. |
-| `AffectsAgentType(int agentTypeID)` | `bool` (method) | Same semantics as `NavMeshModifier`'s. |
-| `activeModifiers` | `List<NavMeshModifierVolume>` (static) | Every active modifier volume currently in the scene. |
-
-The Inspector's **Edit Volume** toggle enables interactive resize handles in the Scene view.
-
-## When to reach for which
-
-- Bake a NavMesh for a whole scene/region → `NavMeshSurface`.
-- Override a specific object's area or exclude it from the build → `NavMeshModifier` on that object.
-- Mark a region of space (not tied to one object's mesh) as a different area type, e.g. a lava pit that's "Not Walkable" regardless of what visual geometry sits there → `NavMeshModifierVolume`.
-- Restrict which objects a given surface bakes from → `NavMeshSurface.collectObjects` (`Volume`/`Children`/`MarkedWithModifier`), combined with `NavMeshModifier` on the objects that should be marked.
+| Re-bake after any change | Geometry, modifier and agent-type edits do not update the mesh; a stale bake is visually identical to a correct one | [Create a NavMesh](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/CreateNavMesh.html) |
+| Clearing a surface | The Inspector's clear action deletes the stored asset; removing the component without clearing leaves an orphaned asset behind | [NavMesh Surface](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavMeshSurface.html) |

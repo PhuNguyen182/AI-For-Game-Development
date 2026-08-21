@@ -1,40 +1,42 @@
-# NavMeshObstacle — Dynamic Obstruction & Carving
+# NavMeshObstacle — obstruction, carving, and the agent conflict
 
-## `NavMeshObstacle` (component)
+Sources: [NavMeshObstacle](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshObstacle.html), [About obstacles](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/AboutObstacles.html), [Create a NavMesh obstacle](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/CreateNavMeshObstacle.html), [Mixing components](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/MixingComponents.html).
+Covers: SKILL.md §4 — **"Choose obstruction or carving from how the object actually moves"**.
 
-[Scripting API — NavMeshObstacle](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshObstacle.html) — "An obstacle for NavMeshAgents to avoid." Namespace `UnityEngine.AI`. Concept/workflow documentation lives in the package manual: [AboutObstacles.html](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/AboutObstacles.html) and [CreateNavMeshObstacle.html](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/CreateNavMeshObstacle.html). Instance-only API; no custom methods documented, only inherited `Behaviour`/`Component`/`Object` members plus the properties below.
+The component for things that block agents without being part of the bake,
+and the one decision it forces. A blocker that never moves is level geometry
+and belongs in the bake instead — see
+[navmesh-components-surface-and-modifiers.md](navmesh-components-surface-and-modifiers.md).
 
-| Property | Type | Description |
+## The two modes
+
+| Mode | What happens | Fits | Source |
+|---|---|---|---|
+| Obstruction only | Agents steer around it locally; the mesh is untouched, so pathfinding still routes through the space it occupies | Anything continuously moving — a patrolling enemy, a rolling boulder — where carving would rebuild the mesh every frame | [About obstacles](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/AboutObstacles.html) |
+| Carving | Cuts a hole so pathfinding itself reroutes, not just steering | Something that genuinely closes a route — a parked vehicle, a shut door — where agents should path a different way entirely | [About obstacles](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/AboutObstacles.html) |
+
+**Critical caveat**: carving updates a frame behind the obstacle. It cannot
+block anything on the same frame it appears, so a door that must be shut
+before an agent reaches it needs the carve to have already happened.
+
+## Carving strategy
+
+| Strategy | Behaviour | Fits | Source |
+|---|---|---|---|
+| Carve only when stationary | Waits until movement drops below a threshold for a set time, then carves once | Things that mostly sit still and occasionally move; tune the time so the hole appears after it stops rather than while it is slowing | [NavMeshObstacle](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshObstacle.html) |
+| Carve when moved | Re-carves continuously once movement passes a distance threshold | Large slow movers where pathfinding must track the motion, at a higher rebuild cost | [NavMeshObstacle](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshObstacle.html) |
+
+| Field | What it decides | Source |
 |---|---|---|
-| `shape` | [`NavMeshObstacleShape`](#navmeshobstacleshape-enum) | `Capsule` or `Box`. |
-| `radius` | `float` | Capsule shape radius. |
-| `height` | `float` | Cylinder shape height. |
-| `size` | `Vector3` | Box shape dimensions, local space. |
-| `center` | `Vector3` | Obstacle center, local space. |
-| `carving` | `bool` | Whether this obstacle cuts an actual hole in the NavMesh (vs. just being locally avoided by agents — see the two modes below). |
-| `carveOnlyStationary` | `bool` | When `carving` is on: only re-carve once the obstacle is stationary, rather than continuously. |
-| `carvingTimeToStationary` | `float` | Wait time (used with `carveOnlyStationary`) before the obstacle is treated as stationary and re-carved. |
-| `carvingMoveThreshold` | `float` | Distance threshold that triggers a moving-carved-hole update. |
-| `velocity` | `Vector3` | Velocity the obstacle moves at around the NavMesh — feeds agents' local avoidance prediction. |
+| `shape`, `size`, `radius`, `height`, `center` | A box or a capsule and its extent — the box is the right fit for a vehicle footprint, the capsule for a character-shaped blocker | [NavMeshObstacle](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshObstacle.html) |
+| `carvingTimeToStationary` | How long stillness must last before the hole appears; too short and a slowing vehicle carves and un-carves repeatedly | [NavMeshObstacle](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshObstacle.html) |
+| `carvingMoveThreshold` | How far it must move before an existing hole is updated, which is what stops small jitter triggering rebuilds | [NavMeshObstacle](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshObstacle.html) |
+| `velocity` | Feeds agents' local avoidance prediction, so a moving obstruction is anticipated rather than reacted to | [NavMeshObstacle](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshObstacle.html) |
 
-### `NavMeshObstacleShape` (enum)
+## Mixing with an agent
 
-[Scripting API — NavMeshObstacleShape](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshObstacleShape.html)
-
-- `Capsule` — capsule-shaped obstacle.
-- `Box` — box-shaped obstacle.
-
-## Two operating modes — pick deliberately
-
-Per [AboutObstacles.html](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/AboutObstacles.html):
-
-1. **Obstruction only** (`carving = false`) — agents locally avoid the obstacle as a moving obstacle, no NavMesh modification. Best fit for anything **continuously moving** (a patrolling enemy, a rolling boulder) — carving a continuously-moving object would thrash the NavMesh every frame.
-2. **Carving** (`carving = true`) — cuts an actual hole in the NavMesh so pathfinding routes around it, not just local steering. Has an inherent **one-frame delay** between the obstacle's change and the NavMesh update reflecting it — don't rely on carving for a same-frame-reactive block. Two carving strategies:
-   - **Carve Only Stationary** (default) — waits for `carvingTimeToStationary` after movement drops below `carvingMoveThreshold`, then carves. Fits things that mostly sit still and occasionally move (a parked vehicle, a closed door that sometimes opens).
-   - **Carve When Moved** — updates continuously once past `carvingMoveThreshold`, suited to large, slow-moving objects (a tank, a boss) where the pathfinding-level rerouting genuinely needs to track its motion, at higher rebuild cost than the stationary strategy.
-
-Don't default every dynamic obstacle to carving "to be safe" — a fast/small mover is usually cheaper and looks just as correct as pure local obstruction; reserve carving for objects that genuinely need to close/reroute pathfinding-level routes.
-
-## `NavMeshAgent` + `NavMeshObstacle` don't mix on one GameObject
-
-Per the package manual's [MixingComponents.html](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/MixingComponents.html): **do not have both an active `NavMeshAgent` and an active `NavMeshObstacle` on the same GameObject at the same time.** A common pattern that needs both roles at different times (e.g. an NPC that stops to become a physical roadblock) is to toggle one `enabled = false` while the other is `true`, never both `true` simultaneously — never author code that assumes both are live together.
+| Rule | Consequence | Source |
+|---|---|---|
+| Never both enabled on one object | An active agent and an active obstacle on the same object conflict; a character that must also become a blocker toggles between them | [Mixing components](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/MixingComponents.html) |
+| Both excluded from the bake | Obstacles and agents are runtime actors, not bake geometry, so an obstacle never appears in the baked mesh regardless of settings | [NavMesh Surface](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavMeshSurface.html) |
+| Carving is not free | Every carve is a partial rebuild; defaulting every dynamic object to carving turns a crowd into continuous mesh work | [About obstacles](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/AboutObstacles.html) |

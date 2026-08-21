@@ -1,51 +1,50 @@
-# Runtime NavMesh Building, Samples & Upgrading From the Legacy System
+# Runtime Building, Samples and Upgrading
 
-## Building/updating a NavMesh at runtime
+Sources: [NavMeshSurface API](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/api/Unity.AI.Navigation.NavMeshSurface.html), [Samples](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/Samples.html), [Upgrade guide](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/UpgradeGuide.html), [NavMeshBuilder](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshBuilder.html).
+Covers: SKILL.md §4 — **"Update a runtime NavMesh incrementally rather than rebuilding the surface"**.
 
-There is **no dedicated "runtime building" manual page** in the package docs (confirmed absent from the manual's table of contents) — the workflow is assembled from the API itself plus a couple of cross-links:
+How a mesh changes while the game is running, the worked examples that ship
+with the package, and the path off the legacy system. The package has no
+dedicated runtime-building manual page — the workflow is assembled from the
+API and the samples below.
 
-1. **`NavMeshSurface.UpdateNavMesh(NavMeshData data)`** → `AsyncOperation` — the primary runtime entry point: an asynchronous, incremental rebuild restricted to the regions actually affected by scene changes, avoiding a hard frame stall. Prefer this over `BuildNavMesh()` (synchronous, full rebuild) for anything happening during gameplay rather than at edit time or a loading screen.
-2. **`NavMeshSurface.AddData()` / `RemoveData()`** — attach/detach a surface's `NavMeshData` from the live navigation system without rebuilding it — the mechanism for streaming a pre-baked NavMesh chunk in and out as the player moves between world regions.
-3. **Combine with `NavMeshObstacle`** for anything that changes shape/position more often than a full surface rebuild is worth — see [navmesh-obstacles-and-avoidance.md](navmesh-obstacles-and-avoidance.md) for the obstruction-vs-carving trade-off. A one-off scripted `NavMesh.AddLink()`/`RemoveLink()` (see [navmesh-links.md](navmesh-links.md)) is usually cheaper than a rebuild for a shortcut that only sometimes opens.
-4. For a fully custom procedural pipeline where `NavMeshSurface` doesn't fit (e.g. building `NavMeshData` from generated-at-runtime source geometry with no corresponding scene object), drop to the low-level `NavMeshBuilder`/`NavMeshBuildSource` API directly — see [navmesh-baking-low-level-api.md](navmesh-baking-low-level-api.md).
+## Runtime entry points
 
-An external community walkthrough exists at [A guide on using the new AI Navigation package](https://discussions.unity.com/t/a-guide-on-using-the-new-ai-navigation-package-in-unity-2022-lts-and-above) (linked from the package manual's index page) — treat it as a supplementary community resource, not an authoritative Unity doc; verify anything it claims against the actual API pages in this skill's references before relying on it.
-
-## Samples shipped with the package
-
-[Manual — Samples](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/Samples.html) — installable via Package Manager's Samples tab for this package. 9 samples, each a worked example rather than documentation prose:
-
-| # | Sample | Demonstrates |
+| Entry point | What it decides | Source |
 |---|---|---|
-| 1 | Multiple Agent Sizes | Different agent radii producing different navigable paths through the same scene — see [agent-types-areas-and-navigation-window.md](agent-types-areas-and-navigation-window.md). |
-| 2 | Drop Plank | Player-triggered runtime addition of walkable planks, dynamically altering the NavMesh — a worked runtime-rebuild example. |
-| 3 | Free Orientation | A controllable agent walking on a tilted (non-horizontal) plane — exercises `NavMeshAgent.updateUpAxis`. |
-| 4 | Sliding Window Infinite | Agents in a dynamically-generated infinite world; the NavMesh is built only within a bounded region that follows the agent — the package's worked example of runtime/streaming NavMesh building. |
-| 5 | Sliding Window Terrain | Same sliding-window streaming approach, over a `Terrain` instead of generated meshes. |
-| 6 | Modify Mesh | A player-deformable plane mesh with the NavMesh updating in response — another runtime-rebuild worked example. |
-| 7 | Dungeon | Pre-baked maze tiles connected via `NavMeshLink`s, with customizable traversal animations — a worked link + animation-coupling example. |
-| 8 | Height Mesh | Side-by-side comparison of agent placement on stairs with vs. without `buildHeightMesh` enabled. |
-| 9 | Cornering Speed Control | Adjusts agent speed based on upcoming turn sharpness — pairs with [Control agent speed for cornering](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/ControlAgentSpeedForCornering.html). |
+| Asynchronous incremental update | Rebuilds only the regions scene changes affected, without the frame stall a full rebuild causes — the default for anything happening during play | [NavMeshSurface API](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/api/Unity.AI.Navigation.NavMeshSurface.html) |
+| Synchronous full build | Rebuilds everything and blocks; acceptable behind a loading screen, not during gameplay | [NavMeshSurface API](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/api/Unity.AI.Navigation.NavMeshSurface.html) |
+| Attach and detach data | Brings a pre-baked mesh in and out of the live system without building anything — the cheapest option, and what streaming actually uses | [NavMeshSurface API](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/api/Unity.AI.Navigation.NavMeshSurface.html) |
+| An obstacle instead of a rebuild | Something that changes position more often than a rebuild is worth belongs to [navmesh-obstacles-and-avoidance.md](navmesh-obstacles-and-avoidance.md), not to the builder | [NavMeshSurface API](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/api/Unity.AI.Navigation.NavMeshSurface.html) |
+| A scripted link instead of a rebuild | A shortcut that only sometimes opens is a link toggle, which costs nothing next to rebuilding a region — see [navmesh-links.md](navmesh-links.md) | [NavMeshBuilder](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshBuilder.html) |
 
-For any genuinely runtime-generation-heavy feature (streaming open world, procedural dungeon), start from Sample 4/5's sliding-window pattern rather than re-deriving a streaming scheme from the low-level API cold.
+**Critical caveat**: agents holding a path across a region that was rebuilt
+do not automatically notice. Their path is stale rather than invalid, which
+is why a streaming world produces agents walking through geometry that is no
+longer navigable — see [navmesh-agent.md](navmesh-agent.md).
 
-## Upgrading from the legacy built-in system
+## Shipped samples
 
-[Manual — Upgrade Guide](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/UpgradeGuide.html): since Unity 2022.2, `com.unity.ai.navigation` is the standard navigation package; an existing project can stay on the legacy baked-in-scene system or convert. Only relevant when touching an older project — new work should never target the legacy system.
+| Sample | Demonstrates | Source |
+|---|---|---|
+| Multiple agent sizes | Different radii producing genuinely different routes through one scene | [Samples](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/Samples.html) |
+| Drop plank | A player action adding walkable geometry and the mesh updating in response | [Samples](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/Samples.html) |
+| Free orientation | An agent walking a non-horizontal surface, exercising up-axis alignment | [Samples](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/Samples.html) |
+| Sliding window, infinite and terrain | The package's own streaming pattern — a bounded build region that follows the agent, over generated meshes and over terrain | [Samples](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/Samples.html) |
+| Modify mesh | A deformable surface with the mesh rebuilding as it changes | [Samples](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/Samples.html) |
+| Dungeon | Pre-baked tiles joined by links, with traversal animation on the links | [Samples](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/Samples.html) |
+| Height mesh | Agent placement on stairs with and without the supplementary surface, side by side | [Samples](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/Samples.html) |
+| Cornering speed control | Speed adjusted from the sharpness of the next turn | [Samples](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/Samples.html) |
 
-1. **Remove any legacy community `NavMeshComponents`** package (the pre-official [Unity-Technologies/NavMeshComponents](https://github.com/Unity-Technologies/NavMeshComponents) GitHub package) first — its types share names with this package's components and will conflict.
-2. **Run `Window > AI > Navigation Updater`** — choose the **NavMesh Scene Converter** (migrates baked-in scene NavMeshes to `NavMeshSurface` components, and "Navigation Static"-flagged objects to `NavMeshModifier` components) or the **OffMesh Link Converter** ( `OffMeshLink` → `NavMeshLink`, see [navmesh-links.md](navmesh-links.md)). Run **Initialize Converters** to detect eligible assets, then **Convert Assets**.
-3. **Create/assign matching agent types** if different scenes used different legacy bake settings — via `Window > AI > Navigation`'s Agents tab, per [agent-types-areas-and-navigation-window.md](agent-types-areas-and-navigation-window.md) — then assign them to the converted `NavMeshSurface`/`NavMeshAgent` components.
-4. **Fix up script references by hand.** The automated converters only touch scene/prefab data — any script that referenced the old `OffMeshLink` component's members must be updated manually (Unity's Script Updating Consent utility can assist, but doesn't do this automatically).
+For a streaming or procedural feature, start from the sliding-window samples
+rather than deriving a scheme from the low-level API cold — they solve the
+region-boundary and link-stitching problems that are the hard part.
 
-### What changed in package version 2.0.0
+## Upgrading from the legacy system
 
-[Manual — What's New](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/whats-new.html):
-
-- **Added**: `NavMeshLink` endpoints settable via `startTransform`/`endTransform` Transform references (previously point-only); new `NavMeshLink.activated` property.
-- **Changed**: `NavMeshLink.costModifier` is now `float` (see the Obsolete-members list in [navmesh-links.md](navmesh-links.md) for the renamed members this superseded).
-- **Deprecated**: the `OffMeshLink` component removed entirely from the Add Component menu — new work must use `NavMeshLink`.
-
-### Known dead link
-
-`https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/BuildingOffMeshLinksAutomatically.html` **404s** even though the live `NavMeshSurface.html` manual page links to it from its "Generate Links" description (`NavMeshSurface.generateLinks` fallback behavior for auto-generated drop/jump links). This is a known-dead cross-reference in Unity's own docs at package version 2.0 — don't spend time chasing it, and don't cite it as a working URL in any output this skill produces.
+| Step | What it covers | Source |
+|---|---|---|
+| The Navigation Updater | Converts scene and prefab data, including legacy link components, to the current package's equivalents | [Upgrade guide](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/UpgradeGuide.html) |
+| What it does not cover | Script references to the converted types are not updated — code still naming the legacy component compiles against a class stripped of its members | [Upgrade guide](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/UpgradeGuide.html) |
+| Renamed link members | Several link fields were renamed in this package version, with the old names kept as obsolete aliases — see [navmesh-links.md](navmesh-links.md) | [Upgrade guide](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/UpgradeGuide.html) |
+| Bake location | The legacy system stored the mesh with the scene; the current one stores it on a surface component, so an upgraded scene has no mesh until a surface exists and is baked | [Upgrade guide](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/UpgradeGuide.html) |

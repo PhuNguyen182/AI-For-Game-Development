@@ -1,78 +1,58 @@
-# NavMeshAgent
+# NavMeshAgent — steering, avoidance, path state, transform sync
 
-[Scripting API — NavMeshAgent](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshAgent.html) — "Navigation mesh agent." Namespace `UnityEngine.AI`, inherits `Behaviour`. The per-character component that moves a GameObject along the baked NavMesh: local avoidance, path following, and off-mesh-link traversal, all driven by properties below. The page's own "For more details" pointer routes to the [package manual](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/index.html) for conceptual/workflow guidance — Inspector field reference for this component actually lives in the package's manual at [Reference.html → NavMeshAgent.html](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavMeshAgent.html), organized as **Basic** (Agent Type, Base Offset), **Steering** (Speed, Angular Speed, Acceleration, Stopping Distance, Auto Braking), **Obstacle Avoidance** (Radius, Height, Quality, Priority — 0–99, lower value = higher priority), **Path Finding** (Auto Traverse Off Mesh Link, Auto Repath, Area Mask).
+Sources: [NavMeshAgent](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshAgent.html), [ObstacleAvoidanceType](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.ObstacleAvoidanceType.html), [Control agent speed for cornering](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/ControlAgentSpeedForCornering.html), [UnityEngine.AIModule](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/UnityEngine.AIModule.html).
+Covers: SKILL.md §4 — **"Configure the agent's steering to the character rather than leaving the defaults"**, **"Check `pathStatus` and `pathPending` rather than the call's return value"**, **"Feed the Animator from the agent's own velocity"**.
 
-No Obsolete/Deprecated/Experimental members as of Unity 6000.5. No events are exposed on this component (no `onDestinationReached`/`onPathChanged` — poll `remainingDistance`/`pathStatus`/`hasPath` instead).
+The component that moves one character, and the handful of members that
+decide whether the movement reads correctly and whether the code above it can
+trust what it is told. The Animator that consumes the velocity is
+`unity-animation`'s; the destination is `csharp-engineer`'s.
 
-## Properties
+## Steering
 
-| Property | Type | Notes |
+| Member | What it decides | Source |
 |---|---|---|
-| `agentTypeID` | `int` | Which agent type (from the Navigation window / package agent-type list) this instance uses. |
-| `baseOffset` | `float` | Vertical displacement of the owning GameObject relative to the agent's simulated cylinder — needed when the GameObject's pivot isn't at the cylinder's base. |
-| `speed` | `float` | Max movement speed. |
-| `angularSpeed` | `float` | Max turn speed, degrees/sec. |
-| `acceleration` | `float` | Max acceleration following a path, units/sec². |
-| `stoppingDistance` | `float` | Distance from the target at which the agent is considered arrived. |
-| `autoBraking` | `bool` | Whether the agent decelerates automatically as it nears its destination — turn off for continuously-patrolling or formation-following agents that shouldn't slow down at waypoints. |
-| `radius` | `float` | Avoidance radius. |
-| `height` | `float` | Clearance height under obstacles. |
-| `obstacleAvoidanceType` | [`ObstacleAvoidanceType`](#obstacleavoidancetype-enum) | Avoidance quality vs. performance tier. |
-| `avoidancePriority` | `int` | Lower value = higher priority in local avoidance resolution between agents. |
-| `autoTraverseOffMeshLink` | `bool` | Whether the agent automatically moves itself across an off-mesh link/`NavMeshLink` it reaches, vs. waiting for a script to drive that traversal manually (see [navmesh-links.md](navmesh-links.md)). |
-| `autoRepath` | `bool` | Whether the agent automatically recomputes its path if the current one becomes invalid. |
-| `areaMask` | `int` | Bitmask of NavMesh areas this agent is permitted to traverse — the mechanism behind asymmetric traversal rules (a locked-door area only some agent types can use). |
-| `destination` | `Vector3` | Get, or attempt-set, the world-space target. Setting it triggers path (re)calculation — prefer `SetDestination()` for the write side since it returns a success bool. |
-| `path` | `NavMeshPath` | Get/set the agent's current path directly. |
-| `hasPath` | `bool` (RO) | Whether the agent currently has a path assigned. |
-| `pathPending` | `bool` (RO) | A path is being computed asynchronously and isn't ready yet — check this before trusting `path`/`pathStatus` right after `SetDestination`. |
-| `pathStatus` | [`NavMeshPathStatus`](navmesh-queries-and-pathfinding-api.md#navmeshpathstatus-enum) | Complete / Partial / Invalid — see the pathfinding API reference for the partial-path pitfall. |
-| `isPathStale` | `bool` (RO) | The current path may no longer reflect the actual NavMesh (e.g. after a runtime rebuild) — combine with `autoRepath` handling. |
-| `remainingDistance` | `float` (RO) | Distance to destination along the path — the standard "have we arrived" signal. |
-| `steeringTarget` | `Vector3` (RO) | The current immediate steering target along the path (not the final destination). |
-| `desiredVelocity` | `Vector3` (RO) | Desired velocity including avoidance's contribution. |
-| `velocity` | `Vector3` | Current velocity (get), or a manual override (set) — feed this into an Animator parameter for locomotion blending instead of computing speed separately; see [agent-types-areas-and-navigation-window.md](agent-types-areas-and-navigation-window.md)'s animation-coupling note. |
-| `nextPosition` | `Vector3` | Get/set the agent's simulated position directly. |
-| `isOnNavMesh` | `bool` (RO) | Whether the agent is currently bound to a NavMesh at all. |
-| `isOnOffMeshLink` | `bool` (RO) | Whether the agent is currently traversing a link. |
-| `currentOffMeshLinkData` / `nextOffMeshLinkData` | `OffMeshLinkData` | Data for the link currently being traversed / the next one on the path — see [navmesh-links.md](navmesh-links.md). |
-| `navMeshOwner` | `Object` (RO) | The owning object of the NavMesh the agent currently sits on. |
-| `isStopped` | `bool` | Set true to halt movement along the current path without discarding it; false to resume. |
-| `updatePosition` | `bool` | Whether the component syncs the GameObject's `transform.position` from the simulated agent position — disable when animation root motion should drive the transform instead. |
-| `updateRotation` | `bool` | Whether the component auto-updates `transform` orientation to face movement direction — disable for the same root-motion scenario. |
-| `updateUpAxis` | `bool` | Whether the agent aligns to the up-axis of the NavMesh/link surface it's currently on (relevant for non-horizontal NavMeshes, e.g. walking on a tilted plane). |
+| `speed`, `angularSpeed`, `acceleration` | The movement's character — a high speed with low angular speed produces wide arcs, which reads as a vehicle rather than a person | [NavMeshAgent](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshAgent.html) |
+| `stoppingDistance` | How close counts as arrived; too small and the agent oscillates on the spot trying to reach an exact point | [NavMeshAgent](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshAgent.html) |
+| `autoBraking` | Deceleration near the destination — correct for a single target, wrong for a patrol, where it makes the agent slow at every waypoint | [NavMeshAgent](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshAgent.html) |
+| `radius` and `height` | The per-instance avoidance cylinder, distinct from the agent type's bake-time dimensions — the two disagreeing is why an agent clips walls it was baked to clear | [NavMeshAgent](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshAgent.html) |
+| `baseOffset` | Vertical offset of that cylinder from the object's pivot, for a model whose origin is not at its feet | [NavMeshAgent](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshAgent.html) |
+| `obstacleAvoidanceType` | Quality tier for local avoidance between agents, from none to highest; the tiers trade CPU directly for how well a crowd untangles | [ObstacleAvoidanceType](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.ObstacleAvoidanceType.html) |
+| `avoidancePriority` | Who yields when two agents meet — a lower number wins, which reads backwards to most people the first time | [NavMeshAgent](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshAgent.html) |
+| `areaMask` | Which areas this agent may traverse — see [agent-types-areas-and-navigation-window.md](agent-types-areas-and-navigation-window.md) | [NavMeshAgent](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshAgent.html) |
+
+## Path state
+
+| Member | What it decides | Source |
+|---|---|---|
+| `SetDestination` return | Reports that the request was accepted, not that the destination is reachable — treating it as arrival confirmation is the single most common mistake here | [NavMeshAgent](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshAgent.html) |
+| `pathPending` | A path is still being computed, so the path and its status are not yet meaningful — read immediately after a destination request, both are stale | [NavMeshAgent](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshAgent.html) |
+| `pathStatus` | Complete, partial, or invalid; a partial path is honoured by walking as far as possible and stopping short, silently | [NavMeshAgent](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshAgent.html) |
+| `isPathStale` | The path may no longer match the mesh after a rebuild, which is what turns a streaming world into agents walking through walls | [NavMeshAgent](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshAgent.html) |
+| `remainingDistance` | Distance along the path, and zero while the path is pending — an arrival check that does not also test pending fires immediately on the frame of the request | [NavMeshAgent](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshAgent.html) |
+| `isOnNavMesh` | Whether the agent is bound to a mesh at all; an agent spawned off the mesh silently refuses every command | [NavMeshAgent](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshAgent.html) |
+| `isStopped` | Halts movement while keeping the path, which is the correct pause; clearing the path instead discards work that has to be redone | [NavMeshAgent](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshAgent.html) |
+
+**Critical caveat**: the request return value, the pending flag, and the path
+status answer three different questions. Code that checks only the first
+reports success for a destination the agent will never reach.
+
+## Driving the transform and the Animator
+
+| Member | What it decides | Source |
+|---|---|---|
+| `velocity` and `desiredVelocity` | Current motion and intended motion including avoidance — the values an Animator's speed parameter should read, rather than a separately computed transform delta that will disagree | [NavMeshAgent](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshAgent.html) |
+| `updatePosition` and `updateRotation` | Whether the component writes the transform at all; both go off when animation root motion should drive it instead, and the agent's simulated position is then read separately | [NavMeshAgent](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshAgent.html) |
+| `nextPosition` | The simulated position, which is what root-motion-driven movement writes back so the simulation and the visible character do not diverge | [NavMeshAgent](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshAgent.html) |
+| `updateUpAxis` | Alignment to a non-horizontal surface, for a mesh baked on a tilted or curved world | [NavMeshAgent](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshAgent.html) |
+| `steeringTarget` | The next corner on the path rather than the destination — the value a cornering-speed rule reads | [Control agent speed for cornering](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/ControlAgentSpeedForCornering.html) |
 
 ## Methods
 
-| Method | Purpose |
-|---|---|
-| `SetDestination(Vector3)` | Set/update the destination and trigger a new path calculation — the standard entry point for "go here." |
-| `ResetPath()` | Clear the current path. |
-| `CalculatePath(Vector3, NavMeshPath)` | Compute a path to a point into a caller-owned `NavMeshPath` **without** moving the agent or replacing its live path — use for speculative "can I reach X" checks. |
-| `SetPath(NavMeshPath)` | Assign an already-computed path to the agent. |
-| `Warp(Vector3)` | Teleport the agent to a position, bypassing normal movement/path invalidation concerns — the correct way to relocate an agent instantly (respawn, cutscene placement) instead of writing `transform.position` directly. |
-| `Move(Vector3)` | Apply a relative movement delta to the current position. |
-| `Raycast(Vector3, out NavMeshHit)` | Trace a straight path toward a target without moving the agent — agent-scoped equivalent of `NavMesh.Raycast`; same "`true` = blocked" return convention. |
-| `FindClosestEdge(out NavMeshHit)` | Nearest NavMesh edge from the agent's current position. |
-| `SamplePathPosition(int areaMask, float maxDistance, out NavMeshHit)` | Sample a position along the agent's current path. |
-| `GetAreaCost(int)` / `SetAreaCost(int, float)` | Get/set traversal cost for an area, **scoped to this agent only** — contrast with `NavMesh.SetAreaCost`'s global effect (see [navmesh-queries-and-pathfinding-api.md](navmesh-queries-and-pathfinding-api.md)). |
-| `CompleteOffMeshLink()` | Finish movement across the current off-mesh link/`NavMeshLink`. |
-| `ActivateCurrentOffMeshLink(bool)` | Enable/disable the link the agent is currently on. |
-
-## `ObstacleAvoidanceType` (enum)
-
-[Scripting API — ObstacleAvoidanceType](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.ObstacleAvoidanceType.html) — "Level of obstacle avoidance." Quality and performance cost scale together monotonically; pick the cheapest tier that still looks correct for the given agent count rather than defaulting every agent to the top tier.
-
-- `NoObstacleAvoidance` — avoidance disabled.
-- `LowQualityObstacleAvoidance` — simple avoidance, low performance impact.
-- `MedQualityObstacleAvoidance` — medium avoidance, medium impact.
-- `GoodQualityObstacleAvoidance` — good avoidance, high impact.
-- `HighQualityObstacleAvoidance` — highest precision, highest impact.
-
-For crowds of many agents, consider a mixed strategy: high-priority/hero agents at a higher quality tier, background/filler agents at `Low`/`Med` — per `performance-and-algorithms.md`'s general "measured, not assumed" discipline, verify the actual frame cost per tier with the Profiler before deciding a project-wide default.
-
-## MonoBehaviour + agent interaction pitfalls
-
-- **`NavMeshAgent` and `NavMeshObstacle` do not mix well on the same GameObject simultaneously** — per the package manual's `MixingComponents.html` guidance, only one should be active at a time on a given object; see [navmesh-obstacles-and-avoidance.md](navmesh-obstacles-and-avoidance.md).
-- A non-kinematic `Rigidbody` and `NavMeshAgent` driving the same transform can race each other — if a Rigidbody must coexist (e.g. for physical knockback reactions), make sure only one is authoritative over `transform.position` at any given moment, and hand off deliberately rather than letting both write it the same frame.
-- When animation root motion should drive movement instead of the agent's own transform sync, set `updatePosition`/`updateRotation` to `false` and feed the resulting root-motion delta back into `nextPosition`, rather than fighting the agent's own transform writes.
+| Method | Effect | Source |
+|---|---|---|
+| `Warp` | Relocates the agent and its simulation together — the correct way to teleport, since writing the transform leaves the simulation behind | [NavMeshAgent](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshAgent.html) |
+| `CalculatePath` | Computes a path into a caller-owned object without moving the agent or replacing its live path — the speculative reachability check | [NavMeshAgent](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshAgent.html) |
+| `SetPath` and `ResetPath` | Assigns a precomputed path, or clears the current one entirely | [NavMeshAgent](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshAgent.html) |
+| `Raycast` | Agent-scoped straight-line test with the same inverted return as the static one — see [navmesh-queries-and-pathfinding-api.md](navmesh-queries-and-pathfinding-api.md) | [NavMeshAgent](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshAgent.html) |
+| `SetAreaCost` | Adjusts a cost for this agent only, unlike the static setter that reaches every agent in the project | [NavMeshAgent](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshAgent.html) |

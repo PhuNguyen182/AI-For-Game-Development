@@ -1,58 +1,47 @@
-# Agent Types, Areas & the Navigation Window
+# Agent Types, Areas and Costs — the project-wide navigation settings
 
-Concept pages from the package manual covering how agent dimensions and area costs are configured project-wide, plus the task/how-to pages for common authoring workflows.
+Sources: [About agents](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/AboutAgents.html), [Navigation window](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavigationWindow.html), [Areas and costs](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/AreasAndCosts.html), [HeightMesh](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/HeightMesh.html).
+Covers: SKILL.md §4 — **"Add an agent type only when a character's dimensions or slope tolerance genuinely differ"**.
+
+The settings that live once per project rather than per scene or per
+character, and the mechanism behind letting some agents use a route that
+others cannot. Which agent should be excluded from which area is a game rule
+and belongs to `csharp-engineer`.
 
 ## Agent types
 
-[Manual — About Agents](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/AboutAgents.html): an agent is modeled as an upright, orientation-independent cylinder (Radius × Height). Bake-time dimensions come from the **Navigation window's Agents tab**; per-instance runtime dimensions/behavior come from the `NavMeshAgent` component on that specific object (see [navmesh-agent.md](navmesh-agent.md)). **Base Offset** repositions the cylinder relative to the GameObject's pivot when the pivot isn't at the cylinder's base.
+| Setting | What it decides | Source |
+|---|---|---|
+| Radius | Minimum clearance from walls and ledges, and the basis for the default voxel size — the single field that most changes what bakes as navigable | [Navigation window](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavigationWindow.html) |
+| Height | Vertical clearance needed to pass under geometry | [Navigation window](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavigationWindow.html) |
+| Step Height | The tallest step the agent walks up without a link, which is what separates stairs that bake as walkable from stairs that do not | [Navigation window](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavigationWindow.html) |
+| Max Slope | The steepest ramp that bakes navigable | [Navigation window](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavigationWindow.html) |
+| Drop Height and Jump Distance | The limits for automatically generated links, so a gap wider than the jump distance simply produces no connection | [Navigation window](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavigationWindow.html) |
+| Base Offset | Repositions the simulated cylinder relative to the object's pivot, for a model whose pivot is not at its feet | [About agents](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/AboutAgents.html) |
 
-[Manual — Navigation window, Agents tab](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavigationWindow.html#agents-tab) (`Window > AI > Navigation`):
+**Critical caveat**: an agent is simulated as an upright cylinder regardless
+of the model. Every dimension above describes that cylinder, and each agent
+type requires its own baked mesh — so a new type is another bake, another
+asset, and another thing to keep current.
 
-| Setting | Meaning |
-|---|---|
-| Name | Agent type identifier, referenced by `agentTypeID` throughout the API. |
-| Radius | Minimum clearance from walls/ledges. |
-| Height | Vertical clearance. |
-| Step Height | Max climbable step height. |
-| Max Slope | Max traversable ramp angle, degrees. |
-| Drop Height | Max jump-down height for auto-generated links. |
-| Jump Distance | Max jump-across distance for auto-generated links. |
+## Areas and costs
 
-Create a distinct agent type whenever a character genuinely needs different dimensions/slope tolerance than the default (a crouching enemy, a giant boss, a flying unit that ignores most constraints) — don't reuse one agent type across meaningfully different body sizes just to avoid the extra Inspector step; per KISS/YAGNI, also don't create a new agent type for a difference that doesn't actually change traversal (e.g. purely cosmetic scale).
+| Subject | What it decides | Source |
+|---|---|---|
+| Built-in areas | Walkable, not walkable, and jump exist by default, with a bounded set of custom slots beyond them | [Areas and costs](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/AreasAndCosts.html) |
+| Cost | A multiplier on traversed distance, so a higher cost biases paths away from an area without making it impassable — the difference between "avoid the mud" and "cannot enter the mud" | [Areas and costs](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/AreasAndCosts.html) |
+| Overlap resolution | Where geometry or modifiers claim different areas, the higher-indexed area generally wins, except that not walkable always wins regardless of index | [Areas and costs](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/AreasAndCosts.html) |
+| Area mask on an agent | Restricts which areas that agent may traverse at all — the mechanism behind asymmetric routes, such as a door only some agents can use | [Areas and costs](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/AreasAndCosts.html) |
+| Cost scopes | Costs can be set globally, per agent, or per query filter, and the three are not interchangeable — see [navmesh-queries-and-pathfinding-api.md](navmesh-queries-and-pathfinding-api.md) | [Areas and costs](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/AreasAndCosts.html) |
 
-## Areas & costs
+| Consequence | Detail | Source |
+|---|---|---|
+| A link's area must be in the agent's mask | Otherwise the link exists, is active, touches the mesh, and is still unusable by that agent, with nothing reported — see [navmesh-links.md](navmesh-links.md) | [Areas and costs](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/AreasAndCosts.html) |
+| Cost is not a barrier | A high cost still permits the route when no cheaper one exists, so a cost is the wrong tool for a hard restriction | [Areas and costs](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/AreasAndCosts.html) |
 
-[Manual — Navigation Areas and Costs](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/AreasAndCosts.html): 3 built-in area types (**Walkable**, **Not Walkable**, **Jump**) plus up to 29 custom slots, each with a **Name** and a **Cost** (multiplier on traveled distance for A*; default `1.0`). A cost of `2.0` makes the pathfinder treat that polygon's distance as twice as long, biasing paths away from it without making it impassable. When overlapping geometry/modifiers claim different area types, the **highest-index** area type generally wins the tie — except **Not Walkable always wins** regardless of index.
+## Height Mesh
 
-Each `NavMeshAgent` restricts itself to a subset of areas via `areaMask` — this is the mechanism behind **asymmetric traversal rules** (e.g. a "locked door" area only a keycard-holding agent type's mask includes, or a "human-only" corridor a zombie agent type's mask excludes). Scripted cost/area lookups: `NavMesh.GetAreaCost`/`SetAreaCost`/`GetAreaFromName`/`GetAreaNames`, `NavMeshAgent.GetAreaCost`/`SetAreaCost`, `NavMeshQueryFilter.GetAreaCost`/`SetAreaCost` — see [navmesh-queries-and-pathfinding-api.md](navmesh-queries-and-pathfinding-api.md) for how the three scopes (global/agent/filter) differ.
-
-Deciding *which* area an enemy type should be excluded from, or *whether* a keycard should unlock a door's area, is a gameplay rule and belongs in `Game.Core.*` per `coding-principles.md`'s Shared Core integrity rule — this skill only wires the area mask/cost once that rule is decided.
-
-## Task/how-to pages
-
-[Manual — Navigation Overview](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavigationOverview.html) fans out to:
-
-- [Create a NavMesh](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/CreateNavMesh.html) — the `NavMeshSurface` bake workflow (see [navmesh-components-surface-and-modifiers.md](navmesh-components-surface-and-modifiers.md)); re-bake is required after geometry, modifier, or agent-type changes — a stale bake is a common source of "the agent won't path there" bugs.
-- [Create a NavMesh agent](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/CreateNavMeshAgent.html) — adding/configuring `NavMeshAgent`.
-- [Create a NavMesh obstacle](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/CreateNavMeshObstacle.html) — see [navmesh-obstacles-and-avoidance.md](navmesh-obstacles-and-avoidance.md).
-- [Create a NavMesh link](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/CreateNavMeshLink.html) — see [navmesh-links.md](navmesh-links.md).
-- [Using NavMesh Agent with other components](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/MixingComponents.html) — explicitly warns **`NavMeshAgent` and `NavMeshObstacle` "do not mix well"** on the same GameObject simultaneously (see [navmesh-obstacles-and-avoidance.md](navmesh-obstacles-and-avoidance.md)); also documents Rigidbody/Animator interplay — a race condition risk when both a non-kinematic `Rigidbody` and `NavMeshAgent` drive the same transform, and the recommendation to feed `NavMeshAgent.velocity` into an Animator's blend parameters (or disable `updatePosition`/`updateRotation` when animation root motion should drive the agent instead — see the pitfalls list in [navmesh-agent.md](navmesh-agent.md)).
-- [Advanced navigation how-tos](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavHowTos.html), fanning out further to:
-  - [Move an agent to a destination](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavMoveToDestination.html)
-  - [Move an agent to a clicked point](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavMoveToClickPoint.html)
-  - [Patrol between points](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavAgentPatrol.html)
-  - [Couple animation and navigation](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/CouplingAnimationAndNavigation.html) — driving Animator blend parameters from `NavMeshAgent.velocity`/`desiredVelocity`; actual Animator Controller/blend-tree authoring is `unity-animation`'s territory, this page only covers the navigation-side data to feed it.
-  - [Control agent speed for cornering](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/ControlAgentSpeedForCornering.html) — slowing an agent based on upcoming turn sharpness; paired with Sample 9 ("Cornering Speed Control").
-
-## Reference/window pages
-
-[Manual — Reference (Navigation Interface hub)](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/Reference.html) fans out to:
-
-- [Navigation window](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavigationWindow.html) — Agents/Areas tabs (above).
-- [AI Navigation preferences](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavEditorPreferences.html)
-- [AI Navigation overlay](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/NavigationOverlay.html) — the Scene view overlay with the "Show NavMesh" toggle referenced throughout this skill's troubleshooting notes.
-- Component reference pages for `NavMeshAgent`, `NavMeshSurface`, `NavMeshModifier`, `NavMeshModifierVolume`, `NavMeshObstacle`, `NavMeshLink` — cross-referenced from their respective files in this folder.
-
-## HeightMesh
-
-[Manual — Build a HeightMesh for Accurate Character Placement](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/HeightMesh.html) — enabling `buildHeightMesh` on a `NavMeshSurface`/`NavMeshBuildSettings` generates a supplemental mesh so agents are placed at the true visual height (accurate stair/slope placement) rather than the coarser voxel-based NavMesh height alone. Costs extra bake time/memory — enable it only where visible foot/step placement error would actually be noticeable (staircases, uneven terrain), not as a blanket default on every surface.
+| Subject | What it decides | Source |
+|---|---|---|
+| Purpose | A supplementary surface used for placing agents accurately on stairs and slopes, where the simplified navigable mesh otherwise leaves them floating or sunk | [HeightMesh](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/HeightMesh.html) |
+| Cost | Extra bake time and memory, so it is enabled where the placement error is visible rather than everywhere | [HeightMesh](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/HeightMesh.html) |
