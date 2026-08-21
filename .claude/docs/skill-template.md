@@ -195,6 +195,7 @@ Path is `.claude/skills/<group>/<name>/SKILL.md`; `name:` equals the **leaf** fo
 |---|---|
 | Frontmatter | Exactly two keys: `name`, `description`. **MUST** — no other keys. |
 | `description` | 50–100 words, naming the distinctive API/symbol surface and closing with a terse **Not for:** list — `<concern> (owning-skill)` per boundary, one line — covering every adjacent skill. Nothing outside this text is read at retrieval time; a file path named here is inert. **MUST** |
+| `description` — line breaks | The `>` folded scalar joins lines with a space, so no line may end mid-token — not on `/`, `(`, `[`, or a hyphen. A line ending `` `A`/ `` renders as `` `A`/ `B` ``, splitting the alternation. Break between words instead. **MUST** |
 | Structure | Sections 1–8, numbered, in order, none omitted. **MUST** |
 | Bundled resources | Present iff the folder ships files beyond SKILL.md; one table per type, only the tables that have rows. Unnumbered, directly under the H1. **MUST** |
 | §3 | Every boundary in `description` restated as a `Negative trigger:` bullet. **MUST** |
@@ -255,6 +256,7 @@ Each item maps to a distinct silent-failure mode — a skill that never fires, o
 - [ ] `description` is 50–100 words and names real symbols/APIs — prose-only descriptions never match retrieval.
 - [ ] `description` ends with one `Not for:` list naming **every** adjacent skill and the concern it owns — not a paragraph per neighbour.
 - [ ] `description` carries every symbol retrieval must match; none has been displaced into `references/`, which retrieval never sees.
+- [ ] No `description` line ends mid-token, which the `>` fold would split with a space: `sed -n '/^description: >/,/^---$/{/^---$/d;p}' SKILL.md | grep -nE '[/([-]$'` returns nothing.
 - [ ] Sections 1–8 are all present, numbered, and in order — none added, dropped, renumbered, or reordered.
 - [ ] Every `description` boundary reappears as a §3 `Negative trigger:` bullet.
 - [ ] What `description` promises is what §4 actually instructs — no promise the workflow doesn't deliver.

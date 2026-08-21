@@ -4,8 +4,8 @@ description: >
   CsvHelper — reading and writing delimited text: `CsvReader`/`CsvWriter` over
   a `StreamReader`/`StreamWriter`, `GetRecords<T>()`/`WriteRecords()`, manual
   `ReadHeader()`/`Read()`/`GetField<T>()`, `ClassMap<T>`/`AutoMap()` with
-  `.Name()`/`.Index()`/`.Ignore()`/`.Optional()`/`.Constant()`/`.Validate()`/
-  `.TypeConverter<T>()`, the attribute equivalents (`[Name]`, `[Index]`,
+  `.Name()`/`.Index()`/`.Ignore()`/`.Optional()`/`.Constant()`/`.Validate()`/`.TypeConverter<T>()`,
+  the attribute equivalents (`[Name]`, `[Index]`,
   `[Optional]`, `[Constant]`, `[TypeConverter]`, `[CultureInfo]`,
   `[Delimiter]`), `CsvConfiguration` (`HasHeaderRecord`, `IgnoreBlankLines`,
   delimiter), custom `ITypeConverter`/`DefaultTypeConverter`,

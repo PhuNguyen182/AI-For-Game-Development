@@ -2,10 +2,11 @@
 name: spine-animation
 description: >
   spine-unity runtime integration: `SkeletonRenderer`, `SkeletonAnimation`,
-  `SkeletonGraphic`, `SkeletonMecanim`, the `Skeleton`/`AnimationState`/
-  `TrackEntry` API (`SetAnimation`, `AddAnimation`, `SetEmptyAnimation`,
-  `SetSkin`, `SetupPoseSlots`, `FindBone`), `[SpineBone]`/`[SpineSlot]`/
-  `[SpineAnimation]` attributes, followers (`BoneFollower`, `PointFollower`,
+  `SkeletonGraphic`, `SkeletonMecanim`, the
+  `Skeleton`/`AnimationState`/`TrackEntry` API (`SetAnimation`,
+  `AddAnimation`, `SetEmptyAnimation`, `SetSkin`, `SetupPoseSlots`,
+  `FindBone`), `[SpineBone]`/`[SpineSlot]`/`[SpineAnimation]` attributes,
+  followers (`BoneFollower`, `PointFollower`,
   `BoundingBoxFollower`), `SkeletonUtility`, `SkeletonRootMotion`,
   `SkeletonRenderSeparator`, `SkeletonRenderTexture`, `SkeletonGhost`,
   `AtlasUtilities` repacking, the `Spine/*` shader catalog, PMA vs. straight

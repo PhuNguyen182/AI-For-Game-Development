@@ -2,9 +2,10 @@
 name: unity-collections
 description: >
   Unity Collections package (`Unity.Collections`): picking and using unmanaged
-  containers — `NativeArray`/`NativeSlice`, `NativeList`, `NativeHashMap`/
-  `NativeParallelHashMap`, `NativeHashSet`, `NativeQueue`, `NativeStream`,
-  `NativeReference` — plus `FixedString*Bytes`/`FixedList*Bytes`, `Unsafe-`
+  containers — `NativeArray`/`NativeSlice`, `NativeList`,
+  `NativeHashMap`/`NativeParallelHashMap`, `NativeHashSet`, `NativeQueue`,
+  `NativeStream`, `NativeReference` — plus
+  `FixedString*Bytes`/`FixedList*Bytes`, `Unsafe-`
   variants, aliasing, `AsParallelWriter()`, and allocator strategy beyond
   Temp/TempJob/Persistent (rewindable and custom allocators,
   `AllocatorHelper`, `CollectionHelper`). Use when choosing a container for a
