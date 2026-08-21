@@ -1,139 +1,136 @@
 ---
 name: unity-lighting
 description: >
-  Technique for Unity's lighting system — light sources (`UnityEngine.Light`:
-  Directional/Point/Spot/Area, `LightType`, `LightShadows`, `LightRenderMode`,
-  cookies, culling mask), direct vs. indirect lighting and Global
-  Illumination (Baked GI/Progressive Lightmapper, Realtime GI/Enlighten,
-  Mixed Lighting Modes — Baked Indirect/Shadowmask/Subtractive, the Lighting
-  window, Light Probes, lightmap UVs), shadows (shadow cascades, shadow
-  distance/bias/resolution, both the Built-in Render Pipeline's general
-  shadow model and URP's shadow settings/screen space shadows), reflections
-  (Reflection Probes — baked/realtime/custom, box projection, blending, both
-  general and URP-specific), and URP's own lighting-adjacent systems: the
-  URP lighting landing page, Adaptive Probe Volumes (APV —
-  `UnityEngine.Rendering.ProbeVolume`/`ProbeAdjustmentVolume`), Rendering
-  Layers used from the lighting side (`Light.renderingLayerMask`,
-  `RenderingLayerMask`, preventing APV light leaks), and the URP lighting
-  HLSL API a custom lit shader consults (`GetMainLight`,
-  `GetAdditionalLight`/`GetAdditionalLightsCount`, `LightingLambert`/
-  `LightingSpecular`, `DistanceAttenuation`/`AngleAttenuation`,
-  `GlossyEnvironmentReflection`/`EvaluateAdaptiveProbeVolume`/`SampleSH`).
-  Use this for any task touching a `Light` component, GI/lightmap baking
-  configuration, shadow cascade/distance/resolution tuning, Reflection Probe
-  placement, Adaptive Probe Volume setup, or lighting-side Rendering Layer
-  masks — e.g. "set up baked lighting for this static level", "the mobile
-  build's shadows are too expensive, tune cascades and distance", "place
-  reflection probes for this reflective corridor", "bake Adaptive Probe
-  Volumes for dynamic object lighting in this URP scene", "a custom shader
-  needs to read the additional lights list in URP". Do not use this for the
-  initial URP-vs-HDRP pipeline/shader-targeting decision — that's
-  `render-pipeline-urp-hdrp`. Do not use this for HDRP lighting (HDRP Frame
-  Settings, HDRP's own Volume-driven Exposure/Fog/Sky overrides, Diffusion
-  Profiles, HDRP's Adaptive Probe Volume/light probe workflow, ray/path
-  tracing) — that's `unity-hdrp-rendering`; this skill's Manual references
-  are Built-in Render Pipeline and URP only. Do not use this for URP Renderer
-  Features/passes, rendering path choice (Forward/Forward+/Deferred),
-  post-processing Volume Profiles/Overrides (Bloom, Tonemapping — an
-  unrelated "Volume" concept from Adaptive Probe Volumes), the 2D Renderer
-  (`Light2D`), or camera stacking — that's `unity-urp-rendering`, which also
-  documents Rendering Layers from its own renderer-feature/Decal-targeting
-  angle; the two skills' Rendering Layers coverage overlaps by design, this
-  skill covers it specifically from the light-to-object-masking side. Do not
-  use this to write the actual shader code for a custom lighting model
-  (Shader Graph nodes, HLSL/ShaderLab authoring) — that's
-  `shader-authoring`; this skill only covers the URP lighting API/concepts a
-  custom shader consults, not the shader file itself. Do not use this for
-  Cinemachine camera lighting-adjacent behavior, particle/VFX light-driven
-  effects, or any gameplay decision that merely reads a light's state
-  (stealth detection, day/night gameplay triggers) — the decision itself
-  belongs in `Game.Core.*` per `coding-principles.md`'s Shared Core
-  integrity rule; this skill only configures the light/GI/shadow/reflection
-  system itself.
+  Technique for Unity lighting on the Built-in pipeline and URP: `Light`
+  sources and their parameters, baked, realtime and mixed Global Illumination
+  through the Progressive Lightmapper, Lighting Modes, lightmap UVs, Light
+  Probes, shadow cascades, distance, bias and resolution, Reflection Probes
+  and box projection, Adaptive Probe Volume authoring, lighting-side Rendering
+  Layers, and the URP lighting HLSL a custom lit shader consults. Use when a
+  scene must be lit, baked, or its shadows and reflections tuned. Not for:
+  pipeline choice (`render-pipeline-urp-hdrp`); HDRP pipeline settings
+  (`unity-hdrp-rendering`); rendering path, Renderer Features and `Light2D`
+  (`unity-urp-rendering`); post-process Volumes (`unity-post-processing`);
+  shader content (`shader-authoring`).
 ---
 
-# Unity Lighting — Light Sources, Global Illumination, Shadows, Reflections, URP Lighting Systems
+# Unity Lighting — Sources, Global Illumination, Shadows, Reflections, Probe Volumes
 
-Sources: see [references/](references/) for the Manual/Scripting API root links, split by topic — [root-links.md](references/root-links.md), [light-sources-and-parameters.md](references/light-sources-and-parameters.md), [direct-indirect-and-gi.md](references/direct-indirect-and-gi.md), [shadows.md](references/shadows.md), [reflections.md](references/reflections.md), [urp-lighting-landing.md](references/urp-lighting-landing.md), [probe-volumes.md](references/probe-volumes.md), [rendering-layers.md](references/rendering-layers.md), [custom-lighting.md](references/custom-lighting.md), [scripting-api.md](references/scripting-api.md).
+## Bundled resources
+
+### References
+Read-only context, loaded on demand so SKILL.md itself stays short.
+
+| File | Contents | Read when |
+|---|---|---|
+| [root-links.md](references/root-links.md) | Manual and API roots, the version pin, and where each pipeline keeps its lighting settings | Starting any task here, or a setting appears to have no effect |
+| [light-sources.md](references/light-sources.md) | Light types and what each can actually do, intensity units, range, culling, URP light limits | Placing or tuning lights, or lights vanish from some objects |
+| [global-illumination.md](references/global-illumination.md) | Light Modes, the three Lighting Modes, lightmapping, lightmap UVs, Light Probes | Anything is being baked, or a bake produced the wrong result |
+| [shadows.md](references/shadows.md) | Cascades, distance, bias, resolution tiers, and which asset owns each | Tuning shadow cost or quality, or diagnosing acne and peter-panning |
+| [reflections.md](references/reflections.md) | Reflection Probe modes, box projection, blending, refresh cost | A surface must reflect its surroundings rather than only the skybox |
+| [probe-volumes.md](references/probe-volumes.md) | Adaptive Probe Volume placement, density, Baking Sets, streaming, leak fixes | Dynamic objects need baked indirect light, or light leaks through walls |
+| [rendering-layers.md](references/rendering-layers.md) | Rendering Layers from the light-masking side, and what gates them | One light must affect only some renderers, including across an APV boundary |
+| [custom-lighting-api.md](references/custom-lighting-api.md) | URP's lighting HLSL entry points and include files | A custom lit shader needs to read Unity's lights correctly |
 
 ## 1. Objective
-Configure Unity's lighting system correctly and deliberately — light sources and their parameters, the GI mode per light (Realtime/Baked/Mixed), shadow cascades/distance/resolution, Reflection Probe placement, and (in URP) Adaptive Probe Volumes and lighting-side Rendering Layer masks — matched to the project's actual render pipeline (Built-in RP or URP) and target platform tier, without drifting into pipeline choice, Renderer Features, post-processing Volumes, HDRP systems, actual shader authoring, or gameplay decisions that merely consume a light's state.
+Light a scene so the result survives a bake, a build, and the target device — the light type chosen for what it can actually do, the Light Mode set before anything is baked around it, geometry flagged and UV'd so the lightmapper has something to write into, shadow cost spent on distance before resolution, and probe data placed so dynamic objects are lit at all. Lighting fails quietly and expensively: a wrong flag costs a re-bake, not a recompile.
 
 ## 2. Role
-Act as the lighting specialist: given a scene or feature that needs light sources, baked/realtime GI, shadows, or reflections, you choose and configure the right `UnityEngine.Light`/GI/shadow/Reflection Probe/Adaptive Probe Volume setup for the confirmed render pipeline — you don't decide which pipeline the project targets, you don't build Renderer Features or post-processing Volumes, and you don't write the custom shader code that consumes lighting data, all of which are sibling skills' territory.
+Act as the lighting specialist for Built-in RP and URP, and as the probe and lightmap authoring owner on any SRP — the pipeline skills enable Adaptive Probe Volumes at the Asset level, this skill places, densifies, and bakes them. You do not choose the pipeline, configure Renderer Features, or write the shader that consumes the lighting data you set up.
 
 ## 3. When to invoke this skill
-- Setting up or tuning **light sources**: choosing Directional/Point/Spot/Area, configuring range/intensity/color/color temperature/cookie/culling mask/spot angle, or diagnosing per-pixel vs. per-vertex rendering (`LightRenderMode`).
-- Choosing and configuring **Global Illumination**: Baked GI (Progressive Lightmapper) vs. Realtime GI (Enlighten) vs. Mixed Lighting (Baked Indirect/Shadowmask/Subtractive), setting a light's `Mode` (`Realtime`/`Mixed`/`Baked`), configuring the Lighting window/Lighting Settings Asset, Light Probes placement, or lightmap UV generation.
-- Configuring or troubleshooting **shadows**: shadow cascade count/splits, shadow distance, shadow resolution/bias, hard vs. soft shadows, shadow acne/peter-panning artifacts, or URP-specific shadow resolution tiers and screen space shadows.
-- Placing or tuning **Reflection Probes**: baked vs. realtime vs. custom mode, box projection, blending, resolution/refresh mode/time-slicing, or URP's reflection probe resolution/blending behavior.
-- Configuring **URP's own lighting-adjacent systems**: the URP lighting landing page's light-limit/Forward+ light handling, **Adaptive Probe Volumes** (placement, density, baking sets, streaming, runtime lighting changes), or **Rendering Layers used to mask which Lights affect which Renderers** (including preventing APV light leaks).
-- Consulting URP's **lighting HLSL API** (`GetMainLight`, `GetAdditionalLight`/`GetAdditionalLightsCount`, indirect lighting sampling, light falloff functions) to inform — but not author — a custom lit shader.
-- Negative trigger: deciding *whether* the project targets URP or HDRP — `render-pipeline-urp-hdrp`.
-- Negative trigger: any HDRP-specific lighting system (Frame Settings, HDRP's Volume-driven Exposure/Fog/Sky, Diffusion Profiles, HDRP's own APV/light probe workflow, ray/path tracing) — `unity-hdrp-rendering`.
-- Negative trigger: URP Renderer Features/passes, rendering path choice (Forward/Forward+/Deferred/Deferred+), post-processing Volume Profiles/Overrides, the 2D Renderer (`Light2D`), or camera stacking — `unity-urp-rendering`.
-- Negative trigger: writing the actual Shader Graph nodes or HLSL/ShaderLab code for a custom lighting model — `shader-authoring`; this skill only supplies the lighting API/concepts that shader consults.
-- Negative trigger: any gameplay decision that merely reads a light's/shadow's state (stealth detection thresholds, day/night gameplay triggers, a light-based puzzle's win condition) — that decision lives in `Game.Core.*` per `coding-principles.md`'s Shared Core integrity rule; this skill only configures the lighting system itself.
+- Placing or tuning lights: type, intensity and its unit, range, colour or colour temperature, cookies, spot angles, culling.
+- Choosing a lighting strategy — fully baked, fully realtime, or mixed — and configuring the lightmapper, the Lighting Settings Asset, and the bake itself.
+- A bake produced nothing, or produced seams, bleeding, or blotches on specific meshes.
+- Tuning shadows against a platform budget: cascade count and splits, shadow distance, bias, per-light resolution tiers, soft shadow quality.
+- Placing Reflection Probes, deciding baked against realtime, and fitting box projection to a room or corridor.
+- Authoring Adaptive Probe Volumes — placement, density, Baking Sets, streaming — and fixing light leaks between spaces that should not influence each other.
+- Scoping which lights affect which renderers through Rendering Layers, including across an APV boundary.
+- Supplying the URP lighting HLSL surface a custom lit shader must call, without authoring the shader.
+- Negative trigger: whether the project targets URP or HDRP — that is `render-pipeline-urp-hdrp`.
+- Negative trigger: HDRP pipeline settings — Frame Settings, its Volume framework, Diffusion Profiles, ray and path tracing, and the Asset-level toggle that makes APV available — that is `unity-hdrp-rendering`; the probe authoring it hands off arrives here.
+- Negative trigger: rendering path, Renderer Features, camera stacking, or `Light2D` and the 2D Renderer — that is `unity-urp-rendering`, whose rendering-path choice this skill's light limits depend on.
+- Negative trigger: post-processing Volumes and their overrides — that is `unity-post-processing`; a `VolumeProfile` and a `ProbeVolume` share a word and nothing else.
+- Negative trigger: the Shader Graph or HLSL of a custom lighting model — that is `shader-authoring`; this skill supplies the API surface it calls.
+- Negative trigger: a gameplay rule that reads light state — stealth detection, a day-night trigger, a light-based puzzle — that decision lives in `Game.Core.*` per `coding-principles.md`.
 
 ## 4. How to use this skill
-1. **Confirm the active render pipeline first** (Built-in RP, URP, or HDRP — check Graphics settings/the assigned pipeline asset) before citing any Manual page. Built-in RP and URP diverge in page location and in some behavior (e.g. shadow resolution tiers, Adaptive Probe Volumes are URP/HDRP-only). If the project is on HDRP, route to `unity-hdrp-rendering` instead.
-2. **Choose light types and parameters deliberately**, per [light-sources-and-parameters.md](references/light-sources-and-parameters.md): Directional for a scene's dominant sun/moon, Point/Spot/Area for local sources, and set `LightType`/intensity/color/cookie/culling mask/`LightRenderMode` to match the actual visual and performance requirement — don't leave lights at Editor defaults.
-3. **Decide the GI mode per light deliberately**, per [direct-indirect-and-gi.md](references/direct-indirect-and-gi.md): `Baked` for fully static geometry (cheapest at runtime, via the Progressive Lightmapper), `Realtime` for lights that must react to runtime changes, `Mixed` (Shadowmask/Baked Indirect/Subtractive) as the deliberate middle ground for lights on static geometry that also need dynamic shadow casters. Use Light Probes so dynamic (non-lightmapped) objects still receive baked indirect lighting.
-4. **Configure shadows to the actual quality tier**, per [shadows.md](references/shadows.md): pick cascade count/splits and shadow distance based on scene scale and the target platform (mobile vs. PC), tune bias to avoid acne/peter-panning rather than over-correcting blindly, and — on URP — set per-tier shadow resolution and consider screen space shadows only where the extra pass is justified.
-5. **Place and configure Reflection Probes deliberately**, per [reflections.md](references/reflections.md): Baked for static reflective surfaces (cheapest), Realtime only where the reflected content genuinely changes at runtime (with a deliberate `refreshMode`/time-slicing choice, since realtime probes are expensive), box projection when a probe's reflection must respect room/corridor bounds rather than assuming an infinitely distant environment.
-6. **In URP, treat the URP lighting landing page as the map** ([urp-lighting-landing.md](references/urp-lighting-landing.md)) to the Forward+ per-object light limit, `UniversalAdditionalLightData` (URP's per-light extension component), and where Adaptive Probe Volumes/Rendering Layers fit in.
-7. **Configure Adaptive Probe Volumes for dynamic-object indirect lighting in URP** ([probe-volumes.md](references/probe-volumes.md)) instead of the legacy baked Light Probe Group workflow when the project's URP version supports APV — size/density Probe Volumes to the scene's actual geometry, use Baking Sets for multi-scene bakes, and use rendering layer masks to prevent light leaks between rooms/volumes that shouldn't influence each other.
-8. **Use Rendering Layers from the lighting side deliberately** ([rendering-layers.md](references/rendering-layers.md)): set `Light.renderingLayerMask`/`Renderer.renderingLayerMask` to scope which Lights affect which Renderers when a scene genuinely needs per-light exclusion (e.g. an indoor light that shouldn't leak onto an adjacent APV cell) — don't reach for this as a routine default when a simpler culling mask or scene layout change would do.
-9. **When a custom lit shader needs lighting data, supply the API, hand off the authoring**: point to the confirmed HLSL entry points in [custom-lighting.md](references/custom-lighting.md) (`GetMainLight`, `GetAdditionalLight`/`GetAdditionalLightsCount`, `LightingLambert`/`LightingSpecular`, `DistanceAttenuation`/`AngleAttenuation`, `GlossyEnvironmentReflection`/`EvaluateAdaptiveProbeVolume`/`SampleSH`), then route the actual Shader Graph/HLSL authoring to `shader-authoring`.
-10. **Validate any performance claim with a measurement** (Unity Profiler frame time, memory, or bake time), not asserted from the optimization guide alone, per `performance-and-algorithms.md`'s Verification section — this applies to shadow cascade/distance changes, reflection probe count/resolution, and Adaptive Probe Volume density.
-11. **Respect the Shared Core boundary.** A light/shadow/reflection setup is purely a Client-layer visual/rendering concern; any gameplay rule that happens to consume a light's state (stealth detection, a light-triggered puzzle) is decided in `Game.Core.*` per `coding-principles.md`'s Shared Core integrity rule — this skill only configures the lighting system, it never decides the gameplay outcome.
+1. **Confirm the pipeline and then confirm which asset actually owns the setting being changed** — Built-in RP reads Quality Settings, URP reads its own Asset, and editing the wrong one changes nothing while looking correct. [root-links.md](references/root-links.md) pins the doc version and maps each setting to its owner.
+2. **Choose the light type by what it can do, not by how it looks in the viewport**, per [light-sources.md](references/light-sources.md) — an Area light contributes only through a bake and is inert at runtime, a Directional light ignores its position entirely and uses only rotation, and a Point or Spot light's Range is a hard cutoff rather than a falloff, so a light that stops short is a range problem that raising intensity only blows out.
+3. **Set each light's Mode before anything is authored around it** — Realtime, Baked, or Mixed is a bake-time property, so changing it later invalidates the bake rather than taking effect, and the scene's single Lighting Mode applies to every Mixed light at once, per [global-illumination.md](references/global-illumination.md). One light cannot be Shadowmask while another is Baked Indirect.
+4. **Flag the geometry and give it lightmap UVs before blaming the lightmapper** — a mesh without Contribute GI is never lightmapped and a mesh with overlapping or missing lightmap UVs bakes bleeding and seams, and both report success, per [global-illumination.md](references/global-illumination.md).
+5. **Spend shadow budget on distance before resolution**, per [shadows.md](references/shadows.md) — shadow distance is the dominant cost lever, and cascades subdivide that distance rather than extending it, so adding a cascade redistributes resolution instead of making shadows reach further.
+6. **Fix shadow acne with normal bias before depth bias** — depth bias pushes the whole comparison along the light ray and detaches contact shadows from their casters, which reads as objects floating, while normal bias offsets along the surface normal and costs far less of that artifact.
+7. **Choose Reflection Probe mode by whether the reflected content actually changes**, per [reflections.md](references/reflections.md) — Baked is nearly free at runtime, a Realtime probe re-renders six faces and needs a deliberate refresh mode and time slicing, and box projection needs its box fitted to the real room or reflections slide as the camera moves.
+8. **Author Adaptive Probe Volumes for dynamic objects instead of a legacy Light Probe Group**, per [probe-volumes.md](references/probe-volumes.md) — confirm APV is enabled on the pipeline Asset first, since without that the volumes bake and render nothing — on URP that toggle is part of this setup, on HDRP `unity-hdrp-rendering` owns it and hands the authoring here — then size and densify to the traversable space rather than the whole level.
+9. **Treat an APV light leak as a placement problem before reaching for bias** — a probe sitting inside a wall carries outdoor light into the room next to it, and a Probe Adjustment Volume or a rendering layer mask removes the cause, where raising leak-reduction bias only trades it for a different artifact.
+10. **Scope lights with Rendering Layers rather than culling masks under an SRP**, per [rendering-layers.md](references/rendering-layers.md) — the mask must be enabled on the pipeline Asset before it does anything, and it is what filters the shadow pass, so an object excluded from a light by culling mask alone can still appear in that light's shadows.
+11. **Supply the lighting API and hand the shader off**, per [custom-lighting-api.md](references/custom-lighting-api.md) — `GetMainLight`, the `GetAdditionalLightsCount` loop, the attenuation and indirect helpers, and the include files they live in; the Shader Graph or HLSL that uses them is `shader-authoring`'s work.
+12. **Attach a measurement to any lighting performance claim**, per `performance-and-algorithms.md`'s Verification section — bake time, frame time, or memory, captured on the tier being claimed for, not inferred from the optimization guide.
+13. **Keep the gameplay decision in `Game.Core.*`** — a stealth threshold that reads light level is a game rule per `coding-principles.md`'s Shared Core integrity rule; this skill configures the light it reads from.
 
 ## 5. Specific goals / tasks this skill performs
-- Configuring light sources and parameters (`LightType`, intensity/color/color temperature, cookies, culling mask, `LightRenderMode`).
-- Choosing and configuring GI mode per light (Baked/Realtime/Mixed), Progressive Lightmapper settings, Light Probes, lightmap UVs.
-- Tuning shadow cascades, distance, resolution, and bias — for both the Built-in Render Pipeline and URP (including URP screen space shadows).
-- Placing and configuring Reflection Probes (baked/realtime/custom, box projection, blending, resolution/refresh mode).
-- Configuring URP's Adaptive Probe Volumes (placement, density, Baking Sets, streaming, runtime lighting changes).
-- Using Rendering Layers from the lighting-masking side (`Light.renderingLayerMask`, preventing APV light leaks).
-- Supplying the URP lighting HLSL API surface a custom shader needs to consume (without authoring the shader itself).
-- Out of scope: URP/HDRP pipeline choice (`render-pipeline-urp-hdrp`); HDRP-specific lighting systems (`unity-hdrp-rendering`); URP Renderer Features/rendering path/post-processing Volumes/2D Renderer/camera stacking (`unity-urp-rendering`); actual shader code authoring (`shader-authoring`); gameplay decisions consuming light state (`csharp-engineer`'s Shared Core).
+- Light placement and parameter setup across Directional, Point, Spot, and Area, including intensity units and URP light limits.
+- Lighting strategy: Baked, Realtime, or Mixed, the scene's Lighting Mode, lightmapper configuration, and the bake itself.
+- Diagnosing failed or wrong bakes — unflagged geometry, lightmap UV problems, seams, bleeding.
+- Shadow tuning against a platform budget: cascades, distance, bias, resolution tiers, soft shadow quality.
+- Reflection Probe placement, mode choice, box projection fitting, and blending.
+- Adaptive Probe Volume authoring on any SRP: placement, density, Baking Sets, streaming, leak removal.
+- Lighting-side Rendering Layer masks, including across APV boundaries.
+- Supplying URP's lighting HLSL surface to a custom shader author.
+- Out of scope: pipeline choice (`render-pipeline-urp-hdrp`); HDRP pipeline settings and the APV enablement toggle (`unity-hdrp-rendering`); rendering path, Renderer Features, `Light2D` (`unity-urp-rendering`); post-process Volumes (`unity-post-processing`); shader content (`shader-authoring`); gameplay rules reading light state (`csharp-engineer`).
 
 ## 6. Output format
 ```
-## Lighting Work — <scene/feature name>
-- Render pipeline confirmed: Built-in RP / URP (version) — HDRP routed to unity-hdrp-rendering if applicable
-- Light sources: type(s) used, key parameter choices, rationale
-- GI mode per light: Baked / Realtime / Mixed <Shadowmask/Baked Indirect/Subtractive> — rationale
-- Light Probes / Adaptive Probe Volumes: placement/density summary, or "not used" + why
-- Shadows: cascade count/splits, distance, resolution tier, bias — rationale + platform tier targeted
-- Reflection Probes: mode(s), placement, box projection, blend distance — rationale
-- Rendering Layers (if used): masks defined, lighting-side purpose
-- Custom lighting API consulted (if applicable): functions referenced, hand-off to shader-authoring confirmed
-- Verified on: <device/quality tier actually tested, bake time if relevant>
-- Shared Core boundary: confirmed no gameplay decision made in lighting-layer config/code
+## Lighting — <scene or feature name>
+- Pipeline confirmed: <Built-in RP / URP version / HDRP — and which asset owns the settings changed>
+- Lights: <type, intensity and unit, range, colour or temperature — and why each>
+- Light Modes: <per light> — scene Lighting Mode: <Baked Indirect / Shadowmask / Subtractive>
+- Bake: <lightmapper, resolution, Contribute GI coverage, lightmap UV source, bake time>
+- Dynamic-object lighting: <Adaptive Probe Volumes with density and Baking Set / Light Probes / none>
+- Shadows: <distance, cascade count and splits, bias values, resolution tier — and the budget behind them>
+- Reflections: <probe modes, placement, box projection fit, blend distance — or "skybox only">
+- Rendering Layers: <what they scope, and confirmation the Asset enables them — or "unused">
+- Custom shader API supplied: <entry points handed to shader-authoring — or "none">
+- Verified on: <device or tier captured, bake time and frame time behind any perf claim>
+- Layer: <Game.Client.* scene lighting, lighting assets, probe data>
 - Known limitations: <...>
+```
+
+**Extended report — emit ONLY when the requester asks for it.** It replaces the one-line `Known limitations` above with all three fields:
+```
+- Known limitations: <what the delivered lighting does not cover>
+- Latent concerns: <failure modes not yet triggered: assumptions that hold only under current conditions, thresholds not yet reached, trade-offs knowingly deferred>
+- Future remediation: <the concrete fix for each concern above, each with the condition that should trigger it>
 ```
 
 ## 7. Examples
 **Example 1**
-- Input: "Set up lighting for an outdoor daytime URP level: static architecture, a moving player character, and a few reflective glass corridors."
-- Output: confirmed URP active; one Directional Light as the sun set to `Mixed` (Shadowmask) so static geometry gets baked indirect lighting while the moving player still casts a real-time shadow; baked GI via the Progressive GPU Lightmapper for static architecture; Adaptive Probe Volumes placed and densified around the player's traversable area so the moving character receives correct indirect lighting without a legacy Light Probe Group; four shadow cascades with distance tuned to the level's actual draw distance; Baked Reflection Probes with box projection placed in each glass corridor sized to the corridor bounds; verified bake time and runtime frame cost on the target mid-tier device via Profiler.
-- Hand-off: none needed for this task — entirely within scope.
+- Input: "Light this URP outdoor level — static architecture, a player character that moves through it, glass corridors that should reflect."
+- Output: one Directional sun set to Mixed with the scene's Lighting Mode on Shadowmask, so static geometry keeps baked shadows past the shadow distance while the player still casts a realtime one inside it. Verified every static mesh carried Contribute GI and had generated lightmap UVs before the first bake rather than after a wasted one. Adaptive Probe Volumes sized to the traversable space, not the whole level, so the player picks up indirect light without paying for probes in unreachable geometry. Shadow distance set from the level's real sightlines first, then four cascades within it. Baked Reflection Probes per corridor with box projection fitted to the corridor bounds, since an unfitted box slides the reflection as the camera moves. Bake time and mid-tier frame time both captured.
 
 **Example 2**
-- Input: "A custom toon-shaded material needs to correctly react to the main light and up to 4 additional lights under URP's Forward+ path."
-- Output: confirmed the project is on URP with Forward+ active (cross-checked with `unity-urp-rendering`'s rendering-path configuration, which owns that choice); supplied the shader author with the confirmed HLSL entry points from [custom-lighting.md](references/custom-lighting.md) — `GetMainLight()` for the sun, `GetAdditionalLightsCount()`/`GetAdditionalLight()` inside a `LIGHT_LOOP_BEGIN`/`LIGHT_LOOP_END` loop for the additional lights, and `DistanceAttenuation()`/`AngleAttenuation()` for falloff; confirmed the material's affecting lights are scoped correctly via `Light.renderingLayerMask`.
-- Hand-off: the actual Shader Graph/HLSL implementation of the toon ramp itself is `shader-authoring`'s task — this skill's contribution stopped at supplying the correct lighting API surface and confirming the light-count/rendering-layer setup it depends on.
+- Input: "Some objects stop being lit when the player walks into the crowded market area."
+- Output: not a lighting bug — Forward's per-object additional-light limit, which drops the lowest-priority lights per renderer while the scene as a whole still looks lit. Confirmed the light count in that area against the limit, and routed the rendering-path decision to `unity-urp-rendering`, since Forward+ removes exactly that limit and the choice belongs to it. On the lighting side, reduced overlapping decorative point lights whose ranges covered the same stalls, which lowered the count under the existing path regardless of how that decision lands.
+
+**Example 3**
+- Input: "Indoor rooms are picking up the outdoor sky colour after the APV bake."
+- Output: a leak — probes falling inside the wall volume carry exterior lighting into the interior cell. Fixed at the cause with a Probe Adjustment Volume over the affected rooms plus rendering layer masks separating interior from exterior lights, per §4's leak step, after confirming Rendering Layers were actually enabled on the URP Asset. Left the leak-reduction bias at default deliberately: raising it would have hidden this leak while softening contact lighting everywhere else in the level.
 
 ## 8. Edge cases & guardrails
-- Never cite a Built-in Render Pipeline Manual page (e.g. `Manual/Shadows.html`, `Manual/ReflectionProbes.html`) as authoritative for a URP project, or vice versa — confirm the active pipeline first; the two diverge in page location and in real behavior (shadow resolution tiers, Adaptive Probe Volumes availability).
-- Adaptive Probe Volumes and post-processing Volumes (Bloom/Tonemapping, owned by `unity-urp-rendering`) share the word "Volume" but are unrelated systems — never conflate `UnityEngine.Rendering.ProbeVolume` with a `VolumeProfile`/`VolumeComponent`.
-- `LightShape` is obsolete — use `LightType.Spot`/`Pyramid`/`Box` instead; don't recommend it for new work.
-- `LightProbeProxyVolume` is deprecated alongside the Built-in Render Pipeline's deprecation — don't recommend it for new URP/HDRP work; use Adaptive Probe Volumes instead.
-- The Manual slug `GlobalIllumination.html` now redirects to `lighting-window.html` — if a stale bookmark/reference uses the old slug, treat the redirect target as current.
-- Never leave shadow cascades/distance, Reflection Probe count/resolution, or Adaptive Probe Volume density at Editor defaults for a shipping platform tier — map them deliberately to the project's actual target devices, per `performance-and-algorithms.md`.
-- Never assert a lighting-related performance improvement (a cascade change, a probe density reduction, a bake-time optimization) without a Profiler/bake-time measurement backing it, per `performance-and-algorithms.md`'s Verification section.
-- Realtime Reflection Probes and Realtime GI (Enlighten) are both meaningfully more expensive than their baked counterparts — never default to `Realtime` mode without a concrete runtime-change requirement justifying the cost.
-- Rendering Layers has overlapping coverage with `unity-urp-rendering` (which documents it from the Renderer Feature/Decal-targeting angle) — this skill's angle is strictly the lighting/light-masking side; don't use this skill's guidance to author a Decal-targeting or general renderer-feature Rendering Layer setup unrelated to lighting.
-- Never write the actual shader code for a custom lighting model here — this skill supplies the URP lighting HLSL API surface (`GetMainLight`, `GetAdditionalLight`, falloff/indirect functions) for `shader-authoring` to consume; authoring the shader itself is out of scope.
-- Never let lighting-layer code/config make a gameplay decision (a stealth-detection threshold based on light level, a day/night gameplay trigger) — that decision belongs in `Game.Core.*` per `coding-principles.md`'s Shared Core integrity rule; this skill only configures the light/shadow/reflection/probe system that the decision might read from.
+- Never assume a Built-in RP page applies to URP — shadow distance, cascades, and resolution live on the URP Asset, and the Quality Settings fields for them do not drive a URP project.
+- Never expect an Area light to do anything at runtime — it contributes through the bake only, and a realtime one is silently inert.
+- Never move a Directional light to change its lighting — only its rotation is read.
+- Never raise intensity to make a Point or Spot light reach further — Range is a hard cutoff, and the result is a blown-out near field with the same reach.
+- Never treat Light Mode as a runtime switch — it is baked into the result, and changing it invalidates the bake.
+- Never set two Mixed lights to different Lighting Modes — the mode is a scene-wide setting, and the Inspector will not warn.
+- Never bake before confirming Contribute GI and lightmap UVs — the most common bad bake is geometry the lightmapper was never given.
+- Never add cascades to make shadows reach further — cascades subdivide the shadow distance, they do not extend it.
+- Never fix acne by raising depth bias alone — it detaches shadows from their casters, which is a worse artifact than the one being fixed.
+- Never leave a Realtime Reflection Probe on every-frame refresh without time slicing — it re-renders six faces, and the cost is not visible in the Inspector.
+- Never author Adaptive Probe Volumes without confirming the pipeline Asset enables them — they bake and render nothing, with no error.
+- Never treat an APV light leak as a bias problem first — the probe placement is the cause, and bias trades the artifact rather than removing it.
+- Never rely on a light's culling mask to keep an object out of its shadows under an SRP — the shadow pass filters on rendering layer mask.
+- `LightShape` is obsolete — use `LightType.Spot`, `Pyramid`, or `Box`. `LightProbeProxyVolume` belongs to the Built-in pipeline; new SRP work uses Adaptive Probe Volumes.
+- Never assert a lighting performance win without a capture — bake time, frame time, or memory, on the tier claimed for.
+- Never let lighting configuration decide a gameplay outcome — `Game.Core.*` owns the rule that reads it.

@@ -8,12 +8,13 @@ description: >
   layout for SRP Batcher compatibility, `shader_feature` versus
   `multi_compile` variant control, and `half` precision on mobile. Use when a
   shader must be written, fixed, or made to compile.
-  Not for: which pipeline to target (`render-pipeline-urp-hdrp`); where a pass
-  is injected (`unity-urp-rendering`, `unity-hdrp-rendering`); Volume plumbing
-  around a full-screen effect (`unity-post-processing`); compute kernels
-  (`compute-shader-vfx`); particle graphs (`vfx-particle-authoring`); DOTS
-  Instancing requirements (`unity-entities-graphics`); tuning an unchanged
-  shader (`tech-lead-performance`).
+  Not for: pipeline choice (`render-pipeline-urp-hdrp`); pass injection
+  (`unity-urp-rendering`, `unity-hdrp-rendering`); Volume plumbing around a
+  full-screen effect (`unity-post-processing`); compute kernels
+  (`compute-shader-vfx`); particle graphs (`vfx-particle-authoring`); the
+  light rig it reads (`unity-lighting`); DOTS Instancing requirements
+  (`unity-entities-graphics`); tuning an unchanged shader
+  (`tech-lead-performance`).
 ---
 
 # Shader Authoring — Shader Graph & HLSL Content
@@ -36,6 +37,7 @@ Act as the shader programmer for the client track — the tool reached for whene
 - Negative trigger: the `VolumeComponent` and override plumbing around a full-screen post effect — that is `unity-post-processing`; this skill writes the shader that effect samples.
 - Negative trigger: a compute kernel producing simulation data — that is `compute-shader-vfx`; this skill writes the shader that consumes its buffer.
 - Negative trigger: particle emission and simulation graph structure — that is `vfx-particle-authoring`; this skill writes the shader its output stage renders with.
+- Negative trigger: the lights, probes and limits a lit shader reads — including a shader that receives fewer lights than expected, which is the rendering path's per-object limit rather than the shader — that is `unity-lighting`, which supplies the HLSL entry points this skill calls.
 - Negative trigger: deciding that a shader must be DOTS Instancing compatible, or which properties are Hybrid Per Instance — that is `unity-entities-graphics`; authoring the shader itself stays here.
 - Negative trigger: making an already-correct shader faster with no visual change requested — that is `tech-lead-performance`.
 
@@ -60,7 +62,7 @@ Act as the shader programmer for the client track — the tool reached for whene
 - SRP Batcher compatibility work and diagnosis of a shader that is not batching.
 - Variant-count control through deliberate `shader_feature`/`multi_compile` choice.
 - Precision and platform-compatibility work across the project's shipping targets.
-- Out of scope: pipeline targeting (`render-pipeline-urp-hdrp`); pass injection (`unity-urp-rendering`, `unity-hdrp-rendering`); Volume plumbing for post effects (`unity-post-processing`); compute kernels (`compute-shader-vfx`); particle graphs (`vfx-particle-authoring`); DOTS Instancing requirements (`unity-entities-graphics`); pure performance tuning (`tech-lead-performance`).
+- Out of scope: pipeline targeting (`render-pipeline-urp-hdrp`); pass injection (`unity-urp-rendering`, `unity-hdrp-rendering`); Volume plumbing for post effects (`unity-post-processing`); compute kernels (`compute-shader-vfx`); particle graphs (`vfx-particle-authoring`); the light rig a lit shader reads (`unity-lighting`); DOTS Instancing requirements (`unity-entities-graphics`); pure performance tuning (`tech-lead-performance`).
 
 ## 6. Output format
 ```

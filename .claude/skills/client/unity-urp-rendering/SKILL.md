@@ -7,13 +7,13 @@ description: >
   and Deferred+ rendering paths, the URP Asset's render scale, shadow distance
   and cascade settings, SRP Batcher compatibility, Rendering Layers, the 2D
   Renderer and `Light2D`, and camera stacking through
-  `UniversalAdditionalCameraData`. Use when URP itself must be configured or
-  a pass does not run.
+  `UniversalAdditionalCameraData`. Use when URP must be configured or a
+  pass does not run.
   Not for: which pipeline to use (`render-pipeline-urp-hdrp`); HDRP
-  (`unity-hdrp-rendering`); shader content (`shader-authoring`); post-process
-  authoring (`unity-post-processing`); lights, probes and baking
+  (`unity-hdrp-rendering`); shader content (`shader-authoring`); Volumes and
+  post-processing (`unity-post-processing`); lights, probes and baking
   (`unity-lighting`); `Camera` scripting (`unity-camera-fundamentals`); entity
-  rendering (`unity-entities-graphics`); the sprite data 2D lighting consumes
+  rendering (`unity-entities-graphics`); sprite data 2D lighting reads
   (`unity-2d-sprite`).
 ---
 
@@ -29,7 +29,6 @@ Read-only context, loaded on demand so SKILL.md itself stays short.
 | [root-links.md](references/root-links.md) | URP manual and API roots plus the version pin | Starting any task here, or confirming which URP version the project installs |
 | [renderer-features-and-passes.md](references/renderer-features-and-passes.md) | `ScriptableRendererFeature`, `ScriptableRenderPass`, Render Graph, injection points | Building a custom pass, or an existing one stopped running after an upgrade |
 | [rendering-paths.md](references/rendering-paths.md) | Forward, Forward+, Deferred, Deferred+ and what each costs | Choosing a path, or diagnosing a per-object light limit |
-| [volumes-and-post-processing.md](references/volumes-and-post-processing.md) | Volume components, profiles, priority and blending | Placing or scoping a Volume — the effect catalog itself is another skill's |
 | [2d-renderer.md](references/2d-renderer.md) | `Renderer2DData`, `Light2D`, 2D shadows, Tilemap integration | 2D lighting is expected and may or may not be available |
 | [camera-stacking-and-asset-settings.md](references/camera-stacking-and-asset-settings.md) | Camera stacks, `UniversalAdditionalCameraData`, URP Asset settings, Rendering Layers, SRP Batcher | Compositing cameras, or mapping quality settings to device tiers |
 
@@ -50,7 +49,7 @@ Act as the URP configuration specialist for the client track — the tool reache
 - Negative trigger: which pipeline the project runs, or whether it should be URP at all — that is `render-pipeline-urp-hdrp`, whose answer this skill requires as input.
 - Negative trigger: any HDRP system — Frame Settings, Custom Pass Volumes, Diffusion Profiles — that is `unity-hdrp-rendering`.
 - Negative trigger: the shader's node graph or HLSL — that is `shader-authoring`; this skill decides where its output is injected, not what it computes.
-- Negative trigger: authoring a post-process effect, its `VolumeComponent`, or picking from the Bloom-to-Vignette override catalog — that is `unity-post-processing`; this skill owns Volume placement and priority only as pipeline configuration.
+- Negative trigger: the Volume system in its entirety — placing a `Volume`, its profile, priority and blend distance, the camera's Volume Mask, and every override in it — that is `unity-post-processing`; a Volume in URP exists to drive post-processing, so splitting its placement from its contents helps nobody.
 - Negative trigger: light setup, probes, lightmapping, or shadow authoring as a lighting problem — that is `unity-lighting`; this skill owns the URP Asset's shadow *settings*, not the lighting design.
 - Negative trigger: plain `Camera` or `Transform` scripting with no URP system involved — that is `unity-camera-fundamentals`.
 - Negative trigger: how ECS entities reach the renderer — that is `unity-entities-graphics`, which requires the Forward+ path this skill configures.
@@ -62,14 +61,13 @@ Act as the URP configuration specialist for the client track — the tool reache
 3. **Register the feature on the Renderer the target tier actually uses** — a `ScriptableRendererFeature` lives on a specific Renderer asset, so adding it to the default Renderer while a tier references another means it silently never runs for that tier, with nothing logged.
 4. **Choose the injection point from what the pass must read** — a pass sampling colour has to run after the content it samples, and one sampling depth after depth is written; picking the event by what the effect should look like rather than by its data dependency is the usual reason a pass renders a frame-old or empty texture.
 5. **Choose the rendering path against measured light counts per tier**, per [rendering-paths.md](references/rendering-paths.md) — Forward has a per-object light limit, so extra lights stop affecting an object rather than the scene; Forward+ removes that limit with a screen-space light structure; Deferred trades bandwidth for light-count scalability and gives up MSAA. Back the choice with a Profiler capture per `performance-and-algorithms.md`'s Verification section, never with folklore.
-6. **Place Volumes as pipeline configuration and hand the effects to their owner**, per [volumes-and-post-processing.md](references/volumes-and-post-processing.md) — this skill decides Global versus local, priority, and blend distance; which overrides go in the profile and how a custom effect is authored is `unity-post-processing`'s.
-7. **Confirm the active Renderer is the 2D Renderer before relying on `Light2D`**, per [2d-renderer.md](references/2d-renderer.md) — 2D lighting exists only under `Renderer2DData`, so a project on the Universal Renderer has none of it, and the components simply do nothing rather than warning.
-8. **Composite with a Base plus Overlay camera stack**, per [camera-stacking-and-asset-settings.md](references/camera-stacking-and-asset-settings.md) — `UniversalAdditionalCameraData.cameraStack` is URP's mechanism for layering, and independent full-screen cameras cost a full render each while bypassing it.
-9. **Scope light and decal influence with Rendering Layers rather than filtering in a shader** — Rendering Layers are distinct from physics and culling Layers, and they express the intent in the pipeline where it can be seen, rather than hiding it in shader logic.
-10. **Verify SRP Batcher compatibility rather than assuming the toggle is enough** — the batcher is enabled on the URP Asset, but a shader only qualifies if its per-material properties sit in the expected constant-buffer layout; confirm the shader side with `shader-authoring` instead of inferring from the setting.
-11. **Map every tier-sensitive setting deliberately** — render scale, shadow distance, cascade count, and per-tier feature toggles belong in URP Asset variants per device tier, per `performance-and-algorithms.md`'s platform-abstraction rule; template defaults are a decision nobody made.
-12. **Verify on the real tier before claiming completion** — capture the effect on the quality level and device class that actually uses the configured asset, because a pass on the wrong Renderer and a correct one look identical in code.
-13. **Ask which tier a change is for when it is unstated** — URP configuration is per-asset, so a change applied to the wrong tier is both invisible where it was wanted and unexplained where it landed.
+6. **Confirm the active Renderer is the 2D Renderer before relying on `Light2D`**, per [2d-renderer.md](references/2d-renderer.md) — 2D lighting exists only under `Renderer2DData`, so a project on the Universal Renderer has none of it, and the components simply do nothing rather than warning.
+7. **Composite with a Base plus Overlay camera stack**, per [camera-stacking-and-asset-settings.md](references/camera-stacking-and-asset-settings.md) — `UniversalAdditionalCameraData.cameraStack` is URP's mechanism for layering, and independent full-screen cameras cost a full render each while bypassing it.
+8. **Scope light and decal influence with Rendering Layers rather than filtering in a shader** — Rendering Layers are distinct from physics and culling Layers, and they express the intent in the pipeline where it can be seen, rather than hiding it in shader logic.
+9. **Verify SRP Batcher compatibility rather than assuming the toggle is enough** — the batcher is enabled on the URP Asset, but a shader only qualifies if its per-material properties sit in the expected constant-buffer layout; confirm the shader side with `shader-authoring` instead of inferring from the setting.
+10. **Map every tier-sensitive setting deliberately** — render scale, shadow distance, cascade count, and per-tier feature toggles belong in URP Asset variants per device tier, per `performance-and-algorithms.md`'s platform-abstraction rule; template defaults are a decision nobody made.
+11. **Verify on the real tier before claiming completion** — capture the effect on the quality level and device class that actually uses the configured asset, because a pass on the wrong Renderer and a correct one look identical in code.
+12. **Ask which tier a change is for when it is unstated** — URP configuration is per-asset, so a change applied to the wrong tier is both invisible where it was wanted and unexplained where it landed.
 
 ## 5. Specific goals / tasks this skill performs
 - Custom render passes as `ScriptableRendererFeature` plus `ScriptableRenderPass` on the Render Graph API, registered on the correct Renderer.
@@ -78,8 +76,7 @@ Act as the URP configuration specialist for the client track — the tool reache
 - Camera stacking through `UniversalAdditionalCameraData`.
 - Rendering Layers for light and decal scoping.
 - URP Asset quality-tier mapping and SRP Batcher verification.
-- Volume placement, priority, and blend scoping as pipeline configuration.
-- Out of scope: pipeline targeting (`render-pipeline-urp-hdrp`); HDRP (`unity-hdrp-rendering`); shader content (`shader-authoring`); post-process effect authoring (`unity-post-processing`); lighting design and baking (`unity-lighting`); plain camera scripting (`unity-camera-fundamentals`); entity rendering (`unity-entities-graphics`).
+- Out of scope: pipeline targeting (`render-pipeline-urp-hdrp`); HDRP (`unity-hdrp-rendering`); shader content (`shader-authoring`); Volumes and post-processing (`unity-post-processing`); lighting design and baking (`unity-lighting`); plain camera scripting (`unity-camera-fundamentals`); entity rendering (`unity-entities-graphics`).
 
 ## 6. Output format
 ```
@@ -88,7 +85,6 @@ Act as the URP configuration specialist for the client track — the tool reache
 - Renderer asset targeted: <name> — confirmed used by <tiers>
 - Pass: <feature and pass names, Render Graph or Compatibility Mode, injection point and the data dependency behind it>
 - Rendering path: <Forward / Forward+ / Deferred / Deferred+> — measurement that decided it
-- Volumes: <placement, priority, blend distance — effects handed to unity-post-processing>
 - 2D Renderer: <Renderer2DData confirmed and Light2D setup — or "not a 2D project">
 - Camera stack: <base and overlays — or "single camera">
 - Rendering Layers: <what they scope — or "unused">

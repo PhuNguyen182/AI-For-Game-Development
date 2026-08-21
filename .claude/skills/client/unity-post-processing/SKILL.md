@@ -1,129 +1,124 @@
 ---
 name: unity-post-processing
 description: >
-  Technique for Unity's post-processing/full-screen effects systems — the URP
-  Volume system (`UnityEngine.Rendering.Volume`/`VolumeProfile`/
-  `VolumeComponent`/`VolumeManager`, Global vs. local Volumes, priority/
-  weight/blend distance), URP's built-in Volume Override effect list (Bloom,
-  Color Adjustments/Curves/Lookup, Depth of Field, Film Grain, Lens
-  Distortion, Lift/Gamma/Gain, Motion Blur, Panini Projection, Screen Space
-  Lens Flare, Shadows Midtones Highlights, Split Toning, Tonemapping,
-  Vignette, White Balance), authoring a custom post-processing effect in URP
-  (the low-code `FullScreenPassRendererFeature` + Fullscreen Shader Graph
-  workflow, and the scripted `ScriptableRendererFeature`/`ScriptableRenderPass`
-  + `VolumeComponent` workflow), the legacy Post Processing Stack v2 package
-  (`com.unity.postprocessing`: `PostProcessLayer`, `PostProcessVolume`,
-  `PostProcessProfile`, `PostProcessEffectSettings`) used with the Built-in
-  Render Pipeline, and cross-pipeline effect-availability differences (an
-  effect present in URP/HDRP but not Built-in RP/PPv2, or vice versa). Use
-  this for any task touching a post-processing/full-screen visual effect —
-  e.g. "add Bloom and color grading to this URP scene", "set up a Global
-  Volume with a blend region for an underwater area", "author a custom
-  full-screen distortion effect with Volume-driven intensity", "this
-  Built-in-RP project needs a vignette, wire up PPv2", "check whether Panini
-  Projection is available outside URP". Do not use this for the initial
-  URP-vs-HDRP pipeline decision — that's `render-pipeline-urp-hdrp`. Do not
-  use this for HDRP's own post-processing/Volume framework (HDRP has a
-  parallel but separate Volume-driven Exposure/Fog/Sky/Custom Pass Volume
-  system) — that's `unity-hdrp-rendering`. Do not use this for URP Renderer
-  Features/passes in general, rendering path choice (Forward/Forward+/
-  Deferred), the 2D Renderer, camera stacking, Rendering Layers, or SRP
-  Batcher/quality-tier mapping — that's `unity-urp-rendering`, which also
-  gives a one-line mention of Volume-driven post-processing as part of its
-  own general URP configuration scope; this skill is the deep-dive
-  specialist for the post-processing/Volume content itself, the two skills'
-  coverage overlaps by design at that shallow mention. Do not use this for
-  Adaptive Probe Volumes (`UnityEngine.Rendering.ProbeVolume`) — an unrelated
-  system that happens to share the word "Volume" — that's `unity-lighting`.
-  Do not use this to write the actual Shader Graph node content or HLSL of a
-  custom post-processing effect's shader — that's `shader-authoring`; this
-  skill only covers the Renderer Feature/VolumeComponent authoring workflow
-  and API surface around it, not the shader file itself. Do not use this for
-  any gameplay decision that merely reads or triggers a post-processing
-  state (a "blinded" status effect toggling a vignette, a low-health
-  color-grading cue) — that decision belongs in `Game.Core.*` per
-  `coding-principles.md`'s Shared Core integrity rule; this skill only
-  configures the post-processing system itself.
+  Technique for Unity post-processing and full-screen effects: the URP Volume
+  system — `Volume`, `VolumeProfile`, `VolumeComponent`, `VolumeManager`,
+  global versus local scope, priority, weight, blend distance — the built-in
+  Volume Override catalog from Bloom and Tonemapping through Depth of Field,
+  Color Adjustments, Motion Blur and Vignette, custom effects through
+  `FullScreenPassRendererFeature` or a scripted `ScriptableRendererFeature`
+  plus `VolumeComponent`, and legacy Post Processing Stack v2 on the Built-in
+  pipeline. Use when a full-screen effect must be added, tuned, or authored.
+  Not for: pipeline choice (`render-pipeline-urp-hdrp`); HDRP Volumes
+  (`unity-hdrp-rendering`); Renderer Features generally
+  (`unity-urp-rendering`); Adaptive Probe Volumes (`unity-lighting`); shader
+  content (`shader-authoring`).
 ---
 
-# Unity Post-Processing — Volumes, Effect List, Custom Effects, Legacy PPv2
+# Unity Post-Processing — Volumes, Effect Catalog, Custom Effects, Legacy PPv2
 
-Sources: see [references/](references/) for the Manual/Scripting API root links, split by topic — [root-links.md](references/root-links.md), [effect-availability-and-effect-list.md](references/effect-availability-and-effect-list.md), [volumes.md](references/volumes.md), [custom-post-processing.md](references/custom-post-processing.md), [postprocessing-v2-legacy.md](references/postprocessing-v2-legacy.md), [scripting-api.md](references/scripting-api.md).
+## Bundled resources
+
+### References
+Read-only context, loaded on demand so SKILL.md itself stays short.
+
+| File | Contents | Read when |
+|---|---|---|
+| [root-links.md](references/root-links.md) | Manual and package roots, the version pin, and which pipeline owns which system | Starting any task here, or confirming what the project actually installs |
+| [volumes.md](references/volumes.md) | `Volume`, `VolumeProfile`, `VolumeComponent`, blending order, `overrideState`, scripted access | Placing a Volume, or an override that looks correct produces no visible change |
+| [effect-catalog.md](references/effect-catalog.md) | The built-in URP overrides and the property on each that actually decides the look | Choosing which override delivers a requested look |
+| [pipeline-availability.md](references/pipeline-availability.md) | Which effects exist on Built-in RP, URP, and HDRP, and where the names diverge | Before promising any effect on a pipeline it was not authored on |
+| [custom-effects.md](references/custom-effects.md) | Low-code and scripted authoring paths, injection points, buffer requirements | The built-in catalog cannot express the requested effect |
+| [postprocessing-v2-legacy.md](references/postprocessing-v2-legacy.md) | `PostProcessLayer`, `PostProcessVolume`, `PostProcessProfile`, PPv2 effect classes | The project is on the Built-in Render Pipeline |
 
 ## 1. Objective
-Configure Unity's post-processing/full-screen effect systems correctly and deliberately — the URP Volume system and its built-in effect list, custom post-processing effect authoring, and the legacy Post Processing Stack v2 package for Built-in RP projects — matched to the project's actual render pipeline, without drifting into general URP renderer configuration, HDRP's own post-processing framework, Adaptive Probe Volumes, actual shader authoring, or gameplay decisions that merely consume a post-processing effect's state.
+Deliver a full-screen effect that actually reaches the screen on the pipeline the project runs. Post-processing fails silently more than almost any other Unity system: a perfectly authored Volume Profile renders nothing when the Camera's Post Processing checkbox is off, a scripted intensity change does nothing while `overrideState` stays false, an effect requested from the wrong pipeline's catalog does not exist to be added, and a Volume on a layer outside the camera's mask is never evaluated. Every one of those reports success in the console.
 
 ## 2. Role
-Act as the post-processing specialist: given a scene or feature that needs a visual full-screen effect, you choose and configure the right Volume/Volume Override setup (URP) or `PostProcessVolume`/effect settings setup (Built-in RP), or author a custom effect via the correct URP workflow — you don't decide which pipeline the project targets, you don't build general-purpose Renderer Features unrelated to post-processing, and you don't write the shader code a custom effect ultimately runs, all of which are sibling skills' territory.
+Act as the post-processing specialist: choose the effect, set up the Volume that drives it, and author a custom pass when the catalog cannot express what was asked. You do not choose the render pipeline, you do not build Renderer Features unrelated to post-processing, and you do not write the shader a custom effect runs.
 
 ## 3. When to invoke this skill
-- Adding or tuning a **built-in Volume Override effect** in URP (Bloom, Color Adjustments/Curves/Lookup, Depth of Field, Film Grain, Lens Distortion, Lift/Gamma/Gain, Motion Blur, Panini Projection, Screen Space Lens Flare, Shadows Midtones Highlights, Split Toning, Tonemapping, Vignette, White Balance).
-- Setting up or troubleshooting the **URP Volume system** itself: Global vs. local Volume, Volume Profile creation/sharing, Volume Override configuration, priority/weight/blend distance blending behavior.
-- Authoring a **custom post-processing effect** in URP: the low-code `FullScreenPassRendererFeature` + Fullscreen Shader Graph workflow, or the scripted `ScriptableRendererFeature`/`ScriptableRenderPass` + `VolumeComponent` workflow for a Volume-driven custom effect.
-- Wiring up **legacy Post Processing Stack v2** (`PostProcessLayer`/`PostProcessVolume`/`PostProcessProfile`) for a project still on the Built-in Render Pipeline.
-- Checking **cross-pipeline effect availability** — confirming whether a specific effect (Auto Exposure, Fog, Screen Space Reflection, Panini Projection, Shadows Midtones Highlights, Split Toning) actually exists on the project's target pipeline before assuming parity across Built-in RP/URP/HDRP.
-- Negative trigger: deciding *whether* the project targets URP or HDRP — `render-pipeline-urp-hdrp`.
-- Negative trigger: HDRP's own Volume-driven post-processing framework (Exposure, Fog, Sky, Custom Pass Volume, Diffusion Profiles) — `unity-hdrp-rendering`.
-- Negative trigger: URP Renderer Features/passes unrelated to post-processing, rendering path choice, the 2D Renderer, camera stacking, Rendering Layers, or SRP Batcher/quality-tier mapping — `unity-urp-rendering`.
-- Negative trigger: Adaptive Probe Volumes (`ProbeVolume`/`ProbeAdjustmentVolume`) — a different system that happens to share the word "Volume" — `unity-lighting`.
-- Negative trigger: writing the actual Shader Graph nodes or HLSL/blit shader code a custom post-processing effect renders with — `shader-authoring`; this skill only supplies the Renderer Feature/VolumeComponent authoring workflow and API.
-- Negative trigger: any gameplay decision that merely reads or triggers a post-processing effect's state (a status-effect vignette, a low-health color grade) — that decision lives in `Game.Core.*` per `coding-principles.md`'s Shared Core integrity rule; this skill only configures the post-processing system itself.
+- Adding or tuning a built-in Volume Override — bloom, colour grading, depth of field, vignette, motion blur — in a URP scene.
+- Setting up the Volume system itself: global versus local scope, profile creation and sharing, priority and weight when volumes overlap, blend distance for a region effect.
+- A post-processing effect is configured but nothing appears on screen, or a scripted parameter change has no effect.
+- Authoring a custom full-screen effect the built-in catalog cannot express, through either the low-code or the Volume-driven scripted path.
+- Wiring post-processing on a project still on the Built-in Render Pipeline, through the legacy Post Processing Stack v2 package.
+- Confirming whether a specific effect exists at all on the target pipeline before committing to a look.
+- Negative trigger: whether the project should be on URP or HDRP — that is `render-pipeline-urp-hdrp`, whose answer this skill needs as input.
+- Negative trigger: HDRP's own Volume framework — Exposure, Fog, Sky, Custom Pass Volumes — that is `unity-hdrp-rendering`, a parallel system sharing this one's vocabulary but not its API.
+- Negative trigger: Renderer Features, rendering path, the 2D Renderer, or camera stacking — that is `unity-urp-rendering`, which owns Volume placement as pipeline configuration while this skill owns what the Volume drives.
+- Negative trigger: Adaptive Probe Volumes and light probes — that is `unity-lighting`; they share the word Volume with this system and nothing else.
+- Negative trigger: the Shader Graph nodes or HLSL a custom effect computes — that is `shader-authoring`; this skill delivers the pass and the parameter plumbing around it.
+- Negative trigger: the gameplay rule that decides when an effect should appear — a status effect, a low-health cue — that lives in `Game.Core.*` per `coding-principles.md`; this skill only wires the visual to consume it.
 
 ## 4. How to use this skill
-1. **Confirm the active render pipeline first** (Built-in RP, URP, or HDRP — check Graphics settings/the assigned pipeline asset) before citing any Manual page or API. The three pipelines' post-processing systems are structurally parallel but not interchangeable: URP uses the Volume system, Built-in RP uses the legacy PPv2 package, HDRP has its own Volume-driven framework. If the project is on HDRP, route to `unity-hdrp-rendering` instead.
-2. **On URP, set up the Volume system first**, per [volumes.md](references/volumes.md): add a Global Volume for scene-wide effects or a local Volume (with a collider and `blendDistance`) for a region-triggered effect, assign a `VolumeProfile`, and set `priority`/`weight` deliberately when multiple Volumes can overlap — don't leave blending behavior to accident.
-3. **Add and tune built-in Volume Override effects deliberately**, per [effect-availability-and-effect-list.md](references/effect-availability-and-effect-list.md): pick only the effects the scene's actual look calls for, tune their key properties instead of leaving Editor defaults, and confirm cross-pipeline availability before assuming an effect exists everywhere (e.g. Auto Exposure/Fog/Screen Space Reflection are HDRP+PPv2 only, not in URP; Panini Projection/Shadows Midtones Highlights/Split Toning are URP+HDRP only, not in Built-in RP/PPv2).
-4. **On Built-in RP, use legacy PPv2 instead of assuming URP's Volume system applies**, per [postprocessing-v2-legacy.md](references/postprocessing-v2-legacy.md): add a `PostProcessLayer` to the camera, create a `PostProcessVolume` with a `PostProcessProfile`, and add effect settings (`Bloom`, `ColorGrading`, `Vignette`, etc.) — note PPv2 groups several URP-separate effects (Channel Mixer, Color Adjustments, Color Curves, Lift/Gamma/Gain, Tonemapping) under the single `ColorGrading` class rather than exposing them individually.
-5. **Author a custom post-processing effect only when the built-in effect list genuinely doesn't cover the need**, per [custom-post-processing.md](references/custom-post-processing.md): choose the low-code `FullScreenPassRendererFeature` + Fullscreen Shader Graph path when no C# is needed, or the scripted `ScriptableRendererFeature`/`ScriptableRenderPass` + `VolumeComponent` path when the effect needs Volume-driven, blendable parameters — then hand off the actual Shader Graph/HLSL content to `shader-authoring`.
-6. **Pick the injection point deliberately** for any custom pass — before/after transparents, after post-processing, etc. — per the injection-points reference in [custom-post-processing.md](references/custom-post-processing.md); an effect injected at the wrong point silently reads/writes the wrong buffer state.
-7. **Mind mobile/tile-based GPU cost.** Full-screen post-processing effects resolve off-tile on tile-based mobile GPUs, which is meaningfully more expensive than on-tile rendering — check [root-links.md](references/root-links.md)'s on-tile post-processing note before defaulting to a heavy effect stack on a mobile quality tier.
-8. **Validate any performance claim with a measurement** (Unity Profiler GPU frame time), not asserted from the optimization guide alone, per `performance-and-algorithms.md`'s Verification section — this applies to effect count/quality settings and custom pass cost alike.
-9. **Never conflate the two pipelines' parallel-but-incompatible systems.** `Volume`/`VolumeProfile`/`VolumeComponent` (URP) and `PostProcessVolume`/`PostProcessProfile`/`PostProcessEffectSettings` (Built-in RP/PPv2) are structurally analogous but not the same API — confirm which pipeline before citing either.
-10. **Respect the Shared Core boundary.** A post-processing effect setup is purely a Client-layer visual concern; any gameplay rule that happens to trigger or read a post-processing effect's state (a status-effect vignette, a damage color flash) is decided in `Game.Core.*` per `coding-principles.md`'s Shared Core integrity rule — this skill only configures the effect, it never decides the gameplay outcome.
+1. **Confirm the active render pipeline before citing a single API** — the three pipelines' post-processing systems are structurally parallel and mutually incompatible, and URP explicitly does not support the legacy PPv2 package, so installing it there adds a system that never renders. [root-links.md](references/root-links.md) pins the versions every page below is read at, and a Built-in RP project follows [postprocessing-v2-legacy.md](references/postprocessing-v2-legacy.md) from here instead.
+2. **Enable Post Processing on the Camera and HDR on the URP Asset before diagnosing anything else** — the camera checkbox gates the entire stack, and with HDR off Tonemapping has no values above one to remap and Bloom's threshold stops behaving as authored. Both are the answer far more often than any profile setting is.
+3. **Put the Volume on a layer inside the camera's Volume Mask** — the Volume Manager evaluates only masked layers, so a Volume on an excluded layer is not merely low priority, it is absent from the blend entirely, per [volumes.md](references/volumes.md).
+4. **Give the scene one Global Volume as the floor every local Volume blends up from** — a local-only setup falls back to project defaults outside its blend region rather than to the look the scene was authored for, and the scripted-update failure documented in [volumes.md](references/volumes.md) is the same missing-global cause.
+5. **Set `overrideState`, not just the parameter value, whenever a Volume parameter is written from code** — the Inspector checkbox beside each property is that flag, and a parameter with it false is skipped by the blend no matter what value it holds. `Override()` sets both, which is why it exists.
+6. **Edit `sharedProfile` only when the change is meant to reach the asset on disk** — reading `profile` instantiates a runtime copy, so it is the right call for a per-camera variation and the wrong one for a scene-wide tweak, exactly as `sharedMaterial` is to `material`.
+7. **Pick each override from what it decides rather than from what it is called**, per [effect-catalog.md](references/effect-catalog.md) — a warm look is White Balance rather than a tinted Color Filter, a focus pull is Depth of Field rather than a vignette, and Bloom's Threshold set below the scene's own sky luminance makes the whole sky bloom.
+8. **Check the effect exists on the target pipeline before designing around it**, per [pipeline-availability.md](references/pipeline-availability.md) — Auto Exposure, Fog, and Screen Space Reflection are absent from URP, Panini Projection and Split Toning are absent from Built-in RP, and post-process anti-aliasing is a Camera setting in URP rather than an override anyone can find in the catalog.
+9. **Choose the custom-effect path by whether the effect needs blendable parameters**, per [custom-effects.md](references/custom-effects.md) — `FullScreenPassRendererFeature` plus a Fullscreen Shader Graph needs no C# and gives no Volume blending; the scripted feature plus a `VolumeComponent` costs both and buys per-Volume tuning. Pick the second only when something must actually blend.
+10. **Pick the injection point from what the pass reads and whether its output should be graded** — an effect injected before post-processing is subsequently tonemapped and colour-graded, one injected after is not, and the same shader looks correct in one project and blown out in another for exactly this reason.
+11. **Treat turning post-processing on as the mobile cost, not the effect count** — a tile-based GPU resolves the framebuffer out of tile memory once the stack is enabled, so the meaningful decision on a low tier is whether that tier carries post-processing at all. Any claim that removing an effect helped ships with a Profiler GPU capture, per `performance-and-algorithms.md`'s Verification section.
+12. **Keep the decision in `Game.Core.*` and only the visual here** — the threshold at which a status effect darkens the screen is a game rule per `coding-principles.md`'s Shared Core integrity rule; this skill wires the vignette that rule drives.
 
 ## 5. Specific goals / tasks this skill performs
-- Setting up and troubleshooting the URP Volume system (Global/local Volumes, Volume Profiles, priority/weight/blend distance).
-- Adding and tuning built-in URP Volume Override effects (the full 18-effect list).
-- Authoring custom post-processing effects in URP via the low-code Renderer Feature workflow or the scripted Renderer-Feature-plus-`VolumeComponent` workflow.
-- Wiring up legacy Post Processing Stack v2 (`PostProcessLayer`/`PostProcessVolume`/`PostProcessProfile`/effect settings) for Built-in RP projects.
-- Checking and explaining cross-pipeline effect-availability differences.
-- Out of scope: URP/HDRP pipeline choice (`render-pipeline-urp-hdrp`); HDRP's own post-processing/Volume framework (`unity-hdrp-rendering`); general URP Renderer Features/rendering path/2D Renderer/camera stacking/Rendering Layers (`unity-urp-rendering`); Adaptive Probe Volumes (`unity-lighting`); actual shader code authoring (`shader-authoring`); gameplay decisions consuming post-processing state (`csharp-engineer`'s Shared Core).
+- Volume system setup: global and local scope, profiles, priority, weight, blend distance, layer masking.
+- Selecting and tuning built-in Volume Overrides against a described look.
+- Diagnosing a post-processing setup that renders nothing, or a scripted parameter that does not take.
+- Authoring custom full-screen effects through the low-code or Volume-driven scripted path, including injection point choice.
+- Legacy PPv2 setup on Built-in Render Pipeline projects.
+- Cross-pipeline effect availability checks before a look is committed to.
+- Out of scope: pipeline choice (`render-pipeline-urp-hdrp`); HDRP's Volume framework (`unity-hdrp-rendering`); Renderer Features and rendering path (`unity-urp-rendering`); Adaptive Probe Volumes (`unity-lighting`); shader content (`shader-authoring`); the gameplay rule an effect visualises (`csharp-engineer`).
 
 ## 6. Output format
 ```
-## Post-Processing Work — <scene/feature name>
-- Render pipeline confirmed: Built-in RP (legacy PPv2) / URP (version) — HDRP routed to unity-hdrp-rendering if applicable
-- Volume setup (URP) / PostProcessVolume setup (Built-in RP): Global/local, profile, priority/weight/blend distance
-- Effects used: <effect list> — key property choices, rationale
-- Cross-pipeline availability checked: yes/no — any effect confirmed unavailable on the target pipeline
-- Custom effect (if applicable): low-code Renderer Feature / scripted Renderer-Feature-plus-VolumeComponent — injection point, hand-off to shader-authoring confirmed
-- Mobile/tile-based GPU cost considered: yes/no + rationale
-- Verified on: <device/quality tier actually tested, Profiler data if a perf claim is made>
-- Shared Core boundary: confirmed no gameplay decision made in post-processing config/code
+## Post-Processing — <scene or feature name>
+- Pipeline confirmed: <Built-in RP with PPv2 / URP version / HDRP routed away>
+- Camera and asset gates: <Post Processing enabled, HDR state, Volume Mask layers>
+- Volume setup: <global or local, profile asset, priority, weight, blend distance>
+- Overrides used: <effect list — the property tuned on each and why>
+- Availability checked: <effects confirmed present on this pipeline, any refused>
+- Custom effect: <low-code or scripted, injection point and what it reads — or "none">
+- Scripted access: <sharedProfile or profile, and overrideState handling — or "none">
+- Mobile: <whether the tier carries post-processing at all, and the rationale>
+- Verified on: <device or quality tier captured, Profiler data behind any perf claim>
+- Layer: <Game.Client.* profiles, renderer assets, and pass code>
 - Known limitations: <...>
+```
+
+**Extended report — emit ONLY when the requester asks for it.** It replaces the one-line `Known limitations` above with all three fields:
+```
+- Known limitations: <what the delivered configuration does not cover>
+- Latent concerns: <failure modes not yet triggered: assumptions that hold only under current conditions, thresholds not yet reached, trade-offs knowingly deferred>
+- Future remediation: <the concrete fix for each concern above, each with the condition that should trigger it>
 ```
 
 ## 7. Examples
 **Example 1**
-- Input: "Set up outdoor daytime post-processing for this URP scene: bloom on bright surfaces, filmic color grading, and a subtle vignette."
-- Output: confirmed URP active; added one Global Volume with a new Volume Profile; added Bloom (Threshold/Intensity/Scatter tuned to the scene's actual bright-surface count), Tonemapping (ACES mode) plus Color Adjustments (Post Exposure/Contrast/Saturation) for the filmic grade, and Vignette (low Intensity, Smoothness tuned) — left Depth of Field and Motion Blur out since the brief didn't call for them; verified GPU frame time on the target mid-tier device via Profiler before calling the effect count final.
-- Hand-off: none needed — entirely within scope.
+- Input: "Give this URP scene a warm filmic daytime look — bloom on the bright surfaces, graded, slight vignette."
+- Output: confirmed URP and that HDR was enabled on the asset the target tier uses, since Tonemapping without it produces a flat result that reads as a bad grade rather than a missing setting. One Global Volume with a new profile: Tonemapping in ACES, Color Adjustments for exposure and saturation, White Balance for the warmth rather than tinting through Color Filter, Bloom with Threshold set above the scene's actual sky luminance so it fires on the intended surfaces only, and a low-intensity Vignette. Left Depth of Field and Motion Blur out — neither was asked for, and both are expensive on the mobile tier.
 
 **Example 2**
-- Input: "Author a custom 'screen static' effect that intensifies as a status effect progresses, blendable like a built-in Volume Override."
-- Output: confirmed URP active; used the scripted `Assets > Create > Scripting > URP Post-process Volume Scripts` template to scaffold a custom `ScriptableRendererFeature`/`ScriptableRenderPass` pair and a `VolumeComponent` exposing a `ClampedFloatParameter` for static intensity; wired the pass's `AddRenderPasses()` to read the active `VolumeComponent`'s overridden value from the `VolumeStack` and push it to the effect Material via `SetFloat`; injection point set to "After Rendering Post Processing".
-- Hand-off: the Fullscreen Shader Graph/HLSL implementing the actual static noise pattern is `shader-authoring`'s task — this skill's contribution stopped at the Renderer Feature/VolumeComponent scaffold and confirming how the Volume-driven intensity value reaches the shader. The status-effect progression logic that sets the intensity value at runtime is a `Game.Core.*` gameplay rule per the Shared Core boundary — this skill only wired the visual effect to consume it.
+- Input: "The underwater volume works in the editor but the tint never appears in a build."
+- Output: the Volume was local with no Global Volume in the scene, so outside its blend region the stack fell back to project defaults, and the local volume's own layer sat outside the camera's Volume Mask — it was never evaluated on either side. Added a Global Volume as the scene floor and moved the local Volume onto a masked layer, per §4's masking and global-fallback steps. The build-only symptom was the editor holding a previously resolved stack that a fresh load did not reproduce.
+
+**Example 3**
+- Input: "Fade the screen to grayscale as the player's health drops. Write it as a custom effect."
+- Output: scripted path, since the fade has to blend — a `ScriptableRendererFeature` plus a `VolumeComponent` exposing a `ClampedFloatParameter`, injected after post-processing so the desaturation is not itself re-graded by Tonemapping. Wrote through `Override()` rather than assigning `.value`, which is what makes a scripted parameter take. The grayscale shader went to `shader-authoring`; the health threshold driving the parameter went to `Game.Core.*` — this skill delivered the pass and the parameter path between them.
 
 ## 8. Edge cases & guardrails
-- Never assume an effect exists on every pipeline — check [effect-availability-and-effect-list.md](references/effect-availability-and-effect-list.md) first; Auto Exposure/Fog/Screen Space Reflection are HDRP+PPv2 only (not URP), Panini Projection/Shadows Midtones Highlights/Split Toning are URP+HDRP only (not Built-in RP/PPv2).
-- Never cite PPv2's `ColorGrading` class properties as if they map 1:1 to URP's separate Channel Mixer/Color Adjustments/Color Curves/Lift-Gamma-Gain/Tonemapping overrides — PPv2 groups them into one class; there is no standalone PPv2 `Tonemapper` class, tonemapping is a field on `ColorGrading`.
-- `Volume`/`VolumeProfile`/`VolumeComponent` (URP) and `PostProcessVolume`/`PostProcessProfile`/`PostProcessEffectSettings` (Built-in RP/PPv2) are structurally parallel but not compatible or interchangeable — never mix API from the two in the same recommendation without first confirming the active pipeline.
-- Adaptive Probe Volumes (`unity-lighting`) and the post-processing Volume system share the word "Volume" but are unrelated — never conflate `UnityEngine.Rendering.ProbeVolume` with `UnityEngine.Rendering.Volume`.
-- Never leave a scene with zero Global Volume when any Volume Override is expected to apply — a Volume Override on a local-only Volume with no overlapping Global fallback silently has no effect outside its blend region.
-- Prefer the low-code `FullScreenPassRendererFeature` + Shader Graph workflow when no runtime-tunable parameter is needed; reach for the scripted Renderer-Feature-plus-`VolumeComponent` workflow only when the effect genuinely needs Volume-driven blending/parameters — don't default to the more complex scripted path out of habit.
-- Never use `RenderPipelineManager.beginCameraRendering` callbacks to inject a reusable custom post-processing pass — the Manual explicitly recommends the Renderer Feature pattern instead; the callback approach is a narrower, one-off technique.
-- Full-screen post-processing effects are meaningfully more expensive on tile-based mobile GPUs (off-tile resolve) — never assume a PC-tuned effect stack is free to reuse unchanged on a mobile quality tier; check the on-tile post-processing guidance and verify with Profiler.
-- Never assert a post-processing performance improvement (an effect removed, a quality setting lowered) without a Profiler measurement backing it, per `performance-and-algorithms.md`'s Verification section.
-- This skill's coverage of "Volume-driven post-processing" overlaps by design with `unity-urp-rendering`'s own shallow one-line mention of the same topic — this skill is the deep-dive specialist; route general Renderer Feature/rendering-path/2D-Renderer/camera-stacking/Rendering-Layer work to `unity-urp-rendering` instead.
-- Never write the actual shader code for a custom post-processing effect here — this skill supplies the Renderer Feature/VolumeComponent authoring workflow and API for `shader-authoring` to consume; authoring the Shader Graph/HLSL itself is out of scope.
-- Never let post-processing-layer code/config make a gameplay decision (a status-effect threshold driving a vignette, a low-health color-grade trigger) — that decision belongs in `Game.Core.*` per `coding-principles.md`'s Shared Core integrity rule; this skill only configures the post-processing system that the decision might drive.
+- Never debug a profile before checking the Camera's Post Processing toggle and the URP Asset's HDR setting — both silently disable work that is otherwise correct.
+- Never assume an effect exists across pipelines — URP has no Auto Exposure, Fog, or Screen Space Reflection, and Built-in RP has no Panini Projection, Shadows Midtones Highlights, or Split Toning.
+- Never look for anti-aliasing in URP's override catalog — it is a Camera setting, and time lost searching the Volume list is the usual outcome.
+- Never assign a Volume parameter's `.value` from code and stop there — without `overrideState` the blend ignores it, and nothing reports the omission.
+- Never read `volume.profile` for a scene-wide change — it instantiates a copy, so the edit reaches one instance and never the asset.
+- Never map PPv2's `ColorGrading` onto URP's separate overrides one to one — PPv2 folds Channel Mixer, Color Adjustments, Color Curves, Lift Gamma Gain, and tonemapping into that single class, and there is no standalone PPv2 tonemapper type.
+- Never mix `Volume` and `PostProcessVolume` API in one recommendation — they are parallel systems, and the project is on exactly one.
+- Never confuse this Volume system with Adaptive Probe Volumes — shared word, unrelated system, and `unity-lighting` owns the other.
+- Never reach for `RenderPipelineManager.beginCameraRendering` to inject a reusable effect — the Manual recommends the Renderer Feature pattern, and the callback is a one-off technique.
+- Never carry a PC effect stack onto a mobile tier unchanged — the off-tile resolve is paid the moment the stack is enabled, before any effect runs.
+- Never let post-processing code decide a gameplay outcome — it visualises a decision `Game.Core.*` already made.
