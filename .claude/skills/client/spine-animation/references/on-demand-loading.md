@@ -1,35 +1,57 @@
-# On-Demand Loading — Deferred Atlas Texture Loading & the Addressables Extension
+# On-Demand Loading — Deferred Atlas Textures & the Addressables Extension
 
-Source: [spine-unity-on-demand-loading](https://esotericsoftware.com/spine-unity-on-demand-loading).
+Source: [spine-unity On-Demand Loading](https://esotericsoftware.com/spine-unity-on-demand-loading).
+Covers: SKILL.md §4 — **"Reach for on-demand loading only once a measured build-size or memory problem justifies it"**.
 
-## Why
-By default, all atlas textures are indirectly referenced by the `SkeletonDataAsset` and load whenever the skeleton itself loads — even skins/atlas pages that won't be visible for a given instance. On-demand loading lets a project (typically one with many skins/atlas pages per skeleton) defer high-resolution atlas texture loads until the corresponding skin is actually assigned, trading a small per-load runtime delay for a smaller initial download/memory footprint. This is Spine's own extension on top of the underlying loading mechanism — see `unity-addressables` for Addressables' general loading/reference-counting contract, which this extension builds on but doesn't replace.
+By default every atlas texture is indirectly referenced by the
+`SkeletonDataAsset` and loads with the skeleton, including pages a given
+instance will never show. This extension defers the high-resolution load until
+the matching skin is assigned, trading a small per-load delay for a smaller
+download and memory footprint. It builds on Addressables rather than replacing
+it — the general loading and reference-counting contract stays with
+`unity-addressables`.
 
-## Two extension UPM packages
-1. **`com.esotericsoftware.spine.on-demand-loading`** — generic infrastructure for a custom loading strategy.
-2. **`com.esotericsoftware.spine.addressables`** — a ready-to-use implementation built on Unity Addressables; depends on the On-Demand Loading package, so install that one first.
+## The two extension packages
+
+| Package | Holds | Use when | Source |
+|---|---|---|---|
+| `com.esotericsoftware.spine.on-demand-loading` | Generic infrastructure for a custom loading strategy | A bespoke strategy is genuinely required | [On-Demand Loading](https://esotericsoftware.com/spine-unity-on-demand-loading) |
+| `com.esotericsoftware.spine.addressables` | Ready-to-use Addressables implementation; depends on the package above, so install that first | The standard case — no custom code needed | [On-Demand Loading](https://esotericsoftware.com/spine-unity-on-demand-loading) |
 
 ## Setting up the Addressables extension
-1. Mark the relevant textures Addressable in the project as usual.
-2. Right-click the `SpineAtlasAsset`'s Inspector heading → "Add Addressables Loader." This creates an `AddressableTextureLoader` asset with its configuration parameters.
-3. Build Addressables content normally.
 
-No custom code is required for the standard case. A pre-build step automatically swaps the build output's textures for low-resolution placeholders; a post-build step restores the original high-resolution textures back into the project.
+| Step | Action | Source |
+|---|---|---|
+| 1 | Mark the relevant textures Addressable as usual | [On-Demand Loading](https://esotericsoftware.com/spine-unity-on-demand-loading) |
+| 2 | Right-click the `SpineAtlasAsset` Inspector heading → "Add Addressables Loader", creating an `AddressableTextureLoader` asset | [On-Demand Loading](https://esotericsoftware.com/spine-unity-on-demand-loading) |
+| 3 | Build Addressables content normally | [On-Demand Loading](https://esotericsoftware.com/spine-unity-on-demand-loading) |
+| Automatic | A pre-build step swaps build-output textures for low-resolution placeholders; a post-build step restores the originals into the project | [On-Demand Loading](https://esotericsoftware.com/spine-unity-on-demand-loading) |
 
-## Editor preview caveat
-Low-resolution placeholders only take effect in an actual build — the Editor always shows the full-resolution texture. To preview the placeholder behavior without building, select the `AddressableTextureLoader` asset and use its "Testing" menu → "Assign Placeholders." This is preview-only and has no effect on a built executable — **never manually assign placeholders as a substitute for actually building**, since the automated pre/post-build swap already handles the real build correctly.
+**Critical caveat**: placeholders only take effect in an actual build — the
+Editor always shows full resolution. The `AddressableTextureLoader`'s
+"Testing → Assign Placeholders" menu previews the behaviour, but manually
+assigning placeholders is never a substitute for building; the pre/post-build
+swap already handles the real build.
 
 ## Custom implementation
-- For most custom cases, derive from `GenericOnDemandTextureLoader` and implement its abstract methods — use `AddressablesTextureLoader` as the reference implementation to follow.
-- For a fully custom loading strategy, derive from `OnDemandTextureLoader` directly instead.
 
-**Relevant source locations**:
-- `spine-unity/Assets/Spine/Runtime/spine-unity/Asset Types/OnDemandTextureLoader.cs` — core infrastructure.
-- `com.esotericsoftware.spine.on-demand-loading/Runtime/GenericOnDemandTextureLoader.cs` — the generic template to subclass.
-- `com.esotericsoftware.spine.addressables/Runtime/AddressablesTextureLoader.cs` — the Addressables reference implementation.
+| Base class | Use when | Source |
+|---|---|---|
+| `GenericOnDemandTextureLoader` | Most custom cases — implement its abstract methods, following `AddressablesTextureLoader` as the reference | [On-Demand Loading](https://esotericsoftware.com/spine-unity-on-demand-loading) |
+| `OnDemandTextureLoader` | A fully custom loading strategy that shares nothing with the generic template | [On-Demand Loading](https://esotericsoftware.com/spine-unity-on-demand-loading) |
 
-## When to reach for this
-Only once a real, measured build-size or memory problem justifies the added complexity (per `performance-and-algorithms.md`'s "measured, practical performance" principle) — most skeletons with a small, fixed skin set don't need this at all. Don't adopt it speculatively for a skeleton that only ever uses one or two skins.
+| Source location | Holds | Source |
+|---|---|---|
+| `spine-unity/Assets/Spine/Runtime/spine-unity/Asset Types/OnDemandTextureLoader.cs` | Core infrastructure | [On-Demand Loading](https://esotericsoftware.com/spine-unity-on-demand-loading) |
+| `com.esotericsoftware.spine.on-demand-loading/Runtime/GenericOnDemandTextureLoader.cs` | The generic template to subclass | [On-Demand Loading](https://esotericsoftware.com/spine-unity-on-demand-loading) |
+| `com.esotericsoftware.spine.addressables/Runtime/AddressablesTextureLoader.cs` | The Addressables reference implementation | [On-Demand Loading](https://esotericsoftware.com/spine-unity-on-demand-loading) |
 
-## Licensing
+## When it is justified
+
+| Condition | Verdict | Source |
+|---|---|---|
+| Many skins or atlas pages per skeleton, with a measured size or memory problem | Adopt it | synthesized |
+| A small, fixed skin set | Do not adopt — the complexity buys nothing | synthesized |
+| No measurement taken yet | Measure first, per `performance-and-algorithms.md`'s Verification section | synthesized |
+
 A Spine license is required to integrate the Spine Runtimes into an application.

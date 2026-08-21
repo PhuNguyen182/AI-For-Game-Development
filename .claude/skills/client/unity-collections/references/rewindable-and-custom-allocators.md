@@ -1,7 +1,37 @@
-# Rewindable & Custom Allocators
+# Rewindable & Custom Allocators — Escalation Path
 
-Covers SKILL.md step 6's escalation path (when the basic three allocators don't fit the data's actual lifetime).
+Source: [Rewindable allocator overview](https://docs.unity3d.com/Packages/com.unity.collections@6.6/manual/allocator-rewindable.html), [Use a custom allocator](https://docs.unity3d.com/Packages/com.unity.collections@6.6/manual/allocator-custom-use.html).
+Covers: SKILL.md §4 — **"Pick the allocator by actual data lifetime"**, escalation branch.
 
-## Manual
-- [Rewindable allocator overview](https://docs.unity3d.com/Packages/com.unity.collections@6.6/manual/allocator-rewindable.html) — a fast, thread-safe custom allocator that behaves like a linear allocator: it pre-allocates memory blocks (64-byte minimum alignment), hands out ranges from them on request, and — its main advantage — lets you free every allocation it made at once by "rewinding" it, instead of disposing each one individually. Blocks double in size until a cap, then grow linearly; rewinding keeps some blocks around for reuse while releasing others. Use `AllocatorHelper` to create one.
-- [Use a custom allocator](https://docs.unity3d.com/Packages/com.unity.collections@6.6/manual/allocator-custom-use.html) — declare/create via `AllocatorHelper`, register it globally, and initialize it; allocate `Native-` collections through `CollectionHelper.CreateNativeArray`/`CollectionHelper.Dispose`, and `Unsafe-` collections through `AllocatorManager.Allocate`/`AllocatorManager.Free`; dispose by rewinding the allocator handle, unregistering, and freeing its backing memory. Reserve this for an intermediate-lifetime need neither Temp/TempJob/Persistent nor a rewindable allocator covers.
+Read only after Temp/TempJob/Persistent ([allocators.md](allocators.md)) have
+been shown not to fit. Both options below trade setup complexity for control
+over *when* memory is released, and neither is justified by a lifetime the
+built-in three already cover.
+
+## Choosing the escalation
+
+| Option | Effect | Use when | Source |
+|---|---|---|---|
+| Rewindable allocator | Linear/bump allocation from pre-allocated blocks; one rewind frees every allocation it made | Many short-lived allocations share one release point, and per-allocation `Dispose()` bookkeeping is the actual cost | [Rewindable allocator overview](https://docs.unity3d.com/Packages/com.unity.collections@6.6/manual/allocator-rewindable.html) |
+| Custom allocator | A user-defined allocation strategy registered globally | A lifetime or strategy neither the built-in three nor a rewindable allocator covers | [Use a custom allocator](https://docs.unity3d.com/Packages/com.unity.collections@6.6/manual/allocator-custom-use.html) |
+
+## Rewindable allocator mechanics
+
+| Property | What it decides | Source |
+|---|---|---|
+| Block alignment | 64-byte minimum alignment on every block | [Rewindable allocator overview](https://docs.unity3d.com/Packages/com.unity.collections@6.6/manual/allocator-rewindable.html) |
+| Block growth | Blocks double in size up to a cap, then grow linearly | [Rewindable allocator overview](https://docs.unity3d.com/Packages/com.unity.collections@6.6/manual/allocator-rewindable.html) |
+| Rewind semantics | Frees every allocation at once; some blocks are retained for reuse, others released | [Rewindable allocator overview](https://docs.unity3d.com/Packages/com.unity.collections@6.6/manual/allocator-rewindable.html) |
+| Creation | Created through `AllocatorHelper` | [Rewindable allocator overview](https://docs.unity3d.com/Packages/com.unity.collections@6.6/manual/allocator-rewindable.html) |
+
+## Custom allocator lifecycle
+
+| Stage | Call | Source |
+|---|---|---|
+| Create | Declare and create via `AllocatorHelper`, register globally, then initialize | [Use a custom allocator](https://docs.unity3d.com/Packages/com.unity.collections@6.6/manual/allocator-custom-use.html) |
+| Allocate `Native-` | `CollectionHelper.CreateNativeArray` / `CollectionHelper.Dispose` | [Use a custom allocator](https://docs.unity3d.com/Packages/com.unity.collections@6.6/manual/allocator-custom-use.html) |
+| Allocate `Unsafe-` | `AllocatorManager.Allocate` / `AllocatorManager.Free` | [Use a custom allocator](https://docs.unity3d.com/Packages/com.unity.collections@6.6/manual/allocator-custom-use.html) |
+| Tear down | Rewind the handle, unregister it, then free its backing memory | [Use a custom allocator](https://docs.unity3d.com/Packages/com.unity.collections@6.6/manual/allocator-custom-use.html) |
+
+**Critical caveat**: the teardown order is load-bearing. Unregistering before
+rewinding leaks the blocks the allocator still holds, and nothing reports it.

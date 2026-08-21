@@ -1,110 +1,118 @@
-# Utility Components — Followers, SkeletonUtility, Root Motion, Render Separation & Effects
+# Utility Components — Followers, SkeletonUtility, Root Motion, Separation & Effects
 
-Source: [spine-unity-utility-components](https://esotericsoftware.com/spine-unity-utility-components).
+Source: [spine-unity Utility Components](https://esotericsoftware.com/spine-unity-utility-components).
+Covers: SKILL.md §4 — **"Prefer a follower or utility component over per-frame bone-copying code"**, **"Use render separation whenever another GameObject must draw between skeleton parts"**, **"Use `SkeletonRenderTexture` for a full-skeleton alpha fade, never a per-slot alpha reduction"**.
+
+Every component here exists so a task does not need hand-written per-frame
+bone copying. The selection question is almost always the same: does this need
+one isolated transform, or a full mirrored hierarchy? Bone access in code is
+[skeleton-api.md](skeleton-api.md); the material side of the rendering
+utilities is [rendering.md](rendering.md).
+
+## Contents
+
+- [Followers — isolated tracking](#followers--isolated-tracking)
+- [SkeletonUtility — mirrored hierarchies](#skeletonutility--mirrored-hierarchies)
+- [Root motion](#root-motion)
+- [Material and rendering utilities](#material-and-rendering-utilities)
+- [Effect components](#effect-components)
+
+## Followers — isolated tracking
+
+| Component | Effect | Use when | Source |
+|---|---|---|---|
+| `BoneFollower` | Matches its own transform to a named bone every update, as a fully isolated GameObject | A particle system, prop, or object should visually track one bone | [Utility Components](https://esotericsoftware.com/spine-unity-utility-components) |
+| `BoneFollowerGraphic` | The `SkeletonGraphic` (UI) variant of the above | The same need inside a Canvas | [Utility Components](https://esotericsoftware.com/spine-unity-utility-components) |
+| `PointFollower` | Tracks a `PointAttachment` instead of a bone; also isolated | The anchor is a point attachment, not a bone | [Utility Components](https://esotericsoftware.com/spine-unity-utility-components) |
+| `BoundingBoxFollower` | Extracts a `BoundingBoxAttachment` into a `PolygonCollider2D`, enabling and disabling it per animation frame | A collider must match the current frame's bounding box | [Utility Components](https://esotericsoftware.com/spine-unity-utility-components) |
+
+**Critical caveat**: `BoundingBoxFollower` does **not** follow the bone's
+position on its own — pair it with a `BoneFollower` — and does **not** follow
+vertex-deformation animation, only the undeformed shape. Keep deformation on
+bounding-box attachments minimal. Simulating physics on the resulting collider
+is `unity-2d-physics`, not this skill.
+
+## SkeletonUtility — mirrored hierarchies
+
+| Element | Effect | Use when | Source |
+|---|---|---|---|
+| `SkeletonUtilityBone` Follow mode | The GameObject mirrors the bone, read-only | Reading bone state through the transform hierarchy | [Utility Components](https://esotericsoftware.com/spine-unity-utility-components) |
+| `SkeletonUtilityBone` Override mode | The GameObject drives the bone, applied before the world-transform update | Physics or manual control should win over the animation | [Utility Components](https://esotericsoftware.com/spine-unity-utility-components) |
+| `SkeletonUtility` "Spawn Hierarchy" | Generates the mirrored hierarchy; modes are Follow all, Follow (Root Only), Override all, Override (Root Only) | A full mirror is genuinely needed — added from the renderer's Advanced section | [Utility Components](https://esotericsoftware.com/spine-unity-utility-components) |
+| `SkeletonUtilityConstraint` | Base class for custom constraints; a subclass auto-registers with the parent `SkeletonUtility`. Shipped examples: `SkeletonUtilityGroundConstraint`, `SkeletonUtilityEyeConstraint` | A custom constraint must run in step with the skeleton update | [Utility Components](https://esotericsoftware.com/spine-unity-utility-components) |
+
+**Critical caveat**: `SkeletonUtilityBone` uses **local** transform values and
+requires a GameObject hierarchy mirroring the skeleton's actual bone
+hierarchy. Deleting an intermediate GameObject breaks everything below it.
+
+| Hinge chain | Generates | Source |
+|---|---|---|
+| 3D — "Create 3D Hinge Chain" on the first element | A `HingeChain` parent at the scene root with per-element `HingeJoint`s; per-element drag and mass are adjustable, and the rig auto-rotates 180° on skeleton flip | [Utility Components](https://esotericsoftware.com/spine-unity-utility-components) |
+| 2D — "Create 2D Hinge Chain" | A `HingeChain` parent with "Hinge Chain" and "Hinge Chain FlippedX" children that auto-toggle on flip | [Utility Components](https://esotericsoftware.com/spine-unity-utility-components) |
+
+**Critical caveat**: never reparent a hinge-chain root under the skeleton's
+own bones. It disconnects the chain from skeleton-driven momentum and the rig
+stops behaving physically, without any error.
 
 ## Root motion
 
-### SkeletonRootMotion
-Drives a `SkeletonAnimation`/`SkeletonGraphic`'s position from a bone's movement (like Mecanim's "Apply Root Motion"). Properties: `Root Motion Bone`, per-axis `X`/`Y` toggles, `Root Motion Scale (X)`/`(Y)` (delta compensation), `Animation Tracks` (which tracks contribute). Optional `Rigidbody2D`/`Rigidbody` to move via physics instead of `Transform`. Method: `AdjustRootMotionToDistance(targetDelta, trackIndex)` for dynamic distance compensation.
+| Component | Pairs with | Notable properties | Source |
+|---|---|---|---|
+| `SkeletonRootMotion` | `SkeletonAnimation`/`SkeletonGraphic` | `Root Motion Bone`, per-axis `X`/`Y`, `Root Motion Scale (X)`/`(Y)`, `Animation Tracks`; optional `Rigidbody`/`Rigidbody2D` to move via physics; `AdjustRootMotionToDistance(targetDelta, trackIndex)` | [Utility Components](https://esotericsoftware.com/spine-unity-utility-components) |
+| `SkeletonMecanimRootMotion` | `SkeletonMecanim` — auto-added when the `Animator`'s "Apply Root Motion" is enabled | Same shape, but `Mecanim Layers` instead of `Animation Tracks` | [Utility Components](https://esotericsoftware.com/spine-unity-utility-components) |
 
-**Incompatible with `SkeletonMecanim`** — use `SkeletonMecanimRootMotion` there instead.
+**Critical caveat**: the two are not interchangeable — each is tied to its own
+animation driver. Attaching the wrong one produces no root motion rather than
+an error.
 
-### SkeletonMecanimRootMotion
-The `SkeletonMecanim` equivalent; auto-added when the `Animator`'s "Apply Root Motion" is enabled. Same shape of properties (`Root Motion Bone`, `X`/`Y`, `Root Motion Scale`), but `Mecanim Layers` instead of `Animation Tracks`. Same `AdjustRootMotionToDistance(...)` method and optional `Rigidbody`/`Rigidbody2D` support.
+## Material and rendering utilities
 
-## Followers
+| Component | Effect | Source |
+|---|---|---|
+| `SkeletonRendererCustomMaterials` | Per-instance and per-slot overrides for `SkeletonRenderer`; arrays `Custom Slot Materials` and `Custom Material Overrides`; code access via `CustomMaterialOverride`/`CustomSlotMaterials` | [Utility Components](https://esotericsoftware.com/spine-unity-utility-components) |
+| `SkeletonGraphicCustomMaterials` | The UI equivalent; arrays `Custom Texture Overrides`, `Custom Material Overrides` (per original texture), and `Custom Slot Materials` in 4.3+ | [Utility Components](https://esotericsoftware.com/spine-unity-utility-components) |
+| `SkeletonRenderSeparator` | Splits a `SkeletonRenderer` into two or more `SkeletonPartsRenderer`s with independent sorting, so another GameObject can draw between parts | [Utility Components](https://esotericsoftware.com/spine-unity-utility-components) |
 
-### BoneFollower / BoneFollowerGraphic
-Sets its own GameObject's transform to match a named bone of a `SkeletonRenderer`/`SkeletonGraphic`, every update. Works as a fully isolated GameObject — no need to build a parent bone hierarchy. Use for a particle system, prop, or any object that should visually track one bone. `BoneFollowerGraphic` is the UI (`SkeletonGraphic`) variant.
-
-### PointFollower
-Same idea as `BoneFollower`, but tracks a `PointAttachment` instead of a bone. Also isolated — no parent hierarchy required.
-
-### BoundingBoxFollower
-Extracts a `BoundingBoxAttachment`'s current shape into a `PolygonCollider2D`, enabling/disabling it each frame to match the active animation frame. **Does not** follow the bone's position on its own (pair it with a `BoneFollower`) and **does not** follow vertex-deformation animation on the bounding box (only the initial/undeformed shape). The Inspector has an "Add Bone Follower" convenience button.
-
-## SkeletonUtility / SkeletonUtilityBone
-
-### SkeletonUtilityBone
-Lets a GameObject either follow a bone's position or override it via manual control/physics.
-
-- **Follow mode** — the GameObject mirrors the bone (read-only).
-- **Override mode** — the GameObject drives the bone's position, applied before the skeleton's world-transform update.
-
-Uses **local transform values** and requires a GameObject hierarchy that mirrors the skeleton's actual bone hierarchy — deleting a middle GameObject in that hierarchy breaks the chain below it. The Inspector can create child bones (selectively or recursively) and generate 2D/3D hinge chains for physics. Hierarchy icons differ: a bone icon marks Follow mode, a pose-bones icon marks Override mode.
-
-### SkeletonUtility
-Quick way to spawn a `SkeletonUtilityBone` hierarchy mirroring the skeleton's bones. Add via the `SkeletonRenderer`/`SkeletonGraphic` Inspector's Advanced section ("Add Skeleton Utility"), then "Spawn Hierarchy" with a mode: Follow all bones, Follow (Root Only), Override all bones, Override (Root Only). More bones can be added afterward via the `SkeletonUtilityBone` inspector; unwanted ones can be deleted while keeping the rest of the chain intact.
-
-### 2D/3D hinge chains (physics)
-Built from a `SkeletonUtilityBone` hierarchy.
-
-- **3D**: select the first chain element → "Create 3D Hinge Chain" → generates a `HingeChain` parent at the scene root (not parented under the skeleton) with per-element `HingeJoint`s; rigidbody drag/mass are adjustable per element; the rig auto-rotates 180° when the skeleton flips.
-- **2D**: select the first element → "Create 2D Hinge Chain" → generates a `HingeChain` parent with two children, "Hinge Chain" and "Hinge Chain FlippedX," which auto-activate/deactivate on skeleton flip.
-
-**Critical caveat**: never reparent a hinge-chain root under the skeleton's own bones — doing so disconnects the chain from the skeleton's movement and breaks the physics simulation's momentum coupling.
-
-### SkeletonUtilityConstraint
-Base class for custom constraint behaviors; a subclass auto-registers itself with the parent `SkeletonUtility` and updates alongside it. Shipped examples: `SkeletonUtilityGroundConstraint`, `SkeletonUtilityEyeConstraint`.
-
-## Material/rendering utilities
-
-### SkeletonRendererCustomMaterials
-Per-instance/per-slot material overrides for `SkeletonRenderer`. Add via right-click → "Add Basic Serialized Custom Materials." Arrays: `Custom Slot Materials` (per-slot), `Custom Material Overrides` (global substitution). Code access: `SkeletonRenderer.CustomMaterialOverride`, `SkeletonRenderer.CustomSlotMaterials`.
-
-### SkeletonGraphicCustomMaterials
-The `SkeletonGraphic` (UI) equivalent. Arrays: `Custom Texture Overrides`, `Custom Material Overrides` (per original texture), `Custom Slot Materials` (spine-unity 4.3+). Code access: `SkeletonGraphic.CustomMaterialOverride`, `SkeletonGraphic.CustomTextureOverride`.
-
-### SkeletonRenderSeparator
-Splits a `SkeletonRenderer` into two or more `SkeletonPartsRenderer`s with independent sorting/layer order, so another GameObject can render between skeleton parts (e.g. a character running behind a tree trunk with one leg in front, one behind).
-
-**Setup**: identify the separator slot(s) in the skeleton's draw order → right-click `SkeletonRenderer` → "Add Skeleton Render Separator" → assign `Separator Slot Names` → click "Add the missing renderers (n)" → set `Sorting Layer`/`Order in Layer` per resulting renderer. The generated `SkeletonPartsRenderer`s don't need to be children of the Spine GameObject.
+| Separation setup step | Action | Source |
+|---|---|---|
+| 1 | Identify the separator slots in the skeleton's draw order | [Utility Components](https://esotericsoftware.com/spine-unity-utility-components) |
+| 2 | Right-click `SkeletonRenderer` → "Add Skeleton Render Separator", then assign `Separator Slot Names` | [Utility Components](https://esotericsoftware.com/spine-unity-utility-components) |
+| 3 | Click "Add the missing renderers (n)", then set `Sorting Layer`/`Order in Layer` per renderer | [Utility Components](https://esotericsoftware.com/spine-unity-utility-components) |
+| Note | The generated `SkeletonPartsRenderer`s need not be children of the Spine GameObject | [Utility Components](https://esotericsoftware.com/spine-unity-utility-components) |
 
 ```csharp
-skeletonRenderSeparator.enabled = true;   // enable separation
-skeletonRenderSeparator.enabled = false;  // disable separation
+this.skeletonRenderSeparator.enabled = true;   // Disables the original renderer's own rendering.
+this.skeletonRenderSeparator.enabled = false;  // Re-enables it automatically.
 
-// separatorSlots list on SkeletonRenderer — Add/Remove/Clear as needed
-
-SkeletonRenderSeparator.AddToSkeletonRenderer(skeletonAnimation);  // add at runtime
+SkeletonRenderSeparator.AddToSkeletonRenderer(this.skeletonAnimation);
 ```
 
-Enabling separation disables the original `SkeletonRenderer`'s own rendering; disabling separation re-enables it automatically. `SkeletonGraphic` doesn't need this component — it has a built-in `Advanced → Enable Separation` toggle instead.
+`SkeletonGraphic` needs no separator component — it has a built-in
+`Advanced → Enable Separation` toggle instead.
 
-## Effects and misc example components
+## Effect components
 
-### SkeletonRagdoll / SkeletonRagdoll2D
-Turns an animated skeleton into a physics-driven ragdoll (e.g. a death/knockdown simulation) via a guided interface for creating the ragdoll rig.
+| Component | Effect | Use when | Source |
+|---|---|---|---|
+| `SkeletonRenderTexture` / `SkeletonGraphicRenderTexture` | Renders the skeleton to a `RenderTexture` rather than straight to the frame buffer | An effect needs the composited skeleton as a single image — **expensive**, keep disabled otherwise | [Utility Components](https://esotericsoftware.com/spine-unity-utility-components) |
+| `SkeletonRenderTextureFadeout` | Renders at full opacity to that texture, then draws it at the target opacity | Fading without the overlapping-attachment show-through; requires the render-texture component | [Utility Components](https://esotericsoftware.com/spine-unity-utility-components) |
+| `SkeletonGhost` | Draws the skeleton repeatedly with a customizable material (speed, power) | A motion-trail or motion-blur effect | [Utility Components](https://esotericsoftware.com/spine-unity-utility-components) |
+| `SkeletonRagdoll` / `SkeletonRagdoll2D` | Converts an animated skeleton into a physics-driven ragdoll via a guided rig setup | A death or knockdown simulation | [Utility Components](https://esotericsoftware.com/spine-unity-utility-components) |
+| `SkeletonUtilityKinematicShadow` | Applies inertia to bones or propagates movement between them; chains can inherit velocity from a parent transform or an unrelated rigidbody | A cape or similar should follow character movement convincingly | [Utility Components](https://esotericsoftware.com/spine-unity-utility-components) |
+| `RenderExistingMesh` / `RenderExistingMeshGraphic` | Re-renders an already-generated mesh elsewhere without re-animating it | Many identical copies of one animated skeleton, or an outline-only second pass | [Utility Components](https://esotericsoftware.com/spine-unity-utility-components) |
+| `RenderCombinedMesh` | Combines submeshes into one mesh before rendering | A multi-material skeleton needs an outline without inner seams between submeshes | [Utility Components](https://esotericsoftware.com/spine-unity-utility-components) |
 
-### SkeletonRenderTexture / SkeletonGraphicRenderTexture
-Renders the skeleton to a `RenderTexture` instead of directly to the frame buffer, enabling effects like a correct full-skeleton alpha fade. **Expensive** relative to direct rendering — keep it disabled except while the effect is actually active.
+**Critical caveat**: lowering a skeleton's alpha directly is never the fade
+technique — overlapping attachments show through each other at any opacity
+below full. The render-texture path exists specifically for this.
 
-### SkeletonRenderTextureFadeout
-Fades a skeleton via transparency without the overlapping-attachment show-through artifact. Requires `SkeletonRenderTexture`/`SkeletonGraphicRenderTexture` already present: it renders the skeleton at full opacity to a temporary texture, then draws that texture's content at the desired fade opacity.
+## Example scenes
 
-### SkeletonGhost
-Draws the skeleton multiple times with a customizable material to produce a motion-trail/motion-blur effect (speed, power).
-
-### SkeletonUtilityKinematicShadow
-Applies inertia to bones or propagates movement from other bones — e.g. making a cape follow a character's movement convincingly. Hinge chains built this way can inherit velocity from parent-transform changes or from an unrelated rigidbody.
-
-### RenderExistingMesh / RenderExistingMeshGraphic
-Re-renders an already-generated skeleton mesh at a different location without re-animating it — a performance win for many identical copies of the same animated skeleton, and also usable to render an outline-only pass via a URP outline shader.
-
-### RenderCombinedMesh
-Combines a skeleton's submeshes into one mesh before rendering, producing correct outlines when a skeleton needs multiple materials and an outline shader is applied (a naive multi-submesh render otherwise outlines each submesh separately, showing inner seams).
-
-## Key caveats and gotchas
-- A `SkeletonUtilityBone` hierarchy must mirror the skeleton's actual bone hierarchy — removing an intermediate GameObject breaks everything parented below it.
-- Never reparent a hinge-chain root onto the skeleton's own bones — it disconnects the chain from skeleton-driven momentum.
-- `BoundingBoxFollower` only reflects the bounding box's initial/undeformed shape and doesn't track bone position on its own — pair with `BoneFollower` and keep deformation on bounding-box attachments minimal.
-- `SkeletonRenderTexture`/`SkeletonGraphicRenderTexture` are expensive — enable only while the effect that needs them is active.
-- `SkeletonRootMotion` and `SkeletonMecanimRootMotion` are mutually exclusive by which animation-driving component they pair with — never attach the wrong one.
-
-## Example scenes referenced
-- `Spine Examples/Getting Started/4 Object Oriented Sample` — `BoneFollower`.
-- `Spine Examples/Getting Started/6 Skeleton Graphic` — `BoneFollowerGraphic`.
-- `Spine Examples/Other Examples/SkeletonUtility Animated Physics` — `SkeletonUtilityBone`, `SkeletonUtilityKinematicShadow`.
-- `Spine Examples/Other Examples/SkeletonUtility GroundConstraint & Eyes` — `SkeletonUtilityConstraint`.
-- `Spine Examples/Other Examples/SkeletonUtility Ragdoll` — `SkeletonRagdoll2D`.
-- `Spine Examples/Other Examples/SkeletonRenderSeparator` — `SkeletonRenderSeparator`.
+| Scene | Demonstrates | Source |
+|---|---|---|
+| `Spine Examples/Getting Started/4 Object Oriented Sample` | `BoneFollower` | [Utility Components](https://esotericsoftware.com/spine-unity-utility-components) |
+| `Spine Examples/Getting Started/6 Skeleton Graphic` | `BoneFollowerGraphic` | [Utility Components](https://esotericsoftware.com/spine-unity-utility-components) |
+| `Spine Examples/Other Examples/SkeletonUtility Animated Physics` | `SkeletonUtilityBone`, `SkeletonUtilityKinematicShadow` | [Utility Components](https://esotericsoftware.com/spine-unity-utility-components) |
+| `Spine Examples/Other Examples/SkeletonUtility GroundConstraint & Eyes` | `SkeletonUtilityConstraint` | [Utility Components](https://esotericsoftware.com/spine-unity-utility-components) |
+| `Spine Examples/Other Examples/SkeletonUtility Ragdoll` | `SkeletonRagdoll2D` | [Utility Components](https://esotericsoftware.com/spine-unity-utility-components) |
+| `Spine Examples/Other Examples/SkeletonRenderSeparator` | `SkeletonRenderSeparator` | [Utility Components](https://esotericsoftware.com/spine-unity-utility-components) |

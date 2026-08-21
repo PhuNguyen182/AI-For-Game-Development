@@ -1,19 +1,36 @@
-# Root Links
+# Root Links — spine-unity Documentation
 
-Root/index pages, as given by the user. Follow their own in-page navigation (anchors) for anything not covered by the other files in this folder.
+Source: the root documentation pages listed below, as provided for this skill.
+Covers: the whole skill — provenance and page index for every file in this
+folder.
 
-## Given by the user
-- [Spine Unity main components](https://esotericsoftware.com/spine-unity-main-components#Main-Components) — `SkeletonRenderer`, `SkeletonAnimation`, `SkeletonGraphic`, `SkeletonMecanim`, the `Skeleton`/`AnimationState`/`TrackEntry` scripting API, skin/attachment/repacking, runtime instantiation. Covered in [main-components.md](main-components.md).
-- [Spine Unity utility components](https://esotericsoftware.com/spine-unity-utility-components) — followers, `SkeletonUtility`/`SkeletonUtilityBone`, root motion, render separation, ragdoll/ghost/render-texture helper components. Covered in [utility-components.md](utility-components.md).
-- [Spine Unity rendering](https://esotericsoftware.com/spine-unity-rendering) — render pipeline support, materials/atlas/draw calls, sorting, shaders (Built-in/URP/LWRP), PMA vs straight alpha, custom shader requirements. Covered in [rendering.md](rendering.md).
-- [Spine Unity Timeline](https://esotericsoftware.com/spine-unity-timeline) — the Timeline extension package's tracks/clips. Covered in [timeline.md](timeline.md).
-- [Spine Unity on-demand loading](https://esotericsoftware.com/spine-unity-on-demand-loading) — the on-demand-loading/Addressables extension packages for atlas textures. Covered in [on-demand-loading.md](on-demand-loading.md).
-- [Spine Unity FAQ](https://esotericsoftware.com/spine-unity-faq) — import/visual/performance/licensing Q&A. Covered in [faq.md](faq.md).
+Anchors every link in this folder to the official spine-unity documentation
+(spine-unity v4.3+). Anything this skill cites resolves under one of these
+pages; anything that does not is out of scope for the skill, not merely
+undocumented here. **The spine-unity docs are unversioned per URL** — there is
+no version segment to pin, so confirm against the runtime version actually
+installed before relying on a version-sensitive detail.
 
-## Related pages referenced by the above (not independently fetched, but linked from them)
-- [Spine Unity installation](https://esotericsoftware.com/spine-unity-installation#Compatible-Unity-Versions) — compatible Unity version table per runtime, referenced by the FAQ's compatibility section.
-- [Spine Unity assets](https://esotericsoftware.com/spine-unity-assets) — `SkeletonDataAsset`/`SpineAtlasAsset` import settings, Premultiplied vs. Straight Alpha import, referenced by both rendering.md and faq.md.
-- [Spine Metrics](https://esotericsoftware.com/spine-metrics#Metrics-view) — the Metrics view used to audit a skeleton's vertex/deformation/clipping cost, referenced by faq.md's Performance section.
+## Pages this skill was built from
 
-## Licensing
-A Spine license is required to integrate the Spine Runtimes into any application — stated on both main-components.md's and on-demand-loading.md's source pages. This is a legal/commercial precondition, not a technical one; flag it if a project pulls in `Spine.Unity.*` without a confirmed license.
+| Page | Holds | Distilled in | Source |
+|---|---|---|---|
+| Main Components | `SkeletonRenderer`, `SkeletonAnimation`, `SkeletonGraphic`, `SkeletonMecanim`, the `Skeleton`/`AnimationState`/`TrackEntry` API, skins, repacking, runtime instantiation | [main-components.md](main-components.md), [skeleton-api.md](skeleton-api.md), [animation-state.md](animation-state.md) | [Main Components](https://esotericsoftware.com/spine-unity-main-components#Main-Components) |
+| Utility Components | Followers, `SkeletonUtility`/`SkeletonUtilityBone`, root motion, render separation, ragdoll/ghost/render-texture helpers | [utility-components.md](utility-components.md) | [Utility Components](https://esotericsoftware.com/spine-unity-utility-components) |
+| Rendering | Pipeline support, materials, atlas and draw calls, sorting, shader catalog, PMA vs. straight alpha, custom shader requirements | [rendering.md](rendering.md) | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| Timeline | The Timeline extension package's tracks and clips | [timeline.md](timeline.md) | [Timeline](https://esotericsoftware.com/spine-unity-timeline) |
+| On-Demand Loading | The on-demand-loading and Addressables extension packages for atlas textures | [on-demand-loading.md](on-demand-loading.md) | [On-Demand Loading](https://esotericsoftware.com/spine-unity-on-demand-loading) |
+| FAQ | Import, visual, cross-machine, performance, and licensing Q&A | [faq.md](faq.md) | [FAQ](https://esotericsoftware.com/spine-unity-faq) |
+
+## Pages linked from the above, not independently distilled
+
+| Page | Holds | Source |
+|---|---|---|
+| Installation | The Compatible Unity Versions table per runtime version | [Installation](https://esotericsoftware.com/spine-unity-installation#Compatible-Unity-Versions) |
+| Assets | `SkeletonDataAsset`/`SpineAtlasAsset` import settings, premultiplied vs. straight alpha import | [Assets](https://esotericsoftware.com/spine-unity-assets) |
+| Spine Metrics | The Metrics view for auditing a skeleton's vertex, deformation, and clipping cost | [Metrics](https://esotericsoftware.com/spine-metrics#Metrics-view) |
+
+A Spine license is required to integrate the Spine Runtimes into any
+application — stated on both the Main Components and On-Demand Loading pages.
+This is a legal precondition rather than a technical one; flag it if a project
+pulls in `Spine.Unity.*` without a confirmed license.

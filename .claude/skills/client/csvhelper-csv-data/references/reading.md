@@ -1,75 +1,83 @@
-# Reading CSV Data
+# Reading CSV Data — GetRecords, Manual Reading & Multi-Shape Files
 
-Source: [reading](https://joshclose.github.io/CsvHelper/examples/reading/), [get-class-records](https://joshclose.github.io/CsvHelper/examples/reading/get-class-records/), [get-dynamic-records](https://joshclose.github.io/CsvHelper/examples/reading/get-dynamic-records/), [get-anonymous-type-records](https://joshclose.github.io/CsvHelper/examples/reading/get-anonymous-type-records/), [enumerate-class-records](https://joshclose.github.io/CsvHelper/examples/reading/enumerate-class-records/), [reading-by-hand](https://joshclose.github.io/CsvHelper/examples/reading/reading-by-hand/), [reading-multiple-data-sets](https://joshclose.github.io/CsvHelper/examples/reading/reading-multiple-data-sets/), [reading-multiple-record-types](https://joshclose.github.io/CsvHelper/examples/reading/reading-multiple-record-types/).
+Sources: [Reading](https://joshclose.github.io/CsvHelper/examples/reading/), [Get Class Records](https://joshclose.github.io/CsvHelper/examples/reading/get-class-records/), [Get Dynamic Records](https://joshclose.github.io/CsvHelper/examples/reading/get-dynamic-records/), [Get Anonymous Type Records](https://joshclose.github.io/CsvHelper/examples/reading/get-anonymous-type-records/), [Enumerate Class Records](https://joshclose.github.io/CsvHelper/examples/reading/enumerate-class-records/), [Reading by Hand](https://joshclose.github.io/CsvHelper/examples/reading/reading-by-hand/), [Reading Multiple Data Sets](https://joshclose.github.io/CsvHelper/examples/reading/reading-multiple-data-sets/), [Reading Multiple Record Types](https://joshclose.github.io/CsvHelper/examples/reading/reading-multiple-record-types/).
+Covers: SKILL.md §4 — **"Default to `GetRecords<T>()`/`WriteRecords()` with the by-name convention"**, **"Enumerate `GetRecords<T>()` with `foreach`, not `.ToList()`, for large files"**, **"Reach for manual `ReadHeader()`/`Read()`/`GetField<T>()` when no class-per-row model fits"**.
 
-## GetRecords\<T\>() — strongly-typed records
+Every way to get rows out of a file, and the enumeration semantics that decide
+memory behaviour. Mapping the columns once the shape is chosen is
+[class-maps.md](class-maps.md); the disposal scope every snippet here assumes
+is [prerequisites.md](prerequisites.md).
 
-```csharp
-using (var reader = new StreamReader("path\\to\\file.csv"))
-using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
-{
-    var records = csv.GetRecords<Foo>();
-}
+## Contents
 
-public class Foo
-{
-    public int Id { get; set; }
-    public string Name { get; set; }
-}
-```
+- [Reading strategies](#reading-strategies)
+- [Enumeration semantics](#enumeration-semantics)
+- [Manual reading](#manual-reading)
+- [Files holding more than one shape](#files-holding-more-than-one-shape)
 
-Column headers (`Id`, `Name`) match property names by default convention — no explicit mapping needed when the CSV header and the class's property names already agree.
+## Reading strategies
 
-`GetRecords<T>()` returns a **deferred, forward-only `IEnumerable<T>`** — it reads and yields one row at a time as the sequence is enumerated, it does not buffer the whole file in memory. Enumerate it with `foreach` (or `.ToList()` only when the full set genuinely needs to be materialized) — per [enumerate-class-records], iterating with `foreach` instead of `ToList()` is the low-memory choice for large files, since each row is discarded as soon as the loop moves past it. The one row currently being read is reused/overwritten internally — do not hold onto a reference to a record's backing row object outside the loop iteration that produced it; copy out the fields you need.
-
-## GetRecords\<dynamic\>() — no class needed
-
-```csharp
-using (var reader = new StreamReader("path\\to\\file.csv"))
-using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
-{
-    var records = csv.GetRecords<dynamic>();
-}
-```
-
-Every property on the resulting `dynamic` object is a `string` — CsvHelper has no target type to convert into. Use this only for a quick inspection/passthrough case; reach for a typed class (with its own type conversion) as soon as the data needs anything other than raw text.
-
-## Anonymous types
-
-`GetRecords<T>()` also supports projecting into an anonymous type by passing an instance of the anonymous shape as the type witness, for a one-off read that doesn't warrant a named class.
-
-## Reading by hand
-
-For cases where "it's easier to not try and configure a mapping to match your class definition," read row-by-row manually instead of `GetRecords<T>()`:
+| Strategy | Effect | Use when | Source |
+|---|---|---|---|
+| `GetRecords<T>()` | Deferred sequence of typed records; headers match property names by default convention | The file is one class per row and headers agree with the model | [Get Class Records](https://joshclose.github.io/CsvHelper/examples/reading/get-class-records/) |
+| `GetRecords<dynamic>()` | Every property comes back a `string` — there is no target type to convert into | A quick inspection or straight passthrough, nothing more | [Get Dynamic Records](https://joshclose.github.io/CsvHelper/examples/reading/get-dynamic-records/) |
+| `GetRecords<T>()` with an anonymous witness | Projects into an anonymous shape passed as the type witness | A one-off read that does not warrant a named class | [Get Anonymous Type Records](https://joshclose.github.io/CsvHelper/examples/reading/get-anonymous-type-records/) |
+| `ReadHeader()`/`Read()`/`GetField<T>()` | Row-by-row control, no mapping configuration, no expression-tree codegen | No class-per-row model fits, or an AOT-safe path is required | [Reading by Hand](https://joshclose.github.io/CsvHelper/examples/reading/reading-by-hand/) |
 
 ```csharp
-using (var reader = new StreamReader("path\\to\\file.csv"))
+using (var reader = new StreamReader("path/to/ItemBalance.csv"))
 using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
 {
-    csv.ReadHeader();
-    while (csv.Read())
+    foreach (var record in csv.GetRecords<ItemBalanceRow>())
     {
-        var record = new Foo
-        {
-            Id = csv.GetField<int>("Id"),
-            Name = csv.GetField("Name"),
-        };
-        records.Add(record);
+        this.Apply(record);
     }
 }
 ```
 
-- `csv.ReadHeader()` consumes the header row and lets subsequent `GetField` calls address columns by name.
-- `csv.Read()` advances to the next row; returns `false` at end-of-file — this is the loop condition, not a count.
-- `csv.GetField<T>(name)` returns a converted value; `csv.GetField(name)` (no type parameter) returns the raw `string`.
+## Enumeration semantics
 
-## Reading multiple data sets in one file
+| Property | What it decides | Source |
+|---|---|---|
+| Deferred and forward-only | `GetRecords<T>()` yields one row at a time and never buffers the file | [Enumerate Class Records](https://joshclose.github.io/CsvHelper/examples/reading/enumerate-class-records/) |
+| `foreach` is the low-memory choice | Each row is discarded as the loop moves past it | [Enumerate Class Records](https://joshclose.github.io/CsvHelper/examples/reading/enumerate-class-records/) |
+| `.ToList()` holds everything | Justified only by a small file, or a caller needing random access or multiple passes | [Enumerate Class Records](https://joshclose.github.io/CsvHelper/examples/reading/enumerate-class-records/) |
+| The current row is reused internally | Keeping a reference past its iteration reads whatever the next row overwrote | [Enumerate Class Records](https://joshclose.github.io/CsvHelper/examples/reading/enumerate-class-records/) |
 
-Some CSV files contain more than one table separated by a blank line (e.g. a "Foo" section, then a blank line, then a "Bar" section). Handle this by:
-1. Setting `IgnoreBlankLines = false` in `CsvConfiguration` so the blank-line separator survives instead of being silently skipped.
-2. Reading manually: detect a blank line (end of the current section), call `csv.ReadHeader()` again to pick up the next section's header, and inspect the new header's first column name to decide which registered `ClassMap`/type applies next.
-3. Registering a `ClassMap` per record type up front, and calling `csv.GetRecord<T>()` (singular) once per row inside whichever section is currently active.
+**Critical caveat**: copy out the fields needed rather than storing the record
+object itself when anything survives the loop iteration. The stale read is
+silent — no exception, just the wrong row's values.
 
-## Reading multiple record types from one file (row-type discriminator)
+## Manual reading
 
-For a file where every row can be a different record type (not separated into distinct sections, but interleaved), disable the header (`HasHeaderRecord = false`), register an index-based `ClassMap` per type, and use the first field on each row as a discriminator in a `switch` to decide which type to deserialize that row into — e.g. `1` maps to `Foo` (int Id, string Name), `2` maps to `Bar` (Guid Id, string Name), each read via `csv.GetRecord<Foo>()`/`csv.GetRecord<Bar>()` inside the matching `switch` arm.
+| Call | Effect | Source |
+|---|---|---|
+| `csv.ReadHeader()` | Consumes the header row so later `GetField` calls can address columns by name | [Reading by Hand](https://joshclose.github.io/CsvHelper/examples/reading/reading-by-hand/) |
+| `csv.Read()` | Advances one row; returns `false` at end of file — this is the loop condition, not a count | [Reading by Hand](https://joshclose.github.io/CsvHelper/examples/reading/reading-by-hand/) |
+| `csv.GetField<T>(name)` | Returns the converted value | [Reading by Hand](https://joshclose.github.io/CsvHelper/examples/reading/reading-by-hand/) |
+| `csv.GetField(name)` | Returns the raw `string`, unconverted | [Reading by Hand](https://joshclose.github.io/CsvHelper/examples/reading/reading-by-hand/) |
+
+```csharp
+csv.Read();
+csv.ReadHeader();
+while (csv.Read())
+{
+    var record = new ItemBalanceRow
+    {
+        Id = csv.GetField<int>("Item Id"),
+        Name = csv.GetField("Name"),
+    };
+    records.Add(record);
+}
+```
+
+## Files holding more than one shape
+
+| Shape | How it is handled | Source |
+|---|---|---|
+| Several tables separated by blank lines | Set `IgnoreBlankLines = false` so the separator survives, then read manually: on a blank line call `ReadHeader()` again and inspect the new first column name to pick the next `ClassMap`/type | [Reading Multiple Data Sets](https://joshclose.github.io/CsvHelper/examples/reading/reading-multiple-data-sets/) |
+| Interleaved rows of different types | Set `HasHeaderRecord = false`, register an index-based `ClassMap` per type, and `switch` on the first field as a discriminator, calling `csv.GetRecord<T>()` in the matching arm | [Reading Multiple Record Types](https://joshclose.github.io/CsvHelper/examples/reading/reading-multiple-record-types/) |
+
+**Critical caveat**: `IgnoreBlankLines` defaults to skipping blank lines. Left
+alone, a multi-data-set file reads as one continuous table and the section
+boundary vanishes without error.

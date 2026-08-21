@@ -1,9 +1,46 @@
-# Shared Core & Burst Compatibility
+# Shared Core & Burst Compatibility — Layer Rules and the Determinism Boundary
 
-Covers SKILL.md step 1 and 9, and the cross-skill boundary this skill is scoped around. Not sourced from a single URL — synthesized from `coding-principles.md`'s Shared Core integrity rule, `performance-and-algorithms.md`, and this package's own manual content.
+Source: not sourced from a single URL — synthesized from `coding-principles.md`'s Shared Core integrity section, `performance-and-algorithms.md`, and this package's own manual content.
+Covers: SKILL.md §4 — **"Identify the context before choosing any type"**, **"Never claim byte-for-byte cross-platform determinism from type choice alone"**.
 
-- Every `Unity.Mathematics` type is a blittable, unmanaged struct with **zero `UnityEngine` dependency** — this is exactly what `coding-principles.md` requires for `Game.Core.*` (Shared Core), where a `UnityEngine.Vector3`/`Quaternion`/`Random` reference is disallowed. Use `float2`/`float3`/`float4`, `quaternion`, `float3x3`/`float4x4`, `math`, and `Random` in Shared Core instead of their `UnityEngine`/`System` equivalents.
-- The same blittable-struct property is what makes these types Burst's preferred data model — Burst is built to vectorize `Unity.Mathematics` operations efficiently. That compilation/vectorization concern (HPC# subset compliance, `FloatMode`, verifying via the Burst Inspector) belongs to `unity-burst-compiler`, not this skill — this skill only picks the right type and function, not how well it compiles.
-- **Determinism nuance:** using `Unity.Mathematics` types satisfies the "no `UnityEngine` dependency" half of Shared Core's determinism requirement, but does not by itself guarantee bit-identical results across platforms/architectures — instruction reordering, SIMD codegen differences, and `FloatMode` all still affect that, and are `unity-burst-compiler`'s territory (`FloatMode.Deterministic` specifically). Don't present a type migration alone as having "fixed" determinism.
-- `Unity.Mathematics.Random` is the concrete answer to `coding-principles.md`'s "use a seeded, injectable RNG instead [of `UnityEngine.Random`]" requirement for Shared Core — see [random-numbers.md](random-numbers.md).
-- ECS (`unity-ecs-architecture`) components very commonly use `float3`/`quaternion`/etc. as field types, and the C# Job System/Collections (`unity-job-system-and-burst`/`unity-collections`) commonly store them in `NativeArray<float3>` and similar — but modeling those components or choosing those containers is each sibling skill's own territory, not this one's.
+Settles which layer requires these types and, more importantly, exactly how
+far the determinism claim reaches — the boundary most often overstated after a
+type migration. Sibling-skill ownership is tabulated at the end.
+
+## Why these types satisfy Shared Core
+
+| Property | What it decides | Source |
+|---|---|---|
+| Blittable, unmanaged structs | Nothing here allocates or needs marshalling, so the same value crosses into a job or component unchanged | synthesized |
+| Zero `UnityEngine` dependency | Exactly what `coding-principles.md`'s Shared Core integrity section requires of `Game.Core.*`, where `Vector3`/`Quaternion`/`Random` are disallowed | synthesized |
+| Burst's preferred data model | Burst is built to vectorize these operations, so the Shared Core choice and the performance choice coincide rather than trade off | synthesized |
+
+## Layer-by-layer requirement
+
+| Context | Requirement | Source |
+|---|---|---|
+| `Game.Core.*` Shared Core | Mandatory — a `UnityEngine` math type here is a rule violation, not a preference | synthesized |
+| Burst-compiled job or method | Required in practice: `Mathf` is not the surface Burst optimizes around | synthesized |
+| ECS component | Required — component fields must be blittable and unmanaged | synthesized |
+| `Game.Client.*` MonoBehaviour | Not required; `UnityEngine` types are correct where a `Transform` is being read or written directly | synthesized |
+
+## The determinism boundary
+
+| Claim | Status | Source |
+|---|---|---|
+| "No `UnityEngine` dependency in Shared Core" | **Satisfied** by the type migration alone | synthesized |
+| "Bit-identical results across platforms and architectures" | **Not satisfied** — SIMD codegen, instruction reordering, `FloatMode`, and transcendental precision all still vary | synthesized |
+| Who owns the residual | `unity-burst-compiler`, via `FloatMode.Deterministic` and Burst Inspector verification | synthesized |
+
+**Critical caveat**: presenting a type migration as having "fixed determinism"
+is the specific overclaim this file exists to prevent. It fixes the dependency
+half and leaves the numeric half untouched.
+
+## Sibling-skill ownership
+
+| Neighbour | This skill owns | The neighbour owns | Source |
+|---|---|---|---|
+| `unity-burst-compiler` | That these types are what Burst vectorizes best | HPC# subset compliance, `FloatMode`, intrinsics, AOT settings, Burst Inspector verification | synthesized |
+| `unity-ecs-architecture` | The `float3`/`quaternion` field types a component uses | Modeling the component, system, and query themselves | synthesized |
+| `unity-collections` | The element type, e.g. the `float3` in `NativeArray<float3>` | Which container holds it, and its allocator | synthesized |
+| `unity-job-system-and-burst` | The math the job body performs | Scheduling it and chaining `JobHandle` dependencies | synthesized |

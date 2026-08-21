@@ -1,111 +1,120 @@
 ---
 name: unity-collections
 description: >
-  Technique for Unity's Collections package — choosing the right unmanaged
-  container (`NativeArray`/`NativeSlice`, `NativeList`, `NativeHashMap`/
+  Unity Collections package (`Unity.Collections`): picking and using unmanaged
+  containers — `NativeArray`/`NativeSlice`, `NativeList`, `NativeHashMap`/
   `NativeParallelHashMap`, `NativeHashSet`, `NativeQueue`, `NativeStream`,
-  `NativeReference`), allocation-free `FixedString`/`FixedList` types,
-  `Unsafe-` collection variants and aliasing, and allocator strategy beyond
-  the basic Temp/TempJob/Persistent lifetimes (rewindable and custom
-  allocators). Collections is one of the foundational packages DOTS is built
-  on — used by the C# Job System, Burst, and ECS alike — but it works
-  independently of all three: a project can use `NativeArray`/`NativeList`
-  in ordinary MonoBehaviour code with no job or entity involved. Do not use
-  this for job scheduling, `JobHandle` dependency chaining, or the plain
-  Temp/TempJob/Persistent allocator choice for a container feeding a single
-  scheduled job — that's `unity-job-system-and-burst`; this skill owns which
-  collection type to pick and its own API surface (resizing, hashing,
-  parallel writers, `FixedString`/`FixedList`, `Unsafe-` variants,
-  custom/rewindable allocators). Do not use this for Burst-specific
-  compilation tuning (HPC# subset, `FloatMode`, intrinsics, AOT settings) —
-  that's `unity-burst-compiler`, even though every collection here is
-  designed to be Burst-compatible. Do not use this to model ECS components,
-  buffers (`IBufferElementData`/`DynamicBuffer<T>`), or queries — that's
-  `unity-ecs-architecture`. Do not use this for `Unity.Mathematics`
-  vector/matrix/random/noise types — that's `unity-mathematics`. Do not use
-  this to choose physics-specific data types — `PhysicsCollider`'s
-  `BlobAssetReference<Collider>`, or the `NativeStream`-shaped
-  `CollisionEvents`/`TriggerEvents` streams — that's `unity-physics`; this
-  skill still owns the general blob-asset/`NativeStream` mechanics those
-  types are built from. Do not use this to choose rendering-specific data
-  types — `RenderMeshArray`'s internal mesh/material lists — that's
-  `unity-entities-graphics`; this skill still owns the general shared-
-  component/container mechanics those types are conceptually built from.
+  `NativeReference` — plus `FixedString*Bytes`/`FixedList*Bytes`, `Unsafe-`
+  variants, aliasing, `AsParallelWriter()`, and allocator strategy beyond
+  Temp/TempJob/Persistent (rewindable and custom allocators,
+  `AllocatorHelper`, `CollectionHelper`). Use when choosing a container for a
+  data shape, replacing a managed `List`/`Dictionary`/`string` that must cross
+  into a job, Burst method, or ECS component, or auditing disposal and
+  aliasing. Not for: job scheduling and `JobHandle` chains
+  (`unity-job-system-and-burst`), Burst compilation tuning
+  (`unity-burst-compiler`), ECS component/buffer/query design
+  (`unity-ecs-architecture`), `float3`/`quaternion`/`Random`/`noise`
+  (`unity-mathematics`), physics data types (`unity-physics`),
+  `RenderMeshArray` (`unity-entities-graphics`).
 ---
 
 # Unity Collections — Native Containers, FixedString/FixedList & Allocators
 
-Sources: see [references/](references/) for the Unity Manual/Scripting API root links, split by topic — [root-links.md](references/root-links.md), [collection-types.md](references/collection-types.md), [fixedstring-and-fixedlist.md](references/fixedstring-and-fixedlist.md), [unsafe-collections-and-aliasing.md](references/unsafe-collections-and-aliasing.md), [allocators.md](references/allocators.md), [rewindable-and-custom-allocators.md](references/rewindable-and-custom-allocators.md), [parallel-readers-writers.md](references/parallel-readers-writers.md), [dots-relationship.md](references/dots-relationship.md).
+## Bundled resources
+
+### References
+Read-only context, loaded on demand so this file stays short.
+
+| File | Contents | Read when |
+|---|---|---|
+| [root-links.md](references/root-links.md) | Collections 6.6 Manual/API index roots and the version-pin rule | Starting any task here, or before adding a new upstream link |
+| [collection-types.md](references/collection-types.md) | Per-type behaviour of each `Native-` container; `Native-` vs `Unsafe-` vs non-allocating category | The container type is not yet decided, or a chosen type's limits are in question |
+| [fixedstring-and-fixedlist.md](references/fixedstring-and-fixedlist.md) | `FixedString*Bytes`/`FixedList*Bytes` sizes, usable capacity, no-disposal property | A `string` or small list must cross into a job, Burst method, or ECS component |
+| [unsafe-collections-and-aliasing.md](references/unsafe-collections-and-aliasing.md) | What `Unsafe-` drops; alias ownership and invalidation rules | Someone proposes an `Unsafe-` variant, or two collections are to share one allocation |
+| [allocators.md](references/allocators.md) | `Temp`/`TempJob`/`Persistent` lifetimes, `Dispose(JobHandle)`, `IsCreated` | Choosing an allocator, or auditing a disposal path |
+| [rewindable-and-custom-allocators.md](references/rewindable-and-custom-allocators.md) | Rewindable block growth/rewind semantics; custom-allocator registration and teardown | The built-in three provably do not fit the data's lifetime |
+| [parallel-readers-writers.md](references/parallel-readers-writers.md) | `ParallelWriter` capacity and ordering guarantees vs. `NativeStream` per-thread buffers | Multiple threads will write one container inside a parallel job |
+| [dots-relationship.md](references/dots-relationship.md) | Where this package ends and Jobs/Burst/ECS/Mathematics begin | A request straddles two DOTS packages, or a hand-off must be stated |
 
 ## 1. Objective
 Pick and use the right unmanaged collection type for the data and access pattern at hand — correct type choice, correct allocator, correct disposal — without drifting into job-scheduling mechanics, Burst tuning, or ECS component design, which are sibling skills' territory.
 
 ## 2. Role
-Act as the Collections-package specialist: given a need for unmanaged, GC-free data (feeding a job, a Burst-compiled method, an ECS buffer, or just a MonoBehaviour that wants to avoid GC pressure per `performance-and-algorithms.md`), you choose the right container type, its allocator, and its safe access pattern — you don't schedule the job that consumes it and you don't tune its Burst compilation.
+Act as the Collections-package specialist for the client track — the tool reached for whenever a feature needs unmanaged, GC-free data (feeding a job, a Burst-compiled method, an ECS buffer, or a MonoBehaviour avoiding GC pressure per `performance-and-algorithms.md`). You choose the container, its allocator, and its safe access pattern; you do not schedule the job that consumes it or tune its Burst compilation.
 
 ## 3. When to invoke this skill
 - Choosing between `NativeArray<T>`, `NativeList<T>`, `NativeHashMap<TKey,TValue>`/`NativeParallelHashMap<TKey,TValue>`, `NativeHashSet<T>`, `NativeQueue<T>`, `NativeStream`, or `NativeReference<T>` for a specific data shape and access pattern.
-- Replacing a managed `string`/`List<T>`/`Dictionary<TKey,TValue>` that needs to cross into a job, Burst-compiled method, or ECS component with an unmanaged `FixedString*Bytes`/`FixedList*Bytes<T>` or `Native-` equivalent.
-- Deciding between a `Native-` collection (safety-checked) and its `Unsafe-` counterpart (no safety checks, lower overhead) for a specific, justified low-level case.
-- Reasoning about aliasing — reinterpreting one collection's memory as another type/shape without a separate allocation.
-- A `Temp`/`TempJob`/`Persistent` allocator doesn't fit the actual data lifetime (e.g. many short-lived allocations across more than a few frames, or allocations whose lifetime doesn't map to a job or a frame) — evaluating a rewindable or custom allocator instead.
-- Writing to a `Native-` container concurrently from multiple threads inside a parallel job — choosing between a `ParallelWriter` and `NativeStream`/`UnsafeStream` based on whether write order matters.
-- Negative trigger: scheduling the job that will consume the container, chaining `JobHandle` dependencies, or the routine Temp/TempJob/Persistent choice for data feeding one scheduled job — that's `unity-job-system-and-burst`; hand off once the container itself is chosen and populated.
-- Negative trigger: Burst-specific compilation tuning (HPC# subset compliance, `FloatMode`, intrinsics, AOT settings) — that's `unity-burst-compiler`, even though every type here is Burst-eligible by design.
-- Negative trigger: modeling ECS components, `IBufferElementData`/`DynamicBuffer<T>`, or queries — that's `unity-ecs-architecture`, even though a `DynamicBuffer<T>` behaves conceptually like a `NativeList<T>` under the hood.
+- Replacing a managed `string`/`List<T>`/`Dictionary<TKey,TValue>` that must cross into a job, Burst-compiled method, or ECS component with a `FixedString*Bytes`/`FixedList*Bytes<T>` or `Native-` equivalent.
+- Deciding between a `Native-` collection (safety-checked) and its `Unsafe-` counterpart, or reasoning about aliasing — reinterpreting one collection's memory as another type or shape without a second allocation.
+- `Temp`/`TempJob`/`Persistent` doesn't fit the actual data lifetime (many short-lived allocations spanning more than a few frames) — evaluating a rewindable or custom allocator instead.
+- Writing to a container concurrently from a parallel job — `ParallelWriter` vs. `NativeStream`/`UnsafeStream`, decided by whether write order matters.
+- Negative trigger: scheduling the consuming job, chaining `JobHandle` dependencies, or the routine allocator pick for data feeding one scheduled job — that's `unity-job-system-and-burst`; hand off once the container is chosen and populated.
+- Negative trigger: Burst compilation tuning (HPC# subset, `FloatMode`, intrinsics, AOT settings) — that's `unity-burst-compiler`, even though every type here is Burst-eligible by design.
+- Negative trigger: modeling ECS components, `IBufferElementData`/`DynamicBuffer<T>`, or queries — that's `unity-ecs-architecture`, even though `DynamicBuffer<T>` behaves like an entity-scoped `NativeList<T>`.
 - Negative trigger: `Unity.Mathematics` vector/matrix/quaternion/`Random`/`noise` types — that's `unity-mathematics`, a separate package with its own skill.
-- Negative trigger: choosing physics-specific data types — `PhysicsCollider`'s `BlobAssetReference<Collider>`, or reading `CollisionEvents`/`TriggerEvents` streams — that's `unity-physics`, even though both are built on this skill's own blob-asset and `NativeStream` concepts.
-- Negative trigger: choosing rendering-specific data types — `RenderMeshArray`'s internal mesh/material lists — that's `unity-entities-graphics`, even though it's conceptually built on this skill's own shared-component/container concepts.
+- Negative trigger: physics-specific data types — `PhysicsCollider`'s `BlobAssetReference<Collider>`, or `CollisionEvents`/`TriggerEvents` streams — that's `unity-physics`, even though both build on this skill's blob-asset and `NativeStream` mechanics.
+- Negative trigger: rendering-specific data types such as `RenderMeshArray`'s internal mesh/material lists — that's `unity-entities-graphics`.
 
 ## 4. How to use this skill
-1. **Confirm the actual access pattern before picking a type.** Sequential iteration/append → `NativeList<T>`; key-value lookup → `NativeHashMap`/`NativeParallelHashMap` (single-threaded vs. multithreaded write, per `collection-types.md`); uniqueness checks → `NativeHashSet<T>`; FIFO work items → `NativeQueue<T>`; per-thread append-only buffers → `NativeStream`; a single boxed value that needs to cross into a job → `NativeReference<T>`. Don't default to `NativeList<T>` for everything the way `List<T>` gets defaulted to in managed code.
-2. **Decide managed vs. unmanaged deliberately.** If the data never needs to cross into a job, a Burst-compiled method, or an ECS component, a plain managed `List<T>`/`Dictionary<TKey,TValue>` (per `performance-and-algorithms.md`'s baseline data-structure guidance) is simpler and avoids allocator-lifetime bookkeeping — reach for `Native-` types only when something on the other side of that boundary actually needs them.
-3. **Use `FixedString*Bytes`/`FixedList*Bytes<T>` for small, fixed-capacity data that must be Burst/job-compatible** (log messages, short identifiers, small per-entity tag lists) — pick the smallest size (`32`/`64`/`128`/`512`/`4096` bytes) that comfortably fits the data; both are fully stack-embeddable structs with no separate allocation or disposal.
-4. **Reach for `Unsafe-` collection variants only for a specific, justified low-level case** (e.g. building a custom container on top of them, or a proven safety-check overhead problem) — the safety checks on `Native-` types exist to catch real bugs (disposal, race conditions) and are the correct default.
-5. **Use aliasing deliberately, not as a shortcut around a second allocation you didn't want to think through** — an alias shares its parent's memory and becomes unusable the moment the parent is disposed; document which collection owns the allocation when aliasing is used.
-6. **Pick the allocator by actual data lifetime**, escalating beyond the basic three only when they genuinely don't fit: `Temp`/`TempJob`/`Persistent` (per `unity-job-system-and-burst`) cover most cases; reach for a **rewindable allocator** when many short-lived allocations need to be freed together at a defined checkpoint without per-allocation `Dispose()` bookkeeping; reach for a **custom allocator** only for a genuinely specialized lifetime/strategy neither built-in option covers.
-7. **For concurrent writes from a parallel job, choose based on whether order matters.** A `ParallelWriter` (`AsParallelWriter()`) is simplest but its write order is indeterministic under thread scheduling; use `NativeStream`/`UnsafeStream` (per-thread buffers) when the indeterminism itself is a problem, or sort/index afterward if order must be recovered.
-8. **Dispose every `Native-`/custom-allocator allocation on every code path**, including early returns — this is the Collections-specific case of `performance-and-algorithms.md`'s Memory discipline rule; an aliased collection is the one exception, since disposing its parent already covers it.
-9. **State the hand-off explicitly.** Once the container is chosen, allocated, and populated, scheduling the job that reads/writes it is `unity-job-system-and-burst`'s territory, and tuning that job's Burst compilation is `unity-burst-compiler`'s — don't extend this skill's guidance into either.
+1. **Confirm the actual access pattern before picking a type**, per [collection-types.md](references/collection-types.md) (anchored to the version pinned in [root-links.md](references/root-links.md)) — sequential append → `NativeList<T>`; key-value lookup → `NativeHashMap`/`NativeParallelHashMap`; uniqueness → `NativeHashSet<T>`; FIFO → `NativeQueue<T>`; per-thread append-only → `NativeStream`; one value crossing into a job → `NativeReference<T>`. Defaulting to `NativeList<T>` the way managed code defaults to `List<T>` picks the type before the question is asked.
+2. **Decide managed vs. unmanaged deliberately**, per [dots-relationship.md](references/dots-relationship.md). Unmanaged containers cost allocator-lifetime bookkeeping; that cost only buys something at a job/Burst/ECS boundary. If the data never crosses one, a managed `List<T>`/`Dictionary<TKey,TValue>` is the correct answer under `performance-and-algorithms.md`'s data-structure guidance.
+3. **Use `FixedString*Bytes`/`FixedList*Bytes<T>` for small, fixed-capacity data that must be Burst/job-compatible**, per [fixedstring-and-fixedlist.md](references/fixedstring-and-fixedlist.md) — pick the smallest size (32/64/128/512/4096 bytes) that comfortably fits, since the struct is copied by value on every pass. Neither family takes an `Allocator` or needs `Dispose()`.
+4. **Reach for an `Unsafe-` variant only for a specific, justified low-level case**, per [unsafe-collections-and-aliasing.md](references/unsafe-collections-and-aliasing.md) — building a custom container on top of one, or a *measured* safety-check overhead problem per `performance-and-algorithms.md`'s Verification section. Absent that measurement, `Native-` is the answer: its checks catch real disposal and race bugs.
+5. **Use aliasing deliberately, and name the owner**, per [unsafe-collections-and-aliasing.md](references/unsafe-collections-and-aliasing.md) — an alias shares its parent's allocation and becomes invalid, not merely stale, the instant the parent is disposed. Record which collection owns the allocation wherever an alias is introduced.
+6. **Pick the allocator by actual data lifetime**, per [allocators.md](references/allocators.md), escalating only when the built-in three provably don't fit. Many short-lived allocations freed together at a defined checkpoint → a **rewindable** allocator; a lifetime neither built-in nor rewindable covers → a **custom** allocator, per [rewindable-and-custom-allocators.md](references/rewindable-and-custom-allocators.md).
+7. **For concurrent writes from a parallel job, decide on write order first**, per [parallel-readers-writers.md](references/parallel-readers-writers.md) — `AsParallelWriter()` is simplest but its order follows thread scheduling and it cannot grow capacity, so pre-size the list; when the indeterminism itself is the problem, use `NativeStream`/`UnsafeStream`, or sort afterward to recover order.
+8. **Dispose every `Native-`/custom-allocator allocation on every code path**, including early returns — the Collections-specific case of `performance-and-algorithms.md`'s Memory discipline rule. An alias is the sole exception, since disposing its parent already covers it.
+9. **If the request's data shape or crossing boundary is unstated, ask before choosing** — access pattern and boundary are the two inputs steps 1–2 consume, and guessing either silently picks the wrong container. Once the container is chosen and populated, state the hand-off: scheduling belongs to `unity-job-system-and-burst`, Burst tuning to `unity-burst-compiler`, per [dots-relationship.md](references/dots-relationship.md).
 
 ## 5. Specific goals / tasks this skill performs
 - Choosing the right `Native-`/`Unsafe-` collection type for a given data shape and access pattern.
-- Replacing managed strings/lists/dictionaries that need to cross a job/Burst/ECS boundary with `FixedString`/`FixedList`/`Native-` equivalents.
-- Evaluating and applying rewindable or custom allocators when the basic Temp/TempJob/Persistent lifetimes don't fit.
-- Choosing between `ParallelWriter` and `NativeStream`/`UnsafeStream` for concurrent-write safety and ordering needs.
+- Replacing managed strings/lists/dictionaries that cross a job/Burst/ECS boundary with `FixedString`/`FixedList`/`Native-` equivalents.
+- Evaluating and applying rewindable or custom allocators when Temp/TempJob/Persistent don't fit.
+- Choosing between `ParallelWriter` and `NativeStream`/`UnsafeStream` for concurrent-write safety and ordering.
 - Auditing collection disposal and aliasing correctness.
-- Out of scope: scheduling jobs/`JobHandle` dependency chains and the routine Temp/TempJob/Persistent choice for single-job data (`unity-job-system-and-burst`); Burst compilation tuning (`unity-burst-compiler`); ECS component/buffer/query design (`unity-ecs-architecture`); `Unity.Mathematics` types (`unity-mathematics`).
+- Out of scope: job scheduling and `JobHandle` chains (`unity-job-system-and-burst`); Burst compilation tuning (`unity-burst-compiler`); ECS component/buffer/query design (`unity-ecs-architecture`); `Unity.Mathematics` types (`unity-mathematics`).
 
 ## 6. Output format
 ```
 ## Collections Work — <system/data name>
 - Access pattern: <sequential / key-value / set / FIFO / per-thread append / single value>
-- Collection type chosen: <NativeArray / NativeList / NativeHashMap / NativeParallelHashMap / NativeHashSet / NativeQueue / NativeStream / NativeReference / FixedString*/FixedList*> — rationale
-- Managed vs. unmanaged decision: <why this needed to be unmanaged, or "kept managed — no job/Burst/ECS boundary crossed">
+- Collection type chosen: <NativeArray / NativeList / NativeHashMap / NativeParallelHashMap / NativeHashSet / NativeQueue / NativeStream / NativeReference / FixedString* / FixedList*> — rationale
+- Managed vs. unmanaged: <the boundary that forced unmanaged, or "kept managed — no job/Burst/ECS boundary crossed">
 - Unsafe- variant used: <yes/no — justification>
-- Aliasing used: <yes/no — parent/owner collection>
-- Allocator: <Temp/TempJob/Persistent/rewindable/custom> — rationale
+- Aliasing used: <yes/no — owning collection>
+- Allocator: <Temp / TempJob / Persistent / rewindable / custom> — rationale
 - Concurrent-write pattern: <ParallelWriter / NativeStream / UnsafeStream / none>
-- Disposal confirmed on every code path: <yes/no>
-- Hand-off: <job scheduling → unity-job-system-and-burst / Burst tuning → unity-burst-compiler, if applicable>
+- Rule compliance: <disposal on every code path confirmed, per Memory discipline>
+- Verification: <how the disposal/overhead claim was confirmed, or "not applicable">
+- Layer: <Game.Core.* / Game.Client.* / Editor-only>
 - Known limitations: <...>
+```
+
+**Extended report — emit ONLY when the requester asks for it.** It replaces the one-line `Known limitations` above with all three fields:
+```
+- Known limitations: <what the delivered solution does not cover>
+- Latent concerns: <failure modes not yet triggered: assumptions holding only under current conditions, thresholds not yet reached>
+- Future remediation: <the concrete fix for each concern, each with its trigger condition>
 ```
 
 ## 7. Examples
 **Example 1**
-- Input: a bulk per-agent update (already approved for the Job System per `unity-job-system-and-burst`) needs a per-agent neighbor list that's rebuilt every frame and consumed within the same job batch.
-- Output: chose `NativeStream` over a `NativeParallelHashMap`-based approach so each worker thread appends neighbor results into its own buffer with zero cross-thread contention; allocated with `Allocator.TempJob` since the data doesn't need to survive past the frame's job chain; disposed via `Dispose(JobHandle)` chained to the consuming job's handle; handed the actual `IJobFor` scheduling back to `unity-job-system-and-burst`.
+- Input: a bulk per-agent update (already approved for the Job System per `unity-job-system-and-burst`) needs a per-agent neighbour list rebuilt every frame and consumed within the same job batch.
+- Output: chose `NativeStream` over a `NativeParallelHashMap` approach so each worker thread appends into its own buffer with zero cross-thread contention; `Allocator.TempJob`, since the data doesn't outlive the frame's job chain; disposed via `Dispose(JobHandle)` chained to the consuming job's handle; `IJobFor` scheduling handed back to `unity-job-system-and-burst`.
 
 **Example 2**
-- Input: "Can you make this per-frame debug label use a `NativeHashMap<int, FixedString64Bytes>` so it works inside our Burst job?" — the label is only ever read/written on the main thread, never inside a job.
-- Output: declined the unmanaged container — since nothing here crosses into a job or Burst-compiled code, a plain managed `Dictionary<int, string>` is simpler, avoids allocator-lifetime bookkeeping and `Dispose()` calls entirely, and is fully in line with `performance-and-algorithms.md`'s guidance to default to the simpler structure when the "smarter" one buys nothing.
+- Input: "Can you make this per-frame debug label use a `NativeHashMap<int, FixedString64Bytes>` so it works inside our Burst job?" — the label is only ever touched on the main thread, never inside a job.
+- Output: declined — nothing here crosses into a job or Burst-compiled code, so the unmanaged container buys nothing and costs allocator-lifetime bookkeeping and `Dispose()` calls. Kept a managed `Dictionary<int, string>`, per `performance-and-algorithms.md`'s rule to default to the simpler structure when the smarter one buys nothing.
+
+**Example 3**
+- Input: an Editor-side mesh importer makes thousands of small short-lived allocations across a multi-frame import, all dead once the import ends.
+- Output: `TempJob` rejected (lifetime exceeds ~4 frames and would raise leak warnings), `Persistent` rejected (thousands of individual `Dispose()` calls). Chose a rewindable allocator created via `AllocatorHelper`, containers allocated through `CollectionHelper.CreateNativeArray`, and one rewind at the import's end freeing every allocation at once — per [rewindable-and-custom-allocators.md](references/rewindable-and-custom-allocators.md).
 
 ## 8. Edge cases & guardrails
-- Never introduce a `Native-`/`Unsafe-` collection for data that never crosses a job/Burst/ECS boundary — a managed collection is simpler and avoids allocator-lifetime bookkeeping for no benefit.
-- Never leave a `Native-` collection or custom-allocator allocation undisposed on any code path — an alias is the sole exception, since its parent's disposal already covers it.
-- Never touch an alias after its parent collection has been disposed — the alias becomes invalid the instant the parent is disposed, not just "stale."
-- Don't reach for an `Unsafe-` variant without a specific, justified reason — the `Native-` safety checks catch real disposal/race bugs and are the correct default.
-- Don't assume a `ParallelWriter`'s write order is deterministic — if downstream logic depends on order, use `NativeStream`/`UnsafeStream` or sort afterward instead of assuming thread-scheduling luck.
-- Don't reach for a rewindable or custom allocator before confirming Temp/TempJob/Persistent genuinely doesn't fit the data's actual lifetime — the basic three cover the overwhelming majority of cases.
-- Pick the smallest `FixedString`/`FixedList` capacity that comfortably fits the data — oversizing wastes struct space that gets copied by value on every pass.
-- Don't confuse this skill's collection-type/allocator-strategy concerns with `unity-job-system-and-burst`'s scheduling/dependency concerns — a container can be perfectly chosen and still be scheduled incorrectly, and vice versa; check both independently.
+- Never introduce a `Native-`/`Unsafe-` collection for data that never crosses a job/Burst/ECS boundary — it adds allocator-lifetime bookkeeping and buys nothing.
+- Never leave a `Native-` or custom-allocator allocation undisposed on any code path, including early returns — an alias is the sole exception, since its parent's disposal covers it.
+- Never touch an alias after its parent has been disposed — it is invalid from that instant, and reading it is undefined behaviour, not a stale read.
+- Never reach for an `Unsafe-` variant without a measured reason — dropping the safety checks removes the only thing that reports a disposal or race bug before it becomes a crash.
+- Never assume `ParallelWriter` order is deterministic, and never let it grow a list — it cannot, so pre-size or the append silently fails to fit.
+- Never escalate to a rewindable or custom allocator before confirming the built-in three genuinely don't fit — that's speculative complexity YAGNI already forbids.
+- If the access pattern, the crossing boundary, or the data's real lifetime is unstated, ask — each one independently determines a different field of §6, and a guess produces a plausible-looking wrong answer.

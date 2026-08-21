@@ -1,102 +1,78 @@
-# Class Maps
+# Class Maps — Every ClassMap<T> Mapping Technique
 
-Source: [class-maps](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/), [mapping-properties](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/mapping-properties/), [mapping-by-name](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/mapping-by-name/), [mapping-by-alternate-names](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/mapping-by-alternate-names/), [mapping-duplicate-names](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/mapping-duplicate-names/), [mapping-by-index](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/mapping-by-index/), [auto-mapping](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/auto-mapping/), [ignoring-properties](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/ignoring-properties/), [constant-value](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/constant-value/), [type-conversion](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/type-conversion/), [inline-type-conversion](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/inline-type-conversion/), [optional-maps](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/optional-maps/), [validation](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/validation/).
+Sources: [Class Maps](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/), [Mapping Properties](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/mapping-properties/), [Mapping by Name](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/mapping-by-name/), [Alternate Names](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/mapping-by-alternate-names/), [Duplicate Names](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/mapping-duplicate-names/), [Mapping by Index](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/mapping-by-index/), [Auto Mapping](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/auto-mapping/), [Ignoring Properties](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/ignoring-properties/), [Constant Value](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/constant-value/), [Optional Maps](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/optional-maps/), [Type Conversion](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/type-conversion/), [Inline Type Conversion](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/inline-type-conversion/), [Validation](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/validation/).
+Covers: SKILL.md §4 — **"Default to `GetRecords<T>()`/`WriteRecords()` with the by-name convention"**, **"Choose `ClassMap<T>` vs. attributes by how many mapping shapes the type needs"**.
 
-A `ClassMap<T>` is registered once per reader/writer via `csv.Context.RegisterClassMap<FooMap>()`, before calling `GetRecords<T>()`/`WriteRecords()`. Every mapping technique below is a `Map(m => m.Property)` call chained with a configuration method.
+Each row below is one reason the by-name convention is not enough. If none
+applies, no map should be written at all. The attribute form of the same
+settings is [attributes.md](attributes.md); converter selection is
+[type-conversion.md](type-conversion.md).
 
-## Mapping by name
+## Contents
 
-Use when the CSV header text doesn't match the property name:
+- [Registration](#registration)
+- [Selecting the column](#selecting-the-column)
+- [Properties with no column](#properties-with-no-column)
+- [Conversion and validation](#conversion-and-validation)
 
-```csharp
-public sealed class FooMap : ClassMap<Foo>
-{
-    public FooMap()
-    {
-        Map(m => m.Id).Name("ColumnA");
-        Map(m => m.Name).Name("ColumnB");
-    }
-}
-```
+## Registration
 
-## Mapping by alternate names
+| Fact | What it decides | Source |
+|---|---|---|
+| `csv.Context.RegisterClassMap<FooMap>()` | Registers the map once per reader or writer, **before** `GetRecords<T>()`/`WriteRecords()` | [Class Maps](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/) |
+| Every technique is a chained `Map(m => m.Property)` call | One property per statement, so a map reads as a column list | [Mapping Properties](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/mapping-properties/) |
+| More than one map may be registered per type | This is what attributes cannot do — the reason a map wins for multi-variant files | [Class Maps](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/) |
 
-`.Name(...)` accepts multiple header strings for the same property, so a property can match whichever header name the current file actually uses (useful across CSV export sources/versions that renamed a column).
+## Selecting the column
 
-## Mapping duplicate names
-
-When two columns in the CSV share the same header text, disambiguate with a name index alongside `.Name(...)` (the Nth column with that header name) rather than relying on plain `.Name(...)`, which would otherwise resolve ambiguously.
-
-## Mapping by index
-
-Use when the CSV has no header row at all — `HasHeaderRecord = false` in `CsvConfiguration`, then map every property to a fixed column position. **You can't rely on the order of class properties in .NET**, so index-based mapping must be explicit:
-
-```csharp
-public sealed class FooMap : ClassMap<Foo>
-{
-    public FooMap()
-    {
-        Map(m => m.Id).Index(0);
-        Map(m => m.Name).Index(1);
-    }
-}
-```
-
-## Auto mapping + overrides
-
-`AutoMap(CultureInfo)` generates the default (by-name) mapping for every property; call it first, then override only the properties that need something different — the common pattern once a class has more than a couple of properties needing customization:
+| Technique | Effect | Use when | Source |
+|---|---|---|---|
+| `.Name("ColumnA")` | Matches by header text instead of property name | The header text and the property name differ | [Mapping by Name](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/mapping-by-name/) |
+| `.Name("A", "B")` | Accepts several header strings for one property | Export sources or versions renamed a column | [Alternate Names](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/mapping-by-alternate-names/) |
+| `.Name(...)` plus a name index | Selects the Nth column carrying that header text | Two columns share the same header | [Duplicate Names](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/mapping-duplicate-names/) |
+| `.Index(0)` | Matches by column position | `HasHeaderRecord = false` — there is no header to match | [Mapping by Index](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/mapping-by-index/) |
+| `AutoMap(CultureInfo)` then overrides | Generates the by-name mapping for every property, then replaces only the exceptions | More than a couple of properties need customization | [Auto Mapping](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/auto-mapping/) |
 
 ```csharp
-public sealed class FooMap : ClassMap<Foo>
+public sealed class ItemBalanceRowMap : ClassMap<ItemBalanceRow>
 {
-    public FooMap()
+    public ItemBalanceRowMap()
     {
         AutoMap(CultureInfo.InvariantCulture);
-        Map(m => m.Name).Name("The Name");
+        Map(m => m.Id).Name("Item Id");
+        Map(m => m.BaseDamage).Name("Base Damage");
     }
 }
 ```
 
-## Ignoring properties
+**Critical caveat**: .NET does not guarantee the declaration order of class
+properties, so index-based mapping must name every index explicitly. A map
+that relies on property order is correct until an unrelated edit reorders the
+class.
 
-`.Ignore()` excludes a property AutoMap would otherwise pick up, for a property that has no corresponding CSV column (a computed/runtime-only field):
+## Properties with no column
 
-```csharp
-AutoMap(CultureInfo.InvariantCulture);
-Map(m => m.IsDirty).Ignore();
-```
+| Technique | Effect | Use when | Source |
+|---|---|---|---|
+| `.Ignore()` | Excludes a property `AutoMap` would otherwise pick up | The property is computed or runtime-only | [Ignoring Properties](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/ignoring-properties/) |
+| `.Constant(value)` | Assigns a fixed value on every row instead of reading one | No column exists but the object still needs a deterministic value | [Constant Value](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/constant-value/) |
+| `.Optional()` | Suppresses the throw when the column is absent | The column exists in some file variants and not others | [Optional Maps](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/optional-maps/) |
 
-## Constant value
+## Conversion and validation
 
-`.Constant(value)` assigns a fixed value to a property on every row instead of reading it from a column — for a property with no CSV column at all that still needs a deterministic value on the resulting object:
-
-```csharp
-Map(m => m.IsDirty).Constant(true);
-```
-
-## Optional maps
-
-`.Optional()` on a mapped property tells CsvHelper not to throw when that column is missing from the file — needed for a property that's present in some file versions/variants but not others:
-
-```csharp
-Map(m => m.Date).Optional();
-```
-
-## Type conversion (class-map level) and inline type conversion
-
-`.TypeConverter<T>()` (or the attribute/global-registration forms — see [type-conversion.md](type-conversion.md)) assigns a specific `ITypeConverter` to one property's mapping. `.Convert(row => ...)` (inline type conversion) supplies a conversion lambda directly on the map for a one-off case that doesn't warrant a whole separate converter class — reach for a named `ITypeConverter` once the conversion logic is non-trivial or reused across maps (see [type-conversion.md](type-conversion.md)'s Custom Type Converter section).
-
-## Validation
-
-`.Validate(args => ...)` runs a predicate against the raw field value (`args.Field`) before/during conversion; returning `false` signals an invalid field:
+| Technique | Effect | Use when | Source |
+|---|---|---|---|
+| `.TypeConverter<T>()` | Assigns a named `ITypeConverter` to one property's mapping | The conversion is non-trivial or reused across maps | [Type Conversion](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/type-conversion/) |
+| `.Convert(row => ...)` | Supplies the conversion inline as a lambda | A one-off that does not warrant a converter class | [Inline Type Conversion](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/inline-type-conversion/) |
+| `.Validate(args => ...)` | Runs a predicate against the raw `args.Field`; `false` signals an invalid field | A business rule must reject bad data at parse time | [Validation](https://joshclose.github.io/CsvHelper/examples/configuration/class-maps/validation/) |
 
 ```csharp
-public class FooMap : ClassMap<Foo>
+public sealed class ItemBalanceRowMap : ClassMap<ItemBalanceRow>
 {
-    public FooMap()
+    public ItemBalanceRowMap()
     {
-        Map(m => m.Id);
-        Map(m => m.Name).Validate(args => !args.Field.Contains("-"));
+        Map(m => m.Id).Validate(args => !args.Field.Contains("-"));
+        Map(m => m.Loot).TypeConverter<LootJsonConverter>();
     }
 }
 ```

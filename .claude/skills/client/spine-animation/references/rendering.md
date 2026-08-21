@@ -1,100 +1,143 @@
-# Rendering — Pipelines, Materials, Draw Calls, Alpha Workflow, Shaders
+# Rendering — Pipelines, Shaders, Materials, Draw Calls & Alpha Workflow
 
-Source: [spine-unity-rendering](https://esotericsoftware.com/spine-unity-rendering).
+Source: [spine-unity Rendering](https://esotericsoftware.com/spine-unity-rendering).
+Covers: SKILL.md §4 — **"Match the shader family to the render pipeline and never mix them"**, **"Never assign a Materials array entry or `MeshRenderer.material` directly"**.
 
-## Render pipeline support
-- **Built-in Render Pipeline** — default shaders ship in the spine-unity runtime package.
-- **Universal Render Pipeline (URP)** — a separate extension UPM package, with 2D and 3D Forward Renderer shader variants.
-- **Lightweight Render Pipeline (LWRP)** — a separate legacy extension UPM package.
-- **Deferred Shading** — not supported by Spine shaders (Built-in or URP).
+Two independent axes decide everything here: which pipeline is active, and
+which alpha workflow the textures were exported and imported with. Getting
+either wrong renders *something*, which is why the symptom index in
+[faq.md](faq.md) matters more than eye inspection. The components these
+materials sit on are [main-components.md](main-components.md); the effect
+components are [utility-components.md](utility-components.md).
 
-Never mix shader families across a pipeline boundary — a Built-in `Spine/Skeleton` shader under URP, or a URP Spine shader under the Built-in pipeline, is a broken combination even where it happens to render *something*.
+## Contents
 
-## Materials and atlas management
-Each atlas page texture gets its own Material, auto-created at import. Using a slot blend mode other than `Normal` creates additional per-blend-mode materials too (except `Additive` under PMA, which reuses the normal material). `SkeletonRenderer`/`SkeletonGraphic` rebuild the Materials array every frame from the currently-assigned attachments, their atlas assets, and slot blend modes — **any direct edit to the Materials array is overwritten on the next `LateUpdate()`**. Use `SkeletonRendererCustomMaterials`/`SkeletonGraphicCustomMaterials` (see utility-components.md) for a per-instance override instead, or edit the Atlas asset itself for a project-wide change.
+- [Pipeline support](#pipeline-support)
+- [Materials and the rebuild rule](#materials-and-the-rebuild-rule)
+- [Draw calls and material switching](#draw-calls-and-material-switching)
+- [Transparency and draw order](#transparency-and-draw-order)
+- [Shader catalog](#shader-catalog)
+- [PMA vs. straight alpha](#pma-vs-straight-alpha)
+- [Writing a custom Spine shader](#writing-a-custom-spine-shader)
 
-## Material switching and draw calls
-Material order in the array follows draw order. When attachments span multiple atlas pages or blend modes (material `A`, material `B`, ...), the array is populated in the order draw order actually needs them — each entry is one draw call. Minimize material switching by packing attachments across fewer atlas pages and organizing them with draw order in mind, not just visual grouping.
+## Pipeline support
 
-### Per-instance customization without breaking batching
+| Pipeline | Shader source | Source |
+|---|---|---|
+| Built-in Render Pipeline | Default shaders ship in the spine-unity runtime package | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| Universal Render Pipeline | A separate extension UPM package, with 2D and 3D Forward Renderer variants | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| Lightweight Render Pipeline | A separate legacy extension UPM package | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| Deferred Shading | **Not supported** by any Spine shader, Built-in or URP | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+
+**Critical caveat**: a Built-in `Spine/Skeleton` shader under URP, or a URP
+Spine shader under Built-in, is broken even where it renders something
+plausible. Never mix families across a pipeline boundary.
+
+## Materials and the rebuild rule
+
+| Fact | What it decides | Source |
+|---|---|---|
+| One material per atlas page | Created automatically at import | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| Non-`Normal` slot blend modes add materials | Except `Additive` under PMA, which reuses the normal material | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| The Materials array is rebuilt every frame | From current attachments, their atlas assets, and slot blend modes — **any direct edit is overwritten on the next `LateUpdate()`** | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| Per-instance override | `SkeletonRendererCustomMaterials`/`SkeletonGraphicCustomMaterials`, or `CustomMaterialOverride`/`CustomSlotMaterials` in code | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| Project-wide change | Edit the Atlas asset itself, not the instance | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+
 ```csharp
-// Full material swap (breaks batching with other instances on the original material)
-skeletonAnimation.CustomMaterialOverride[originalMaterial] = newMaterial;
-skeletonAnimation.CustomMaterialOverride.Remove(originalMaterial);
-// Get the original material from SkeletonDataAsset.atlasAssets[0].PrimaryMaterial, not MeshRenderer.material
+// Full swap — breaks batching with other instances on the original material.
+// Take the original from SkeletonDataAsset.atlasAssets[0].PrimaryMaterial,
+// never from MeshRenderer.material.
+this.skeletonAnimation.CustomMaterialOverride[originalMaterial] = newMaterial;
 
-// Per-slot override
-skeletonAnimation.CustomSlotMaterials[slot] = newMaterial;
+// Per-slot override.
+this.skeletonAnimation.CustomSlotMaterials[slot] = newMaterial;
 ```
 
-**Tinting without breaking batching**: set `Skeleton.R`/`G`/`B`/`A` (with `Advanced → PMA Vertex Colors` enabled) instead of swapping materials — same technique works per-slot. `MaterialPropertyBlock` (via `Renderer.SetPropertyBlock()`) is the other per-instance override path, but different property values per instance still break batching; batching only happens when values actually match.
+| Tinting approach | Batching consequence | Source |
+|---|---|---|
+| `Skeleton.R`/`G`/`B`/`A` with PMA Vertex Colors enabled | Preserves batching; works per-slot too — the correct default | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| `MaterialPropertyBlock` via `Renderer.SetPropertyBlock()` | Differing values per instance still break batching; batching survives only when values match | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| Swapping in a tinted material instance | Breaks batching and is overwritten by the next rebuild | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+
+## Draw calls and material switching
+
+| Fact | What it decides | Source |
+|---|---|---|
+| Material array order follows draw order | Each entry is one draw call | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| Attachments spanning atlas pages or blend modes add entries | The array is populated in the order draw order needs them | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| The lever is packing and ordering | Pack across fewer atlas pages and organize attachments with draw order in mind, not by visual grouping | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
 
 ## Transparency and draw order
-Alpha blending defeats automatic z-buffer depth sorting — triangles must render back-to-front. Within one mesh, slot draw order guarantees this. Between meshes/renderers, order is decided (in priority) by: camera depth → `Material.renderQueue` → shader `Queue` tag → `SortingGroup` components → `SortingLayer`/`sortingOrder` → distance from camera. Cameras also expose a `transparencySortMode` property.
 
-**Sorting Layer / Order in Layer**: exposed on the SkeletonRenderer inspector as friendly properties, backed by `MeshRenderer.sortingLayerID`/`sortingOrder`.
-
-**Multi-page skeletons under an orthographic camera** can sort incorrectly — fix by adding a `SortingGroup` component to the skeleton GameObject, or by rotating the camera a negligible amount (e.g. Y rotation = 0.001) to break the degenerate sort case.
-
-**Rendering something between skeleton parts**: use `SkeletonRenderSeparator` (see utility-components.md) to split rendering into multiple parts.
-
-**Fading a skeleton in/out**: don't just lower alpha — overlapping attachments will show through each other. Render to a temporary `RenderTexture` at full opacity, then draw that texture at the target fade opacity, via `SkeletonRenderTexture`/`SkeletonRenderTextureFadeout` (see utility-components.md). Example scene: `Spine Examples/Other Examples/RenderTexture FadeOut Transparency`.
+| Fact | What it decides | Source |
+|---|---|---|
+| Alpha blending defeats z-buffer sorting | Triangles must render back-to-front; slot draw order guarantees this within one mesh | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| Between meshes, order resolves by priority | Camera depth → `Material.renderQueue` → shader `Queue` tag → `SortingGroup` → `SortingLayer`/`sortingOrder` → distance from camera | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| Inspector sorting properties | `Sorting Layer`/`Order in Layer` back onto `MeshRenderer.sortingLayerID`/`sortingOrder` | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| Multi-page skeletons under an orthographic camera can mis-sort | Add a `SortingGroup` to the skeleton GameObject, or rotate the camera negligibly (Y = 0.001) to break the degenerate case | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| Drawing between skeleton parts | Requires render separation, see [utility-components.md](utility-components.md) | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| Fading a skeleton | Render to a `RenderTexture` at full opacity, then draw that at the target opacity — lowering alpha directly shows attachments through each other | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
 
 ## Shader catalog
 
-Default shader: `Spine/Skeleton`. **Only special `CanvasRenderer`-compatible shaders (`Spine/SkeletonGraphic*`) work with `SkeletonGraphic`** — this restriction is repeated because it's the single most common Spine rendering mistake.
+| Built-in shader | Effect | Source |
+|---|---|---|
+| `Spine/Skeleton` | Unlit, no z-write — the default for `SkeletonRenderer` | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| `Spine/Skeleton Graphic` | Unlit, no z-write, single texture — the default for `SkeletonGraphic` | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| `Spine/Skeleton Lit`, `Spine/Skeleton Lit ZWrite` | Simple lit, without and with z-write | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| `Spine/Skeleton Fill` | Unlit with a colour overlay (`FillColor`, `FillPhase`) | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| `Spine/Skeleton Tint` | Unlit two-colour tint — light via `Tint Color`, dark via `Black Point` | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| `Spine/Skeleton Tint Black`, `... Additive` | Animated per-slot tint-black, and its additive variant | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| `Spine/SkeletonGraphic Tint Black` | The `SkeletonGraphic` variant; supports Additive with `CanvasGroup` | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| `Spine/Sprite` (Unlit / Vertex Lit / Pixel Lit) | Configurable — normal maps, metallic, emission, cel ramps, rim lighting | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| `Spine/Special` (Grayscale, Ghost) | Ghost is the trail variant used by `SkeletonGhost` | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| `Spine/Blend Modes` (PMA Additive, Multiply, Screen) | Slot blend modes beyond Normal | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| `Spine/Outline`, `Spine/Outline/OutlineOnly-ZWrite` | Outline variants; the ZWrite one is for combined-mesh rendering | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
 
-### Built-in pipeline shaders
-| Shader | Notes |
-|---|---|
-| `Spine/Skeleton` | Unlit, no z-write; default for `SkeletonRenderer` |
-| `Spine/Skeleton Graphic` | Unlit, no z-write, single texture only; default for `SkeletonGraphic` |
-| `Spine/Skeleton Lit` | Simple lit, no z-write |
-| `Spine/Skeleton Lit ZWrite` | Simple lit, with z-write |
-| `Spine/Skeleton Fill` | Unlit with a customizable color overlay (`FillColor`, `FillPhase`) |
-| `Spine/Skeleton Tint` | Unlit, two-color tint (light via `Tint Color`, dark via `Black Point`) |
-| `Spine/Skeleton Tint Black` | Unlit, animated per-slot tint-black support |
-| `Spine/Skeleton Tint Black Additive` | Additive variant of the above |
-| `Spine/SkeletonGraphic Tint Black` | `SkeletonGraphic` variant, supports Additive with `CanvasGroup` |
-| `Spine/Sprite` (Unlit / Vertex Lit / Pixel Lit) | Advanced configurable shaders — normal maps, metallic, emission, cel-shading ramps, rim lighting |
-| `Spine/Special` (Grayscale, Ghost) | Ghost is the trail-rendering variant used by `SkeletonGhost` |
-| `Spine/Blend Modes` (PMA Additive, Multiply, Screen) | For slot blend modes beyond Normal |
-| `Spine/Outline` (incl. `Spine/Outline/OutlineOnly-ZWrite`) | Outline variants; the ZWrite variant is meant for combined-mesh rendering |
+| Extension shaders | Names | Source |
+|---|---|---|
+| URP 2D Renderer | `Universal Render Pipeline/2D/Spine/Skeleton`, `.../Skeleton Lit`, `.../Sprite` | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| URP 3D Forward Renderer | `Universal Render Pipeline/Spine/Skeleton`, `.../Skeleton Lit`, `.../Sprite`, `.../Outline/Skeleton-OutlineOnly` | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| LWRP (legacy) | `Lightweight Render Pipeline/Spine/Skeleton`, `.../Skeleton Lit`, `.../Sprite` | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
 
-### Tint Black setup
-Enable `Advanced → Tint Black` on the `SkeletonAnimation`/`SkeletonRenderer` component. For `SkeletonGraphic`, additionally enable TexCoord1 and TexCoord2 under the Canvas's Additional Shader Channels. The Additive blend variant on `SkeletonGraphic` also requires enabling "CanvasGroup Compatible" on both the shader and the component.
+| Feature setup | Requirement | Source |
+|---|---|---|
+| Tint Black | Enable `Advanced → Tint Black` on the component; on `SkeletonGraphic` also enable TexCoord1 and TexCoord2 in the Canvas's Additional Shader Channels | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| Tint Black Additive on `SkeletonGraphic` | Enable "CanvasGroup Compatible" on both the shader and the component | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| Post-processing needing the z-buffer, e.g. Depth of Field | Enable the shader's "Depth Write", or move the material's Render Queue from Transparent to AlphaTest — some Render Pipeline Assets need both | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| Z-write or a non-transparent shader | Set `Advanced → Z-Spacing` non-zero to avoid Z-fighting; it does not fully solve aliasing at semi-transparent edges | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
 
-### URP shaders (extension package)
-Separate UPM package. **Do not use with `SkeletonGraphic` or the Deferred rendering path.**
-
-- 2D Renderer: `Universal Render Pipeline/2D/Spine/Skeleton`, `.../Skeleton Lit`, `.../Sprite`.
-- 3D Forward Renderer: `Universal Render Pipeline/Spine/Skeleton`, `.../Skeleton Lit`, `.../Sprite`, `.../Outline/Skeleton-OutlineOnly`.
-
-Example scenes: `com.esotericsoftware.spine.URP-shaders/Examples/3D/URP 3D Shaders.unity`, `2D/URP 2D Shaders.unity`, `Outline Shaders URP.unity`.
-
-### LWRP shaders (extension package, legacy)
-`Lightweight Render Pipeline/Spine/Skeleton`, `.../Skeleton Lit`, `.../Sprite`. Example scene: `com.esotericsoftware.spine.lwrp-shaders-4.2/Examples/LWRP Shaders.unity`.
-
-## Post-processing interaction
-Effects needing the z-buffer (e.g. Depth of Field) require z-write. Enable the shader's "Depth Write" option, or switch the material's Render Queue from Transparent to AlphaTest — some Render Pipeline Assets need both changes together.
+**Critical caveat**: URP Spine shaders must never go on `SkeletonGraphic` or
+the Deferred path. Only `Spine/SkeletonGraphic*` materials belong on
+`SkeletonGraphic` — the single most common Spine rendering mistake.
 
 ## PMA vs. straight alpha
-- **Premultiplied Alpha (PMA)** — RGB pre-multiplied by alpha; blend mode `Blend One OneMinusSrcAlpha`; lets Normal and Additive slot blend modes share a single-pass shader via PMA vertex colors. Was the default until spine-unity 4.2.
-- **Straight Alpha** — RGB not pre-multiplied; either the standard `Blend SrcAlpha OneMinusSrcAlpha` (no Additive slots), or a shader-level conversion: `#if defined(_STRAIGHT_ALPHA_INPUT) texColor.rgb *= texColor.a; #endif`.
 
-Enable `Advanced → PMA Vertex Colors` on `SkeletonRenderer`/`SkeletonGraphic` whenever the material is using PMA. See faq.md's Visual section for the specific artifacts (dark borders, washed-out colors, colorful stripes) each mismatch produces, and root-links.md's link to spine-unity-assets for the import-side setting.
+| Workflow | Mechanics | Source |
+|---|---|---|
+| Premultiplied Alpha | RGB pre-multiplied by alpha; `Blend One OneMinusSrcAlpha`; lets Normal and Additive slot blend modes share one single-pass shader via PMA vertex colours. Was the default until spine-unity 4.2 | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| Straight Alpha | RGB not pre-multiplied; either standard `Blend SrcAlpha OneMinusSrcAlpha` with no Additive slots, or a shader-level conversion `#if defined(_STRAIGHT_ALPHA_INPUT) texColor.rgb *= texColor.a; #endif` | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| Component setting | Enable `Advanced → PMA Vertex Colors` whenever the material uses PMA | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+
+Which artifact each mismatch produces is indexed in [faq.md](faq.md); the
+import-side setting lives on the Assets page linked from
+[root-links.md](root-links.md).
 
 ## Writing a custom Spine shader
-- `Cull Off` is mandatory — flipped/negatively-scaled skeletons need both faces rendered.
-- No normals by default — enable `Advanced → Add Normals` if the shader needs lighting.
-- No tangents by default — enable `Advanced → Solve Tangents` if the shader needs normal maps.
-- Multiply texture by vertex color for PMA, with `Advanced → PMA Vertex Colors` enabled to match.
-- Correct blend mode for the chosen alpha workflow: `Blend One OneMinusSrcAlpha` (PMA) or `Blend SrcAlpha OneMinusSrcAlpha` (straight).
-- Keep the UI/non-UI shader split strict: UI (`CanvasRenderer`-compatible) shaders only ever go on `SkeletonGraphic`; non-UI shaders only ever go on `SkeletonAnimation`/`SkeletonMecanim`.
 
-`Spine/Skeleton`'s own shader demonstrates the pattern: PMA blend (`Blend One OneMinusSrcAlpha`), `ZWrite Off`, `Cull Off`, `return (texColor * i.vertexColor)` for tint/blend application, a `"ShadowCaster"` pass with an alpha-threshold clip, and an optional `#pragma shader_feature _STRAIGHT_ALPHA_INPUT` toggle.
+| Requirement | Why | Source |
+|---|---|---|
+| `Cull Off` is mandatory | Flipped or negatively scaled skeletons need both faces rendered | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| Enable `Advanced → Add Normals` for lighting | Meshes carry no normals by default | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| Enable `Advanced → Solve Tangents` for normal maps | Meshes carry no tangents by default | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| Multiply texture by vertex colour for PMA | Must match `Advanced → PMA Vertex Colors` on the component | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| Blend mode must match the alpha workflow | `Blend One OneMinusSrcAlpha` for PMA, `Blend SrcAlpha OneMinusSrcAlpha` for straight | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
+| Keep the UI/non-UI split strict | `CanvasRenderer`-compatible shaders only on `SkeletonGraphic`; non-UI shaders only on `SkeletonAnimation`/`SkeletonMecanim` | [Rendering](https://esotericsoftware.com/spine-unity-rendering) |
 
-No official Shader Graph nodes exist for Spine; straight-alpha-exported textures work fine with ordinary non-Spine shaders. Community Amplify Shader Editor templates exist on the forum. Starting from an existing Spine shader is the fastest path to a working custom one.
-
-## Z-spacing
-When enabling z-write or using a non-transparent shader, set `Advanced → Z-Spacing` to a non-zero value on `SkeletonRenderer`/`SkeletonGraphic` to avoid Z-fighting (especially under lighting) — depth-buffer writing can also cause aliasing at semi-transparent edges, which Z-Spacing doesn't fully solve on its own.
+`Spine/Skeleton` itself demonstrates the pattern: PMA blend, `ZWrite Off`,
+`Cull Off`, `return (texColor * i.vertexColor)`, a `"ShadowCaster"` pass with
+an alpha-threshold clip, and an optional `#pragma shader_feature
+_STRAIGHT_ALPHA_INPUT`. No official Shader Graph nodes exist for Spine;
+straight-alpha textures work with ordinary non-Spine shaders, and starting from
+an existing Spine shader is the fastest path to a working custom one.
+Authoring one from scratch is `shader-authoring`'s territory, not this skill's.

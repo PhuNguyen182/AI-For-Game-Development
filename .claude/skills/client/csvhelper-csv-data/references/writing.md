@@ -1,35 +1,35 @@
-# Writing CSV Data
+# Writing CSV Data — WriteRecords & Appending
 
-Source: [writing](https://joshclose.github.io/CsvHelper/examples/writing/), [write-class-objects](https://joshclose.github.io/CsvHelper/examples/writing/write-class-objects/), [write-dynamic-objects](https://joshclose.github.io/CsvHelper/examples/writing/write-dynamic-objects/), [write-anonymous-type-objects](https://joshclose.github.io/CsvHelper/examples/writing/write-anonymous-type-objects/), [appending-to-an-existing-file](https://joshclose.github.io/CsvHelper/examples/writing/appending-to-an-existing-file/).
+Sources: [Writing](https://joshclose.github.io/CsvHelper/examples/writing/), [Write Class Objects](https://joshclose.github.io/CsvHelper/examples/writing/write-class-objects/), [Write Dynamic Objects](https://joshclose.github.io/CsvHelper/examples/writing/write-dynamic-objects/), [Write Anonymous Type Objects](https://joshclose.github.io/CsvHelper/examples/writing/write-anonymous-type-objects/), [Appending to an Existing File](https://joshclose.github.io/CsvHelper/examples/writing/appending-to-an-existing-file/).
+Covers: SKILL.md §4 — **"Default to `GetRecords<T>()`/`WriteRecords()` with the by-name convention"**.
 
-## WriteRecords\<T\>() — a collection
+Writing is symmetric with [reading.md](reading.md) with one asymmetry that
+causes most of the bugs: `WriteRecords` emits a header unconditionally, which
+is correct for a new file and wrong for an append.
+
+## WriteRecords behaviour
+
+| Property | What it decides | Source |
+|---|---|---|
+| Header written once, then one row per item | Property names supply the header by default convention | [Write Class Objects](https://joshclose.github.io/CsvHelper/examples/writing/write-class-objects/) |
+| Disposal flushes and closes | No manual `Flush()` is needed when the `using` scopes are correct | [Write Class Objects](https://joshclose.github.io/CsvHelper/examples/writing/write-class-objects/) |
+| Dynamic and anonymous records work identically | The header is inferred from the first record's runtime member names or keys | [Write Dynamic Objects](https://joshclose.github.io/CsvHelper/examples/writing/write-dynamic-objects/), [Write Anonymous Type Objects](https://joshclose.github.io/CsvHelper/examples/writing/write-anonymous-type-objects/) |
 
 ```csharp
-var records = new List<Foo>
-{
-    new Foo { Id = 1, Name = "one" },
-};
-
-using (var writer = new StreamWriter("path\\to\\file.csv"))
+using (var writer = new StreamWriter("path/to/Localization.csv"))
 using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
 {
     csv.WriteRecords(records);
 }
 ```
 
-Produces:
-```
-Id,Name
-1,one
-```
+## Appending to a file that already has a header
 
-`WriteRecords` writes the header row (property names, by default convention) once, then one row per item in the collection. Disposing the nested `using (var writer = ...)` / `using (var csv = ...)` block flushes and closes both — no manual `Flush()` call needed for the common case.
-
-Dynamic objects and anonymous types can be written the same way — `WriteRecords` infers the header from whatever member names/keys the runtime type of the first record exposes.
-
-## Appending to an existing file
-
-Writing again into a file that already has a header requires suppressing the header row, or it gets written a second time. Open the file in append mode and configure `HasHeaderRecord = false` for that second write:
+| Step | Effect | Source |
+|---|---|---|
+| `File.Open(path, FileMode.Append)` | Positions the stream at end of file rather than truncating it | [Appending to an Existing File](https://joshclose.github.io/CsvHelper/examples/writing/appending-to-an-existing-file/) |
+| `HasHeaderRecord = false` on the `CsvConfiguration` | Suppresses the second header — the one setting the whole pattern depends on | [Appending to an Existing File](https://joshclose.github.io/CsvHelper/examples/writing/appending-to-an-existing-file/) |
+| `WriteRecords(newRecords)` | Writes only the new rows, which combine under the original header | [Appending to an Existing File](https://joshclose.github.io/CsvHelper/examples/writing/appending-to-an-existing-file/) |
 
 ```csharp
 var config = new CsvConfiguration(CultureInfo.InvariantCulture)
@@ -37,7 +37,7 @@ var config = new CsvConfiguration(CultureInfo.InvariantCulture)
     HasHeaderRecord = false,
 };
 
-using (var stream = File.Open("path\\to\\file.csv", FileMode.Append))
+using (var stream = File.Open("path/to/Localization.csv", FileMode.Append))
 using (var writer = new StreamWriter(stream))
 using (var csv = new CsvWriter(writer, config))
 {
@@ -45,11 +45,6 @@ using (var csv = new CsvWriter(writer, config))
 }
 ```
 
-Result — header appears once, both writes' rows combine under it:
-```
-Id,Name
-1,one
-2,two
-```
-
-`HasHeaderRecord = false` is the essential setting here — without it, `WriteRecords` writes the header again at the current (appended) file position, producing a header row in the middle of the data.
+**Critical caveat**: without `HasHeaderRecord = false`, the append writes a
+second header row at the current file position — a header in the middle of the
+data. Nothing throws; the file is simply corrupt for every later reader.

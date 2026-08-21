@@ -1,30 +1,43 @@
-# Prerequisites — Disposal, Files, Streams
+# Prerequisites — Disposal, Files & Streams
 
-Source: [prerequisites/using-and-dispose](https://joshclose.github.io/CsvHelper/examples/prerequisites/using-and-dispose/), [prerequisites/reading-and-writing-files](https://joshclose.github.io/CsvHelper/examples/prerequisites/reading-and-writing-files/), [prerequisites/streams](https://joshclose.github.io/CsvHelper/examples/prerequisites/streams/).
+Sources: [Using and Dispose](https://joshclose.github.io/CsvHelper/examples/prerequisites/using-and-dispose/), [Reading and Writing Files](https://joshclose.github.io/CsvHelper/examples/prerequisites/reading-and-writing-files/), [Streams](https://joshclose.github.io/CsvHelper/examples/prerequisites/streams/).
+Covers: SKILL.md §4 — **"Wrap every reader, writer, and stream in `using`"**.
 
-## Using and Dispose
+CsvHelper never touches a byte stream directly: it operates on a
+`TextReader`/`TextWriter`, so every usage is a chain of two or three
+`IDisposable` objects whose disposal order matters. This file holds that chain
+and the scope pattern that gets it right.
 
-`CsvReader`/`CsvWriter` wrap an `IDisposable` `TextReader`/`TextWriter` (typically a `StreamReader`/`StreamWriter`). The documentation's guidance: "Whenever you have an object that implements `IDisposable`, you need to dispose of the resource when you're done with it" — wrap it in a `using` block so disposal happens as soon as the block exits, rather than deferring it manually:
+## The adapter chain
+
+| Layer | Effect | Use when | Source |
+|---|---|---|---|
+| `Stream` | The raw bytes — `FileStream`, `MemoryStream`, a network stream | Always present underneath, explicitly or via a convenience constructor | [Streams](https://joshclose.github.io/CsvHelper/examples/prerequisites/streams/) |
+| `StreamReader`/`StreamWriter` | Adapts bytes to characters — the required intermediary | Always; CsvHelper cannot consume a raw `Stream` | [Streams](https://joshclose.github.io/CsvHelper/examples/prerequisites/streams/) |
+| `CsvReader`/`CsvWriter` | Parses/formats CSV over the character reader or writer | Always; takes the `TextReader`/`TextWriter` plus culture or `CsvConfiguration` | [Reading and Writing Files](https://joshclose.github.io/CsvHelper/examples/prerequisites/reading-and-writing-files/) |
+
+## Disposal rules
+
+| Rule | Effect | Source |
+|---|---|---|
+| Every `IDisposable` is disposed when done | The upstream guidance is unconditional; a leaked handle keeps a file locked | [Using and Dispose](https://joshclose.github.io/CsvHelper/examples/prerequisites/using-and-dispose/) |
+| Prefer the inline form | `using (var stream = new MemoryStream())` shows intent; declaring first and writing `using (stream) { }` works but does not | [Using and Dispose](https://joshclose.github.io/CsvHelper/examples/prerequisites/using-and-dispose/) |
+| Nest reader inside stream | `CsvReader`/`CsvWriter` disposes first, the underlying stream second | [Reading and Writing Files](https://joshclose.github.io/CsvHelper/examples/prerequisites/reading-and-writing-files/) |
+| C# 8+ `using` declarations are equivalent | Same ordering guarantee without the nesting braces | [Using and Dispose](https://joshclose.github.io/CsvHelper/examples/prerequisites/using-and-dispose/) |
 
 ```csharp
-var stream = new MemoryStream();
-using (stream) { }
-```
-
-This deferred form works but "doesn't show intent" as clearly as an inline `using (var stream = new MemoryStream())`. Prefer the inline form. Nest the reader/writer's `using` inside the stream's `using` (or use C# 8+ `using` declarations) so both are disposed in the correct order — `CsvReader`/`CsvWriter` first, then the underlying stream.
-
-## Reading and Writing Files
-
-The canonical pattern pairs a `StreamReader`/`StreamWriter` with a `CsvReader`/`CsvWriter`, both scoped to the same `using`:
-
-```csharp
-using (var reader = new StreamReader("path\\to\\file.csv"))
+using (var reader = new StreamReader("path/to/file.csv"))
 using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
 {
-    var records = csv.GetRecords<Foo>();
+    foreach (var record in csv.GetRecords<ItemBalanceRow>())
+    {
+        // Consume each row here; the reader is disposed on scope exit.
+    }
 }
 ```
 
-## Streams
-
-`CsvReader`/`CsvWriter` operate against a `TextReader`/`TextWriter`, not a raw `Stream` — a `StreamReader`/`StreamWriter` is the adapter between a byte stream (file, network, memory) and the character-based reader/writer CsvHelper needs. Any `Stream` works (`FileStream`, `MemoryStream`, a network stream) as long as it's wrapped in a `StreamReader`/`StreamWriter` first.
+**Critical caveat**: never let the `CsvReader` outlive the scope owning its
+stream. `GetRecords<T>()` is deferred (see [reading.md](reading.md)), so
+returning its `IEnumerable<T>` out of the `using` block hands the caller a
+sequence backed by an already-disposed reader — it compiles and fails at
+enumeration.

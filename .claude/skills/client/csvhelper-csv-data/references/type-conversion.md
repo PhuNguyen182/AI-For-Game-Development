@@ -1,68 +1,83 @@
-# Type Conversion
+# Type Conversion — Options, Custom Converters & CsvDataReader
 
-Source: [type-conversion](https://joshclose.github.io/CsvHelper/examples/type-conversion/), [type-converter-options](https://joshclose.github.io/CsvHelper/examples/type-conversion/type-converter-options/), [custom-type-converter](https://joshclose.github.io/CsvHelper/examples/type-conversion/custom-type-converter/), [csvdatareader](https://joshclose.github.io/CsvHelper/examples/csvdatareader/).
+Sources: [Type Conversion](https://joshclose.github.io/CsvHelper/examples/type-conversion/), [Type Converter Options](https://joshclose.github.io/CsvHelper/examples/type-conversion/type-converter-options/), [Custom Type Converter](https://joshclose.github.io/CsvHelper/examples/type-conversion/custom-type-converter/), [CsvDataReader](https://joshclose.github.io/CsvHelper/examples/csvdatareader/).
+Covers: SKILL.md §4 — **"Prefer built-in converters and `TypeConverterOptions` over a custom `ITypeConverter`"**.
 
-## Type converter options
+Ordered by escalation: tune the built-in converter first, write a custom one
+only when no option covers the shape, and reach for `CsvDataReader` only when
+the consumer genuinely demands an `IDataReader`. Where a converter is attached
+to a property is [class-maps.md](class-maps.md) or [attributes.md](attributes.md).
 
-"Most type converters use `IFormattable.ToString` to write and `TryParse` to read." Options tune that formatting/parsing (date styles, number styles, boolean literals) without replacing the converter entirely — set via the class map:
+## Built-in converters and their options
+
+| Fact | What it decides | Source |
+|---|---|---|
+| Most converters use `IFormattable.ToString` to write and `TryParse` to read | Anything those two accept is already supported without custom code | [Type Conversion](https://joshclose.github.io/CsvHelper/examples/type-conversion/) |
+| `TypeConverterOption` tunes formatting and parsing | Date styles, number styles, and boolean literal sets — no converter replacement needed | [Type Converter Options](https://joshclose.github.io/CsvHelper/examples/type-conversion/type-converter-options/) |
+| Options are settable from a map or an attribute | Same effect either way; pick per [attributes.md](attributes.md) | [Type Converter Options](https://joshclose.github.io/CsvHelper/examples/type-conversion/type-converter-options/) |
 
 ```csharp
 public sealed class FooMap : ClassMap<Foo>
 {
     public FooMap()
     {
-        Map(m => m.DateTimeProp)
+        Map(m => m.ReleasedAt)
             .TypeConverterOption
             .DateTimeStyles(DateTimeStyles.AllowInnerWhite | DateTimeStyles.RoundtripKind);
     }
 }
 ```
 
-or via attribute:
+## Custom converters
+
+| Element | Effect | Use when | Source |
+|---|---|---|---|
+| `DefaultTypeConverter` subclass | Override `ConvertFromString`/`ConvertToString` for one type | The built-in converters and their options genuinely do not cover the shape | [Custom Type Converter](https://joshclose.github.io/CsvHelper/examples/type-conversion/custom-type-converter/) |
+| `ITypeConverter` directly | Full control where the default base class is not wanted | A converter shares nothing with the default behaviour | [Custom Type Converter](https://joshclose.github.io/CsvHelper/examples/type-conversion/custom-type-converter/) |
 
 ```csharp
-public class Foo
-{
-    [DateTimeStyles(DateTimeStyles.AllowInnerWhite | DateTimeStyles.RoundtripKind)]
-    public DateTime DateTimeProp { get; set; }
-}
-```
-
-## Custom type converter
-
-"The built in type converters will handle most situations for you, but if you find a situation where they don't you can create your own type converter" — subclass `DefaultTypeConverter` (or implement `ITypeConverter` directly) and override `ConvertFromString`/`ConvertToString`:
-
-```csharp
-public class JsonNodeConverter : DefaultTypeConverter
+public sealed class LootJsonConverter : DefaultTypeConverter
 {
     public override object ConvertFromString(string text, IReaderRow row, MemberMapData memberMapData)
     {
-        return JsonSerializer.Deserialize<JsonNode>(text);
+        return JsonSerializer.Deserialize<LootEntry[]>(text);
     }
 }
 ```
 
-Three ways to register it, in increasing order of scope:
-1. **Global** — every occurrence of the target type, across every map: `csv.Context.TypeConverterCache.AddConverter<JsonNode>(new JsonNodeConverter());`
-2. **Attribute** — on one property: `[TypeConverter(typeof(JsonNodeConverter))] public JsonNode Json { get; set; }`
-3. **ClassMap** — on one property, for one specific map: `Map(m => m.Json).TypeConverter<JsonNodeConverter>();`
+## Registration scope — narrowest that solves the problem
 
-Prefer the narrowest scope that actually solves the problem — a global converter changes behavior for every map in the process, including ones this change wasn't meant to affect.
+| Scope | Registration | Reach | Source |
+|---|---|---|---|
+| ClassMap | `Map(m => m.Loot).TypeConverter<LootJsonConverter>();` | One property, one map — the default choice | [Custom Type Converter](https://joshclose.github.io/CsvHelper/examples/type-conversion/custom-type-converter/) |
+| Attribute | `[TypeConverter(typeof(LootJsonConverter))]` | One property, everywhere that type is mapped | [Custom Type Converter](https://joshclose.github.io/CsvHelper/examples/type-conversion/custom-type-converter/) |
+| Global | `csv.Context.TypeConverterCache.AddConverter<LootEntry[]>(new LootJsonConverter());` | Every occurrence of the type across every map in the process | [Custom Type Converter](https://joshclose.github.io/CsvHelper/examples/type-conversion/custom-type-converter/) |
 
-## CsvDataReader (DataTable integration)
+**Critical caveat**: a global registration changes behaviour for maps this
+change never intended to touch, including ones written later by someone else.
+It is justified only when every occurrence of that type process-wide genuinely
+needs the same conversion.
 
-`CsvDataReader` wraps a configured `CsvReader` as an `IDataReader`, primarily to feed a `DataTable.Load(...)`. "There is really no reason to use this class directly over using `CsvReader`" for anything else — reach for it only when the actual requirement is a `DataTable`/`IDataReader` consumer (e.g. handing data to an existing ADO.NET-oriented API), not as a general substitute for `GetRecords<T>()`.
+## CsvDataReader — DataTable interop
+
+| Fact | What it decides | Source |
+|---|---|---|
+| Wraps a configured `CsvReader` as an `IDataReader` | Its purpose is feeding `DataTable.Load(...)`, not general reading | [CsvDataReader](https://joshclose.github.io/CsvHelper/examples/csvdatareader/) |
+| The `CsvReader` must already be configured | It reads the first row immediately on construction | [CsvDataReader](https://joshclose.github.io/CsvHelper/examples/csvdatareader/) |
+| Pre-declare `DataTable` columns with types | Otherwise every column loads as `string` | [CsvDataReader](https://joshclose.github.io/CsvHelper/examples/csvdatareader/) |
 
 ```csharp
-using (var reader = new StreamReader("path\\to\\file.csv"))
+using (var reader = new StreamReader("path/to/file.csv"))
 using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
-using (var dr = new CsvDataReader(csv))
+using (var dataReader = new CsvDataReader(csv))
 {
-    var dt = new DataTable();
-    dt.Columns.Add("Id", typeof(int));
-    dt.Columns.Add("Name", typeof(string));
-    dt.Load(dr);
+    var table = new DataTable();
+    table.Columns.Add("Id", typeof(int));
+    table.Columns.Add("Name", typeof(string));
+    table.Load(dataReader);
 }
 ```
 
-The `CsvReader` passed in must already be configured before constructing `CsvDataReader` — it reads the first row immediately on construction. Pre-declaring `DataTable` columns with explicit types (as above) gets typed columns instead of everything loading as `string`.
+**Critical caveat**: upstream states there is no reason to use this class over
+`CsvReader` for anything but `DataTable`/`IDataReader` interop. It is not a
+general substitute for `GetRecords<T>()`.

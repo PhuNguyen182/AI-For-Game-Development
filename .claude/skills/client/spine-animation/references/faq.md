@@ -1,42 +1,78 @@
-# FAQ — Import, Visual, Performance, Licensing Q&A
+# FAQ — Import, Visual, Cross-Machine & Performance Symptoms
 
-Source: [spine-unity-faq](https://esotericsoftware.com/spine-unity-faq).
+Source: [spine-unity FAQ](https://esotericsoftware.com/spine-unity-faq).
+Covers: SKILL.md §4 — **"Diagnose a Spine-specific symptom against the FAQ before assuming a generic Unity cause"**, **"Ship the binary `.skel.bytes` export and pool skeleton instances"**.
 
-## Unity compatibility
-- **Which Unity versions are compatible with my spine-unity runtime?** Check the Compatible Unity Versions table on the [installation page](https://esotericsoftware.com/spine-unity-installation#Compatible-Unity-Versions) for the supported range per runtime version.
-- **Compile errors mentioning Unity methods — is my Unity version supported?** Confirm the Unity version is one officially supported by the installed spine-unity runtime, per the same table.
+A symptom-to-root-cause index. Read a row before treating a Spine symptom as a
+generic Unity rendering or performance bug — most visual faults here trace to
+one alpha-workflow or Color Space mismatch rather than to a shader defect.
+Shader mechanics are [rendering.md](rendering.md).
 
-## Import
-- **"Could not automatically set the AtlasAsset for .."** — the atlas file must use the `.atlas.txt` extension, not `.atlas`. Also check for missing attachments via the Find and Replace window with "Missing images" enabled.
-- **"Failed to read version info at skeleton"** — the export was made selecting a lower Spine version than the actual editor (e.g. exporting as 4.2 from a 4.3 project). That kind of lower-version export exists only for importing into a lower-version *Spine Editor* — a runtime can't load it directly; re-export at the matching version instead.
-- **"Opening scene in read-only package!"** — a Unity bug prevents opening example scenes directly from a git-sourced UPM package. Copy the scene files into the project's own `Assets` directory via a file manager first.
+## Contents
 
-## Workflows — straight alpha vs. PMA
-Use **straight alpha** when: the project uses Linear color space (Unity's default), might switch color spaces later, needs compatibility with standard (non-Spine) Unity shaders, or a simpler workflow is preferred. Use **PMA** when: the project uses Gamma color space exclusively, mipmap quality at transparent edges matters, and the team understands PMA's workflow limitations. See rendering.md's PMA-vs-straight-alpha section for the shader-level mechanics.
+- [Compatibility and import](#compatibility-and-import)
+- [Choosing the alpha workflow](#choosing-the-alpha-workflow)
+- [Visual symptoms](#visual-symptoms)
+- [Inconsistent behaviour across machines](#inconsistent-behaviour-across-machines)
+- [Performance](#performance)
 
-## Visual symptoms and root causes
-- **Dark borders around transparent areas** — usually exported as PMA but imported/rendered with mismatched settings; PMA isn't supported under Linear color space at all. Straight alpha with mipmaps can also show this if transparent-pixel color bleed is missing.
-- **Washed-out/desaturated colors** — almost always Linear color space (the default) combined with PMA-oriented auto-import settings, which sets `sRGB (Color Texture)` incorrectly. Only straight alpha works correctly under Linear; switch to Gamma color space (`Project Settings → Player → Other Settings → Color Space`) only if PMA is actually required.
-- **Colorful stripes in transparent areas** — exported as straight alpha but imported/rendered as if PMA. See the Premultiplied vs. Straight Alpha Import section on the spine-unity-assets page (root-links.md).
-- **White borders around attachments with Generate Mip Maps enabled** — PMA textures with `sRGB (Color Texture)` incorrectly left enabled.
-- **Wrong colors specifically with Tint Black** — confirm `Advanced → Tint Black` is actually enabled on the `SkeletonRenderer`/`SkeletonAnimation` component, not just on the shader/material.
-- **Can't assign a material directly on the MeshRenderer** — expected: `SkeletonRenderer` rebuilds the Materials array every frame. Use `SkeletonRendererCustomMaterials`/`CustomMaterialOverride`/`CustomSlotMaterials` instead (rendering.md).
-- **Spine shaders look wrong in URP** — the base runtime only ships Built-in Render Pipeline shaders; install the separate URP Shaders extension UPM package (rendering.md).
-- **Outline shader shows only outlines in URP** — either a Built-in outline shader is being used under URP (switch to the URP outline shader), or a single-pass outline-only shader is in use where a combined render is needed; use `RenderExistingMesh` to re-render with the outline shader as a second pass.
-- **Outline shader shows unwanted inner outlines between skeleton parts** — caused by multiple materials producing separately-outlined submeshes. Reduce to a single material via atlas packing or runtime repacking (main-components.md's Combining Skins section), or use `RenderCombinedMesh` with an outline-only shader.
-- **Normal map looks wrong** — confirm `Advanced → Solve Tangents` is enabled on the `SkeletonRenderer`.
-- **SkeletonGraphic brightens during a CanvasGroup alpha fade** — see main-components.md's CanvasGroup-alpha section.
-- **Skeleton parts show through each other during an alpha fade** — the standard overlapping-triangle transparency artifact; see rendering.md's "Fading a skeleton in/out" guidance (RenderTexture-based fade, not a naive alpha reduction).
-- **Repacked skin renders fine in the Editor but shows white polygons in a build** — check the runtime-repacking failure checklist in main-components.md (Read/Write enabled, Compression `None`, full-resolution quality tier, power-of-two source texture).
+## Compatibility and import
 
-## Inconsistent behavior across machines
-- **Project behaves differently on different machines when using a git UPM URL** — a URL ending in `#4.3` always resolves to the branch's *latest* commit, so different machines pulling at different times get different code. Pin to a specific commit hash instead (e.g. `#5e8e4c21f11603ba1b72c220369d367582783744`).
-- **Getting a commit hash for the Package Manager URL** — open the [GitHub commits page](https://github.com/EsotericSoftware/spine-runtimes/commits/4.3) for the target branch and copy the full SHA via the commit's copy button.
+| Symptom | Root cause and fix | Source |
+|---|---|---|
+| Compile errors naming Unity methods | The Unity version is outside the installed runtime's supported range — check the Compatible Unity Versions table | [Installation](https://esotericsoftware.com/spine-unity-installation#Compatible-Unity-Versions) |
+| "Could not automatically set the AtlasAsset for .." | The atlas file must use the `.atlas.txt` extension, not `.atlas`; also check for missing attachments via Find and Replace with "Missing images" enabled | [FAQ](https://esotericsoftware.com/spine-unity-faq) |
+| "Failed to read version info at skeleton" | The export selected a lower Spine version than the editor. That export form exists only for importing into a lower-version Spine *Editor* — re-export at the matching version | [FAQ](https://esotericsoftware.com/spine-unity-faq) |
+| "Opening scene in read-only package!" | A Unity bug blocking example scenes opened from a git-sourced UPM package — copy the scene files into `Assets` first | [FAQ](https://esotericsoftware.com/spine-unity-faq) |
+
+## Choosing the alpha workflow
+
+| Workflow | Choose when | Source |
+|---|---|---|
+| Straight alpha | Linear color space (Unity's default), a possible future color-space switch, compatibility with standard non-Spine shaders, or a simpler workflow is wanted | [FAQ](https://esotericsoftware.com/spine-unity-faq) |
+| PMA | Gamma color space exclusively, mipmap quality at transparent edges matters, and the team accepts PMA's workflow limits | [FAQ](https://esotericsoftware.com/spine-unity-faq) |
+
+**Critical caveat**: PMA is not supported under Linear color space at all. Any
+project on the Unity default has effectively already chosen straight alpha.
+
+## Visual symptoms
+
+| Symptom | Root cause and fix | Source |
+|---|---|---|
+| Dark borders around transparent areas | Exported PMA but imported or rendered with mismatched settings; straight alpha with mipmaps shows this too when transparent-pixel colour bleed is missing | [FAQ](https://esotericsoftware.com/spine-unity-faq) |
+| Washed-out or desaturated colours | Linear color space plus PMA-oriented auto-import settings, which set `sRGB (Color Texture)` wrongly. Switch to Gamma only if PMA is genuinely required | [FAQ](https://esotericsoftware.com/spine-unity-faq) |
+| Colourful stripes in transparent areas | Exported straight alpha but imported or rendered as PMA — see the premultiplied-vs-straight import section on the [Assets](https://esotericsoftware.com/spine-unity-assets) page | [FAQ](https://esotericsoftware.com/spine-unity-faq) |
+| White borders with Generate Mip Maps on | PMA textures with `sRGB (Color Texture)` left enabled | [FAQ](https://esotericsoftware.com/spine-unity-faq) |
+| Wrong colours specifically with Tint Black | `Advanced → Tint Black` is enabled on the shader/material but not on the `SkeletonRenderer`/`SkeletonAnimation` component | [FAQ](https://esotericsoftware.com/spine-unity-faq) |
+| A material assigned on the `MeshRenderer` does not stick | Expected — the Materials array is rebuilt every frame; use the custom-materials components, see [rendering.md](rendering.md) | [FAQ](https://esotericsoftware.com/spine-unity-faq) |
+| Spine shaders look wrong under URP | The base runtime ships Built-in pipeline shaders only — install the URP Shaders extension package | [FAQ](https://esotericsoftware.com/spine-unity-faq) |
+| Outline shader shows only outlines under URP | Either a Built-in outline shader under URP (switch to the URP one), or a single-pass outline-only shader where a combined render is needed — use `RenderExistingMesh` for a second pass | [FAQ](https://esotericsoftware.com/spine-unity-faq) |
+| Unwanted inner outlines between parts | Multiple materials produce separately outlined submeshes — reduce to one material by atlas packing or runtime repacking, or use `RenderCombinedMesh` with an outline-only shader | [FAQ](https://esotericsoftware.com/spine-unity-faq) |
+| Normal map looks wrong | `Advanced → Solve Tangents` is not enabled on the `SkeletonRenderer` | [FAQ](https://esotericsoftware.com/spine-unity-faq) |
+| `SkeletonGraphic` brightens during a `CanvasGroup` fade | Vertex-colour alpha conflicts with premultiplied-alpha shaders — see [main-components.md](main-components.md) | [FAQ](https://esotericsoftware.com/spine-unity-faq) |
+| Parts show through each other during a fade | The overlapping-triangle transparency artifact — use the render-texture fade in [utility-components.md](utility-components.md), never a naive alpha reduction | [FAQ](https://esotericsoftware.com/spine-unity-faq) |
+| Repacked skin fine in Editor, white polygons in a build | One of the repack preconditions failed — see the failure table in [skeleton-api.md](skeleton-api.md) | [FAQ](https://esotericsoftware.com/spine-unity-faq) |
+
+## Inconsistent behaviour across machines
+
+| Symptom | Root cause and fix | Source |
+|---|---|---|
+| The project behaves differently per machine with a git UPM URL | A URL ending in `#4.3` resolves to that branch's *latest* commit, so machines pulling at different times get different code — pin a full commit SHA instead | [FAQ](https://esotericsoftware.com/spine-unity-faq) |
+| Finding the SHA to pin | Open the branch's [GitHub commits page](https://github.com/EsotericSoftware/spine-runtimes/commits/4.3) and copy the full SHA | [FAQ](https://esotericsoftware.com/spine-unity-faq) |
 
 ## Performance
-- **FPS drop or GC allocation when instantiating a skeleton** — switch the export from `.json` to binary `.skel.bytes`; load skeletons at level-load time; use object pooling instead of Instantiate/Destroy (pre-warm ~10 instances); enable/reposition pooled instances instead of instantiating new ones; on despawn, disable the GameObject and call `AnimationState.ClearTracks()` instead of destroying it.
-- **Many draw calls/batches/materials for one skeleton** — usually multiple atlas pages, or slots alternating blend modes. See rendering.md's Materials / Material Switching and Draw Calls sections; consider runtime repacking (main-components.md).
-- **General skeleton performance improvement checklist**: avoid clipping-attachment polygons where Unity masking would do instead, and minimize clipping-polygon vertex count when clipping is unavoidable; minimize mesh-deformation keys; minimize overall vertex count; remove unnecessary keyframes; audit via the [Metrics view](https://esotericsoftware.com/spine-metrics#Metrics-view); minimize the number of atlas page textures; order attachments in draw order to minimize material switches; share a single larger atlas across multiple skeletons via the `SkeletonDataAsset`'s atlas array instead of one atlas per skeleton.
 
-## Licensing
+| Symptom | Root cause and fix | Source |
+|---|---|---|
+| FPS drop or GC allocation when instantiating a skeleton | Export binary `.skel.bytes` rather than `.json`; load at level-load time; pool instead of Instantiate/Destroy, pre-warming ~10 instances; on despawn disable the GameObject and call `AnimationState.ClearTracks()` rather than destroying | [FAQ](https://esotericsoftware.com/spine-unity-faq) |
+| Many draw calls, batches, or materials for one skeleton | Multiple atlas pages, or slots alternating blend modes — see [rendering.md](rendering.md), and consider runtime repacking per [skeleton-api.md](skeleton-api.md) | [FAQ](https://esotericsoftware.com/spine-unity-faq) |
+
+| Optimization checklist item | What it targets | Source |
+|---|---|---|
+| Avoid clipping-attachment polygons where Unity masking would do; minimize their vertex count when unavoidable | Per-frame clipping cost | [FAQ](https://esotericsoftware.com/spine-unity-faq) |
+| Minimize mesh-deformation keys, overall vertex count, and unnecessary keyframes | Per-frame skinning and memory cost | [FAQ](https://esotericsoftware.com/spine-unity-faq) |
+| Audit the skeleton in the Metrics view | Finding which of the above actually dominates | [Metrics](https://esotericsoftware.com/spine-metrics#Metrics-view) |
+| Minimize atlas page textures and order attachments to minimize material switches | Draw-call count | [FAQ](https://esotericsoftware.com/spine-unity-faq) |
+| Share one larger atlas across skeletons via the `SkeletonDataAsset` atlas array | Texture memory and batching across instances | [FAQ](https://esotericsoftware.com/spine-unity-faq) |
+
 A Spine license is required to integrate the Spine Runtimes into any application.
