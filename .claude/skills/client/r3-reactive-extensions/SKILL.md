@@ -10,7 +10,7 @@ description: >
   model, and `AddTo`/`DisposableBag`/`ObservableTracker`. Use for a
   continuously observed value or event stream — health changing, an input
   stream, a cooldown ticking, UI data binding. `Game.Client.*` only.
-  Not for: one-shot awaits (`unitask-async-programming`), single addressed messages (`messagepipe-event-messaging`), subscription lifetime scoping in DI (`vcontainer-dependency-injection`), formatting the text a sink writes (`zstring-zero-allocation-strings`).
+  Not for: one-shot awaits (`unitask-async-programming`), single addressed messages (`messagepipe-event-messaging`), subscription lifetime scoping in DI (`vcontainer-dependency-injection`), formatting the text a sink writes (`zstring-zero-allocation-strings`), discrete named states and the legal transitions between them (`stateless-state-machines`).
 ---
 
 # R3 — Reactive Extensions for Continuous Event Streams
@@ -28,6 +28,7 @@ Act as the reactive-programming specialist for the client track — the tool Uni
 - Auditing an existing pipeline for leaked subscriptions after a scene reload or a long session.
 - Negative trigger: a one-shot operation with a definite completion — an animation finishing, an RPC returning — that is `unitask-async-programming`. R3's `SubscribeAwait` and `SelectAwait` consume UniTask internally, so the two compose rather than compete.
 - Negative trigger: one discrete addressed message delivered once to decoupled systems — that is `messagepipe-event-messaging`; R3 models a stream a subscriber composes over time.
+- Negative trigger: a fixed set of named states with rules about which transitions are legal — that is `stateless-state-machines`. A `ReactiveProperty<GameState>` carries the current state but enforces nothing about how it changes, so the transition rules end up scattered across subscribers instead of declared in one graph.
 - Negative trigger: deciding where a subscription's lifetime is scoped in the DI object graph — that is `vcontainer-dependency-injection`; this skill writes and disposes the pipeline once the scope exists.
 - Negative trigger: how the sink builds its display string — that is `zstring-zero-allocation-strings`, downstream of the stream decision.
 - Negative trigger: any `Game.Core.*` code — the Unity-facing package depends on `UnityEngine`, which `coding-principles.md`'s Shared Core integrity section forbids in Core. Expose Core state as a plain C# event and adapt it to an `Observable<T>` from `Game.Client.*`.

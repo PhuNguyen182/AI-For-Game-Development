@@ -1,75 +1,102 @@
 ---
 name: roslyn-analyzer-codefix
 description: >
-  Technique for building custom Roslyn DiagnosticAnalyzers (with an optional
-  CodeFixProvider) that enforce this project's own Shared Core rules as
-  compile-time diagnostics instead of relying solely on manual Code Review to
-  catch them: the Game.Core/UnityEngine namespace boundary, the Shared Core
-  determinism rules (no UnityEngine.Random, no wall-clock time), the
-  mandatory `this.` qualification convention, and other mechanically
-  detectable violations of `coding-principles.md`/`naming-convention.md`. Use
-  this when a rule is being violated repeatedly across submissions and
-  automatic enforcement would catch it earlier than review. Do not use this
-  for generating boilerplate code — that's `source-generator-authoring`. Do
-  not use this to build permanent tooling around a single one-off finding.
+  Custom Roslyn `DiagnosticAnalyzer`s, with an optional `CodeFixProvider`, that
+  enforce this project's own rules as compile-time diagnostics: the
+  `Game.Core`/`UnityEngine` namespace boundary, Shared Core determinism
+  (`UnityEngine.Random`, wall-clock time), the mandatory `this.` qualifier,
+  `&&`/`||` over `&`/`|`, naming casing. Covers diagnostic IDs and severity,
+  `RegisterSymbolAction`/`RegisterSyntaxNodeAction`/`RegisterCompilationStartAction`,
+  `EnableConcurrentExecution`, `ConfigureGeneratedCodeAnalysis`, `.editorconfig`
+  severity overrides, `netstandard2.0` packaging and Unity's `RoslynAnalyzer`
+  label. Use it when a mechanically checkable rule keeps recurring across
+  submissions. Not for: generating code (`source-generator-authoring`), rules
+  that need human judgement (`code-reviewer`), a violation seen once
+  (`coding-principles.md`).
 ---
 
-# Roslyn Analyzer & Code Fix Authoring
+# Roslyn Analyzer and Code Fix Authoring
 
 ## 1. Objective
-Turn a recurring, mechanically-detectable rule violation into a compile-time diagnostic (and, where the fix is unambiguous, an automatic code fix), so it's caught before Code Reviewer ever sees it — not as a replacement for review, but as a faster, earlier gate for the subset of rules a compiler pass can actually verify.
+Turn a recurring, mechanically detectable rule violation into a compile-time diagnostic — and, where the fix is unambiguous, an automatic one — so it is caught before Code Reviewer reads the submission. Not a replacement for review: an earlier gate for the subset of rules a compiler pass can actually decide, built so it never false-positives, never blocks a build it should not, and never flags code nobody can edit.
 
 ## 2. Role
-Act as a senior Roslyn analyzer author. You are, in effect, encoding this project's own rule files (`coding-principles.md`, `naming-convention.md`, the Shared Core determinism requirement) as executable compiler checks — treat those files as the specification the analyzer must match, not as inspiration for a stricter or looser rule of your own invention.
+Act as the Roslyn analyzer specialist. You are encoding this project's own rule files as executable compiler checks, which makes those files the specification — never a starting point for a stricter or looser rule of your own invention.
 
 ## 3. When to invoke this skill
-- A rule from `coding-principles.md`/`naming-convention.md`/`performance-and-algorithms.md` is mechanically checkable via syntax/semantic analysis and has been violated more than once across submissions — e.g. `UnityEngine` types leaking into `Game.Core.*`, `UnityEngine.Random`/`DateTime.Now` used inside Shared Core, missing `this.` qualification, `&`/`|` used where `&&`/`||` was intended.
-- Explicitly requested (e.g. by Tech Lead – C# Unity) to add a permanent compile-time guardrail for the Shared Core boundary.
-- Negative trigger: generating repetitive code — that's `source-generator-authoring`, a different Roslyn API (`IIncrementalGenerator`, not `DiagnosticAnalyzer`).
-- Negative trigger: a single, one-off finding from a specific review — fix the instance; don't build standing tooling for something that hasn't recurred (YAGNI applies to tooling too).
+- A rule from `coding-principles.md`, `naming-convention.md`, or `performance-and-algorithms.md` is decidable from syntax or symbols and has been violated more than once across submissions — `UnityEngine` leaking into `Game.Core.*`, `UnityEngine.Random` or `DateTime.Now` inside Shared Core, a missing `this.` qualifier, `&` where `&&` was meant.
+- Explicitly requested — typically by Tech Lead – C# Unity — to make the Shared Core boundary a standing compile-time guardrail rather than a review responsibility.
+- An existing analyzer misfires: a diagnostic firing on valid code, or firing on generated code the author cannot change.
+- Negative trigger: emitting repetitive code — that's `source-generator-authoring`, a different Roslyn surface (`IIncrementalGenerator`, not `DiagnosticAnalyzer`).
+- Negative trigger: a rule whose application needs human judgement — "this logic belongs in Shared Core", "this abstraction is premature" — which stays with `code-reviewer`; a compiler pass cannot decide it and an analyzer that pretends otherwise trains people to suppress it.
+- Negative trigger: a single finding from one review — fix the instance; standing tooling for a violation that has not recurred is the tooling-ahead-of-need YAGNI forbids in `coding-principles.md`.
 
 ## 4. How to use this skill
-1. **Give every diagnostic a stable, project-prefixed ID and category** (e.g. `GC0001` for a Shared Core boundary violation, `GC0002` for a determinism violation, `GC0100` for a style/naming rule) — never reuse or renumber an ID once shipped, since suppression comments (`#pragma warning disable GC0001`) reference it by ID.
-2. **Set severity proportional to real consequence, not personal preference**: `DiagnosticSeverity.Error` for anything that would actually break correctness if it slipped through — a `Game.Core` type referencing `UnityEngine`, or a non-deterministic API used inside Shared Core, both of which `coding-principles.md` states can "silently break the whole client-server sync model." Use `Warning`/`Info` for style conventions like the `this.` qualifier or naming casing, where the cost of a miss is readability, not correctness.
-3. **Register the narrowest analysis action that catches the case**: `RegisterSymbolAction` for a symbol-shape check (e.g. "does this type live in `Game.Core.*`"), `RegisterSyntaxNodeAction` for a specific syntax pattern (e.g. a member-access expression), `RegisterCompilationStartAction` when the check needs to cache something (like the resolved `INamedTypeSymbol` for `UnityEngine.Random`) once per compilation instead of re-resolving it per node.
-4. **Resolve identity via `SemanticModel`/`ISymbol`, never string/text matching.** Checking whether a member-access expression's target symbol is actually `UnityEngine.Random` (via `ISymbol.ContainingNamespace`/`ContainingAssembly`) avoids false positives from a same-named project type; matching on the literal text `"Random"` does not.
-5. **Ship a `CodeFixProvider` only when the fix is unambiguous and mechanical** — inserting a missing `this.` qualifier, or rewriting `&`/`|` to `&&`/`||` in a boolean conditional context, are safe to auto-fix. A violation requiring judgment (e.g. "this logic belongs in `Game.Core`, not here") should surface as a diagnostic with a clear message, not a fabricated auto-fix that might move code somewhere wrong.
-6. **Write both a positive and a negative test per diagnostic** using `Microsoft.CodeAnalysis.Testing`'s `CSharpAnalyzerVerifier`/`CSharpCodeFixVerifier` before considering the analyzer done — an analyzer that false-positives on valid code gets suppressed project-wide the first time it blocks someone, which permanently defeats its purpose.
-7. **Make the diagnostic message actionable**, citing the specific rule it enforces (e.g. `"Game.Core must not reference UnityEngine types (coding-principles.md — Shared Core integrity)"`) — a flagged engineer should understand *why* immediately, not have to go hunting for the rule.
-8. **Package and wire it into the project's build** the way the project's confirmed toolchain expects (an analyzer project referenced via `<Analyzer>`/`<PackageReference>` with `PrivateAssets="all"`, or dropped in as a `.dll` with the `RoslynAnalyzer` label for Unity) — confirm the actual mechanism in use before assuming a default.
+1. **Confirm the rule is both decidable and recurring before writing an analyzer** — decidable means a symbol or syntax check settles it with no judgement left over; recurring means it has actually been violated more than once. A rule failing either test costs more to maintain than the reviews it saves.
+2. **Target `netstandard2.0` for the analyzer assembly** — it loads into the compiler host, and any other target framework fails to load quietly, leaving a build that reports nothing and an analyzer that never runs.
+3. **Assign a stable, project-prefixed diagnostic ID and never reuse or renumber it** — `#pragma warning disable GC0001` and `.editorconfig` entries reference the ID, so renumbering silently re-enables every suppression somebody deliberately wrote.
+4. **Set severity by real consequence, remembering that `Error` blocks the whole team** — in Unity an error-severity diagnostic fails compilation, so nobody enters Play Mode until it is resolved. Reserve `Error` for violations that break correctness, such as a `Game.Core` type touching `UnityEngine` or a non-deterministic API in Shared Core, which `coding-principles.md` states can silently break the client-server sync model. Style rules get `Warning` or `Info`.
+5. **Call `EnableConcurrentExecution()` and `ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None)` in `Initialize`** — without the second, the analyzer reports on generated files, and this project generates Shared Core code (`source-generator-authoring`), so those diagnostics land on code no engineer can edit or suppress at the source.
+6. **Keep the analyzer instance itself stateless** — Roslyn constructs one instance and reuses it across concurrent compilations, so a mutable field is a cross-compilation data race. Cache per-compilation state in a `RegisterCompilationStartAction` closure instead.
+7. **Register the narrowest action that catches the case** — `RegisterSymbolAction` for a shape question such as "does this type live in `Game.Core.*`", `RegisterSyntaxNodeAction` for a specific expression form, `RegisterCompilationStartAction` when a symbol like `UnityEngine.Random` should be resolved once per compilation rather than per node. Analyzers run on every keystroke in the IDE, so per-node cost is paid by everyone typing.
+8. **Resolve identity through `SemanticModel` and `ISymbol`, never through identifier text** — checking `ContainingNamespace`/`ContainingAssembly` distinguishes `UnityEngine.Random` from a project type that happens to be named `Random`; matching the literal string cannot, and the resulting false positive is what gets an analyzer disabled project-wide.
+9. **Write the message so it is actionable without leaving the editor** — name the rule it enforces, as in `"Game.Core must not reference UnityEngine types (coding-principles.md — Shared Core integrity)"`. A diagnostic that states only what is wrong makes every hit a lookup.
+10. **Ship a `CodeFixProvider` only when the fix is mechanical** — inserting a missing `this.`, or rewriting `&` to `&&` in a boolean condition, are safe and batch-fixable. Anything requiring a decision about where code belongs surfaces as a diagnostic and nothing more; a fabricated auto-fix moves code somewhere plausible and wrong.
+11. **Leave suppression and severity tuning available** — expose severity through `.editorconfig` (`dotnet_diagnostic.GC0001.severity`) so the project can adjust without recompiling the analyzer, and accept that a legitimate exception needs `#pragma` or `[SuppressMessage]`. An unsuppressible diagnostic gets the whole analyzer removed the first time it is wrong.
+12. **Write a positive and a negative test per diagnostic before calling it done** — use `CSharpAnalyzerVerifier`/`CSharpCodeFixVerifier`. The negative case is the important one: an analyzer that fires on valid code is suppressed project-wide the first time it blocks someone, which permanently defeats it. Then confirm the packaging the project actually uses, an analyzer reference or a `RoslynAnalyzer`-labelled `.dll` for Unity, rather than assuming a default.
 
 ## 5. Specific goals / tasks this skill performs
-- Enforce the `Game.Core.*` / `UnityEngine` namespace boundary from `naming-convention.md`.
-- Enforce the Shared Core determinism rules from `coding-principles.md` (ban `UnityEngine.Random`, wall-clock time, and other divergence-prone APIs inside `Game.Core.*`).
-- Enforce the mandatory `this.` qualification convention, with an auto-fix.
-- Enforce `&&`/`||` over `&`/`|` in conditional expressions, with an auto-fix.
-- Flag naming-convention casing violations (`_camelCase` private fields, `PascalCase` public members, etc.) per `naming-convention.md`'s casing table.
-- Out of scope: generating new code (`source-generator-authoring`), and one-off findings that haven't recurred enough to justify standing tooling.
+- Enforcing the `Game.Core.*`/`UnityEngine` namespace boundary from `naming-convention.md` as a compile error.
+- Enforcing Shared Core determinism from `coding-principles.md` — banning `UnityEngine.Random`, wall-clock time, and other divergence-prone APIs inside `Game.Core.*`.
+- Enforcing the mandatory `this.` qualifier and `&&`/`||` over `&`/`|`, each with a mechanical auto-fix.
+- Flagging casing violations against `naming-convention.md`'s table.
+- Analyzer project setup: `netstandard2.0`, concurrent execution, generated-code exclusion, `.editorconfig` severity, Unity packaging.
+- Out of scope: emitting code (`source-generator-authoring`), rules requiring judgement (`code-reviewer`), one-off findings that have not recurred (`coding-principles.md`).
 
 ## 6. Output format
 ```
 ## Roslyn Analyzer — <diagnostic ID / name>
-- Rule enforced: <which coding-principles.md / naming-convention.md rule, quoted or cited>
-- Severity: Error / Warning / Info — rationale: <correctness vs. style>
+- Rule enforced: <which rule file and section, cited>
+- Decidability: <the symbol/syntax check that settles it with no judgement left>
+- Recurrence: <how many times it has been violated>
+- Severity: Error / Warning / Info — rationale: correctness vs. style
 - Registration: <RegisterSymbolAction / RegisterSyntaxNodeAction / RegisterCompilationStartAction>
-- Resolution method: <semantic symbol check, not text matching>
-- Code fix: <mechanical fix provided, or "none — requires judgment">
-- Tests: <positive + negative cases added>
+- Initialize: EnableConcurrentExecution + ConfigureGeneratedCodeAnalysis(None) — confirmed
+- Statelessness: <confirmed no mutable analyzer field; per-compilation state in closure>
+- Resolution: <semantic symbol check — never identifier text>
+- Code fix: <mechanical fix provided, or "none — requires judgement">
+- Suppression: <.editorconfig key; pragma escape available>
+- Tests: <positive and negative cases added>
+- Layer: analyzer project is build-time only — netstandard2.0
 - Known limitations: <...>
+```
+
+**Extended report — emit ONLY when the requester asks for it.** It replaces the one-line `Known limitations` above with all three fields:
+```
+- Known limitations: <cases the diagnostic does not catch — omit this line entirely if there are genuinely none>
+- Latent concerns: <shapes not yet tested, severity that may become disruptive, rules that could drift from the analyzer>
+- Future remediation: <the concrete fix for each concern above, each with the condition that should trigger it>
 ```
 
 ## 7. Examples
 **Example 1**
-- Input: "UnityEngine types have leaked into Game.Core twice this sprint despite the rule in coding-principles.md — Code Review keeps having to catch it manually."
-- Output: `GC0001` analyzer, `DiagnosticSeverity.Error`, `RegisterSymbolAction` on named types checking `ContainingNamespace` starts with `Game.Core` while any member's resolved type symbol has `ContainingAssembly` matching `UnityEngine.CoreModule` (or any `UnityEngine.*` assembly); no auto-fix (moving the code is a judgment call); positive/negative tests added.
+- Input: "UnityEngine types have leaked into Game.Core twice this sprint; review keeps catching it by hand."
+- Output: `GC0001` at `DiagnosticSeverity.Error`, `RegisterSymbolAction` over named types whose `ContainingNamespace` starts with `Game.Core` while a member's resolved type has a `UnityEngine.*` containing assembly. No auto-fix, since where the code should move is a judgement call. `EnableConcurrentExecution` and `ConfigureGeneratedCodeAnalysis(None)` set so the generated snapshot codecs are not flagged; positive and negative tests added.
 
 **Example 2**
-- Input: "Engineers keep forgetting the mandatory `this.` qualifier on instance member access; it's a mechanical, low-stakes miss."
-- Output: `GC0100` analyzer, `DiagnosticSeverity.Warning`, `RegisterSyntaxNodeAction` on `IdentifierNameSyntax` resolving to an unqualified instance member, paired with a `CodeFixProvider` that inserts `this.` — batch-fixable across a whole solution via "Fix All in Solution."
+- Input: "make an analyzer that flags any class doing more than one job, so Single Responsibility gets enforced automatically."
+- Output: declined — there is no symbol or syntax check that decides it, so the analyzer would encode a proxy (member count, line count) that fires on correct code and misses real violations. Kept it with `code-reviewer`, and instead shipped `GC0002` for the determinism rule, which a symbol check does decide exactly.
+
+**Example 3**
+- Input: an existing `this.`-qualifier analyzer is reporting hundreds of hits in files nobody wrote.
+- Output: `Initialize` was missing `ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None)`, so it was analyzing the source generator's output, which no engineer can edit. Added it alongside `EnableConcurrentExecution`, and moved the resolved symbol lookup into `RegisterCompilationStartAction` so it stops re-resolving per node on every keystroke.
 
 ## 8. Edge cases & guardrails
-- Never ship an analyzer without both a positive and a negative test — an untested analyzer is exactly as risky as untested production code, and a false positive here blocks every engineer's build, not just one caller.
-- Never resolve project rules via string/text matching on identifiers — always resolve through `SemanticModel`/`ISymbol` to avoid false positives on same-named but unrelated types.
-- Never attach an automatic code fix to a diagnostic whose correct resolution requires human judgment.
-- Keep severity honest: reserve `Error` for rules whose violation causes a real correctness/determinism bug (per `coding-principles.md`), not for stylistic preference — an over-eager `Error` severity trains engineers to reach for suppression instead of understanding the rule.
-- Don't stand up a permanent analyzer for a violation that has occurred exactly once — that's tooling built ahead of actual need (YAGNI).
+- Never ship an analyzer without a negative test — a false positive is suppressed project-wide the first time it blocks someone, which ends the analyzer's usefulness permanently.
+- Never match on identifier text — resolve through `SemanticModel`/`ISymbol`, or a same-named project type gets flagged.
+- Never omit `ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None)` — it reports on code nobody can edit.
+- Never keep mutable state in an analyzer field — one instance serves concurrent compilations.
+- Never attach an auto-fix to a diagnostic whose resolution requires judgement — a plausible wrong edit is worse than no edit.
+- Never use `Error` severity for a style rule — in Unity it fails compilation and blocks Play Mode for the whole team.
+- Never reuse or renumber a shipped diagnostic ID — existing suppressions silently stop applying.
+- Never build an analyzer for a rule that has been violated once, or one that needs judgement to apply.
