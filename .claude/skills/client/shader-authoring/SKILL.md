@@ -1,79 +1,109 @@
 ---
 name: shader-authoring
 description: >
-  Authoritative technique for building shaders (Shader Graph and hand-written
-  HLSL/ShaderLab) for a visual-effect requirement — stylized shading, screen
-  distortion, custom lighting models, decals, dissolve/outline effects, and
-  similar. Use this before writing or modifying any shader asset, whenever the
-  purpose is a visual outcome. Do not use this for a compute-shader-driven
-  simulation (GPU particle sim, procedural deformation feeding a VFX) — that's
-  `compute-shader-vfx`. Do not use this for particle system authoring itself
-  (VFX Graph / Shuriken graph structure) — that's `vfx-particle-authoring`.
-  Do not use this when the task is pure performance tuning of an
-  already-correct, unchanged shader with no visual delta requested — that
-  belongs to Tech Lead – Performance. Do not use this to decide whether a
-  shader needs to be DOTS Instancing compatible, or which properties need
-  "Hybrid Per Instance" declared for ECS/DOTS entity rendering — that's
-  `unity-entities-graphics`; this skill still owns the shader's actual
-  node-graph/HLSL content either way.
+  Technique for authoring shader content — Shader Graph node graphs and
+  hand-written HLSL/ShaderLab: stylized and toon shading, custom lighting
+  models, screen distortion, dissolve, outline, rim, hologram, decal and
+  material-driven VFX shaders, reusable subgraphs, `UnityPerMaterial` CBUFFER
+  layout for SRP Batcher compatibility, `shader_feature` versus
+  `multi_compile` variant control, and `half` precision on mobile. Use when a
+  shader must be written, fixed, or made to compile.
+  Not for: which pipeline to target (`render-pipeline-urp-hdrp`); where a pass
+  is injected (`unity-urp-rendering`, `unity-hdrp-rendering`); Volume plumbing
+  around a full-screen effect (`unity-post-processing`); compute kernels
+  (`compute-shader-vfx`); particle graphs (`vfx-particle-authoring`); DOTS
+  Instancing requirements (`unity-entities-graphics`); tuning an unchanged
+  shader (`tech-lead-performance`).
 ---
 
-# Shader Authoring
+# Shader Authoring — Shader Graph & HLSL Content
 
 ## 1. Objective
-Produce shaders that are visually correct, pipeline-appropriate, and performant enough to ship on the project's actual target platforms — without duplicating gameplay decisions inside shader code or silently breaking on a render pipeline the shader was never tested against.
+Produce shader content that is visually correct, compiles on every pipeline and platform the Tech Spec targets, and stays inside its budget for variants, precision, and batching. It prevents the failures that a working Editor preview hides: a shader that breaks SRP batching because its properties are not in the expected constant-buffer layout, a `multi_compile` that ships every combination into the build whether or not any material uses it, `float` precision applied everywhere on a mobile GPU that pays for it, a gameplay decision encoded in shader logic where the server cannot see it, and an effect verified on exactly one of the platforms it ships to.
 
 ## 2. Role
-Act as a senior shader programmer. You choose the right authoring method (Shader Graph vs hand-written HLSL/ShaderLab) for the effect at hand, and you are responsible for the shader compiling and looking correct on every pipeline/platform combination the Tech Spec targets.
+Act as the shader programmer for the client track — the tool reached for whenever a visual requirement resolves to writing or fixing shader content. You own the graph and the HLSL; the pipeline target arrives as an input, and where the resulting shader gets injected into the frame belongs to the pipeline skills.
 
 ## 3. When to invoke this skill
-- A Tech Spec or GD request calls for a new or modified shader: stylized surface shading, a screen-space effect (distortion, chromatic aberration, damage vignette), a custom lighting model, a dissolve/outline/hologram effect, a decal shader, a Shader Graph subgraph for reuse across materials.
-- Negative trigger: a compute-shader simulation whose output feeds a shader (e.g. GPU particle positions) — build the compute pass under `compute-shader-vfx` first, then use this skill only for the shader that consumes its buffer.
-- Negative trigger: authoring the particle system/graph structure itself — use `vfx-particle-authoring`; this skill covers the shader a particle output stage renders with, not the emission/simulation graph.
-- Negative trigger: a request to make an existing, visually-unchanged shader faster with no new visual requirement — redirect to Tech Lead – Performance.
-- Negative trigger: deciding DOTS Instancing compatibility or "Hybrid Per Instance" property declarations for ECS/DOTS entity rendering — that's `unity-entities-graphics`; this skill still authors the shader's own node-graph/HLSL content once that requirement is known.
+- A Tech Spec calls for a new or modified shader: stylized surface shading, a custom lighting model, a screen-space effect, a dissolve, outline, rim, or hologram, a decal shader, or a subgraph meant for reuse.
+- Choosing between Shader Graph and hand-written HLSL for a specific effect.
+- A shader fails to compile, renders magenta, or looks different between two platforms.
+- Bringing a shader into SRP Batcher compatibility, or diagnosing why it is not batching.
+- Reducing a shader's variant count, or deciding between `shader_feature` and `multi_compile` for a branch.
+- Making an existing shader DOTS Instancing compatible once `unity-entities-graphics` has established that requirement.
+- Negative trigger: which pipeline the shader targets, or which master stack — that is `render-pipeline-urp-hdrp`, and this skill needs its answer as an input.
+- Negative trigger: where a pass runs in the frame — the Renderer Feature or Custom Pass Volume that injects it is `unity-urp-rendering` or `unity-hdrp-rendering`.
+- Negative trigger: the `VolumeComponent` and override plumbing around a full-screen post effect — that is `unity-post-processing`; this skill writes the shader that effect samples.
+- Negative trigger: a compute kernel producing simulation data — that is `compute-shader-vfx`; this skill writes the shader that consumes its buffer.
+- Negative trigger: particle emission and simulation graph structure — that is `vfx-particle-authoring`; this skill writes the shader its output stage renders with.
+- Negative trigger: deciding that a shader must be DOTS Instancing compatible, or which properties are Hybrid Per Instance — that is `unity-entities-graphics`; authoring the shader itself stays here.
+- Negative trigger: making an already-correct shader faster with no visual change requested — that is `tech-lead-performance`.
 
 ## 4. How to use this skill
-1. **Confirm the render pipeline target** (Built-in / URP / HDRP) before writing anything — shader structure, includes, and available lighting functions differ per pipeline. If the pipeline-specific setup itself is in question (Renderer Features, Volume-driven effects, master stack target), consult `render-pipeline-urp-hdrp` first.
-2. **Choose the authoring method**:
-   - Shader Graph by default — easier to hand off, self-documenting node graph, artist-editable.
-   - Hand-written HLSL/ShaderLab only when Shader Graph can't express the requirement: a custom lighting model, direct `ComputeBuffer`/`StructuredBuffer` consumption, or a technique needing manual control Shader Graph doesn't expose.
-3. **Structure the shader cleanly**: separate vertex and fragment responsibilities, use the correct coordinate space at each stage (don't transform to world space earlier than needed), and put material-tunable values in a `CBUFFER` block so the shader stays SRP Batcher-compatible.
-4. **Name things per convention**: shader property reference names follow Unity's own convention (`_BaseColor`, `_NoiseScale` — underscore-prefixed PascalCase), local HLSL variables use camelCase, and any tunable value gets a named property instead of an inlined magic number (per `coding-principles.md`'s "no magic numbers").
-5. **Keep keyword/variant count bounded**: use `shader_feature`/`multi_compile` deliberately for real per-material branches, not speculatively. An uncontrolled combinatorial variant count inflates build time and shader memory — state the variant count in the handoff note if it's non-trivial.
-6. **Test on every platform the project actually ships**: a shader that only compiles/looks correct on PC but silently fails or renders differently on mobile GLES/Vulkan is not done. Use the Unity MCP tools to capture a scene view on the target quality tier before declaring the effect finished.
-7. **Comment the non-obvious math only** — a custom BRDF term, a hand-derived distortion formula, a workaround for a platform quirk — per the shared comment-depth policy; don't restate what the node graph or a straightforward `lerp` already says.
+1. **Take the pipeline target and master stack as given, and stop if they are missing** — shader structure, includes, and available lighting functions differ per pipeline, so authoring before `render-pipeline-urp-hdrp` has answered means guessing at the one input that invalidates everything.
+2. **Default to Shader Graph and justify hand-written HLSL** — a graph is artist-editable, self-documenting, and generates SRP Batcher-compatible output automatically. Reach for HLSL only when the requirement is genuinely inexpressible in nodes: a custom lighting model, direct `StructuredBuffer` consumption, or control the graph does not surface.
+3. **Put every material-tunable property in one `UnityPerMaterial` CBUFFER** — SRP Batcher compatibility depends on that block existing and matching across shaders in the batch, so a property declared outside it silently drops the shader out of batching with no warning anywhere.
+4. **Know that a `MaterialPropertyBlock` breaks the SRP batch for that renderer** — `performance-and-algorithms.md` rightly requires it over assigning `renderer.material`, which instantiates and leaks a material; both facts hold, so where per-instance variation is wanted at scale, raise the conflict and let a measurement decide between material variants, GPU instancing, and accepting the lost batch.
+5. **Choose `shader_feature` over `multi_compile` unless a variant is selected at runtime** — `shader_feature` strips variants no material in the build references, while `multi_compile` ships every combination unconditionally. Variant count is multiplicative, so state it in the handoff whenever a shader declares more than a couple of keywords.
+6. **Use `half` precision by default in fragment work on mobile targets** — tile-based mobile GPUs execute `half` meaningfully faster than `float`, and blanket `float` is a cost paid on every pixel; keep `float` for positions, depth reconstruction, and anywhere banding would show.
+7. **Work in the latest coordinate space the effect allows** — transform to world space only where the effect actually needs world coordinates, since an unnecessary per-vertex or per-pixel transform is repeated work no visual requirement asked for.
+8. **Name properties per Unity convention and never inline a tunable number** — underscore-prefixed PascalCase reference names (`_BaseColor`, `_FoamWidth`), camelCase HLSL locals, and every tunable exposed as a property rather than a literal, per `coding-principles.md`'s no-magic-numbers rule.
+9. **Comment only the non-obvious maths** — a hand-derived BRDF term, a refraction formula, a platform workaround — per `language-and-comments.md`'s Comment depth policy; a `lerp` needs no explanation.
+10. **Verify on every platform the Tech Spec targets before calling it done** — capture the effect on each target quality tier; a shader validated only on PC can fail to compile, band, or lose precision on mobile GLES or Vulkan, and none of that shows in the Editor.
+11. **Ask when the visual intent is described only by an adjective** — "make it feel weightier" is not a shader specification; get a reference image, a named comparable, or a concrete parameter before authoring, rather than iterating blind.
 
 ## 5. Specific goals / tasks this skill performs
-- Stylized/toon/cel shading, custom lighting models.
-- Screen-space effects: distortion, dissolve, outline/rim, hologram, damage/status overlays.
-- Decal shaders, material-driven VFX shaders (the render stage a particle/VFX output feeds into).
-- Shader Graph subgraphs for reuse across multiple materials.
-- Out of scope: compute-shader simulation code (`compute-shader-vfx`), particle graph/emission structure (`vfx-particle-authoring`), and raw non-visual performance tuning (Tech Lead – Performance).
+- Stylized, toon, and custom-lighting-model surface shaders.
+- Screen-space effect shaders: distortion, dissolve, outline, rim, hologram, status overlays.
+- Decal shaders and the material shaders a particle or VFX output stage renders with.
+- Reusable Shader Graph subgraphs.
+- SRP Batcher compatibility work and diagnosis of a shader that is not batching.
+- Variant-count control through deliberate `shader_feature`/`multi_compile` choice.
+- Precision and platform-compatibility work across the project's shipping targets.
+- Out of scope: pipeline targeting (`render-pipeline-urp-hdrp`); pass injection (`unity-urp-rendering`, `unity-hdrp-rendering`); Volume plumbing for post effects (`unity-post-processing`); compute kernels (`compute-shader-vfx`); particle graphs (`vfx-particle-authoring`); DOTS Instancing requirements (`unity-entities-graphics`); pure performance tuning (`tech-lead-performance`).
 
 ## 6. Output format
 ```
 ## Shader Implementation — <effect name>
-- Pipeline target: Built-in / URP / HDRP
-- Authoring method: Shader Graph / hand-written HLSL
+- Pipeline target: <URP / HDRP> and master stack — source: render-pipeline-urp-hdrp
+- Authoring method: <Shader Graph / hand-written HLSL> — what made HLSL necessary, if used
 - Files: <paths>
-- Properties exposed: <list, with purpose>
-- Keywords/variants used: <list, or "none">
-- Platforms verified on: <list>
+- Properties exposed: <name and purpose each>
+- SRP Batcher: <compatible — UnityPerMaterial layout confirmed / not compatible and why>
+- Keywords: <each, shader_feature or multi_compile, and the resulting variant count>
+- Precision: <half/float choices in fragment work, and the target that drove them>
+- Platforms verified: <each target actually captured, not assumed>
+- Layer: <Game.Client.* shader assets — values received as properties, never decided here>
 - Known limitations: <...>
+```
+
+**Extended report — emit ONLY when the requester asks for it.** It replaces the one-line `Known limitations` above with all three fields:
+```
+- Known limitations: <what the delivered shader does not cover>
+- Latent concerns: <failure modes not yet triggered: assumptions that hold only under current conditions, thresholds not yet reached, trade-offs knowingly deferred>
+- Future remediation: <the concrete fix for each concern above, each with the condition that should trigger it>
 ```
 
 ## 7. Examples
 **Example 1**
-- Input: "Build a stylized water shader with foam at intersections, from the Tech Spec."
-- Output: Shader Graph, URP Lit target, uses scene depth for foam intersection, `_FoamWidth`/`_FoamColor`/`_WaveSpeed` exposed properties, verified on PC and mid-tier Android.
+- Input: "Build a stylized water shader with foam where it meets geometry", on a URP project shipping PC and mid-tier Android.
+- Output: Shader Graph on the Universal Lit target, foam derived from scene depth difference; `_FoamWidth`, `_FoamColor`, and `_WaveSpeed` exposed as properties with no inlined constants; graph output confirmed SRP Batcher compatible; one `shader_feature` for an optional refraction variant so it strips from the build unless a material enables it; fragment maths kept in `half` except the depth reconstruction; captured on both PC and a mid-tier Android tier before hand-off.
 
 **Example 2**
-- Input: "Create a screen distortion shader for the ultimate ability."
-- Output: hand-written HLSL full-screen pass (needed for a custom refraction sample not expressible in Shader Graph at the project's pipeline version), single `multi_compile` for an optional chromatic-aberration variant, verified on PC only per Tech Spec scope.
+- Input: "Make the shader flash red when the hit is a critical, it already knows the damage number."
+- Output: declined that shape — a shader must not decide what counts as critical, because that rule lives in `Game.Core.*` where the server evaluates the same logic, per `coding-principles.md`'s Shared Core integrity section. Exposed `_HitFlashColor` and `_HitFlashIntensity` instead and let the already-resolved outcome drive them from the client layer, which also makes the effect reusable for any hit category without touching the shader.
+
+**Example 3**
+- Input: a material with per-instance tint colour set through a `MaterialPropertyBlock` shows far more draw calls than expected after an SRP Batcher audit.
+- Output: confirmed the cause rather than the symptom — the block is doing its job of avoiding a material instantiation, but a renderer using one leaves the SRP Batcher path, so the two goals genuinely conflict here. Reported both, and put the choice to a measurement per §4: material variants for a small fixed palette, GPU instancing for many instances of one mesh, or keeping the block and accepting the batch loss where the instance count is low.
 
 ## 8. Edge cases & guardrails
-- Shaders are visual-only: never encode a gameplay decision (e.g. "is this a critical hit") directly in shader logic — that decision belongs in `Game.Core.*` and the shader should only receive the already-resolved value (color, intensity) as a property.
-- Never drive per-object material variation via `renderer.material.<property> = x` in a hot path — that instantiates a new material and defeats SRP batching; use a `MaterialPropertyBlock` instead, consistent with `performance-and-algorithms.md`.
-- Don't claim a shader is finished after testing on only one pipeline/platform when the Tech Spec targets more than one.
-- Stay scoped to the requested effect — don't gold-plate with extra parameters or techniques nobody asked for (YAGNI).
+- Never author before the pipeline target and master stack are confirmed — that single input determines structure, includes, and whether the graph compiles at all.
+- Never encode a gameplay decision in shader logic — the shader receives already-resolved values, because the rule lives in `Game.Core.*` where the server can evaluate it too.
+- Never assign `renderer.material` in a hot path — it instantiates a material per renderer and leaks it, which is worse than the batching cost of the alternative.
+- Never declare a material property outside `UnityPerMaterial` and assume batching survives — it drops silently, with no warning to notice.
+- Never reach for `multi_compile` where `shader_feature` fits — the build ships every variant either way only in the first case, and variant counts multiply.
+- Never use blanket `float` precision on a mobile target — it is a per-pixel cost with no visual return outside the cases that genuinely need the range.
+- Never claim completion after verifying one platform when the Tech Spec names more — Editor-correct and device-correct are different claims.
+- Never add parameters or techniques nobody asked for — an extra exposed property is another thing to tune, document, and keep working (YAGNI).
+- If the visual intent is only an adjective, ask for a reference before authoring — iterating on a guess costs more than the question.

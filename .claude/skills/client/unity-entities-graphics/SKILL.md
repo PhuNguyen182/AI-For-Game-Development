@@ -14,7 +14,8 @@ description: >
   configuration (`unity-urp-rendering`, `unity-hdrp-rendering`); shader node or
   HLSL content (`shader-authoring`); general entity and system design
   (`unity-ecs-architecture`); scheduling (`unity-job-system-and-burst`); Burst
-  tuning (`unity-burst-compiler`); maths types (`unity-mathematics`).
+  tuning (`unity-burst-compiler`); maths types (`unity-mathematics`); bespoke
+  GPU compute passes (`compute-shader-vfx`).
 ---
 
 # Unity Entities Graphics — Rendering ECS Entities Through URP & HDRP
@@ -58,6 +59,7 @@ Act as the Entities Graphics specialist for the client track — the tool reache
 - Negative trigger: scheduling the system that writes an override component, or its container lifetime — that is `unity-job-system-and-burst`.
 - Negative trigger: HPC# compliance or `FloatMode` on that system — that is `unity-burst-compiler`.
 - Negative trigger: choosing `Unity.Mathematics` types — that is `unity-mathematics`, even though override components are typically `float4`.
+- Negative trigger: a bespoke compute pass driving a visual effect outside this package's own deformation system — that is `compute-shader-vfx`; the Compute Deformation path here is fixed-purpose skinning and blend shapes, not a general GPU simulation hook.
 
 ## 4. How to use this skill
 1. **Name the ECS-adoption decision this rendering work sits on top of**, per [dots-relationship.md](references/dots-relationship.md) — Entities Graphics cannot run without the Entities package, so it inherits `unity-ecs-architecture`'s escalation gate rather than providing its own reason to adopt ECS. [root-links.md](references/root-links.md) pins the package version below.
