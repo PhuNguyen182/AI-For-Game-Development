@@ -1,58 +1,42 @@
-# 2D Tilemap Extras — Tile Types (Animated, Rule, Auto)
+# 2D Tilemap Extras — Rule Tile, Auto Tile & Animated Tile
 
-Sources: https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/index.html, https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/Tiles.html, https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/AnimatedTile.html, https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/RuleTile-landing.html, https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/RuleTile-introduction.html, https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/RuleTile.html, https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/RuleTile-Inspector.html, https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/CustomRulesForRuleTile.html, https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/RuleOverrideTile.html, https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/AdvancedRuleOverrideTile.html, https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/AutoTile.html, https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/AutoTile-Inspector.html, https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/sample-projects.html, `UnityEngine.Tilemaps.AnimatedTile` scripting API
+Sources: [Extras Tiles](https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/Tiles.html), [Animated Tile](https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/AnimatedTile.html), [Rule Tile](https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/RuleTile.html), [Custom rules for Rule Tile](https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/CustomRulesForRuleTile.html), [Auto Tile](https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/AutoTile.html).
+Covers: SKILL.md §4 — **"Order Rule Tile rules with the most common case first"**.
 
-## Package requirement
+Every tile type here ships in `com.unity.2d.tilemap.extras@8.0`, not core
+Unity — install it from **Window > Package Manager > Unity Registry** first.
+Between them they cover most reasons a project would otherwise write a custom
+`TileBase`.
 
-Every tile type on this page ships in the separate **2D Tilemap Extras** package (`com.unity.2d.tilemap.extras`), not Unity's core Tilemap module — install it first via **Window > Package Manager > Unity Registry > 2D Tilemap Extras** before creating any asset described below.
+## Contents
 
-## Animated Tile
+- [Rule Tile versus Auto Tile](#rule-tile-versus-auto-tile)
+- [Rule Tile](#rule-tile)
+- [Auto Tile](#auto-tile)
+- [Animated Tile](#animated-tile)
+- [Samples](#samples)
 
-Plays through a list of sprites in sequence — for a waterfall, a torch, an idle-animated decoration.
+## Rule Tile versus Auto Tile
 
-1. Right-click in the Project window > **Create > 2D > Tiles > Animated Tile**.
-2. Lock the Inspector, drag sprites in one by one (each becomes a frame).
-3. Add the tile to a palette and paint it. Animation only plays in **Play mode**, not in the Scene view while editing.
-
-| Property | Description |
-|---|---|
-| Sprite List | The animation's frames, reorderable by drag handle. |
-| Minimum / Maximum Speed | Unity picks a random playback speed (fps) between these two values per instance. |
-| Start Time | Initial time offset, in seconds. |
-| Start Frame | Which sprite the animation begins on. |
-| Collider Type | None, Sprite, or Grid — same semantics as an ordinary `Tile` (see [tile-palette-and-tiles.md](tile-palette-and-tiles.md)). |
-| Animation Flags | **Loop Once** (play once, then stop), **Pause Animation**, **Update Physics** (re-evaluate collision every animation frame), **Unscaled Time** (ignore `Time.timeScale`), **Sync Animation** (keep identical tiles' animations in lock-step). |
-
-Scripting API — `UnityEngine.Tilemaps.AnimatedTile` (extends `TileBase`): backing fields `m_AnimatedSprites`, `m_AnimationStartFrame`, `m_AnimationStartTime`, `m_MinSpeed`/`m_MaxSpeed`, `m_TileAnimationFlags`, `m_TileColliderType`; overrides `GetTileData()` and `GetTileAnimationData()`.
-
-## Rule Tile vs. Auto Tile
-
-Both change which sprite Unity paints based on surrounding tiles, but differ in authoring model:
-
-| | Rule Tile | Auto Tile |
-|---|---|---|
-| Authoring model | Explicit per-rule neighbor conditions (3×3 grid of match/no-match/either) mapped to an output sprite. | A spritesheet of pre-drawn floor-layout sprites (corners, corridors, etc.), each tagged with a mask of which surrounding cells it represents. |
-| Best for | Fine-grained, conditional control (walls that cap differently depending on 8-directional neighbors, pipes, dungeon walls). | Fast iteration when the art is already organized as a floor-layout spritesheet. |
+| Axis | Rule Tile | Auto Tile | Source |
+|---|---|---|---|
+| Authoring model | Explicit 3×3 neighbour conditions — match, no-match, or don't-care — mapped to an output sprite | A pre-drawn floor-layout spritesheet, each sprite tagged with a mask of which surrounding cells it represents | [Extras Tiles](https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/Tiles.html) |
+| Choose it when | Conditions are fine-grained or asymmetric — walls capping differently by direction, pipes, dungeon edges | The art already arrives organised as a layout sheet and iteration speed matters more than per-case control | [Extras Tiles](https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/Tiles.html) |
 
 ## Rule Tile
 
-1. **Create > 2D > Tiles > Rule Tile** (or an isometric-specific variant, if the target `Tilemap`'s Cell Layout is Isometric).
-2. Set **Default Sprite** — what paints when no rule matches.
-3. Click **+** under Tiling Rules to add a rule; use the 3×3 neighbor grid to mark which neighbor cells must match (green arrow), must not match (red cross), or don't care (empty).
-4. Assign the rule's output **Sprite** (or Random/Animation output — see table below).
-5. Order rules with the most common case first — Unity evaluates rules top-to-bottom and stops at the first match.
-6. Add the tile to a palette and paint normally; editing rules/sprites later re-applies automatically across the whole tilemap.
+| Aspect | What it decides | Source |
+|---|---|---|
+| Default Sprite, GameObject, Collider | What paints when **no** rule matches — the visible signal that rule coverage has a hole | [Rule Tile Inspector](https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/RuleTile-Inspector.html) |
+| Rule order | Evaluation runs top to bottom and **stops at the first match**, so order is a correctness decision, and a rare rule placed first adds comparisons to every paint and refresh | [Rule Tile](https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/RuleTile.html) |
+| 3×3 neighbour grid | Green arrow means must match, red cross must not, empty means don't care — the don't-care cells are what keep a rule from being over-specified | [Rule Tile](https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/RuleTile.html) |
+| Extend Neighbor | Widens the rule grid beyond 3×3 for conditions that must look further | [Rule Tile Inspector](https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/RuleTile-Inspector.html) |
+| Output per rule | **Single** sprite, **Random** with noise, shuffle, and size, or **Animation** with min and max speed | [Rule Tile Inspector](https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/RuleTile-Inspector.html) |
+| Per-rule GameObject and Collider | Overrides for a specific matched case — how one wall variant gains a collider the others do not | [Rule Tile Inspector](https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/RuleTile-Inspector.html) |
+| Isometric variants | Separate Rule Tile types exist for Isometric cell layouts; the rectangular one does not fit an isometric grid's neighbour topology | [Rule Tile](https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/RuleTile.html) |
 
-| Property | Description |
-|---|---|
-| Default Sprite / Default GameObject / Default Collider | Used when no tiling rule matches. |
-| Extend Neighbor | Expands the 3×3 rule grid outward for rules that need to check farther neighbors. |
-| Output (per rule) | **Single** sprite, **Random** (with Noise/Shuffle/Size), or **Animation** (with Min/Max Speed, Size). |
-| GameObject / Collider (per rule) | Per-rule prefab spawn / collider shape override. |
-
-Note: the `UnityEngine.Tilemaps.RuleTile<T>` scripting API page returned 404 at authoring time — verify current members against the live Scripting API or the `com.unity.2d.tilemap.extras` package source before extending it.
-
-**Custom neighbor-checking** — subclass `RuleTile<CustomRuleTile.Neighbor>`, define custom neighbor IDs starting at 3 (0–2 are reserved), and override `RuleMatch`:
+Custom neighbour conditions come from subclassing `RuleTile<T>` and overriding
+`RuleMatch`. **Custom neighbour IDs start at 3** — 0 to 2 are reserved.
 
 ```csharp
 public override bool RuleMatch(int neighbor, TileBase tile)
@@ -67,42 +51,41 @@ public override bool RuleMatch(int neighbor, TileBase tile)
 }
 ```
 
-**Rule Override Tile** — a variant of an existing Rule Tile that swaps sprites/GameObjects while keeping its rule logic. Drag/pick the base Rule Tile into the **Tile** field, then fill **Override Sprites**/**Override GameObjects** (leave an entry empty to keep the original).
+| Override variant | What it decides | Source |
+|---|---|---|
+| Rule Override Tile | Swaps sprites and GameObjects while keeping the base tile's rule logic; an empty entry keeps the original | [Rule Override Tile](https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/RuleOverrideTile.html) |
+| Advanced Rule Override Tile | Also overrides the rules themselves, not only their outputs — the choice when a variant genuinely behaves differently | [Advanced Rule Override Tile](https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/AdvancedRuleOverrideTile.html) |
 
-**Advanced Rule Override Tile** — same idea, but also lets the rules themselves be overridden, not just sprites/GameObjects. Same **Tile** field to pick the base Rule Tile; the rest of the Inspector matches the base Rule Tile's own editing UI.
+**Critical caveat**: the `RuleTile<T>` API page returned 404 at authoring time
+— confirm members against the package source before subclassing, per the
+disclosed-gap table in [root-links.md](root-links.md).
 
 ## Auto Tile
 
-1. Prepare a 2×2 or 3×3 spritesheet of floor-layout sprites (corners, corridors, etc.) and slice it in the Sprite Editor.
-2. **Create > 2D > Tiles > Auto Tile**.
-3. Set **Default Sprite** (all-floor, no walls), **Mask Type** (Mask_2x2 or Mask_3x3), add the spritesheet under **Textures**.
-4. For each sprite, click it and paint a red mask over the cells that represent floor for that layout.
-5. Add to a palette; painting a tile represents floor, and Unity auto-selects the bordering sprite based on neighbors.
+| Property | What it decides | Source |
+|---|---|---|
+| Default Sprite / GameObject | Used when neighbours match no configured mask | [Auto Tile Inspector](https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/AutoTile-Inspector.html) |
+| Mask Type | Mask_2x2 or Mask_3x3 — how many surrounding cells are examined, and therefore how much art the sheet must supply | [Auto Tile](https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/AutoTile.html) |
+| Textures | The layout spritesheets; each sprite is masked by painting the cells it represents as floor | [Auto Tile](https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/AutoTile.html) |
+| Random | Picks among sprites sharing a mask instead of always the first — the cheap way to break visual repetition | [Auto Tile Inspector](https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/AutoTile-Inspector.html) |
+| Tile Collider / Has Physics Shape | Collider Type as usual, with a read-only indicator that falls back to None when the sprite carries no physics shape | [Auto Tile Inspector](https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/AutoTile-Inspector.html) |
+| Load / Save | Reuses a mask template across different textures, so a second tileset does not need re-masking | [Auto Tile Inspector](https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/AutoTile-Inspector.html) |
 
-| Property | Description |
-|---|---|
-| Default Sprite / Default GameObject | Used when neighboring tiles don't match any configured mask. |
-| Tile Collider | None, Sprite (Custom Physics Shape), or Grid. |
-| Has Physics Shape | Read-only indicator; falls back Tile Collider to None if the sprite has no physics shape. |
-| Mask Type | Mask_2x2 or Mask_3x3 — how many surrounding cells Unity checks. |
-| Random | Picks randomly among sprites sharing the same mask, instead of always the first match. |
-| Textures | The spritesheet(s) supplying layout sprites; **Add (+)** / **Remove (-)**. |
-| Load / Save | Reuse a saved mask template across different textures. |
+## Animated Tile
 
-## Sample projects
+| Property | What it decides | Source |
+|---|---|---|
+| Sprite List | The frames, reorderable by drag | [Animated Tile](https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/AnimatedTile.html) |
+| Minimum / Maximum Speed | A random playback rate per instance between the two — identical tiles desynchronise, which is usually the intent | [Animated Tile](https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/AnimatedTile.html) |
+| Start Time / Start Frame | Initial offset in seconds and starting frame | [Animated Tile](https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/AnimatedTile.html) |
+| Animation Flags | Loop Once, Pause Animation, **Update Physics** (re-evaluates collision every frame), Unscaled Time, and **Sync Animation** (keeps identical tiles in lock-step, the opposite of the random-speed behaviour) | [Animated Tile](https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/AnimatedTile.html) |
+| Where it plays | **Play mode only** — the Scene view shows a static frame while editing, so "the animation isn't working" is usually just edit mode | [Animated Tile](https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/AnimatedTile.html) |
 
-Importable via Package Manager, each with pre-made tiles in a Tiles subfolder ready to drop onto a palette:
+## Samples
 
-| Sample | Demonstrates |
-|---|---|
-| Waterfall Animated Tile | Animated Tile — enter Play mode to see the animation. |
-| Pipe Rule Tile | Rule Tile reacting to 8-directional neighbors. |
-| Dungeon Rule Tile | Rule Tile reacting to 4-directional neighbors. |
-| Auto Tile (3×3) | Auto Tile floor-layout auto-selection. |
-
-## Practical guidance
-
-- Reach for **Rule Tile**/**Auto Tile** before writing a fully custom `TileBase` from scratch ([custom-tiles-and-brushes.md](custom-tiles-and-brushes.md)) — most auto-tiling/terrain-blending needs are already covered by one of these two, per YAGNI in `coding-principles.md`.
-- Order Rule Tile rules with the most frequent case first; rule evaluation is sequential top-to-bottom, so a rarely-hit rule placed first adds unnecessary comparisons to every paint/refresh at edit time.
-- Follow this project's naming convention for a custom `RuleTile<T>` subclass or its nested `Neighbor` type (PascalCase, no Hungarian prefixes) per `naming-convention.md`.
-- A Rule Tile/Auto Tile only decides which **sprite** to render for a given neighbor configuration — it does not decide gameplay state. If the neighbor configuration itself represents gameplay data (e.g. "this cell is walkable"), that determination still belongs in Shared Core, per `coding-principles.md`'s Shared Core integrity rule.
+| Sample | Demonstrates | Source |
+|---|---|---|
+| Waterfall Animated Tile | Animated Tile in Play mode | [Sample projects](https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/sample-projects.html) |
+| Pipe Rule Tile | Eight-directional neighbour conditions | [Sample projects](https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/sample-projects.html) |
+| Dungeon Rule Tile | Four-directional neighbour conditions | [Sample projects](https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/sample-projects.html) |
+| Auto Tile (3×3) | Mask-driven layout selection | [Sample projects](https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/sample-projects.html) |

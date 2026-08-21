@@ -1,36 +1,36 @@
-# Tilemap Scripting API Surface
+# Tilemap Scripting API — Reads, Batched Writes & Refresh
 
-Sources: `UnityEngine.Tilemaps.Tilemap` scripting API
+Source: [Tilemap API](https://docs.unity3d.com/ScriptReference/Tilemaps.Tilemap.html).
+Covers: SKILL.md §4 — **"Batch runtime tile edits and keep them out of `Update`"**.
 
-## `Tilemap` — key properties
+Tile edits are authoring and load-time operations that happen to be callable
+at runtime. Each write invalidates render and collider data for the affected
+region, so the difference between a batched call and a loop of single writes
+is the difference between one invalidation and one per cell.
 
-| Member | Description |
-|---|---|
-| `cellBounds` | Tilemap's bounds, in cell coordinates. |
-| `origin` | Tilemap's origin, in cell coordinates. |
-| `size` | Tilemap's size, in cells. |
-| `tileAnchor` | Script-side equivalent of the Tile Anchor Inspector field. |
-| `color` | Script-side equivalent of the Color Inspector field. |
-| `animationFrameRate` | Script-side equivalent of Animation Frame Rate. |
+## Reading
 
-## `Tilemap` — key methods
+| Member | What it decides | Source |
+|---|---|---|
+| `cellBounds`, `origin`, `size` | The occupied region in cell coordinates — the bounds any iteration should be driven from rather than a guessed range | [Tilemap API](https://docs.unity3d.com/ScriptReference/Tilemaps.Tilemap.html) |
+| `GetTile(Vector3Int)` / `GetTile<T>(Vector3Int)` | The tile at a cell, optionally typed — the generic overload avoids a cast when a custom tile type is expected | [Tilemap.GetTile](https://docs.unity3d.com/ScriptReference/Tilemaps.Tilemap.GetTile.html) |
+| `HasTile(Vector3Int)` | Occupancy without fetching the asset — the cheap test for a walkability query | [Tilemap.HasTile](https://docs.unity3d.com/ScriptReference/Tilemaps.Tilemap.HasTile.html) |
+| `GetSprite(Vector3Int)` | The sprite actually rendered there, which for a Rule Tile is not the tile's default | [Tilemap.GetSprite](https://docs.unity3d.com/ScriptReference/Tilemaps.Tilemap.GetSprite.html) |
+| `tileAnchor`, `color`, `animationFrameRate` | Runtime equivalents of the component fields in [grid-and-tilemap.md](grid-and-tilemap.md) | [Tilemap API](https://docs.unity3d.com/ScriptReference/Tilemaps.Tilemap.html) |
 
-| Member | Description |
-|---|---|
-| `SetTile(Vector3Int position, TileBase tile)` | Places a tile at one cell. |
-| `SetTiles(Vector3Int[] positions, TileBase[] tiles)` | Places multiple tiles in one batched call. |
-| `GetTile(Vector3Int position)` / `GetTile<T>(Vector3Int position)` | Reads the tile at a cell. |
-| `HasTile(Vector3Int position)` | Whether a cell is occupied. |
-| `GetSprite(Vector3Int position)` | Reads the rendered sprite at a cell. |
-| `SetColor(Vector3Int position, Color color)` | Tints a single tile. |
-| `SwapTile(TileBase from, TileBase to)` | Replaces every instance of one tile with another across the whole tilemap. |
-| `BoxFill(Vector3Int position, TileBase tile, int startX, int startY, int endX, int endY)` | Fills a rectangular region with one tile. |
-| `FloodFill(Vector3Int position, TileBase tile)` | Fills a contiguous region starting from a cell. |
-| `ClearAllTiles()` | Removes every tile. |
-| `RefreshTile(Vector3Int position)` / `RefreshAllTiles()` | Forces render/animation data to re-resolve for one tile / every tile. |
+## Writing
 
-## Practical guidance
+| Member | What it decides | Source |
+|---|---|---|
+| `SetTile(Vector3Int, TileBase)` | One cell — correct for a single event-driven change, wrong inside a loop | [Tilemap.SetTile](https://docs.unity3d.com/ScriptReference/Tilemaps.Tilemap.SetTile.html) |
+| `SetTiles(Vector3Int[], TileBase[])` | Many cells in one call, invalidating render and collider data once instead of per cell | [Tilemap.SetTiles](https://docs.unity3d.com/ScriptReference/Tilemaps.Tilemap.SetTiles.html) |
+| `BoxFill(...)` / `FloodFill(...)` | A rectangle, or a contiguous matching region, in one operation | [Tilemap.BoxFill](https://docs.unity3d.com/ScriptReference/Tilemaps.Tilemap.BoxFill.html) |
+| `SwapTile(TileBase, TileBase)` | Replaces **every** instance of one tile across the whole tilemap — a global operation frequently mistaken for a local one | [Tilemap.SwapTile](https://docs.unity3d.com/ScriptReference/Tilemaps.Tilemap.SwapTile.html) |
+| `SetColor(Vector3Int, Color)` | Per-tile tint; requires the tile's Lock Color flag to be clear | [Tilemap.SetColor](https://docs.unity3d.com/ScriptReference/Tilemaps.Tilemap.SetColor.html) |
+| `ClearAllTiles()` | Empties the layer — the correct reset before repainting a procedurally generated level | [Tilemap.ClearAllTiles](https://docs.unity3d.com/ScriptReference/Tilemaps.Tilemap.ClearAllTiles.html) |
+| `RefreshTile(Vector3Int)` / `RefreshAllTiles()` | Forces render and animation data to re-resolve; `RefreshAllTiles` is a whole-map cost and is rarely what a single change needs | [Tilemap.RefreshTile](https://docs.unity3d.com/ScriptReference/Tilemaps.Tilemap.RefreshTile.html) |
 
-- Prefer `SetTiles`/`BoxFill`/`FloodFill` over a hand-rolled loop of individual `SetTile` calls when placing more than a handful of cells at once — one batched call avoids redundant per-call collider/render invalidation, consistent with `performance-and-algorithms.md`'s hardware-friendly-execution principle.
-- Never call `SetTile`/`RefreshTile` from a per-frame hot path (`Update`) for static level geometry — tilemap edits are an authoring/level-load-time operation, not a per-frame one; a runtime tile change (e.g. a destructible wall) should still be an event-driven call, not a polled one.
-- The decision of *which* tile goes where in response to gameplay state (destructible terrain, procedural generation) belongs in Shared Core; this API surface only carries out the placement Shared Core already decided, per `coding-principles.md`'s Shared Core integrity rule.
+**Critical caveat**: crossing `TilemapCollider2D`'s Maximum Tile Change Count
+in one batch converts an incremental collider update into a full rebuild — see
+[tilemap-collider-2d.md](tilemap-collider-2d.md). A large procedural repaint
+should expect that cost rather than be surprised by it.

@@ -1,35 +1,37 @@
 # Custom Outline — Sprite Render Mesh
 
-Sources: https://docs.unity3d.com/Manual/sprite/sprite-editor/generate-outline.html, https://docs.unity3d.com/Manual/sprite/sprite-editor/custom-outline-editor-reference.html
+Sources: [Crop a sprite](https://docs.unity3d.com/Manual/sprite/sprite-editor/generate-outline.html), [Custom Outline tab reference](https://docs.unity3d.com/Manual/sprite/sprite-editor/custom-outline-editor-reference.html).
+Covers: SKILL.md §4 — **"Pick Mesh Type by whether the sprite is 9-sliced, not by overdraw instinct"**, escalation branch.
 
-## Purpose
+Custom Outline trims the mesh Unity actually rasterises, so the GPU stops
+shading fully transparent quad area. It has effect **only** at Mesh Type
+Tight — a Full Rect sprite draws as a plain quad no matter what outline is
+authored here. It is a rendering concern and is not interchangeable with
+[custom-physics-shape.md](custom-physics-shape.md), which looks like the same
+workflow and feeds an entirely different system.
 
-The Custom Outline module defines the mesh Unity actually renders for a sprite — i.e. it removes transparent pixels from the render mesh so Unity doesn't waste fragment shader work drawing fully-transparent quad area. It only applies when **Mesh Type = Tight** in the sprite's import settings (see [import-settings.md](import-settings.md)); Full Rect sprites render as a plain quad regardless of any outline authored here.
+## Controls
 
-This is a rendering-mesh concern, distinct from the **Custom Physics Shape** module (collision geometry) — see [custom-physics-shape.md](custom-physics-shape.md). The two are visually similar workflows but feed entirely different systems; don't conflate them.
+| Control | What it decides | Source |
+|---|---|---|
+| Outline Detail | Trades fit against vertex count — a tighter trace shades fewer pixels but submits more vertices, so the win reverses on a sprite that is already mostly opaque | [Custom Outline tab reference](https://docs.unity3d.com/Manual/sprite/sprite-editor/custom-outline-editor-reference.html) |
+| Alpha Tolerance | The alpha below which a pixel counts as transparent when tracing — raise it when anti-aliased edges pull the outline outward | [Custom Outline tab reference](https://docs.unity3d.com/Manual/sprite/sprite-editor/custom-outline-editor-reference.html) |
+| Snap | Snaps vertices to the pixel grid, which is what keeps a pixel-art outline from sitting on half-pixels | [Custom Outline tab reference](https://docs.unity3d.com/Manual/sprite/sprite-editor/custom-outline-editor-reference.html) |
+| Generate | Traces the selected sprite only | [Custom Outline tab reference](https://docs.unity3d.com/Manual/sprite/sprite-editor/custom-outline-editor-reference.html) |
+| Generate All | Traces only sprites that have no outline yet — the safe bulk action | [Custom Outline tab reference](https://docs.unity3d.com/Manual/sprite/sprite-editor/custom-outline-editor-reference.html) |
+| Force Generate All | Overwrites every outline on the sheet including hand edits, behind a confirmation checkbox — destructive, and not a re-sync button | [Custom Outline tab reference](https://docs.unity3d.com/Manual/sprite/sprite-editor/custom-outline-editor-reference.html) |
+| Copy / Paste / Paste All | Transfers an outline between sprites | [Custom Outline tab reference](https://docs.unity3d.com/Manual/sprite/sprite-editor/custom-outline-editor-reference.html) |
+| Paste from Custom Physics Shape | Reuses the collision outline as the render mesh when both should match — the only sanctioned way to keep the two in sync | [Custom Outline tab reference](https://docs.unity3d.com/Manual/sprite/sprite-editor/custom-outline-editor-reference.html) |
 
-## Toolbar controls
+## Editing gestures
 
-| Control | Behavior |
-|---|---|
-| Outline Detail | Higher values trace the opaque region more closely (more vertices, closer fit); lower values simplify the shape (fewer vertices, cheaper mesh) — trades render-mesh fidelity against vertex count/GPU cost. |
-| Alpha Tolerance | The alpha threshold below which a pixel counts as transparent for outline tracing purposes. |
-| Snap | Snaps outline vertices to the nearest pixel. |
-| Generate | Traces a fresh outline for the currently selected sprite from its opaque pixels. |
-| Generate All | Generates outlines only for sprites in the sheet that don't already have one. |
-| Force Generate All | Regenerates outlines for every sprite, overwriting any existing hand-edited outline (requires an explicit confirmation checkbox — it's destructive to manual edits). |
-| Copy / Paste / Paste All | Transfers an outline shape between sprites. |
-| Paste from Custom Physics Shape | Copies the physics-shape outline over as the render outline (or vice versa from that module) when both should share the same geometry. |
+| Gesture | Effect | Source |
+|---|---|---|
+| Drag a vertex | Moves it | [Crop a sprite](https://docs.unity3d.com/Manual/sprite/sprite-editor/generate-outline.html) |
+| Click an edge | Inserts a vertex | [Crop a sprite](https://docs.unity3d.com/Manual/sprite/sprite-editor/generate-outline.html) |
+| Select a vertex, press Delete | Removes it | [Crop a sprite](https://docs.unity3d.com/Manual/sprite/sprite-editor/generate-outline.html) |
+| Ctrl+drag an edge | Moves the whole edge | [Crop a sprite](https://docs.unity3d.com/Manual/sprite/sprite-editor/generate-outline.html) |
 
-## Editing
-
-- **Move a vertex**: click and drag it.
-- **Add a vertex**: click on an edge.
-- **Delete a vertex**: select it and press Delete.
-- **Move an edge**: Ctrl+drag it.
-
-## Practical guidance
-
-- Only invest in a tight custom outline when the sprite has significant transparent padding relative to its opaque silhouette (e.g. a small circular icon in a large square texture) — for a sprite that's already mostly opaque, Full Rect mesh is simpler and the outline pass adds nothing (KISS in `coding-principles.md`).
-- Don't crank **Outline Detail** to maximum by default — per `performance-and-algorithms.md`'s hardware-friendly-execution principle, an overly detailed render mesh adds vertex count for a visual difference that's usually imperceptible; tune it to the lowest detail that still reads as the sprite's silhouette.
-- **Force Generate All** discards any hand-tuned outline edits across the whole sheet — treat it as a destructive action to confirm deliberately, not a routine button to click.
+**Critical caveat**: an outline authored while Mesh Type is Full Rect saves
+without complaint and renders nothing — check the import setting first when a
+carefully traced outline appears to have no effect.

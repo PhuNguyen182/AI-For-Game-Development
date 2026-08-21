@@ -1,61 +1,51 @@
-# Sprite Editor — Slicing (Sprite Editor tab)
+# Sprite Editor — Slicing, Modules & the Apply Contract
 
-Sources: https://docs.unity3d.com/Manual/sprite/sprite-editor/use-editor.html, https://docs.unity3d.com/Manual/sprite/sprite-editor/sprite-editor-window-reference-landing.html, https://docs.unity3d.com/Manual/sprite/sprite-editor/sprite-editor-window-reference.html
+Sources: [Cut out sprites from a texture](https://docs.unity3d.com/Manual/sprite/sprite-editor/use-editor.html), [Sprite Editor window reference](https://docs.unity3d.com/Manual/sprite/sprite-editor/sprite-editor-window-reference.html).
+Covers: SKILL.md §4 — **"Slice with Method Safe or Smart on any sheet that already has references"**.
 
-## Opening the Sprite Editor
+The Sprite Editor edits a texture's *import settings*, not a scene object, so
+its output is shared by every instance of every sprite it cuts. That is why
+the slice Method matters: a re-slice can invalidate references held elsewhere
+in the project. Open it by selecting the texture, confirming Texture Type is
+Sprite (2D and UI) per [import-settings.md](import-settings.md), and clicking
+**Open Sprite Editor**.
 
-1. Select the texture asset in the Project window (not a scene object).
-2. Confirm **Texture Type** is **Sprite (2D and UI)** in the Inspector (see [import-settings.md](import-settings.md)).
-3. Click **Open Sprite Editor**.
+## Modules
 
-## The module dropdown
-
-The Sprite Editor window has a module dropdown in its toolbar, switching between:
-
-| Module | Purpose | Covered in |
+| Module | What it authors | Source |
 |---|---|---|
-| Sprite Editor | Slice a texture into one or more sprites, edit each sprite rect's position/size/pivot/border. | This file |
-| Custom Outline | Author the render mesh outline for each sprite. | [custom-outline.md](custom-outline.md) |
-| Custom Physics Shape | Author the collision outline consumed by `Collider2D`'s "Use Sprite Physics Shape". | [custom-physics-shape.md](custom-physics-shape.md) |
-| Secondary Textures | Attach normal-map/mask-map textures alongside the base sprite texture. | [secondary-textures.md](secondary-textures.md) |
-| Skinning Editor | Bone rigging/weight painting for 2D Animation — belongs to the separate **2D Animation** package, out of scope for this skill. | N/A |
+| Sprite Editor | Sprite rects, names, pivots, and 9-slice borders — this file | [Sprite Editor tab reference](https://docs.unity3d.com/Manual/sprite/sprite-editor/sprite-editor-window-reference.html) |
+| Custom Outline | The render mesh, effective only at Mesh Type Tight — see [custom-outline.md](custom-outline.md) | [Custom Outline tab reference](https://docs.unity3d.com/Manual/sprite/sprite-editor/custom-outline-editor-reference.html) |
+| Custom Physics Shape | The collision outline stored on the sprite — see [custom-physics-shape.md](custom-physics-shape.md) | [Custom Physics Shape tab reference](https://docs.unity3d.com/Manual/sprite/sprite-editor/custom-physics-shape-editor-reference.html) |
+| Secondary Textures | Normal/mask maps bound by name — see [secondary-textures.md](secondary-textures.md) | [Secondary Textures tab reference](https://docs.unity3d.com/Manual/sprite/sprite-editor/secondary-textures-editor-reference.html) |
+| Skinning Editor | 2D bone rigging — ships with the separate 2D Animation package and is outside this skill | [Sprite Editor window reference](https://docs.unity3d.com/Manual/sprite/sprite-editor/sprite-editor-window-reference-landing.html) |
 
-## Shared toolbar (present in every module)
+## Shared toolbar
 
-| Control | Behavior |
-|---|---|
-| Preview | Toggles a live preview of pending changes in the Scene view. |
-| Revert | Discards unsaved edits in the current module. |
-| Apply | Commits edits back to the texture's import settings — nothing is saved until Apply is clicked. |
-| Color | Toggles the texture display between full color and alpha-channel-only view — useful for judging outline/physics-shape tracing against transparency. |
-| Zoom | Magnifies the canvas. |
-| Mipmap Level | Slider to preview a specific mip level, when the texture has mipmaps. |
+| Control | What it decides | Source |
+|---|---|---|
+| Apply / Revert | Nothing reaches the asset until Apply — closing the window or switching modules discards pending edits without warning | [Sprite Editor window reference](https://docs.unity3d.com/Manual/sprite/sprite-editor/sprite-editor-window-reference.html) |
+| Color | Switches the canvas to alpha-only view, which is how an outline or physics shape is judged against real transparency rather than against art | [Sprite Editor window reference](https://docs.unity3d.com/Manual/sprite/sprite-editor/sprite-editor-window-reference.html) |
+| Preview | Shows pending changes live in the Scene view before Apply commits them | [Sprite Editor window reference](https://docs.unity3d.com/Manual/sprite/sprite-editor/sprite-editor-window-reference.html) |
+| Zoom / Mipmap Level | Canvas magnification, and previewing a specific mip when the texture has them | [Sprite Editor window reference](https://docs.unity3d.com/Manual/sprite/sprite-editor/sprite-editor-window-reference.html) |
 
-## Sprite Editor tab — slicing
+## Slicing
 
-| Control | Behavior |
-|---|---|
-| Slice dropdown | **Automatic** — segments sprites by transparent-pixel boundaries. **Grid By Cell Size** — uniform-size rects from a pixel size + offset + padding. **Grid By Cell Count** — divides the texture into a fixed column/row count. **Isometric Grid** — diamond-shaped rects with an "Is Alternate" staggering toggle, for isometric tile art. |
-| Pixel Size / Column & Row | Size or count fields, shown depending on the chosen Slice type. |
-| Offset / Padding | Pixel offset from the texture edge, and spacing left between generated sprite rects. |
-| Keep Empty Rects | Preserves fully-transparent rects instead of discarding them (matters when a spritesheet's grid alignment depends on keeping "gap" frames, e.g. an animation sequence with blank frames). |
-| Pivot / Pivot Unit Mode / Custom Pivot | Default pivot applied to every generated sprite rect — presets, Normalized (0–1) or Pixels unit mode, or explicit Custom X/Y. |
-| Method | **Delete Existing** replaces all current sprite rects. **Smart** re-slices while trying to preserve existing rects' names/borders/pivots that still match. **Safe** only adds new rects, never touching existing ones. |
-| Slice button | Executes the configured slice operation. |
-| Trim | Resizes the selected sprite rect to fit tightly around its opaque pixels. |
-| Locks dropdown (Multiple mode) | Locks specific fields (Name/Size/Position/Border/Create-Delete) so a subsequent re-slice doesn't disturb hand-tuned values. |
+| Control | What it decides | Source |
+|---|---|---|
+| Slice type | **Automatic** segments by transparent-pixel boundaries and merges any sprites that touch; **Grid By Cell Size** and **Grid By Cell Count** are the only safe choices on a tightly packed sheet; **Isometric Grid** cuts diamonds with an Is Alternate stagger | [Sprite Editor tab reference](https://docs.unity3d.com/Manual/sprite/sprite-editor/sprite-editor-window-reference.html) |
+| Method | **Delete Existing** rebuilds every rect and breaks any clip or prefab resolving a sprite by name; **Smart** re-slices while preserving still-matching names, borders, and pivots; **Safe** only adds new rects | [Sprite Editor tab reference](https://docs.unity3d.com/Manual/sprite/sprite-editor/sprite-editor-window-reference.html) |
+| Keep Empty Rects | Preserves fully transparent cells — required when an animation's timing depends on blank frames holding their grid position | [Sprite Editor tab reference](https://docs.unity3d.com/Manual/sprite/sprite-editor/sprite-editor-window-reference.html) |
+| Offset / Padding | Pixel offset from the texture edge and spacing between generated rects — the two values that fix a grid slice landing one pixel off | [Sprite Editor tab reference](https://docs.unity3d.com/Manual/sprite/sprite-editor/sprite-editor-window-reference.html) |
+| Pivot / Pivot Unit Mode | Default pivot applied to every generated rect, in Normalized or Pixels units | [Sprite Editor tab reference](https://docs.unity3d.com/Manual/sprite/sprite-editor/sprite-editor-window-reference.html) |
+| Locks (Multiple mode) | Locks Name/Size/Position/Border/Create-Delete so a later re-slice cannot disturb hand-tuned values — the durable version of choosing Safe once | [Sprite Editor tab reference](https://docs.unity3d.com/Manual/sprite/sprite-editor/sprite-editor-window-reference.html) |
+| Trim | Shrinks the selected rect to its opaque pixels | [Sprite Editor tab reference](https://docs.unity3d.com/Manual/sprite/sprite-editor/sprite-editor-window-reference.html) |
 
-## Sprite Rect properties panel (per selected sprite)
+## Per-sprite rect fields
 
-| Field | Meaning |
-|---|---|
-| Name | The sub-sprite's identifier — this becomes its asset name, referenced by `Sprite.name` and by animation clips that key on frame name. |
-| Position (X, Y, W, H) | The rect's location and size on the source texture, in pixels. |
-| Border (L, R, T, B) | The 9-slice border in pixels — see [nine-slicing.md](nine-slicing.md). |
-| Pivot / Pivot Unit Mode / Custom Pivot | Per-sprite override of the rotation/scale origin. |
-
-## Practical guidance
-
-- Use **Automatic** slicing only when sprites are cleanly separated by transparent padding on the sheet; a tightly-packed hand-authored sheet needs **Grid By Cell Size/Count** instead, or Automatic will merge adjacent sprites.
-- Set **Method = Safe** when re-slicing a spritesheet that already has hand-tuned per-sprite borders/pivots and existing animation clips referencing sprite names by index/name — **Delete Existing** silently invalidates those references.
-- Nothing is applied to the asset until **Apply** is clicked — closing the window or switching modules without applying discards the edit.
+| Field | What it decides | Source |
+|---|---|---|
+| Name | Becomes the sub-sprite's asset name and the key animation clips resolve frames by — renaming it breaks those bindings silently | [Sprite Editor tab reference](https://docs.unity3d.com/Manual/sprite/sprite-editor/sprite-editor-window-reference.html) |
+| Position (X, Y, W, H) | The rect on the source texture, in pixels | [Sprite Editor tab reference](https://docs.unity3d.com/Manual/sprite/sprite-editor/sprite-editor-window-reference.html) |
+| Border (L, R, T, B) | The 9-slice border — see [nine-slicing.md](nine-slicing.md) | [9-slice a sprite](https://docs.unity3d.com/Manual/sprite/9-slice/set-sprite-9slicing.html) |
+| Pivot / Custom Pivot | Per-sprite override of the rotation and scale origin | [Sprite Editor tab reference](https://docs.unity3d.com/Manual/sprite/sprite-editor/sprite-editor-window-reference.html) |

@@ -1,30 +1,48 @@
 # Root Links — Unity Built-in 3D Physics (PhysX)
 
-Given by the requester as the canonical entry points for this skill's documentation. These are Unity Manual **section** pages (table-of-contents pages, not single articles) — each one fans out into the child pages covered by this skill's other reference files. All URLs point at the current Unity Manual; re-verify against the project's installed Editor/LTS version, since manual content can shift slightly between LTS releases.
+Source: the Unity Manual section roots listed below, as provided for this skill.
+Covers: the whole skill — provenance and version anchor for every file in this folder.
 
-## Manual — section root pages
+Anchors every link in this folder to Unity's core Manual, published without a
+version segment and therefore always resolving to the current release. Treat
+that as the pin and re-verify any default against the Editor the project
+builds with. The boundary worth stating up front is engine identity:
+`UnityEngine.Physics` is PhysX on ordinary GameObjects, and neither
+`UnityEngine.Physics2D` (`unity-2d-physics`) nor `com.unity.physics` (DOTS,
+`unity-physics`) behaves like it despite sharing most type names.
 
-| # | Section | URL | Covered in |
-|---|---|---|---|
-| 1 | Character controllers | [character-control-section.html](https://docs.unity3d.com/Manual/character-control-section.html) | [character-controller.md](character-controller.md) |
-| 2 | Rigidbody physics | [rigidbody-physics-section.html](https://docs.unity3d.com/Manual/rigidbody-physics-section.html) | [rigidbody-physics.md](rigidbody-physics.md) |
-| 3 | Collision | [collision-section.html](https://docs.unity3d.com/Manual/collision-section.html) | [collision.md](collision.md) |
-| 4 | Joints | [joints-section.html](https://docs.unity3d.com/Manual/joints-section.html) | [joints.md](joints.md) |
-| 5 | Ragdoll physics | [ragdoll-physics-section.html](https://docs.unity3d.com/Manual/ragdoll-physics-section.html) | [ragdoll-physics.md](ragdoll-physics.md) |
-| 6 | Physics optimization | [physics-optimization.html](https://docs.unity3d.com/Manual/physics-optimization.html) | [physics-optimization.md](physics-optimization.md) |
-| 7 | Cloth | [class-Cloth.html](https://docs.unity3d.com/Manual/class-Cloth.html) | [cloth.md](cloth.md) |
-
-## Parent context
-
-| Page | URL | Note |
+| Root | Holds | Source |
 |---|---|---|
-| Built-in 3D physics overview | [PhysicsOverview.html](https://docs.unity3d.com/Manual/PhysicsOverview.html) | Parent page of all seven sections above — the entry point into Unity's built-in PhysX-based 3D physics engine (`UnityEngine.Physics` namespace), as distinct from `UnityEngine.Physics2D` and from the separate `com.unity.physics` DOTS package covered by `unity-physics`. |
+| Physics overview | The parent page for every section below | [Physics](https://docs.unity3d.com/Manual/PhysicsOverview.html) |
+| Character controllers | Capsule locomotion without a Rigidbody | [Character controllers](https://docs.unity3d.com/Manual/character-control-section.html) |
+| Rigidbody physics | Dynamics, forces, interpolation, sleeping | [Rigidbody physics](https://docs.unity3d.com/Manual/rigidbody-physics-section.html) |
+| Collision | Shapes, surfaces, events, detection modes | [Collision](https://docs.unity3d.com/Manual/collision-section.html) |
+| Joints | The five built-in joint types | [Joints](https://docs.unity3d.com/Manual/joints-section.html) |
+| Ragdoll physics | Wizard, stability, articulation | [Ragdoll physics](https://docs.unity3d.com/Manual/ragdoll-physics-section.html) |
+| Cloth | Skinned-mesh fabric simulation | [Cloth](https://docs.unity3d.com/Manual/class-Cloth.html) |
+| Physics optimization | Diagnosis and tuning | [Optimize the physics system](https://docs.unity3d.com/Manual/physics-optimization.html) |
 
-## Scripting API — namespace roots
+## Topic → file map
 
-| Namespace / type | URL | Note |
+| Topic | File | Source |
 |---|---|---|
-| `UnityEngine` (Physics-relevant types) | [ScriptReference/UnityEngine.html](https://docs.unity3d.com/ScriptReference/UnityEngine.html) | 3D physics types (`Rigidbody`, `Collider`, `CharacterController`, `Joint`, `Cloth`, etc.) live directly in `UnityEngine`, not a dedicated sub-namespace. |
-| `Physics` (static class) | [ScriptReference/Physics.html](https://docs.unity3d.com/ScriptReference/Physics.html) | Global physics settings and static query methods (`Raycast`, `SphereCast`, `IgnoreCollision`, `gravity`, layer collision matrix access). |
+| Capsule locomotion and its tuning ratios | [character-controller.md](character-controller.md) | [Character controllers](https://docs.unity3d.com/Manual/CharacterControllers.html) |
+| Body settings, forces, interpolation, sleep | [rigidbody-physics.md](rigidbody-physics.md) | [Rigidbody physics](https://docs.unity3d.com/Manual/RigidbodiesOverview.html) |
+| Shapes, materials, contacts, layer matrix | [collision.md](collision.md) | [Collision](https://docs.unity3d.com/Manual/CollidersOverview.html) |
+| Constraints, drives, limits, breaking | [joints.md](joints.md) | [Joints](https://docs.unity3d.com/Manual/Joints.html) |
+| Ragdolls and articulated chains | [ragdoll-physics.md](ragdoll-physics.md) | [Joint and ragdoll stability](https://docs.unity3d.com/Manual/RagdollStability.html) |
+| Fabric simulation | [cloth.md](cloth.md) | [Cloth](https://docs.unity3d.com/Manual/class-Cloth.html) |
+| Profiling and tuning knobs | [physics-optimization.md](physics-optimization.md) | [Optimize the physics system](https://docs.unity3d.com/Manual/physics-optimization.html) |
 
-All other reference files in this skill link to the specific child pages and Scripting API pages under these roots.
+## Scripting namespace
+
+| Type | Source |
+|---|---|
+| `UnityEngine.Physics` | [Physics](https://docs.unity3d.com/ScriptReference/Physics.html) |
+| `UnityEngine.Rigidbody` | [Rigidbody](https://docs.unity3d.com/ScriptReference/Rigidbody.html) |
+| `UnityEngine.Collider` | [Collider](https://docs.unity3d.com/ScriptReference/Collider.html) |
+| `UnityEngine.CharacterController` | [CharacterController](https://docs.unity3d.com/ScriptReference/CharacterController.html) |
+
+3D physics types live directly in `UnityEngine`, not in a dedicated
+sub-namespace — which is why a `using` line never disambiguates 2D from 3D and
+the type name has to.

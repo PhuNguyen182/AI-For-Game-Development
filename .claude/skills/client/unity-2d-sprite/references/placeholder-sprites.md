@@ -1,32 +1,22 @@
-# Placeholder Sprites
+# Placeholder Sprites — Blockout Before Art
 
-Source: https://docs.unity3d.com/Manual/sprite/placeholder/placeholder-landing.html
+Source: [Add placeholder sprites](https://docs.unity3d.com/Manual/sprite/placeholder/placeholder-landing.html).
+Covers: SKILL.md §4 — **"Read sprite data through the members that stay valid under packing"**, escalation branch.
 
-## What they are
+Placeholder sprites are procedurally generated white primitives Unity ships so
+a feature can be wired, sorted, collided, and playtested before art exists.
+They are not backed by a texture asset, which is the one constraint that
+shapes how they are used and retired.
 
-Placeholder sprites are built-in, white, primitive 2D shapes Unity ships so a scene can be blocked out before final art exists. They let a feature get wired up (Sprite Renderer, sorting, colliders, animation) without waiting on the art pass.
+| Aspect | What it decides | Source |
+|---|---|---|
+| Creation | **GameObject > 2D Object > Sprites**, with the 2D Sprite package installed — the shape list is Editor-version dependent, so read the live menu rather than assuming a fixed set | [Add placeholder sprites](https://docs.unity3d.com/Manual/sprite/placeholder/placeholder-landing.html) |
+| What you get | A GameObject with a `SpriteRenderer` already assigned — no manual component wiring | [Add placeholder sprites](https://docs.unity3d.com/Manual/sprite/placeholder/placeholder-landing.html) |
+| Hard constraint | A placeholder cannot be opened in the Sprite Editor, because there is no importable texture behind it — so no slicing, outline, physics shape, or border can be authored on one | [Add placeholder sprites](https://docs.unity3d.com/Manual/sprite/placeholder/placeholder-landing.html) |
+| Swapping to final art | Reassign the `SpriteRenderer`'s Sprite reference; sorting, colliders, and animation bindings on the GameObject survive untouched | [Add placeholder sprites](https://docs.unity3d.com/Manual/sprite/placeholder/placeholder-landing.html) |
 
-## How to add one
-
-1. Confirm the **2D Sprite** package is installed in the project.
-2. **GameObject > 2D Object > Sprites**.
-3. Pick a shape from the menu (primitive shapes such as square, circle/round, capsule, diamond, hexagon, and a 9-sliced variant are exposed here — the exact list is Unity-version-dependent; check the live menu rather than assuming a fixed set).
-
-This creates a GameObject with a `SpriteRenderer` already wired to the chosen placeholder sprite — no manual component setup needed.
-
-## Key constraint
-
-> "You can't edit a placeholder sprite or its texture in the Sprite Editor."
-
-Placeholder sprites are not backed by an importable texture asset in the project — they're generated procedurally. To move from a placeholder to final art:
-
-1. Select the placeholder GameObject.
-2. On its `SpriteRenderer` component, click the Sprite picker.
-3. Choose the imported sprite that replaces it.
-
-Nothing else about the GameObject (sorting layer, order in layer, collider, animation bindings) needs to change — only the `Sprite` reference is swapped.
-
-## When to use this vs. skipping straight to real art
-
-- Use placeholders when a Tech Spec's gameplay logic needs to be testable before art is ready, or when blocking out layout/composition in the Scene view.
-- Don't use placeholders as a substitute for real import settings review — once real art lands, the full [import-settings.md](import-settings.md) pass (Sprite Mode, Pixels Per Unit, Mesh Type, pivot, physics shape) still applies; a placeholder swap does not carry those decisions over automatically.
+**Critical caveat**: the swap carries no import decisions with it. Because the
+placeholder never had a PPU, Mesh Type, pivot, or physics shape, the arrival
+of real art is exactly when the [import-settings.md](import-settings.md) pass
+has to happen — a scene that looked correct in blockout will change size the
+moment the real texture lands at a different PPU.

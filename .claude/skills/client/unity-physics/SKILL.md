@@ -10,8 +10,8 @@ description: >
   `ICollisionEventsJob`, `ITriggerEventsJob`, `IBodyPairsJob`, `IContactsJob`,
   `IJacobiansJob`; authoring, runtime body creation, multiple worlds, ghost
   collisions. Use when entities must simulate or be queried.
-  Not for: ordinary `Rigidbody`/`Collider`/`Physics.Raycast` PhysX work
-  (`unity-engineer`); the ECS-adoption decision and general entity design
+  Not for: built-in PhysX bodies (`unity-3d-physics`); built-in Box2D
+  (`unity-2d-physics`); the ECS-adoption decision and general entity design
   (`unity-ecs-architecture`); scheduling (`unity-job-system-and-burst`);
   container choice (`unity-collections`); `float3` maths (`unity-mathematics`);
   Burst tuning (`unity-burst-compiler`); prediction protocols
@@ -52,7 +52,7 @@ Act as the Unity Physics specialist for the client track — the tool reached fo
 - Intercepting the simulation pipeline with `IBodyPairsJob`, `IContactsJob`, or `IJacobiansJob` when a filter cannot express the requirement.
 - Setting up physics authoring, creating a body entirely in code, or partitioning simulation with `PhysicsWorldIndex`.
 - A reported symptom: collisions firing at flat-ground seams, a body sinking or jittering, a static object that stopped colliding after being moved, or a collider that scales every instance at once.
-- Negative trigger: ordinary GameObject physics — `Rigidbody`, `Collider`, `Physics.Raycast`, runtime `Joint` components, the layer collision matrix, Fixed Timestep — that is `unity-engineer`'s routine PhysX work per `performance-and-algorithms.md`'s Physics section, even though some authoring component names are identical.
+- Negative trigger: ordinary GameObject physics — `Rigidbody`, `Collider`, `Physics.Raycast`, runtime `Joint` components, the layer collision matrix, Fixed Timestep — that is `unity-3d-physics`, and its 2D counterpart is `unity-2d-physics`; both share some authoring component names with this engine and none of its runtime behaviour.
 - Negative trigger: no architecture-level decision adopting ECS — this skill sits on exactly the gate `unity-ecs-architecture` describes, because Unity Physics cannot run without the Entities package.
 - Negative trigger: general non-physics component, system, query, or baking design — that is `unity-ecs-architecture`, including the `Baker<T>` mechanics physics authoring rides on.
 - Negative trigger: scheduling any of the physics job interfaces, chaining `JobHandle`, or container lifetime — that is `unity-job-system-and-burst`; this skill says which interface fits, not how it is scheduled.
@@ -62,7 +62,7 @@ Act as the Unity Physics specialist for the client track — the tool reached fo
 - Negative trigger: designing a client-prediction or reconciliation protocol on top of this determinism — that is `netcode-engineer`.
 
 ## 4. How to use this skill
-1. **Confirm this is DOTS Physics and not PhysX before touching a component**, per [design-and-pipeline.md](references/design-and-pipeline.md) — the two engines share no runtime code path, only some authoring component names, so a request about a `Rigidbody` on an ordinary GameObject routes to `unity-engineer` instead. [root-links.md](references/root-links.md) pins the package version below.
+1. **Confirm this is DOTS Physics and not PhysX before touching a component**, per [design-and-pipeline.md](references/design-and-pipeline.md) — the two engines share no runtime code path, only some authoring component names, so a request about a `Rigidbody` on an ordinary GameObject routes to `unity-3d-physics` instead. [root-links.md](references/root-links.md) pins the package version below.
 2. **Name the ECS-adoption decision this physics work sits on top of**, per [dots-relationship.md](references/dots-relationship.md) — `PhysicsWorld` is rebuilt from ECS component data every step, so with no approved ECS adoption there is nothing to build on and the request routes to `tech-lead-performance`.
 3. **Keep the game rule in `Game.Core.*` and treat physics output as input to it** — per `coding-principles.md`'s Shared Core integrity section, Unity Physics needs a live Entities `World` and therefore cannot live in Core; pass the resolved contact or query result into the pure Core function rather than deciding the outcome inside a physics system.
 4. **Choose the body's component set from its body type**, per [rigid-bodies-and-components.md](references/rigid-bodies-and-components.md) — every body needs `PhysicsCollider`, a transform, and `PhysicsWorldIndex`; adding `PhysicsVelocity` and `PhysicsMass` is what makes a body dynamic, so putting them on something meant to stay static changes its behaviour rather than merely describing it.
@@ -86,7 +86,7 @@ Act as the Unity Physics specialist for the client track — the tool reached fo
 - Intercepting the simulation pipeline when filters cannot express the requirement.
 - Setting up authoring, runtime body creation, and `PhysicsWorldIndex` partitioning.
 - Diagnosing ghost collisions, stale static transforms, and shared-collider scaling artifacts.
-- Out of scope: PhysX GameObject physics (`unity-engineer`); the ECS-adoption decision and general ECS design (`unity-ecs-architecture`); job scheduling (`unity-job-system-and-burst`); container and allocator choice (`unity-collections`); maths types (`unity-mathematics`); Burst tuning (`unity-burst-compiler`); prediction and reconciliation protocol design (`netcode-engineer`).
+- Out of scope: PhysX GameObject physics (`unity-3d-physics`), built-in 2D physics (`unity-2d-physics`); the ECS-adoption decision and general ECS design (`unity-ecs-architecture`); job scheduling (`unity-job-system-and-burst`); container and allocator choice (`unity-collections`); maths types (`unity-mathematics`); Burst tuning (`unity-burst-compiler`); prediction and reconciliation protocol design (`netcode-engineer`).
 
 ## 6. Output format
 ```

@@ -1,36 +1,36 @@
-# Tilemap Renderer Component
+# Tilemap Renderer — Mode, Sorting, Masking & Chunk Culling
 
-Sources: https://docs.unity3d.com/Manual/tilemaps/work-with-tilemaps/tilemap-renderer-reference.html, `UnityEngine.Tilemaps.TilemapRenderer` scripting API
+Sources: [Tilemap Renderer component reference](https://docs.unity3d.com/Manual/tilemaps/work-with-tilemaps/tilemap-renderer-reference.html), [TilemapRenderer API](https://docs.unity3d.com/ScriptReference/Tilemaps.TilemapRenderer.html).
+Covers: SKILL.md §4 — **"Keep `TilemapRenderer` on Chunk mode unless tiles must interleave with other sprites"**.
 
-## Inspector properties
+`TilemapRenderer` draws a layer's tiles and decides how they batch. The
+central trade-off is Mode: Chunk batches whole regions and cannot interleave
+individual tiles with other sprites, while Individual can, at the cost of that
+batching. Sorting Layer and Mask Interaction carry the same semantics as any
+sprite renderer, which `unity-2d-sprite` documents.
 
-| Property | Description |
-|---|---|
-| Sort Order | Direction tiles sort within a chunk: **Bottom Left** (default), **Bottom Right**, **Top Left**, **Top Right**. |
-| Mode | **Chunk** (batched, best performance), **Individual** (each tile renders separately — needed to depth-sort tiles against non-tilemap sprites), **SRP Batch** (uses the Scriptable Render Pipeline Batcher). |
-| Detect Chunk Culling Bounds | **Auto** (estimated from sprite bounds) or **Manual**. |
-| Chunk Culling Bounds | Extra culling-boundary distance, in units (Manual only). |
-| Mask Interaction | **None**, **Visible Inside Mask**, **Visible Outside Mask** — same semantics as `SpriteRenderer`'s Mask Interaction, see `unity-2d-sprite`'s [sprite-mask.md](../../unity-2d-sprite/references/sprite-mask.md). |
-| Material | Default `Sprite-Lit-Default`; swap only for a specific shader requirement — shader authoring itself is `technical-artist`'s/`shader-authoring`'s territory. |
-| Sorting Layer / Order in Layer | Same semantics as `SpriteRenderer` — see `unity-2d-sprite`'s [sorting-sprites.md](../../unity-2d-sprite/references/sorting-sprites.md). |
-| Rendering Layer Mask | Assigns rendering layers, e.g. for `Light2D` layer filtering (`unity-urp-rendering`'s territory). |
+## Inspector
 
-## Scripting API surface
+| Property | What it decides | Source |
+|---|---|---|
+| Mode | **Chunk** batches per region and is the default; **Individual** renders each tile separately so tiles can depth-sort against other sprites, giving up the batch to do it; **SRP Batch** routes through the Scriptable Render Pipeline Batcher | [Tilemap Renderer reference](https://docs.unity3d.com/Manual/tilemaps/work-with-tilemaps/tilemap-renderer-reference.html) |
+| Sort Order | Which corner tiles sort from within a chunk — Bottom Left by default; it decides which of two overlapping tiles in the same chunk draws in front | [Tilemap Renderer reference](https://docs.unity3d.com/Manual/tilemaps/work-with-tilemaps/tilemap-renderer-reference.html) |
+| Detect Chunk Culling Bounds | **Auto** estimates from sprite bounds; **Manual** is required when tiles carry oversized sprites or painted GameObjects, because an underestimate pops content in at chunk edges | [Tilemap Renderer reference](https://docs.unity3d.com/Manual/tilemaps/work-with-tilemaps/tilemap-renderer-reference.html) |
+| Chunk Culling Bounds | The extra boundary distance in units, Manual mode only | [Tilemap Renderer reference](https://docs.unity3d.com/Manual/tilemaps/work-with-tilemaps/tilemap-renderer-reference.html) |
+| Mask Interaction | None, Visible Inside Mask, or Visible Outside Mask — same semantics as a `SpriteRenderer`, documented by `unity-2d-sprite` | [Tilemap Renderer reference](https://docs.unity3d.com/Manual/tilemaps/work-with-tilemaps/tilemap-renderer-reference.html) |
+| Material | `Sprite-Lit-Default` under URP; changing it is a shader decision owned by `shader-authoring` | [Tilemap Renderer reference](https://docs.unity3d.com/Manual/tilemaps/work-with-tilemaps/tilemap-renderer-reference.html) |
+| Sorting Layer / Order in Layer | The layer's position in the 2D sort chain, whose full semantics `unity-2d-sprite` documents | [Tilemap Renderer reference](https://docs.unity3d.com/Manual/tilemaps/work-with-tilemaps/tilemap-renderer-reference.html) |
+| Rendering Layer Mask | Which rendering layers apply, e.g. for `Light2D` filtering owned by `unity-urp-rendering` | [Tilemap Renderer reference](https://docs.unity3d.com/Manual/tilemaps/work-with-tilemaps/tilemap-renderer-reference.html) |
 
-| Member | Description |
-|---|---|
-| `mode` | Script-side equivalent of the Mode setting. |
-| `sortOrder` | Script-side equivalent of Sort Order. |
-| `chunkSize` | Tile count per chunk. |
-| `detectChunkCullingBounds`, `chunkCullingBounds` | Script-side equivalents of the culling settings. |
-| `maskInteraction` | Script-side equivalent of Mask Interaction. |
-| `maxChunkCount` | Maximum chunks cached in memory. |
-| `maxFrameAge` | Maximum frames an unused chunk stays cached before eviction. |
-| `GetShaderUserValue()` / `SetShaderUserValue()` | Per-tile custom shader data. |
+## Scripting
 
-Inherits the standard `Renderer` API (materials, bounds, `enabled`, shadow settings) since `TilemapRenderer` is a `Renderer` subclass.
+| Member | What it decides | Source |
+|---|---|---|
+| `mode`, `sortOrder`, `maskInteraction` | Runtime equivalents of the Inspector fields | [TilemapRenderer API](https://docs.unity3d.com/ScriptReference/Tilemaps.TilemapRenderer.html) |
+| `chunkSize` | Tiles per chunk — larger chunks batch more and cull more coarsely | [TilemapRenderer API](https://docs.unity3d.com/ScriptReference/Tilemaps.TilemapRenderer.html) |
+| `detectChunkCullingBounds`, `chunkCullingBounds` | Runtime control of the culling estimate | [TilemapRenderer API](https://docs.unity3d.com/ScriptReference/Tilemaps.TilemapRenderer.html) |
+| `maxChunkCount`, `maxFrameAge` | How many chunks stay cached and for how many unused frames — the memory-versus-rebuild dial for a large scrolling map | [TilemapRenderer API](https://docs.unity3d.com/ScriptReference/Tilemaps.TilemapRenderer.html) |
+| `GetShaderUserValue()` / `SetShaderUserValue()` | Per-tile custom shader data, for effects that need per-cell input without a material per tile | [TilemapRenderer API](https://docs.unity3d.com/ScriptReference/Tilemaps.TilemapRenderer.html) |
 
-## Practical guidance
-
-- Use **Individual** mode only when tiles genuinely need to depth-sort against other sprites (e.g. a top-down game where the player walks behind a tall tile) — **Chunk** mode is the default and meaningfully cheaper for anything that doesn't need per-tile sort interleaving, per `performance-and-algorithms.md`'s draw-call/batching discipline.
-- Set **Detect Chunk Culling Bounds = Manual** with an explicit value when tiles include GameObject-brush content or oversized sprites that extend past the auto-estimated bounds — an under-estimated culling bound causes visible pop-in at chunk edges.
+`TilemapRenderer` derives from `Renderer`, so the standard material, bounds,
+and shadow surface applies unchanged.

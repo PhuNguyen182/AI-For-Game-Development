@@ -1,22 +1,29 @@
-# Sprite Shape Object Placement
+# Sprite Shape Object Placement — Props Pinned to a Spline
 
-Sources: https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/manual/SSObjectPlacement.html, `UnityEngine.U2D.SpriteShapeObjectPlacement`/`SpriteShapeObjectPlacementMode` scripting API.
+Sources: [Sprite Shape Object Placement](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/manual/SSObjectPlacement.html), [SpriteShapeObjectPlacement API](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SpriteShapeObjectPlacement.html).
+Covers: SKILL.md §4 — **"Place spline-attached props with `SpriteShapeObjectPlacement`"**.
 
-Attach a `SpriteShapeObjectPlacement` component to any GameObject to position it *along* a `SpriteShapeController`'s spline — e.g. a lamp post that should always sit on a winding path's edge, or a prop that follows a terrain outline as it's edited.
+`SpriteShapeObjectPlacement` keeps a GameObject positioned along another
+object's spline — a lamp post on a winding path, a torch on a cave wall — so
+it follows the outline as the level is reshaped. The one fact that shapes how
+it is used: placement is addressed by control-point **index**, not by
+position, so structural spline edits move every placement after them.
 
-## Inspector / scripting API reference
-
-| Property | Scripting API member | Description |
+| Property | What it decides | Source |
 |---|---|---|
-| — | `spriteShapeController` (`SpriteShapeController`) | The source controller whose spline this object is placed along. |
-| Start Point | `startPoint` (`int`) | Start of the control-point pair the object is placed between. Must be a valid index in the spline and smaller than End Point. |
-| End Point | `endPoint` (`int`) | End of the pair. Must be a valid index and larger than Start Point. |
-| Ratio | `ratio` (`float`) | Distance ratio between Start and End points where the object sits, in `[0, 1]`. |
-| Set Normal | `setNormal` (`bool`) | When enabled, rotates the object to align with the spline's normal direction at the placement point. |
-| Mode | `mode` (`SpriteShapeObjectPlacementMode`) | `Auto` — the object's transform can still be edited by hand while staying constrained to the spline surface. `Manual` — placement is driven strictly by `startPoint`/`endPoint`/`ratio`; no free-hand transform editing. |
+| `spriteShapeController` | Which shape's spline this object rides | [SpriteShapeObjectPlacement API](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SpriteShapeObjectPlacement.html) |
+| `startPoint` / `endPoint` | The control-point pair the object sits between. Both must be valid indices with start below end — and inserting or removing a point renumbers them, silently relocating the prop | [SpriteShapeObjectPlacement API](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SpriteShapeObjectPlacement.html) |
+| `ratio` | Position between those two points, 0 to 1 | [SpriteShapeObjectPlacement API](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SpriteShapeObjectPlacement.html) |
+| `setNormal` | Rotates the object to the spline's normal at that point — what makes a torch stand out from a wall rather than stay world-upright | [SpriteShapeObjectPlacement API](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SpriteShapeObjectPlacement.html) |
+| `mode` = `Auto` | The transform can still be nudged by hand while staying constrained to the spline surface — the mode for art direction in progress | [SpriteShapeObjectPlacementMode API](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SpriteShapeObjectPlacementMode.html) |
+| `mode` = `Manual` | Placement is driven strictly by the index and ratio data, with no free-hand editing — the mode for data-driven or script-generated placement | [SpriteShapeObjectPlacementMode API](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SpriteShapeObjectPlacementMode.html) |
 
-## Practical guidance
+**Critical caveat**: after any structural edit to the source spline — a point
+inserted or deleted, per
+[spriteshape-controller.md](spriteshape-controller.md) — re-verify every
+placement that references it. Nothing warns, and the props simply appear in
+the wrong places.
 
-- Use `Auto` mode while a prop's exact placement is still being art-directed by hand in the Scene view; switch to `Manual` once the placement should be driven by data (e.g. spawned/positioned by a level-generation script via `startPoint`/`endPoint`/`ratio`).
-- `startPoint`/`endPoint` reference the *same* spline control-point indices documented in [spriteshape-controller.md](spriteshape-controller.md) — an edit that inserts/removes control points on the source spline can shift what index a placement references; re-verify placements after structural spline edits.
-- If the placed object needs to react to gameplay state (e.g. a switch that changes appearance once triggered), keep that decision in Shared Core and let this component only handle *where along the spline* it sits, per `coding-principles.md`'s Shared Core integrity rule.
+If a placed object's *appearance* should react to game state, that decision
+belongs in `Game.Core.*` per `coding-principles.md`'s Shared Core integrity
+section; this component only answers where along the spline it sits.

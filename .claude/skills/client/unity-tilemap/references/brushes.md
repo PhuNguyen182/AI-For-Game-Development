@@ -1,35 +1,32 @@
-# Brushes & Brush Picks
+# Brushes & Brush Picks — Painting Behaviour
 
-Sources: https://docs.unity3d.com/Manual/tilemaps/tile-palettes/brushes/brush-picks/brush-picks-landing.html, https://docs.unity3d.com/Manual/tilemaps/tile-palettes/brushes/brush-picks/brush-picks.html, https://docs.unity3d.com/Manual/tilemaps/tile-palettes/brushes/brush-picks/brush-picks-overlay-reference.html
+Sources: [Brush Picks](https://docs.unity3d.com/Manual/tilemaps/tile-palettes/brushes/brush-picks/brush-picks-landing.html), [Use Brush Picks](https://docs.unity3d.com/Manual/tilemaps/tile-palettes/brushes/brush-picks/brush-picks.html), [Brush Picks overlay reference](https://docs.unity3d.com/Manual/tilemaps/tile-palettes/brushes/brush-picks/brush-picks-overlay-reference.html).
+Covers: SKILL.md §4 — **"Check the 2D Tilemap Extras package before writing anything custom"**.
 
-## Built-in brush types
+The brush decides *how* a paint stroke turns into tiles. Only the Default
+brush ships with core Unity; the four alternatives below come from the 2D
+Tilemap Extras package, and referencing one in a project without that package
+is a setup failure rather than a behaviour difference.
 
-Set via the Tile Palette window's Brush Inspector dropdown (see [tile-palette-and-tiles.md](tile-palette-and-tiles.md)):
+## Brush types
 
-| Brush | Behavior |
-|---|---|
-| Default | Standard single-tile paint/erase/fill — what most painting uses; ships with core Unity. |
-| Line | Paints a straight line of tiles between two points. |
-| Random | Paints a randomly-selected tile set from a configured pool each stroke — equal chance, no per-tile weighting. |
-| GameObject | Paints by instantiating GameObjects/prefabs onto the grid instead of `Tile` assets. |
-| Group | Picks/paints a whole contiguous group of tiles as one unit. |
-
-Line, Random, GameObject, and Group brushes ship in the separate **2D Tilemap Extras** package (`com.unity.2d.tilemap.extras`), not core Unity — install via **Window > Package Manager > Unity Registry** first. Full Inspector reference and Scripting API for each: [tilemap-extras-brushes.md](tilemap-extras-brushes.md).
-
-For a brush type none of these cover, author a custom Scriptable Brush — see [custom-tiles-and-brushes.md](custom-tiles-and-brushes.md).
+| Brush | What it decides | Ships with | Source |
+|---|---|---|---|
+| Default | One tile per cell, plus erase and fill — what most authoring uses | Core Unity | [Tile Palette editor reference](https://docs.unity3d.com/Manual/tilemaps/tile-palettes/tile-palette-editor-reference.html) |
+| Line | Paints a straight run between two clicks, with optional gap filling so diagonals stay orthogonally connected | 2D Tilemap Extras — see [tilemap-extras-brushes.md](tilemap-extras-brushes.md) | [Line Brush](https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/LineBrush.html) |
+| Random | Picks from a pool per stroke with **equal chance and no weighting**, so a genuinely rare variant needs a different mechanism | 2D Tilemap Extras | [Random Brush](https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/RandomBrush.html) |
+| GameObject | Instantiates prefabs onto cells instead of writing `Tile` data — so the result is scene objects, not tilemap content | 2D Tilemap Extras | [GameObject Brush](https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/GameObjectBrush.html) |
+| Group | Picks a whole contiguous group as one unit, by adjacency | 2D Tilemap Extras | [Group Brush](https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@8.0/manual/GroupBrush.html) |
+| Custom `GridBrushBase` | Anything the five above cannot express — see [custom-tiles-and-brushes.md](custom-tiles-and-brushes.md) | Authored in-project | [Create a scriptable brush](https://docs.unity3d.com/Manual/tilemaps/tile-palettes/brushes/create-scriptable-brush.html) |
 
 ## Brush Picks
 
-A **Brush Pick** saves a tile (or group of tiles) together with its current brush settings, so the exact same paint configuration can be reused later without re-selecting everything from the palette each time. Brush Picks are managed and re-applied through the **Brush Picks overlay** in the Scene view.
+| Control | What it decides | Source |
+|---|---|---|
+| Brush Picks overlay | Scene-view panel listing saved picks; selecting one restores that exact tile selection *and* brush settings, which is what makes a complex arrangement reusable across sessions | [Brush Picks overlay reference](https://docs.unity3d.com/Manual/tilemaps/tile-palettes/brushes/brush-picks/brush-picks-overlay-reference.html) |
+| Save current selection as Brush Pick | Captures the selection plus settings — the alternative to re-deriving the same multi-tile arrangement by hand each time | [Use Brush Picks](https://docs.unity3d.com/Manual/tilemaps/tile-palettes/brushes/brush-picks/brush-picks.html) |
+| Icon customisation | Unavailable for tiles using the Default brush; only other brush types can carry a custom Brush Pick icon | [Brush Picks overlay reference](https://docs.unity3d.com/Manual/tilemaps/tile-palettes/brushes/brush-picks/brush-picks-overlay-reference.html) |
 
-| Control | Description |
-|---|---|
-| Brush Picks overlay | Scene-view panel listing saved Brush Picks; select one to load it back into the active brush/selection. |
-| Save current selection as Brush Pick | Captures the current palette selection + brush settings as a new, reusable Brush Pick. |
-
-Note: a tile using the **Default Brush** can't have its Brush Pick icon customized — that customization is only available for tiles using other brush types.
-
-## Practical guidance
-
-- Reach for **Random**/**Line**/**Group** brushes only when the design genuinely needs that painting behavior repeatedly (e.g. randomized grass tufts) — for a one-off arrangement, plain **Default** brush painting is simpler (KISS in `coding-principles.md`).
-- Save a **Brush Pick** for any tile configuration (a specific decorated wall corner, a GameObject-brush prop) that gets reused across many painting sessions, instead of re-deriving the same selection by hand each time.
+A one-off arrangement does not justify a specialised brush — the Default brush
+plus a saved Brush Pick usually expresses it, per KISS in
+`coding-principles.md`.

@@ -9,11 +9,12 @@ description: >
   Renderer and `Light2D`, and camera stacking through
   `UniversalAdditionalCameraData`. Use when URP itself must be configured or
   a pass does not run.
-  Not for: which pipeline the project is on (`render-pipeline-urp-hdrp`); HDRP
+  Not for: which pipeline to use (`render-pipeline-urp-hdrp`); HDRP
   (`unity-hdrp-rendering`); shader content (`shader-authoring`); post-process
-  effect authoring (`unity-post-processing`); lights, probes and baking
-  (`unity-lighting`); plain `Camera` scripting (`unity-camera-fundamentals`);
-  entity rendering (`unity-entities-graphics`).
+  authoring (`unity-post-processing`); lights, probes and baking
+  (`unity-lighting`); `Camera` scripting (`unity-camera-fundamentals`); entity
+  rendering (`unity-entities-graphics`); the sprite data 2D lighting consumes
+  (`unity-2d-sprite`).
 ---
 
 # Unity URP Rendering — Universal Render Pipeline Configuration
@@ -53,6 +54,7 @@ Act as the URP configuration specialist for the client track — the tool reache
 - Negative trigger: light setup, probes, lightmapping, or shadow authoring as a lighting problem — that is `unity-lighting`; this skill owns the URP Asset's shadow *settings*, not the lighting design.
 - Negative trigger: plain `Camera` or `Transform` scripting with no URP system involved — that is `unity-camera-fundamentals`.
 - Negative trigger: how ECS entities reach the renderer — that is `unity-entities-graphics`, which requires the Forward+ path this skill configures.
+- Negative trigger: the sprite-side data 2D lighting reads — secondary normal and mask textures, sorting, masking — that is `unity-2d-sprite`; this skill owns the `Light2D` rig and 2D Renderer Data those settings are consumed by.
 
 ## 4. How to use this skill
 1. **Confirm the URP Asset that the target quality tier actually uses, not just the one in Graphics Settings** — Quality Settings can assign a different asset per level, and every later step in this skill applies to one specific asset. [root-links.md](references/root-links.md) pins the URP version these APIs belong to.

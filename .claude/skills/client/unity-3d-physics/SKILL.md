@@ -1,119 +1,132 @@
 ---
 name: unity-3d-physics
 description: >
-  Technique for Unity's built-in 3D physics engine (`UnityEngine.Physics`,
-  PhysX-backed, GameObject/MonoBehaviour-driven) — `CharacterController`
-  locomotion, `Rigidbody` dynamics (mass/drag/interpolation/collision
-  detection mode/constraints/sleep), `Collider` shapes and `PhysicsMaterial`
-  surface properties, collision/trigger events and the layer collision
-  matrix, joints (`FixedJoint`, `HingeJoint`, `SpringJoint`,
-  `CharacterJoint`, `ConfigurableJoint`), `ArticulationBody` chains, ragdoll
-  setup via the Ragdoll Wizard and joint/ragdoll stability tuning, the
-  `Cloth` component for Skinned Mesh Renderer fabric simulation, and
-  Profiler/Memory Profiler/Physics Debug window-driven physics optimization.
-  Use this for any task touching `Rigidbody`, `Collider`, `CharacterController`,
-  `Joint`, `ArticulationBody`, `Cloth`, or `Physics.*` static calls on an
-  ordinary GameObject. Do not use this for `com.unity.physics`
-  (ECS/DOTS-native, deterministic, stateless rigid body physics) — that's
-  `unity-physics`, a structurally unrelated engine despite some shared
-  authoring-component names. Do not use this for 2D physics
-  (`Rigidbody2D`, `Collider2D`, `Joint2D`, `Physics2D.*`) — a separate,
-  structurally similar but distinct API surface this skill does not cover.
-  Do not use this for actual gameplay rule logic that happens to consume
-  physics data (damage formulas, state machines, ability cooldowns) — that
-  belongs in Shared Core, per `coding-principles.md`'s Shared Core
-  integrity rule; this skill only covers wiring the Unity-side physics
-  components themselves. Do not use this for shader/particle-based
-  cloth-like or cloth-adjacent visual effects with no actual `Cloth`
-  component or mesh-deformation physics involved — that's
-  `technical-artist`. Do not use this for deep, escalated performance work
-  beyond Profiler/Memory Profiler/Physics Debug-window-driven optimization
-  (native plugin-level, GPU-level) — that's `tech-lead-performance`.
+  Unity built-in 3D physics (PhysX) on GameObjects — `Rigidbody` mass,
+  drag, interpolation, collision detection mode, constraints, sleep;
+  `Collider` shapes and `MeshCollider` cooking, `PhysicsMaterial`,
+  `CharacterController` `Move`/`SimpleMove`, `FixedJoint`, `HingeJoint`,
+  `SpringJoint`, `CharacterJoint`, `ConfigurableJoint`,
+  `ArticulationBody`, Ragdoll Wizard, `Cloth`, `OnCollisionEnter`,
+  `Physics.Raycast`, the layer matrix, and `Physics.simulationMode`.
+  Use when a body tunnels, jitters, sinks, will not sleep, or a ragdoll
+  or joint chain is unstable. Not for: 2D physics
+  (`unity-2d-physics`), DOTS physics (`unity-physics`), pathfound agent
+  movement (`unity-navmesh-navigation`), animation blending
+  (`unity-animation`), shader-only cloth looks (`technical-artist`),
+  damage and state rules (`csharp-engineer`), escalated optimisation
+  (`tech-lead-performance`).
 ---
 
-# Unity 3D Physics — Built-in PhysX Rigid Body, Character, Joint & Cloth Simulation
+# Unity 3D Physics — PhysX Bodies, Characters, Joints, Ragdolls & Cloth
 
-Sources: see [references/](references/) for the Unity Manual root links, split by topic — [root-links.md](references/root-links.md), [character-controller.md](references/character-controller.md), [rigidbody-physics.md](references/rigidbody-physics.md), [collision.md](references/collision.md), [joints.md](references/joints.md), [ragdoll-physics.md](references/ragdoll-physics.md), [physics-optimization.md](references/physics-optimization.md), [cloth.md](references/cloth.md).
+## Bundled resources
+
+### References
+
+| File | Contents | Read when |
+|---|---|---|
+| [root-links.md](references/root-links.md) | Manual section roots and the topic→file map | Starting any 3D physics task |
+| [character-controller.md](references/character-controller.md) | Capsule locomotion, `Move` vs `SimpleMove`, tuning ratios | Building or fixing character movement |
+| [rigidbody-physics.md](references/rigidbody-physics.md) | Mass, drag, interpolation, detection modes, forces | Configuring a body, or motion looks wrong |
+| [collision.md](references/collision.md) | Collider shapes, `PhysicsMaterial`, contacts, layer matrix | Choosing a shape, or contacts fire or fail wrongly |
+| [joints.md](references/joints.md) | The five joints, drives, limits, break settings | Constraining two bodies |
+| [ragdoll-physics.md](references/ragdoll-physics.md) | Ragdoll Wizard, stability rules, `ArticulationBody` | Building a ragdoll, or a joint chain jitters or stretches |
+| [cloth.md](references/cloth.md) | `Cloth` properties, constraints, collider pairing | Simulating a cape, skirt, or cloak |
+| [physics-optimization.md](references/physics-optimization.md) | Profiler markers, memory techniques, tuning knobs | Physics costs too much, or the frame stutters |
 
 ## 1. Objective
-Configure Unity's built-in 3D PhysX physics correctly on ordinary GameObjects — right locomotion approach, right Rigidbody/Collider settings, right joint for the required degrees of freedom, a stable ragdoll, a correctly-scoped Cloth setup — and keep the whole thing measurably performant, without drifting into DOTS/ECS physics, 2D physics, gameplay rule logic, or performance escalation territory that belong to sibling skills or roles.
+Get 3D bodies, characters, joints, ragdolls, and cloth behaving as the design describes at a cost the platform can pay — and rule out the failures PhysX specialises in: a body driven through its Transform so the solver never sees it, a joint chain destabilised by a mass ratio rather than by its limits, a repeatedly moved static collider forcing a broadphase rebuild every frame, a `Cloth` component silently converting the renderer under it, and a stutter that is fixed-timestep catch-up rather than a physics cost at all.
 
 ## 2. Role
-Act as the built-in 3D physics specialist: given a need for character movement, rigid body dynamics, collision response, joints, ragdolls, or cloth simulation on a normal (non-ECS) GameObject, you choose and configure the right `UnityEngine.Physics`-namespace components and settings — you don't decide gameplay outcomes from physics data (that's Shared Core's job) and you don't reach for DOTS/ECS physics, 2D physics, or deep native/GPU-level optimization, which are sibling skills'/roles' territory.
+Act as the built-in 3D physics specialist for the client track — the skill reached for whenever `Rigidbody`, `Collider`, `CharacterController`, `Joint`, `ArticulationBody`, or `Cloth` must be configured on an ordinary GameObject, or whenever simulated motion does not match the design.
 
 ## 3. When to invoke this skill
-- Choosing between `CharacterController`-driven and `Rigidbody`-driven character locomotion, or configuring either one.
-- Configuring a `Rigidbody`'s mass, drag/angular drag, `isKinematic`, interpolation, collision detection mode, constraints, or sleep behavior.
-- Choosing a `Collider` shape, setting up a `PhysicsMaterial` (friction/bounciness), configuring trigger vs. solid colliders, or tuning the layer collision matrix.
-- Reading/handling collision or trigger events (`OnCollisionEnter`/`OnTriggerEnter` and their `Stay`/`Exit` counterparts), or choosing a collision detection algorithm for fast-moving bodies.
-- Choosing and creating a joint (Fixed, Hinge, Spring, Character, Configurable) by required degrees of freedom, or evaluating whether `ArticulationBody` is a better fit than a Rigidbody+Joint chain.
-- Building or stabilizing a ragdoll via the Ragdoll Wizard.
-- Setting up a `Cloth` component on a Skinned Mesh Renderer for character fabric simulation, including its colliders and self-collision/constraint tuning.
-- Diagnosing or fixing a physics performance problem using the Unity Profiler, Memory Profiler, or Physics Debug window.
-- Negative trigger: the project is ECS/DOTS and the task is `com.unity.physics` component/collider/joint/query work (`PhysicsCollider`, `PhysicsVelocity`, `CollisionWorld`, etc.) — that's `unity-physics`, a completely separate engine despite some shared authoring-component *names*.
-- Negative trigger: 2D physics (`Rigidbody2D`, `Collider2D`, `HingeJoint2D`, `Physics2D.Raycast`, etc.) — a structurally similar but distinct API surface this skill does not cover.
-- Negative trigger: the actual gameplay decision built on top of physics data (damage calculation on collision, a state machine transition, an ability's cooldown/economy math) — that's `csharp-engineer`'s Shared Core, per `coding-principles.md`'s Shared Core integrity rule; this skill stops at wiring the physics component and handing already-resolved data (e.g. a contact point, a hit normal) to Core.
-- Negative trigger: shader/particle-driven cloth-like or fabric-like visual effects with no real `Cloth` component or mesh-deformation physics involved — that's `technical-artist`.
-- Negative trigger: a physics performance problem that survives the Profiler/Memory Profiler/Physics Debug-window-driven baseline in this skill (e.g. needs a native plugin or compute-shader-level fix) — escalate to `tech-lead-performance`, per its own scope definition.
-- Negative trigger: camera-side physics-driven raycasting for click-to-move/aim picking is fine to call `Physics.Raycast`/`Physics.RaycastNonAlloc` from, but the camera scripting itself (coordinate conversions, follow/shake) is `unity-camera-fundamentals`'s territory, not this skill's.
+- Choosing between `CharacterController` and Rigidbody-driven locomotion, or configuring either.
+- Configuring a `Rigidbody` — mass, drag, `isKinematic`, interpolation, collision detection mode, constraints, sleep.
+- Choosing collider shapes, cooking a `MeshCollider`, assigning a `PhysicsMaterial`, or pruning the layer collision matrix.
+- Selecting a joint by degrees of freedom, or evaluating `ArticulationBody` against a Rigidbody-and-joint chain.
+- Building a ragdoll, or stabilising one that jitters, stretches, or explodes on spawn.
+- Setting up `Cloth` on a Skinned Mesh Renderer, including its colliders and constraint painting.
+- A symptom report: a projectile passing through walls, a stack that never sleeps, a character stuck on a step, frame stutter under physics load.
+- Negative trigger: `Rigidbody2D`, `Collider2D`, `Physics2D.*` — that's `unity-2d-physics`, a separate engine with the same vocabulary.
+- Negative trigger: `PhysicsCollider`, `PhysicsVelocity`, `CollisionWorld` on an ECS project — that's `unity-physics`.
+- Negative trigger: a character whose movement is driven by pathfinding — `NavMeshAgent` steering, avoidance, and off-mesh links are `unity-navmesh-navigation`'s, and this skill takes over only where the agent hands off to a physical body.
+- Negative trigger: blending a ragdoll back into animation, or the Animator that drives the rig — that's `unity-animation`.
+- Negative trigger: a cloth-*looking* effect with no mesh simulation — that's `technical-artist`.
+- Negative trigger: deciding damage, knockback magnitude, or a state transition from a contact — that's `csharp-engineer`'s Shared Core, per `coding-principles.md`'s Shared Core integrity section.
+- Negative trigger: a cost that survives shape simplification, matrix pruning, sleep, and timestep tuning — escalate to `tech-lead-performance`.
 
 ## 4. How to use this skill
-1. **Confirm scope first.** This skill is classic built-in 3D PhysX (`UnityEngine.Physics`, GameObject/MonoBehaviour-driven) — `Rigidbody`, `Collider`, `CharacterController`, `Joint`, `ArticulationBody`, `Cloth`. If the project is on ECS/DOTS and the task is `com.unity.physics` work, stop and hand off to `unity-physics`. If the task is 2D, stop — this skill doesn't cover `Physics2D`.
-2. **Respect the Shared Core boundary.** Any gameplay decision that happens to be triggered by a physics event (damage on collision, a knockback amount, an ability's hit resolution) is computed in `Game.Core.*`; this skill's components only detect/resolve the physical event and hand already-resolved data (contact point, normal, relative velocity) to Core — they never decide an outcome themselves, per `coding-principles.md`'s Shared Core integrity rule.
-3. **Choose the locomotion approach deliberately.** `CharacterController` — a kinematic capsule moved manually via `Move`/`SimpleMove`, not affected by forces, doesn't interact with other rigidbodies via physics — fits most player/NPC locomotion. Rigidbody-driven movement (`Rigidbody.MovePosition`/`AddForce` on a non-kinematic body) fits when the character must be realistically pushed by, or push, other dynamic rigidbodies. Don't default to one without checking which behavior the design actually needs; see [character-controller.md](references/character-controller.md) and [rigidbody-physics.md](references/rigidbody-physics.md).
-4. **Configure the Rigidbody deliberately**, per [rigidbody-physics.md](references/rigidbody-physics.md): mass and drag/angular drag sized to the body's actual scale and desired feel; `isKinematic` only for bodies driven purely by script/animation; `interpolation` set to `Interpolate` (visual smoothing against `FixedUpdate`) when a Rigidbody's motion is watched by a moving/following camera, `Extrapolate` only when genuinely needed; `collisionDetectionMode` set to a continuous variant for small/fast-moving bodies that could tunnel through thin colliders at `Discrete`; sleep behavior left enabled unless a specific reason forces bodies to stay always-awake.
-5. **Configure Colliders deliberately**, per [collision.md](references/collision.md): primitive shapes (box/sphere/capsule) over Mesh Colliders wherever the requirement allows, per `performance-and-algorithms.md`'s simplest-collider-shape rule; a dedicated `PhysicsMaterial` for any surface whose friction/bounciness matters instead of leaving Default on everything; trigger vs. solid chosen by whether the collider should physically block or only detect overlap; the layer collision matrix pruned to skip pairs that should never interact, instead of filtering them in `OnCollisionEnter`/`OnTriggerEnter` after the fact — this is the same principle `performance-and-algorithms.md`'s Physics section already states, applied here at the component-configuration level.
-6. **Choose the joint by required degrees of freedom**, per [joints.md](references/joints.md): Fixed to rigidly attach two bodies, Hinge for a single rotational axis (doors, wheels without drive), Spring for a distance constraint with spring/damper behavior, Character Joint for a 3-axis limited-rotation constraint (ragdoll limbs), Configurable Joint only when the required per-axis linear/angular drive-and-limit combination genuinely isn't expressible by a named joint — reaching for Configurable Joint by default when a named joint already fits is unnecessary complexity, per KISS in `coding-principles.md`.
-7. **Consider `ArticulationBody` instead of a Rigidbody+Joint chain** for anything that's structurally a jointed mechanical/kinematic chain (multi-link ragdolls, robotic arms, vehicle suspensions) — it solves the whole chain together for better stability than sequentially-solved individual joints; see [ragdoll-physics.md](references/ragdoll-physics.md).
-8. **Build ragdolls through the Ragdoll Wizard** on a rigged humanoid skeleton, then tune per [RagdollStability guidance](references/ragdoll-physics.md) — sane mass ratios between adjacent limbs, joint limits that aren't so loose the ragdoll folds unnaturally nor so stiff it looks frozen — rather than accepting the wizard's generated defaults uncritically.
-9. **Set up Cloth only on a Skinned Mesh Renderer**, per [cloth.md](references/cloth.md): tune stretching/bending stiffness, damping, and tethers for the fabric's desired stiffness/behavior; assign capsule/sphere colliders for character-body interaction; enable self/inter-collision only when visibly needed, since it's the most expensive Cloth setting. This is a real mesh-deformation physics simulation, not a substitute for a shader-based cloth-like visual effect with no actual `Cloth` component (`technical-artist`'s territory when that's genuinely all that's needed).
-10. **Apply the optimization discipline from [physics-optimization.md](references/physics-optimization.md) before calling physics performance work done**: profile with the Unity Profiler (`Physics.FixedUpdate`/`Physics.Simulate`, broadphase/narrowphase cost), the Memory Profiler (collision-callback array/GC churn), and the Physics Debug window (overly complex colliders, unnecessary interaction pairs, bodies failing to enter sleep) — matching `performance-and-algorithms.md`'s Verification section's "measured, not asserted" rule, applied specifically to physics.
-11. **State the hand-off explicitly.** Gameplay decisions built on top of physics data → `csharp-engineer`'s Shared Core. Performance problems that survive this skill's Profiler/Memory Profiler/Physics Debug-window baseline → `tech-lead-performance`. Visual-only cloth-like or particle effects with no real mesh physics → `technical-artist`. DOTS/ECS physics → `unity-physics`. 2D physics → out of this skill's scope entirely.
+1. **Confirm which physics engine the project is actually on before touching a component**, per [root-links.md](references/root-links.md) — built-in PhysX, `Physics2D`, and DOTS `unity-physics` share nearly every type name and no behaviour, so a mis-scoped answer is wasted whole rather than partly useful.
+2. **Choose the locomotion model by whether the character must be pushed**, per [character-controller.md](references/character-controller.md) — `CharacterController` is a kinematic capsule that pushes bodies but is never pushed, which is what makes it responsive and predictable; a Rigidbody character is the choice only when other dynamic bodies must genuinely move it. Note the component is documented as supported-but-legacy from Unity 6.5, so weigh it for new work — it is not `[Obsolete]`, so `coding-principles.md`'s Obsolete APIs section does not forbid it.
+3. **Move every simulated body through the physics API, never through its Transform** — `MovePosition`/`MoveRotation` from `FixedUpdate` for a Rigidbody, `Move` or `SimpleMove` for a `CharacterController`. A Transform write teleports the body past contact generation, and it also desynchronises any joint the body belongs to.
+4. **Configure the Rigidbody against how it is watched and how fast it moves**, per [rigidbody-physics.md](references/rigidbody-physics.md) — Interpolate whenever a following camera watches the body, a continuous detection mode for anything small and fast enough to cross a thin collider in one step, and sleep left enabled unless a specific requirement forbids it.
+5. **Pick the simplest collider the requirement allows, and stop moving static ones**, per [collision.md](references/collision.md) and `performance-and-algorithms.md`'s Physics section — primitives before `MeshCollider`, and a Kinematic Rigidbody rather than repeatedly repositioning a collider that has none, which forces a broadphase rebuild. Prune the layer matrix rather than filtering inside `OnCollisionEnter`.
+6. **Choose the joint by required degrees of freedom, not by generality**, per [joints.md](references/joints.md) — Fixed to weld, Hinge for one axis, Spring for an elastic link, Character for a limited three-axis limb. `ConfigurableJoint` is correct only when no named joint expresses the per-axis drive and limit combination, per KISS in `coding-principles.md`.
+7. **Prefer `ArticulationBody` for anything that is structurally a chain**, per [ragdoll-physics.md](references/ragdoll-physics.md) — it solves the whole hierarchy together, which removes the pairwise instability long Rigidbody-and-joint chains suffer, at the cost of Character Joint's limit authoring.
+8. **Fix ragdoll instability at the mass ratio and the limits before touching solver iterations** ([ragdoll-physics.md](references/ragdoll-physics.md)) — keep adjacent limb masses within roughly 2×, since about 10× is where the solver becomes unstable; never leave an angular limit at a small non-zero value, because under about 5° it jitters where exactly 0 locks cleanly; and avoid non-uniform scale anywhere in the hierarchy.
+9. **Set up `Cloth` only on a Skinned Mesh Renderer**, per [cloth.md](references/cloth.md) — adding it to a plain Mesh Renderer silently converts that renderer. Paint constraints, assign capsule and sphere colliders for body interaction, and leave self-collision and inter-collision off until a visible problem needs them, since they are its most expensive settings.
+10. **Keep the rule out of the physics callback**, per `coding-principles.md`'s Shared Core integrity section — PhysX results are not reproducible across platforms, so pass the contact point, normal, and relative velocity into `Game.Core.*` and let it decide the outcome that the server must be able to agree with.
+11. **Diagnose with the tool that matches the symptom before tuning anything**, per [physics-optimization.md](references/physics-optimization.md) and `performance-and-algorithms.md`'s Verification section — the Profiler for solver cost, the Memory Profiler for callback and query allocation, and the Physics Debug window for colliders that never sleep. A `Physics.Simulate` call count climbing toward ten in one frame is fixed-timestep catch-up from a preceding heavy frame, so the fix is that frame, not the physics settings.
+12. **When the symptom does not identify its cause, name the assumption before changing settings** — "the character falls through the floor" is a detection mode, a layer matrix entry, a Transform-driven move, or a collider that was never there, and each fix hides the other three.
 
 ## 5. Specific goals / tasks this skill performs
-- Choosing `CharacterController` vs. Rigidbody-driven locomotion for a character.
-- Configuring `Rigidbody` mass/drag/interpolation/collision-detection-mode/constraints/sleep.
-- Choosing collider shapes, configuring `PhysicsMaterial`, trigger vs. solid, and the layer collision matrix.
-- Handling collision/trigger events and choosing an appropriate collision detection algorithm for fast-moving bodies.
-- Choosing/creating joints (Fixed/Hinge/Spring/Character/Configurable) by required degrees of freedom, and evaluating `ArticulationBody` for jointed chains.
-- Building and stabilizing ragdolls via the Ragdoll Wizard.
-- Setting up `Cloth` on a Skinned Mesh Renderer, including colliders and stiffness/self-collision tuning.
-- Diagnosing and fixing physics performance issues via Profiler/Memory Profiler/Physics Debug window.
-- Out of scope: `com.unity.physics`/DOTS physics (`unity-physics`); 2D physics (not covered by any skill in this set); gameplay rule logic consuming physics data (`csharp-engineer`'s Shared Core); shader/particle-only cloth-like VFX (`technical-artist`); performance work beyond the profiler-driven baseline here (`tech-lead-performance`).
+- Locomotion model selection and `CharacterController` tuning.
+- `Rigidbody` configuration and physics-API-driven movement.
+- Collider shape selection, `MeshCollider` cooking, `PhysicsMaterial` assignment, layer matrix pruning.
+- Joint selection and `ArticulationBody` evaluation for jointed chains.
+- Ragdoll construction and stability tuning.
+- `Cloth` setup, constraint painting, and collider pairing.
+- Physics diagnosis via Profiler, Memory Profiler, and Physics Debug window.
+- Out of scope: 2D physics (`unity-2d-physics`), DOTS physics (`unity-physics`), agent pathing (`unity-navmesh-navigation`), animation blending (`unity-animation`), visual-only cloth (`technical-artist`), gameplay rules (`csharp-engineer`), escalated optimisation (`tech-lead-performance`).
 
 ## 6. Output format
 ```
-## Physics Work — <feature/body name>
-- Scope confirmed: built-in 3D PhysX (not DOTS Unity Physics, not Physics2D)
-- Locomotion approach (if applicable): CharacterController / Rigidbody-driven — rationale
-- Rigidbody settings (if applicable): mass <n>, drag <n>/<n>, isKinematic <bool>, interpolation <mode>, collision detection <mode>, constraints <list>
-- Collider setup: shape(s) chosen, PhysicsMaterial (friction/bounciness), trigger vs. solid, layer matrix pruned <yes/no>
-- Joint/ArticulationBody (if applicable): type chosen, degrees of freedom needed
-- Ragdoll (if applicable): Wizard used, stability tuning applied
+## 3D Physics Work — <feature/body name>
+- Engine confirmed: built-in PhysX (not Physics2D, not DOTS Unity Physics)
+- Locomotion (if applicable): CharacterController / Rigidbody-driven — why, and gravity handling
+- Rigidbody: mass <n>, drag <n>/<n>, isKinematic <bool>, interpolation <mode>, detection <mode>, constraints <list>, sleep <on/off>
+- Movement path: <MovePosition/Move/AddForce> — why the Transform is not used
+- Collider: shape(s), MeshCollider cooking <settings or n/a>, PhysicsMaterial <friction/bounce>, layer matrix pruned <list or none>
+- Joint / ArticulationBody (if applicable): type, degrees of freedom, break settings, why not the alternative
+- Ragdoll (if applicable): mass ratios <range>, angular limits <values or locked>, solver iterations <n>, preprocessing <on/off>
 - Cloth (if applicable): stiffness/damping/tethers, colliders assigned, self-collision <on/off + why>
-- Shared Core boundary: confirmed no gameplay decision made in physics-layer code
-- Optimization check: Profiler / Memory Profiler / Physics Debug window findings, or "not yet measured"
-- Hand-off: <gameplay logic → csharp-engineer / deep perf → tech-lead-performance / VFX-only → technical-artist / DOTS → unity-physics, as applicable>
+- Shared Core boundary: <data handed to Core vs decision left in the callback>
+- Verification: Profiler <finding>, Memory Profiler <finding>, Physics Debug <finding>, or "not yet measured"
+- Layer: Game.Client.*
 - Known limitations: <...>
+```
+
+**Extended report — emit ONLY when the requester asks for it.** It replaces the one-line `Known limitations` above with all three fields:
+```
+- Known limitations: <what the delivered solution does not cover — omit this line entirely if there are genuinely none>
+- Latent concerns: <failure modes not yet triggered: assumptions that hold only under current conditions, thresholds not yet reached, trade-offs knowingly deferred>
+- Future remediation: <the concrete fix for each concern above, each with the condition that should trigger it>
 ```
 
 ## 7. Examples
 **Example 1**
-- Input: "Add a third-person player controller that can walk, jump, and get pushed back by an explosion."
-- Output: chose `CharacterController` for the player's day-to-day walk/jump locomotion (manual `Move`, no unwanted physics interaction, predictable and easy to reconcile against Shared Core input state), but modeled the explosion knockback as a temporary switch to a Rigidbody-driven impulse phase (`AddForce` with `ForceMode.Impulse`) for the duration of the knockback, then handed control back to `CharacterController` once the character's velocity settled — the actual knockback *magnitude* came from Shared Core's damage/knockback formula, this skill only applied the already-resolved force vector.
-- Hand-off: knockback magnitude formula → `csharp-engineer`.
+- Input: "Third-person player that walks and jumps, and gets thrown back by an explosion."
+- Output: `CharacterController` for ordinary locomotion — a kinematic capsule with no momentum is what makes walk and jump feel immediate and keeps the pose easy to reconcile against Core's input state. Since `Move` applies no gravity, gravity is integrated by hand into the motion vector each frame, and `isGrounded` is read from the previous move rather than assumed. Knockback runs as a temporary Rigidbody-driven phase with `AddForce(..., ForceMode.Impulse)`, returning control once velocity settles. The force *magnitude* came from Shared Core's knockback formula; this skill applied an already-resolved vector. Skin Width was set to 10% of Radius and Step Offset to 0.3 for a 2 m character, per the Manual's tuning ratios.
 
 **Example 2**
-- Input: "The boss's cape should react physically to movement and wind, and the boss ragdolls on death."
-- Output: added a `Cloth` component to the boss's cape Skinned Mesh Renderer, tuned stretching/bending stiffness and `Use Gravity`/`External Acceleration` for a heavy-fabric feel, added capsule colliders along the boss's spine/shoulders for body collision; built the death ragdoll via the Ragdoll Wizard on the boss's skeleton, then tuned joint limits and adjacent-limb mass ratios per [RagdollStability guidance](references/ragdoll-physics.md) after the wizard's defaults looked visibly too stiff on the shoulders.
-- Optimization check: Physics Debug window confirmed the cape's self-collision was off (not visually needed at this cloth's resolution) to avoid its extra solver cost.
+- Input: "The ragdoll flails and stretches. Let's just raise solver iterations to 50."
+- Output: declined as the first move — solver iterations are the fourth thing to try and the most expensive. The chain's forearm was about 12× the mass of its hand, past the roughly 10× point where the pairwise joint solver becomes unstable, and two joints carried 2° angular limits, which jitter where exactly 0 would lock the axis cleanly. Fixed the mass ratios to within 2×, set the two axes to 0, and disabled Enable Preprocessing on the joints that spawned overlapping level geometry. Solver iterations then only needed 10–20, not 50, and the cost is paid by every jointed body in the scene rather than by this ragdoll alone.
+
+**Example 3**
+- Input: "Frame stutters badly in the physics-heavy arena, but the Profiler says each physics step is cheap."
+- Output: each step *is* cheap — the Calls column showed `Physics.Simulate` running close to ten times in the stuttering frame. That is fixed-timestep catch-up: a preceding expensive frame left simulation debt that PhysX repays all at once, compounding an already slow frame. Raised `Time.fixedDeltaTime` as immediate relief, then traced and fixed the originating heavy frame, which was an asset load, not physics at all. Hand-off: if it had survived that, the cost profile would go to `tech-lead-performance`.
 
 ## 8. Edge cases & guardrails
-- Never assume `com.unity.physics` (`PhysicsCollider`, `CollisionWorld`, etc.) or `Physics2D` behavior applies here — this is the built-in `UnityEngine.Physics` (PhysX) engine on ordinary GameObjects; route ECS/DOTS physics work to `unity-physics` instead.
-- Never make a gameplay decision (damage, score, state transition) inside a `Rigidbody`/`Collider` physics callback — resolve the outcome in Shared Core and let the physics-layer code only detect the event and pass along already-resolved data.
-- Don't leave `interpolation`/`collisionDetectionMode` at their unexamined defaults for camera-watched or fast-moving bodies — visible jitter and tunneling are the direct symptom of skipping this.
-- Don't reach for a Mesh Collider or Configurable Joint by default when a primitive collider or a named joint (Fixed/Hinge/Spring/Character) already expresses the requirement — see KISS in `coding-principles.md`.
-- Don't accept the Ragdoll Wizard's generated joint limits/mass ratios uncritically — verify visually and tune per [RagdollStability guidance](references/ragdoll-physics.md) before calling a ragdoll done.
-- `Cloth` only works on a Skinned Mesh Renderer — it is not a general-purpose fabric/rope/flag solution for non-skinned meshes; don't reach for it outside that constraint, and don't enable self/inter-collision unless a visible problem actually needs it, since it's Cloth's most expensive setting.
-- Never claim a physics optimization worked without a Profiler/Memory Profiler/Physics Debug-window measurement backing it, per `performance-and-algorithms.md`'s Verification section — asserted-from-Big-O-alone claims aren't acceptable here either.
-- If a physics performance problem doesn't resolve at this skill's baseline (collider simplification, layer matrix pruning, sleep tuning, simulation frequency), escalate to `tech-lead-performance` rather than reaching for native/GPU-level techniques here.
+- Never move a simulated or joint-connected body by writing its Transform — it teleports past contact generation and desynchronises the joint solver.
+- Never assume `CharacterController.Move` applies gravity — it does not; only `SimpleMove` does, and `SimpleMove` ignores the Y component of the speed passed to it.
+- Never call `Move` and `SimpleMove` in the same frame, or either one more than once per frame — the results compound in ways the collision flags will not report.
+- Never move a static collider repeatedly — it rebuilds the broadphase; give it a Kinematic Rigidbody instead.
+- Never leave a joint angular limit at a small non-zero value — under roughly 5° it jitters, where exactly 0 locks the axis cleanly.
+- Never connect bodies with an extreme mass ratio — past roughly 10× the joint solver becomes unstable, and no iteration count reliably compensates.
+- Never apply non-uniform scale in a jointed or ragdoll hierarchy — collider and joint robustness degrade in ways that read as tuning problems.
+- Never add `Cloth` to a plain Mesh Renderer expecting it to be ignored — Unity replaces the renderer with a Skinned Mesh Renderer.
+- Never cache the `Collision` object from a callback when `Physics.reuseCollisionCallbacks` is on — one instance is reused for every callback, so the cached reference changes underneath.
+- Never let a physics callback decide a game outcome — PhysX results differ across platforms, which `coding-principles.md`'s Shared Core integrity section forbids depending on.
+- Never claim a physics optimisation without a Profiler, Memory Profiler, or Physics Debug measurement, per `performance-and-algorithms.md`'s Verification section.
+- If a symptom fits several causes, say which one is assumed before changing settings — fixing the wrong one usually masks the real cause rather than leaving it visible.

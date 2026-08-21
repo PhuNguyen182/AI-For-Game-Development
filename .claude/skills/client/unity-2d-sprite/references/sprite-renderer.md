@@ -1,39 +1,44 @@
-# Sprite Renderer Component
+# Sprite Renderer — Component, Scripting Surface & the 2D Profiler
 
-Sources: https://docs.unity3d.com/Manual/sprite/renderer/sprite-renderer-reference.html, https://docs.unity3d.com/Manual/sprite/profiler-2d.html, `UnityEngine.SpriteRenderer` scripting API
+Sources: [Sprite Renderer component reference](https://docs.unity3d.com/Manual/sprite/renderer/sprite-renderer-reference.html), [2D Profiler module](https://docs.unity3d.com/Manual/sprite/profiler-2d.html).
+Covers: SKILL.md §4 — **"Keep the sprite layer free of decisions"**, **"Confirm any draw-call or overdraw claim with the Profiler's 2D module before reporting it"**.
 
-## Inspector properties
+`SpriteRenderer` draws a `Sprite` and nothing more: it renders state that
+`Game.Core.*` has already resolved, per `coding-principles.md`'s Shared Core
+integrity section. This file holds its fields, its scripting surface, and the
+Profiler module that turns a claimed batching win into a measured one.
 
-| Property | Description |
-|---|---|
-| Sprite | The `Sprite` asset this renderer draws. |
-| Color | Tints the sprite; white renders it untinted. |
-| Flip X / Flip Y | Mirrors the rendered texture on an axis without changing the GameObject's Transform — use this instead of a negative Transform scale, which also inverts child colliders/physics in ways Flip X/Y doesn't. |
-| Draw Mode | **Simple** — uniform scaling of the whole sprite. **Sliced** — 9-slice stretch (see [nine-slicing.md](nine-slicing.md)). **Tiled** — 9-slice repeat. |
-| Mask Interaction | **None** / **Visible Inside Mask** / **Visible Outside Mask** — see [sprite-mask.md](sprite-mask.md). |
-| Sprite Sort Point | **Center** or **Pivot** — which point on the sprite is used when distance-from-camera is the active sort tie-breaker (see [sorting-sprites.md](sorting-sprites.md)). |
-| Material | Defaults to `Sprite-Lit-Default` (URP) — swap only when a specific shader requirement (custom shader, unlit, a Technical Artist–authored effect) calls for it; owning shader authoring itself is `technical-artist`'s/`shader-authoring`'s territory. |
-| Sorting Layer / Order in Layer (Additional Settings) | See [sorting-sprites.md](sorting-sprites.md). |
-| Rendering Layer Mask | Assigns the GameObject to rendering layers, e.g. for `Light2D` layer filtering — owning the lighting-side setup is `unity-urp-rendering`'s territory. |
+## Inspector
 
-## Scripting API surface
+| Property | What it decides | Source |
+|---|---|---|
+| Sprite | The drawn asset; reassigning is the sprite-swap path | [Sprite Renderer reference](https://docs.unity3d.com/Manual/sprite/renderer/sprite-renderer-reference.html) |
+| Color | Tint, applied as vertex colour — so unlike a `MaterialPropertyBlock` it does not cost the renderer its batch | [Sprite Renderer reference](https://docs.unity3d.com/Manual/sprite/renderer/sprite-renderer-reference.html) |
+| Flip X / Flip Y | Mirrors the drawn texture without touching the Transform — the correct alternative to negative scale, which also inverts child colliders | [Sprite Renderer reference](https://docs.unity3d.com/Manual/sprite/renderer/sprite-renderer-reference.html) |
+| Draw Mode | Simple ignores the sprite's border; Sliced and Tiled activate 9-slicing, see [nine-slicing.md](nine-slicing.md) | [Sprite Renderer reference](https://docs.unity3d.com/Manual/sprite/renderer/sprite-renderer-reference.html) |
+| Mask Interaction | Whether and how a `SpriteMask` affects this renderer — see [sprite-mask.md](sprite-mask.md) | [Sprite Renderer reference](https://docs.unity3d.com/Manual/sprite/renderer/sprite-renderer-reference.html) |
+| Sprite Sort Point | Center or Pivot, used only when distance is the active tie-breaker — see [sorting-sprites.md](sorting-sprites.md) | [Sprite Renderer reference](https://docs.unity3d.com/Manual/sprite/renderer/sprite-renderer-reference.html) |
+| Material | `Sprite-Lit-Default` under URP; swapping it is a shader decision owned by `shader-authoring` | [Sprite Renderer reference](https://docs.unity3d.com/Manual/sprite/renderer/sprite-renderer-reference.html) |
+| Sorting Layer / Order in Layer | Position in the sort chain — see [sorting-sprites.md](sorting-sprites.md) | [Sprite Renderer reference](https://docs.unity3d.com/Manual/sprite/renderer/sprite-renderer-reference.html) |
+| Rendering Layer Mask | Which rendering layers apply, e.g. for `Light2D` filtering owned by `unity-urp-rendering` | [Sprite Renderer reference](https://docs.unity3d.com/Manual/sprite/renderer/sprite-renderer-reference.html) |
 
-| Member | Description |
-|---|---|
-| `sprite` | The rendered `Sprite` reference — reassign to swap art (e.g. a placeholder → final art swap, or a state-driven sprite change; see [placeholder-sprites.md](placeholder-sprites.md)). |
-| `color`, `flipX`, `flipY` | Same as the Inspector fields. |
-| `drawMode`, `size`, `tileMode`, `adaptiveModeThreshold` | Script-side equivalents of Draw Mode/Sliced-Tiled sizing/fill controls. |
-| `maskInteraction`, `spriteSortPoint` | Script-side equivalents of the Inspector fields. |
-| `sortingLayerName` / `sortingLayerID`, `sortingOrder` | Script-side sorting layer/order control. |
-| `GetBlendShapeWeight`/`SetBlendShapeWeight` | For sprites with blend-shape data (2D Animation package content) — out of scope for this skill. |
-| `RegisterSpriteChangeCallback`/`UnregisterSpriteChangeCallback` | Subscribe to the renderer's `sprite` reference changing — unsubscribe on the same lifecycle boundary the change was registered on, per `coding-principles.md`'s Event handlers rule. |
+## Scripting
+
+| Member | What it decides | Source |
+|---|---|---|
+| `sprite` | The drawn asset; assign only when the value actually changed, per `performance-and-algorithms.md`'s only-update-on-change rule | [Sprite Renderer reference](https://docs.unity3d.com/Manual/sprite/renderer/sprite-renderer-reference.html) |
+| `color`, `flipX`, `flipY` | Script equivalents of the Inspector fields | [Sprite Renderer reference](https://docs.unity3d.com/Manual/sprite/renderer/sprite-renderer-reference.html) |
+| `drawMode`, `size`, `tileMode`, `adaptiveModeThreshold` | Runtime control of Sliced/Tiled sizing and the Adaptive stretch threshold | [Sprite Renderer reference](https://docs.unity3d.com/Manual/sprite/renderer/sprite-renderer-reference.html) |
+| `maskInteraction`, `spriteSortPoint` | Script equivalents of the masking and sort-point fields | [Sprite Renderer reference](https://docs.unity3d.com/Manual/sprite/renderer/sprite-renderer-reference.html) |
+| `sortingLayerName` / `sortingLayerID`, `sortingOrder` | Runtime sorting control; the ID overload avoids the per-call string lookup the name overload performs | [Sprite Renderer reference](https://docs.unity3d.com/Manual/sprite/renderer/sprite-renderer-reference.html) |
+| `RegisterSpriteChangeCallback` / `UnregisterSpriteChangeCallback` | Observes `sprite` reassignment; unregister on the same lifecycle boundary that registered, per `coding-principles.md`'s Event handlers section | [Sprite Renderer reference](https://docs.unity3d.com/Manual/sprite/renderer/sprite-renderer-reference.html) |
 
 ## 2D Profiler module
 
-**Window > Analysis > Profiler**, enable the **2D** module. Tracks Sprite Count / SpriteAtlas Count (loaded, including culled) vs. Sprites Rendered / SpriteAtlases Rendered (actually drawn), plus a details pane showing each atlas/sprite/texture's **Usage** — the percentage of a packed atlas actually contributing to what's on screen. A low Usage percentage on a resident atlas is a direct signal of wasted GPU memory — see [sprite-atlas.md](sprite-atlas.md)'s grouping guidance.
+| Counter | What it decides | Source |
+|---|---|---|
+| Sprite Count vs Sprites Rendered | Loaded versus actually drawn — a large gap means sprites are resident for content that is culled | [2D Profiler module](https://docs.unity3d.com/Manual/sprite/profiler-2d.html) |
+| SpriteAtlas Count vs SpriteAtlases Rendered | The same gap at atlas granularity, which is the direct test of a co-visibility grouping | [2D Profiler module](https://docs.unity3d.com/Manual/sprite/profiler-2d.html) |
+| Usage % per atlas | How much of a resident atlas contributes to the frame — a low value is the measurement that condemns a grouping, see [sprite-atlas.md](sprite-atlas.md) | [2D Profiler module](https://docs.unity3d.com/Manual/sprite/profiler-2d.html) |
 
-## Practical guidance
-
-- Reassigning `sprite` at runtime (state-driven sprite swaps, hit-flash color changes via `color`) is fine as a Unity-side visual-feedback response — but the *decision* of which state/sprite to show belongs in Shared Core's state machine per `coding-principles.md`'s Shared Core integrity rule; this component only renders whatever state Core already resolved.
-- Never call `GetComponent<SpriteRenderer>()` inside `Update()`/hot-path code — cache the reference once, per the baseline performance rule in `coding-principles.md`.
-- Only update `color`/`sprite`/sorting fields when the underlying value actually changed, matching `performance-and-algorithms.md`'s "only update UI/visuals when the value changed" rule — reassigning an unchanged `Sprite` reference or repainting an identical tint every frame is wasted work.
+Open it from **Window > Analysis > Profiler** and enable the **2D** module.

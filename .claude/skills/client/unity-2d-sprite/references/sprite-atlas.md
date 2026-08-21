@@ -1,44 +1,44 @@
-# Sprite Atlas
+# Sprite Atlas — Packing, Master/Variant & Late Binding
 
-Sources: https://docs.unity3d.com/Manual/sprite/atlas/atlas-landing.html, https://docs.unity3d.com/Manual/sprite/atlas/create-sprite-atlas.html, https://docs.unity3d.com/Manual/sprite/atlas/master-variant/master-variant-sprite-atlases.html, https://docs.unity3d.com/Manual/sprite/atlas/distribution/load-sprite-atlas-spriteatlasmanageratlasrequested.html, https://docs.unity3d.com/Manual/sprite/atlas/sprite-atlas-reference.html, `UnityEngine.U2D.SpriteAtlas` / `SpriteAtlasManager` scripting API
+Sources: [Create a sprite atlas](https://docs.unity3d.com/Manual/sprite/atlas/create-sprite-atlas.html), [Master/variant sprite atlases](https://docs.unity3d.com/Manual/sprite/atlas/master-variant/master-variant-sprite-atlases.html), [Load a sprite atlas at runtime](https://docs.unity3d.com/Manual/sprite/atlas/distribution/load-sprite-atlas-spriteatlasmanageratlasrequested.html), [Sprite Atlas reference](https://docs.unity3d.com/Manual/sprite/atlas/sprite-atlas-reference.html).
+Covers: SKILL.md §4 — **"Group an atlas by what appears on screen together"**.
 
-## Why
+An atlas combines source textures so sprites drawn from it batch into one draw
+call, which is the direct application of `performance-and-algorithms.md`'s
+Rendering & draw calls section to 2D content. The grouping decision is the
+whole skill: an atlas is resident as a unit, so mixing unrelated content trades
+draw calls for memory that the scene never uses.
 
-A Sprite Atlas packs multiple source textures into one combined texture, so every sprite drawn from it can batch into a single GPU draw call instead of one draw call per distinct source texture — the direct fix for the "reduce draw calls" rule in `performance-and-algorithms.md`'s Rendering & draw calls section for any scene with many small distinct sprite textures (UI icons, particle sprites, tile sets).
+## Creating and packing
 
-## Creating one
+| Step | What it decides | Source |
+|---|---|---|
+| Assets > Create > 2D > Sprite Atlas | Creates a `.spriteatlasv2` asset; V2 is the current format and V1 is legacy | [Create a sprite atlas](https://docs.unity3d.com/Manual/sprite/atlas/create-sprite-atlas.html) |
+| Objects for Packing | Sprites, textures, or whole folders — a folder entry keeps picking up new art, which is either convenient or an unbounded atlas depending on the folder | [Create a sprite atlas](https://docs.unity3d.com/Manual/sprite/atlas/create-sprite-atlas.html) |
+| Pack Preview | Shows the packed layout, and via its dropdown the packed secondary textures — the check that catches a secondary-texture count mismatch before it fails | [Create a sprite atlas](https://docs.unity3d.com/Manual/sprite/atlas/create-sprite-atlas.html) |
 
-1. **Assets > Create > 2D > Sprite Atlas** — creates a `.spriteatlasv2` asset (Sprite Atlas V2 is the current default format; V1 is legacy).
-2. Before packing, prepare source sprites: disable **Read/Write** on each (unless a script genuinely needs CPU pixel access), and enable **Tight Packing** to reduce transparent-pixel waste in the packed layout.
-3. Select the atlas asset, drag sprites/textures/folders onto **Objects for Packing** (or use its **+** button).
-4. Click **Pack Preview** to visualize the packed result; for sprites with [secondary textures](secondary-textures.md), use the preview's dropdown to inspect the packed normal/mask maps too — verify every sprite going into one atlas has a matching secondary-texture count first, a mismatch is a common packing error.
-
-Once packed, sprites referencing atlas-packed textures automatically resolve through the atlas at both edit-time and runtime — no code change needed for the common case.
+Once packed, sprites resolve through the atlas automatically at edit time and
+runtime; the common case needs no code.
 
 ## Inspector properties
 
-| Property | Description |
-|---|---|
-| Type | **Master** (default — owns its own Objects for Packing list) or **Variant** (derives its sprite set from a Master Atlas at a different resolution, no independent packing list). |
-| Master Atlas | The parent atlas (Variant only). |
-| Scale | Resolution multiplier relative to the Master (Variant only, max 1.0) — e.g. 0.5 packs a half-resolution texture for the same sprite set. |
-| Include in Build | Whether the atlas is bundled and loaded automatically at startup, vs. requiring manual runtime loading (see Late binding below). |
-| Allow Rotation | Lets the packer rotate sprites for tighter packing efficiency. |
-| Tight Packing | Packs by each sprite's actual mesh/outline shape rather than its bounding rectangle. |
-| Padding | Pixel spacing between packed sprites (default 4) — too little risks bleeding between adjacent sprites when filtered. |
-| Alpha Dilation | Expands edge colors into transparent pixels, matching the "Alpha Is Transparency" import setting's purpose but at the atlas level. |
-| Read/Write, Generate Mip Maps, sRGB, Filter Mode, Aniso Level | Same meaning as the equivalent [texture import settings](import-settings.md), applied to the combined atlas texture. |
-| Max Texture Size, Format, Compression, Use Crunch Compression, Compressor Quality | Combined-texture compression controls, with per-platform override tabs — same "set deliberately per platform" discipline as any other texture per `performance-and-algorithms.md`. |
+| Property | What it decides | Source |
+|---|---|---|
+| Type | **Master** owns a packing list; **Variant** derives its set from a Master at a different resolution and has no list of its own | [Master/variant sprite atlases](https://docs.unity3d.com/Manual/sprite/atlas/master-variant/master-variant-sprite-atlases.html) |
+| Master Atlas / Scale | The parent, and a multiplier capped at 1.0 — 0.5 packs a half-resolution set for a constrained target without duplicating the list | [Master/variant sprite atlases](https://docs.unity3d.com/Manual/sprite/atlas/master-variant/master-variant-sprite-atlases.html) |
+| Include in Build | Whether the atlas ships and loads automatically, or must be bound at runtime. Leaving it on for both a Master and its Variant makes which one resolves non-deterministic | [Master/variant sprite atlases](https://docs.unity3d.com/Manual/sprite/atlas/master-variant/master-variant-sprite-atlases.html) |
+| Allow Rotation | Rotates sprites for tighter packing — must be off for sprites a downstream system re-meshes or lays out by rect, such as UI `Image` or Sprite Shape | [Sprite Atlas reference](https://docs.unity3d.com/Manual/sprite/atlas/sprite-atlas-reference.html) |
+| Tight Packing | Packs by mesh outline rather than bounding rect, saving space but making `Sprite.textureRect` invalid — see [sprite-asset-reference.md](sprite-asset-reference.md) | [Sprite Atlas reference](https://docs.unity3d.com/Manual/sprite/atlas/sprite-atlas-reference.html) |
+| Padding | Pixels between packed sprites, default 4 — too little bleeds neighbouring sprites into each other under filtering | [Sprite Atlas reference](https://docs.unity3d.com/Manual/sprite/atlas/sprite-atlas-reference.html) |
+| Alpha Dilation | Expands edge colour into transparent pixels at atlas level, the same purpose as Alpha Is Transparency on import | [Sprite Atlas reference](https://docs.unity3d.com/Manual/sprite/atlas/sprite-atlas-reference.html) |
+| Read/Write, Mip Maps, sRGB, Filter Mode | Same meaning as the per-texture settings in [import-settings.md](import-settings.md), applied to the combined texture | [Sprite Atlas reference](https://docs.unity3d.com/Manual/sprite/atlas/sprite-atlas-reference.html) |
+| Max Texture Size, Format, Compression, Crunch | Compression controls with per-platform override tabs — the atlas is one large texture, so these decide more memory than any single source texture did | [Sprite Atlas reference](https://docs.unity3d.com/Manual/sprite/atlas/sprite-atlas-reference.html) |
 
-## Master/Variant atlases
+## Late binding
 
-Use a **Variant** to ship a lower-resolution version of the same sprite set for a constrained platform (typically mobile) while keeping a full-resolution **Master** for desktop/high-end targets — set the Variant's **Scale** below 1.0 rather than maintaining two entirely separate atlases with duplicated Objects for Packing lists.
-
-By default Unity may include both Master and Variant in a build, which can produce unpredictable results if both are loadable simultaneously — control this deliberately: either disable **Include in Build** on the Master so only the Variant resolves at runtime, or resolve the desired atlas explicitly via `SpriteAtlas.GetSprite`/`GetSprites` in code rather than leaving it to chance.
-
-## Runtime / late-bound loading
-
-When **Include in Build** is off, an atlas must be bound manually via `SpriteAtlasManager.atlasRequested`:
+With Include in Build off, the atlas must be supplied on demand through
+`SpriteAtlasManager.atlasRequested`. Subscribe with a named method and
+unsubscribe it, per `coding-principles.md`'s Event handlers section.
 
 ```csharp
 private void OnEnable()
@@ -58,21 +58,15 @@ private void OnSpriteAtlasRequested(string atlasTag, Action<SpriteAtlas> callbac
 }
 ```
 
-The same pattern applies loading from an Addressable/AssetBundle instead of `Resources` — resolve the atlas by whatever asset-loading mechanism the project uses (see `performance-and-algorithms.md`'s Addressables guidance for load/release discipline), then invoke the callback with the result. Per `coding-principles.md`'s Event handlers rule, subscribe/unsubscribe `atlasRequested` with a named method in `OnEnable`/`OnDisable`, not an inline lambda that can't be unsubscribed.
+The same shape applies when loading from Addressables or an AssetBundle —
+resolve by whichever mechanism the project uses, then invoke the callback.
 
-## Scripting API surface
+## Scripting surface
 
-| Member | Description |
-|---|---|
-| `SpriteAtlas.spriteCount` | Number of sprites packed into the atlas. |
-| `SpriteAtlas.isVariant` | Whether this atlas is a Variant. |
-| `SpriteAtlas.tag` | The atlas's tag identifier. |
-| `SpriteAtlas.GetSprite(string name)` | Returns a clone of the named packed sprite. |
-| `SpriteAtlas.GetSprites(Sprite[] buffer)` | Fills a buffer with clones of every packed sprite. |
-| `SpriteAtlas.CanBindTo(Sprite sprite)` | Whether a given sprite belongs to this atlas. |
-| `SpriteAtlasManager.atlasRequested` | Static event fired when a sprite needs an atlas that isn't currently loaded/bound — the late-binding hook above. |
-
-## Practical guidance
-
-- Group sprites into an atlas by **what's likely to be on screen together** (a UI screen's icon set, one character's part sheet) — an atlas mixing unrelated content wastes GPU memory keeping the whole combined texture resident for a scene that only needs a fraction of it.
-- `GetSprite`/`GetSprites` return **clones**, not the original packed `Sprite` reference — don't assume reference equality against a scene-authored `Sprite` field when comparing against an atlas-fetched one.
+| Member | What it decides | Source |
+|---|---|---|
+| `SpriteAtlas.GetSprite(string)` | Returns a **clone**, not the packed original — reference comparison against a scene-authored `Sprite` fails, and each call allocates | [Sprite Atlas reference](https://docs.unity3d.com/Manual/sprite/atlas/sprite-atlas-reference.html) |
+| `SpriteAtlas.GetSprites(Sprite[])` | Fills a buffer with clones, same caveat at bulk scale | [Sprite Atlas reference](https://docs.unity3d.com/Manual/sprite/atlas/sprite-atlas-reference.html) |
+| `SpriteAtlas.CanBindTo(Sprite)` | Whether a sprite belongs to this atlas — the correct membership test, since equality is not | [Sprite Atlas reference](https://docs.unity3d.com/Manual/sprite/atlas/sprite-atlas-reference.html) |
+| `SpriteAtlas.spriteCount` / `isVariant` / `tag` | Packed count, Variant flag, and the tag `atlasRequested` passes back | [Sprite Atlas reference](https://docs.unity3d.com/Manual/sprite/atlas/sprite-atlas-reference.html) |
+| `SpriteAtlasManager.atlasRequested` | Fires when a sprite needs an atlas that is not bound — the late-binding hook above | [Load a sprite atlas at runtime](https://docs.unity3d.com/Manual/sprite/atlas/distribution/load-sprite-atlas-spriteatlasmanageratlasrequested.html) |

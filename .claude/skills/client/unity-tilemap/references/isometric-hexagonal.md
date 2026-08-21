@@ -1,36 +1,32 @@
-# Isometric & Hexagonal Tilemaps
+# Isometric & Hexagonal Tilemaps — Cell Maths, Height & Sort Axis
 
-Sources: https://docs.unity3d.com/Manual/tilemaps/work-with-tilemaps/isometric-tilemaps/isometric-tilemap-landing.html, https://docs.unity3d.com/Manual/tilemaps/work-with-tilemaps/isometric-tilemaps/create-isometric-tilemap.html, https://docs.unity3d.com/Manual/tilemaps/work-with-tilemaps/isometric-tilemaps/renderer/tilemap-renderer-isometric-modes.html, https://docs.unity3d.com/Manual/tilemaps/work-with-tilemaps/hexagonal-tilemaps/hexagonal-tilemap-landing.html
+Sources: [Isometric Tilemaps](https://docs.unity3d.com/Manual/tilemaps/work-with-tilemaps/isometric-tilemaps/isometric-tilemap-landing.html), [Create an Isometric Tilemap](https://docs.unity3d.com/Manual/tilemaps/work-with-tilemaps/isometric-tilemaps/create-isometric-tilemap.html), [Isometric Tilemap Renderer modes](https://docs.unity3d.com/Manual/tilemaps/work-with-tilemaps/isometric-tilemaps/renderer/tilemap-renderer-isometric-modes.html), [Hexagonal Tilemaps](https://docs.unity3d.com/Manual/tilemaps/work-with-tilemaps/hexagonal-tilemaps/hexagonal-tilemap-landing.html).
+Covers: SKILL.md §4 — **"Derive isometric Cell Size y from the sprite, never by eye"**, **"Set the isometric sort axis before judging any depth problem"**.
 
-## Isometric
+Non-rectangular grids fail in two independent ways that look like one: cells
+that do not line up, and depth that reads backwards. The first is a number
+derived from the sprite; the second is a camera-side sort setting. Fixing
+either alone leaves the map looking broken.
 
-Isometric tilemaps use a 2D grid to simulate a 3D environment (height/depth illusion) — common in strategy games.
+## Isometric setup
 
-**Setup:**
-1. Import isometric sprites with Mesh Type = Tight, Pixels Per Unit = the tile's pixel width, and a custom pivot set (in the Sprite Editor) to the center of the tile's 3D floor — see `unity-2d-sprite`'s [import-settings.md](../../unity-2d-sprite/references/import-settings.md) and [sprite-editor.md](../../unity-2d-sprite/references/sprite-editor.md).
-2. **Assets > Create > 2D > Tile Palette**, set its type to **Isometric**. In the Inspector, set **Cell Size y** = (3D floor height in pixels) / (tile width in pixels) — e.g. a 32px-tall floor on a 64px-wide tile gives Cell Size y = 0.5.
-3. Create the tilemap as either **Isometric Tilemap** (flat — one tilemap per height level, stack separate tilemaps for height) or **Isometric Z as Y Tilemap** (a single tilemap encodes height directly via Z-as-Y painting). Match the `Grid`'s **Cell Size y** to the palette's value.
-4. On the active 2D Renderer asset (URP) set **Transparency Sort Mode = Custom Axis**, **Transparency Sort Axis = (0, 1, 0)** — for the Built-in Render Pipeline, set the equivalent under **Edit > Project Settings > Graphics > Camera Settings** instead. Without this, isometric depth sorting reads wrong.
-5. Paint tiles as usual (see [grid-and-tilemap.md](grid-and-tilemap.md)).
+| Step | What it decides | Source |
+|---|---|---|
+| Import sprites at Mesh Type Tight, PPU equal to the tile's pixel width, pivot at the centre of the tile's 3D floor | The pivot is what makes a tile sit on its cell rather than beside it; the import work itself belongs to `unity-2d-sprite` | [Create an Isometric Tilemap](https://docs.unity3d.com/Manual/tilemaps/work-with-tilemaps/isometric-tilemaps/create-isometric-tilemap.html) |
+| Palette type Isometric, **Cell Size y = floor height in px ÷ tile width in px** | The single most common cause of a grid that will not line up. A 32 px floor on a 64 px tile gives 0.5 — derive it, never round it | [Create an Isometric Tilemap](https://docs.unity3d.com/Manual/tilemaps/work-with-tilemaps/isometric-tilemaps/create-isometric-tilemap.html) |
+| Choose Isometric or **Isometric Z as Y** | Flat Isometric needs one tilemap stacked per height level; Z as Y encodes height inside a single tilemap, which is what continuous ramps and multi-level terrain need | [Isometric Tilemaps](https://docs.unity3d.com/Manual/tilemaps/work-with-tilemaps/isometric-tilemaps/isometric-tilemap-landing.html) |
+| Match the `Grid`'s Cell Size y to the palette's | Two independent copies of the same derived number, and only one of them is usually updated | [Create an Isometric Tilemap](https://docs.unity3d.com/Manual/tilemaps/work-with-tilemaps/isometric-tilemaps/create-isometric-tilemap.html) |
+| Transparency Sort Mode = Custom Axis, axis (0, 1, 0) | Without it, depth sorts by camera distance and reads inverted for an isometric camera. Set it on the 2D Renderer Data under URP, or under Project Settings > Graphics > Camera Settings for the Built-in pipeline | [Create an Isometric Tilemap](https://docs.unity3d.com/Manual/tilemaps/work-with-tilemaps/isometric-tilemaps/create-isometric-tilemap.html) |
 
-**Adding 3D height:** either stack multiple flat `Isometric Tilemap`s (one per level) or use a single **Isometric Z as Y** tilemap and set height while painting.
+## Hexagonal layouts
 
-## Hexagonal
+| Type | What it decides | Source |
+|---|---|---|
+| Point Top | Vertex at top and bottom; alternating **rows** offset right by half a cell | [Hexagonal Tilemaps](https://docs.unity3d.com/Manual/tilemaps/work-with-tilemaps/hexagonal-tilemaps/hexagonal-tilemap-landing.html) |
+| Flat Top | Flat edge at top and bottom, with **x and y swapped** relative to Point Top: Cell Size x governs vertical spacing and y governs horizontal, and alternating **columns** offset downward | [Hexagonal Tilemaps](https://docs.unity3d.com/Manual/tilemaps/work-with-tilemaps/hexagonal-tilemaps/hexagonal-tilemap-landing.html) |
+| Sprite import | Rectangular slices work; Sprite Mode Polygon gives a tighter hex silhouette where the tile's own shape matters | [Hexagonal Tilemaps](https://docs.unity3d.com/Manual/tilemaps/work-with-tilemaps/hexagonal-tilemaps/hexagonal-tilemap-landing.html) |
+| Palette and `Grid` must agree | Palette type Hexagonal Point Top or Flat Top against `Grid` Cell Layout Hexagon | [Hexagonal Tilemaps](https://docs.unity3d.com/Manual/tilemaps/work-with-tilemaps/hexagonal-tilemaps/hexagonal-tilemap-landing.html) |
 
-Hexagonal tiles keep a consistent distance from center to any edge point, and neighboring tiles always share a full edge — well suited to tactical/strategy movement.
-
-| Type | Layout |
-|---|---|
-| Point Top | Vertex at top/bottom; alternating rows offset rightward by half a cell. |
-| Flat Top | Flat edge at top/bottom, x/y axes swapped from Point Top — Cell Size **x** affects vertical spacing, **y** affects horizontal spacing; alternating columns offset downward by half a cell. |
-
-**Setup:**
-1. Import sprite assets — hexagon spritesheet frames can stay as ordinary rectangular slices, or individual sprites can use Sprite Mode = Polygon for a tighter hex shape.
-2. Create a Tile Palette (see [tile-palette-and-tiles.md](tile-palette-and-tiles.md)) with type **Hexagonal Point Top** or **Hexagonal Flat Top**, matching the source art.
-3. Create the tilemap and set the `Grid`'s **Cell Layout = Hexagon** to match.
-
-## Practical guidance
-
-- The isometric Cell Size y formula (floor-height-px / tile-width-px) is the single most common source of a "tiles don't line up" bug — verify it against the actual imported sprite's pixel dimensions rather than eyeballing a round number.
-- Choose **Isometric Z as Y** only when height genuinely varies within one continuous playable layer (ramps, multi-level terrain) — stacked flat **Isometric Tilemap** layers are simpler for a small, fixed number of discrete height levels (KISS in `coding-principles.md`).
-- Flat Top's swapped x/y Cell Size semantics is a common source of confusion when copying settings from a Point Top project — double check which axis governs which spacing before trusting a pasted value.
+**Critical caveat**: a Cell Size copied from a Point Top project into a Flat
+Top one is wrong by construction, because the axes govern the opposite
+spacings. The same applies in reverse.

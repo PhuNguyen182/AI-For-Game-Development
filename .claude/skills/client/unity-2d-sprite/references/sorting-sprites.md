@@ -1,40 +1,43 @@
-# Sorting Sprites — 2D Rendering Order
+# Sorting Sprites — Draw Order, Sorting Group & Transparency Sort Mode
 
-Sources: https://docs.unity3d.com/Manual/sprite/sort-sprites/sort-sprites-landing.html, https://docs.unity3d.com/Manual/sprite/sort-sprites/sort-sprites.html, https://docs.unity3d.com/Manual/2d-renderer-sorting.html, https://docs.unity3d.com/Manual/sprite/sorting-group/sorting-group-reference.html
+Sources: [2D rendering order](https://docs.unity3d.com/Manual/sprite/sort-sprites/sort-sprites.html), [Change the sorting order of 2D GameObjects](https://docs.unity3d.com/Manual/2d-renderer-sorting.html), [Sorting Group component reference](https://docs.unity3d.com/Manual/sprite/sorting-group/sorting-group-reference.html).
+Covers: SKILL.md §4 — **"Set Sorting Layer and Order in Layer explicitly for every depth relationship the design states"**.
 
-## The sort order — in priority
+2D draw order is a chain of tie-breakers, not a single setting. Knowing where
+in the chain a decision lands is what separates "set Order in Layer" from
+"this needs a Sorting Group" from "this camera is sorting along the wrong
+axis". A scene that configures none of it sorts on the last criterion by
+default, which is why depth appears to change whenever something moves in Z.
 
-Unity decides which of two overlapping 2D GameObjects draws in front using these criteria, evaluated in order (later criteria only break ties left by earlier ones):
+## The chain, in evaluation order
 
-1. **Sorting Layer** — a GameObject on a Sorting Layer higher in the project's Sorting Layers list (Edit > Project Settings > Tags and Layers) renders in front of one on a lower layer, regardless of any other setting.
-2. **Order in Layer** — within the same Sorting Layer, a lower value renders behind a higher value (e.g. Order in Layer −1 is behind Order in Layer 3).
-3. **Render Queue** — a lower material Render Queue value renders earlier (default 2D value: 3000).
-4. **Distance from camera** — further from the camera renders earlier (i.e. behind). This is the tie-breaker Unity falls back to when Sorting Layer/Order in Layer/Render Queue are all equal, which is the default state for every sprite until explicitly changed — the practical effect: *"if you don't change these settings, Unity uses distance to camera as the first differentiator."* The exact distance calculation depends on the camera's projection, its **Transparency Sort Mode**, and the sprite's **Sprite Sort Point**.
-5. **Shader/material grouping** — GameObjects sharing an identical shader+material batch together for draw-call efficiency, but relative order within that batch isn't guaranteed.
+| Step | What it decides | Source |
+|---|---|---|
+| 1. Sorting Layer | Wins outright over every criterion below it, regardless of position — layer order is set in Edit > Project Settings > Tags and Layers, where lower in the list draws in front | [2D rendering order](https://docs.unity3d.com/Manual/sprite/sort-sprites/sort-sprites.html) |
+| 2. Order in Layer | Breaks ties inside one Sorting Layer; lower draws behind higher, and negative values are valid | [2D rendering order](https://docs.unity3d.com/Manual/sprite/sort-sprites/sort-sprites.html) |
+| 3. Render Queue | The material's queue value, default 3000 for 2D — normally only relevant once a custom material is involved | [2D rendering order](https://docs.unity3d.com/Manual/sprite/sort-sprites/sort-sprites.html) |
+| 4. Distance from camera | The fallback every unconfigured sprite lands on, computed from the camera's projection, its Transparency Sort Mode, and the renderer's Sprite Sort Point | [2D rendering order](https://docs.unity3d.com/Manual/sprite/sort-sprites/sort-sprites.html) |
+| 5. Shader/material batching | Sprites sharing a material batch for draw-call efficiency, and relative order inside a batch is not guaranteed — never depend on it | [2D rendering order](https://docs.unity3d.com/Manual/sprite/sort-sprites/sort-sprites.html) |
 
-## Configuring Sorting Layers and Order in Layer
+## Transparency Sort Mode
 
-1. **Edit > Project Settings > Tags and Layers > Sorting Layers**, click **Add (+)** to create a layer. Layers listed lower render in front of layers listed higher — order the list deliberately, don't leave newly-added layers wherever they land.
-2. On a `SpriteRenderer` (or other 2D renderer), set **Sorting Layer** and **Order in Layer** under Additional Settings — see [sprite-renderer.md](sprite-renderer.md). Every 2D GameObject starts on the **Default** layer with Order in Layer 0 until changed.
+| Mode | What it decides | Source |
+|---|---|---|
+| Default | Perspective for a perspective camera, orthographic for an orthographic one | [Change the sorting order of 2D GameObjects](https://docs.unity3d.com/Manual/2d-renderer-sorting.html) |
+| Perspective / Orthographic | Forces one distance model regardless of the camera's projection | [Change the sorting order of 2D GameObjects](https://docs.unity3d.com/Manual/2d-renderer-sorting.html) |
+| Custom Axis | Sorts along an explicit world axis — the correct setting for isometric and top-down games, where "further from camera" and "further up the screen" are different questions and the default answers the wrong one | [Change the sorting order of 2D GameObjects](https://docs.unity3d.com/Manual/2d-renderer-sorting.html) |
 
-## Transparency Sort Mode / Axis (Camera)
+## Sorting Group
 
-On the `Camera` component, **Transparency Sort Mode** controls how distance-based sorting is computed for transparent objects: **Default** (perspective for a perspective camera, orthographic for an orthographic one), **Perspective**, **Orthographic**, or **Custom Axis** (sort along an explicit world-space axis — the standard setup for isometric or top-down games where "further from camera" isn't the same as "further along the Z axis").
+Groups a hierarchy so its renderers sort as one unit against the outside
+world, keeping their own relative order internally. This is the answer to
+multi-part characters interleaving with each other — a problem careful Order
+in Layer numbering appears to solve until a second similar object overlaps the
+same range.
 
-## Sorting Group component
-
-Groups a hierarchy of child renderers to sort as a single unit, so they can't get interleaved with another object's renderers even if individual children would otherwise sort differently by distance/layer.
-
-| Property | Description |
-|---|---|
-| Sorting Layer | All child renderers render on this Sorting Layer while keeping their own relative order to each other. |
-| Order in Layer | The group's own Order in Layer sublayer value. |
-| Sorting Type | **Default** — sorts alongside sibling Sorting Groups at the same hierarchy level. **Sort at Root** — sorts at the top of the hierarchy, ignoring any parent Sorting Group. **Sort 3D as 2D** — sorts at the top level and ignores 3D GameObjects' Z value within the group, so mixed 2D/3D content sorts purely as 2D. |
-
-Common use case: a character built from several stacked sprite parts (body, clothing, weapon, accessory) that must always render together as one visual unit, never interleaved with another character's parts even when both characters occupy similar depth.
-
-## Practical guidance
-
-- Don't rely on Z-position/distance-from-camera as the primary sorting mechanism for anything with an explicit design requirement (a UI element that must always be on top, a character that must always render behind a specific prop) — set an explicit Sorting Layer/Order in Layer instead; distance-based sorting is a fallback, not a design tool.
-- For isometric/top-down 2D games, set the camera's **Transparency Sort Mode** to **Custom Axis** deliberately — the default perspective/orthographic distance sort produces visually wrong depth ordering for that camera angle.
-- Reach for a **Sorting Group** the moment a multi-part object's pieces need to stay visually coherent as a unit — don't try to solve that with careful Order in Layer numbering alone, which breaks the first time another similar object's Order in Layer values overlap.
+| Property | What it decides | Source |
+|---|---|---|
+| Sorting Layer / Order in Layer | The whole group's position in the chain above; children keep their relative order inside it | [Sorting Group component reference](https://docs.unity3d.com/Manual/sprite/sorting-group/sorting-group-reference.html) |
+| Sorting Type — Default | Sorts alongside sibling Sorting Groups at the same hierarchy level | [Sorting Group component reference](https://docs.unity3d.com/Manual/sprite/sorting-group/sorting-group-reference.html) |
+| Sorting Type — Sort at Root | Sorts at the top of the hierarchy, ignoring any parent Sorting Group — use when a nested group must escape its parent's band | [Sorting Group component reference](https://docs.unity3d.com/Manual/sprite/sorting-group/sorting-group-reference.html) |
+| Sorting Type — Sort 3D as 2D | Sorts at root and ignores 3D Z values inside the group, so mixed 2D/3D content orders purely as 2D | [Sorting Group component reference](https://docs.unity3d.com/Manual/sprite/sorting-group/sorting-group-reference.html) |

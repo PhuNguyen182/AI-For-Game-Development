@@ -1,31 +1,34 @@
-# Enabling Collision
+# Sprite Shape Collision — Supported Colliders & Auto-Update
 
-Sources: https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/manual/SSCollision.html, `SpriteShapeController.autoUpdateCollider`/`optimizeCollider`/`colliderOffset`/`edgeCollider`/`polygonCollider`/`hasCollider`/`BakeCollider()` scripting API.
+Sources: [Enabling Collision](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/manual/SSCollision.html), [SpriteShapeController API](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SpriteShapeController.html).
+Covers: SKILL.md §4 — **"Attach only `EdgeCollider2D` or `PolygonCollider2D`"**, **"Disable Update Collider before any manual collider edit"**.
+
+Sprite Shape generates collider geometry from the same spline that drives the
+mesh, into a collider you attach yourself. Two facts decide everything here:
+only two collider types receive that geometry, and by default it is
+regenerated on every spline change — which is convenient during art iteration
+and destructive to a hand-tuned collider.
 
 ## Setup
 
-1. Attach a `Collider2D` component to the Sprite Shape GameObject. **Only `EdgeCollider2D` and `PolygonCollider2D` are supported** — other `Collider2D` types don't integrate with Sprite Shape's mesh generation.
-2. Attaching one of these exposes the **Additional Collider settings** section in the `SpriteShapeController` Inspector (see [spriteshape-controller.md](spriteshape-controller.md)).
-3. By default the collider mesh **automatically reshapes** to match the Sprite Shape every time the spline is edited.
+| Step | What it decides | Source |
+|---|---|---|
+| Attach an `EdgeCollider2D` or `PolygonCollider2D` | The only two supported types. Any other `Collider2D` sits on the GameObject receiving no generated geometry and reporting nothing wrong | [Enabling Collision](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/manual/SSCollision.html) |
+| Choose Edge versus Polygon | Edge encloses no area, so bodies cannot be inside the shape — right for a ground surface, wrong for a solid island. Polygon fills | [Enabling Collision](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/manual/SSCollision.html) |
+| Additional Collider settings appear on the controller | Where detail, offset, and auto-update live once a supported collider exists | [Sprite Shape Controller](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/manual/SSController.html) |
 
-## Manual collider editing
+## Controls
 
-To edit the collider mesh directly instead of letting it auto-regenerate, disable **Update Collider** in the `SpriteShapeController`'s Collider settings (clears the checkbox that drives `autoUpdateCollider`) before making manual edits — otherwise the next spline edit or bake overwrites manual changes.
+| Member | What it decides | Source |
+|---|---|---|
+| `autoUpdateCollider` (Update Collider) | Whether the collider regenerates on every spline or geometry change. **Disable it before any manual collider edit** — otherwise the next change silently overwrites the edit | [Enabling Collision](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/manual/SSCollision.html) |
+| `colliderDetail` | Collider tessellation, independent of `splineDetail` — the dial that gives a visually detailed cliff a cheap walkable surface | [SpriteShapeController API](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SpriteShapeController.html) |
+| `optimizeCollider` | Reduces generated point count — fewer vertices per collision check, at some loss of silhouette fidelity | [SpriteShapeController API](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SpriteShapeController.html) |
+| `colliderOffset` | Offsets the generated shape from the outline — how a character's feet land on the visual surface rather than inside it | [SpriteShapeController API](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SpriteShapeController.html) |
+| `hasCollider` | Whether a supported collider is currently attached — the guard before assuming generation happens at all | [SpriteShapeController API](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SpriteShapeController.html) |
+| `edgeCollider` / `polygonCollider` | Returns whichever supported collider is attached, or `null` | [SpriteShapeController API](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SpriteShapeController.html) |
+| `BakeCollider()` | Forces an immediate collider update — a load-time or tooling operation, not per-frame work | [SpriteShapeController API](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SpriteShapeController.html) |
 
-## Scripting API
-
-| Member | Description |
-|---|---|
-| `autoUpdateCollider` (`bool`) | Whether the collider mesh regenerates automatically on spline/geometry changes. |
-| `optimizeCollider` (`bool`) | Whether generated collider geometry is optimized (fewer points). |
-| `colliderDetail` (`int`) | Level of detail for collider geometry generation — independent from `splineDetail`'s render-mesh detail. |
-| `colliderOffset` (`float`) | Offset applied to the generated collider shape. |
-| `hasCollider` (`bool`) | Whether this object currently has a supported collider attached. |
-| `edgeCollider` (`EdgeCollider2D`) / `polygonCollider` (`PolygonCollider2D`) | Returns whichever supported collider is attached, or `null`. |
-| `BakeCollider()` | Forces an immediate collider update. |
-
-## Practical guidance
-
-- Route the resulting `EdgeCollider2D`/`PolygonCollider2D`'s `Rigidbody2D`, physics material, effectors, and joints to the sibling `unity-2d-physics` skill — this file only covers the collider *mesh generation*, not 2D physics dynamics built on top of it.
-- Leave `autoUpdateCollider` on for any shape whose spline is still under art iteration — hand-editing a collider mesh that then gets silently overwritten on the next spline tweak is a common source of confusing bugs. Turn it off only once the shape is finalized and a specific manual collider adjustment is needed.
-- `colliderDetail` doesn't have to match `splineDetail` — a visually detailed shape can use a coarser, cheaper collider if exact silhouette-matching collision isn't gameplay-critical (`performance-and-algorithms.md`'s measured-tradeoff principle).
+Everything attached *to* that collider — the `Rigidbody2D`, the
+`PhysicsMaterial2D`, effectors, joints — belongs to `unity-2d-physics`. This
+file covers only the generation of the collider's geometry.

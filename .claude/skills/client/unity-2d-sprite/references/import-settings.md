@@ -1,46 +1,47 @@
-# Sprite Texture Import Settings
+# Sprite Texture Import Settings — Texture Type, Sprite Mode, PPU, Mesh Type
 
-Sources: https://docs.unity3d.com/Manual/sprite/import-images-sprites/import-images-sprites-landing.html, https://docs.unity3d.com/Manual/texture-type-sprite.html
+Sources: [Import images as sprites](https://docs.unity3d.com/Manual/sprite/import-images-sprites/import-images-sprites-landing.html), [Sprite (2D and UI) import settings reference](https://docs.unity3d.com/Manual/texture-type-sprite.html).
+Covers: SKILL.md §4 — **"Settle Pixels Per Unit against the existing visual set before anything else"**, **"Pick Mesh Type by whether the sprite is 9-sliced, not by overdraw instinct"**.
 
-## Enabling a texture as a sprite
+Import settings are asset metadata, not scene state: they decide the sprite's
+world size, its mesh, and the collision outline every instance inherits, so
+they are settled before any component is wired. Setting **Texture Type** to
+**Sprite (2D and UI)** is what exposes everything below. Compression and Max
+Size decisions follow `performance-and-algorithms.md`'s Assets & memory
+footprint section.
 
-Select the imported texture in the Project window, and in the Inspector set **Texture Type** to **Sprite (2D and UI)**. This exposes the sprite-specific import settings below in place of the generic texture settings.
+## Geometry and scale
 
-## Core sprite settings
+| Setting | What it decides | Source |
+|---|---|---|
+| Sprite Mode | **Single** (whole texture is one sprite), **Multiple** (spritesheet cut in the Sprite Editor), **Polygon** (clipped to a custom polygon). Multiple is the only mode with per-sub-sprite rects, pivots, and borders | [Sprite import settings](https://docs.unity3d.com/Manual/texture-type-sprite.html) |
+| Pixels Per Unit | Texture pixels per Unity world unit — sets both rendered world size and the scale of the sprite-derived physics shape, so a mismatch inside one visual set is an art bug and a hitbox bug at once | [Sprite import settings](https://docs.unity3d.com/Manual/texture-type-sprite.html) |
+| Mesh Type | **Full Rect** is a plain quad and is mandatory for 9-slicing; **Tight** builds a mesh from the alpha shape to cut overdraw but cannot 9-slice. Unity forces Full Rect on any sprite under 32×32 regardless of this setting, so Tight is inert on small icons | [Sprite import settings](https://docs.unity3d.com/Manual/texture-type-sprite.html) |
+| Extrude Edges | Pixels of padding around the generated mesh — raises it when a filtered or scaled sprite shows bleeding at its edge | [Sprite import settings](https://docs.unity3d.com/Manual/texture-type-sprite.html) |
+| Pivot | Rotation/scale origin, preset or Custom X/Y. Single mode only — Multiple mode sets pivot per sub-sprite in the Sprite Editor | [Sprite import settings](https://docs.unity3d.com/Manual/texture-type-sprite.html) |
+| Generate Physics Shape | Auto-traces a default collision outline from opaque pixels when no Custom Physics Shape was authored — leave off for purely decorative sprites, which otherwise carry outline data nothing reads. See [custom-physics-shape.md](custom-physics-shape.md) | [Create collision shapes](https://docs.unity3d.com/Manual/sprite/create-collision-geometry.html) |
+| Open Sprite Editor | Opens the four authoring modules; requires the 2D Sprite package. See [sprite-editor.md](sprite-editor.md) | [Cut out sprites from a texture](https://docs.unity3d.com/Manual/sprite/sprite-editor/use-editor.html) |
 
-| Setting | Values / description |
-|---|---|
-| Sprite Mode | **Single** — the whole texture is one sprite. **Multiple** — the texture is a spritesheet cut into multiple sub-sprites via the Sprite Editor. **Polygon** — the sprite is clipped to a custom polygon outline. |
-| Pixels Per Unit | How many texture pixels map to one Unity world-space unit. Drives both the sprite's rendered world size and its default physics shape scale. |
-| Mesh Type | **Full Rect** — a simple quad covering the whole sprite rect; required for 9-sliced sprites and any sprite under ~32×32 px (Unity forces Full Rect below that size regardless of the setting). **Tight** — a mesh generated from the sprite's alpha shape, reducing overdraw on irregular sprites but incompatible with 9-slicing. |
-| Extrude Edges | Padding (in pixels) added around the generated mesh, to avoid texture bleeding at the sprite's edges when filtered/scaled. |
-| Pivot | The transform origin used for rotation/scaling. Preset options (Center, corners, edge midpoints) or **Custom** with explicit X/Y (Single mode only — Multiple mode sets pivot per sub-sprite in the Sprite Editor). |
-| Generate Physics Shape | When enabled, Unity auto-generates a default physics shape from the sprite's opaque-pixel outline if no custom physics shape was authored in the Sprite Editor's Custom Physics Shape module. See [custom-physics-shape.md](custom-physics-shape.md). |
-| Open Sprite Editor | Button that opens the Sprite Editor for this texture (requires the 2D Sprite package). See [sprite-editor.md](sprite-editor.md). |
+## Colour and alpha
 
-## Color / alpha settings
+| Setting | What it decides | Source |
+|---|---|---|
+| sRGB (Color Texture) | On for anything meant to look correct on screen; off for a texture storing exact linear values (mask, data) — leaving it on silently gamma-shifts those values | [Sprite import settings](https://docs.unity3d.com/Manual/texture-type-sprite.html) |
+| Alpha Source | **None**, **Input Texture Alpha**, or **From Gray Scale** — where alpha comes from when the source format has none | [Sprite import settings](https://docs.unity3d.com/Manual/texture-type-sprite.html) |
+| Alpha Is Transparency | Dilates edge colour into transparent pixels; the fix for dark fringing on a filtered or scaled sprite | [Sprite import settings](https://docs.unity3d.com/Manual/texture-type-sprite.html) |
 
-| Setting | Description |
-|---|---|
-| sRGB (Color Texture) | Import in gamma space for a color texture; disable for a texture that must store exact linear values (e.g. a mask or data texture, not something meant to look "correct" on screen). |
-| Alpha Source | **None**, **Input Texture Alpha**, or **From Gray Scale** — where the sprite's alpha channel comes from. |
-| Alpha Is Transparency | Dilates edge colors into fully-transparent pixels to prevent dark fringing when the sprite is filtered/scaled. |
+## Memory and platform
 
-## Advanced / platform settings
+| Setting | What it decides | Source |
+|---|---|---|
+| Read/Write | Enables CPU pixel access and doubles the texture's memory — on only when a script genuinely reads pixels at runtime | [Sprite import settings](https://docs.unity3d.com/Manual/texture-type-sprite.html) |
+| Generate Mip Maps | Wanted only when the sprite is scaled significantly in perspective; mipmapping pixel art at a fixed scale blurs it and costs a third more memory | [Sprite import settings](https://docs.unity3d.com/Manual/texture-type-sprite.html) |
+| Filter Mode | **Point** for crisp pixel art, **Bilinear**/**Trilinear** for smooth-scaled art — Point is what keeps a pixel-art project from looking soft at non-integer scales | [Sprite import settings](https://docs.unity3d.com/Manual/texture-type-sprite.html) |
+| Wrap Mode | Repeat/Clamp/Mirror, per-axis — matters for Tiled Draw Mode sprites, see [nine-slicing.md](nine-slicing.md) | [Sprite import settings](https://docs.unity3d.com/Manual/texture-type-sprite.html) |
+| Non-Power of 2 | How NPOT dimensions are handled (scale up, pad, none) — relevant where the target platform's compression format requires POT | [Sprite import settings](https://docs.unity3d.com/Manual/texture-type-sprite.html) |
+| Max Size / Format / Compression / Compressor Quality | The single largest lever on sprite memory footprint; set per platform, never left at one global default for both a PC and a mobile target | [Sprite import settings](https://docs.unity3d.com/Manual/texture-type-sprite.html) |
+| Platform-specific overrides | A per-target tab overriding Max Size/Format/Compression without touching the default — the mechanism the rule above is applied through | [Sprite import settings](https://docs.unity3d.com/Manual/texture-type-sprite.html) |
 
-| Setting | Description |
-|---|---|
-| Non-Power of 2 | How Unity handles NPOT texture dimensions (scale up, pad, or none, depending on target). |
-| Read/Write | Enables CPU-side access via `Texture2D` script APIs; doubles the texture's memory footprint — leave off unless a script genuinely reads/writes pixel data at runtime. |
-| Generate Mip Maps | Builds a mipmap chain — almost never wanted for 2D sprites viewed at a fixed pixel scale (mipmapping a pixel-art sprite blurs it); leave off unless the sprite is scaled significantly in 3D/perspective space. |
-| Filter Mode | **Point (no filter)** for crisp pixel-art sprites, **Bilinear**/**Trilinear** for smooth-scaled art. |
-| Wrap Mode | Repeat / Clamp / Mirror / Mirror Once / per-axis — matters mainly for Tiled-draw-mode sprites (see [nine-slicing.md](nine-slicing.md)). |
-| Max Size / Format / Compression / Compressor Quality | Standard texture compression controls — set deliberately per platform per `performance-and-algorithms.md`'s "Assets & memory footprint" rule; an oversized or uncompressed sprite texture is a common source of both load-time and runtime memory bloat, especially on mobile. |
-| Platform-specific overrides | A per-platform tab to override Max Size/Format/Compression for a specific build target without changing the default settings. |
-
-## Practical guidance
-
-- Pick **Sprite Mode = Multiple** the moment a texture is a spritesheet (animation frames, a tile/icon sheet) — don't hand-slice separate texture assets when one spritesheet plus the Sprite Editor's slicing tools does the job.
-- Set **Pixels Per Unit** consistently across a project's sprites (or at least within one visual "set") — mismatched PPU between sprites that appear together produces inconsistent apparent scale.
-- Only enable **Generate Physics Shape** when the sprite actually needs `Collider2D` collision derived from its silhouette; per `coding-principles.md`'s KISS principle, a sprite that's purely decorative doesn't need this on.
-- Route final compression/Max Size decisions through per-platform overrides rather than a single global setting whenever PC and mobile targets have different memory budgets — this is the same "deliberate per-platform texture setting" rule `performance-and-algorithms.md` states for all textures, not something sprite import gets to skip.
+**Critical caveat**: Pixels Per Unit is not a cosmetic scale knob. Because the
+physics shape is expressed in the same units, changing PPU after colliders are
+tuned rescales every hitbox derived from that sprite.

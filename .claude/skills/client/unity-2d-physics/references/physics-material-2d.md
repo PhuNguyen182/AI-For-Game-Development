@@ -1,40 +1,44 @@
-# PhysicsMaterial2D — Friction & Bounciness Surface Properties
+# PhysicsMaterial2D — Friction, Bounciness & Combine Priority
 
-Covers SKILL.md step 5 (configuring collider friction/bounciness).
+Source: [Physics Material 2D reference](https://docs.unity3d.com/Manual/2d-physics/physics-material-2d-reference.html).
+Covers: SKILL.md §4 — **"Assign a `PhysicsMaterial2D` asset rather than tuning friction per collider"**.
 
-## Overview
+A Physics Material 2D asset (**Assets > Create > 2D > Physics Material 2D**)
+carries the friction and bounciness of a surface. The fact that decides how it
+is used: a contact combines *both* colliders' materials, and when their
+combine modes disagree the higher-priority mode wins — so a surface can never
+be reasoned about from its own asset alone.
 
-A Physics Material 2D is an asset (created via `Assets > Create > 2D > Physics Material 2D`) that adjusts the friction and bounce that occur between 2D physics objects when they collide. It attaches by assigning it to the `Material` property of either a `Collider2D` component (via `Collider2D.sharedMaterial`) or a `Rigidbody2D` component (via `Rigidbody2D.sharedMaterial`, which applies the material to all `Collider2D` shapes attached to that Rigidbody2D). Unity notes this asset is the 2D equivalent of the 3D `PhysicsMaterial` asset.
+## Properties
 
-When two colliding `Collider2D` components each have their own `PhysicsMaterial2D` assigned, Unity combines the two materials' `friction` and `bounciness` values independently, each using its own `PhysicsMaterialCombine2D` algorithm (`frictionCombine` and `bounceCombine`). If the two materials specify different combine modes, the mode with the higher priority wins — priority order, lowest to highest: `Average` < `Mean` < `Multiply` < `Minimum` < `Maximum`. For example, if one material uses `Average` and the other uses `Maximum`, the combined result uses `Maximum` because it has higher priority.
-
-## Manual
-
-| Page | URL | Covers |
+| Property | What it decides | Source |
 |---|---|---|
-| Physics Material 2D reference | https://docs.unity3d.com/Manual/2d-physics/physics-material-2d-reference.html | Asset creation, Friction/Bounciness/Friction Combine/Bounce Combine properties and their combine-mode options |
+| Friction | 0 is frictionless ice, 1 is high grip; the coefficient applied along the contact tangent | [Physics Material 2D reference](https://docs.unity3d.com/Manual/2d-physics/physics-material-2d-reference.html) |
+| Bounciness | 0 absorbs the impact, 1 rebounds with no energy loss — values above the design's intent are the usual cause of objects that never settle | [Physics Material 2D reference](https://docs.unity3d.com/Manual/2d-physics/physics-material-2d-reference.html) |
+| Friction Combine | How the pair's friction values combine; **Mean** is the default | [Physics Material 2D reference](https://docs.unity3d.com/Manual/2d-physics/physics-material-2d-reference.html) |
+| Bounce Combine | How the pair's bounciness values combine; **Maximum** is the default, which is why one bouncy object makes every contact bouncy | [Physics Material 2D reference](https://docs.unity3d.com/Manual/2d-physics/physics-material-2d-reference.html) |
 
-## Physics Material 2D asset properties
+## Combine modes, in priority order
 
-| Property | Type | Description |
+| Mode | Result | Priority | Source |
+|---|---|---|---|
+| `Average` | Arithmetic mean of the two values | Lowest | [Physics Material 2D reference](https://docs.unity3d.com/Manual/2d-physics/physics-material-2d-reference.html) |
+| `Mean` | Geometric mean of the two values | Second | [Physics Material 2D reference](https://docs.unity3d.com/Manual/2d-physics/physics-material-2d-reference.html) |
+| `Multiply` | Product of the two values | Third | [Physics Material 2D reference](https://docs.unity3d.com/Manual/2d-physics/physics-material-2d-reference.html) |
+| `Minimum` | The smaller value — the mode that lets one slippery surface win | Fourth | [Physics Material 2D reference](https://docs.unity3d.com/Manual/2d-physics/physics-material-2d-reference.html) |
+| `Maximum` | The larger value — the mode that lets one grippy or bouncy surface win | Highest | [Physics Material 2D reference](https://docs.unity3d.com/Manual/2d-physics/physics-material-2d-reference.html) |
+
+When the two materials specify different modes, the one higher in this list
+decides. A material set to `Average` never takes effect against a material set
+to `Maximum`.
+
+## Assignment and scripting
+
+| Member | What it decides | Source |
 |---|---|---|
-| Friction | float (0–1) | Coefficient of friction for this collider. 0 = no friction (like ice), 1 = very high friction (like rubber). |
-| Bounciness | float (0–1) | Degree to which collisions rebound from the surface. 0 = no bounce, 1 = perfect bounce with no loss of energy. |
-| Friction Combine | `PhysicsMaterialCombine2D` | How to combine both materials' friction values when two colliders interact. Options: `Average` (average of the two values), `Mean` (geometric mean of the two values — **default**), `Multiply` (product of the two values), `Minimum` (smaller value), `Maximum` (larger value). |
-| Bounce Combine | `PhysicsMaterialCombine2D` | How to combine both materials' bounciness values when two colliders interact. Same five options as Friction Combine, but `Maximum` is the **default** here. |
+| `Collider2D.sharedMaterial` | The material for that collider. `Collider2D` has **no** per-instance `material` property, unlike 3D `Collider` — writing here edits the shared asset and therefore every collider using it | [Collider2D.sharedMaterial](https://docs.unity3d.com/ScriptReference/Collider2D-sharedMaterial.html) |
+| `Rigidbody2D.sharedMaterial` | A default applied to every attached collider that has none of its own — the efficient place to set one surface for a whole body | [Rigidbody2D.sharedMaterial](https://docs.unity3d.com/ScriptReference/Rigidbody2D-sharedMaterial.html) |
+| `Collider2D.friction` / `bounciness` / `frictionCombine` / `bounceCombine` | Per-collider values used when no material asset is assigned — fine for a one-off, but they cannot be reused or tuned centrally | [Collider2D.friction](https://docs.unity3d.com/ScriptReference/Collider2D-friction.html) |
+| `PhysicsMaterial2D.GetCombinedValues(...)` | Computes the effective value a given pair would produce — the way to confirm a combine outcome without running the scene | [PhysicsMaterial2D](https://docs.unity3d.com/ScriptReference/PhysicsMaterial2D.html) |
 
-## Scripting API
-
-| Member | Description |
-|---|---|
-| `PhysicsMaterial2D` (class) | Asset type that specifies the surface characteristics of a `Collider2D`. |
-| `friction` | Coefficient of friction. |
-| `bounciness` | Coefficient of restitution. |
-| `frictionCombine` | Determines how the effective friction is calculated when two `Collider2D` come into contact. |
-| `bounceCombine` | Determines how the effective bounciness is calculated when two `Collider2D` come into contact. |
-| `PhysicsMaterial2D.GetCombinedValues(...)` (static) | Calculates the effective value used when two `Collider2D` with their own `PhysicsMaterial2D` come into contact. |
-| `PhysicsMaterialCombine2D` (enum) | `Average`, `Mean`, `Multiply`, `Minimum`, `Maximum` — the combine algorithm selected for `frictionCombine`/`bounceCombine`. |
-
-Assignment happens on the collider or body side, not on the material itself: `Collider2D.sharedMaterial` sets "The PhysicsMaterial2D that is applied to this collider," and `Rigidbody2D.sharedMaterial` sets "The PhysicsMaterial2D that is applied to all Collider2D attached to this Rigidbody2D." Unlike the 3D `Collider` base class, `Collider2D` exposes only `sharedMaterial` — there is no separate per-instance `material` property.
-
-For attaching a material to a specific collider shape, see [collider-2d.md](collider-2d.md).
+For which collider carries the material, see [collider-2d.md](collider-2d.md).

@@ -1,34 +1,39 @@
 # Custom Physics Shape — Sprite Collision Geometry
 
-Sources: https://docs.unity3d.com/Manual/sprite/create-collision-geometry.html, https://docs.unity3d.com/Manual/sprite/sprite-editor/custom-physics-shape-editor-reference.html
+Sources: [Create collision shapes for a sprite](https://docs.unity3d.com/Manual/sprite/create-collision-geometry.html), [Custom Physics Shape tab reference](https://docs.unity3d.com/Manual/sprite/sprite-editor/custom-physics-shape-editor-reference.html).
+Covers: SKILL.md §4 — **"Author collision geometry once on the `Sprite` asset, never per instance"**.
 
-## Purpose
+This module writes a collision outline onto the `Sprite` asset itself, read
+back at runtime through `Sprite.GetPhysicsShape` (see
+[sprite-asset-reference.md](sprite-asset-reference.md)). Any `Collider2D`
+with **Use Sprite Physics Shape** enabled — or a sprite imported with Generate
+Physics Shape on and no custom shape authored — adopts it, so one authoring
+pass serves every instance. Configuring the colliders and bodies that consume
+the shape belongs to `unity-2d-physics`, not here.
 
-The Custom Physics Shape module authors the default collision outline stored on the `Sprite` asset itself (`Sprite.GetPhysicsShape`/`GetPhysicsShapeCount`, see [sprite-asset-reference.md](sprite-asset-reference.md)). When a `Collider2D` on a GameObject has **Use Sprite Physics Shape** enabled (or when `Generate Physics Shape` was left on at import with no custom shape authored — see [import-settings.md](import-settings.md)), Unity uses this outline as the collider's shape for every instance of that sprite — one shape authored once, reused by every GameObject that references the sprite, instead of hand-placing a `PolygonCollider2D` outline per instance.
+## Controls
 
-**Scope boundary**: this module authors the *geometry* a `Collider2D` consumes. Choosing/configuring the `Rigidbody2D`/`Collider2D`/joint/effector components that actually simulate physics with that geometry is `unity-2d-physics`'s territory, not this skill's — see that skill's own scope definition.
+| Control | What it decides | Source |
+|---|---|---|
+| Outline Detail | Vertex count is paid on every collision check, so this is a runtime cost dial, not a fidelity dial — trace to the coarsest silhouette that still plays correctly | [Custom Physics Shape tab reference](https://docs.unity3d.com/Manual/sprite/sprite-editor/custom-physics-shape-editor-reference.html) |
+| Alpha Tolerance | Alpha threshold for "opaque" when tracing — decides whether soft edges are inside the hitbox | [Custom Physics Shape tab reference](https://docs.unity3d.com/Manual/sprite/sprite-editor/custom-physics-shape-editor-reference.html) |
+| Snap | Snaps vertices to the pixel grid | [Custom Physics Shape tab reference](https://docs.unity3d.com/Manual/sprite/sprite-editor/custom-physics-shape-editor-reference.html) |
+| Generate / Generate All | Traces the selected sprite, or only sprites with no shape yet | [Custom Physics Shape tab reference](https://docs.unity3d.com/Manual/sprite/sprite-editor/custom-physics-shape-editor-reference.html) |
+| Force Generate All | Overwrites every shape on the sheet including hand edits — destructive, confirmation-gated | [Custom Physics Shape tab reference](https://docs.unity3d.com/Manual/sprite/sprite-editor/custom-physics-shape-editor-reference.html) |
+| Copy / Paste / Paste All | Transfers a shape between sprites | [Custom Physics Shape tab reference](https://docs.unity3d.com/Manual/sprite/sprite-editor/custom-physics-shape-editor-reference.html) |
+| Paste from Custom Outline | Reuses the render outline as collision when both should match — see [custom-outline.md](custom-outline.md) | [Custom Physics Shape tab reference](https://docs.unity3d.com/Manual/sprite/sprite-editor/custom-physics-shape-editor-reference.html) |
+| Edit Collider | Lets one *instance*'s collider diverge from the sprite's shared default — an override that is easy to forget exists, so use it only when that instance genuinely differs | [Create collision shapes](https://docs.unity3d.com/Manual/sprite/create-collision-geometry.html) |
 
-## Toolbar controls
+## Editing gestures
 
-Same shared toolbar as [custom-outline.md](custom-outline.md) (Preview/Revert/Apply/Color/Zoom/Mipmap Level), plus:
+| Gesture | Effect | Source |
+|---|---|---|
+| Drag a vertex | Moves it | [Create collision shapes](https://docs.unity3d.com/Manual/sprite/create-collision-geometry.html) |
+| Click an edge | Inserts a vertex | [Create collision shapes](https://docs.unity3d.com/Manual/sprite/create-collision-geometry.html) |
+| Select a vertex, press Delete | Removes it | [Create collision shapes](https://docs.unity3d.com/Manual/sprite/create-collision-geometry.html) |
+| Ctrl+drag an edge | Moves the whole edge | [Create collision shapes](https://docs.unity3d.com/Manual/sprite/create-collision-geometry.html) |
 
-| Control | Behavior |
-|---|---|
-| Outline Detail | Higher values produce a closer-fitting, higher-vertex collision outline; lower values simplify it. Per `performance-and-algorithms.md`, a physics shape with more vertices costs more per collision check — don't default to maximum detail. |
-| Alpha Tolerance | Alpha threshold for what counts as "opaque" when tracing the outline. |
-| Snap | Snaps vertices to the nearest pixel. |
-| Generate / Generate All / Force Generate All | Same semantics as Custom Outline — trace from the sprite's opaque pixels; Force Generate All is destructive to hand-edited shapes and requires explicit confirmation. |
-| Copy / Paste / Paste All | Transfer a physics shape between sprites. |
-| Paste from Custom Outline | Copies the render-mesh outline over as the physics shape, when both should match. |
-| Edit Collider | Lets an individual sprite *instance*'s collider diverge from the sprite asset's default shape without altering the shared default. |
-
-## Editing
-
-Same vertex/edge interactions as Custom Outline: drag to move a vertex, click an edge to add one, Delete to remove, Ctrl+drag to move an edge. The shape displays as a white outline with square vertex handles, distinct from the render outline's display.
-
-## Practical guidance
-
-- Prefer a **simple collider shape** the gameplay actually needs — per `performance-and-algorithms.md`'s "simplest collider shape" rule, a low-Outline-Detail physics shape (or, when the sprite's silhouette is roughly convex, an ordinary `BoxCollider2D`/`CircleCollider2D` set up directly in `unity-2d-physics` instead of a sprite-derived polygon) is both simpler and cheaper than a highly detailed traced outline.
-- Author this once per unique sprite silhouette (e.g. once for a character's idle frame reused across many instances), not per GameObject instance — that's the entire point of storing it on the `Sprite` asset rather than hand-drawing a `PolygonCollider2D` per object.
-- Only reach for **Edit Collider** (per-instance override) when a specific instance genuinely needs different collision geometry than its sibling instances of the same sprite — otherwise it silently diverges from the shared default in a way that's easy to forget.
-- Hand off actual `Collider2D`/`Rigidbody2D` configuration, layer collision matrix pruning, and joint/effector setup to `unity-2d-physics` — this module's output is just the shape data those components consume.
+**Critical caveat**: a traced polygon is not automatically the right answer.
+When the silhouette is roughly convex, a `BoxCollider2D` or `CircleCollider2D`
+configured in `unity-2d-physics` is both simpler and cheaper than any
+sprite-derived polygon, per `performance-and-algorithms.md`'s Physics section.

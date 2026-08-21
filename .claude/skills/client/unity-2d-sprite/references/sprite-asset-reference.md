@@ -1,39 +1,38 @@
-# Sprite Asset Reference
+# Sprite Asset — Runtime Data & Packing-Safe Members
 
-Sources: https://docs.unity3d.com/Manual/class-Sprite.html, `UnityEngine.Sprite` scripting API
+Sources: [Sprite asset reference](https://docs.unity3d.com/Manual/class-Sprite.html), [Sprites](https://docs.unity3d.com/Manual/sprite/sprite-landing.html).
+Covers: SKILL.md §4 — **"Read sprite data through the members that stay valid under packing"**.
 
-## Inspector (on the sprite sub-asset itself)
+Half of `Sprite`'s scripting surface describes the sprite on its *original*
+texture and half describes it wherever it currently sits, which for an
+atlas-packed sprite are different places. Choosing the wrong half produces
+code that works in the Editor and throws once packing is enabled.
 
-| Property | Description |
-|---|---|
-| Name | The sprite's identifier — becomes its asset name (also settable per sub-sprite in the [Sprite Editor's slicing panel](sprite-editor.md)). |
-| Pivot | Normalized (0,0 bottom-left to 1,1 top-right) transform origin used for rotation/scaling. |
-| Border (L/R/T/B) | The 9-slice border in pixels — see [nine-slicing.md](nine-slicing.md). |
+## Geometry and scale
 
-## Scripting API surface
+| Member | What it decides | Source |
+|---|---|---|
+| `rect` | Location on the **original** source texture — stable regardless of atlas state, and therefore the default choice | [Sprite asset reference](https://docs.unity3d.com/Manual/class-Sprite.html) |
+| `textureRect` | Location on the **current** texture — throws for a tightly packed atlas sprite, which has no simple rect | [Sprite asset reference](https://docs.unity3d.com/Manual/class-Sprite.html) |
+| `textureRectOffset` | Offset of `textureRect` from the sprite's unpacked bounds | [Sprite asset reference](https://docs.unity3d.com/Manual/class-Sprite.html) |
+| `texture` | The backing `Texture2D` — the atlas texture when packed, the source otherwise | [Sprite asset reference](https://docs.unity3d.com/Manual/class-Sprite.html) |
+| `bounds` | World-space centre and extents, already accounting for pivot and PPU — use it instead of deriving size from `rect` and `pixelsPerUnit` by hand | [Sprite asset reference](https://docs.unity3d.com/Manual/class-Sprite.html) |
+| `pixelsPerUnit`, `pivot`, `border` | The import-time values, readable at runtime — see [import-settings.md](import-settings.md) | [Sprite asset reference](https://docs.unity3d.com/Manual/class-Sprite.html) |
+| `triangles`, `uv`, `vertices` | Copies of the render mesh, reflecting whatever [custom-outline.md](custom-outline.md) authored — each access copies, so cache rather than reading per frame | [Sprite asset reference](https://docs.unity3d.com/Manual/class-Sprite.html) |
 
-| Member | Description |
-|---|---|
-| `texture` | The underlying `Texture2D` — points at the atlas texture if packed, the source texture otherwise. |
-| `textureRect` | The sprite's rectangle on its texture, in pixels — throws if the sprite is tightly packed in an atlas (tight-packed sprites don't have a simple rect). |
-| `textureRectOffset` | Offset of `textureRect` relative to the sprite's original (unpacked) bounds. |
-| `rect` | The sprite's location on its *original* source texture, in pixels — stable regardless of atlas packing. |
-| `pivot` | Pivot location in pixels on the original texture (Inspector's `Pivot` expressed in pixel space). |
-| `pixelsPerUnit` | The sprite's Pixels Per Unit value — see [import-settings.md](import-settings.md). |
-| `border` | The 9-slice border, as a `Vector4` (L, B, R, T). |
-| `bounds` | World-space bounds (center + extents) — useful for camera framing/culling math without hand-deriving it from `rect`/`pixelsPerUnit`. |
-| `packed`, `packingMode`, `packingRotation` | Whether/how the sprite is packed into a [Sprite Atlas](sprite-atlas.md). |
-| `triangles`, `uv`, `vertices` | Copies of the render mesh's triangle indices, UVs, and vertex positions — reflects whatever [Custom Outline](custom-outline.md) authored. |
-| `associatedAlphaSplitTexture` | The separate alpha-channel texture for ETC1-compressed sprites (ETC1 doesn't support alpha directly, so Unity splits it into a second texture). |
-| `spriteAtlasTextureScale` | The resolution scale applied if this sprite came from a [Variant atlas](sprite-atlas.md). |
-| `blendShapeCount` | Blend shape count — only relevant to 2D Animation package content, out of scope for this skill. |
-| `GetPhysicsShapeCount()` / `GetPhysicsShape(int index, List<Vector2> buffer)` | Reads however many [Custom Physics Shape](custom-physics-shape.md) outlines are stored on the sprite. |
-| `GetPhysicsShapePointCount(int index)` | Vertex count for a specific physics shape. |
-| `Create(...)` | Builds a `Sprite` at runtime from a `Texture2D`/rect/pivot — used for procedurally-generated sprite content rather than an imported asset. |
-| `OverrideGeometry(...)` / `OverridePhysicsShape(...)` | Replaces the sprite's render mesh / physics shape at runtime — an advanced, infrequently-needed override; prefer authoring geometry in the Sprite Editor modules for anything that isn't genuinely procedural. |
+## Packing and platform state
 
-## Practical guidance
+| Member | What it decides | Source |
+|---|---|---|
+| `packed`, `packingMode`, `packingRotation` | Whether and how the sprite is in an atlas — the guard to test before touching `textureRect` | [Sprite asset reference](https://docs.unity3d.com/Manual/class-Sprite.html) |
+| `spriteAtlasTextureScale` | The resolution scale applied when the sprite resolved through a Variant atlas, see [sprite-atlas.md](sprite-atlas.md) | [Sprite asset reference](https://docs.unity3d.com/Manual/class-Sprite.html) |
+| `associatedAlphaSplitTexture` | The separate alpha texture ETC1 compression forces, since ETC1 carries no alpha channel — a mobile-only second texture that is easy to forget in a memory budget | [Sprite asset reference](https://docs.unity3d.com/Manual/class-Sprite.html) |
 
-- Use `rect` (original-texture-space, always valid) over `textureRect` (atlas-packed-space, throws when tightly packed) unless code specifically needs the packed texture's actual UV layout.
-- `bounds` already accounts for `pixelsPerUnit` and pivot — don't hand-recompute world-space size from `rect`/`pixelsPerUnit` when `bounds` already gives the answer.
-- `Sprite.Create`/`OverrideGeometry`/`OverridePhysicsShape` are runtime-procedural escape hatches — reach for them only when a sprite's shape is genuinely generated at runtime (e.g. a procedurally-cut texture atlas region), not as a substitute for authoring shape data in the Sprite Editor for ordinary imported art (YAGNI in `coding-principles.md`).
+## Physics shape and runtime construction
+
+| Member | What it decides | Source |
+|---|---|---|
+| `GetPhysicsShapeCount()` / `GetPhysicsShape(int, List<Vector2>)` | Reads the outlines authored in [custom-physics-shape.md](custom-physics-shape.md); the list overload fills a caller-owned buffer, so reuse it rather than allocating per call | [Sprite asset reference](https://docs.unity3d.com/Manual/class-Sprite.html) |
+| `GetPhysicsShapePointCount(int)` | Vertex count of one shape — the cheap way to size a buffer before reading | [Sprite asset reference](https://docs.unity3d.com/Manual/class-Sprite.html) |
+| `Sprite.Create(...)` | Builds a sprite from a texture at runtime — for genuinely procedural content only, and the result is an object the caller now owns | [Sprite asset reference](https://docs.unity3d.com/Manual/class-Sprite.html) |
+| `OverrideGeometry(...)` / `OverridePhysicsShape(...)` | Replaces mesh or collision data at runtime, bypassing everything authored in the Sprite Editor — an escape hatch, not a substitute for authoring | [Sprite asset reference](https://docs.unity3d.com/Manual/class-Sprite.html) |

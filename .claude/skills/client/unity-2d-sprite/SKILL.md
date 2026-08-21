@@ -1,120 +1,131 @@
 ---
 name: unity-2d-sprite
 description: >
-  Technique for Unity's built-in 2D Sprite authoring pipeline
-  (`UnityEngine.Sprite`, `UnityEngine.SpriteRenderer`, `UnityEngine.U2D.*`) —
-  Sprite texture import settings (Texture Type, Sprite Mode, Pixels Per
-  Unit, Mesh Type, Pivot, Generate Physics Shape), the Sprite Editor's
-  modules (slicing/Automatic-Grid-Isometric, Custom Outline render-mesh
-  authoring, Custom Physics Shape collision-outline authoring, Secondary
-  Textures for normal/mask maps), placeholder sprites, sprite sorting
-  (Sorting Layer, Order in Layer, Transparency Sort Mode/Axis, Sorting
-  Group), 9-slicing (Border, Sprite Renderer Draw Mode Simple/Sliced/Tiled),
-  Sprite Mask, and Sprite Atlas packing (Master/Variant, late binding via
-  `SpriteAtlasManager`). Use this for any task touching `Sprite`,
-  `SpriteRenderer`, `SpriteMask`, `SortingGroup`, `SpriteAtlas`, the Sprite
-  Editor window, or a texture's Sprite import settings. Do not use this for
-  2D physics simulation on top of a sprite's physics shape (`Rigidbody2D`,
-  `Collider2D` dynamics, joints, effectors) — that's `unity-2d-physics`, a
-  separate skill; this skill stops at authoring the physics-shape geometry
-  the collider consumes. Do not use this for URP 2D Lighting setup
-  (`Light2D`, 2D Renderer Data) that consumes a sprite's secondary
-  textures — that's `unity-urp-rendering`. Do not use this for Tilemap or
-  Sprite Shape (separate authoring systems built on top of sprites, no
-  dedicated skill exists yet in this project — flag as out of scope). Do
-  not use this for shader/VFX authoring on sprite materials — that's
-  `technical-artist`/`shader-authoring`. Do not use this for gameplay rule
-  logic that happens to consume sprite/rendering state (which sprite a
-  state machine should show, a hit-flash color decision) — that belongs in
-  Shared Core per `coding-principles.md`'s Shared Core integrity rule; this
-  skill only covers wiring the Unity-side sprite components themselves.
+  Unity built-in 2D Sprite authoring — `Sprite`, `SpriteRenderer`,
+  `SpriteMask`, `SortingGroup`, `SpriteAtlas`, `SpriteAtlasManager`.
+  Covers import settings (Sprite Mode, Pixels Per Unit, Mesh Type Full
+  Rect vs Tight, Generate Physics Shape), the Sprite Editor's slicing,
+  Custom Outline, Custom Physics Shape and Secondary Textures modules,
+  Sorting Layer, Order in Layer, Transparency Sort Mode, Draw Mode
+  Sliced/Tiled 9-slicing, Mask Interaction, and atlas packing. Use when a
+  sprite renders wrong, sorts wrong, or costs too many draw calls.
+  Not for: `Rigidbody2D`/`Collider2D` dynamics (`unity-2d-physics`),
+  `Light2D` setup (`unity-urp-rendering`), grid-cell painting
+  (`unity-tilemap`), spline level geometry (`unity-2d-spriteshape`),
+  sprite shaders (`shader-authoring`), animation clips
+  (`unity-animation`), which sprite to show (`csharp-engineer`).
 ---
 
-# Unity 2D Sprite — Built-in Sprite Import, Sprite Editor, Rendering & Atlas Pipeline
+# Unity 2D Sprite — Import, Sprite Editor, Sorting, Masking & Atlas Packing
 
-Sources: see [references/](references/) for the Unity Manual root links, split by topic — [root-links.md](references/root-links.md), [placeholder-sprites.md](references/placeholder-sprites.md), [import-settings.md](references/import-settings.md), [sprite-editor.md](references/sprite-editor.md), [custom-outline.md](references/custom-outline.md), [custom-physics-shape.md](references/custom-physics-shape.md), [secondary-textures.md](references/secondary-textures.md), [sorting-sprites.md](references/sorting-sprites.md), [nine-slicing.md](references/nine-slicing.md), [sprite-mask.md](references/sprite-mask.md), [sprite-atlas.md](references/sprite-atlas.md), [sprite-renderer.md](references/sprite-renderer.md), [sprite-asset-reference.md](references/sprite-asset-reference.md).
+## Bundled resources
+
+### References
+
+| File | Contents | Read when |
+|---|---|---|
+| [root-links.md](references/root-links.md) | Manual/API roots this skill is pinned to, and the topic→file map | Starting any sprite task, or checking whether a page is in scope |
+| [import-settings.md](references/import-settings.md) | Texture Type, Sprite Mode, PPU, Mesh Type, Pivot, compression | Configuring a texture, or a sprite renders at the wrong world size |
+| [sprite-editor.md](references/sprite-editor.md) | Slice types, Method Safe/Smart/Delete Existing, rect fields | Cutting a spritesheet, or a re-slice broke existing references |
+| [custom-outline.md](references/custom-outline.md) | Render-mesh outline authoring and Outline Detail cost | A Tight sprite has heavy transparent padding to trim |
+| [custom-physics-shape.md](references/custom-physics-shape.md) | Collision-outline authoring stored on the `Sprite` asset | A collider must follow the sprite silhouette |
+| [secondary-textures.md](references/secondary-textures.md) | `_NormalMap`/`_MaskTex` attachment and the name-binding rule | Sprite normal/mask lighting shows no effect |
+| [sorting-sprites.md](references/sorting-sprites.md) | The five-step sort chain, Sorting Group, Transparency Sort Mode | Two sprites draw in the wrong order |
+| [nine-slicing.md](references/nine-slicing.md) | Border authoring, Sliced vs Tiled, Continuous vs Adaptive | A sprite must resize without distorting its corners |
+| [sprite-mask.md](references/sprite-mask.md) | `SpriteMask` properties, Custom Range, stencil prerequisite | A mask reveals or hides nothing |
+| [sprite-atlas.md](references/sprite-atlas.md) | Packing settings, Master/Variant, `atlasRequested` late binding | Cutting draw calls, or shipping a smaller mobile texture set |
+| [sprite-renderer.md](references/sprite-renderer.md) | Inspector fields, scripting surface, the 2D Profiler module | Wiring or measuring the renderer component |
+| [sprite-asset-reference.md](references/sprite-asset-reference.md) | `Sprite` runtime data — `rect`, `bounds`, `border`, physics shape | Reading sprite data from code |
+| [placeholder-sprites.md](references/placeholder-sprites.md) | Built-in primitive sprites and the swap-to-final-art path | Blocking out a scene before art exists |
 
 ## 1. Objective
-Configure Unity's built-in 2D Sprite pipeline correctly — right import settings for a texture's role, right Sprite Editor module output (slice/outline/physics-shape/secondary-texture), right sorting/masking/9-slicing setup for the visual requirement, right Sprite Atlas packing for draw-call efficiency — without drifting into 2D physics simulation, URP lighting, Tilemap/Sprite Shape, shader authoring, or gameplay rule logic that belong to sibling skills or roles.
+Make a sprite render at the intended size, in the intended order, with the intended collision and lighting data attached, and at a draw-call cost the target platform can afford — without the silent failures this pipeline specialises in: a Mesh Type that a small texture overrides, a secondary texture whose name nothing binds, a mask with no stencil buffer to write into, a re-slice that invalidates every clip referencing the old sprite names, and an atlas resident in memory for content that is never on screen.
 
 ## 2. Role
-Act as the built-in 2D Sprite authoring specialist: given a need for sprite import configuration, mesh/collision-outline authoring, sorting/masking/9-slicing, or atlas packing, you choose and configure the right `UnityEngine`/`UnityEngine.U2D`-namespace settings and components — you don't decide gameplay outcomes from sprite/rendering state (that's Shared Core's job), you don't configure `Rigidbody2D`/`Collider2D`/joints/effectors (that's `unity-2d-physics`), and you don't reach into 2D lighting, Tilemap/Sprite Shape, or shader/VFX authoring, which are sibling skills'/roles' territory.
+Act as the built-in 2D Sprite authoring specialist for the client track — the skill reached for whenever a `Sprite`, `SpriteRenderer`, `SpriteMask`, `SortingGroup`, or `SpriteAtlas` must be configured, or whenever a sprite's on-screen result does not match what the art or design intended.
 
 ## 3. When to invoke this skill
-- Setting a texture's **Sprite import settings** — Texture Type, Sprite Mode (Single/Multiple/Polygon), Pixels Per Unit, Mesh Type (Full Rect/Tight), Pivot, Extrude Edges, Generate Physics Shape, or platform-specific compression overrides.
-- Using the **Sprite Editor** to slice a spritesheet (Automatic/Grid By Cell Size/Grid By Cell Count/Isometric Grid), author a render-mesh **Custom Outline**, author a **Custom Physics Shape** outline, or attach **Secondary Textures** (normal/mask maps).
-- Adding **placeholder sprites** to block out a scene before final art exists.
-- Configuring **sprite sorting** — Sorting Layers, Order in Layer, Transparency Sort Mode/Axis, or a `SortingGroup` to keep a multi-part object's renderers from being interleaved.
-- Setting up **9-slicing** — a sprite's Border and a `SpriteRenderer`'s Draw Mode (Sliced/Tiled) and Tile fill mode.
-- Adding a **`SpriteMask`** to hide/reveal parts of other sprites, and setting a `SpriteRenderer`'s Mask Interaction.
-- Packing sprites into a **Sprite Atlas** (Master/Variant, Include in Build, late-binding via `SpriteAtlasManager.atlasRequested`).
-- Configuring a **`SpriteRenderer`**'s Color/Flip/Draw Mode/Material/sorting fields, or reading `Sprite` scripting API data (`rect`, `pivot`, `bounds`, `border`, `GetPhysicsShape`).
-- Negative trigger: configuring `Rigidbody2D`, `Collider2D` (beyond authoring the sprite-side physics-shape outline it can consume), 2D joints, or 2D effectors — that's `unity-2d-physics`, a separate skill despite consuming this skill's output.
-- Negative trigger: setting up `Light2D`, 2D Renderer Data, or any lighting-side consumption of a sprite's secondary textures — that's `unity-urp-rendering`.
-- Negative trigger: Tilemap or Sprite Shape authoring — separate systems built on top of sprites; no dedicated skill exists yet in this project, flag explicitly as out of scope rather than guessing at a workflow.
-- Negative trigger: shader/VFX work on sprite materials — that's `technical-artist`/`shader-authoring`.
-- Negative trigger: the actual gameplay decision that happens to be expressed through a sprite change (a state machine picking which frame/sprite to show, a damage-flash trigger condition) — that's `csharp-engineer`'s Shared Core, per `coding-principles.md`'s Shared Core integrity rule; this skill stops at wiring the already-decided sprite/color/visibility onto the Unity-side renderer.
+- Setting a texture's Sprite import settings — Sprite Mode, Pixels Per Unit, Mesh Type, Pivot, Extrude Edges, Generate Physics Shape, or per-platform compression.
+- Slicing a spritesheet, or authoring Custom Outline / Custom Physics Shape / Secondary Textures in the Sprite Editor.
+- A sorting symptom: sprites interleaving with another object's parts, isometric depth reading backwards, a prop drawing over a character it should sit behind.
+- A 9-slicing, `SpriteMask`, or `SpriteRenderer` configuration task, including Draw Mode and Mask Interaction.
+- Packing or late-binding a `SpriteAtlas`, or cutting sprite draw calls.
+- Reading `Sprite` data from code — `rect`, `bounds`, `border`, `GetPhysicsShape`.
+- Negative trigger: `Rigidbody2D`, `Collider2D`, joint, or effector configuration — that's `unity-2d-physics`; this skill only authors the shape geometry those components consume.
+- Negative trigger: `Light2D` or 2D Renderer Data setup, even though it consumes this skill's secondary textures — that's `unity-urp-rendering`.
+- Negative trigger: painting a level from tiles on a grid — that's `unity-tilemap`.
+- Negative trigger: spline-based level geometry that tiles sprites along an outline — that's `unity-2d-spriteshape`.
+- Negative trigger: writing or modifying the shader on a sprite material — that's `shader-authoring`.
+- Negative trigger: authoring animation clips that key sprite frames, or the Animator driving them — that's `unity-animation`.
+- Negative trigger: deciding *which* sprite, tint, or visibility a game state should produce — that's `csharp-engineer`'s Shared Core, per `coding-principles.md`'s Shared Core integrity section.
 
 ## 4. How to use this skill
-1. **Confirm scope first.** This skill is the built-in Sprite authoring pipeline (import settings, Sprite Editor modules, `SpriteRenderer`, `SpriteMask`, `SortingGroup`, `SpriteAtlas`). If the task is 2D physics simulation, hand off to `unity-2d-physics`. If it's 2D lighting, hand off to `unity-urp-rendering`. If it's Tilemap/Sprite Shape, state explicitly that no dedicated skill covers it yet rather than improvising a workflow from this skill's scope.
-2. **Set import settings deliberately**, per [import-settings.md](references/import-settings.md): Sprite Mode by whether the texture is a single sprite or a spritesheet, Pixels Per Unit consistently within a visual set, Mesh Type by whether 9-slicing is needed (Full Rect required) or overdraw reduction matters more (Tight), and per-platform compression/Max Size overrides per `performance-and-algorithms.md`'s texture-memory-footprint rule — never leave compression at an unexamined default for a shipping platform.
-3. **Use the right Sprite Editor module for the job**, per [sprite-editor.md](references/sprite-editor.md): slicing for cutting a spritesheet into sub-sprites, [Custom Outline](references/custom-outline.md) only when a Tight-mesh sprite's transparent padding is significant enough to matter, [Custom Physics Shape](references/custom-physics-shape.md) only when the sprite actually needs `Collider2D` collision derived from its silhouette, [Secondary Textures](references/secondary-textures.md) only when 2D Lighting normal/mask data is actually required — don't author geometry/textures nothing downstream consumes (YAGNI in `coding-principles.md`).
-4. **Respect the Shared Core boundary.** Any gameplay decision that happens to manifest as a sprite/color/visibility change (which animation state to show, whether a hit-flash should trigger, a UI state's icon) is decided in `Game.Core.*`; this skill's components only render whatever state Core already resolved — they never decide it themselves, per `coding-principles.md`'s Shared Core integrity rule.
-5. **Set sorting deliberately**, per [sorting-sprites.md](references/sorting-sprites.md): explicit Sorting Layer/Order in Layer for anything with a real depth requirement, a `SortingGroup` the moment a multi-part object's renderers must stay visually coherent, `Transparency Sort Mode = Custom Axis` for isometric/top-down cameras — don't rely on default distance-from-camera sorting as a design tool.
-6. **Reach for 9-slicing only when a sprite is genuinely resized at runtime or across contexts** ([nine-slicing.md](references/nine-slicing.md)) — a fixed-size sprite doesn't need Sliced/Tiled Draw Mode (KISS in `coding-principles.md`). Choose Sliced for smooth-scaled UI/frames, Tiled for repeating-pattern surfaces.
-7. **Use `SpriteMask` only when the design calls for a masked reveal/hide effect** ([sprite-mask.md](references/sprite-mask.md)); verify the active 2D Renderer's Depth/Stencil Buffer is enabled first — the most common reason masking silently does nothing.
-8. **Pack a Sprite Atlas** whenever a scene has many small distinct sprite textures likely to be on screen together ([sprite-atlas.md](references/sprite-atlas.md)) — group by co-visibility, use a Variant for a lower-resolution mobile target instead of a duplicated Master, and register `SpriteAtlasManager.atlasRequested` via a named method (unsubscribed in `OnDisable`) rather than a lambda if late-binding an atlas excluded from the build, per `coding-principles.md`'s Event handlers rule.
-9. **Configure `SpriteRenderer` deliberately** ([sprite-renderer.md](references/sprite-renderer.md)): cache the component reference outside hot paths, only reassign `sprite`/`color`/sorting fields when the value actually changed (per `performance-and-algorithms.md`'s only-update-on-change rule), and use Flip X/Y instead of a negative Transform scale.
-10. **State the hand-off explicitly.** 2D physics simulation on top of authored physics-shape geometry → `unity-2d-physics`. 2D Lighting consuming secondary textures → `unity-urp-rendering`. Tilemap/Sprite Shape → flagged as uncovered, not improvised. Shader/VFX on sprite materials → `technical-artist`/`shader-authoring`. Gameplay decisions behind a sprite/visual change → `csharp-engineer`'s Shared Core.
+1. **Settle Pixels Per Unit against the existing visual set before anything else**, per [import-settings.md](references/import-settings.md) — PPU fixes both the sprite's rendered world size and the scale of the physics shape derived from it, so a mismatch inside one set is simultaneously an art bug and a hitbox bug, and every later decision is measured against it; [root-links.md](references/root-links.md) pins the doc version each setting below is described at.
+2. **Pick Mesh Type by whether the sprite is 9-sliced, not by overdraw instinct** — Full Rect is mandatory for 9-slicing, and Unity forces Full Rect on any sprite under 32×32 regardless of the setting, so choosing Tight to save fill on small icons changes nothing. Choose Tight only for a large sprite with genuinely heavy transparent padding, then trim it with [custom-outline.md](references/custom-outline.md).
+3. **Slice with Method Safe or Smart on any sheet that already has references** ([sprite-editor.md](references/sprite-editor.md)) — Delete Existing rebuilds every rect and silently breaks animation clips and prefab fields that resolve sprites by name. Delete Existing is for a first slice or a deliberate re-cut, and nothing is written to the asset until Apply.
+4. **Author collision geometry once on the `Sprite` asset, never per instance**, per [custom-physics-shape.md](references/custom-physics-shape.md) — a shape stored on the sprite is reused by every GameObject referencing it. Tune Outline Detail down to the lowest silhouette that still reads: vertex count is paid per collision check, per `performance-and-algorithms.md`'s simplest-collider-shape guidance.
+5. **Name a secondary texture exactly `_NormalMap` or `_MaskTex`**, per [secondary-textures.md](references/secondary-textures.md) — the URP 2D lit shaders look up those property names and nothing else; a custom name attaches the texture, raises no error, and produces no lighting. This is the first thing to check when normal-mapped sprites look flat.
+6. **Set Sorting Layer and Order in Layer explicitly for every depth relationship the design states**, per [sorting-sprites.md](references/sorting-sprites.md) — distance-from-camera is only the tie-breaker Unity falls back to once layer, order, and render queue are all equal, so an unconfigured scene sorts by an axis nobody chose. Add a `SortingGroup` the moment a multi-part object must stay uninterleaved, and set Transparency Sort Mode to Custom Axis for isometric or top-down cameras.
+7. **Reach for 9-slicing or `SpriteMask` only when the design actually resizes or reveals something** ([nine-slicing.md](references/nine-slicing.md), [sprite-mask.md](references/sprite-mask.md)) — Sliced for smooth frames, Tiled for repeating pattern. Masking is stencil-based, so confirm the active 2D Renderer Data has Depth/Stencil Buffer enabled before debugging anything else; that setting is the usual reason a mask does nothing.
+8. **Group an atlas by what appears on screen together**, per [sprite-atlas.md](references/sprite-atlas.md) — an atlas mixing unrelated content stays wholly resident for a scene using a fraction of it. Turn Allow Rotation and Tight Packing off for sprites a downstream system re-meshes (Sprite Shape, UI `Image`), ship a lower-resolution Variant instead of a duplicated Master, and subscribe `SpriteAtlasManager.atlasRequested` with a named method unsubscribed in `OnDisable`, per `coding-principles.md`'s Event handlers section.
+9. **Keep the sprite layer free of decisions**, per `coding-principles.md`'s Shared Core integrity section — `Game.Core.*` resolves which state is active; [sprite-renderer.md](references/sprite-renderer.md) code only assigns the already-resolved `sprite`, `color`, or sorting value, and only when it actually changed.
+10. **Read sprite data through the members that stay valid under packing** ([sprite-asset-reference.md](references/sprite-asset-reference.md)) — `rect` and `bounds` hold regardless of atlas state, while `textureRect` throws on a tightly packed sprite. When art has not landed yet, block out with [placeholder-sprites.md](references/placeholder-sprites.md) and re-settle the Pixels Per Unit and Mesh Type decisions when the real texture arrives.
+11. **Confirm any draw-call or overdraw claim with the Profiler's 2D module before reporting it**, per `performance-and-algorithms.md`'s Verification section — its Usage percentage per atlas is the evidence that packing helped; asserting a batching win from the atlas count alone is not.
+12. **When the requested visual result is ambiguous about ownership, state the boundary and ask** — "sprite is too dark" can be import gamma, a material, or a `Light2D` rig, and the three route to three different owners; name which one is being assumed rather than silently picking.
 
 ## 5. Specific goals / tasks this skill performs
-- Setting Sprite texture import settings (Sprite Mode, Pixels Per Unit, Mesh Type, Pivot, Generate Physics Shape, platform compression overrides).
-- Slicing spritesheets and authoring per-sprite rect/border/pivot data in the Sprite Editor.
-- Authoring Custom Outline (render mesh) and Custom Physics Shape (collision outline) geometry.
-- Attaching Secondary Textures (normal/mask maps) for downstream 2D Lighting consumption.
-- Adding placeholder sprites for pre-art blockout.
-- Configuring Sorting Layers, Order in Layer, Transparency Sort Mode/Axis, and Sorting Groups.
-- Setting up 9-slicing (Border authoring + Sprite Renderer Draw Mode).
-- Adding and configuring Sprite Mask + Mask Interaction.
-- Packing, configuring, and runtime-loading Sprite Atlases (including Master/Variant and late binding).
-- Configuring Sprite Renderer properties and reading Sprite scripting API data.
-- Out of scope: `Rigidbody2D`/`Collider2D`/joint/effector configuration (`unity-2d-physics`); `Light2D`/2D Renderer Data lighting setup (`unity-urp-rendering`); Tilemap/Sprite Shape (uncovered — flag explicitly); shader/VFX authoring (`technical-artist`/`shader-authoring`); gameplay rule logic driving sprite/visual state (`csharp-engineer`'s Shared Core).
+- Sprite texture import configuration, including per-platform compression and Max Size overrides.
+- Spritesheet slicing and per-sprite rect, pivot, and border authoring.
+- Custom Outline (render mesh) and Custom Physics Shape (collision outline) authoring.
+- Secondary texture attachment for downstream 2D lighting.
+- Sorting Layer, Order in Layer, Transparency Sort Mode, and `SortingGroup` setup.
+- 9-slicing setup and `SpriteMask` configuration, including Custom Range scoping.
+- Sprite Atlas packing, Master/Variant sizing, and `atlasRequested` late binding.
+- `SpriteRenderer` wiring and `Sprite` scripting-API reads.
+- Out of scope: 2D physics simulation (`unity-2d-physics`), 2D lighting (`unity-urp-rendering`), tile painting (`unity-tilemap`), spline geometry (`unity-2d-spriteshape`), sprite shaders (`shader-authoring`), animation clips (`unity-animation`), gameplay state driving visuals (`csharp-engineer`).
 
 ## 6. Output format
 ```
 ## 2D Sprite Work — <asset/feature name>
-- Scope confirmed: built-in Sprite pipeline (not 2D physics simulation, not 2D Lighting, not Tilemap/Sprite Shape)
-- Import settings (if applicable): Sprite Mode <Single/Multiple/Polygon>, Pixels Per Unit <n>, Mesh Type <Full Rect/Tight>, Generate Physics Shape <yes/no>, platform overrides <summary>
-- Sprite Editor work (if applicable): module(s) used <Slicing/Custom Outline/Custom Physics Shape/Secondary Textures>, key settings, rationale
-- Sorting (if applicable): Sorting Layer/Order in Layer, Transparency Sort Mode/Axis, Sorting Group used <yes/no + why>
-- 9-slicing (if applicable): Border values, Draw Mode <Sliced/Tiled>, fill mode <Continuous/Adaptive>
-- Sprite Mask (if applicable): Mask Source, range scoping <Custom Range summary>
-- Sprite Atlas (if applicable): Master/Variant, packing group rationale, Include in Build, late-binding setup <yes/no>
-- Sprite Renderer settings: Color/Flip/Draw Mode/Material/Mask Interaction as applicable
-- Shared Core boundary: confirmed no gameplay decision made in sprite-layer code
-- Hand-off: <physics → unity-2d-physics / lighting → unity-urp-rendering / Tilemap-SpriteShape → flagged uncovered / shader-VFX → technical-artist / gameplay logic → csharp-engineer, as applicable>
+- Import: Sprite Mode <Single/Multiple/Polygon>, PPU <n> (matched to <set>), Mesh Type <Full Rect/Tight>, Generate Physics Shape <yes/no>, platform overrides <summary>
+- Sprite Editor: module(s) <Slicing/Custom Outline/Custom Physics Shape/Secondary Textures>, slice Method <Safe/Smart/Delete Existing>, key settings
+- Sorting: Sorting Layer <name>, Order in Layer <n>, Transparency Sort Mode <mode/axis>, SortingGroup <yes/no + why>
+- 9-slicing / mask: Border <L,R,T,B>, Draw Mode <Simple/Sliced/Tiled>, Mask Interaction <mode>, Depth/Stencil confirmed <yes/no/not applicable>
+- Atlas: Master/Variant <n>, grouping rationale, Allow Rotation + Tight Packing <on/off + why>, Include in Build <yes/no>, late binding <yes/no>
+- Shared Core boundary: <what Core decides vs what this layer renders>
+- Verification: 2D Profiler <sprite/atlas counts, Usage %>, or "not yet measured"
+- Layer: Game.Client.* / Editor-only (import settings are asset metadata)
 - Known limitations: <...>
+```
+
+**Extended report — emit ONLY when the requester asks for it.** It replaces the one-line `Known limitations` above with all three fields:
+```
+- Known limitations: <what the delivered solution does not cover — omit this line entirely if there are genuinely none>
+- Latent concerns: <failure modes not yet triggered: assumptions that hold only under current conditions, thresholds not yet reached, trade-offs knowingly deferred>
+- Future remediation: <the concrete fix for each concern above, each with the condition that should trigger it>
 ```
 
 ## 7. Examples
 **Example 1**
-- Input: "Import this 8-frame walk-cycle spritesheet and get it ready for animation, with collision matching each frame's silhouette."
-- Output: set Texture Type = Sprite (2D and UI), Sprite Mode = Multiple, Mesh Type = Tight (frames have significant transparent padding), Pixels Per Unit matched to the project's existing character set; sliced the sheet with Grid By Cell Size (uniform frame size) in the Sprite Editor; authored a Custom Physics Shape per frame at moderate Outline Detail (simple silhouette, no need for high fidelity) rather than leaving Generate Physics Shape's auto-outline, since the design wanted a tighter-than-auto-generated hitbox on the character's weapon frames specifically.
-- Hand-off: attaching the sliced sprites to an Animator/animation clip and choosing which frame plays when → `csharp-engineer`'s Shared Core (animation-state decision) + `unity-engineer` (Animator wiring); adding the actual `Collider2D`/`Rigidbody2D` that consumes the authored physics shape → `unity-2d-physics`.
+- Input: "This 8-frame walk cycle imports fine but the character is twice the size of everyone else, and its hitbox is way off."
+- Output: one cause, not two — PPU was left at the 100 default while the rest of the character set uses 32, so both the rendered size and the sprite-derived physics shape scaled by the same factor. Set PPU to 32, Sprite Mode Multiple, Mesh Type Tight (frames carry wide transparent margins and are well over 32×32), re-sliced with Grid By Cell Size using Method Smart so the existing clip's frame names survived, then authored one Custom Physics Shape at low Outline Detail rather than accepting the auto-generated outline. Hand-off: the `Collider2D`/`Rigidbody2D` consuming that shape → `unity-2d-physics`; the clip playback → `unity-animation`.
 
 **Example 2**
-- Input: "A scalable dialogue box UI panel that needs to resize to fit variable-length text, plus batch all the HUD icons into one draw call."
-- Output: set the panel sprite's Mesh Type to Full Rect and authored a Border in the Sprite Editor around its frame art; set the panel's Sprite Renderer Draw Mode to Sliced (corners must stay crisp, no repeating pattern needed); created a Sprite Atlas for the HUD icon set, grouped together because they're always on screen simultaneously, with Tight Packing enabled and per-platform Max Size overrides set for the project's PC/mobile targets.
-- Hand-off: none for the sprite-layer work itself; the dialogue box's actual resize-to-fit-text logic (computing the target size from text content) → `ui-ux-programmer`, since it's UI layout logic, not sprite authoring.
+- Input: "Just put every sprite in the game into one big atlas — fewer atlases means fewer draw calls."
+- Output: declined. Batching is per-atlas-texture *and* per-material, so one oversized atlas does not reduce draw calls below what co-visible grouping already achieves, and it forces the whole combined texture resident for any scene touching a single sprite in it — the memory-footprint failure `performance-and-algorithms.md`'s Assets & memory footprint section describes. Packed instead by co-visibility (one HUD atlas, one per character set), with a 0.5-scale Variant for mobile, and measured the result in the Profiler's 2D module: Usage per resident atlas is the number that decides whether a grouping is right.
+
+**Example 3**
+- Input: "Normal maps are attached to the tileset sprites but the 2D lights do nothing to them."
+- Output: the secondary textures had been named `Normal` rather than `_NormalMap`, so the URP 2D lit shader found no such property, bound nothing, and logged nothing. Renamed both entries to `_NormalMap`/`_MaskTex` and re-applied, then verified every sprite in the shared atlas carries a matching secondary-texture count, since a mismatch inside one atlas fails at pack time. Hand-off: the `Light2D` rig and 2D Renderer Data setup itself → `unity-urp-rendering`.
 
 ## 8. Edge cases & guardrails
-- Never assume `Rigidbody2D`/`Collider2D`/joint/effector behavior is this skill's territory — this skill only authors the physics-shape *geometry* those components consume; route the component configuration itself to `unity-2d-physics`.
-- Never assume `Light2D`/2D Renderer Data lighting setup is this skill's territory, even though it consumes this skill's Secondary Textures output — route that to `unity-urp-rendering`.
-- Tilemap and Sprite Shape are separate Unity authoring systems built on top of sprites; this project has no dedicated skill for either yet — state that explicitly rather than trying to stretch this skill's guidance to cover them.
-- Never make a gameplay decision (which sprite/frame to show, whether a visual state should trigger) inside sprite-layer code — resolve the decision in Shared Core and let `SpriteRenderer`/`Sprite` code only render whatever state Core already resolved.
-- 9-slicing requires **Mesh Type = Full Rect** — Tight mesh type silently breaks it; verify this explicitly rather than assuming any sprite can be 9-sliced.
-- A `SpriteMask` that appears to do nothing is very often a Depth/Stencil Buffer disabled on the active 2D Renderer Data asset — check that before assuming the mask setup itself is wrong.
-- Don't crank Custom Outline / Custom Physics Shape **Outline Detail** to maximum by default — per `performance-and-algorithms.md`'s hardware-friendly-execution principle, tune it to the lowest detail that still reads correctly; a needlessly detailed physics shape costs more per collision check, and a needlessly detailed render mesh costs more vertices for an imperceptible visual difference.
-- **Force Generate All** in either Custom Outline or Custom Physics Shape is destructive to hand-edited geometry across the whole sheet — confirm it's genuinely wanted before using it, don't reach for it as a routine re-sync action.
-- Never claim a sprite-related performance improvement (fewer draw calls from atlas packing, reduced overdraw from Tight mesh) without a Profiler measurement (the 2D Profiler module, or the general Unity Profiler) backing it, per `performance-and-algorithms.md`'s Verification section.
-- `SpriteAtlas.GetSprite`/`GetSprites` return clones, not the original packed `Sprite` reference — don't assume reference equality when comparing an atlas-fetched sprite against a scene-authored one.
+- Never treat Mesh Type = Tight as an overdraw fix on small sprites — Unity forces Full Rect under 32×32, so the setting reads as applied while nothing changed.
+- Never re-slice a referenced spritesheet with Method = Delete Existing — clips and prefabs resolving sprites by name break silently, with no console error to trace back.
+- Never leave a secondary texture under a custom name and assume the shader will find it — `_NormalMap`/`_MaskTex` are the only names the built-in 2D lit shaders look up.
+- Never rely on distance-from-camera for a stated depth requirement — it is the last tie-breaker in the chain, so it changes the moment anything moves in Z.
+- Never use Force Generate All in Custom Outline or Custom Physics Shape as a routine re-sync — it overwrites hand-edited geometry across the whole sheet and cannot be undone after Apply; confirm with the requester in the current conversation first.
+- Never mirror a sprite with a negative Transform scale — use Flip X/Y, since negative scale also inverts child colliders and physics behaviour in ways the renderer flip does not.
+- Never assume an atlas-fetched sprite is reference-equal to a scene-authored one — `SpriteAtlas.GetSprite` returns a clone per call, so comparisons fail and repeated calls allocate.
+- Never ship both a Master and its Variant with Include in Build enabled — which one resolves at runtime becomes non-deterministic; disable it on the Master.
+- Never claim an atlas or mesh-type change improved performance without a Profiler 2D module measurement, per `performance-and-algorithms.md`'s Verification section.
+- If the requester's symptom could equally be import, material, or lighting, say which layer is being assumed and confirm before changing settings — guessing wrong here edits an asset that other scenes share.

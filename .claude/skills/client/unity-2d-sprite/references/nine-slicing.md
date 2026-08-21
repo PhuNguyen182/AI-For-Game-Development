@@ -1,36 +1,38 @@
-# 9-Slicing Sprites
+# 9-Slicing — Border, Draw Mode & Fill
 
-Sources: https://docs.unity3d.com/Manual/sprite/9-slice/9-slice-landing.html, https://docs.unity3d.com/Manual/sprite/9-slice/9-slicing.html, https://docs.unity3d.com/Manual/sprite/9-slice/set-sprite-9slicing.html
+Sources: [9-slicing sprites](https://docs.unity3d.com/Manual/sprite/9-slice/9-slicing.html), [9-slice a sprite](https://docs.unity3d.com/Manual/sprite/9-slice/set-sprite-9slicing.html).
+Covers: SKILL.md §4 — **"Reach for 9-slicing or `SpriteMask` only when the design actually resizes or reveals something"**.
 
-## Concept
+9-slicing lets one sprite serve every size a panel, wall, or platform needs,
+by holding the corners fixed while the edges and centre absorb the resize. It
+requires two settings in two different places — a Border on the sprite asset
+and a Draw Mode on the renderer — and it is inert without both.
 
-9-slicing divides a sprite into nine regions so it can be resized without distorting its detail or needing a separate sprite asset per target size:
+## The nine regions
 
-- **4 corners** — fixed size, never stretched or tiled, regardless of how the sprite is resized. This is what keeps rounded corners/borders crisp.
-- **4 edges** (top/bottom/left/right) — stretch or tile along a single axis only (top/bottom scale horizontally, left/right scale vertically).
-- **1 center** — stretches or tiles along both axes.
+| Region | Behaviour under resize | Source |
+|---|---|---|
+| 4 corners | Never stretch or tile — this is what keeps rounded borders crisp at any size | [9-slicing](https://docs.unity3d.com/Manual/sprite/9-slice/9-slicing.html) |
+| 4 edges | Stretch or tile along one axis only: top/bottom horizontally, left/right vertically | [9-slicing](https://docs.unity3d.com/Manual/sprite/9-slice/9-slicing.html) |
+| 1 centre | Stretches or tiles on both axes | [9-slicing](https://docs.unity3d.com/Manual/sprite/9-slice/9-slicing.html) |
 
-This is the standard technique for scalable UI panels and repeatable/stretchable world geometry (walls, floors, platforms) without authoring a unique sprite per size.
+## Setup
 
-## Setting it up
+| Step | What it decides | Source |
+|---|---|---|
+| Mesh Type = Full Rect | A hard prerequisite — Tight silently breaks 9-slicing, see [import-settings.md](import-settings.md) | [9-slice a sprite](https://docs.unity3d.com/Manual/sprite/9-slice/set-sprite-9slicing.html) |
+| Border L/R/T/B in the Sprite Editor | Where the corners end; generous enough to cover the frame detail, no more, since an oversized border leaves less area for the stretch regions to work with | [9-slice a sprite](https://docs.unity3d.com/Manual/sprite/9-slice/set-sprite-9slicing.html) |
+| Draw Mode on the `SpriteRenderer` | Simple ignores the border entirely; Sliced and Tiled activate it — see [sprite-renderer.md](sprite-renderer.md) | [9-slice a sprite](https://docs.unity3d.com/Manual/sprite/9-slice/set-sprite-9slicing.html) |
 
-1. In the sprite's import settings, set **Mesh Type = Full Rect** and apply — **Tight** mesh type is incompatible with 9-slicing and will break it.
-2. Open the Sprite Editor (see [sprite-editor.md](sprite-editor.md)), select the sprite, drag the green border handles inward (or enter explicit pixel values in the **L/R/T/B** fields) to define the border, then **Apply**.
-3. On the GameObject's `SpriteRenderer`, set **Draw Mode** to **Sliced** or **Tiled** (see [sprite-renderer.md](sprite-renderer.md)).
+## Sliced vs Tiled
 
-## Sliced vs. Tiled
+| Option | What it decides | Source |
+|---|---|---|
+| Sliced | All nine regions scale — smooth and continuous, correct for UI frames and gradients, wrong for a patterned texture, which blurs | [9-slicing](https://docs.unity3d.com/Manual/sprite/9-slice/9-slicing.html) |
+| Tiled — Continuous | Edges and centre repeat the source pattern and never stretch; boundary tiles may render cropped | [9-slicing](https://docs.unity3d.com/Manual/sprite/9-slice/9-slicing.html) |
+| Tiled — Adaptive | Stretches until the Stretch Value multiple of original size is reached, then starts repeating — Stretch Value 1 begins repeating once the sprite doubles | [9-slicing](https://docs.unity3d.com/Manual/sprite/9-slice/9-slicing.html) |
 
-- **Sliced** — all nine regions stretch (scale) to fit the new size; smooth, continuous scaling, no repeating pattern.
-- **Tiled** — the edges and center repeat the source texture pattern instead of stretching, with two fill sub-modes:
-  - **Continuous** — the texture never stretches; tiles at the boundary may render a cropped partial tile.
-  - **Adaptive** — the center stretches until it reaches the **Stretch Value** threshold (a multiple of the original size), then switches to repeating. A Stretch Value of 1 means it starts repeating once the sprite doubles in size; a lower value triggers repetition sooner.
-
-## Collision on a 9-sliced sprite
-
-Only `BoxCollider2D` or `PolygonCollider2D` can be added to a 9-sliced sprite's GameObject. Enable **Auto Tiling** on the collider so it updates automatically as the sprite is resized, instead of manually re-authoring the collider shape every time the Draw Mode's size changes. Configuring the collider component itself is `unity-2d-physics`'s territory — this skill only covers authoring the border and Draw Mode.
-
-## Practical guidance
-
-- Don't 9-slice a sprite that's always shown at a fixed size — per KISS in `coding-principles.md`, a static-size sprite doesn't need Sliced/Tiled Draw Mode; Simple is simpler and cheaper.
-- Choose **Sliced** for UI panels/frames where a smooth scale reads correctly, and **Tiled** for anything where a repeating texture pattern is the intended look (a brick wall segment, a scrolling floor) — using the wrong one produces either an unwanted stretched-blur look (Sliced on a patterned texture) or unwanted visible seams (Tiled on a smooth gradient).
-- Set the border generously enough to cover any rounded corner/frame detail, but no more — an oversized border needlessly shrinks how much of the sprite the stretch/tile regions can actually cover before looking distorted.
+**Critical caveat**: only `BoxCollider2D` and `PolygonCollider2D` can follow a
+9-sliced sprite, and only with **Auto Tiling** enabled — otherwise the
+collider keeps the shape it had when the sprite was last resized. Configuring
+that collider is `unity-2d-physics`'s work.

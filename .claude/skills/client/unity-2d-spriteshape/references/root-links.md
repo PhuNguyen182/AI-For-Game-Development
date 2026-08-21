@@ -1,72 +1,58 @@
-# Root Reference Links — 2D Sprite Shape
+# Root Links — 2D Sprite Shape 15.0
 
-Root Manual/Scripting API landing pages for the **2D Sprite Shape** package (`com.unity.2d.spriteshape`, version 15.0 docs). Each row's "Covered in" column points to the reference file that expands that topic with full Inspector/Scripting API detail.
+Source: the package Manual and Scripting API index pages listed below, as provided for this skill.
+Covers: the whole skill — provenance and version anchor for every file in this folder.
 
-## Manual
+Anchors every link in this folder to `com.unity.2d.spriteshape@15.0`. Keep the
+`@15.0` segment when following any link from this skill; a different package
+version's API may differ. Anything not reachable under a root below is outside
+this skill: sprite import belongs to `unity-2d-sprite`, physics on the
+generated collider to `unity-2d-physics`, grid-cell levels to `unity-tilemap`,
+and 2D lighting to `unity-urp-rendering`.
 
-| Topic | URL | Covered in |
+| Root | Holds | Source |
 |---|---|---|
-| Package manual index (landing) | https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/manual/index.html | (this file) |
-| Sprite Shape Profile | https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/manual/SSProfile.html | [spriteshape-profile.md](spriteshape-profile.md) |
-| Sprite Shape Controller | https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/manual/SSController.html | [spriteshape-controller.md](spriteshape-controller.md) |
-| Enabling Collision | https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/manual/SSCollision.html | [spriteshape-collision.md](spriteshape-collision.md) |
-| Sprite Shape Object Placement | https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/manual/SSObjectPlacement.html | [spriteshape-object-placement.md](spriteshape-object-placement.md) |
+| Manual | Every authoring workflow this skill covers | [Sprite Shape manual](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/manual/index.html) |
+| Scripting API | Types and members for driving shapes from code | [Sprite Shape API](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/index.html) |
+| `UnityEngine.U2D` namespace | The namespace every public type here lives in | [UnityEngine.U2D](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.html) |
 
-## Scripting API
+## Topic → file map
 
-| Topic | URL | Covered in |
+| Topic | File | Source |
 |---|---|---|
-| Package API index (landing) | https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/index.html | (this file) |
-| `UnityEngine.U2D` namespace index | https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.html | (this file) |
-| `SpriteShapeController` | https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SpriteShapeController.html | [spriteshape-controller.md](spriteshape-controller.md) |
-| `Spline` | https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.Spline.html | [spriteshape-controller.md](spriteshape-controller.md) |
-| `SplineControlPoint` | https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SplineControlPoint.html | [spriteshape-controller.md](spriteshape-controller.md) |
-| `ShapeTangentMode` (enum) | https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.ShapeTangentMode.html | [spriteshape-controller.md](spriteshape-controller.md) |
-| `SpriteShape` (ScriptableObject) | https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SpriteShape.html | [spriteshape-profile.md](spriteshape-profile.md) |
-| `AngleRange` | https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.AngleRange.html | [spriteshape-profile.md](spriteshape-profile.md) |
-| `CornerSprite` | https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.CornerSprite.html | [spriteshape-profile.md](spriteshape-profile.md) |
-| `Corner` (enum) | https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.Corner.html | [spriteshape-profile.md](spriteshape-profile.md) |
-| `CornerType` (enum) | https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.CornerType.html | [spriteshape-profile.md](spriteshape-profile.md) |
-| `QualityDetail` (enum) | https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.QualityDetail.html | [spriteshape-controller.md](spriteshape-controller.md) |
-| `SpriteShapeObjectPlacement` | https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SpriteShapeObjectPlacement.html | [spriteshape-object-placement.md](spriteshape-object-placement.md) |
-| `SpriteShapeObjectPlacementMode` (enum) | https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SpriteShapeObjectPlacementMode.html | [spriteshape-object-placement.md](spriteshape-object-placement.md) |
-| `SpriteShapeGeometryModifier` | https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SpriteShapeGeometryModifier.html | [custom-geometry-scripting.md](custom-geometry-scripting.md) |
-| `SpriteShapeGeometryCreator` | https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SpriteShapeGeometryCreator.html | [custom-geometry-scripting.md](custom-geometry-scripting.md) |
-| `SplineUtility` | https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SplineUtility.html | [custom-geometry-scripting.md](custom-geometry-scripting.md) |
-| `BezierUtility` | https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.BezierUtility.html | [custom-geometry-scripting.md](custom-geometry-scripting.md) |
+| Topology, Angle Ranges, Corner Sprites, Fill | [spriteshape-profile.md](spriteshape-profile.md) | [Sprite Shape Profile](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/manual/SSProfile.html) |
+| Controller settings and spline editing | [spriteshape-controller.md](spriteshape-controller.md) | [Sprite Shape Controller](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/manual/SSController.html) |
+| Collider generation | [spriteshape-collision.md](spriteshape-collision.md) | [Enabling Collision](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/manual/SSCollision.html) |
+| Props pinned along a spline | [spriteshape-object-placement.md](spriteshape-object-placement.md) | [Object Placement](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/manual/SSObjectPlacement.html) |
+| Custom geometry generation | [custom-geometry-scripting.md](custom-geometry-scripting.md) | [SpriteShapeGeometryModifier](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SpriteShapeGeometryModifier.html) |
 
-## Disclosed gaps — pages that 404'd at authoring time
+## Key types
 
-These URLs were guessed from strong signals (a property's declared return type, or the DocFX naming convention used by every other page in this namespace) but returned HTTP 404 when fetched directly. Don't assume they don't exist at all — verify against the live Scripting API or the package source before depending on their exact members:
-
-| Guessed URL | Why it was guessed |
+| Type | Source |
 |---|---|
-| `.../api/UnityEngine.U2D.SpriteShapeRenderer.html` | `SpriteShapeController.spriteShapeRenderer` is documented as returning a `SpriteShapeRenderer`, but this type is absent from the `UnityEngine.U2D` namespace index page itself — no confirmed public API page exists for it. |
-| `.../api/UnityEngine.U2D.SpriteShapeSegment.html` | Referenced as a `NativeArray<SpriteShapeSegment>` parameter type in `SpriteShapeGeometryModifier`/`SpriteShapeGeometryCreator`'s job methods. |
-| `.../api/UnityEngine.U2D.SpriteShapeParameters.html` | Guessed by naming-convention analogy to other packages; not confirmed to exist. |
-| `.../api/UnityEngine.U2D.AngleRangeInfo.html` | `SpriteShapeController.angleRangeInfoArray` is typed `AngleRangeInfo[]`, but no confirmed public API page exists for the type itself. |
-| `.../api/UnityEditor.U2D.html` | Guessed editor-only namespace root (analogous to `UnityEditor.Tilemaps` in the sibling `unity-tilemap` skill); no confirmed public API page — Editor-side Sprite Shape tooling (custom Inspectors, Scene handles) is not documented as a separate public namespace at this URL.
+| `SpriteShapeController` | [SpriteShapeController](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SpriteShapeController.html) |
+| `Spline` | [Spline](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.Spline.html) |
+| `SplineControlPoint` | [SplineControlPoint](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SplineControlPoint.html) |
+| `ShapeTangentMode` | [ShapeTangentMode](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.ShapeTangentMode.html) |
+| `SpriteShape` | [SpriteShape](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SpriteShape.html) |
+| `AngleRange` | [AngleRange](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.AngleRange.html) |
+| `CornerSprite` | [CornerSprite](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.CornerSprite.html) |
+| `QualityDetail` | [QualityDetail](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.QualityDetail.html) |
+| `SpriteShapeObjectPlacement` | [SpriteShapeObjectPlacement](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SpriteShapeObjectPlacement.html) |
+| `SplineUtility` | [SplineUtility](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SplineUtility.html) |
+| `BezierUtility` | [BezierUtility](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.BezierUtility.html) |
 
-## Parent context
+## Disclosed gaps — types with no published API page
 
-| Page | URL |
-|---|---|
-| 2D game development overview | https://docs.unity3d.com/Manual/Unity2D.html |
-| Sprites landing (Sprite Shape paints/tiles ordinary Sprites along a spline) | https://docs.unity3d.com/Manual/sprite/sprite-landing.html |
-| 2D physics collider landing (`EdgeCollider2D`/`PolygonCollider2D` fundamentals Sprite Shape's auto-generated collider builds on) | https://docs.unity3d.com/Manual/2d-physics/collider/collider-2d-landing.html |
-| 2D Renderer / 2D URP lighting (referenced by Sprite Shape's Enable Tangents property) | https://docs.unity3d.com/Packages/com.unity.render-pipelines.universal@9.0/manual/2d-index.html |
+These types appear in documented signatures or return types, but their own
+pages returned HTTP 404 at authoring time. Their members are inferred, not
+confirmed — verify against the live API or the package source before writing
+code that depends on their layout.
 
-## Scripting API — namespace roots
-
-| Member | Description |
-|---|---|
-| `UnityEngine.U2D.SpriteShapeController` | `MonoBehaviour` holding the `Spline` and `SpriteShape` profile reference; generates SpriteShape geometry. See [spriteshape-controller.md](spriteshape-controller.md). |
-| `UnityEngine.U2D.Spline` / `SplineControlPoint` | The editable outline data a `SpriteShapeController` draws geometry from. See [spriteshape-controller.md](spriteshape-controller.md). |
-| `UnityEngine.U2D.SpriteShape` | `ScriptableObject` profile asset — Angle Ranges, Corner Sprites, fill texture. See [spriteshape-profile.md](spriteshape-profile.md). |
-| `UnityEngine.U2D.AngleRange` / `CornerSprite` | Profile sub-data: which sprites render at which outline angle / corner type. See [spriteshape-profile.md](spriteshape-profile.md). |
-| `UnityEngine.U2D.SpriteShapeObjectPlacement` | Positions a GameObject along a `SpriteShapeController`'s spline. See [spriteshape-object-placement.md](spriteshape-object-placement.md). |
-| `UnityEngine.U2D.SpriteShapeGeometryModifier` / `SpriteShapeGeometryCreator` | Extension points for post-processing or fully replacing generated geometry. See [custom-geometry-scripting.md](custom-geometry-scripting.md). |
-| `UnityEngine.U2D.SplineUtility` / `BezierUtility` | Static helper math for tangents, slope angle, and Bezier point evaluation. See [custom-geometry-scripting.md](custom-geometry-scripting.md). |
-| `EdgeCollider2D` / `PolygonCollider2D` | Core-Unity collider types Sprite Shape auto-generates/updates mesh data for — see [spriteshape-collision.md](spriteshape-collision.md). |
-
-For authoring the underlying Sprite art referenced by an Angle Range or Corner Sprite (import settings, Sprite Editor slicing/atlas packing), see the sibling `unity-2d-sprite` skill — this skill only consumes already-imported `Sprite` assets. For `Rigidbody2D` dynamics, effectors, or joints beyond the collider mesh `SpriteShapeController` itself auto-generates, see `unity-2d-physics`. For a grid/tile-based (non-spline) 2D level authoring alternative, see `unity-tilemap`. For 2D URP normal-map lighting setup that Enable Tangents feeds into, see `unity-urp-rendering`. For gameplay-rule-driven outline/shape decisions (procedural terrain, destructible ground), see `csharp-engineer`'s Shared Core.
+| Type | Why it is referenced | Source |
+|---|---|---|
+| `SpriteShapeRenderer` | Declared return type of `SpriteShapeController.spriteShapeRenderer`, yet absent from the namespace index | [SpriteShapeController](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SpriteShapeController.html) |
+| `SpriteShapeSegment` | Parameter type of the geometry job methods, as `NativeArray<SpriteShapeSegment>` | [SpriteShapeGeometryModifier](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SpriteShapeGeometryModifier.html) |
+| `AngleRangeInfo` | Element type of `SpriteShapeController.angleRangeInfoArray` | [SpriteShapeController](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SpriteShapeController.html) |
+| `SpriteShapeParameters` | Inferred by naming convention only; existence unconfirmed | synthesized |
+| `UnityEditor.U2D` namespace root | Editor-side tooling is not published as a separate documented namespace here | synthesized |

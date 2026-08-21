@@ -1,130 +1,133 @@
 ---
 name: unity-tilemap
 description: >
-  Technique for Unity's built-in Tilemap authoring pipeline
-  (`UnityEngine.Tilemaps.*`, `UnityEditor.Tilemaps.*`) — the `Grid`/`Tilemap`
-  GameObject hierarchy, Tile Palette creation (manual drag-in vs. the
-  auto-updating Tile Set Importer), Tile asset properties (Sprite, Color,
-  Collider Type, Flags, GameObject to Instantiate), the Tile Palette
-  window's painting toolbar (Paint/Box Fill/Flood Fill/Eraser/Rotate/Flip),
-  built-in brush types (Default plus the 2D Tilemap Extras package's
-  Line/Random/GameObject/Group) and Brush Picks, `TilemapRenderer` (Mode
-  Chunk/Individual/SRP Batch, sorting, mask interaction),
-  `TilemapCollider2D` + `Composite Collider 2D` collision generation,
-  isometric tilemaps (Cell Size y, Isometric Z as Y, Custom Axis
-  transparency sorting) and hexagonal tilemaps (Point Top/Flat Top), custom
-  Scriptable Tiles (`TileBase`/`TileData`) and Scriptable Brushes
-  (`GridBrushBase`), and the 2D Tilemap Extras package
-  (`com.unity.2d.tilemap.extras`: `RuleTile`, `AnimatedTile`, Auto Tile,
-  Rule/Advanced Rule Override Tile, `GridInformation`). Use this for any
-  task touching `Tilemap`, `TilemapRenderer`, `TilemapCollider2D`, the Tile
-  Palette window, `Tile` assets, `Grid` (when its Cell Layout is set up for
-  tilemap painting), custom `TileBase`/`GridBrushBase` scripting, or the 2D
-  Tilemap Extras package's brushes/tiles. Do not use this for
-  authoring the underlying Sprite art (import settings, Sprite Editor
-  slicing/outline/physics-shape/atlas packing) tiles are made from — that's
-  `unity-2d-sprite`, a separate skill; this skill only consumes
-  already-imported `Sprite` assets as tile art. Do not use this for
-  `Rigidbody2D`/`Collider2D` dynamics, effectors, or joints beyond what
-  `TilemapCollider2D` itself generates — that's `unity-2d-physics`. Do not
-  use this for URP 2D Lighting (`Light2D`, 2D Renderer Data) consuming a
-  tile sprite's secondary textures — that's `unity-urp-rendering`. Do not
-  use this for Sprite Shape (a separate spline-based 2D authoring system)
-  — that's `unity-2d-spriteshape`, a separate skill. Do not use this for
-  gameplay rule logic that happens to decide tilemap
-  content (procedural level generation, which tile a destructible-terrain
-  rule should place) — that belongs in Shared Core per
-  `coding-principles.md`'s Shared Core integrity rule; this skill only
-  covers wiring the Unity-side tilemap components/painting themselves.
+  Unity built-in Tilemap authoring (`UnityEngine.Tilemaps`) — the
+  `Grid`/`Tilemap` hierarchy, Cell Layout Rectangle, Hexagon, Isometric and
+  Isometric Z as Y, Tile Palette creation by drag-in or Tile Set Importer,
+  `Tile` assets and Collider Type, painting brushes and Brush Picks,
+  `TilemapRenderer` Chunk/Individual/SRP Batch mode, `TilemapCollider2D`
+  with `CompositeCollider2D`, `SetTiles`/`BoxFill`/`FloodFill`, custom
+  `TileBase` and `GridBrushBase`, plus 2D Tilemap Extras `RuleTile`,
+  `AnimatedTile`, Auto Tile and `GridInformation`. Use for tile-based level
+  building, auto-tiling, and tile collision. Not for: sprite import and
+  atlasing (`unity-2d-sprite`), bodies and joints (`unity-2d-physics`),
+  spline geometry (`unity-2d-spriteshape`), `Light2D`
+  (`unity-urp-rendering`), level-generation rules (`csharp-engineer`).
 ---
 
-# Unity Tilemap — Built-in Grid/Tilemap Authoring, Rendering, Collision & Custom Tiles/Brushes
+# Unity Tilemap — Grid Authoring, Painting, Rendering, Collision & Custom Tiles
 
-Sources: see [references/](references/) for the Unity Manual root links, split by topic — [root-links.md](references/root-links.md), [grid-and-tilemap.md](references/grid-and-tilemap.md), [tile-palette-and-tiles.md](references/tile-palette-and-tiles.md), [brushes.md](references/brushes.md), [tilemap-renderer.md](references/tilemap-renderer.md), [tilemap-collider-2d.md](references/tilemap-collider-2d.md), [isometric-hexagonal.md](references/isometric-hexagonal.md), [custom-tiles-and-brushes.md](references/custom-tiles-and-brushes.md), [scripting-api.md](references/scripting-api.md), [tilemap-extras-tiles.md](references/tilemap-extras-tiles.md), [tilemap-extras-brushes.md](references/tilemap-extras-brushes.md).
+## Bundled resources
+
+### References
+
+| File | Contents | Read when |
+|---|---|---|
+| [root-links.md](references/root-links.md) | Manual roots, package pins, topic→file map, disclosed 404 gaps | Starting any tilemap task, or a type has no documented page |
+| [grid-and-tilemap.md](references/grid-and-tilemap.md) | `Grid` and `Tilemap` properties, layer hierarchy, painting flow | Setting up the scene hierarchy, or painting lands misaligned |
+| [tile-palette-and-tiles.md](references/tile-palette-and-tiles.md) | Both palette creation paths, window tools, `Tile` asset fields | Building a palette, or source art edits do not propagate |
+| [brushes.md](references/brushes.md) | Built-in and Extras brush behaviours, Brush Picks | Choosing how to paint, or reusing a paint configuration |
+| [tilemap-renderer.md](references/tilemap-renderer.md) | Mode, sorting, mask interaction, chunk culling | Tiles sort wrongly against sprites, or pop in at chunk edges |
+| [tilemap-collider-2d.md](references/tilemap-collider-2d.md) | Collider generation, composite pairing, rebuild threshold | Adding collision to a painted level |
+| [isometric-hexagonal.md](references/isometric-hexagonal.md) | Cell Size maths, Z as Y, Point Top vs Flat Top, sort axis | Building a non-rectangular grid, or tiles do not line up |
+| [scripting-api.md](references/scripting-api.md) | `Tilemap` reads, batched writes, refresh methods | Changing tiles from code |
+| [custom-tiles-and-brushes.md](references/custom-tiles-and-brushes.md) | `TileBase` and `GridBrushBase` override surfaces | No built-in or Extras tile or brush fits |
+| [tilemap-extras-tiles.md](references/tilemap-extras-tiles.md) | Rule Tile, Auto Tile, Animated Tile, override variants | Auto-tiling, terrain blending, or animated tiles |
+| [tilemap-extras-brushes.md](references/tilemap-extras-brushes.md) | Line, Random, Group, GameObject brushes, `GridInformation` | Repetitive painting patterns, or per-cell metadata |
 
 ## 1. Objective
-Configure Unity's built-in Tilemap pipeline correctly — right `Grid`/`Tilemap` hierarchy, right Tile Palette creation path, right `TilemapRenderer`/`TilemapCollider2D` settings for the visual/collision requirement, right isometric/hexagonal layout math, right custom tile/brush only when the built-ins genuinely fall short — without drifting into sprite authoring, 2D physics dynamics, URP lighting, Sprite Shape, or gameplay rule logic that belong to sibling skills or roles.
+Build a tile-based level that lines up, sorts correctly, collides efficiently, and keeps following its source art as that art changes — avoiding the failure modes this pipeline hides: a palette created by drag-in that silently stops tracking its texture, an isometric Cell Size derived by eye rather than from the sprite, a composite setting that does nothing because no composite component exists, a chunk culling bound that clips oversized tiles, and a custom tile written for something Rule Tile already does.
 
 ## 2. Role
-Act as the built-in Tilemap authoring specialist: given a need for tile-based level geometry, painting tools, collision generation, or specialized grid layouts, you choose and configure the right `UnityEngine.Tilemaps`/`UnityEditor.Tilemaps`-namespace components and assets — you don't decide gameplay outcomes from tilemap state (that's Shared Core's job), you don't author the underlying Sprite art or configure `Rigidbody2D`/`Collider2D` dynamics beyond `TilemapCollider2D`'s own generation, and you don't reach into 2D lighting or Sprite Shape, which are sibling skills'/roles' territory.
+Act as the built-in Tilemap authoring specialist for the client track — the skill reached for whenever `Grid`, `Tilemap`, `TilemapRenderer`, `TilemapCollider2D`, a Tile Palette, or a custom tile or brush must be created, configured, or driven from code.
 
 ## 3. When to invoke this skill
-- Setting up a **`Grid`/`Tilemap` hierarchy** — Cell Size/Gap/Layout/Swizzle, Tilemap Animation Frame Rate/Color/Tile Anchor/Orientation.
-- Creating a **Tile Palette** (manual drag-in vs. the auto-updating Tile Set Importer) or authoring **Tile assets** (Sprite, Color, Collider Type, Flags, GameObject to Instantiate).
-- Using the **Tile Palette window** to paint/erase/fill/rotate/flip tiles, or choosing a **brush type** (Default/Line/Random/GameObject/Group) or a **Brush Pick**.
-- Configuring **`TilemapRenderer`** — Mode (Chunk/Individual/SRP Batch), sorting, mask interaction, chunk culling.
-- Adding **`TilemapCollider2D`** (+ `Composite Collider 2D`) to generate collision from tile data.
-- Setting up an **isometric** (Cell Size y math, Isometric vs. Isometric Z as Y, Custom Axis transparency sorting) or **hexagonal** (Point Top vs. Flat Top) tilemap.
-- Writing a **custom Scriptable Tile** (`TileBase`/`GetTileData`) or **Scriptable Brush** (`GridBrushBase`) when a built-in tile/brush can't express the requirement.
-- Using the **2D Tilemap Extras** package (`com.unity.2d.tilemap.extras`) — **Rule Tile**/**Auto Tile**/**Animated Tile**, Rule/Advanced Rule Override Tile variants, the Line/Random/GameObject/Group brushes, or `GridInformation` per-cell metadata storage.
-- Negative trigger: authoring the underlying Sprite art (import settings, Sprite Editor slicing/outline/physics-shape/secondary-textures/atlas packing) that tile art is made from — that's `unity-2d-sprite`, a separate skill despite this skill consuming its output.
-- Negative trigger: configuring `Rigidbody2D`, standalone `Collider2D`, 2D joints, or 2D effectors beyond what `TilemapCollider2D` itself generates — that's `unity-2d-physics`.
-- Negative trigger: setting up `Light2D`, 2D Renderer Data, or any lighting-side consumption of tile sprites' secondary textures — that's `unity-urp-rendering`.
-- Negative trigger: Sprite Shape authoring — a separate spline-based 2D system, covered by the sibling `unity-2d-spriteshape` skill.
-- Negative trigger: the actual gameplay decision that happens to be expressed through tilemap content (procedural level generation, a destructible-terrain rule deciding which tile replaces a broken wall) — that's `csharp-engineer`'s Shared Core, per `coding-principles.md`'s Shared Core integrity rule; this skill stops at placing/rendering/colliding whatever layout Core already decided.
+- Setting up a `Grid` and its `Tilemap` layers, including Cell Size, Gap, Layout, Swizzle, Tile Anchor, and Orientation.
+- Creating a Tile Palette by either path, or authoring `Tile` asset properties.
+- Painting, filling, erasing, rotating, or flipping tiles, choosing a brush, or saving a Brush Pick.
+- Configuring `TilemapRenderer` mode, sorting, mask interaction, or chunk culling bounds.
+- Generating collision with `TilemapCollider2D`, with or without a `CompositeCollider2D`.
+- Setting up an isometric or hexagonal grid, including Z as Y height.
+- Editing tiles at runtime through the `Tilemap` API.
+- Reaching for auto-tiling, terrain blending, tile animation, or per-cell metadata.
+- Writing a custom `TileBase` or `GridBrushBase` when nothing built-in fits.
+- Negative trigger: importing, slicing, or atlasing the sprite art tiles are made from — that's `unity-2d-sprite`; this skill consumes finished `Sprite` assets.
+- Negative trigger: the `Rigidbody2D`, physics material, effector, or joint on the generated collider — that's `unity-2d-physics`; this skill stops at generating collision shapes.
+- Negative trigger: spline-based level geometry rather than cells — that's `unity-2d-spriteshape`.
+- Negative trigger: `Light2D` or 2D Renderer Data setup — that's `unity-urp-rendering`.
+- Negative trigger: deciding *which* tile belongs where — procedural generation, destructible terrain rules — that's `csharp-engineer`'s Shared Core, per `coding-principles.md`'s Shared Core integrity section.
 
 ## 4. How to use this skill
-1. **Confirm scope first.** This skill is the built-in Tilemap authoring pipeline (`Grid`/`Tilemap`/`TilemapRenderer`/`TilemapCollider2D`, Tile Palette, custom tiles/brushes). If the task is authoring the Sprite art itself, hand off to `unity-2d-sprite`. If it's 2D physics dynamics beyond collision generation, hand off to `unity-2d-physics`. If it's 2D lighting, hand off to `unity-urp-rendering`. If it's Sprite Shape, hand off to `unity-2d-spriteshape`.
-2. **Set up `Grid`/`Tilemap` deliberately**, per [grid-and-tilemap.md](references/grid-and-tilemap.md): one shared `Grid` per set of cell-aligned layers (ground/walls/decoration as separate `Tilemap` children), Cell Layout matched to the design (Rectangle by default, Hexagon/Isometric per [isometric-hexagonal.md](references/isometric-hexagonal.md)).
-3. **Build the Tile Palette the right way**, per [tile-palette-and-tiles.md](references/tile-palette-and-tiles.md): the auto-updating Tile Set Importer path for art still under iteration, manual drag-in only for a settled final palette. Set each Tile's Collider Type to `Grid` by default (cheapest) and `Sprite` only when the silhouette genuinely needs it.
-4. **Respect the Shared Core boundary.** Any gameplay decision that happens to manifest as tilemap content (procedural level layout, which tile a destructible-terrain event places) is decided in `Game.Core.*`; this skill's components only paint/render/collide whatever layout Core already resolved — they never decide it themselves, per `coding-principles.md`'s Shared Core integrity rule.
-5. **Configure `TilemapRenderer` deliberately**, per [tilemap-renderer.md](references/tilemap-renderer.md): Mode = Chunk by default, Individual only when tiles must depth-sort against other sprites; set Manual chunk culling bounds when tile content extends past the auto-estimated bounds.
-6. **Add `TilemapCollider2D` + `Composite Collider 2D` for level terrain**, per [tilemap-collider-2d.md](references/tilemap-collider-2d.md) — merge shapes rather than leaving hundreds of per-tile colliders; hand off the resulting body's `Rigidbody2D`/effector/joint configuration to `unity-2d-physics`.
-7. **Get isometric/hexagonal math right before painting**, per [isometric-hexagonal.md](references/isometric-hexagonal.md): verify the isometric Cell Size y formula against the actual imported sprite's pixel dimensions, and confirm Point Top vs. Flat Top's swapped Cell Size axis semantics before reusing settings across projects.
-8. **Check the 2D Tilemap Extras package before writing anything custom** ([tilemap-extras-tiles.md](references/tilemap-extras-tiles.md), [tilemap-extras-brushes.md](references/tilemap-extras-brushes.md)) — confirm it's installed (Package Manager > Unity Registry), then reach for Rule Tile/Auto Tile/Animated Tile or the Line/Random/GameObject/Group brushes before writing a fully custom `TileBase`/`GridBrushBase`.
-9. **Reach for a fully custom Scriptable Tile/Brush only when a built-in one — core or Extras package — genuinely can't express the requirement** ([custom-tiles-and-brushes.md](references/custom-tiles-and-brushes.md)) — non-standard neighbor logic, non-standard painting; per YAGNI in `coding-principles.md`.
-10. **Use the batched `Tilemap` scripting API** ([scripting-api.md](references/scripting-api.md)) — `SetTiles`/`BoxFill`/`FloodFill` over a hand-rolled loop of `SetTile` calls, and never edit tiles from a per-frame hot path.
-11. **State the hand-off explicitly.** Sprite art authoring → `unity-2d-sprite`. 2D physics dynamics beyond collision generation → `unity-2d-physics`. 2D Lighting → `unity-urp-rendering`. Sprite Shape → `unity-2d-spriteshape`. Gameplay decisions behind tilemap content → `csharp-engineer`'s Shared Core.
+1. **Settle the Cell Layout before creating anything**, per [grid-and-tilemap.md](references/grid-and-tilemap.md) — Rectangle, Hexagon, Isometric, or Isometric Z as Y must match between the `Grid` and every palette painted into it, and a mismatch produces tiles that paint to the wrong cells rather than an error; [root-links.md](references/root-links.md) pins which package version each feature below belongs to. One `Grid` with several `Tilemap` children keeps ground, walls, and decoration cell-aligned; separate `Grid` hierarchies with differing cell sizes are the usual cause of misalignment.
+2. **Create the palette through the Tile Set Importer whenever the art will change again**, per [tile-palette-and-tiles.md](references/tile-palette-and-tiles.md) — tiles produced by dragging a texture in are **not** linked back to it, so a later art edit silently fails to propagate, while importer-generated tiles regenerate on source change. Manual drag-in is for a settled, final palette only.
+3. **Set each `Tile`'s Collider Type to the cheapest shape that plays correctly** — Grid for anything whose silhouette matches its cell, Sprite only where the outline genuinely differs, per `performance-and-algorithms.md`'s Physics section. Sprite type consumes the physics shape authored by `unity-2d-sprite`, so it is only as good as that authoring.
+4. **Derive isometric Cell Size y from the sprite, never by eye**, per [isometric-hexagonal.md](references/isometric-hexagonal.md) — it is the tile's 3D floor height in pixels divided by its width in pixels, and it is the single most common source of a grid that will not line up. Hexagonal Flat Top swaps which axis governs which spacing, so a value copied from a Point Top project is wrong by construction.
+5. **Set the isometric sort axis before judging any depth problem** — Transparency Sort Mode Custom Axis with axis (0, 1, 0), on the 2D Renderer Data under URP or under Project Settings > Graphics > Camera Settings for the Built-in pipeline. The general sorting semantics belong to `unity-2d-sprite`; this step is the isometric-specific value.
+6. **Keep `TilemapRenderer` on Chunk mode unless tiles must interleave with other sprites**, per [tilemap-renderer.md](references/tilemap-renderer.md) — Individual mode gives per-tile depth sorting and gives up batching to do it. Set Detect Chunk Culling Bounds to Manual whenever tiles carry oversized sprites or GameObject-brush content, since an underestimated bound pops content in at chunk edges.
+7. **Pair `TilemapCollider2D` with a `CompositeCollider2D` for level terrain**, per [tilemap-collider-2d.md](references/tilemap-collider-2d.md) — merging beats hundreds of per-tile colliders, and Composite Operation and Order do nothing at all until that component is actually present. Hand the resulting body and material to `unity-2d-physics`.
+8. **Check the 2D Tilemap Extras package before writing anything custom** ([tilemap-extras-tiles.md](references/tilemap-extras-tiles.md), [tilemap-extras-brushes.md](references/tilemap-extras-brushes.md)) — Rule Tile, Auto Tile, and Animated Tile already solve most auto-tiling, terrain-blending, and animation needs, and the Line, Random, Group, and GameObject brushes cover most repetitive painting, compared against the Default brush in [brushes.md](references/brushes.md). None of them ship with core Unity, so confirm the package is installed first.
+9. **Order Rule Tile rules with the most common case first** — evaluation is sequential top-to-bottom and stops at the first match, so rule order is both a correctness decision and an edit-time cost. Choose Rule Tile when neighbour conditions are authored explicitly, and Auto Tile when the art already arrives as a masked floor-layout sheet.
+10. **Write a custom `TileBase` or `GridBrushBase` only once nothing built-in or Extras fits**, per [custom-tiles-and-brushes.md](references/custom-tiles-and-brushes.md) and YAGNI in `coding-principles.md` — and follow `naming-convention.md` for the class name, since these become project assets other people pick from a dropdown.
+11. **Batch runtime tile edits and keep them out of `Update`**, per [scripting-api.md](references/scripting-api.md) — `SetTiles`, `BoxFill`, and `FloodFill` avoid the repeated collider and render invalidation a loop of `SetTile` calls causes, and a tile change should be event-driven. Note that exceeding Maximum Tile Change Count turns an incremental collider update into a full rebuild.
+12. **Keep the layout's meaning out of this layer**, per `coding-principles.md`'s Shared Core integrity section — `Game.Core.*` decides which tile a generator or a destruction rule produces, and this skill's components only paint, render, and collide the result. `GridInformation` may carry authoring metadata to the painting layer, but it never interprets it.
 
 ## 5. Specific goals / tasks this skill performs
-- Setting up `Grid`/`Tilemap` hierarchies and their cell-layout properties.
-- Creating Tile Palettes (manual or Tile Set Importer) and authoring Tile asset properties.
-- Painting/erasing/filling tiles via the Tile Palette window, choosing brush types, and managing Brush Picks.
-- Configuring `TilemapRenderer` (mode, sorting, mask interaction, chunk culling).
-- Adding `TilemapCollider2D` + `Composite Collider 2D` for tile-derived collision.
-- Setting up isometric (including Z-as-Y height) and hexagonal (Point Top/Flat Top) tilemaps.
-- Writing custom Scriptable Tiles (`TileBase`) and Scriptable Brushes (`GridBrushBase`).
-- Using the `Tilemap` scripting API for batched runtime tile edits.
-- Using the 2D Tilemap Extras package's Rule Tile/Auto Tile/Animated Tile, Rule/Advanced Rule Override Tile, Line/Random/GameObject/Group brushes, and `GridInformation`.
-- Out of scope: Sprite import/Sprite Editor/atlas authoring (`unity-2d-sprite`); `Rigidbody2D`/`Collider2D`/joint/effector configuration beyond `TilemapCollider2D`'s own generation (`unity-2d-physics`); `Light2D`/2D Renderer Data lighting setup (`unity-urp-rendering`); Sprite Shape (`unity-2d-spriteshape`); gameplay rule logic driving tilemap content (`csharp-engineer`'s Shared Core).
+- `Grid` and `Tilemap` hierarchy setup, including non-rectangular layouts and Z as Y height.
+- Tile Palette creation by either path, and `Tile` asset authoring.
+- Painting workflows, brush selection, and Brush Picks.
+- `TilemapRenderer` and `TilemapCollider2D` configuration, including composite pairing.
+- Batched runtime tile edits through the `Tilemap` API.
+- Rule Tile, Auto Tile, Animated Tile, override variants, and `GridInformation` metadata.
+- Custom Scriptable Tiles and Brushes when no built-in covers the requirement.
+- Out of scope: sprite import and atlasing (`unity-2d-sprite`), 2D physics dynamics (`unity-2d-physics`), spline geometry (`unity-2d-spriteshape`), 2D lighting (`unity-urp-rendering`), level-generation rules (`csharp-engineer`).
 
 ## 6. Output format
 ```
 ## Tilemap Work — <level/feature name>
-- Scope confirmed: built-in Tilemap pipeline (not Sprite authoring, not 2D physics dynamics, not 2D Lighting, not Sprite Shape)
-- Grid/Tilemap setup (if applicable): Cell Layout <Rectangle/Hexagon/Isometric/Isometric Z as Y>, Cell Size/Gap/Swizzle, Tilemap layer(s) and their purpose
-- Tile Palette (if applicable): creation path <manual drag-in/Tile Set Importer>, Tile Collider Type(s) used, rationale
-- Painting/brushes (if applicable): brush type(s) used, Brush Picks saved
-- TilemapRenderer settings: Mode, sorting, mask interaction, chunk culling as applicable
-- TilemapCollider2D (if applicable): Composite Collider 2D pairing <yes/no>, Extrusion Factor, Use Delaunay Mesh, rationale
-- Isometric/Hexagonal (if applicable): Cell Size y calculation, sort mode/axis, Point Top vs Flat Top
-- 2D Tilemap Extras (if applicable): package installed <yes/no>, tile/brush type(s) used (Rule Tile/Auto Tile/Animated Tile/Line/Random/GameObject/Group/GridInformation)
-- Custom Tile/Brush (if applicable): why neither a core built-in nor an Extras-package tile/brush covered the requirement
-- Shared Core boundary: confirmed no gameplay decision made in tilemap-layer code
-- Hand-off: <sprite authoring → unity-2d-sprite / physics dynamics → unity-2d-physics / lighting → unity-urp-rendering / Sprite Shape → unity-2d-spriteshape / gameplay logic → csharp-engineer, as applicable>
+- Layout: Cell Layout <Rectangle/Hexagon/Isometric/Isometric Z as Y>, Cell Size <x,y>, Gap, Swizzle; Tilemap layers <names and purpose>
+- Palette: creation path <Tile Set Importer/manual drag-in> and why, Grid type match confirmed <yes/no>
+- Tiles: Collider Type(s) used and rationale, GameObject to Instantiate <yes/no>
+- Painting: brush(es) used, Brush Picks saved, Extras package installed <yes/no/not needed>
+- Renderer: Mode <Chunk/Individual/SRP Batch>, sorting, mask interaction, chunk culling <Auto/Manual + bound>
+- Collision: TilemapCollider2D <yes/no>, CompositeCollider2D <yes/no>, Extrusion Factor, Delaunay <on/off>
+- Isometric/Hex (if applicable): Cell Size y derivation, sort mode and axis, Point Top vs Flat Top
+- Extras / custom (if applicable): Rule Tile / Auto Tile / Animated Tile used, or why a custom TileBase/GridBrushBase was needed
+- Shared Core boundary: <what Core decides vs what this layer paints>
+- Layer: Game.Client.* / Editor-only (palette and tile assets)
 - Known limitations: <...>
+```
+
+**Extended report — emit ONLY when the requester asks for it.** It replaces the one-line `Known limitations` above with all three fields:
+```
+- Known limitations: <what the delivered solution does not cover — omit this line entirely if there are genuinely none>
+- Latent concerns: <failure modes not yet triggered: assumptions that hold only under current conditions, thresholds not yet reached, trade-offs knowingly deferred>
+- Future remediation: <the concrete fix for each concern above, each with the condition that should trigger it>
 ```
 
 ## 7. Examples
 **Example 1**
-- Input: "Build a simple platformer level: ground tiles the player can stand on, plus a few decorative background tiles that shouldn't collide."
-- Output: created one `Grid` with two `Tilemap` children ("Ground", "Background") sharing Cell Layout = Rectangle; populated a Tile Palette via the Tile Set Importer from the existing tileset texture (still under art iteration); set Ground tiles' Collider Type = Grid, Background tiles' Collider Type = None; added `TilemapCollider2D` + `Composite Collider 2D` (Static `Rigidbody2D`) to the Ground tilemap only; kept `TilemapRenderer` on default Chunk mode for both layers, Background sorted behind Ground via Order in Layer.
-- Hand-off: the Ground `Rigidbody2D`'s physics material/friction tuning and any player-vs-ground effector behavior → `unity-2d-physics`; the tileset art's import settings/slicing → `unity-2d-sprite` (assumed already done, tileset was pre-existing).
+- Input: "Platformer level: ground the player stands on, plus background tiles that should not collide."
+- Output: one `Grid` with Ground and Background `Tilemap` children so both stay cell-aligned; palette built through the Tile Set Importer because the tileset is still being iterated; Ground tiles at Collider Type Grid and Background at None; `TilemapCollider2D` plus `CompositeCollider2D` on Ground only, backed by a Static `Rigidbody2D`; both renderers left on Chunk mode with Background behind via Order in Layer. Hand-off: the ground's physics material and any effector → `unity-2d-physics`; the tileset's import settings → `unity-2d-sprite`.
 
 **Example 2**
-- Input: "An isometric strategy map with a few elevated plateau tiles, and a destructible wall that should swap to a rubble tile when destroyed."
-- Output: set the Tile Palette and `Grid` to Isometric Z as Y, computed Cell Size y from the tileset's actual floor-height/tile-width pixel ratio, set the 2D Renderer's Transparency Sort Mode to Custom Axis (0,1,0); painted the plateau tiles at a raised Z-as-Y height using the Isometric Z as Y tilemap; for the destructible wall, wired a `Tilemap.SetTile` call that swaps the wall tile for a rubble tile at a specific cell.
-- Hand-off: the actual "wall is destroyed" decision (damage threshold, trigger condition) → `csharp-engineer`'s Shared Core; this skill's code only executes the `SetTile` swap once Core signals the wall broke.
+- Input: "Write a custom TileBase that picks the right wall sprite based on its neighbours."
+- Output: declined as new code. That is exactly Rule Tile: a 3×3 neighbour grid of match, no-match, and don't-care conditions mapped to output sprites, already shipping in 2D Tilemap Extras with editor tooling, override variants, and animation output. Installed the package, authored the rules with the most common case first because evaluation stops at the first match, and kept a custom `RuleTile<T>` subclass on the table only for the one case needing a neighbour condition the built-in set cannot express — where custom neighbour IDs start at 3, since 0 to 2 are reserved.
+
+**Example 3**
+- Input: "The isometric map's tiles don't line up and the depth sorting looks inverted."
+- Output: two independent causes, both usual. Cell Size y had been set to a round 0.5 rather than derived — the actual sprites are 64 px wide with a 24 px floor, giving 0.375 — and the palette and `Grid` must both carry it. Separately, the 2D Renderer Data was on the default Transparency Sort Mode, which sorts by camera distance and reads backwards for an isometric camera; set Custom Axis with axis (0, 1, 0). Fixing only the first leaves the sorting wrong and invites a second round of "it's still broken".
 
 ## 8. Edge cases & guardrails
-- Never assume this skill covers authoring the Sprite art tiles are made from — route Sprite import settings, Sprite Editor work, and atlas packing to `unity-2d-sprite`.
-- Never assume `Rigidbody2D`/standalone `Collider2D`/effector/joint configuration is this skill's territory, even on the same GameObject as `TilemapCollider2D` — route that to `unity-2d-physics`.
-- Never assume `Light2D`/2D Renderer Data lighting setup is this skill's territory — route that to `unity-urp-rendering`.
-- Sprite Shape is a separate spline-based 2D authoring system, covered by the sibling `unity-2d-spriteshape` skill — don't stretch this skill's guidance to cover it.
-- Never make a gameplay decision (which tile a procedural generator or destructible-terrain rule should place) inside tilemap-layer code — resolve the decision in Shared Core and let `Tilemap`/`Tile`/brush code only carry out whatever layout Core already decided.
-- Manually drag-in Tile Palettes are **not** linked back to their source sprite/texture — a source-art edit silently doesn't propagate; use the Tile Set Importer path whenever the art is still iterating.
-- The isometric Cell Size y formula and Flat-Top's swapped x/y Cell Size axis semantics are common, easy-to-miss sources of misaligned tiles — verify both explicitly against the actual sprite/palette rather than reusing a value from another project without checking.
-- `Composite Operation`/`Composite Order` on `TilemapCollider2D` only take effect when paired with an actual `Composite Collider 2D` component — verify that component is present before assuming those settings do anything.
-- Don't reach for a custom `TileBase`/`GridBrushBase` when a built-in tile + Default/Line/Random/GameObject/Group brush, or a 2D Tilemap Extras Rule Tile/Auto Tile/Animated Tile, already expresses the requirement — see YAGNI in `coding-principles.md`.
-- The Line/Random/GameObject/Group brushes and Rule Tile/Animated Tile/Auto Tile all require the separate **2D Tilemap Extras** package (`com.unity.2d.tilemap.extras`) to be installed (Package Manager > Unity Registry) — never assume they're available in a project without confirming the package is present.
-- The core `UnityEditor.Tilemaps.GridBrushBase`/`GridBrush` Scripting API pages, and the Extras package's `UnityEngine.Tilemaps.RuleTile<T>` page, were unreachable (404) at authoring time; this skill's `GridBrushBase` guidance is sourced from the Manual workflow page and its Rule Tile guidance from the Manual's Inspector reference — verify current method signatures against the live Scripting API or the `com.unity.2d.tilemap.extras` package source before implementing a custom brush or extending `RuleTile<T>`.
+- Never assume a drag-in palette tracks its source art — those `Tile` assets have no link back, so texture edits silently do not propagate.
+- Never let the palette's Grid type and the `Tilemap`'s Cell Layout diverge — painting goes to the wrong cells rather than reporting a mismatch.
+- Never set isometric Cell Size y by eye — derive it from floor height over tile width, and re-derive it whenever the tile art's dimensions change.
+- Never reuse a Point Top hexagonal Cell Size on a Flat Top grid — the axes govern the opposite spacings.
+- Never expect Composite Operation or Composite Order to do anything without an actual `CompositeCollider2D` on the object.
+- Never leave chunk culling on Auto when tiles carry oversized sprites or painted GameObjects — content pops in at chunk boundaries.
+- Never switch `TilemapRenderer` to Individual mode for depth that Sorting Layers already express — it gives up batching for the whole tilemap.
+- Never reference a Rule Tile, Auto Tile, Animated Tile, or a Line, Random, Group, or GameObject brush without confirming 2D Tilemap Extras is installed — none of them ship with core Unity.
+- Never assume Random Brush respects per-tile weighting — its pool is uniform, so a "rare" variant needs a different mechanism.
+- Never edit tiles from `Update` — batch through `SetTiles`, `BoxFill`, or `FloodFill` on an event, per `performance-and-algorithms.md`'s hot-path rules.
+- Never use `SwapTile` to change one cell — it replaces every instance of that tile across the whole tilemap.
+- Never decide gameplay state inside a tile's `GetTileData` or a brush — those run at edit time as well as runtime, and the decision belongs in Shared Core.
+- If a misalignment could be Cell Size, Grid type, or pivot, name which is being assumed before editing shared palette assets — a palette is referenced by every scene painted from it.

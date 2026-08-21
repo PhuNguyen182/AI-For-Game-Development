@@ -1,84 +1,68 @@
-# Sprite Shape Controller & Spline
+# Sprite Shape Controller & Spline — Settings, Point Modes, API
 
-Sources: https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/manual/SSController.html, `UnityEngine.U2D.SpriteShapeController`/`Spline`/`SplineControlPoint`/`ShapeTangentMode`/`QualityDetail` scripting API.
+Sources: [Sprite Shape Controller](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/manual/SSController.html), [SpriteShapeController API](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SpriteShapeController.html), [Spline API](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.Spline.html).
+Covers: SKILL.md §4 — **"Set Detail from how closely the shape is actually seen"**, **"Pick the Point Mode that matches the edge, not the one that looks smoothest"**.
 
-**GameObject > 2D Object > Sprite Shape** (Open Shape or Closed Shape) creates a GameObject with `SpriteShapeController`, `SpriteShapeRenderer`, and the spline data the outline is drawn with.
+**GameObject > 2D Object > Sprite Shape** creates a GameObject carrying a
+`SpriteShapeController`, a `SpriteShapeRenderer`, and the spline the outline is
+drawn from. The controller holds the per-instance shape; the Profile it points
+at holds the shared look — see
+[spriteshape-profile.md](spriteshape-profile.md).
 
-## Inspector reference
+## Inspector
 
-| Property | Description |
-|---|---|
-| Profile | The `SpriteShape` asset (see [spriteshape-profile.md](spriteshape-profile.md)) this instance draws sprites from. |
-| Edit Spline | Toggles Control Point handles visible/editable in the Scene view. |
-| Detail | Tessellation quality preset — High/Medium/Low (`QualityDetail.High`=16, `.Mid`=8, `.Low`=4 — the number is the geometry detail multiplier). |
-| Open Ended | Whether the shape's two ends connect (mirrors `Spline.isOpenEnded`). |
-| Adaptive UV | Enabled by default; Unity adjusts UVs to keep sprite tiling seamless as the spline is edited. |
-| Enable Tangents | Adds a tangent channel to generated geometry, required for certain shader features under 2D URP (normal-map lighting) — see the 2D URP manual link in [root-links.md](root-links.md). |
-| Corner Threshold | A point is treated as a corner at this angle (degrees) or lower; default 30. |
-| Pixels Per Unit | Scale of the Fill texture on closed shapes; default 100. |
-| World Space UV | Fill texture UVs are computed in world space instead of per-object local space. |
-| Stretched Corners | Shown when a control point's corner mode is Stretched — see Point Modes below. |
-| Additional Collider settings | Shown once a `Collider2D` is attached — see [spriteshape-collision.md](spriteshape-collision.md). |
+| Property | What it decides | Source |
+|---|---|---|
+| Profile | The `SpriteShape` asset supplying sprites per angle | [Sprite Shape Controller](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/manual/SSController.html) |
+| Edit Spline | Shows the control-point handles in the Scene view — everything below in the editing section needs it on | [Sprite Shape Controller](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/manual/SSController.html) |
+| Detail | Tessellation preset, and the number behind it is the geometry multiplier: `QualityDetail.High` is 16, `Mid` is 8, `Low` is 4. Every bake pays for the choice, so a background shape never seen close does not need High | [QualityDetail API](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.QualityDetail.html) |
+| Open Ended | Whether the two ends connect; mirrors `Spline.isOpenEnded` and must agree with the Profile's topology | [Sprite Shape Controller](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/manual/SSController.html) |
+| Adaptive UV | On by default; adjusts UVs so tiling stays seamless as the spline is edited — turning it off is what produces visible stretching mid-segment | [Sprite Shape Controller](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/manual/SSController.html) |
+| Enable Tangents | Adds a tangent channel to the generated mesh, required by 2D URP normal-map lighting. Off unless that lighting is actually in use, since it is geometry paid for either way | [Sprite Shape Controller](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/manual/SSController.html) |
+| Corner Threshold | A point at or below this angle counts as a corner; default 30°. Raise it and gentle bends start consuming corner sprites, lower it and sharp bends stretch an edge sprite instead | [Sprite Shape Controller](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/manual/SSController.html) |
+| Pixels Per Unit | Scale of the Fill texture on closed shapes; default 100 | [Sprite Shape Controller](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/manual/SSController.html) |
+| World Space UV | Computes fill UVs in world space instead of per object — how several adjacent shapes share one continuous texture rather than each restarting it | [Sprite Shape Controller](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/manual/SSController.html) |
+| Stretched Corners | Appears when a control point's corner mode is Stretched | [Sprite Shape Controller](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/manual/SSController.html) |
 
 ## Editing the spline
 
-With **Edit Spline** enabled and a Control Point selected, keyboard shortcuts cycle per-point behavior:
-
-| Key | Action |
-|---|---|
-| M | Cycle Point Mode (Linear / Continuous Mirrored / Broken Mirrored). |
-| N | Cycle which sprite variant (Angle Range sprite index) renders at this point. |
-| Del | Remove the selected Control Point. |
-| B | Mirror tangent lengths at the selected point. |
-
-### Point Modes (`ShapeTangentMode`)
-
-| Mode | `ShapeTangentMode` value | Behavior |
+| Shortcut | Effect | Source |
 |---|---|---|
-| Linear | `Linear` | Tangents are zero — a straight edge on both sides of the point. |
-| Continuous Mirrored | `Continuous` | Left/right tangents are set so the Bezier curve stays continuous (smooth) through the point. |
-| Broken Mirrored | `Broken` | Left and right tangents are set independently — allows a sharp direction change. |
+| M | Cycles Point Mode on the selected control point | [Sprite Shape Controller](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/manual/SSController.html) |
+| N | Cycles which Angle Range sprite variant renders at that point | [Sprite Shape Controller](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/manual/SSController.html) |
+| B | Mirrors tangent lengths at the point | [Sprite Shape Controller](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/manual/SSController.html) |
+| Del | Removes the point — and renumbers every index after it, which matters for [spriteshape-object-placement.md](spriteshape-object-placement.md) | [Sprite Shape Controller](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/manual/SSController.html) |
 
-## `SpriteShapeController` — key scripting API
+| Point Mode | `ShapeTangentMode` | What it decides | Source |
+|---|---|---|---|
+| Linear | `Linear` | Tangents are zero — a straight edge on both sides, and the correct choice for a hard architectural edge | [ShapeTangentMode API](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.ShapeTangentMode.html) |
+| Continuous Mirrored | `Continuous` | Tangents are kept mirrored so the curve stays smooth through the point | [ShapeTangentMode API](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.ShapeTangentMode.html) |
+| Broken Mirrored | `Broken` | Each side's tangent is independent, allowing a sharp direction change that still curves on both sides | [ShapeTangentMode API](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.ShapeTangentMode.html) |
 
-| Member | Description |
-|---|---|
-| `spline` (`Spline`) | The Bezier control-point data this controller renders. |
-| `spriteShape` (`SpriteShape`) | The assigned Profile asset. |
-| `spriteShapeRenderer` | Returns the `SpriteShapeRenderer` component (see disclosed-gap note in [root-links.md](root-links.md) — no confirmed public API page for this type itself). |
-| `splineDetail` / `colliderDetail` (`int`) | Level of detail for render / collider geometry generation. |
-| `cornerAngleThreshold` (`float`) | Script-side equivalent of Corner Threshold. |
-| `fillPixelsPerUnit` / `stretchTiling` (`float`) | Fill/stretch UV scale controls. |
-| `enableTangents` / `worldSpaceUVs` (`bool`) | Script-side equivalents of Enable Tangents / World Space UV. |
-| `autoUpdateCollider` / `optimizeCollider` / `colliderOffset` | Collider generation controls — see [spriteshape-collision.md](spriteshape-collision.md). |
-| `modifiers` (`List<SpriteShapeGeometryModifier>`) / `spriteShapeCreator` | Custom geometry post-processing hooks — see [custom-geometry-scripting.md](custom-geometry-scripting.md). |
-| `spriteShapeHashCode` (`int`) | Hash tracking whether the SpriteShape configuration changed. |
-| `BakeMesh()` | Generates geometry on a job; returns a `JobHandle`. |
-| `BakeCollider()` | Updates the collider for this object. |
-| `RefreshSpriteShape()` | Forces regeneration on the next visible frame. |
-| `UpdateSpriteShapeParameters()` | Forces a parameter update; returns `true` if a change was detected. |
+## Controller API
 
-## `Spline` — key scripting API
+| Member | What it decides | Source |
+|---|---|---|
+| `spline`, `spriteShape` | The outline data and the Profile this instance uses | [SpriteShapeController API](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SpriteShapeController.html) |
+| `splineDetail` / `colliderDetail` | Render and collider tessellation **independently** — a detailed silhouette can carry a coarse collider | [SpriteShapeController API](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SpriteShapeController.html) |
+| `cornerAngleThreshold`, `fillPixelsPerUnit`, `stretchTiling`, `enableTangents`, `worldSpaceUVs` | Script equivalents of the Inspector fields above | [SpriteShapeController API](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SpriteShapeController.html) |
+| `BakeMesh()` | Generates geometry on a job and returns a `JobHandle` — a load-time and authoring operation, never per-frame work | [SpriteShapeController API](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SpriteShapeController.html) |
+| `RefreshSpriteShape()` | Forces regeneration on the next visible frame, rather than immediately | [SpriteShapeController API](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SpriteShapeController.html) |
+| `UpdateSpriteShapeParameters()` | Applies parameter changes and returns whether anything actually changed — the cheap guard before forcing a rebuild | [SpriteShapeController API](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SpriteShapeController.html) |
+| `spriteShapeHashCode` | Tracks whether the configuration changed, for tooling that must detect edits | [SpriteShapeController API](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SpriteShapeController.html) |
 
-Index-based accessors over the control-point list (no direct indexer — always go through these methods):
+## Spline API
 
-| Member | Description |
-|---|---|
-| `isOpenEnded` (`bool`) | Script-side equivalent of Open Ended. |
-| `GetPointCount()` | Number of control points. |
-| `GetPosition(int)` / `SetPosition(int, Vector3)` | Control point position. |
-| `GetLeftTangent(int)` / `SetLeftTangent(int, Vector3)`, `GetRightTangent(int)` / `SetRightTangent(int, Vector3)` | Tangent vectors. |
-| `GetTangentMode(int)` / `SetTangentMode(int, ShapeTangentMode)` | Point Mode per point. |
-| `GetHeight(int)` / `SetHeight(int, float)` | Per-point height (affects generated geometry). |
-| `GetCorner(int)` / `SetCorner(int, bool)` | Whether corner mode is enabled at this point. |
-| `GetSpriteIndex(int)` / `SetSpriteIndex(int, int)` | Which Angle Range sprite variant renders at this point. |
-| `InsertPointAt(int, Vector3)` / `RemovePointAt(int)` | Add/remove points (throws `ArgumentException` on an invalid index). |
-| `Clear()` | Removes all control points. |
+`Spline` exposes no indexer — every read and write goes through an
+index-based accessor, and an invalid index throws rather than clamping.
 
-`SplineControlPoint` is the plain-data struct equivalent (`position`, `height`, `leftTangent`, `rightTangent`, `mode`, `corner`, `spriteIndex`, plus a `cornerMode` (`Corner` enum: `Automatic`/`Disable`/`Stretched`) property) — used when reading/constructing point data outside the indexed `Spline` accessor API.
-
-## Practical guidance
-
-- Prefer `splineDetail`/`colliderDetail` tuned to the actual visual/collision fidelity the shape needs — a higher Detail level generates more geometry every bake; don't leave it at High by default for background-only shapes never seen up close (`performance-and-algorithms.md`'s measured-tradeoff principle).
-- `BakeMesh()`/`BakeCollider()` are authoring/level-load-time operations — never call them from a per-frame hot path; drive spline edits from an authored/event-driven change (a level-load, an editor tool), not `Update()`.
-- The actual outline shape (a procedurally generated cave wall, a destructible terrain edge) is Shared Core's decision when it's gameplay-rule-driven; this component only renders whatever control-point layout Core already resolved, per `coding-principles.md`'s Shared Core integrity rule.
+| Member | What it decides | Source |
+|---|---|---|
+| `GetPointCount()` | Point count, and therefore the valid index range for everything below | [Spline API](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.Spline.html) |
+| `GetPosition(int)` / `SetPosition(int, Vector3)` | Control point position | [Spline API](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.Spline.html) |
+| `GetLeftTangent` / `GetRightTangent` and setters | Tangent vectors — only meaningful for non-Linear point modes | [Spline API](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.Spline.html) |
+| `GetTangentMode(int)` / `SetTangentMode(int, ShapeTangentMode)` | Point Mode from code | [Spline API](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.Spline.html) |
+| `GetHeight(int)` / `SetHeight(int, float)` | Per-point geometry height, for tapering a shape along its length | [Spline API](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.Spline.html) |
+| `GetSpriteIndex(int)` / `SetSpriteIndex(int, int)` | Which sprite from the covering Angle Range's pool renders there | [Spline API](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.Spline.html) |
+| `InsertPointAt(int, Vector3)` / `RemovePointAt(int)` | Structural edits — both renumber later indices, and throw `ArgumentException` on an invalid index | [Spline API](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.Spline.html) |
+| `SplineControlPoint` | The plain-data equivalent — `position`, `height`, tangents, `mode`, `corner`, `spriteIndex`, `cornerMode` — for reading or constructing point data outside the accessors | [SplineControlPoint API](https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/api/UnityEngine.U2D.SplineControlPoint.html) |

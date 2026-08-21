@@ -1,40 +1,42 @@
-# Sprite Mask
+# Sprite Mask — Stencil-Based Reveal & Hide
 
-Sources: https://docs.unity3d.com/Manual/sprite/mask/mask-landing.html, https://docs.unity3d.com/Manual/sprite/mask/hide-reveal-parts-sprite-mask.html, https://docs.unity3d.com/Manual/sprite/mask/sprite-mask-reference.html
+Sources: [Add a sprite mask](https://docs.unity3d.com/Manual/sprite/mask/hide-reveal-parts-sprite-mask.html), [Sprite Mask component reference](https://docs.unity3d.com/Manual/sprite/mask/sprite-mask-reference.html).
+Covers: SKILL.md §4 — **"Reach for 9-slicing or `SpriteMask` only when the design actually resizes or reveals something"**.
 
-## Concept
-
-A `SpriteMask` hides or reveals parts of other sprites based on where it overlaps them. It's unrelated to a URP mask-map secondary texture (see [secondary-textures.md](secondary-textures.md)) — same word, different feature; don't confuse the two.
+A `SpriteMask` hides or reveals other sprites where it overlaps them, using
+the stencil buffer. It is unrelated to a `_MaskTex` secondary texture despite
+the shared word — see [secondary-textures.md](secondary-textures.md). Masking
+takes effect only where two independent settings agree: the renderer's Mask
+Interaction, and the mask's own sorting-layer range.
 
 ## Prerequisite
 
-The active 2D Renderer asset must have its **Depth/Stencil Buffer** enabled — sprite masking is stencil-buffer-based and silently does nothing if that's off.
+| Requirement | Consequence if unmet | Source |
+|---|---|---|
+| Depth/Stencil Buffer enabled on the active 2D Renderer Data | Masking silently does nothing at all — no warning, no visual change; this is the usual cause before any component setting is suspect | [Add a sprite mask](https://docs.unity3d.com/Manual/sprite/mask/hide-reveal-parts-sprite-mask.html) |
 
-## Setting it up
+## Component properties
 
-1. **GameObject > 2D Object > Sprite Mask** (defaults to a circular mask shape — swap its Sprite reference for a custom shape: opaque pixels define the mask area, transparent pixels define the excluded area).
-2. Position the mask so it overlaps the sprite(s) it should affect.
-3. On each target `SpriteRenderer`, set **Mask Interaction**: **None** (unaffected by any mask), **Visible Inside Mask** (only the overlapping portion renders), or **Visible Outside Mask** (the overlapping portion is hidden, the rest renders).
+| Property | What it decides | Source |
+|---|---|---|
+| Mask Source | **Sprite** takes the shape from a `Sprite`; **Supported Renderer** takes it from an attached `SpriteRenderer`, `SpriteShapeRenderer`, or `TilemapRenderer` — the latter is how a tilemap or spline shape becomes a mask | [Sprite Mask component reference](https://docs.unity3d.com/Manual/sprite/mask/sprite-mask-reference.html) |
+| Sprite | The masking shape; opaque pixels are the mask area | [Sprite Mask component reference](https://docs.unity3d.com/Manual/sprite/mask/sprite-mask-reference.html) |
+| Alpha Cutoff | Minimum alpha counted as part of the mask — lowering it pulls semi-transparent edges into the shape | [Sprite Mask component reference](https://docs.unity3d.com/Manual/sprite/mask/sprite-mask-reference.html) |
+| Sprite Sort Point | Center or Pivot, used when distance is the active sort tie-breaker | [Sprite Mask component reference](https://docs.unity3d.com/Manual/sprite/mask/sprite-mask-reference.html) |
+| Custom Range | Restricts the mask to a band of Sorting Layers instead of every sprite it geometrically overlaps — the scalable way to keep several masks from interfering | [Sprite Mask component reference](https://docs.unity3d.com/Manual/sprite/mask/sprite-mask-reference.html) |
+| Front / Back Sorting Layer + Order in Layer | The two boundaries of that band; anything outside is unmasked | [Sprite Mask component reference](https://docs.unity3d.com/Manual/sprite/mask/sprite-mask-reference.html) |
+| Rendering Layer Mask | Restricts masking by rendering layer, independently of draw order | [Sprite Mask component reference](https://docs.unity3d.com/Manual/sprite/mask/sprite-mask-reference.html) |
 
-## Sprite Mask component properties
+## Opting a renderer in
 
-| Property | Description |
-|---|---|
-| Mask Source | **Sprite** — mask shape comes from a `Sprite`. **Supported Renderer** — mask shape comes from an attached `SpriteRenderer`, `SpriteShapeRenderer`, or `TilemapRenderer` instead of a dedicated sprite. |
-| Sprite | The masking sprite (Mask Source = Sprite only); opaque pixels define the masked area. |
-| Supported Renderer | Which renderer component supplies the mask shape (Mask Source = Supported Renderer only). |
-| Sprite Sort Point | **Center** or **Pivot** — which point on the mask sprite is used for camera-distance sorting (Mask Source = Sprite only). |
-| Alpha Cutoff | Minimum alpha for a pixel to count as part of the mask shape — lower values include more semi-transparent pixels. |
-| Custom Range | When enabled, restricts which Sorting Layers the mask affects via explicit Front/Back boundaries, instead of affecting every sprite it geometrically overlaps regardless of layer. |
-| Front Sorting Layer / Order in Layer | The topmost layer+sublayer the mask affects — anything above this boundary is unmasked. |
-| Back Sorting Layer / Order in Layer | The bottommost layer+sublayer the mask affects — this layer and anything behind it is unmasked. |
-| Rendering Layer Mask | Restricts masking to GameObjects on matching rendering layers — independent of draw order/sorting layers. |
+| Mask Interaction on the target `SpriteRenderer` | Result | Source |
+|---|---|---|
+| None | Unaffected by every mask — the default, which is why a new mask appears to do nothing until targets are opted in | [Add a sprite mask](https://docs.unity3d.com/Manual/sprite/mask/hide-reveal-parts-sprite-mask.html) |
+| Visible Inside Mask | Only the overlapping part renders | [Add a sprite mask](https://docs.unity3d.com/Manual/sprite/mask/hide-reveal-parts-sprite-mask.html) |
+| Visible Outside Mask | The overlapping part is hidden | [Add a sprite mask](https://docs.unity3d.com/Manual/sprite/mask/hide-reveal-parts-sprite-mask.html) |
 
-## Restricting which sprites a mask affects
-
-Beyond `Mask Interaction`/`None` on individual renderers, use **Custom Range** with Sorting Layers to scope a mask to a specific band of the sort order — put the sprites that should never be maskable on a layer outside the mask's Front/Back range. For multiple independent masks that shouldn't interfere with each other, combine this with a [Sorting Group](sorting-sprites.md) around each mask+target set.
-
-## Practical guidance
-
-- If a mask appears to do nothing, check the 2D Renderer Data's Depth/Stencil Buffer setting first — it's the most common reason masking silently fails.
-- Prefer **Custom Range** over relying purely on `Mask Interaction = None` on every non-target sprite when a scene has several masks — explicitly scoping each mask's range is more robust than remembering to opt every unrelated sprite out individually.
+Prefer Custom Range over opting every unrelated sprite out one by one: scoping
+one mask is a single edit, while the opt-out approach has to be repeated for
+every sprite added to the scene afterwards. Pair it with a
+[Sorting Group](sorting-sprites.md) around each mask-and-target set when
+several masks must stay independent.

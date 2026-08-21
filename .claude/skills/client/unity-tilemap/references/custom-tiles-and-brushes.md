@@ -1,70 +1,70 @@
-# Custom Tiles & Brushes (Scripting)
+# Custom Tiles & Brushes — `TileBase` and `GridBrushBase`
 
-Sources: https://docs.unity3d.com/Manual/tilemaps/custom-tiles-brushes.html, https://docs.unity3d.com/Manual/tilemaps/tiles-for-tilemaps/scriptable-tiles/scriptable-tiles.html, https://docs.unity3d.com/Manual/tilemaps/tile-palettes/brushes/create-scriptable-brush.html, https://docs.unity3d.com/Manual/tilemaps/tile-palettes/tile-template-asset.html, `UnityEngine.Tilemaps.TileBase`/`TileData` scripting API
+Sources: [Custom tiles and brushes](https://docs.unity3d.com/Manual/tilemaps/custom-tiles-brushes.html), [Scriptable Tiles](https://docs.unity3d.com/Manual/tilemaps/tiles-for-tilemaps/scriptable-tiles/scriptable-tiles.html), [Create a scriptable brush](https://docs.unity3d.com/Manual/tilemaps/tile-palettes/brushes/create-scriptable-brush.html), [Tile Template asset](https://docs.unity3d.com/Manual/tilemaps/tile-palettes/tile-template-asset.html).
+Covers: SKILL.md §4 — **"Write a custom `TileBase` or `GridBrushBase` only once nothing built-in or Extras fits"**.
 
-Note: the core `UnityEditor.Tilemaps.GridBrushBase`/`GridBrush` Scripting API pages, and the `com.unity.2d.tilemap.extras` package's `UnityEngine.Tilemaps.RuleTile<T>` page, returned 404 at authoring time — this file's `GridBrushBase` guidance is sourced from the Manual's workflow page instead. The package's `LineBrush`/`RandomBrush`/`GroupBrush`/`GameObjectBrush`/`AnimatedTile`/`GridInformation` API pages did resolve — see [tilemap-extras-brushes.md](tilemap-extras-brushes.md) and [tilemap-extras-tiles.md](tilemap-extras-tiles.md). Verify any signature not covered here against the live Scripting API or the package source before implementing.
+Two extension points: a **Scriptable Tile** decides what a cell renders, and a
+**Scriptable Brush** decides how painting writes cells. Before either, check
+that Rule Tile, Auto Tile, or Animated Tile does not already cover it — see
+[tilemap-extras-tiles.md](tilemap-extras-tiles.md) — because most auto-tiling
+and animation requirements are already solved there.
 
-Before writing a fully custom `TileBase`/`GridBrushBase`, check whether the 2D Tilemap Extras package's ready-made **Rule Tile**, **Animated Tile**, or **Auto Tile** ([tilemap-extras-tiles.md](tilemap-extras-tiles.md)) already covers the need — most auto-tiling/terrain-blending/animation requirements are already solved there, per YAGNI in `coding-principles.md`.
+## Scriptable Tile — extend `TileBase`
 
-## Custom Scriptable Tile
-
-Extend `UnityEngine.Tilemaps.TileBase` for a tile that dynamically changes its own look or the look of neighboring tiles (animated tiles, auto-tiling/terrain-blending tiles, randomized-variant tiles).
-
-| Method | Purpose |
-|---|---|
-| `GetTileData(Vector3Int position, ITilemap tilemap, ref TileData tileData)` | Required. Determines the tile's render data — populate `tileData.sprite`, `.color`, `.transform`, `.gameObject`, `.flags` as needed. |
-| `GetTileAnimationData(Vector3Int position, ITilemap tilemap, ref TileAnimationData tileAnimationData)` | Supplies animation frame data for an animated tile. |
-| `RefreshTile(Vector3Int position, ITilemap tilemap)` | Called on refresh; also controls which neighboring tiles re-run their own `GetTileData` (the mechanism behind auto-tiling/terrain-blend tiles). |
-| `StartUp(Vector3Int position, ITilemap tilemap, GameObject go)` | Called on the first frame the Scene runs — runtime initialization. |
-| `OnEnable()` / `OnDisable()` | Called when the tile asset is loaded / goes out of scope. |
-
-`TileData` struct fields: `sprite`, `color`, `transform`, `gameObject`, `flags`, plus `spriteEntityId`/`gameObjectEntityId` (DOTS entity references, when applicable).
-
-```csharp
-[CreateAssetMenu]
-public class AutoTintTile : TileBase
-{
-    public override void GetTileData(Vector3Int position, ITilemap tilemap, ref TileData tileData)
-    {
-        tileData.color = Color.white;
-    }
-}
-```
-
-Add `[CreateAssetMenu]`, create an instance via the Assets menu, then drag it into a Tile Palette like any other tile.
-
-## Custom Scriptable Brush
-
-Extend `UnityEditor.Tilemaps.GridBrushBase` (editor-only) for painting behavior the built-in brushes (Default/Line/Random/GameObject/Group — see [brushes.md](brushes.md)) don't cover.
-
-| Method | Purpose |
-|---|---|
-| `Paint` | Add items to the grid at the given position(s). |
-| `Erase` | Remove items from the grid. |
-| `FloodFill` | Fill a contiguous area. |
-| `Rotate` / `Flip` | Rotate/mirror the current brush content. |
-| `ChangeZPosition` / `ResetZPosition` | Manage 3D height when painting into an Isometric Z as Y tilemap. |
+| Member | What it decides | Source |
+|---|---|---|
+| `GetTileData(Vector3Int, ITilemap, ref TileData)` | Required. Populates `sprite`, `color`, `transform`, `gameObject`, and `flags` — the whole visual result of the cell | [Scriptable Tiles](https://docs.unity3d.com/Manual/tilemaps/tiles-for-tilemaps/scriptable-tiles/scriptable-tiles.html) |
+| `GetTileAnimationData(Vector3Int, ITilemap, ref TileAnimationData)` | Supplies animation frames, for a tile that animates itself rather than relying on Animated Tile | [Scriptable Tiles](https://docs.unity3d.com/Manual/tilemaps/tiles-for-tilemaps/scriptable-tiles/scriptable-tiles.html) |
+| `RefreshTile(Vector3Int, ITilemap)` | Controls which **neighbouring** cells re-run their own `GetTileData` — this is the mechanism behind every auto-tiling tile, and omitting it is why a neighbour-aware tile fails to update its surroundings | [Scriptable Tiles](https://docs.unity3d.com/Manual/tilemaps/tiles-for-tilemaps/scriptable-tiles/scriptable-tiles.html) |
+| `StartUp(Vector3Int, ITilemap, GameObject)` | Runs on the first frame the scene plays — runtime initialisation, not edit-time | [Scriptable Tiles](https://docs.unity3d.com/Manual/tilemaps/tiles-for-tilemaps/scriptable-tiles/scriptable-tiles.html) |
+| `OnEnable` / `OnDisable` | Asset load and unload | [Scriptable Tiles](https://docs.unity3d.com/Manual/tilemaps/tiles-for-tilemaps/scriptable-tiles/scriptable-tiles.html) |
+| `TileData` fields | `sprite`, `color`, `transform`, `gameObject`, `flags`, plus `spriteEntityId`/`gameObjectEntityId` for DOTS entity references | [Scriptable Tiles](https://docs.unity3d.com/Manual/tilemaps/tiles-for-tilemaps/scriptable-tiles/scriptable-tiles.html) |
 
 ```csharp
 using UnityEngine;
 using UnityEngine.Tilemaps;
-using UnityEditor.Tilemaps;
 
 [CreateAssetMenu]
-public class MyCustomBrush : GridBrushBase
+public class AutoTintTile : TileBase
 {
-    // Override Paint/Erase/FloodFill/etc. as needed.
+    [SerializeField] private Sprite sprite;
+    [SerializeField] private Color tint = Color.white;
+
+    public override void GetTileData(Vector3Int position, ITilemap tilemap, ref TileData tileData)
+    {
+        tileData.sprite = this.sprite;
+        tileData.color = this.tint;
+    }
 }
 ```
 
-`[CreateAssetMenu]` makes the brush creatable as a project asset, which then appears in the Tile Palette's Brush Inspector dropdown. Override `OnPaintInspectorGUI`/`OnPaintSceneGUI` for custom Inspector/Scene-view controls, or apply a `CustomGridBrush` attribute to adjust default display behavior.
+`[CreateAssetMenu]` is what makes the tile creatable from the Assets menu and
+draggable into a palette like any other tile.
 
-## Tile Template asset
+## Scriptable Brush — extend `GridBrushBase`
 
-For customizing how Unity generates `Tile` assets *from* a texture (the auto-creation step in [tile-palette-and-tiles.md](tile-palette-and-tiles.md)'s Tile Set Importer path), extend `TileTemplate` instead of hooking `TileBase` directly.
+| Member | What it decides | Source |
+|---|---|---|
+| `Paint` / `Erase` | Adding and removing content at the painted cells — the two overrides a minimal brush needs | [Create a scriptable brush](https://docs.unity3d.com/Manual/tilemaps/tile-palettes/brushes/create-scriptable-brush.html) |
+| `FloodFill` | Contiguous fill behaviour, if it should differ from painting cell by cell | [Create a scriptable brush](https://docs.unity3d.com/Manual/tilemaps/tile-palettes/brushes/create-scriptable-brush.html) |
+| `Rotate` / `Flip` | How the brush's own content transforms before being written | [Create a scriptable brush](https://docs.unity3d.com/Manual/tilemaps/tile-palettes/brushes/create-scriptable-brush.html) |
+| `ChangeZPosition` / `ResetZPosition` | Height handling when painting into an Isometric Z as Y tilemap — see [isometric-hexagonal.md](isometric-hexagonal.md) | [Create a scriptable brush](https://docs.unity3d.com/Manual/tilemaps/tile-palettes/brushes/create-scriptable-brush.html) |
+| `OnPaintInspectorGUI` / `OnPaintSceneGUI` | Custom Inspector and Scene-view controls for the brush | [Create a scriptable brush](https://docs.unity3d.com/Manual/tilemaps/tile-palettes/brushes/create-scriptable-brush.html) |
+| `CustomGridBrush` attribute | Adjusts how the brush is presented in the Brush Inspector dropdown | [Create a scriptable brush](https://docs.unity3d.com/Manual/tilemaps/tile-palettes/brushes/create-scriptable-brush.html) |
 
-## Practical guidance
+`GridBrushBase` lives in `UnityEditor.Tilemaps`, so a brush is editor-only
+code and must not be referenced from runtime assemblies.
 
-- Reach for a custom `TileBase`/`GridBrushBase` only when a built-in tile/brush genuinely can't express the requirement (auto-tiling, procedural variation, non-standard painting) — a plain `Tile` asset with the Default Brush covers the overwhelming majority of tilemap content (YAGNI in `coding-principles.md`).
-- A custom tile's `GetTileData`/`RefreshTile` runs in the editor and at runtime — keep it free of gameplay-rule decisions (which tile *should* be there per game state); resolve that in Shared Core and have the tile only render whatever the Shared Core-resolved layout already decided, per `coding-principles.md`'s Shared Core integrity rule.
-- Follow this project's naming convention for any custom tile/brush class (`AutoTintTile`, `RandomVariantBrush`) per `naming-convention.md` — PascalCase class names, no Hungarian prefixes.
+**Critical caveat**: the `GridBrushBase` and `GridBrush` API pages returned 404
+at authoring time — see the disclosed-gap table in
+[root-links.md](root-links.md). Confirm signatures against the live API before
+implementing.
+
+## Tile Template
+
+| Concept | What it decides | Source |
+|---|---|---|
+| Extend `TileTemplate` | Customises how Unity generates `Tile` assets *from* a texture during the Tile Set Importer flow, rather than what a tile does once created | [Tile Template asset](https://docs.unity3d.com/Manual/tilemaps/tile-palettes/tile-template-asset.html) |
+
+Name custom tiles and brushes per `naming-convention.md` — they become project
+assets other people select from a dropdown, so the name is the whole interface.
