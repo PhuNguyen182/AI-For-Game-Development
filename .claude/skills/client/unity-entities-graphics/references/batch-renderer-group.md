@@ -1,8 +1,20 @@
-# BatchRendererGroup
+# BatchRendererGroup — What the Package Is Built On
 
-Covers SKILL.md step 4's diagnostic use — understanding what Entities Graphics is built on, without needing to call the API directly.
+Source: [The BatchRendererGroup API](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/batch-renderer-group-api.html).
+Covers: SKILL.md §4 — **"Measure batching as instances per draw command"**.
 
-## Manual
-- [The BatchRendererGroup API](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/batch-renderer-group-api.html) — `BatchRendererGroup` is the Unity Engine API Entities Graphics is built on top of; it's what connects Entities Graphics to the rendering backend. Using Entities Graphics normally means never touching this API directly — it's handled internally. Unity 2022.1 introduced a unified code path replacing earlier implementations, with better usability, performance, flexibility, and test coverage.
+Background for reasoning about batching behaviour, not an API this skill calls.
+Entities Graphics drives `BatchRendererGroup` internally; the metrics and tools
+that expose the result are in
+[runtime-creation-and-performance.md](runtime-creation-and-performance.md).
 
-Knowing this exists is mainly useful for reasoning about *why* batching behaves the way it does (see [runtime-creation-and-performance.md](runtime-creation-and-performance.md)'s performance-measurement guidance) — not for writing custom `BatchRendererGroup` code, which is outside this skill's normal scope.
+| Subject | What it decides | Source |
+|---|---|---|
+| What it is | The Unity Engine API connecting Entities Graphics to the rendering backend — the layer that turns entity data into batched draws | [BatchRendererGroup API](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/batch-renderer-group-api.html) |
+| Whether to call it | Normal Entities Graphics use never touches it directly; it is handled internally | [BatchRendererGroup API](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/batch-renderer-group-api.html) |
+| Unified code path | Unity 2022.1 replaced the earlier implementations with one path, with better performance, flexibility, and test coverage | [BatchRendererGroup API](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/batch-renderer-group-api.html) |
+| Why it matters here | It explains *why* draw calls group the way they do, which is what makes a fragmented-batch diagnosis actionable rather than a guess | [BatchRendererGroup API](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/batch-renderer-group-api.html) |
+
+**Critical caveat**: writing custom `BatchRendererGroup` code is outside this
+skill's scope. A requirement that genuinely needs it is a rendering-architecture
+decision, not an Entities Graphics configuration task.

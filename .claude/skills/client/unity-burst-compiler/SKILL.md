@@ -1,115 +1,131 @@
 ---
 name: unity-burst-compiler
 description: >
-  Technique for the Burst compiler itself — the High Performance C# (HPC#)
-  language subset, `[BurstCompile]` attribute configuration (`FloatMode`,
-  `FloatPrecision`, per-job/per-assembly options), verifying compiled output
-  via the Burst Inspector, `Unity.Burst.Intrinsics` SIMD intrinsics, AOT
-  build/platform settings, `FunctionPointer<T>`/`SharedStatic<T>`, and memory
-  aliasing/`[NoAlias]`. Use this only on top of an already-justified Job
-  System/Burst decision — per `performance-and-algorithms.md`, Burst/Job
-  System/DOTS is architecture-level, escalation territory for Tech Lead –
-  Performance, not a routine default. Do not use this to schedule jobs, chain
-  `JobHandle` dependencies, or manage `NativeContainer` allocator lifetime —
-  that's `unity-job-system-and-burst`. Do not use this for a GPU-driven
-  visual effect — that's `compute-shader-vfx`. Do not use this to decide
-  whether to model a feature in ECS, or to design entities/components/
-  systems/queries — that's `unity-ecs-architecture`; Burst compilation of an
-  ECS job/system follows the exact same rules this skill already covers for
-  a plain job, so apply this skill's guidance either way rather than
-  treating ECS Burst tuning as a separate case. Do not use this to choose a
-  collection type or allocator strategy — that's `unity-collections`. Do not
-  use this to choose `Unity.Mathematics` types or functions — that's
-  `unity-mathematics`, even though `Unity.Mathematics` types are exactly
-  what this skill's HPC# subset and vectorization guidance is built around.
-  Do not use this to choose physics components, colliders, joints/motors, or
-  spatial queries — that's `unity-physics`, even though its entire
-  `PhysicsSimulationGroup` and query code are Burst-compiled by default and
-  this skill's tuning applies to them unchanged. Do not use this to choose
-  rendering components, DOTS Instancing shader compatibility, or material
-  overrides — that's `unity-entities-graphics`, even though its
-  material-override systems are expected to be Burst-compiled and this
-  skill's tuning applies to them unchanged.
+  Technique for the Burst compiler itself: the High Performance C# (HPC#)
+  subset and its type restrictions, `[BurstCompile]` placement and options
+  (`FloatMode`, `FloatPrecision`, `CompileSynchronously`, `DisableSafetyChecks`,
+  `[assembly: BurstCompile]`), reading generated assembly in the Burst
+  Inspector, `Unity.Burst.Intrinsics` SSE/AVX2/Neon, Burst AOT Settings and CPU
+  architecture targets, `FunctionPointer<T>`, `SharedStatic<T>`, and
+  `[NoAlias]` aliasing. Use when code that should be Burst-compiled is not, or
+  when compiled output must be tuned or verified.
+  Not for: scheduling, `JobHandle` chains, allocator lifetime
+  (`unity-job-system-and-burst`); whether Burst is warranted
+  (`tech-lead-performance`); the capture proving it (`unity-profiler-diagnostics`);
+  entity and system design (`unity-ecs-architecture`); container type choice
+  (`unity-collections`); `float3` maths (`unity-mathematics`); GPU-driven effects
+  (`compute-shader-vfx`).
 ---
 
 # Unity Burst Compiler — HPC# Compilation, Verification & Tuning
 
-Sources: see [references/](references/) for the Unity Manual/Scripting API root links, split by topic — [root-links.md](references/root-links.md), [getting-started-and-compilation-model.md](references/getting-started-and-compilation-model.md), [csharp-language-support.md](references/csharp-language-support.md), [intrinsics-and-simd.md](references/intrinsics-and-simd.md), [debugging-and-inspector.md](references/debugging-and-inspector.md), [aot-builds-and-platforms.md](references/aot-builds-and-platforms.md), [function-pointers-and-shared-static.md](references/function-pointers-and-shared-static.md), [aliasing-and-attributes.md](references/aliasing-and-attributes.md).
+## Bundled resources
+
+### References
+Read-only context, loaded on demand so SKILL.md itself stays short.
+
+| File | Contents | Read when |
+|---|---|---|
+| [root-links.md](references/root-links.md) | Burst manual and API roots plus the version pin | Starting any task here, or confirming which Burst version the project installs |
+| [getting-started-and-compilation-model.md](references/getting-started-and-compilation-model.md) | Where `[BurstCompile]` applies, option precedence, Play Mode JIT behaviour | Deciding where the attribute goes, or Editor timings look wrong on the first run |
+| [csharp-language-support.md](references/csharp-language-support.md) | The HPC# subset: types, strings, static fields | Code fails to compile under Burst, or new Burst-targeted code is being written |
+| [debugging-and-inspector.md](references/debugging-and-inspector.md) | Burst Inspector, the `Jobs > Burst` menu, debugger limits | Confirming a target compiled, or reading its generated assembly |
+| [aliasing-and-attributes.md](references/aliasing-and-attributes.md) | `FloatMode`, `FloatPrecision`, `[NoAlias]`, job-field aliasing rules | Choosing float behaviour, or a loop that should vectorize does not |
+| [intrinsics-and-simd.md](references/intrinsics-and-simd.md) | `Unity.Burst.Intrinsics`, X86 and Arm Neon families, support probes | Auto-vectorization has been measured insufficient and hand-written SIMD is on the table |
+| [aot-builds-and-platforms.md](references/aot-builds-and-platforms.md) | Burst AOT Settings, CPU architecture, AOT versus JIT scope | Configuring a Player build, or something works in Play Mode but not in a build |
+| [function-pointers-and-shared-static.md](references/function-pointers-and-shared-static.md) | `FunctionPointer<T>`, `SharedStatic<T>`, initialization order | Managed code must call into Burst code, or mutable static state must be shared |
 
 ## 1. Objective
-Get code Burst-compiling correctly and verifiably — within the HPC# language subset, with the right `[BurstCompile]` configuration for the accuracy/speed trade-off the workload actually needs — and confirm via the Burst Inspector that it took effect, rather than assuming the attribute alone guarantees it.
+Make an already-approved Burst target actually compile, prove it compiled, and tune its options to the accuracy and platform requirements the workload really has. It prevents the failures Burst produces silently rather than loudly: an entry point that quietly runs managed because one call in its graph is ineligible, a first-run Editor timing taken while async compilation was still in flight, `FloatMode.Fast` reordering arithmetic that a server has to reproduce exactly, a `[NoAlias]` asserted on memory that does alias, a `SharedStatic<T>` read before its static constructor ran, and AOT settings that only fail once a real build exists.
 
 ## 2. Role
-Act as the Burst compilation specialist inside Tech Lead – Performance's escalation territory: given a job or static method that has already been decided (per `performance-and-algorithms.md` and `unity-job-system-and-burst`) to need Burst, you make it actually compile, verify it compiled, and tune its compilation options — you don't decide whether Burst is warranted in the first place, and you don't schedule the job or manage its `NativeContainer` lifetime.
+Act as the Burst compilation specialist for the client track — the tool reached for once `unity-job-system-and-burst` or `unity-ecs-architecture` has a target that is supposed to be Burst-compiled and either is not, or needs its compilation tuned and verified. You make compilation happen and prove it; you do not decide that Burst is warranted, and you do not schedule the work.
 
 ## 3. When to invoke this skill
-- Code that's supposed to be Burst-compiled hits an HPC# language-subset error (a managed/reference type snuck in, a non-blittable field, an unsupported C# construct) and needs to be brought inside the supported subset.
-- Configuring `[BurstCompile]` parameters — `FloatMode`, `FloatPrecision`, `CompileSynchronously`, `DisableSafetyChecks` — at the job/method level or the assembly level via `[assembly: BurstCompile(...)]`.
-- Verifying whether a target actually compiled with Burst (versus silently falling back to Mono/IL2CPP) and reading its generated assembly in the Burst Inspector.
-- Reaching for `Unity.Burst.Intrinsics` (X86 SSE/AVX2, Arm Neon) for hand-tuned SIMD after standard Burst auto-vectorization has already been measured insufficient.
-- Configuring Burst AOT Settings (CPU architecture targets, Player build behavior) for a specific target platform.
-- Bridging managed C# and Burst code with `FunctionPointer<T>` or sharing mutable static state with `SharedStatic<T>`.
-- Applying `[NoAlias]` or reasoning about memory aliasing to help Burst vectorize a loop that isn't auto-vectorizing.
-- Negative trigger: scheduling a job, chaining `JobHandle` dependencies, or choosing a `NativeContainer` allocator — that's `unity-job-system-and-burst`, not this skill.
-- Negative trigger: no prior measurement or architecture decision justifying Burst/Job System at all — per `performance-and-algorithms.md` this is escalation territory; get the measurement from `unity-profiler-diagnostics` and the go-ahead from Tech Lead – Performance first.
-- Negative trigger: the deliverable is a GPU-driven visual effect (particle simulation, mesh deformation) — that's `compute-shader-vfx`, not this skill.
-- Negative trigger: deciding whether to model a feature in ECS, or designing entities/components/systems/queries — that's `unity-ecs-architecture`. This skill applies unchanged whether the Burst target is a plain job or an ECS `IJobEntity`/`ISystem`.
-- Negative trigger: choosing a collection type or allocator strategy — that's `unity-collections`. Negative trigger: choosing `Unity.Mathematics` vector/matrix/`Random`/`noise` types or functions — that's `unity-mathematics`, even though this skill's Burst-eligibility and vectorization guidance is written around exactly those types.
-- Negative trigger: choosing physics components, colliders, joints/motors, or spatial queries — that's `unity-physics`, even though its simulation group and query code are Burst-compiled by default and follow this skill's rules unchanged once that choice is made.
-- Negative trigger: choosing rendering components, DOTS Instancing shader compatibility, or material overrides — that's `unity-entities-graphics`, even though its material-override systems are expected to be Burst-compiled and follow this skill's rules unchanged once that choice is made.
+- Code meant to be Burst-compiled fails the HPC# subset — a managed or reference type, a non-blittable field, a mutable static, an unsupported construct — and must be brought inside it.
+- Setting `[BurstCompile]` options at method, job, or assembly level: `FloatMode`, `FloatPrecision`, `CompileSynchronously`, `DisableSafetyChecks`.
+- A reported symptom of compilation not happening: a job missing from the Burst Inspector's Compile Targets list, performance identical with and without the attribute, or a first-frame spike that disappears on later runs.
+- Reading generated assembly in the Burst Inspector to check whether a loop vectorized.
+- Reaching for `Unity.Burst.Intrinsics` (X86 SSE through AVX2, Arm Neon) after auto-vectorization has been measured insufficient.
+- Configuring Burst AOT Settings and CPU architecture targets, or diagnosing something that works in Play Mode and fails in a Player build.
+- Bridging managed and Burst code with `FunctionPointer<T>`, or sharing mutable static state with `SharedStatic<T>`.
+- Negative trigger: scheduling a job, chaining `JobHandle` dependencies, choosing an allocator, or disposing a container — that is `unity-job-system-and-burst`; a job can be perfectly scheduled and still not Burst-compile, and the two are diagnosed separately.
+- Negative trigger: no decision or measurement justifying Burst at all — that is `tech-lead-performance`'s call, on a capture from `unity-profiler-diagnostics`.
+- Negative trigger: modeling entities, systems, or queries — that is `unity-ecs-architecture`; this skill's rules apply unchanged whether the Burst target is a plain job or an `ISystem`.
+- Negative trigger: choosing a container type or allocator strategy — that is `unity-collections`.
+- Negative trigger: choosing `Unity.Mathematics` types or functions — that is `unity-mathematics`, even though those types are exactly what the vectorization guidance here is written around.
+- Negative trigger: a GPU-driven visual effect — that is `compute-shader-vfx`.
 
 ## 4. How to use this skill
-1. **Confirm the prerequisite.** State which already-justified Job System/Burst decision this tuning work sits on top of (same gate as `unity-job-system-and-burst` step 1) — this skill doesn't re-litigate whether Burst is warranted, it makes an already-approved target compile correctly.
-2. **Check the HPC# subset before writing.** No managed/reference types, no boxing, blittable data only, static fields must be read-only and initialized before first Burst-side access, strings limited to `Debug.Log`/`FixedString` assignment — consult `csharp-language-support.md` rather than guessing at what compiles.
-3. **Apply `[BurstCompile]` at the right level** — per-job/per-method, or `[assembly: BurstCompile(...)]` for a project-wide default — and know Editor menu settings override assembly settings, which override the attribute's own defaults.
-4. **Choose `FloatMode` deliberately.** Default to `FloatMode.Strict`/`Deterministic` unless a specific, measured accuracy tolerance justifies `FloatMode.Fast`'s instruction reordering and reduced-precision SIMD — don't reach for `Fast` by habit.
-5. **Verify compilation actually happened**, every time, via the Burst Inspector (`Jobs > Burst > Open Inspector`) or a build log — never assume the `[BurstCompile]` attribute alone guarantees the target compiled; a managed type anywhere in the call graph silently prevents it.
-6. **Reach for `Unity.Burst.Intrinsics` only after measuring** that Burst's own auto-vectorization isn't enough — hand-written SIMD intrinsics are harder to read and platform-specific (X86 vs. Arm Neon), so they're a deliberate escalation, not a default.
-7. **Configure AOT/Burst settings per target platform explicitly** (Project Settings > Burst AOT Settings, CPU architecture) rather than leaving Player-build compilation behavior implicit — AOT settings only affect Player builds, not Play Mode.
-8. **Use `FunctionPointer<T>`/`SharedStatic<T>` only when genuinely bridging the managed/Burst boundary is required** — cache `FunctionPointer<T>.Invoke` in a static field for the best call performance, and always initialize a `SharedStatic<T>` from a static constructor before any Burst-side access.
-9. **Use `[NoAlias]` sparingly and only with a genuine no-aliasing guarantee.** Most cases don't need it — Burst already infers no-alias information for `[NativeContainer]`-attributed structs and job struct fields; misapplying `[NoAlias]` on data that can actually alias is undefined behavior, not a performance-neutral mistake.
-10. **Re-measure after any Burst-specific change**, via `unity-profiler-diagnostics` or the Burst Inspector's generated assembly — a `FloatMode`/intrinsics/aliasing change is only worth keeping if it's backed by an actual measurement, per the Verification section of `performance-and-algorithms.md`.
+1. **Name the approved Job System or ECS work this compilation sits on top of** — per `performance-and-algorithms.md`'s Multithreading section, Burst is not adopted on its own; with no such decision, route to `tech-lead-performance` rather than tuning. [root-links.md](references/root-links.md) pins the Burst version every option below belongs to.
+2. **Bring the whole call graph inside the HPC# subset, not just the entry point**, per [csharp-language-support.md](references/csharp-language-support.md) — Burst compiles from an entry point outward, so one managed type, boxed value, or mutable static in any method it reaches disqualifies the entry point itself. Static fields must be `readonly` and compile-time evaluable; strings survive only as `FixedString` or a `Debug.Log` argument.
+3. **Apply `[BurstCompile]` at the level the target actually needs**, per [getting-started-and-compilation-model.md](references/getting-started-and-compilation-model.md) — on the job struct, or on both a static method and its containing class, or `[assembly: BurstCompile(...)]` for a project default. Precedence runs Editor menu over per-target attribute over assembly default, so a menu toggle can mask a wrong attribute.
+4. **Pick `FloatMode` from whether the result must be reproducible**, per [aliasing-and-attributes.md](references/aliasing-and-attributes.md) — anything feeding a game rule the server also evaluates stays `Deterministic` or `Strict`, because `coding-principles.md`'s Shared Core integrity section forbids float behaviour that can diverge across platforms. `FloatMode.Fast` reorders arithmetic and takes reduced-precision SIMD paths, so it is for presentation-only maths with a stated tolerance.
+5. **Verify in the Burst Inspector that the target compiled**, per [debugging-and-inspector.md](references/debugging-and-inspector.md) — `Jobs > Burst > Open Inspector`, confirm the target appears in Compile Targets and has generated assembly. The attribute's presence is never evidence; a silent fallback costs nothing at compile time and everything at runtime.
+6. **Set `CompileSynchronously = true` before timing anything in the Editor** — Play Mode compiles asynchronously by default, so the first invocations run managed while Burst works in the background, and an early capture measures the fallback rather than the compiled code.
+7. **Reach for `Unity.Burst.Intrinsics` only after generated assembly shows auto-vectorization fell short**, per [intrinsics-and-simd.md](references/intrinsics-and-simd.md) — hand-written SIMD is per-architecture (X86 versus Neon), and any `IsXXXSupported` probe returns false when Burst is disabled, so every intrinsic path needs a scalar fallback that produces the same result.
+8. **Cross the managed boundary with `FunctionPointer<T>` or `SharedStatic<T>` only where it is required**, per [function-pointers-and-shared-static.md](references/function-pointers-and-shared-static.md) — delegates are managed and uncompilable; cache `FunctionPointer<T>.Invoke` in a static field, and initialize every `SharedStatic<T>` from a static constructor before any Burst-side read.
+9. **Apply `[NoAlias]` only with a guarantee you can state in one sentence** — Burst already infers no-alias for `[NativeContainer]` structs and job fields, so explicit use is rare, and asserting it over memory that can overlap is undefined behaviour rather than a lost optimization.
+10. **Set Burst AOT Settings per target platform explicitly**, per [aot-builds-and-platforms.md](references/aot-builds-and-platforms.md) — `Project Settings > Burst AOT Settings` governs Player builds only, never Play Mode, so a wrong CPU architecture target surfaces first on a real device.
+11. **Leave `DisableSafetyChecks` off unless a measurement names it as the cost** — it removes the Editor-only container checks that are the project's only race and leak detection, and per `performance-and-algorithms.md`'s Verification section an unmeasured trade of correctness for speed is not a trade at all.
+12. **Re-measure after every compilation change and report what moved** — a `FloatMode`, intrinsics, or aliasing change is kept only on evidence from `unity-profiler-diagnostics` or a generated-assembly diff, not on the expectation that it should have helped.
+13. **Ask when the required accuracy tolerance is unstated** — if nobody has said whether a value must reproduce exactly, assume it must, keep `FloatMode.Strict`, and flag the assumption; the reverse mistake is discovered only as a desync.
 
 ## 5. Specific goals / tasks this skill performs
-- Diagnosing and fixing HPC# language-subset compile errors (managed types, non-blittable fields, unsupported constructs).
-- Configuring `[BurstCompile]` parameters at the job/method or assembly level (`FloatMode`, `FloatPrecision`, `CompileSynchronously`).
-- Verifying Burst compilation actually occurred via the Burst Inspector or build log, and diagnosing a silent Mono/IL2CPP fallback.
-- Applying `Unity.Burst.Intrinsics` SIMD intrinsics after a measured shortfall in Burst's own auto-vectorization.
-- Configuring Burst AOT Settings / CPU architecture targets for Player builds.
-- Bridging managed/Burst code with `FunctionPointer<T>` and `SharedStatic<T>`.
-- Applying `[NoAlias]` and reasoning about memory aliasing to help vectorization, backed by a genuine no-aliasing guarantee.
-- Out of scope: deciding *whether* a workload warrants Burst/Job System at all (`performance-and-algorithms.md`/Tech Lead – Performance's call); the initial Profiler measurement that justifies this work (`unity-profiler-diagnostics`); scheduling jobs, `JobHandle` dependency chains, `NativeContainer` allocator lifetime (`unity-job-system-and-burst`); GPU-driven visual effects (`compute-shader-vfx`).
+- Diagnosing and fixing HPC# subset violations anywhere in a Burst entry point's call graph.
+- Setting `[BurstCompile]` options at method, job, or assembly level, with precedence understood.
+- Verifying compilation in the Burst Inspector and diagnosing a silent managed fallback.
+- Choosing `FloatMode`/`FloatPrecision` against the reproducibility the value actually requires.
+- Applying `Unity.Burst.Intrinsics` after a measured auto-vectorization shortfall, with a scalar fallback.
+- Configuring Burst AOT Settings and CPU architecture targets for Player builds.
+- Bridging managed and Burst code with `FunctionPointer<T>` and `SharedStatic<T>`, initialization order included.
+- Out of scope: whether Burst is warranted (`tech-lead-performance`); the Profiler capture behind it (`unity-profiler-diagnostics`); scheduling and container lifetime (`unity-job-system-and-burst`); entity and system design (`unity-ecs-architecture`); container selection (`unity-collections`); maths types (`unity-mathematics`); GPU-driven effects (`compute-shader-vfx`).
 
 ## 6. Output format
 ```
-## Burst Compilation Work — <job/method or system name>
-- Prerequisite decision: <which already-approved Job System/Burst work this sits on top of>
-- HPC# subset issue(s) found/fixed: <managed type, non-blittable field, unsupported construct — or "none">
-- [BurstCompile] configuration: <FloatMode, FloatPrecision, level applied (method/assembly)>
-- Compilation verified via: <Burst Inspector / build log> — result: <compiled / fell back, why>
-- Intrinsics used: <yes/no — which, and the measurement that justified them>
-- AOT/platform settings touched: <yes/no — which>
-- FunctionPointer<T>/SharedStatic<T> used: <yes/no — why>
-- [NoAlias] applied: <yes/no — the no-aliasing guarantee backing it>
-- Before/after measurement: <from unity-profiler-diagnostics or Burst Inspector assembly diff>
+## Burst Compilation Work — <job/method/system name>
+- Approved by: <the Job System or ECS work this compilation belongs to>
+- HPC# issues found: <the specific violation and where in the call graph — or "none">
+- Attribute placement: <method / job struct / assembly — and any precedence that mattered>
+- FloatMode/FloatPrecision: <value — and whether the result must reproduce across platforms>
+- Compilation verified: <Burst Inspector result — compiled, or fell back and why>
+- Timing method: <CompileSynchronously used for measurement — yes/no>
+- Intrinsics: <which family, the shortfall that justified it, and the scalar fallback — or "none">
+- AOT settings: <platforms and CPU architectures touched — or "untouched">
+- FunctionPointer/SharedStatic: <used and why — or "none">
+- [NoAlias]: <where, and the guarantee in one sentence — or "none">
+- Measurement: <before/after evidence, or generated-assembly diff>
+- Layer: <Game.Core.* logic compiled / Game.Client.* jobs and systems>
 - Known limitations: <...>
+```
+
+**Extended report — emit ONLY when the requester asks for it.** It replaces the one-line `Known limitations` above with all three fields:
+```
+- Known limitations: <what the delivered solution does not cover>
+- Latent concerns: <failure modes not yet triggered: assumptions that hold only under current conditions, thresholds not yet reached, trade-offs knowingly deferred>
+- Future remediation: <the concrete fix for each concern above, each with the condition that should trigger it>
 ```
 
 ## 7. Examples
 **Example 1**
-- Input: an `IJobFor` already approved for Burst compilation (per `unity-job-system-and-burst`) was silently falling back to managed execution; the Burst Inspector showed it missing from the Compile Targets list.
-- Output: traced it to a `Debug.Log` call passing an interpolated managed string and a cached `List<T>` field referenced inside the job — replaced the log with a `FixedString128Bytes`-based call gated for Editor-only use, moved the list-based lookup to precomputed `NativeArray` data outside the job; reconfirmed via the Burst Inspector that the job now appears in Compile Targets and its generated assembly is present; re-measured in `unity-profiler-diagnostics` to confirm the CPU-time drop the original approval was based on.
+- Input: an `IJobFor` already approved for Burst shows the same frame cost with and without `[BurstCompile]`, and does not appear in the Burst Inspector's Compile Targets list.
+- Output: traced to two ineligible constructs reachable from `Execute` — an interpolated managed string passed to `Debug.Log`, and a `List<T>` field read through a static helper. Replaced the log with a `FixedString128Bytes` call gated to the Editor, precomputed the lookup into a `NativeArray` supplied as job data, and confirmed the target now appears in Compile Targets with generated assembly present; re-timed with `CompileSynchronously = true` so the measurement was not taken against the async fallback.
 
 **Example 2**
-- Input: "Can you add Arm Neon intrinsics to this Burst job to squeeze out more speed?" — no measurement showing the existing `[BurstCompile]` job (already auto-vectorized) was still short of the target.
-- Output: declined to add hand-written intrinsics without justification — reran the job through the Burst Inspector's generated assembly and a `unity-profiler-diagnostics` capture first, which showed the existing auto-vectorized code was already within the frame budget; reported that finding back instead of introducing platform-specific, harder-to-maintain intrinsic code for a gain that wasn't needed.
+- Input: "Set `FloatMode.Fast` on the whole gameplay assembly — it is free speed on the maths-heavy jobs."
+- Output: declined at assembly scope — `Fast` permits arithmetic reordering and reduced-precision SIMD, so applying it across the assembly would cover the movement and damage maths the server independently re-evaluates, and `coding-principles.md`'s Shared Core integrity section requires those to agree bit-for-bit. Applied `Fast` only to the presentation-side particle and camera-shake jobs, with the accepted tolerance stated in the handoff, and left the simulation jobs on `Strict`.
+
+**Example 3**
+- Input: a Burst job with Arm Neon intrinsics produces correct results in the Editor but wrong ones on a QA build with Burst compilation disabled.
+- Output: the intrinsic path was guarded by `IsNeonSupported`, which returns false under reference-Mono when Burst is off, and the else-branch had drifted from the vector implementation. Rewrote the scalar fallback to compute the same result and added it to the same test case, per §4's intrinsics step, so both paths are exercised rather than only the one Burst takes.
 
 ## 8. Edge cases & guardrails
-- Never assume `[BurstCompile]` took effect just because the attribute is present anywhere in the call chain — a single managed/reference type reachable from the entry point silently prevents compilation; verify via the Burst Inspector or build log every time.
-- Don't reach for `FloatMode.Fast` by default — it reorders floating-point operations and can use lower-precision SIMD paths; only use it with a measured, accepted accuracy tolerance.
-- Don't reach for `Unity.Burst.Intrinsics` before measuring that Burst's own auto-vectorization is insufficient — hand-written intrinsics are platform-specific (X86 vs. Arm Neon) and harder to maintain.
-- Never apply `[NoAlias]` without a genuine no-aliasing guarantee — misuse produces undefined behavior that's hard to trace back to its cause, not a neutral no-op.
-- Remember AOT/Burst build settings only govern Player builds — Play Mode in the Editor uses JIT compilation, so a Player-only AOT misconfiguration won't surface until an actual build.
-- Always initialize a `SharedStatic<T>` from a static constructor before any Burst-side code accesses it — accessing it uninitialized leads to an undefined initialization state, not a clean default value.
-- Cache `FunctionPointer<T>.Invoke` in a static field rather than re-resolving it on every call — re-resolving adds avoidable overhead on the managed-to-Burst call boundary.
-- Don't confuse this skill's HPC#/compilation-model concerns with `unity-job-system-and-burst`'s scheduling/dependency/`NativeContainer`-lifetime concerns — a job can be correctly scheduled and still silently fail to Burst-compile, and vice versa; check both independently.
+- Never treat the `[BurstCompile]` attribute as evidence of compilation — one ineligible call anywhere in the entry point's graph drops the whole target to managed with no error.
+- Never measure Burst code in the Editor without `CompileSynchronously` — async compilation means early frames run the managed fallback, and the number recorded is that fallback.
+- Never use `FloatMode.Fast` for anything the server also evaluates — reordered arithmetic breaks the bit-for-bit agreement prediction and authority depend on.
+- Never assert `[NoAlias]` without a stated guarantee — misapplied it is undefined behaviour, which surfaces as corrupted results far from the attribute.
+- Never read a `SharedStatic<T>` before its static constructor has run — the value is undefined, not a default.
+- Never leave an intrinsic path without an equivalent scalar fallback — `IsXXXSupported` is false whenever Burst is disabled, and an untested else-branch is where the divergence hides.
+- Never enable `DisableSafetyChecks` to buy speed without a measurement naming it — it removes the only race and leak detection the project has, and only in the environment where those bugs are still catchable.
+- Remember AOT settings govern Player builds only — a wrong CPU architecture is invisible in Play Mode and appears first on a device.
+- If the required accuracy tolerance is unstated, keep `FloatMode.Strict` and flag it — the opposite assumption is discovered as a desync, long after the change.

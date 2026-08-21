@@ -1,14 +1,36 @@
-# Rigid Bodies & Core Physics Components
+# Rigid Bodies, Their Components & `PhysicsStep`
 
-Covers SKILL.md step 3 (choosing a rigid body's component set by body type).
+Sources: [Rigid bodies](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/concepts-data.html), [Physics Step](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/component-step.html).
+Covers: SKILL.md §4 — **"Choose the body's component set from its body type"**, **"Tune `PhysicsStep` once per scene, not per body"**.
 
-## Manual
-- [Principal data components](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/core-components.html) — entry point listing the components covered by this section: rigid bodies, colliders, joints, motors.
-- [Rigid bodies](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/concepts-data.html) — the ECS component set for a rigid body: `PhysicsCollider` (shape, needed for any body that can collide), `PhysicsVelocity` (linear/angular velocity, required for any moving body), `PhysicsMass` (center of mass and moment of inertia, for dynamic bodies), optional `PhysicsDamping` (per-step velocity reduction/drag) and `PhysicsGravityFactor` (per-body gravity multiplier), `PhysicsCustomTags` (custom filter flags), `PhysicsSolverType` (Iterative vs. Direct solver), and `PhysicsWorldIndex` (a required shared component denoting which physics world the entity belongs to). All bodies also need `Unity.Transforms` components — dynamic bodies need `LocalTransform`, static bodies need `LocalTransform` or `LocalToWorld`.
-- [Physics Step: Configuring your physics simulation](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/component-step.html) — the single, scene-global `PhysicsStep` component: global gravity (overridable per-body via `PhysicsGravityFactor`), optional gyroscopic torque simulation, solver iteration count and substep count (accuracy vs. performance trade-off), multithreading toggle, collision tolerance, depenetration velocity limits, broadphase options, and Direct-solver contact stiffness/damping/joint parameters. Only one `PhysicsStep` component should exist per scene.
+The component set is not descriptive — it is what decides how the simulation
+treats a body. Creating this set in code rather than by baking is
+[authoring-and-runtime-creation.md](authoring-and-runtime-creation.md).
 
-## Scripting API
-- [`Unity.Physics.PhysicsMass`](https://docs.unity3d.com/Packages/com.unity.physics@6.6/api/Unity.Physics.PhysicsMass.html) — mass properties struct (inverse mass, inverse inertia tensor, center of mass).
-- [`Unity.Physics.PhysicsVelocity`](https://docs.unity3d.com/Packages/com.unity.physics@6.6/api/Unity.Physics.PhysicsVelocity.html) — linear/angular velocity struct.
+## Body components
 
-For creating this component set entirely in code at runtime (as opposed to authoring/baking it), see [authoring-and-runtime-creation.md](authoring-and-runtime-creation.md).
+| Component | What it decides | Source |
+|---|---|---|
+| `PhysicsCollider` | The shape; required for anything that can collide at all | [Rigid bodies](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/concepts-data.html) |
+| `PhysicsVelocity` | Linear and angular velocity — required for any moving body, and part of what marks a body as simulated rather than fixed | [PhysicsVelocity](https://docs.unity3d.com/Packages/com.unity.physics@6.6/api/Unity.Physics.PhysicsVelocity.html) |
+| `PhysicsMass` | Centre of mass and inertia tensor — its presence alongside velocity is what makes a body dynamic | [PhysicsMass](https://docs.unity3d.com/Packages/com.unity.physics@6.6/api/Unity.Physics.PhysicsMass.html) |
+| `PhysicsDamping` | Per-step velocity reduction; optional per-body drag | [Rigid bodies](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/concepts-data.html) |
+| `PhysicsGravityFactor` | Per-body multiplier over the scene's global gravity — the sanctioned way to make one body fall differently | [Rigid bodies](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/concepts-data.html) |
+| `PhysicsCustomTags` | Custom filter flags — the cheap alternative to intercepting the pipeline | [Rigid bodies](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/concepts-data.html) |
+| `PhysicsSolverType` | Iterative or Direct solver for this body | [Rigid bodies](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/concepts-data.html) |
+| `PhysicsWorldIndex` | Required **shared** component naming the body's world — being shared, it also partitions chunks | [PhysicsWorldIndex](https://docs.unity3d.com/Packages/com.unity.physics@6.6/api/Unity.Physics.PhysicsWorldIndex.html) |
+| Transform components | Dynamic bodies need `LocalTransform`; static bodies need `LocalTransform` or `LocalToWorld` | [Rigid bodies](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/concepts-data.html) |
+
+## `PhysicsStep` — one per scene
+
+| Setting | What it decides | Source |
+|---|---|---|
+| Gravity | The scene-global value every body inherits unless it carries `PhysicsGravityFactor` | [Physics Step](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/component-step.html) |
+| Solver iteration and substep counts | The accuracy-versus-cost dial for the entire simulation — raising it fixes soft or jittery stacks at a global price | [Physics Step](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/component-step.html) |
+| Multithreading toggle | Whether the simulation spreads across worker threads | [Physics Step](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/component-step.html) |
+| Collision tolerance, depenetration limits, broadphase options | Contact generation and recovery behaviour | [Physics Step](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/component-step.html) |
+| Gyroscopic torque | Optional extra fidelity for spinning bodies | [Physics Step](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/component-step.html) |
+
+**Critical caveat**: only one `PhysicsStep` should exist per scene. A second
+one is not additive configuration — it is ambiguity about which settings the
+simulation is actually running.

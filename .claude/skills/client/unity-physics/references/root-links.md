@@ -1,11 +1,19 @@
 # Root Links — Unity Physics 6.6
 
-Given by the requester as the canonical entry points for this skill's documentation, pinned to the package version this skill targets.
+Source: the root index pages listed below, as provided for this skill.
+Covers: the whole skill — provenance and version anchor for every file in
+this folder.
 
-## Manual
-- [Unity Physics overview](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/index.html) — package entry point: supported Unity versions (2022.3 LTS, Unity 6 LTS), installation, and links to Getting started / Upgrade guide / What's new / ECS packages.
+Anchors every link in this folder to the Unity Physics package, version 6.6.
+Anything this skill cites resolves under one of these roots; anything that does
+not is out of scope for the skill, not merely undocumented here.
 
-## Scripting API
-- [Unity Physics API reference](https://docs.unity3d.com/Packages/com.unity.physics@6.6/api/index.html) — root of the `Unity.Physics`/`Unity.Physics.Extensions`/`Unity.Physics.Authoring` namespace API reference.
+| Root | Holds | Source |
+|---|---|---|
+| Manual | Design philosophy, pipeline, components, colliders, joints, queries, authoring, troubleshooting | [Unity Physics overview](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/index.html) |
+| Scripting API | `Unity.Physics`, `Unity.Physics.Extensions`, `Unity.Physics.Authoring` | [Unity Physics API reference](https://docs.unity3d.com/Packages/com.unity.physics@6.6/api/index.html) |
 
-All other reference files in this skill link to specific sub-pages under these two roots, each verified at the `@6.6` version.
+The package supports Unity 2022.3 LTS and Unity 6 LTS. Every other link in this
+`references/` folder is a specific page under these roots, pinned to `@6.6` —
+verify the version the project actually installs before relying on a member,
+and keep the pin when following any link from this skill.

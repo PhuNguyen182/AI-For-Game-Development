@@ -1,11 +1,32 @@
-# Mesh Deformations (Skinning & Blend Shapes)
+# Mesh Deformations — Compute Skinning & Blend Shapes
 
-Covers SKILL.md step 8 — the experimental compute-shader-based deformation system.
+Source: [Mesh Deformations](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/mesh_deformations.html).
+Covers: SKILL.md §4 — **"Treat mesh deformation as an experimental, disclosed trade-off"**.
 
-## Manual
-- [Mesh Deformations](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/mesh_deformations.html) — an **experimental**, compute-shader-based system mimicking Skinned Mesh Renderer behavior for entities.
-  - **Setup**: install Entities Graphics; optionally add a scripting define for HDRP motion-vector support; build materials with a Shader Graph using the "Compute Deformation" node wired to vertex position/normal/tangent outputs; source meshes need a Skinned Mesh Renderer with blend shapes and/or valid bind poses + skin weights.
-  - **Control**: driven by two ECS components — Skin Matrix and Blend Shape Weight — modified by a custom system to animate the deformation.
-  - **Limitations**: not compatible with Scene View Draw Modes; no frustum/occlusion culling; no VFX Graph integration; missing standard Skinned Mesh Renderer features (cloth simulation, bake-mesh). Compute-shader processing is the supported path — vertex-shader skinning is discouraged and will not receive future support.
+The experimental compute-shader system that mimics Skinned Mesh Renderer
+behaviour for entities. Its limitations are the deliverable of this file — they
+decide whether it can be used at all.
 
-Confirm the Tech Spec genuinely needs this before setting it up — see SKILL.md's edge-case guardrail on disclosing its experimental status up front.
+## Setup
+
+| Step | What it decides | Source |
+|---|---|---|
+| Shader Graph "Compute Deformation" node | Wired to vertex position, normal, and tangent outputs — without it the material cannot deform | [Mesh Deformations](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/mesh_deformations.html) |
+| Source mesh requirements | A Skinned Mesh Renderer with blend shapes and/or valid bind poses plus skin weights | [Mesh Deformations](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/mesh_deformations.html) |
+| Skin Matrix and Blend Shape Weight components | The two ECS components a custom system writes to animate the deformation | [Mesh Deformations](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/mesh_deformations.html) |
+| HDRP motion vectors | Requires an additional scripting define | [Mesh Deformations](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/mesh_deformations.html) |
+
+## What it does not do
+
+| Limitation | What it decides | Source |
+|---|---|---|
+| No frustum or occlusion culling | Deformation cost is paid for off-screen characters too, which changes the crowd budget entirely | [Mesh Deformations](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/mesh_deformations.html) |
+| No VFX Graph integration | Effects driven from deformed geometry are not available | [Mesh Deformations](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/mesh_deformations.html) |
+| No cloth simulation, no bake-mesh | Standard Skinned Mesh Renderer features simply absent | [Mesh Deformations](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/mesh_deformations.html) |
+| Not compatible with Scene View Draw Modes | Some Editor diagnostics do not work on deformed entities | [Mesh Deformations](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/mesh_deformations.html) |
+| Vertex-shader skinning | Discouraged and will receive no future support — compute is the only forward path | [Mesh Deformations](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/mesh_deformations.html) |
+
+**Critical caveat**: missing culling is the limitation that most often decides
+against this system. A crowd sized on the assumption that off-screen characters
+are cheap is sized wrongly here, and the discrepancy appears only once the
+camera turns away.

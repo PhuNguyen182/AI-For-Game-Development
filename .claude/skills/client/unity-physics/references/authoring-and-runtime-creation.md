@@ -1,16 +1,38 @@
-# Authoring, Runtime Body Creation & Multiple Physics Worlds
+# Authoring Paths, Code-Created Bodies & Multiple Worlds
 
-Covers SKILL.md steps 9 and part of step 3/10 (choosing an authoring path, creating bodies in code, and multiple physics worlds).
+Sources: [Built-in physics authoring](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/built-in-components.html), [Creating bodies in code](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/create-body.html), [Multiple worlds](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/group-body.html).
+Covers: SKILL.md §4 — **"State which authoring path each body uses"**.
 
-## Manual
-- [Authoring](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/authoring.html) — entry point for the authoring section: Physics Step authoring, built-in physics authoring, custom physics authoring, Physics Debug Display, Custom Physics Body Tags.
-- [Built-in physics authoring](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/built-in-components.html) — Unity Physics supports baking the **built-in `UnityEngine` physics authoring components** directly for sub-scene editing: `Rigidbody`; `BoxCollider`/`SphereCollider`/`CapsuleCollider`/`MeshCollider`; `CharacterJoint`/`ConfigurableJoint`/`SpringJoint`/`FixedJoint`/`HingeJoint`; ragdolls (sample scenes in Unity Physics Samples). These are Editor-only, GameObject-side authoring inputs that bake into the same runtime ECS physics data as Unity Physics's own authoring components — using them does **not** make the runtime simulation PhysX; the two systems only share this authoring-time convenience, not any runtime code path. Custom physics authoring components are the alternative path.
-- [Custom Physics Shape component](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/custom-shapes.html) — see [colliders.md](colliders.md); `PhysicsShapeAuthoring` is the Unity-Physics-native alternative to baking built-in `Collider` components.
-- [Interacting with bodies](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/interacting-with-bodies.html) — entry point for runtime body interaction: attracting bodies to an entity, creating bodies in code, multiple worlds.
-- [Creating bodies in code](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/create-body.html) — building a rigid body entirely at runtime: every body needs `LocalTransform`, `LocalToWorld`, `PhysicsCollider`, `PhysicsWorldIndex`; a dynamic body additionally needs `PhysicsVelocity`, `PhysicsMass`, `PhysicsDamping`, `PhysicsGravityFactor`. The docs' example `CreateBody` method populates each component's data, using unsafe pointers to access collider properties for mass calculation on dynamic bodies.
-- [Multiple worlds](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/group-body.html) — simulating distinct body groups independently via `PhysicsWorldIndex.Value` (default `0` = the main world); assign a different world via a `PhysicsWorldAuthoring` component (or the equivalent runtime value), then create a system group extending `CustomPhysicsSystemGroup` with the target world index passed to its constructor. Entities in different worlds land in separate ECS chunks (different shared-component values), enabling fully independent simulation per world.
+The three ways a body comes into existence, and how simulation is partitioned.
+General baking mechanics — when baking runs, how a `Baker<T>` works — are
+`unity-ecs-architecture`'s.
 
-## Scripting API
-- [`Unity.Physics.PhysicsWorldIndex`](https://docs.unity3d.com/Packages/com.unity.physics@6.6/api/Unity.Physics.PhysicsWorldIndex.html) — the shared component selecting which physics world an entity belongs to.
+## Authoring paths
 
-Baking mechanics themselves (the `Baker<T>` pipeline, when baking runs, how authoring MonoBehaviours convert to entities in general) are `unity-ecs-architecture`'s territory — this file covers only which physics-specific authoring input (built-in vs. Unity-Physics-native) to bake from.
+| Path | What it decides | Source |
+|---|---|---|
+| Built-in `UnityEngine` components | `Rigidbody`, `BoxCollider`/`SphereCollider`/`CapsuleCollider`/`MeshCollider`, `CharacterJoint`/`ConfigurableJoint`/`SpringJoint`/`FixedJoint`/`HingeJoint` bake directly into ECS physics data — Editor-only authoring convenience that does **not** make the runtime PhysX | [Built-in authoring](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/built-in-components.html) |
+| Unity Physics authoring components | `PhysicsShapeAuthoring`, `PhysicsBodyAuthoring` — the native alternative, exposing this engine's own settings such as bevel radius and Force Unique | [Custom shapes](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/custom-shapes.html) |
+| Runtime creation in code | Build the component set directly — the path when bodies do not exist at design time | [Creating bodies in code](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/create-body.html) |
+
+## Creating a body in code
+
+| Requirement | What it decides | Source |
+|---|---|---|
+| Every body | `LocalTransform`, `LocalToWorld`, `PhysicsCollider`, `PhysicsWorldIndex` | [Creating bodies in code](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/create-body.html) |
+| Dynamic bodies additionally | `PhysicsVelocity`, `PhysicsMass`, `PhysicsDamping`, `PhysicsGravityFactor` | [Creating bodies in code](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/create-body.html) |
+| Mass computation | The documented example reaches collider properties through unsafe pointers to compute mass for dynamic bodies | [Creating bodies in code](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/create-body.html) |
+
+## Multiple worlds
+
+| Subject | What it decides | Source |
+|---|---|---|
+| `PhysicsWorldIndex.Value` | Selects the world; `0` is the main one | [PhysicsWorldIndex](https://docs.unity3d.com/Packages/com.unity.physics@6.6/api/Unity.Physics.PhysicsWorldIndex.html) |
+| Assigning a world | Through `PhysicsWorldAuthoring` at authoring time, or the equivalent value at runtime | [Multiple worlds](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/group-body.html) |
+| `CustomPhysicsSystemGroup` | A system group constructed with the target world index drives that world's simulation | [Multiple worlds](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/group-body.html) |
+| Chunk consequence | Different world indices are different shared-component values, so worlds also partition ECS chunks | [Multiple worlds](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/group-body.html) |
+
+**Critical caveat**: seeing `Rigidbody` and `BoxCollider` in a subscene does not
+mean the project is running PhysX. Both engines accept the same authoring
+components; only where the body ends up — an entity in a `PhysicsWorld`, or a
+GameObject in the PhysX scene — settles which engine simulates it.

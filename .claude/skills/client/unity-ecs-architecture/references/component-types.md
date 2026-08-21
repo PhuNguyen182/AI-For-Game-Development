@@ -1,11 +1,34 @@
-# Component Types
+# Component Types — The Five Kinds & Their Storage Cost
 
-Covers SKILL.md step 2 (choosing the right component kind deliberately).
+Sources: [Unmanaged components](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/components-unmanaged.html), [Shared components](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/components-shared-introducing.html), [Enableable components](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/components-enableable.html).
+Covers: SKILL.md §4 — **"Choose each component kind from how its value changes, not from what it holds"**.
 
-## Manual
-- [Unmanaged components](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/components-unmanaged.html) — the default: a struct implementing `IComponentData` with blittable, unmanaged fields; stored directly in chunks; usable in jobs and Burst-compiled code.
-- [Managed components](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/components-managed.html) — a class implementing `IComponentData`; **deprecated** — can't be accessed in jobs or Burst-compiled code, requires garbage collection, stored out-of-chunk with an extra index lookup. Default to unmanaged components instead.
-- [Shared components introduction](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/components-shared-introducing.html) — `ISharedComponentData` groups entities within an archetype's chunks by matching value, de-duplicating data; unique values per entity fragments chunks — use only when many entities genuinely share the same value.
-- [Dynamic buffer components](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/components-buffer.html) — `IBufferElementData` gives an entity a resizable, array-like `DynamicBuffer<T>`; stored in-chunk until it exceeds capacity, then spills to an external allocation.
-- [Enableable components](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/components-enableable.html) — `IEnableableComponent` (on `IComponentData`/`IBufferElementData`) toggles a component on/off per-entity at runtime without a structural change; use for frequently/unpredictably changing state instead of add/remove churn.
-- [Use enableable components](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/components-enableable-use.html) — enabling/disabling API, and how queries can filter on enabled state.
+Each kind has a different storage consequence, and the consequence — not the
+data's type — is what decides the choice. The field types inside a component
+(`float3`, `quaternion`) are `unity-mathematics`'s territory, not this file's.
+
+## The five kinds
+
+| Kind | What it decides | Source |
+|---|---|---|
+| `IComponentData` on a struct | The default: blittable, stored inline in the chunk, readable from jobs and Burst-compiled code | [Unmanaged components](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/components-unmanaged.html) |
+| `IComponentData` on a class | Managed and **deprecated** — GC-tracked, stored outside the chunk behind an extra indirection, unusable in jobs or Burst; never the answer for new code | [Managed components](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/components-managed.html) |
+| `ISharedComponentData` | Partitions the archetype's chunks by value: entities with different values never share a chunk, so a value that is unique per entity yields roughly one chunk per entity | [Shared components](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/components-shared-introducing.html) |
+| `IBufferElementData` | Gives the entity a resizable `DynamicBuffer<T>`, stored in-chunk up to its declared capacity and spilling to a heap allocation past it | [Dynamic buffer components](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/components-buffer.html) |
+| `IEnableableComponent` | Toggles a component on or off per entity with **no** structural change, so frequently-flipping state costs no archetype move | [Enableable components](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/components-enableable.html) |
+
+## Choosing between them
+
+| Situation | Kind | Source |
+|---|---|---|
+| Ordinary per-entity value read by a hot query | `IComponentData` struct | [Unmanaged components](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/components-unmanaged.html) |
+| A handful of distinct values shared by thousands of entities (team, faction, material set) | `ISharedComponentData` | [Shared components](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/components-shared-introducing.html) |
+| A value that differs per entity | Never `ISharedComponentData` — it fragments the archetype | [Shared components](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/components-shared-introducing.html) |
+| Variable-length per-entity list (inventory slots, waypoints) | `IBufferElementData`, capacity set to the common case | [Dynamic buffer components](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/components-buffer.html) |
+| State toggled several times per second (stunned, invulnerable) | `IEnableableComponent`, not add/remove churn | [Use enableable components](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/components-enableable-use.html) |
+| Query filter with no payload | Empty tag `IComponentData` — free at rest, matched by the query | [Component concepts](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/concepts-components.html) |
+
+**Critical caveat**: a query does not skip a disabled `IEnableableComponent`
+for free by default — filtering on enabled state is a query option, and a
+query written without it still visits those entities. Enableable components
+remove the *structural change*, not the iteration.

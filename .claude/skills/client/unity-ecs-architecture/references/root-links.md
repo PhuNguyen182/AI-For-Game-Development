@@ -1,11 +1,21 @@
-# Root Links
+# Root Links — Entities 6.6
 
-The two package-index pages the whole reference set is built from.
+Source: the root index pages listed below, as provided for this skill.
+Covers: the whole skill — provenance and version anchor for every file in
+this folder.
 
-## Manual
-- [Entities package](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/index.html) — Entities manual landing page; part of Unity's Data-Oriented Technology Stack (DOTS), providing a data-oriented ECS implementation.
+Anchors every link in this folder to the Entities package, version 6.6.
+Anything this skill cites resolves under one of these roots; anything that
+does not is out of scope for the skill, not merely undocumented here.
 
-## Scripting API
-- [Entity Component System API reference](https://docs.unity3d.com/Packages/com.unity.entities@6.6/api/index.html) — API landing page; links to Entity types, Component types, System types, and other core ECS classes.
+| Root | Holds | Source |
+|---|---|---|
+| Manual | ECS concepts, component kinds, systems, baking, structural changes | [Entities Manual index](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/index.html) |
+| Scripting API | `EntityManager`, `World`, `EntityQuery`, `EntityCommandBuffer` and the rest of the type reference | [Entities API index](https://docs.unity3d.com/Packages/com.unity.entities@6.6/api/index.html) |
 
-Note: version-substitute the `@6.6` segment for the Entities package version actually installed in the project (`Window > Package Manager` or `manifest.json`).
+Every other link in this `references/` folder is a specific page under these
+roots, pinned to `@6.6`. Keep the `@6.6` segment when following any link from
+this skill — a different version's API may differ. Confirm the version the
+project actually installs in `Window > Package Manager` or `manifest.json`
+before relying on a member, and consult the live site for anything not
+covered here.

@@ -1,9 +1,35 @@
-# Troubleshooting & Ghost Collisions
+# Troubleshooting — Ghost Collisions & Stale Static Transforms
 
-Covers SKILL.md's ghost-collision guardrail (edge case 6).
+Sources: [Troubleshooting](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/troubleshooting.html), [Ghost collisions](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/ghost-collisions.html).
+Covers: SKILL.md §4 — **"Treat a boundary artifact as a collider-geometry problem first"**.
 
-## Manual
-- [Troubleshooting](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/troubleshooting.html) — known issues: ghost collisions (see below), and static rigid bodies with parent transforms not updating collision detection when moved (fix: ensure `LocalToWorld` is current before physics systems run). Links to sample scenes and detailed sub-pages for each issue.
-- [Ghost collisions](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/ghost-collisions.html) — spurious collisions at boundaries between adjacent colliders. Causes: shared vertices/edges between adjacent colliders evaluated independently, misaligned separating planes during edge transitions, discrete time steps letting fast-moving objects skip past correct contact detection, and high-triangle-count collider shapes. Mitigations: narrowphase contact modification (smooths interaction between connected colliders), detailed static-mesh collision processing across multiple frames, simplifying colliders (e.g. convex-hull approximation instead of raw mesh), smaller time steps, and Voronoi-region-based normal validation to ignore/adjust invalid contact normals.
+The two documented failure modes this engine calls out by name, with causes
+ordered so the cheap fixes come first. Contact-level interception is the last
+resort, not the first — see [spatial-queries-and-events.md](spatial-queries-and-events.md).
 
-Ghost collisions are the most common collision-detection artifact this engine's own docs call out — check collider simplicity and shared-edge geometry first before reaching for pipeline-level interception (`IContactsJob`, per [spatial-queries-and-events.md](spatial-queries-and-events.md)) to work around a specific case.
+## Ghost collisions
+
+| Cause | What it decides | Source |
+|---|---|---|
+| Shared vertices or edges between adjacent colliders | Each is evaluated independently, so a seam between two flat tiles can generate a contact — the most common source | [Ghost collisions](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/ghost-collisions.html) |
+| Misaligned separating planes during edge transitions | A body crossing from one collider to the next meets an unexpected normal | [Ghost collisions](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/ghost-collisions.html) |
+| Discrete time steps with fast bodies | Contact detection is skipped past entirely | [Ghost collisions](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/ghost-collisions.html) |
+| High-triangle-count shapes | More edges to catch on, and more cost per contact | [Ghost collisions](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/ghost-collisions.html) |
+
+| Mitigation | What it decides | Source |
+|---|---|---|
+| Simplify the collider | Convex-hull approximation instead of raw mesh — the cheapest and most durable fix | [Ghost collisions](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/ghost-collisions.html) |
+| Smaller time steps | Helps the fast-body case specifically, at a global cost | [Ghost collisions](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/ghost-collisions.html) |
+| Narrowphase contact modification | Smooths interaction between connected colliders; an `IContactsJob`-level fix | [Ghost collisions](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/ghost-collisions.html) |
+| Voronoi-region normal validation | Ignores or adjusts invalid contact normals | [Ghost collisions](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/ghost-collisions.html) |
+| Multi-frame static-mesh processing | Spreads detailed static collision work across frames | [Ghost collisions](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/ghost-collisions.html) |
+
+## Static bodies under moving parents
+
+| Symptom | What it decides | Source |
+|---|---|---|
+| A static body moved by its parent stops colliding | Collision detection did not update — ensure `LocalToWorld` is current before the physics systems run | [Troubleshooting](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/troubleshooting.html) |
+
+**Critical caveat**: both failures present as "physics is broken" rather than as
+an error. Neither logs anything, so the first diagnostic move is checking
+collider geometry and transform ordering, not reading simulation code.

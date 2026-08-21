@@ -1,12 +1,35 @@
-# Joints & Motors
+# Joints & Motors — Choosing by Degrees of Freedom
 
-Covers SKILL.md step 5 (choosing joints/motors by required degrees of freedom).
+Sources: [Joints](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/custom-joints.html), [Motors](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/custom-motors.html).
+Covers: SKILL.md §4 — **"Choose a joint or motor by the degrees of freedom the mechanic needs"**.
 
-## Manual
-- [Joints](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/custom-joints.html) — the seven pre-built joint types: **ball and socket** (multi-axis rotation, e.g. hips/shoulders), **hinge** (free single-axis rotation, e.g. wheels), **limited hinge** (restricted single-axis rotation, e.g. knees/fingers), **fixed** (fully constrains two bodies together), **prismatic** (single-axis sliding), **ragdoll** (limited multi-axis motion for character physics), **stiff spring** (maintains a target distance). Each joint type has a static creation function on `Unity.Physics.JointData` (e.g. `CreateBallAndSocket`, `CreateLimitedHinge()`); input parameters vary by type.
-- [Motors](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/custom-motors.html) — motors are `PhysicsJoint`s with one driven constraint that move a body toward a target: **position motor** (drives to a target relative position along an axis), **linear velocity motor** (drives to a target relative velocity along an axis), **rotation motor** (drives to a target angle around an axis), **angular velocity motor** (drives to a target rotational speed around an axis). Every motor type takes spring frequency and damping ratio parameters controlling convergence toward the target. Creatable via GameObject joint components (baked), the C# API directly, or Unity Physics's own authoring motor components (explicitly noted as educational-only, not for production).
+Seven joint types and four motor types, selected by what motion must remain
+possible rather than by what the mechanic is called. The `float3`/`quaternion`
+maths feeding their parameters is `unity-mathematics`.
 
-## Scripting API
-- [`Unity.Physics.PhysicsJoint`](https://docs.unity3d.com/Packages/com.unity.physics@6.6/api/Unity.Physics.PhysicsJoint.html) — the runtime joint component wrapping a `JointData` created via one of the static factory functions above.
+## Joints
 
-For rotation/position target math (`float3`/`quaternion`), see `unity-mathematics` — this skill owns which joint/motor type to use, not the vector/quaternion math feeding it.
+| Type | What it decides | Source |
+|---|---|---|
+| Ball and socket | Multi-axis rotation about a shared point — hips, shoulders | [Joints](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/custom-joints.html) |
+| Hinge | Free rotation about one axis — wheels, doors | [Joints](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/custom-joints.html) |
+| Limited hinge | One axis with angular limits — knees, fingers | [Joints](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/custom-joints.html) |
+| Fixed | Fully constrains two bodies together | [Joints](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/custom-joints.html) |
+| Prismatic | Sliding along a single translational axis | [Joints](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/custom-joints.html) |
+| Ragdoll | Limited multi-axis motion tuned for character physics | [Joints](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/custom-joints.html) |
+| Stiff spring | Maintains a target distance rather than a fixed pose | [Joints](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/custom-joints.html) |
+| `Unity.Physics.JointData` factories | Each type is created by its own static function (`CreateBallAndSocket`, `CreateLimitedHinge`, …) with type-specific parameters | [PhysicsJoint](https://docs.unity3d.com/Packages/com.unity.physics@6.6/api/Unity.Physics.PhysicsJoint.html) |
+
+## Motors
+
+| Type | What it decides | Source |
+|---|---|---|
+| Position motor | Drives towards a target relative position along an axis | [Motors](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/custom-motors.html) |
+| Linear velocity motor | Drives towards a target relative velocity along an axis | [Motors](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/custom-motors.html) |
+| Rotation motor | Drives towards a target angle about an axis | [Motors](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/custom-motors.html) |
+| Angular velocity motor | Drives towards a target rotational speed about an axis | [Motors](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/custom-motors.html) |
+| Spring frequency and damping ratio | Every motor takes both; together they decide how fast it converges and whether it overshoots | [Motors](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/custom-motors.html) |
+
+**Critical caveat**: Unity Physics's own authoring motor components are
+documented as educational, not production. Create production motors from baked
+GameObject joint components or the C# API directly.

@@ -1,11 +1,29 @@
-# Getting Started & the Compilation Model
+# Compilation Model — Placement, Precedence & Play Mode
 
-Covers SKILL.md steps 1, 3, 10 (prerequisite framing, `[BurstCompile]` application levels, Play Mode compilation behavior).
+Sources: [Marking code for Burst compilation](https://docs.unity3d.com/Packages/com.unity.burst@1.8/manual/compilation-burstcompile.html), [Assembly-level Burst options](https://docs.unity3d.com/Packages/com.unity.burst@1.8/manual/compilation-burstcompile-assembly.html), [Burst compilation in Play mode](https://docs.unity3d.com/Packages/com.unity.burst@1.8/manual/compilation-synchronous.html).
+Covers: SKILL.md §4 — **"Apply `[BurstCompile]` at the level the target actually needs"**.
 
-## Manual
-- [Get started](https://docs.unity3d.com/Packages/com.unity.burst@1.8/manual/getting-started.html) — first Burst-compiled example, install/enable Burst.
-- [HPC# overview](https://docs.unity3d.com/Packages/com.unity.burst@1.8/manual/csharp-hpc-overview.html) — what High Performance C# is and how it relates to the full C# language.
-- [Marking code for Burst compilation](https://docs.unity3d.com/Packages/com.unity.burst@1.8/manual/compilation-burstcompile.html) — `[BurstCompile]` on jobs, classes (with `[BurstCompile]` static methods), structs, static methods; implicit entry-point compilation.
-- [Defining Burst options for an assembly](https://docs.unity3d.com/Packages/com.unity.burst@1.8/manual/compilation-burstcompile-assembly.html) — `[assembly: BurstCompile(...)]` project-wide defaults; precedence order (Editor menu > per-target attribute > assembly default).
-- [Calling Burst-compiled code](https://docs.unity3d.com/Packages/com.unity.burst@1.8/manual/csharp-calling-burst-code.html) — direct-call IL post-processing from managed C#, `DisableDirectCall`; generic methods/types unsupported.
-- [Burst compilation in Play mode](https://docs.unity3d.com/Packages/com.unity.burst@1.8/manual/compilation-synchronous.html) — async (default) vs. synchronous JIT compilation while in the Editor.
+Where the attribute goes, which setting wins when several disagree, and why an
+Editor timing taken too early measures the wrong code.
+
+## Placement
+
+| Target | What it decides | Source |
+|---|---|---|
+| Job struct | Compiles the job's `Execute` and everything it reaches | [Marking code](https://docs.unity3d.com/Packages/com.unity.burst@1.8/manual/compilation-burstcompile.html) |
+| Static method | Needs the attribute on **both** the method and its containing class — marking one is the common reason a helper stays managed | [Marking code](https://docs.unity3d.com/Packages/com.unity.burst@1.8/manual/compilation-burstcompile.html) |
+| `[assembly: BurstCompile(...)]` | Sets project-wide option defaults for that assembly, without marking anything for compilation by itself | [Assembly options](https://docs.unity3d.com/Packages/com.unity.burst@1.8/manual/compilation-burstcompile-assembly.html) |
+| Direct call from managed C# | IL post-processing routes a managed call into the compiled version; unavailable for generic methods, and suppressible with `DisableDirectCall` | [Calling Burst code](https://docs.unity3d.com/Packages/com.unity.burst@1.8/manual/csharp-calling-burst-code.html) |
+
+## Precedence and timing
+
+| Subject | What it decides | Source |
+|---|---|---|
+| Precedence order | Editor menu (`Jobs > Burst`) beats the per-target attribute, which beats the assembly default — so a menu toggle can hide a wrong attribute for everyone but the person who set it | [Assembly options](https://docs.unity3d.com/Packages/com.unity.burst@1.8/manual/compilation-burstcompile-assembly.html) |
+| Async compilation (Play Mode default) | Early invocations run the managed version while Burst compiles in the background | [Play mode compilation](https://docs.unity3d.com/Packages/com.unity.burst@1.8/manual/compilation-synchronous.html) |
+| `CompileSynchronously = true` | Forces compilation before first execution — the precondition for any Editor measurement to mean anything | [Play mode compilation](https://docs.unity3d.com/Packages/com.unity.burst@1.8/manual/compilation-synchronous.html) |
+| Editor JIT versus Player AOT | Two different compilation paths; Player behaviour is governed by AOT settings, see [aot-builds-and-platforms.md](aot-builds-and-platforms.md) | [Get started](https://docs.unity3d.com/Packages/com.unity.burst@1.8/manual/getting-started.html) |
+
+**Critical caveat**: a first-run frame spike followed by fast later runs is the
+signature of async compilation, not of a warm-up cost in the algorithm. Time it
+again with `CompileSynchronously` before optimizing anything.

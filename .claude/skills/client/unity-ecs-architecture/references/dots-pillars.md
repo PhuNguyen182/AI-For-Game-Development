@@ -1,16 +1,41 @@
-# DOTS Pillars — How ECS, Job System & Burst Relate
+# DOTS Pillars — Which Package Owns Which Concern
 
-Covers SKILL.md step 1 and the cross-skill boundary this whole skill is scoped around.
+Sources: [ECS packages](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/ecs-packages.html); the dependency claims below are synthesized from that page plus each sibling package's own stated requirements.
+Covers: SKILL.md §4 — **"Name the architecture-level decision that approved ECS for this feature"**.
 
-## Manual
-- [ECS packages](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/ecs-packages.html) — Unity's Data-Oriented Technology Stack (DOTS) is made of several independent pieces working together: the **Entities** package (ECS data model — this skill), the **C# Job System** (multithreading — `unity-job-system-and-burst`), the **Burst compiler** (native-quality code generation — `unity-burst-compiler`), the **Collections** (`unity-collections`) and **Mathematics** (`unity-mathematics`) packages used by all three, **Unity Physics** (`unity-physics`) — a deterministic rigid body/spatial-query simulation package — and **Entities Graphics** (`unity-entities-graphics`) — the package that renders ECS entities via `BatchRendererGroup`. Unlike Collections/Mathematics, neither Physics nor Entities Graphics is independent of ECS: both require the Entities package to run at all.
+DOTS is several packages, not one; three of them are usable with no entities
+involved at all. This file exists to settle, before any modeling starts, which
+of the seven owns the concern in front of you — because the most common way
+this skill goes wrong is answering a scheduling or compilation question in ECS
+terms.
 
-## The relationship, explicitly
-- The Job System and Burst compiler are **independent of ECS** — a project can schedule `IJob`/`IJobFor`/`IJobParallelFor` over plain `NativeArray` data and apply `[BurstCompile]` to it with zero entities, components, or systems involved. Don't assume either one requires ECS.
-- Collections (`unity-collections`) and Mathematics (`unity-mathematics`) are likewise **independent of ECS, the Job System, and Burst** — `NativeArray<T>`/`FixedString`/`float3`/`quaternion`/`Random` all work in plain MonoBehaviour code with none of the other three involved. They're foundational packages the other three build on, not ECS-specific concepts.
-- ECS's own iteration job types (`IJobEntity`, `IJobChunk`) are built **on top of** the same underlying Job System — once scheduled, they follow the identical `JobHandle`/`.Complete()`/`NativeContainer`-lifetime rules as any other job, covered by `unity-job-system-and-burst`, not restated here.
-- Burst compilation of an ECS job or `ISystem` (HPC# subset compliance, `FloatMode`, verifying via the Burst Inspector, AOT settings) follows exactly the same rules as Burst-compiling a plain job — covered by `unity-burst-compiler`, not restated here.
-- An ECS component's fields are commonly typed with `Unity.Mathematics` types (`float3`, `quaternion`) and its buffers/queries commonly built on `unity-collections` container concepts (`DynamicBuffer<T>` behaves like a `NativeList<T>` scoped to an entity) — but choosing those types/containers is each sibling skill's own territory, not this one's.
-- Unity Physics (`unity-physics`) is a sibling package that **does** require ECS — its rigid bodies are ordinary ECS components (`PhysicsCollider`, `PhysicsVelocity`, `PhysicsMass`, etc.) modeled with this skill's own component/baking mechanics, its job interfaces (`ICollisionEventsJob`, `IContactsJob`, etc.) scheduled by `unity-job-system-and-burst`, its simulation group Burst-compiled per `unity-burst-compiler`, its collider geometry stored behind a `unity-collections`-style `BlobAssetReference<T>`, and every one of its parameters typed with `unity-mathematics`'s `float3`/`quaternion`. It sits on the same ECS-adoption escalation gate this skill does — but which physics components/colliders/joints/queries to use is `unity-physics`'s own territory, not restated here.
-- Entities Graphics (`unity-entities-graphics`) is the other sibling package that **does** require ECS — it renders entities by bridging their rendering components (`RenderMeshArray`, `MaterialMeshInfo`, `RenderMeshDescription`, etc., also modeled with this skill's own mechanics) to `BatchRendererGroup`, needs a Burst-compiled system (`unity-job-system-and-burst`/`unity-burst-compiler`) to update a material-override component, and typically types those overrides with `unity-mathematics`'s `float4`. It further narrows the ECS-adoption gate to a platform/pipeline requirement (URP Forward+ or HDRP only, never Built-in) that's specific to it, not restated here.
-- This skill (`unity-ecs-architecture`) owns only the ECS-specific concerns: how data is modeled as entities/components, how systems are organized and query that data, baking/authoring, and structural-change batching.
+## Independent of ECS
+
+| Package | What it decides | Source |
+|---|---|---|
+| C# Job System (`unity-job-system-and-burst`) | Schedules `IJob`/`IJobParallelFor` over plain `NativeArray` data with zero entities present — needing jobs is not a reason to adopt ECS | [ECS packages](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/ecs-packages.html) |
+| Burst (`unity-burst-compiler`) | Compiles any HPC#-compliant static method or job, ECS or not — `[BurstCompile]` on an `ISystem` follows identical rules to a plain job | [ECS packages](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/ecs-packages.html) |
+| Collections (`unity-collections`) | `NativeArray<T>`, `FixedString`, allocator lifetime — works in ordinary MonoBehaviour code | [ECS packages](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/ecs-packages.html) |
+| Mathematics (`unity-mathematics`) | `float3`, `quaternion`, `Random`, `noise` — the everyday field types of ECS components, but the type choice is not an ECS decision | [ECS packages](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/ecs-packages.html) |
+
+## Requires ECS to run at all
+
+| Package | What it decides | Source |
+|---|---|---|
+| Entities — this skill | Data modeling, archetypes, systems, queries, baking, structural-change batching | [Entities Manual](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/index.html) |
+| Unity Physics (`unity-physics`) | `PhysicsCollider`/`PhysicsVelocity`/`PhysicsMass`, collider shapes, joints, spatial queries — ordinary ECS components, but which ones to use is that skill's call | synthesized |
+| Entities Graphics (`unity-entities-graphics`) | `RenderMeshArray`/`MaterialMeshInfo`, DOTS Instancing compatibility, material overrides — and narrows the adoption gate further to URP Forward+ or HDRP only | synthesized |
+
+## Where the hand-off actually falls
+
+| Situation | Owner | Source |
+|---|---|---|
+| An `IJobEntity` needs its `JobHandle` chained or its container disposed | `unity-job-system-and-burst` — once scheduled it is an ordinary job | synthesized |
+| An `ISystem` is `[BurstCompile]`d and must be verified in the Burst Inspector | `unity-burst-compiler` — identical workflow to a plain job | synthesized |
+| A `DynamicBuffer<T>` needs sizing or a `NativeHashMap` feeds a system | `unity-collections` | synthesized |
+| An entity should render, collide, or be queried spatially | `unity-entities-graphics` / `unity-physics` | synthesized |
+
+**Critical caveat**: needing multithreading is not a reason to adopt ECS. The
+Job System and Burst deliver parallelism and native codegen with no entities
+at all, so "we need this on worker threads" resolves to
+`unity-job-system-and-burst`, never to this skill.

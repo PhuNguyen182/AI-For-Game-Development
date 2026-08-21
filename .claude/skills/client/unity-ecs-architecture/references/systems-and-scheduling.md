@@ -1,14 +1,41 @@
-# Systems, Update Order & Job System Integration
+# Systems, Update Order & the Job Hand-off
 
-Covers SKILL.md steps 5, 6 (system type/placement, and the handoff point where ECS iteration becomes a Job System job).
+Sources: [System groups and update order](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/systems-update-order.html), [SystemBase overview](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/systems-systembase.html), [SystemAPI overview](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/systems-systemapi.html).
+Covers: SKILL.md §4 — **"Prefer `ISystem` in an existing `SystemGroup`"**.
 
-## Manual
-- [SystemBase overview](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/systems-systembase.html) — managed system class; `OnCreate`/`OnUpdate`/`OnDestroy`; can call managed APIs, but isn't itself Burst-compilable.
-- [System groups](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/systems-update-order.html) — default root groups (`InitializationSystemGroup`, `SimulationSystemGroup`, `PresentationSystemGroup`); `UpdateBefore`/`UpdateAfter`/`OrderFirst`/`OrderLast` to control placement within a group; custom `ComponentSystemGroup` subclasses.
-- [SystemAPI overview](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/systems-systemapi.html) — cached, source-generated access to queries, component lookups, and singletons from inside `ISystem`/`SystemBase`.
-- [Job system in Entities introduction](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/systems-scheduling-jobs.html) — how systems schedule `IJobEntity`/`IJobChunk` jobs to iterate entity data on worker threads.
+Which system type to write, where it updates, and the exact point at which the
+work stops being an ECS concern. Everything past that point — `JobHandle`
+chaining, `.Complete()` placement, container disposal — is
+`unity-job-system-and-burst`, and is deliberately not restated here.
 
-**Hand-off point:** once entity data iteration is scheduled as a job (`IJobEntity`/`IJobChunk`), it becomes an ordinary Job System job underneath — the same `JobHandle` dependency-chaining, `.Complete()`/dispose discipline, and `NativeContainer` allocator rules from `unity-job-system-and-burst` apply unchanged. This skill only covers designing the ECS-side query/iteration; it doesn't restate those scheduling mechanics.
+## System type
 
-## Scripting API
-- [Interface `IJobEntity`](https://docs.unity3d.com/Packages/com.unity.entities@6.6/api/Unity.Entities.IJobEntity.html) — job that executes `Execute()` once per entity matching an inferred `EntityQuery`; simpler alternative to `IJobChunk` for straightforward per-entity work.
+| Subject | What it decides | Source |
+|---|---|---|
+| `ISystem` | Unmanaged struct, Burst-compilable — the default, and the only one that can be `[BurstCompile]`d | [Systems comparison](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/systems-comparison.html) |
+| `SystemBase` | Managed class; can call managed APIs and capture managed state, but is not Burst-compilable — pick it only when a managed API is genuinely required | [SystemBase overview](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/systems-systembase.html) |
+| `SystemAPI` | Source-generated cached access to queries, lookups, and singletons — only usable inside a system, so it cannot be lifted into a plain static helper | [SystemAPI overview](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/systems-systemapi.html) |
+
+## Update order
+
+| Subject | What it decides | Source |
+|---|---|---|
+| `InitializationSystemGroup` | Runs first each frame — setup that later groups depend on | [Update order](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/systems-update-order.html) |
+| `SimulationSystemGroup` | Gameplay simulation; where most feature systems belong | [Update order](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/systems-update-order.html) |
+| `PresentationSystemGroup` | Runs last, before rendering; anything reading simulation results for display | [Update order](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/systems-update-order.html) |
+| `[UpdateBefore]` / `[UpdateAfter]` | Order *within* one group only — they cannot order across groups, and a cross-group expectation written this way silently does nothing | [Update order](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/systems-update-order.html) |
+| `[OrderFirst]` / `[OrderLast]` | Pins a system to the edge of its group, ahead of the `UpdateBefore`/`UpdateAfter` sort | [Update order](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/systems-update-order.html) |
+| Custom `ComponentSystemGroup` | Groups related systems under one ordering unit and one update rate — worth it only when several systems share both | [Update order](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/systems-update-order.html) |
+
+## The hand-off point
+
+| Situation | Owner | Source |
+|---|---|---|
+| Deciding a system schedules an `IJobEntity` rather than iterating on the main thread | This skill — see [queries-and-iteration.md](queries-and-iteration.md) | synthesized |
+| Chaining that job's `JobHandle`, choosing where `.Complete()` lands, disposing its containers | `unity-job-system-and-burst` | [Scheduling jobs in Entities](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/systems-scheduling-jobs.html) |
+| Making the system itself Burst-compile and verifying it did | `unity-burst-compiler` | synthesized |
+
+**Critical caveat**: `state.Dependency` is the system's job handle, and a
+system that schedules a job without assigning it back leaves the next system
+free to read the same data concurrently. Assigning it is the ECS-side half of
+the contract; everything else about that handle is the Job System skill's.

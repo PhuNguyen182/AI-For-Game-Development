@@ -1,15 +1,33 @@
-# Relationship to ECS, Job System, Burst, Collections & Mathematics
+# Relationship to ECS, Jobs, Burst, Collections & Mathematics
 
-Covers SKILL.md's ECS-adoption gate and every hand-off point to the other four DOTS-family skills.
+Sources: [ECS packages](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/ecs-packages.html); the ownership rows below are synthesized from this skill set's own boundaries.
+Covers: SKILL.md §4 — **"Name the ECS-adoption decision this physics work sits on top of"**.
 
-## Manual
-- [ECS packages](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/ecs-packages.html) — Unity Physics is explicitly built on the other DOTS packages: **Entities** (the ECS pattern itself), the **C# Job System** (multithreaded execution), the **Burst compiler** (optimized codegen), **Collections** (unmanaged collection types), and **Mathematics** ("specially optimized in Burst-compiled code"). Physics sits as a specialized simulation layer within the broader DOTS ecosystem, alongside sibling packages like Netcode and Entities Graphics that build on the same foundation.
+Unity Physics is a specialized simulation layer on top of the DOTS packages,
+not a peer of them. This file settles which skill owns a request that touches
+physics plus one of its foundations.
 
-## The relationship, explicitly
-- **Requires ECS, always.** Unlike Collections and Mathematics (independent of ECS/Job System/Burst — see `unity-collections`/`unity-mathematics`'s own `dots-relationship.md`/`shared-core-and-burst-compatibility.md`), Unity Physics *cannot* run without the Entities package: `PhysicsWorld` is built from ECS component data every step. This skill therefore sits on the exact same `performance-and-algorithms.md` ECS-adoption escalation gate `unity-ecs-architecture` requires — never invoke this skill for a project/system that hasn't already justified ECS.
-- **`unity-ecs-architecture` owns the general ECS mechanics** this skill's physics components ride on top of: the `Baker<T>` baking pipeline itself, `SystemGroup` placement conventions, `EntityCommandBuffer` batching, and `BlobAssetReference<T>`/`BlobBuilder` usage. This skill only decides *which* physics-specific components/colliders/joints to model with those mechanics, not how the mechanics themselves work. Collider geometry specifically is stored behind a `BlobAssetReference<Collider>` — the same blob-asset concept `unity-ecs-architecture` covers generically.
-- **`unity-job-system-and-burst` owns scheduling** for every physics-specific job interface named in this skill (`ICollisionEventsJob`, `ITriggerEventsJob`, `IBodyPairsJob`, `IContactsJob`, `IJacobiansJob`) — `JobHandle` dependency chains, `.Complete()` timing, and disposal follow its rules unchanged; this skill only says which interface fits a given need.
-- **`unity-collections` owns the container/allocator choices** underneath physics data — `CollisionEvents`/`TriggerEvents` stream through `NativeStream`-shaped storage, and query results/body pairs commonly flow through `NativeList`/`NativeArray`. This skill doesn't re-derive allocator lifetime or container-type selection; it only says what physics data needs to move through one.
-- **`unity-mathematics` owns every vector/quaternion type** this skill's components and joints are built from — `float3` positions/velocities, `quaternion` orientations, joint axis/target math. Motor spring-frequency/damping-ratio tuning and query-input construction (`RaycastInput`, `ColliderCastInput`) are physics-specific, but the underlying `float3`/`quaternion` type choice is `unity-mathematics`'s territory.
-- **`unity-burst-compiler` owns Burst tuning** for the entire `PhysicsSimulationGroup` (Burst-compiled by default) and for any query/job code — this skill's own docs recommend running queries inside Burst-compiled jobs for performance, but verifying and tuning that compilation (HPC# compliance, `FloatMode`, Burst Inspector) is that skill's job, not this one's.
-- **Determinism is this package's headline property** (see [design-and-pipeline.md](design-and-pipeline.md)) — stateless, same-inputs-same-outputs simulation that makes rollback netcode and multi-step-per-frame simulation straightforward. This is a genuinely useful property for a multiplayer project, but designing the actual client-prediction/reconciliation protocol around it is Netcode Engineer's territory, not this skill's, and — unlike `unity-mathematics`'s types — Unity Physics itself still requires a running Entities `World`, so it is not something `Game.Core.*` Shared Core can host directly the way pure `Unity.Mathematics` math can.
+## What it requires
+
+| Subject | What it decides | Source |
+|---|---|---|
+| Entities package | **Required** — `PhysicsWorld` is rebuilt from ECS component data every step, so this skill inherits `unity-ecs-architecture`'s adoption gate and never justifies ECS by itself | [ECS packages](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/ecs-packages.html) |
+| Job System, Burst, Collections, Mathematics | Built on all four — the simulation group is Burst-compiled by default and the docs expect queries to run inside Burst jobs | [ECS packages](https://docs.unity3d.com/Packages/com.unity.physics@6.6/manual/ecs-packages.html) |
+| A live `World` | Physics cannot be hosted in `Game.Core.*` the way pure `Unity.Mathematics` code can — the rule decision stays in Core and receives physics output as input | synthesized |
+
+## Who owns what
+
+| Concern | Owner | Source |
+|---|---|---|
+| Which physics component, collider, joint, query, or hook to use | This skill | synthesized |
+| `Baker<T>` mechanics, `SystemGroup` conventions, `EntityCommandBuffer`, blob assets generically | `unity-ecs-architecture` | synthesized |
+| Scheduling `ICollisionEventsJob`, `IContactsJob` and the rest — dependencies, `.Complete()`, disposal | `unity-job-system-and-burst` | synthesized |
+| Container and allocator choice under event streams and query results | `unity-collections` | synthesized |
+| `float3`/`quaternion` type and function choice in every parameter | `unity-mathematics` | synthesized |
+| HPC# compliance and `FloatMode` for physics-adjacent jobs | `unity-burst-compiler` | synthesized |
+| Client prediction and reconciliation built on this determinism | `netcode-engineer` | synthesized |
+| `Rigidbody`, `Collider`, `Physics.Raycast` on ordinary GameObjects | `unity-engineer` | synthesized |
+
+**Critical caveat**: determinism makes this engine attractive for rollback
+netcode, and that attraction is where scope creep starts. Determinism is a
+property this skill preserves; the protocol built on it is designed elsewhere.

@@ -18,7 +18,7 @@ Given by the requester as the canonical entry points for this skill's documentat
 
 | Page | URL | Note |
 |---|---|---|
-| Built-in 3D physics overview | [PhysicsOverview.html](https://docs.unity3d.com/Manual/PhysicsOverview.html) | Parent page of all seven sections above — the entry point into Unity's built-in PhysX-based 3D physics engine (`UnityEngine.Physics` namespace), as distinct from `UnityEngine.Physics2D` and from the separate `com.unity.physics` DOTS package covered by [unity-physics](../../unity-physics/SKILL.md). |
+| Built-in 3D physics overview | [PhysicsOverview.html](https://docs.unity3d.com/Manual/PhysicsOverview.html) | Parent page of all seven sections above — the entry point into Unity's built-in PhysX-based 3D physics engine (`UnityEngine.Physics` namespace), as distinct from `UnityEngine.Physics2D` and from the separate `com.unity.physics` DOTS package covered by `unity-physics`. |
 
 ## Scripting API — namespace roots
 

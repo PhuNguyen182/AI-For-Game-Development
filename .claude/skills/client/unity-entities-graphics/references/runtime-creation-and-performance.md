@@ -1,21 +1,51 @@
-# Runtime Entity Creation, Performance & Known Issues
+# Runtime Creation, Batching Metrics & Known Issues
 
-Covers SKILL.md steps 4 and 9 — creating renderable entities in code, and measuring/diagnosing the result.
+Sources: [Runtime Entity Creation](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/runtime-entity-creation.html), [Entities Graphics Performance](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/entities-graphics-performance.html), [Known Issues](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/known-issues.html).
+Covers: SKILL.md §4 — **"Create runtime entities from one prototype and `Instantiate` it"**, **"Measure batching as instances per draw command"**.
 
-## Manual — Runtime Entity Creation
-- [Runtime Usage](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/runtime-usage.html) — index page pointing to Runtime Entity Creation for spawning/configuring renderable entities during gameplay rather than at design time.
-- [Runtime Entity Creation](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/runtime-entity-creation.html) — `RenderMeshUtility.AddComponents` populates an entity with the required rendering components from a mesh, material, and `RenderMeshDescription`. **Recommended pattern**: build one prototype entity via `AddComponents`, then `Instantiate` it repeatedly and update per-instance data (transform, etc.) via `SetComponent` — instantiation performance doesn't depend on how the prototype was created, it avoids repeated expensive structural changes, and it composes with Burst jobs + `EntityCommandBuffer.ParallelWriter` for parallel bulk spawning. Calling `AddComponents` per spawn is the documented anti-pattern this avoids.
+## Contents
+- [Runtime creation](#runtime-creation)
+- [Batching efficiency](#batching-efficiency)
+- [Known issues](#known-issues)
 
-## Manual — Performance
-- [Entities Graphics Performance](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/entities-graphics-performance.html) — rendering goes through `BatchRendererGroup` + DOTS Instancing, batching same-mesh/same-material instances into draw calls; efficiency is measured as **instances per draw command** (higher is better).
-  - **Measurement tools**: FrameDebugger (shows "Hybrid Batch Groups," instance counts, draw-call info); `EntitiesGraphicsStatsDrawer` (Editor-only on-screen overlay for culling/rendering stats); Profiler (`SRPBRender.ApplyShader`, `BatchRendererGroup` markers).
-  - **Caveats**: batch-creation overhead means Entities Graphics can be *slower* than GameObject rendering when few objects are batched; Android performance can suffer from persistent-GPU-data approaches; shader-property costs apply even when DOTS instancing properties go unused; OpenGL offers no guaranteed gain; differing shader variants or meshes fragment batches.
+Spawning renderable entities in code, the metric that says whether it worked,
+and the documented failures worth checking before filing a bug.
 
-## Manual — Known Issues
-- [Known Issues](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/known-issues.html)
-  - **Lighting**: "Auto-generate lightmaps" unsupported with sub-scenes (manual baking required); a sub-scene can only store a single baked lightmap (a problem when loading/unloading multiple interdependent sub-scenes); a directional light inside a sub-scene causes missing ambient lighting and incorrect cascade shadow settings; mismatched fog/lightmap settings between a scene and its sub-scenes can render incorrectly in Player builds.
-  - **RenderTexture**: a camera rendering into a RenderTexture assigned to a sub-scene `MeshRenderer` material's texture displays incorrectly at runtime.
-  - **Shader stripping**: `DOTS_INSTANCING_ON` shader variants are always compiled and included in a Player build, which can lengthen build times and increase memory usage.
-  - **Companion Components**: `ParticleSystem`/`VisualEffect` previews aren't available in Game View; `ParticleSystem` light modules don't render once converted to a companion component; HDRP `PlanarReflectionProbe` objects need "Maximum Planar Reflection Probes on Screen" increased.
+## Runtime creation
 
-Cross-check an unexplained symptom against this known-issues list before treating it as a new bug — per SKILL.md's edge-case guardrails.
+| Subject | What it decides | Source |
+|---|---|---|
+| `RenderMeshUtility.AddComponents` | Populates an entity with the rendering components from a mesh, material, and `RenderMeshDescription` | [Runtime Entity Creation](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/runtime-entity-creation.html) |
+| Prototype plus `Instantiate` | The recommended pattern — instantiation cost does not depend on how the prototype was built, and it avoids a structural change per spawn | [Runtime Entity Creation](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/runtime-entity-creation.html) |
+| Per-instance variation | Applied with `SetComponent` after cloning — transform and override values, not a rebuilt component set | [Runtime Entity Creation](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/runtime-entity-creation.html) |
+| Bulk spawning | Composes with Burst jobs and `EntityCommandBuffer.ParallelWriter`, so large spawns stay off the main thread | [Runtime Entity Creation](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/runtime-entity-creation.html) |
+| `AddComponents` per spawn | The documented anti-pattern — one structural change per instance | [Runtime Entity Creation](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/runtime-entity-creation.html) |
+
+## Batching efficiency
+
+| Subject | What it decides | Source |
+|---|---|---|
+| Instances per draw command | The efficiency metric; higher is better, and it is what a batching claim must cite | [Performance](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/entities-graphics-performance.html) |
+| FrameDebugger — Hybrid Batch Groups | Shows batch groups, instance counts, and draw-call info | [Performance](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/entities-graphics-performance.html) |
+| `EntitiesGraphicsStatsDrawer` | Editor-only on-screen culling and rendering stats | [Performance](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/entities-graphics-performance.html) |
+| Profiler markers | `SRPBRender.ApplyShader` and `BatchRendererGroup` markers attribute the cost | [Performance](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/entities-graphics-performance.html) |
+| Batch fragmentation | Differing shader variants or meshes split batches — the usual reason instance counts per command stay low | [Performance](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/entities-graphics-performance.html) |
+| Low object counts | Batch-creation overhead can make this **slower** than GameObject rendering | [Performance](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/entities-graphics-performance.html) |
+| Platform caveats | Android suffers from persistent-GPU-data approaches; OpenGL offers no guaranteed gain; shader-property costs apply even when instancing properties go unused | [Performance](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/entities-graphics-performance.html) |
+
+## Known issues
+
+| Symptom | What it decides | Source |
+|---|---|---|
+| Auto-generated lightmaps do nothing in subscenes | Manual baking is required — not a project misconfiguration | [Known Issues](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/known-issues.html) |
+| One baked lightmap per subscene | Constrains loading several interdependent subscenes together | [Known Issues](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/known-issues.html) |
+| Directional light inside a subscene | Causes missing ambient lighting and wrong cascade shadow settings | [Known Issues](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/known-issues.html) |
+| Scene/subscene fog or lightmap mismatch | Renders incorrectly in Player builds specifically | [Known Issues](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/known-issues.html) |
+| RenderTexture on a subscene material | Displays incorrectly at runtime | [Known Issues](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/known-issues.html) |
+| `DOTS_INSTANCING_ON` variants | Always compiled into a Player build, raising build time and memory | [Known Issues](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/known-issues.html) |
+| Companion previews | `ParticleSystem`/`VisualEffect` previews missing in Game View; particle light modules stop rendering once converted | [Known Issues](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/known-issues.html) |
+
+**Critical caveat**: several of these present as content bugs rather than
+package bugs — missing ambient light, a black RenderTexture, a subscene that
+looks right in the Editor and wrong in a build. Check this list before
+attributing any of them to authoring.
