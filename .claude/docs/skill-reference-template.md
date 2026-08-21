@@ -57,6 +57,12 @@ reverse-engineer — including what deliberately lives in a sibling skill.>
 > `Covers: SKILL.md §4 — **"Pick the allocator by actual data lifetime"**.` ✅
 > `Covers SKILL.md step 6.` ❌ — renumbering §4 silently invalidates the pointer, with no error and no test to catch it.
 
+Quote the bolded span **exactly**, punctuation included. §4 directives close the
+bold before any punctuation ([skill-template.md](skill-template.md)'s A.3), so
+the quote carries none either — the sentence's own period sits outside the
+closing `**`. A directive written `**…alone.**` puts a period inside the key and
+no quote can match it; fix the directive, not the quote.
+
 Section numbers `§1`–`§8` are frozen by [skill-template.md](skill-template.md)'s Appendix A.3 and are safe to cite; step ordinals inside §4 are not.
 
 A file serving several steps quotes each directive, comma-separated — quoting a *range* reintroduces the ordinal coupling this rule exists to remove:
@@ -255,6 +261,7 @@ Identical contract to [skill-template.md](skill-template.md)'s Appendix A.4 — 
 - [ ] No frontmatter; exactly one H1 on line 1; filename matches the topic.
 - [ ] `Source:` present with full URLs, or synthesis stated explicitly.
 - [ ] `Covers:` quotes every §4 directive the file serves, verbatim — **`grep -rnE 'steps? [0-9]' <skill-folder>/references` must return nothing**. `root-links.md` declares whole-skill coverage instead.
+- [ ] Each quoted directive string-matches a §4 bolded span exactly; neither side swallows punctuation into the bold.
 - [ ] Orientation paragraph states the decision served, and names the sibling skill owning any adjacent concern.
 - [ ] File >120 lines → has a TOC; file >250 lines → split instead.
 - [ ] One archetype, applied consistently through the file.

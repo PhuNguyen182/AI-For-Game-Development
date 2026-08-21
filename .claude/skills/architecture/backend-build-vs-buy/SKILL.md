@@ -1,68 +1,95 @@
 ---
 name: backend-build-vs-buy
 description: >
-  Build-vs-buy framework for backend infrastructure — matchmaking, player
-  data persistence/save sync, dedicated server hosting/orchestration,
-  leaderboards/social — broken down per component rather than one monolithic
-  vendor decision (PlayFab, Nakama, GameLift, or fully custom). Use this
-  whenever the CTO is asked to choose a managed backend platform vs.
-  self-hosted/custom infrastructure. Do not use this for the client-server
-  sync protocol itself (message format, tick rate, prediction/reconciliation)
-  — that's netcode-architecture-decision/netcode-engineer's territory. Do not
-  use this for implementing server-side gameplay validation once the backend
-  is chosen — that's server-authoritative-engineer's job.
+  Per-component build-vs-buy framework for backend infrastructure —
+  matchmaking, player data persistence and save sync, dedicated server
+  hosting/orchestration, leaderboards and party/social — shortlisting managed
+  (PlayFab, GameLift, Nakama Cloud), self-hosted open-source (Nakama), and
+  fully custom per component instead of one monolithic vendor call, decided
+  on the scaling-cost crossover point, real ops capacity, and server-region
+  coverage. Use when choosing a managed backend versus self-hosted or custom
+  infrastructure. Not for: the sync protocol itself — message format, tick
+  rate, prediction/reconciliation (`netcode-architecture-decision`,
+  `netcode-engineer`), server-side gameplay validation
+  (`server-authoritative-engineer`), the scoring rubric
+  (`tco-reversibility-scoring`), remote-config content cadence
+  (`live-ops-content-pipeline`), event pipelines
+  (`analytics-telemetry-platform`).
 ---
 
-# Backend Build-vs-Buy
+# Backend Build-vs-Buy — per-component infrastructure decision
 
 ## 1. Objective
-Give the CTO a consistent framework for the build-vs-buy backend infrastructure decision — matchmaking, persistence, dedicated server hosting — independent of the netcode/gameplay-sync decision, so it isn't bundled into a single all-or-nothing vendor call by default.
+Give the CTO a consistent framework for the backend infrastructure build-vs-buy call — matchmaking, persistence, hosting, social — kept independent of the netcode/gameplay-sync decision so it is not bundled into a single all-or-nothing vendor commitment by default.
 
 ## 2. Role
-Act as a backend-infrastructure-minded CTO who has run both self-hosted and managed multiplayer backend stacks at scale.
+Act as a backend-infrastructure CTO who has run both self-hosted and managed multiplayer stacks at scale, and who has paid the operational bill for each.
 
 ## 3. When to invoke this skill
-- Deciding whether to license a managed backend (PlayFab, GameLift, Nakama, etc.) vs. build/host custom infrastructure for matchmaking, player data persistence, or dedicated server orchestration.
-- Negative trigger: don't use this for the client-server sync protocol itself — that's `netcode-architecture-decision`/`netcode-engineer`.
-- Negative trigger: don't use this for implementing server-side validation logic once the backend is chosen — that's `server-authoritative-engineer`.
+- Choosing between a managed backend platform and self-hosted or custom infrastructure for any backend component.
+- A vendor's bundled offering is being treated as one decision, and the components inside it have not been separated yet.
+- Negative trigger: the question is the client-server sync protocol — message format, tick rate, prediction/reconciliation — which belongs to `netcode-architecture-decision` for the foundation choice and `netcode-engineer` for the protocol itself.
+- Negative trigger: the backend is already chosen and the work is implementing server-side gameplay validation — that is `server-authoritative-engineer`.
+- Negative trigger: the question is content cadence (remote config, live events) or the analytics event pipeline — separate infra decisions with their own skills.
 
 ## 4. How to use this skill
-1. Break the backend need into its actual components — they don't have to share one vendor: matchmaking, player data persistence/save sync, dedicated server hosting/orchestration, leaderboards, party/social.
-2. For each component, shortlist realistic options: fully managed (PlayFab, GameLift, Nakama Cloud), self-hosted open-source (Nakama self-hosted), or fully custom.
-3. Score each shortlisted option per component with `tco-reversibility-scoring`, paying particular attention to the scaling cost curve bucket — managed backends often look expensive at scale but cheap at launch, and the crossover point matters more than the sticker price.
-4. Check operational burden realistically: a fully custom backend needs a real ops/backend engineering investment this team may or may not have — factor actual team capacity, not aspirational headcount.
-5. Check regional/latency requirements: does the option support server regions matching the game's target audience geography (especially relevant for real-time competitive play)?
-6. Recommend per component — it's fine, and often correct, for different components to use different vendors/approaches (e.g. managed matchmaking + custom dedicated server hosting).
-7. If a component's requirement is one the team has no working basis to estimate (e.g. "can this handle our projected concurrent player count"), flag it as a feasibility unknown for `rd-engineer` rather than deciding on an unverified assumption.
+1. **Split the need into its actual components before shortlisting anything** — matchmaking, player data persistence/save sync, dedicated server hosting/orchestration, leaderboards, party/social. They do not have to share one vendor, and treating them as one decision is what produces avoidable lock-in.
+2. **Shortlist realistic options per component across all three tiers** — fully managed (PlayFab, GameLift, Nakama Cloud), self-hosted open-source (Nakama), fully custom. Dropping a tier before scoring it turns the framework into a justification for a choice already made.
+3. **Score each shortlisted option with `tco-reversibility-scoring`, per component** — and read the scaling-cost curve bucket closely. Managed backends usually look cheap at launch and expensive at scale; the crossover point decides this, not the sticker price.
+4. **Check ops burden against the team that actually exists** — a custom backend needs real backend/ops engineering capacity to run reliably. Score against current headcount, not headcount a funding round would buy.
+5. **Check server-region coverage against the target audience's geography** — for real-time competitive play a missing region is a latency floor no amount of client-side work can lift, which disqualifies the option outright rather than costing it points.
+6. **Check what persistence lock-in does to save data** — if the vendor's schema shapes the save format, exit cost is a live-player data migration, and reversibility drops to Low regardless of how clean the API looks.
+7. **Recommend per component, allowing a mixed result** — managed matchmaking alongside custom dedicated server hosting is a normal, often correct outcome. Forcing one vendor across every component to look tidy is not a technical argument.
+8. **Write the decision in English**, per `language-and-comments.md`'s Working language section — it is a durable artifact other roles act on; the Vietnamese reply to the GD is the final message, not the document.
+9. **Flag any component whose requirement the team has no working basis to estimate as a feasibility unknown for `rd-engineer`** — projected concurrent player count is the usual one. Deciding on an unverified load assumption puts the whole component's score on a guess.
 
 ## 5. Specific goals / tasks this skill performs
-- Produce a build-vs-buy verdict per backend component (matchmaking, persistence, hosting, leaderboards/social), not one monolithic all-or-nothing call.
-- Surface the scaling cost curve crossover point explicitly, not just launch-day cost.
-- Out of scope: the sync protocol itself, and server-side gameplay validation implementation.
+- Produce a build-vs-buy verdict per backend component, never one monolithic all-or-nothing call.
+- Surface each component's scaling-cost crossover point explicitly, not just launch-day cost.
+- Test every option against the team's real ops capacity and the target regions.
+- Route load-bearing feasibility unknowns to `rd-engineer` instead of absorbing them into the decision.
+- Out of scope: the sync protocol (`netcode-architecture-decision`, `netcode-engineer`), server-side validation implementation (`server-authoritative-engineer`), live-ops content infra (`live-ops-content-pipeline`).
 
 ## 6. Output format
 ```
-## Backend Build-vs-Buy Decision
-| Component | Options considered | TCO/Reversibility | Ops burden fit | Decision |
-|---|---|---|---|---|
-| Matchmaking | ... | ... | ... | ... |
-| Persistence | ... | ... | ... | ... |
-| Dedicated server hosting | ... | ... | ... | ... |
-| Leaderboards/social | ... | ... | ... | ... |
+## Backend Build-vs-Buy Decision — <project>
+| Component | Options considered | TCO / Reversibility | Ops burden fit | Region coverage | Decision |
+|---|---|---|---|---|---|
+| Matchmaking | ... | ... | ... | ... | ... |
+| Persistence / save sync | ... | ... | ... | ... | ... |
+| Dedicated server hosting | ... | ... | ... | ... | ... |
+| Leaderboards / social | ... | ... | ... | ... | ... |
 
-Feasibility unknowns remaining (route to R&D Engineer if any): ...
+- Scaling crossover: <component> flips at roughly <scale> — <which way>
+- Save-data lock-in: <none / vendor schema shapes the save format>
+- Rule compliance: decision written in English, per Working language
+- Feasibility unknowns: <none / listed>
+- Routed to: `rd-engineer` for the unknowns above; `server-authoritative-engineer` for validation once chosen
+```
+
+**Extended report — emit ONLY when the requester asks for it.** It replaces the one-line unknowns field with all three:
+```
+- Known limitations: <components the decision leaves open, and why>
+- Latent concerns: <assumptions holding only at launch scale or current team size>
+- Future remediation: <the re-decision trigger for each — the scale, headcount, or region change that forces a revisit>
 ```
 
 ## 7. Examples
 **Example 1**
-- Input: a mid-size studio shipping a mid-core PvP game.
-- Output: managed matchmaking + persistence (PlayFab) for launch simplicity, custom lightweight dedicated server hosting on a cloud provider recommended once scale projections justify the cost-curve crossover.
+- Input: a mid-size studio shipping a mid-core PvP title, one backend engineer.
+- Output: managed matchmaking and persistence on PlayFab for launch; custom lightweight dedicated server hosting recommended only once projected concurrency passes the cost-curve crossover, with that crossover stated as a number rather than "later".
 
 **Example 2**
-- Input: a small team shipping a hardcore niche title with no dedicated backend engineer.
-- Output: fully managed Nakama Cloud across all components, given the team has no ops capacity to run self-hosted infrastructure reliably.
+- Input: "put everything on one vendor so there's a single bill and a single integration."
+- Output: declined as a default. Scored per component, dedicated server hosting was the only component where the managed option lost on cost curve, and it is also the component with the highest reversibility — so splitting it costs one extra integration and removes the largest lock-in. A single bill is an accounting preference, not a scoring input.
+
+**Example 3**
+- Input: a small team, hardcore niche PC title, no dedicated backend engineer, no load projection.
+- Output: fully managed Nakama Cloud across every component on ops capacity alone — self-hosting is disqualified before cost is considered. Concurrency projection flagged as a feasibility unknown and routed to `rd-engineer`, since the persistence tier choice depends on it.
 
 ## 8. Edge cases & guardrails
-- Never recommend "build everything custom" purely on cost-per-unit grounds without weighing the team's actual ops capacity to run it reliably.
-- Don't force one vendor across all components if a mixed approach genuinely scores better — component-level decisions are allowed and often correct.
-- If projected scale is a guess, don't build the decision around it silently — flag it and, if it's load-bearing for the choice, route to `rd-engineer` for a benchmark first.
+- Never recommend "build everything custom" on cost-per-unit grounds without weighing whether this team can actually operate it — an unrun backend costs more than a managed one.
+- Never force one vendor across all components when a mixed result scores better; component-level decisions are the point of this skill.
+- Never treat a missing target region as a cost penalty on a real-time competitive title — it is a disqualification.
+- Never let a bundled vendor demo set the component boundaries — split the need first, per §4, then see which bundle happens to fit.
+- If projected scale is a guess and the choice turns on it, route to `rd-engineer` for a benchmark rather than deciding around the guess.

@@ -89,7 +89,7 @@ Files inserted verbatim into the deliverable (templates, boilerplate, config stu
 - Negative trigger: [second boundary] — that stays with `other-skill`/`role-name`.
 
 ## 4. How to use this skill
-[Numbered, imperative, decision-ordered — earlier steps constrain later ones. Bold the directive, then justify it in one clause. Every step ends in a decision or a named criterion that produces one. Cite bundled files inline at their point of use.]
+[Numbered, imperative, decision-ordered — earlier steps constrain later ones. Bold the directive, then justify it in one clause. Close the bold **before** any punctuation — `**Directive**, per …` and `**Directive** — why`, never `**Directive.**` or `**Directive,**` — because a reference file's `Covers:` line quotes this text verbatim and a swallowed period breaks the match. Every step ends in a decision or a named criterion that produces one. Cite bundled files inline at their point of use.]
 
 1. **[Hard constraint that must be settled first]** — [why; what breaks otherwise].
 2. **[Default technique]**, per [topic-a.md](references/topic-a.md). [Escalation condition: reach for the heavier option only once <condition> — don't pre-build it (YAGNI).]
@@ -199,6 +199,7 @@ Path is `.claude/skills/<group>/<name>/SKILL.md`; `name:` equals the **leaf** fo
 | Bundled resources | Present iff the folder ships files beyond SKILL.md; one table per type, only the tables that have rows. Unnumbered, directly under the H1. **MUST** |
 | §3 | Every boundary in `description` restated as a `Negative trigger:` bullet. **MUST** |
 | §4 | Each step bolds its directive, states *why*, and resolves to a decision; cite every bundled file inline at its point of use; name the governing `.claude/rules/*.md` file as ``` `file.md`'s <Section> section ```. **MUST** |
+| §4 — directive text | No punctuation inside the closing `**`: write `**Directive** — why`, never `**Directive.**`. The bolded span is a quotable key, and `Covers:` matches it verbatim. **MUST** |
 | §5 | Final bullet is `Out of scope:`, routing each excluded concern to the owning skill or role. **MUST** |
 | §6 | A literal fenced block, not prose. Technique archetype ends `Layer:` + `Known limitations:`; decision/gate archetype ends `Decision:` or a verdict + `Routed to:`. Extended report defined and marked request-only. **MUST** |
 | `references/*.md` | Each file follows `skill-reference-template.md`: no frontmatter, `Source:` + `Covers:` header, one topic per file, tables carrying a `Source` column, and a `Covers:` line quoting the §4 directive(s) it serves — never a step number or range. **MUST** |
@@ -258,6 +259,7 @@ Each item maps to a distinct silent-failure mode — a skill that never fires, o
 - [ ] Every `description` boundary reappears as a §3 `Negative trigger:` bullet.
 - [ ] What `description` promises is what §4 actually instructs — no promise the workflow doesn't deliver.
 - [ ] No step, guardrail, or example resolves to "it depends" — each names its deciding criterion.
+- [ ] No §4 directive closes its bold over punctuation: `grep -nE '^\s*[0-9]+\. \*\*.*[.,;:]\*\*' SKILL.md` returns nothing — a swallowed period makes the directive unquotable by `Covers:`.
 - [ ] §4 defines behaviour for missing/ambiguous input; §8 defines it for the failure cases.
 - [ ] Any destructive or hard-to-reverse action is gated on explicit user confirmation in §8.
 - [ ] Skill produces code or technical documents → §4 names the governing `.claude/rules/*.md` sections.
