@@ -50,6 +50,7 @@ Act as the tweening/animation specialist for the client track — the tool Unity
 - Building or extending an Inspector-authored animation with the `LitMotion.Animation` package, including a custom `LitMotionAnimationComponent`.
 - A value type has no built-in adapter and needs a custom `IMotionAdapter<T,TOptions>`.
 - Porting existing DOTween/LeanTween/PrimeTween/LitMotion-v1 tween code to current LitMotion.
+- Negative trigger: the task is equally satisfied by either tweening engine and neither is already established for the touched module — whether DOTween or LitMotion governs new work is a standing per-module/project decision, not something to default here just because this skill was invoked; check convention or ask, per `dotween-tweening`'s own `coexistence-and-migration.md`.
 - Negative trigger: composing a general reactive event/state stream unrelated to a timed interpolation — that's `r3-reactive-extensions`; LitMotion only produces the `Observable<T>`, it doesn't own stream composition.
 - Negative trigger: orchestrating unrelated async game logic with no motion involved — that's `unitask-async-programming`.
 - Negative trigger: a shader-driven or particle-system visual effect — that's `vfx-particle-authoring`/`technical-artist`; LitMotion animates discrete properties, not GPU-simulated effects.

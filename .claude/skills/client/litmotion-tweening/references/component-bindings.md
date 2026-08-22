@@ -29,6 +29,13 @@ per property is known. Text/TextMeshPro bindings live in
 
 ## RectTransform / uGUI
 
+These bind to the same `Canvas`/`RectTransform`/`Graphic` components the
+`ugui` skill owns the non-tweening side of (layout, event wiring, Inspector
+setup) — see its
+[rect-transform-and-layout.md](../../ugui/references/rect-transform-and-layout.md)
+before binding a size/position property a Layout Group or Content Size
+Fitter also controls, to avoid the two fighting over the same value.
+
 | Property | Members | Source |
 |---|---|---|
 | Anchored position | `BindToAnchoredPosition` (`Vector2`) + `X`/`Y`; `BindToAnchoredPosition3D` (`Vector3`) + `X`/`Y`/`Z` | [`LitMotionRectTransformExtensions.cs`](https://github.com/annulusgames/LitMotion/blob/main/src/LitMotion/Assets/LitMotion/Runtime/Extensions/uGUI/LitMotionRectTransformExtensions.cs) |

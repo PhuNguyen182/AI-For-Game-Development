@@ -61,7 +61,7 @@ Give the trigger only — the technique itself stays inside the skill.
 | `unity-2d-sprite`, `unity-2d-spriteshape`, `unity-tilemap`, `unity-3d-mesh` | Authoring or importing the matching 2D/3D content type. |
 | `vcontainer-dependency-injection` | Wiring dependencies instead of reaching for a singleton or `Find`. |
 | `messagepipe-event-messaging`, `r3-reactive-extensions` | Decoupling systems through messages or reactive state instead of direct references. |
-| `unitask-async-programming`, `litmotion-tweening` | Allocation-free async flows, or tweening transform/material values. |
+| `unitask-async-programming`, `litmotion-tweening`, `dotween-tweening` | Allocation-free async flows, or tweening transform/material values — check module/project convention before picking a tweening engine if neither is already established. |
 | `odin-inspector` | Designer-facing inspector tooling for a component or ScriptableObject. |
 | `unity-mathematics` | SIMD-friendly vector/matrix math in per-frame code. |
 

@@ -41,6 +41,15 @@ LMotion.Create(0f, 1f, delay).WithOnComplete(action).RunWithoutBinding();
 
 ## Migrating from DOTween
 
+This table assumes the porting direction has already been decided. It
+hasn't been decided for you by default — whether DOTween or LitMotion
+governs a given module is a standing project/module choice, not this
+skill's to assume; see `dotween-tweening`'s own
+[coexistence-and-migration.md](../../dotween-tweening/references/coexistence-and-migration.md)
+for that checklist and for the DOTween-side vocabulary (its uGUI/TextMeshPro
+shortcuts, its `UNITASK_DOTWEEN_SUPPORT` async integration) before treating
+every existing DOTween call site as something to port.
+
 | DOTween | LitMotion | Source |
 |---|---|---|
 | `transform.DOMove(end, dur)` | `LMotion.Create(transform.position, end, dur).BindToPosition(transform)` | [Migrate from DOTween](https://annulusgames.github.io/LitMotion/articles/en/migrate-from-dotween.html) |

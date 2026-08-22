@@ -49,7 +49,7 @@ Give the trigger only — the technique itself stays inside the skill.
 | `ui-toolkit` | Building screens with UI Toolkit — UXML structure, custom controls, USS styling and responsive layout. |
 | `ugui` | Building screens with uGUI — `Canvas`/`RectTransform` setup, Auto Layout, interaction components, `EventSystem` wiring, TextMeshPro UI text. |
 | `r3-reactive-extensions` | Binding a view to changing gameplay state so it updates only when the value actually changes. |
-| `litmotion-tweening` | Animating a UI element — transitions, feedback, easing. |
+| `litmotion-tweening`, `dotween-tweening` | Animating a UI element — transitions, feedback, easing. Check module/project convention before picking a tweening engine if neither is already established. |
 | `zstring-zero-allocation-strings` | Formatting text that updates frequently, so counters and timers do not allocate every frame. |
 | `unity-input-system` | Consuming already-configured input actions for UI navigation. |
 | `odin-inspector` | Exposing designer-editable UI configuration in the inspector. |
