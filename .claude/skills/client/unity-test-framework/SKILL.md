@@ -37,7 +37,7 @@ Read-only context, loaded on demand so SKILL.md itself stays short.
 Produce tests that fail only when the code is wrong. The failures this prevents are the ones that make a suite worthless: a `Game.Core.*` test that reads real time or unseeded randomness and passes intermittently, a coroutine test parameterized with an attribute the framework silently ignores, a log expectation registered after the code already logged, a float comparison that fails on precision rather than on behaviour, and a setup method assumed to re-run after a domain reload that it does not survive.
 
 ## 2. Role
-Act as the automated-testing specialist for the client track — the tool reached for once code has passed Code Review and needs a verification gate. You choose the test kind, the attributes, and the assertions; you do not author the game rules being verified, walk the game manually against the design, or build for a device.
+Act as the automated-testing specialist for the QA track, testing client-track code — the tool reached for once code has passed Code Review and needs a verification gate. You choose the test kind, the attributes, and the assertions; you do not author the game rules being verified, walk the game manually against the design, or build for a device. `qa-automation-engineer` uses this skill to author and run tests in the Editor; `build-verification-tester` uses only its standalone-Player and command-line surface to run the existing suite against a real build.
 
 ## 3. When to invoke this skill
 - Creating a test assembly or a test script, and deciding whether it targets Edit Mode, Play Mode, or both.
@@ -51,7 +51,7 @@ Act as the automated-testing specialist for the client track — the tool reache
 - A test is flaky, or passes for a reason nobody can name.
 - Negative trigger: authoring the game rule the test verifies — damage formulas, state machines, economy maths — that is `csharp-engineer`'s Shared Core, per `coding-principles.md`'s Shared Core integrity rule.
 - Negative trigger: walking Play Mode by hand and comparing feel against the GDD — that is `playtest-tester`, a different activity that happens to share Play Mode with this one.
-- Negative trigger: producing a real platform build or running several Editor instances — that is `build-run-engineer`, and only on the GD's explicit request; this skill's standalone-Player and command-line coverage is reference material for that role.
+- Negative trigger: producing a real platform build or running several Editor instances — that is `build-run-engineer`, and only on the GD's explicit request. Running the existing suite against an artifact that already exists is `build-verification-tester`, which uses this skill's standalone-Player and command-line coverage.
 - Negative trigger: measuring frame time, GC pressure, or memory — that is `unity-profiler-diagnostics`; the allocation constraint here is a pass-or-fail gate, not a measurement.
 - Negative trigger: plain NUnit attributes and assertion style that are not Unity additions — defer to NUnit's own documentation rather than restating it.
 
@@ -122,7 +122,7 @@ Act as the automated-testing specialist for the client track — the tool reache
 
 **Example 4**
 - Input: "Can we run this feature's tests on the actual Android build as part of QA?"
-- Output: documented the standalone-Player run and the platform and build-path flags as reference, and handed the execution to `build-run-engineer` — producing a real platform build is that role's territory and needs the GD's explicit request, so this skill supplied the configuration rather than triggering the build.
+- Output: documented the standalone-Player run and the platform and build-path flags, and split the work — producing the APK is `build-run-engineer`'s territory and needs the GD's explicit request, while running the suite against that artifact once it exists is `build-verification-tester`'s. This skill supplied the configuration for both rather than triggering the build itself.
 
 ## 8. Edge cases & guardrails
 - Never let a Core test read real time or unseeded randomness — it hides a determinism violation behind a result that eventually flickers.

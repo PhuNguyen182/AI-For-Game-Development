@@ -36,7 +36,7 @@ Whichever case it is — listed here or not — never adopt a "faster in theory,
 
 ## Algorithmic complexity discipline
 
-- Know the time and space complexity of any non-trivial function you write. When it isn't obvious from the code, state it in a comment (per the comment-depth policy in `.claude/rules/shared/language-and-comments.md`) — an O(n²) nested loop over gameplay entities should be a deliberate, documented choice, not an accident nobody noticed.
+- Know the time and space complexity of any non-trivial function you write. When it isn't obvious from the code, state it in a comment (per the comment-depth policy in `.claude/rules/language-and-comments.md`) — an O(n²) nested loop over gameplay entities should be a deliberate, documented choice, not an accident nobody noticed.
 - For any system that scales with player count, entity count, or inventory size, actively avoid quadratic-or-worse behavior once N is unbounded by design (entity-vs-entity checks, inventory search, etc.) — use spatial partitioning, indexing, or an explicitly bounded/capped N instead of a naive nested loop once N can plausibly grow past a small constant.
 - Don't over-engineer for an N that structurally cannot grow — a fixed 4-slot ability bar doesn't need a hash-indexed lookup; a linear scan over 4 elements is both simpler (see KISS in `coding-principles.md`) and faster in practice than any "smarter" structure's overhead.
 
@@ -83,7 +83,7 @@ Baseline engine-level technique expected from routine client-track work, on top 
 - Never call `GC.Collect()` in gameplay hot paths. Forcing a full collection defeats the incremental scheduler and causes exactly the stall it exists to avoid — the fix for allocation pressure is to stop allocating (pooling, struct reuse, avoiding boxing), not to force more frequent collection.
 
 ### Multithreading — escalation territory, not a routine default
-- The Job System + Burst Compiler is the right tool for genuinely parallelizable, CPU-bound bulk work (large-scale simulation, batched pathfinding, etc.) — but most Unity APIs are main-thread-only, and introducing Job System/Burst/DOTS is an architecture-level decision with real added complexity, not a routine optimization. Per `TEAM_STRUCTURE.md`, this is Tech Lead – Performance's territory once profiling shows a genuinely CPU-bound, parallelizable bottleneck — don't reach for it as a first-pass default (see KISS/YAGNI in `coding-principles.md`).
+- The Job System + Burst Compiler is the right tool for genuinely parallelizable, CPU-bound bulk work (large-scale simulation, batched pathfinding, etc.) — but most Unity APIs are main-thread-only, and introducing Job System/Burst/DOTS is an architecture-level decision with real added complexity, not a routine optimization. This is `tech-lead-performance`'s territory once profiling shows a genuinely CPU-bound, parallelizable bottleneck — don't reach for it as a first-pass default (see KISS/YAGNI in `coding-principles.md`).
 
 ## Verification
 
@@ -95,4 +95,4 @@ Baseline engine-level technique expected from routine client-track work, on top 
 - No per-frame heap allocations, no unnecessary boxing, no LINQ in hot paths — already required by `coding-principles.md`; this file adds the reasoning (allocation and GC pressure) and extends it to algorithm/data-structure choice generally, not just `Update()`-loop code.
 - Prefer the runtime's built-in, well-tested collection/algorithm implementations over hand-rolled ones unless a specific, measured case proves otherwise.
 - Every complexity/practicality trade-off claim ships with a measurement, not just an assertion.
-- Stay scoped to what the Tech Spec actually needs — don't add a low-level optimization nobody asked for at the cost of readability, unless a measured problem justifies it (see Tech Lead – Performance's escalation path in `TEAM_STRUCTURE.md` for when a problem is deep enough to warrant that trade-off).
+- Stay scoped to what the Tech Spec actually needs — don't add a low-level optimization nobody asked for at the cost of readability, unless a measured problem justifies it (see `tech-lead-performance`'s own agent file for when a problem is deep enough to warrant that trade-off).
