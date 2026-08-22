@@ -107,12 +107,20 @@ never run in the same round — one exists because no direction exists yet, the 
 | **A clean critic** | `critic` returning `Done` with an empty findings list is a **pass**, not a missing result. Proceed to CP1. |
 | **Escalation** | `critic` is a leaf — it reports to the GD and routes to nobody, at every level. |
 
-### Step 5 — the research branch
+### Step 5 — the research branch, and when to skip it
 
 Any tier can need a capability the project does not have. When the request or the chosen direction names one,
 dispatch `research-decision.md` **before** step 6 — a Tech Spec written on a guessed technology is rework.
 This branch is the pipeline's to detect: on Complex tier `advisor` will name it, but Medium tier skips the
 loop entirely and nothing else will raise it.
+
+**Skip it when the answer is already in the project — and name what covers it.** That naming is the whole
+test. Research that comes back "you already have this" burns a round to learn nothing, but a guess dressed up
+as a skip costs a Tech Spec. If you cannot name the package, first-party API or existing system that covers
+the capability, you are guessing: branch.
+
+A skip is recorded, never silent. The named coverage travels to CP2, so a wrong call is caught while the
+Tech Spec is still on the table rather than after code is written against it.
 
 ### Step 6 — the Tech Spec
 
