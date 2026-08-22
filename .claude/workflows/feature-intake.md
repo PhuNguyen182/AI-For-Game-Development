@@ -147,6 +147,7 @@ CP3 and CP4 sit outside this pipeline — see `review-pipeline.md` and `qa-pipel
 | Return | Action |
 |---|---|
 | `advisor` → `Rejected`, `Routed to: gd` — it was asked to choose | Return to the GD; offer `critic` on whichever option they lean toward |
+| `advisor` → `Needs-decision`, `Routed to: rd-engineer` or `cto` | Hand to `research-decision.md` at its step 0, then resume the loop with what it settled |
 | `critic` → `Rejected`, `Routed to: gd` — it was asked to design the fix | Return to the GD, then re-enter at step 2 once the direction is settled |
 | `technical-architect` → `Rejected`, `Routed to: cto` | Hand to `research-decision.md` at its `cto` step, then re-enter here at step 6 |
 | any agent → `Blocked` | Ask the GD for exactly the input named. `Blocked` is a correct result, never a silent retry with a guess |

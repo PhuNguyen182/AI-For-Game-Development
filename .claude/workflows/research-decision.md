@@ -173,11 +173,9 @@ stops — there is no feature to resume.
 - **Nothing here writes to the project.** `researcher` has no write tools, `cto` executes nothing, and
   `rd-engineer` marks its output disposable in both the code and the report.
 
-## Owed to `feature-intake.md`
+## Upstream this pipeline depends on
 
-Both are flagged rather than applied, because that file and `technical-architect.md` are already GD-approved.
-
-| What | Why |
+| Where | What it must carry |
 |---|---|
-| One routing row | It covers `advisor` → `Rejected`, `Routed to: gd`, but not `advisor` → `Needs-decision`, `Routed to: rd-engineer \| cto` — entry point **E3** |
-| The architect's `Open design question:` wording | It currently reads "for `advisor` to widen". **E4** also needs it to carry a technology unknown, which comes here instead |
+| `feature-intake.md` routing table | The `advisor` → `Needs-decision`, `Routed to: rd-engineer \| cto` row — entry point **E3** |
+| `technical-architect`'s `Open design question:` | A technology unknown as well as a design one — entry point **E4** reads it to decide which pipeline the question belongs to |
