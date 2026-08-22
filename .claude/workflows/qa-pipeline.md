@@ -30,9 +30,8 @@ Derived from the agents' stated required inputs and boundaries:
 
 1. **Plan** — `qa-lead` turns the Tech Spec + Triage tier into a coverage assignment and exit criteria.
    Depth scales with tier; a Simple-tier change needs a few lines.
-2. **Review gates, in parallel** — `code-reviewer` and `security-reviewer` run on the same submission as
-   independent gates. Neither waits on the other's verdict, and neither duplicates the other's lens.
-   Both require the submission's Implementation Note (`.claude/rules/implementation-note.md`).
+2. **Review gates** — owned by `review-pipeline.md`, not described here. QA consumes both verdicts as given
+   and never re-decides them, per `qa-lead`'s own boundary.
 3. **Automated tests** — `qa-automation-engineer`, **hard-blocked until the code-review gate passes**. It
    returns `Blocked` on unreviewed code regardless of how small the change is.
 4. **Integration testing** — `playtest-tester` against the GDD's scenarios, once the feature is integrated.
