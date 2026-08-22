@@ -26,9 +26,12 @@ statement. Every `Routed to:` below is a recommendation this pipeline acts on, n
 |---|---|---|
 | **E1** | `feature-intake.md` CP2 approved — Medium or Complex | The Tech Spec, its per-`agent-id` task breakdown, and the tier |
 | **E2** | `feature-intake.md` step 2 — Simple tier | The architect's direct notes, addressed to one `agent-id` |
-| **E3** | `review-pipeline.md` — a submission came back with findings | The findings, the original brief, and the strike count |
+| **E3** | A defect returns — from `review-pipeline.md`, from `qa-pipeline.md`, or reported by the GD | The findings, the original brief, and the strike count |
 
 **E2 runs one agent and stops** — no fan-out, no ordering, no README. A Simple-tier change is one role by definition; the full shape over it is the overhead Triage exists to avoid.
+
+**A GD-reported defect enters at E3 with zero strikes.** If the spec was right and the GD now wants
+something else, that is `change-request.md` — a change request, not a defect.
 
 ## Pipeline at a glance
 

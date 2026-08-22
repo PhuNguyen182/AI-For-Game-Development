@@ -14,6 +14,7 @@ The **GD** column is a separate axis: a part can be written but not yet approved
 | 4. Review | `review-pipeline.md` | ✅ Written · GD approved |
 | 5. QA | `qa-pipeline.md` | ✅ Written · GD approved |
 | — Change request | `change-request.md` | ✅ Written · GD approved |
+| 7. Orchestrator | `orchestrator.md` + `orchestration.md` + `state/ledger.md` | ✅ Written · GD approved |
 
 ## 1. Feature intake — `feature-intake.md`
 
@@ -115,6 +116,34 @@ The **GD** column is a separate axis: a part can be written but not yet approved
 | 6.8 | Routing table, incl. the `cto` hand-off when the change forces a tech choice | — (pipeline) | ✅ | ✔ |
 | 6.9 | Block diagram | — | ✅ | ✔ |
 
+## 7. Orchestrator — `orchestrator.md`, `orchestration.md`, `state/ledger.md`
+
+| # | Part | Agents | Status | GD |
+|---|---|---|---|---|
+| 7.1 | `.claude/rules/orchestration.md` — the auto-loaded rule that gives the whole layer ignition | — (rule) | ✅ | ✔ |
+| 7.2 | Step 0 — seven lanes read top-down, **first match wins**; four escalation criteria; zero agent calls | — (pipeline) | ✅ | ✔ |
+| 7.2a | The defect lane is scoped to what the pipeline built — no approved spec means nothing to measure | — (pipeline) | ✅ | ✔ |
+| 7.3 | Route by the **cost of being wrong**; the direct lane subsumes what Triage calls Simple | — (pipeline) | ✅ | ✔ |
+| 7.4 | Sizing classifies the **input**, never a tier — the one interpreted boundary, stated as such | — (pipeline) | ✅ | ✔ |
+| 7.5 | Escape upward the moment an escalation criterion turns out to apply | — (pipeline) | ✅ | ✔ |
+| 7.6 | Three modes — full run / entry point / direct agent; the router infers and states, never asks | — (pipeline) | ✅ | ✔ |
+| 7.6a | **Mode 3 is the GD's cost override, and the only one** — sizing is a proposal, stated so it can be overruled | — (pipeline) | ✅ | ✔ |
+| 7.7 | Entry index — **17** addressable entries; a "cluster" is one of these rows, never a new grouping | — (pipeline) | ✅ | ✔ |
+| 7.8 | Direct dispatch — two classes derived from `tools:`; 10 agents accrue review debt | — (pipeline) | ✅ | ✔ |
+| 7.9 | Review debt attaches to the artifact, is recorded, never enforced, and settles in batch | — (pipeline) | ✅ | ✔ |
+| 7.10 | The global Editor lock — ten agents, one process, across concurrent runs | — (pipeline) | ✅ | ✔ |
+| 7.11 | The ledger — written at each transition, not at run end | — (state) | ✅ | ✔ |
+| 7.12 | `Routed to:` fallback for when no pipeline is running | — (pipeline) | ✅ | ✔ |
+| 7.13 | Block diagram | — | ✅ | ✔ |
+
+**Edits this round made to already-approved files** — called out, not slipped in:
+
+| # | File | Change | GD |
+|---|---|---|---|
+| 7.14 | `feature-intake.md` | Its entry labelled **E1**; sizing vs. Triage boundary stated | ✔ |
+| 7.15 | `review-pipeline.md` | Existing entry labelled **E1**; **E2** added for a standalone audit | ✔ |
+| 7.16 | `feature-development.md` | **E3** now names all three defect reporters — the row was already stale | ✔ |
+
 ## Open decisions the GD owes
 
 **None.** All seven are settled.
@@ -148,17 +177,24 @@ The **GD** column is a separate axis: a part can be written but not yet approved
   Mode verification. Three escapes were tested and rejected — see `feature-development.md` step 2. The one
   concurrency that does work is review, which holds no Unity tools and writes nothing.
 
-## Known gaps outside the five pipelines
+## Debt register
 
-| Gap | Why it matters |
-|---|---|
-| **No orchestrator file** | Nobody owns cross-run state: retry counters, "same submission" identity, track on/off, acting on `Routed to:` — and 3.11 now makes submission identity load-bearing, since a feature produces several |
-| **Legacy roster doc deleted** | `.claude/docs/TEAM_STRUCTURE.md` was removed once its §6 criteria reached `change-request.md` — the only content nothing else carried. Recoverable at `git checkout a33f02b -- .claude/docs/TEAM_STRUCTURE.md` if anything turns out to have been missed |
+`Open` = owed · `Deferred` = seen, priced, declined on purpose · `Recorded` = a fact, not work. None blocks the layer.
+
+| Debt | State | What closing it takes |
+|---|---|---|
+| **Test code meets no review gate** | Open | `qa-automation-engineer` writes `.cs` after CP3, but `review-pipeline.md` **E1** only accepts a submission from `feature-development.md`. Invariant I2 catches it in the ledger as review debt; closing it properly means giving `qa-pipeline.md` a route to a gate — one round |
+| **Three re-entry targets are unaddressable** | Open | `research-decision.md` hands back to `feature-intake.md` **step 6**, and `change-request.md` reopens **CP1**/**CP2**. None carries an entry label, so mode 2 cannot name them. Either label them or state that re-entries are pipeline-internal — one round, cheap |
+| **The ledger has never been exercised** | Recorded | No feature has run through `state/ledger.md`, so its column contract is designed rather than proven. Expect the first real run to reshape it; that is normal, not a defect |
+| **Enforcement is advisory only** | Deferred | A `PreToolUse` hook could hard-block a dispatch that skips the router. **Declined on purpose** — writing one before any real miss has occurred is guessing at what will break. Reopen only when a miss supplies the evidence |
+| **The Implementation Note's `Deliberately out of scope` is a proxy** | Deferred | Per `.claude/rules/implementation-note.md`: an agent that sets a nearby problem aside may record it under `Assumptions` and never return `Routed to:`, so the field can be silently empty. Closing it means adding a field to seven agent envelopes — declined until a real round trip proves it worth it |
+| **Legacy roster doc deleted** | Recorded | `.claude/docs/TEAM_STRUCTURE.md` was removed once its §6 criteria reached `change-request.md` — the only content nothing else carried. Recover with `git checkout a33f02b -- .claude/docs/TEAM_STRUCTURE.md` if something turns out to have been missed |
 
 ## Authoring order
 
-Pipeline 1 ✅ → 2 ✅ → 3 ✅ → 4 ✅ → 5 ✅ → `change-request.md` ✅ → **the orchestrator file**. All six are
-written and GD-approved. One round per GD approval; this file is updated at the end of each.
+Pipeline 1 ✅ → 2 ✅ → 3 ✅ → 4 ✅ → 5 ✅ → `change-request.md` ✅ → orchestrator ✅. Every file is written;
+the first six are GD-approved and pipeline 7 awaits review. One round per GD approval.
 
-**The workflow layer is complete.** What is left is the orchestrator — the one piece that holds cross-run
-state, and the only reason the six approved files still name a caller that does not exist yet.
+**The workflow layer is complete, and now has ignition.** `.claude/rules/orchestration.md` is the only
+piece loaded automatically — without it the other seven files take effect only when something reads them,
+which is why the layer could be finished and still never run.

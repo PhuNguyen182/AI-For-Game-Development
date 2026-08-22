@@ -17,12 +17,21 @@ statement. Every `Routed to:` below is a recommendation this pipeline acts on, n
 
 `cto` and `tech-lead-sdk-platform` are reachable from here but owned elsewhere.
 
-## Entry
+## Entry points
 
-**One submission per entry.** A feature produces several — the Shared Core, each client agent, each backend
-agent, and the README — and each is reviewed on its own. Only the checkpoint aggregates.
+| | Enters when | Carried in |
+|---|---|---|
+| **E1** | A submission from `feature-development.md` | Everything in the table below |
+| **E2** | The GD asks for an audit of code already in the repo | The code in scope, and what it is audited against |
 
-| Carried in | Why |
+**One submission per E1 entry.** A feature produces several — the Shared Core, each client agent, each
+backend agent, and the README — and each is reviewed on its own. Only the checkpoint aggregates.
+
+**E2 has no author, no strike and no CP3.** `security-reviewer` is contractually callable standalone;
+`code-reviewer` returns `Blocked` without a spec, so either name what the audit checks against or dispatch
+only the security gate. Its findings are a report to the GD, never a submission's rejection.
+
+| Carried in — E1 | Why |
 |---|---|
 | The code or diff in scope | Both gates return `Blocked` without it; neither judges from a description or a filename |
 | The Tech Spec section, or the Simple-tier direct notes | `code-reviewer` returns `Blocked` — without the intended behaviour there is no "correct" to check against |

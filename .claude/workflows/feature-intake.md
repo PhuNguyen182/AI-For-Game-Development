@@ -58,6 +58,16 @@ Shapes: `([ ])` start and stop · `[ ]` an agent or a pipeline action · `{ }` a
 `Blocked` returns are deliberately not drawn — any agent can return one at any step, and the action is always
 the same: ask the GD for exactly the input named, then resume from that step.
 
+## Entry
+
+| | Enters when | Carried in |
+|---|---|---|
+| **E1** | `orchestrator.md` step 0 sized a GD request into this pipeline | The GD's own words unedited, and which tracks are active |
+
+Step 0 sizes the **input**; this pipeline triages the **feature**. Triage still runs on everything that
+arrives here, including what looks trivial — sizing decides whether a request is a feature request, never
+what tier it is.
+
 ## Step order
 
 | # | Step | Runs for | Produces |
