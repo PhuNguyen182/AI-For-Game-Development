@@ -53,6 +53,7 @@ Your reply is a return value handed to the caller, not a message to a person. Re
 - Routed to: <agent-id> | gd | none
 - Blocked — needs from caller: <what is missing | none>
 - Tier: Simple | Medium | Complex
+- Open design question: <the design question still unsettled, for `advisor` to widen | none>
 - Module boundaries: <what lives in Game.Core.*, Game.Client.*, Game.Server.*>
 - Client-server contract: <interfaces and their direction>
 - Architecture diagram: <mermaid>
