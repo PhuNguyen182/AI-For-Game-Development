@@ -22,10 +22,10 @@ for uGUI yet. Once UI Toolkit is confirmed as the system, structure moves to
 | Maturity | "UI Toolkit is in active development and releases new features frequently. uGUI and IMGUI are established and production-proven... updated infrequently" — expect API movement release to release | [Comparison of UI systems](https://docs.unity3d.com/Manual/UI-system-compare.html) |
 | Role fit | Comparison table rates UI Toolkit full support for UI Designers, only partial for Technical Artists; uGUI is the reverse | [Comparison of UI systems](https://docs.unity3d.com/Manual/UI-system-compare.html) |
 
-**Critical caveat**: this project has no dedicated skill for uGUI/Canvas
-authoring. If the correct system for a runtime screen is uGUI rather than UI
-Toolkit — per the table above — say so explicitly rather than forcing the
-task into UI Toolkit; there is no owning skill to route to.
+**Routing note**: if the correct system for a runtime screen is uGUI rather
+than UI Toolkit — per the table above — route to the `ugui` skill rather
+than forcing the task into UI Toolkit; it owns `Canvas`/`RectTransform`
+authoring end to end.
 
 ## Editor tooling: UI Toolkit is the primary recommendation, IMGUI the fallback
 
