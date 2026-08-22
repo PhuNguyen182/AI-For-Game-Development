@@ -12,7 +12,8 @@ The **GD** column is a separate axis: a part can be written but not yet approved
 | 2. Research & decision | `research-decision.md` | ✅ Written · GD approved |
 | 3. Feature development | `feature-development.md` | ✅ Written · GD approved |
 | 4. Review | `review-pipeline.md` | ✅ Written · GD approved |
-| 5. QA | `qa-pipeline.md` | ✅ Written — awaiting GD review |
+| 5. QA | `qa-pipeline.md` | ✅ Written · GD approved |
+| — Change request | `change-request.md` | ✅ Written · GD approved |
 
 ## 1. Feature intake — `feature-intake.md`
 
@@ -86,31 +87,44 @@ The **GD** column is a separate axis: a part can be written but not yet approved
 
 | # | Part | Agents | Status | GD |
 |---|---|---|---|---|
-| 5.1 | Three entry points; E1 plans, E2 unlocks execution, E3 re-runs only what the fix touched | — (pipeline) | ✅ | — |
-| 5.2 | Entry table — every carried input keyed to an agent's own `If absent` | — (pipeline) | ✅ | — |
-| 5.3 | The plan runs early — CP3 gates execution, never planning | `qa-lead` | ✅ | — |
-| 5.4 | Dispatch only the agent-ids the coverage assignment names, never all four | — (pipeline) | ✅ | — |
-| 5.5 | Three Editor executors serial, the build verifier alongside — forced by `tools:` | `qa-automation-engineer`, `playtest-tester`, `performance-qa-engineer` | ✅ | — |
-| 5.6 | Their internal order is the pipeline's choice, with the reason stated as such | — (pipeline) | ✅ | — |
-| 5.7 | The build branch exists only on an explicit GD request | `build-run-engineer`, `build-verification-tester` | ✅ | — |
-| 5.8 | What comes back — defect, design flaw, Editor-only number, `Not covered` | — (pipeline) | ✅ | — |
-| 5.9 | Sign-off against its own exit criteria; the two kinds of gap split | `qa-lead` | ✅ | — |
-| 5.10 | **CHECKPOINT 4** — three outcomes, and an accepted gap must be recorded durably | `producer`, gd | ✅ | — |
-| 5.11 | A CP4 rejection splits: drift → E3, or a change request → `technical-architect` | — (pipeline) | ✅ | — |
-| 5.12 | Routing table; three strikes stays in pipeline 4; the passes-review/fails-QA bound | — (pipeline) | ✅ | — |
-| 5.13 | Block diagram | — | ✅ | — |
+| 5.1 | Three entry points; E1 plans, E2 unlocks execution, E3 re-runs only what the fix touched | — (pipeline) | ✅ | ✔ |
+| 5.2 | Entry table — every carried input keyed to an agent's own `If absent` | — (pipeline) | ✅ | ✔ |
+| 5.3 | The plan runs early — CP3 gates execution, never planning | `qa-lead` | ✅ | ✔ |
+| 5.4 | Dispatch only the agent-ids the coverage assignment names, never all four | — (pipeline) | ✅ | ✔ |
+| 5.5 | Three Editor executors serial, the build verifier alongside — forced by `tools:` | `qa-automation-engineer`, `playtest-tester`, `performance-qa-engineer` | ✅ | ✔ |
+| 5.6 | Their internal order is the pipeline's choice, with the reason stated as such | — (pipeline) | ✅ | ✔ |
+| 5.7 | The build branch exists only on an explicit GD request | `build-run-engineer`, `build-verification-tester` | ✅ | ✔ |
+| 5.8 | What comes back — defect, design flaw, Editor-only number, `Not covered` | — (pipeline) | ✅ | ✔ |
+| 5.9 | Sign-off against its own exit criteria; the two kinds of gap split | `qa-lead` | ✅ | ✔ |
+| 5.10 | **CHECKPOINT 4** — three outcomes, and an accepted gap must be recorded durably | `producer`, gd | ✅ | ✔ |
+| 5.11 | A CP4 rejection splits: drift → E3, or a change request → `technical-architect` | — (pipeline) | ✅ | ✔ |
+| 5.12 | Routing table; three strikes stays in pipeline 4; the passes-review/fails-QA bound | — (pipeline) | ✅ | ✔ |
+| 5.13 | Block diagram | — | ✅ | ✔ |
+
+## Change request — `change-request.md`
+
+| # | Part | Agents | Status | GD |
+|---|---|---|---|---|
+| 6.1 | Two entry points; a change before CP2 is not a change request at all | — (pipeline) | ✅ | ✔ |
+| 6.2 | Halt new dispatches first, then classify — a running agent cannot be recalled | — (pipeline) | ✅ | ✔ |
+| 6.3 | The architect classifies and never asks the GD to confirm the tier first | `technical-architect` | ✅ | ✔ |
+| 6.4 | Minor / Moderate / Major — **criteria salvaged from the retired roster doc §6** | `technical-architect` | ✅ | ✔ |
+| 6.5 | Minor is the one to get wrong: any boundary or interface move makes it Moderate | — (pipeline) | ✅ | ✔ |
+| 6.6 | The rework list re-enters at `feature-development.md` E3, in serial order | — (pipeline) | ✅ | ✔ |
+| 6.7 | A change request resets the strike count on every submission it invalidates | — (pipeline) | ✅ | ✔ |
+| 6.8 | Routing table, incl. the `cto` hand-off when the change forces a tech choice | — (pipeline) | ✅ | ✔ |
+| 6.9 | Block diagram | — | ✅ | ✔ |
 
 ## Open decisions the GD owes
 
-**One, and it does not block.** Pipeline 5 is written and works without it; it is listed because it is the
-only rule in that file with no agent contract behind it.
-
-- ***G*** — **the passes-review/fails-QA bound.** A submission that clears both gates but fails QA twice goes
-  to `technical-architect` for root cause instead of a third fix. Three strikes counts *review* rejections, so
-  this loop would otherwise never terminate. Two rounds is my choice of bound, not a derivation — raise it,
-  lower it, or drop the rule. In `qa-pipeline.md`'s routing rules, marked in-file as a pipeline decision.
+**None.** All seven are settled.
 
 **Settled and removed:**
+
+- ***G*** — **the passes-review/fails-QA bound is two rounds.** A submission that clears both gates but fails
+  QA twice goes to `technical-architect` for root cause instead of a third fix, because three strikes counts
+  *review* rejections and this loop would otherwise never terminate. Approved as written, with the file
+  stating plainly that the bound is a pipeline decision and not a contract derivation.
 
 - ***A*** — **CP3 gates QA execution, not QA planning.** `qa-lead` in plan mode needs only the Tech Spec and
   the tier, so it runs as soon as both gates clear and nothing it produces is invalidated by a CP3 rejection.
@@ -124,7 +138,7 @@ only rule in that file with no agent contract behind it.
   source) → the authoring agent → `gd` only when neither can name an origin. In `review-pipeline.md`.
 - ***F*** — **the merged checkpoint is CP4.** `feature-intake.md`'s approved tier table already states it:
   Simple skips CP1 and CP2, merges CP3 into the single final checkpoint, and keeps CP4. The only competing
-  reading came from `TEAM_STRUCTURE.md`, which the GD has ruled out as a source of authority.
+  reading came from the retired legacy roster doc, which the GD ruled out and which has since been deleted.
 
 - ***B*** — a `Routed to: rd-engineer` becomes a GD ask, never an auto-dispatch, and the GD's yes is the
   explicit summon the agent requires. Pipeline 2 gets a GD gate only on its standalone path. Both now live in
@@ -139,14 +153,12 @@ only rule in that file with no agent contract behind it.
 | Gap | Why it matters |
 |---|---|
 | **No orchestrator file** | Nobody owns cross-run state: retry counters, "same submission" identity, track on/off, acting on `Routed to:` — and 3.11 now makes submission identity load-bearing, since a feature produces several |
-| **No `change-request.md`** | `technical-architect.md:64` carries Minor / Moderate / Major and their rollback targets, but no workflow file routes them. **Two approved pipelines now point at it** — a mid-flight GDD change, and a CP4 rejection where the spec itself should change. Derivable from that agent file alone |
-| **`TEAM_STRUCTURE.md` still present** | The GD has ruled it out as a source of authority: it is a legacy reference, Vietnamese, roster stale by 4 agents, 0 inbound references outside this file. Deletable now |
+| **Legacy roster doc deleted** | `.claude/docs/TEAM_STRUCTURE.md` was removed once its §6 criteria reached `change-request.md` — the only content nothing else carried. Recoverable at `git checkout a33f02b -- .claude/docs/TEAM_STRUCTURE.md` if anything turns out to have been missed |
 
 ## Authoring order
 
-Pipeline 1 ✅ → pipeline 2 ✅ → pipeline 3 ✅ → pipeline 4 ✅ → pipeline 5 ✅ *(awaiting GD review)* →
-**`change-request.md`** → orchestrator → delete `TEAM_STRUCTURE.md`. One round per GD approval; this file is
-updated at the end of each.
+Pipeline 1 ✅ → 2 ✅ → 3 ✅ → 4 ✅ → 5 ✅ → `change-request.md` ✅ → **the orchestrator file**. All six are
+written and GD-approved. One round per GD approval; this file is updated at the end of each.
 
-All five pipelines now exist. `change-request.md` is next and is no longer optional: `qa-pipeline.md`'s CP4
-rejection route hands it a second caller, so it is the one file two approved pipelines both point at.
+**The workflow layer is complete.** What is left is the orchestrator — the one piece that holds cross-run
+state, and the only reason the six approved files still name a caller that does not exist yet.
