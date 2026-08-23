@@ -129,7 +129,7 @@ The **GD** column is a separate axis: a part can be written but not yet approved
 | 7.6 | Three modes — full run / entry point / direct agent; the router infers and states, never asks | — (pipeline) | ✅ | ✔ |
 | 7.6a | **Mode 3 is the GD's cost override, and the only one** — sizing is a proposal, stated so it can be overruled | — (pipeline) | ✅ | ✔ |
 | 7.7 | Entry index — **17** addressable entries; a "cluster" is one of these rows, never a new grouping | — (pipeline) | ✅ | ✔ |
-| 7.8 | Direct dispatch — two classes derived from `tools:`; 10 agents accrue review debt | — (pipeline) | ✅ | ✔ |
+| 7.8 | Direct dispatch — two classes derived from `tools:`; 11 agents accrue review debt | — (pipeline) | ✅ | ✔ |
 | 7.9 | Review debt attaches to the artifact, is recorded, never enforced, and settles in batch | — (pipeline) | ✅ | ✔ |
 | 7.10 | The global Editor lock — ten agents, one process, across concurrent runs | — (pipeline) | ✅ | ✔ |
 | 7.11 | The ledger — written at each transition, not at run end | — (state) | ✅ | ✔ |
@@ -189,6 +189,8 @@ The **GD** column is a separate axis: a part can be written but not yet approved
 | **Enforcement is advisory only** | Deferred | A `PreToolUse` hook could hard-block a dispatch that skips the router. **Declined on purpose** — writing one before any real miss has occurred is guessing at what will break. Reopen only when a miss supplies the evidence |
 | **The Implementation Note's `Deliberately out of scope` is a proxy** | Deferred | Per `.claude/rules/implementation-note.md`: an agent that sets a nearby problem aside may record it under `Assumptions` and never return `Routed to:`, so the field can be silently empty. Closing it means adding a field to seven agent envelopes — declined until a real round trip proves it worth it |
 | **Legacy roster doc deleted** | Recorded | `.claude/docs/TEAM_STRUCTURE.md` was removed once its §6 criteria reached `change-request.md` — the only content nothing else carried. Recover with `git checkout a33f02b -- .claude/docs/TEAM_STRUCTURE.md` if something turns out to have been missed |
+| **`git-expert` is reachable only in mode 3** | Recorded | Added at the GD's instruction with no Step 0 lane row, so sizing never routes to it and a git task still lands in the chore lane until the GD names the agent. Class counts and the `Routed to:` fallback are updated; the mermaid is not, because no lane changed. Closing it means adding a lane row — one round, only if auto-routing is wanted |
+| **Class A/B does not measure destructive power** | Recorded | The two classes derive from `Write`/`Edit` in `tools:`, which `git-expert` breaks either way: with only `Bash` it would file as **A — leaves no source** while holding `git reset --hard`, and `Write`/`Edit` files it as B for reasons unrelated to that risk. It is classed B because its `.gitattributes`/`.gitignore` writes are genuinely reviewable config. A classifier that counts git's blast radius would need a third axis — not worth adding for one agent |
 
 ## Authoring order
 

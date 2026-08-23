@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git status:*)",
+      "Bash(git log:*)",
+      "Bash(git diff:*)",
+      "Bash(git show:*)",
+      "Bash(git blame:*)",
+      "Bash(git reflog:*)",
+      "Bash(git shortlog:*)",
+      "Bash(git rev-list:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(git merge-base:*)",
+      "Bash(git name-rev:*)",
+      "Bash(git describe:*)",
+      "Bash(git ls-files:*)",
+      "Bash(git ls-tree:*)",
+      "Bash(git cat-file:*)",
+      "Bash(git grep:*)",
+      "Bash(git fsck:*)",
+      "Bash(git count-objects:*)",
+      "Bash(git branch --list:*)",
+      "Bash(git tag --list:*)",
+      "Bash(git tag -l:*)",
+      "Bash(git stash list:*)",
+      "Bash(git bisect log:*)",
+      "Bash(git worktree list:*)",
+      "Bash(git submodule status:*)",
+      "Bash(git remote -v)",
+      "Bash(git remote get-url:*)",
+      "Bash(git config --get:*)",
+      "Bash(git config --list:*)",
+      "Bash(git lfs ls-files:*)",
+      "Bash(git lfs env:*)",
+      "Bash(git lfs fsck:*)",
+      "Bash(git clean -xdn:*)",
+      "Bash(git clean -nd:*)",
+      "Bash(git clean --dry-run:*)"
+    ]
+  }
+}

@@ -186,6 +186,7 @@ Path is `.claude/skills/<group>/<name>/SKILL.md`; `name:` equals the **leaf** fo
 | `qa/` | Verification and gating method — audits, scans, test design, evidence discipline | QA-track agents |
 | `live-ops/` | Production incident and operations procedures | crash-anr-investigator |
 | `research/` | External-source evidence gathering and screening | researcher |
+| `devops/` | Repository and version-control procedure — history operations, recovery, forensics, and the Unity-specific git surface | git-expert |
 
 **Adding a group.** It is well-formed when it can fill all three columns without overlapping an existing row — a body of work with a consumer the current groups do not serve. Do not open a group to shelve a single skill that already fits one. Every skill belongs to exactly one group; a skill that plausibly fits two means either the groups are cut wrong or the skill is doing two jobs, which §1 should have caught.
 
