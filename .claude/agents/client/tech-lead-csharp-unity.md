@@ -47,6 +47,7 @@ Give the trigger only — the technique itself stays inside the skill.
 | Skill | Invoke when |
 |---|---|
 | `vcontainer-dependency-injection` | The pattern decision concerns composition, lifetime, or how dependencies reach a MonoBehaviour. |
+| `unity-scriptableobject-architecture` | The pattern decision concerns which SO-based decoupling shape (Delegate Object, Observer event vs Event Channel, Extendable Enum, Command, Runtime Set) fits, or a Dual Serialization bug is corrupting shared asset state. |
 | `stateless-state-machines` | The problem is an implicit or tangled state machine that should be made explicit. |
 | `messagepipe-event-messaging`, `r3-reactive-extensions` | The pattern decision concerns decoupling systems or propagating state changes. |
 | `unitask-async-programming` | The problem involves async lifetimes, cancellation, or PlayerLoop timing. |
