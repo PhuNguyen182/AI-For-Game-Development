@@ -1,0 +1,96 @@
+## Objective
+[Một câu: người chơi hoặc dev làm được gì mà trước đó không làm được, và vì sao
+ tính năng này tồn tại.]
+
+## Context
+- Where it lives: [scene / thư mục / namespace]
+- Existing systems it must work with: [nêu tên cụ thể]
+- Already available to reuse: [component, service, package, skill có sẵn]
+
+<escalation_check>
+Trả lời từng câu dưới đây bằng một dòng TRƯỚC KHI viết bất kỳ dòng code nào, và
+dừng lại chờ tôi nếu có bất kỳ câu nào là "có":
+- Việc này có chạm `Game.Core.*` — một luật chơi, kinh tế, state machine, cooldown?
+- Nó có cần nhiều hơn một vai trò?
+- Nó có liên quan multiplayer?
+- Nó có dựa trên thứ tôi chưa quyết?
+Không cho cả bốn: làm trực tiếp.
+Có ở bất kỳ câu nào: nói rõ câu nào, nêu chi phí tính theo số lượt gọi agent, và
+chờ tôi đồng ý.
+</escalation_check>
+
+## Behaviour
+- [Hành vi — kèm con số và đơn vị, không bao giờ dùng tính từ]
+- [Hành vi]
+- Edge case: khi [điều kiện] thì kết quả là [kết quả]
+- Forbidden: [điều không bao giờ được phép xảy ra]
+
+<game_rules>
+Những luật này quyết định kết quả, nên chúng nằm ở `Game.Core.*` và chỉ được viết
+một lần:
+- [luật — giá trị, đơn vị, điều kiện]
+- [luật]
+Ràng buộc lên đoạn code đó:
+- Không dùng type của `UnityEngine`. Không `UnityEngine.Random` — bơm vào một RNG
+  có seed. Không đọc giờ hệ thống. Không phép float nào có thể phân kỳ giữa các
+  nền tảng.
+- Tầng Client gọi vào nó và không bao giờ viết lại nó.
+- Dữ liệu phụ thuộc Unity được resolve ở tầng Client rồi truyền vào dạng đã resolve.
+</game_rules>
+
+<authority_and_sync>
+- Client may predict: [cái gì]
+- Server must validate: [cái gì]
+- Client is never the source of truth for: [cái gì]
+- Must hold under: [độ trễ ms], [tỉ lệ mất gói %], tick rate [giá trị | chưa quyết]
+- Luật được viết một lần ở `Game.Core.*`. Server BỌC và xác thực chúng, không bao
+  giờ viết lại. Nếu bạn thấy mình đang copy logic sang phía server, dừng lại và
+  báo tôi.
+- Chốt hợp đồng client-server với tôi TRƯỚC — hình dạng message, thứ tự, cái gì là
+  authoritative, cái gì reconcile — rồi mới viết phần triển khai.
+</authority_and_sync>
+
+<performance_budget>
+- Budget: [con số + đơn vị] trên [thiết bị / nền tảng], đo trong [scene / kịch bản]
+- Hot path: không cấp phát mỗi frame, không LINQ, không `GetComponent` trong
+  `Update`, không `Find`/`FindObjectOfType` lúc runtime.
+- Mọi khẳng định về hiệu năng phải kèm số đo trước/sau và độ dao động giữa các lần
+  chạy. Số đo trong Editor phải được ghi rõ là chỉ mang tính chỉ báo và không bao
+  giờ thay cho số đo trên thiết bị thật.
+</performance_budget>
+
+<platform_matrix>
+- Must work on: [nền tảng A], [nền tảng B]
+- Differs by platform: [cách nhập liệu, tỉ lệ màn hình, mức chất lượng — nêu rõ]
+- Giữ nhánh riêng cho từng nền tảng sau một abstraction duy nhất, không rải `#if`
+  khắp code gameplay.
+</platform_matrix>
+
+## Scope
+- Chỉ dựng đúng những gì liệt kê ở mục Behaviour.
+- Không thêm hook, tuỳ chọn config, hay điểm mở rộng nào tôi không yêu cầu.
+- Không refactor code xung quanh. Liệt kê riêng những gì bạn muốn đổi.
+- Out of scope this round: [thứ tôi KHÔNG muốn dựng lần này]
+
+## Constraints
+- Tuân `.claude/rules/client/coding-principles.md`, `naming-convention.md` và
+  `performance-and-algorithms.md`.
+- Không dùng API nào đã đánh dấu `[Obsolete]`.
+- Undecided — hỏi tôi, đừng tự chốt: [liệt kê | none]
+
+<process_gates>
+- Triage trước. Nêu rõ bạn xếp tier nào và vì sao.
+- Nêu chi phí tính theo số lượt gọi agent trước khi bắt đầu.
+- Dừng ở từng checkpoint để tôi duyệt. Đừng chạy một mạch tới code.
+- Nêu ra mọi giả định bạn đã tự đặt ở chỗ brief của tôi im lặng.
+</process_gates>
+
+## Deliverable
+- Code, kèm một Implementation Note theo `.claude/rules/implementation-note.md`:
+  nó thoả những clause nào, file nào đã đổi, giả định, giới hạn đã biết, thứ bạn
+  cố ý không đụng, và thứ bạn thật sự đã xác minh so với thứ chưa.
+
+## Done when
+[Một kịch bản cụ thể: làm X thì ra Y, quan sát bằng cách nào.]
+[Có giữ khối performance_budget? Thêm: và budget vẫn đạt, đo cùng một cách, trên
+ cùng một thiết bị.]

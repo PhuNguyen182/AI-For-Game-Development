@@ -1,0 +1,84 @@
+## Objective
+[Một câu: tôi cần gì từ lượt này, trên toàn bộ lô tính năng.]
+
+Mode: [plan-the-batch | build-shared-foundation | absorb-a-change]
+
+## The batch
+| # | Feature | One-line intent | Priority |
+|---|---------|-----------------|----------|
+| 1 | [tên]   | [ý đồ]          | [high / med / low] |
+| 2 | [tên]   | [ý đồ]          | [ ] |
+| 3 | [tên]   | [ý đồ]          | [ ] |
+
+## Context
+- Already shipped and must keep working: [các hệ thống]
+- Platform / target: [ ]
+- Milestone or deadline: [ ]
+- Roles available: [ ]
+
+<dependency_map_request>
+Mode plan-the-batch. Không viết dòng code nào ở lượt này.
+1. Triage từng tính năng: tier, và nó có chạm `Game.Core.*`, có cần nhiều hơn một
+   vai trò, có liên quan multiplayer, hay có dựa trên thứ chưa quyết.
+2. Dựng đồ thị phụ thuộc: cái nào phải xong trước cái nào, và VÌ SAO — một phụ
+   thuộc kỹ thuật thật, không phải thứ tự tôi gõ ra.
+3. Chỉ ra phần dùng chung. Nếu nhiều tính năng sẽ mỗi cái tự dựng một phiên bản của
+   cùng một thứ, nói ra và đề xuất tách nó thành việc riêng.
+4. Chỉ ra xung đột: hai tính năng cùng sửa một file, hoặc hai tính năng đưa ra hai
+   giả định trái nhau về cùng một hệ thống.
+5. Đề xuất thứ tự thực hiện, kèm chi phí từng bước tính theo số lượt gọi agent.
+Trả về bảng: feature | tier | depends on | risk | cost. Rồi tới thứ tự và lý do.
+</dependency_map_request>
+
+<shared_foundation>
+Mode build-shared-foundation. Dựng [phần nền dùng chung] để các tính năng ở trên
+đứng lên trên nó, thay vì mỗi cái tự mọc ra một phiên bản riêng.
+Consumer có thật hôm nay — chỉ thiết kế cho những cái này, không cho cái nào khác:
+- [tính năng A] cần: [cái gì]
+- [tính năng B] cần: [cái gì]
+Quy tắc:
+- Rút ra API nhỏ nhất phủ đúng các nhu cầu có thật ở trên. Không thiết kế cho
+  consumer chưa tồn tại.
+- Nói rõ cái gì thuộc phần nền và cái gì mỗi tính năng tự giữ. Ranh giới đó quan
+  trọng hơn bản thân đoạn code.
+- Consumer phụ thuộc vào interface, không bao giờ phụ thuộc class cụ thể hay singleton.
+- Nếu dự án đã có package hoặc skill giải quyết việc này, đề xuất dùng nó và nêu rõ
+  đánh đổi, thay vì viết mới.
+- Nói xem cái gì sẽ phải đổi nếu [một consumer thứ ba có khả năng xuất hiện] xuất
+  hiện, và việc đổi đó tốn bao nhiêu.
+Chỉ tích hợp ĐÚNG MỘT consumer ở lượt này: [tính năng A]. Để yên những cái còn lại.
+</shared_foundation>
+
+<in_flight_change>
+Mode absorb-a-change. Không đổi dòng code nào ở lượt này.
+The change: [cái gì đổi] — từ [hành vi / giá trị cũ] thành [mới].
+Reason: [playtest / cân bằng / phản hồi / ràng buộc mới]
+Trạng thái từng tính năng bị ảnh hưởng: [tên: đã ship | đang review | đang code dở]
+Trả lời bốn câu hỏi:
+1. Blast radius — những file, hệ thống và tính năng nào phải đổi theo. Tách "bắt
+   buộc phải đổi" khỏi "đổi thì tốt hơn".
+2. Cái gì đang phụ thuộc vào hành vi cũ và sẽ vỡ — gồm cả save data của người chơi
+   hiện tại, nếu có.
+3. Tài liệu nào thành lỗi thời: Tech Spec, test, README, config.
+4. Đây là một chi tiết cần sửa, hay là dấu hiệu thiết kế sai? Nói thẳng. Đừng gói
+   một lỗi thiết kế thành một bug thường để giữ nó trong chu trình thông thường.
+Trả về bảng: item | phải đổi gì | rủi ro | agent-id sở hữu. Rồi một khuyến nghị —
+làm ngay, hoãn, hay thiết kế lại. Chờ tôi duyệt rồi mới hành động.
+</in_flight_change>
+
+## Scope
+- Không bắt đầu triển khai bất kỳ tính năng nào trong lô ở lượt này.
+  [Xoá dòng này khi ở mode build-shared-foundation.]
+- Không mở rộng lô. Thiếu gì thì nêu tên, đừng tự thêm vào.
+
+## Constraints
+- Tuân `.claude/rules/client/coding-principles.md` và `naming-convention.md`.
+- Đưa ước lượng chi phí theo số lượt gọi agent, cho từng bước, trước khi bắt đầu.
+- YAGNI đứng trên tính tổng quát: một API nhỏ mà đúng hơn một API tổng quát mà sai.
+
+## Deliverable
+[Bảng mà khối ở trên yêu cầu, kèm khuyến nghị của nó.]
+
+## Done when
+[Tôi chọn được cái làm đầu tiên mà không phải đoán, và biết cái nào còn thiếu thông
+ tin đến mức chưa thể bắt đầu.]

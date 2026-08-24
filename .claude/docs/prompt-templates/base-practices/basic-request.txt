@@ -1,0 +1,44 @@
+## Objective
+[Một câu: xong việc này thì cái gì khác đi.]
+
+Task kind: [understand | rename-or-format | tune-a-visible-value | write-something-small]
+
+## Context
+- Entry point: [đúng một file, class, prefab hoặc scene mà tôi đã biết]
+- What I do not know yet: [câu hỏi cụ thể — hoặc xoá cả dòng này]
+- Platform / version: [phiên bản Unity, nền tảng đích — hoặc xoá cả dòng này]
+
+<existing_code>
+[Dán nguyên văn đoạn code, config hoặc asset mà việc này nói về.
+ Xoá trọn khối này khi Entry point ở trên đã đủ rõ.]
+</existing_code>
+
+## Scope
+- Touch only: [file, thư mục hoặc component]
+- Do not touch: [thứ mà bạn dự là sẽ bị dụ sửa theo]
+- Find the same problem elsewhere: ghi ra cuối, không tự sửa.
+
+## Constraints
+- Tuân `.claude/rules/client/coding-principles.md` và `naming-convention.md`.
+- Không đổi hành vi quan sát được. [Xoá dòng này khi việc CHÍNH LÀ đổi hành vi.]
+- Không dùng API nào đã đánh dấu `[Obsolete]`.
+- Dừng lại và báo tôi TRƯỚC KHI làm tiếp, nếu việc này hoá ra chạm `Game.Core.*`,
+  cần nhiều hơn một vai trò, ảnh hưởng multiplayer, hoặc dựa trên thứ tôi chưa
+  quyết. Đừng tự lách qua trong im lặng.
+
+<api_contract>
+[Chỉ dùng với Task kind write-something-small. Public API tôi muốn:
+ - Method(...) -> return  — mục đích
+ - property / event       — mục đích
+ Không thêm bất cứ thứ gì ngoài danh sách này.
+ Xoá trọn khối này với ba task kind còn lại.]
+</api_contract>
+
+## Deliverable
+- [Diff | danh sách file dạng path:line | câu trả lời bằng văn xuôi — chọn một.]
+- Mỗi file một dòng nói vì sao nó bị đụng.
+- Danh sách những gì bạn thấy và cố ý không đụng tới.
+
+## Done when
+[Một phép kiểm tôi tự chạy được: một lệnh grep không trả về gì, một giá trị đọc ra
+ X, một màn hình trông như Y ở tỉ lệ màn hình Z, một lần compile sạch.]

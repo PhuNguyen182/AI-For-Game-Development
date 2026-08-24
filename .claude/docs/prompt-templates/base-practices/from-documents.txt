@@ -1,0 +1,77 @@
+## Objective
+[Một câu: tôi cần gì từ các tài liệu này ở lượt này.]
+
+Mode: [map-the-documents | implement-from-the-map]
+
+<source_documents>
+Tài liệu, xếp theo thứ tự thẩm quyền — khi hai cái mâu thuẫn, cái đứng trên thắng:
+1. [đường dẫn hoặc link] — [là gì, ai viết, ngày] — thẩm quyền: cao nhất
+2. [đường dẫn hoặc link] — [ ]
+3. [đường dẫn hoặc link] — [ ]
+Phạm vi tôi muốn phủ từ chúng: [phần nào, hoặc "toàn bộ"]
+
+<excerpt source="[tài liệu 1], mục [x]">
+[Dán nguyên văn. Đừng tóm tắt, đừng cắt bớt. Xoá tag này nếu các đường dẫn ở trên
+ đã đủ để bạn tự mở đọc.]
+</excerpt>
+</source_documents>
+
+## Context
+- Existing code these must fit into: [đường dẫn]
+- Platform / target: [ ]
+- Track state: [client-only | backend active | multiplayer active]
+
+<gap_register>
+Mode map-the-documents. Không viết dòng code nào ở lượt này.
+1. Rút ra danh sách yêu cầu đánh số. Mỗi yêu cầu trích dẫn đúng nguồn — tên tài liệu
+   cộng mục, trang, hoặc dòng.
+2. Đánh dấu từng cái: clear | ambiguous | contradicts [nguồn].
+3. Liệt kê các GAPS — thứ code chắc chắn cần mà tài liệu không bao giờ nói tới:
+   giá trị mặc định, hành vi khi lỗi, giới hạn, thứ tự, hành vi lần chạy đầu.
+4. Với mỗi gap, đề xuất một giả định và hậu quả nếu nó sai. Đừng tự chốt; để tôi quyết.
+5. Ánh xạ mỗi yêu cầu vào một tầng: `Game.Core.*` / `Game.Client.*` / `Game.Server.*`,
+   và nói rõ cái nào bạn không chắc.
+Đừng bịa ra một yêu cầu không có trong tài liệu. Bất cứ thứ gì bạn cho là "hiển nhiên
+cần có" thuộc về danh sách GAPS, không thuộc danh sách yêu cầu.
+Trả về: một bảng ID | requirement | source citation | status | layer, rồi danh sách
+gap, rồi danh sách mâu thuẫn.
+</gap_register>
+
+<traceability_contract>
+Mode implement-from-the-map. Triển khai đúng các ID này và không gì khác: [R1-R7, R12]
+Quyết định của tôi về các gap: [đường dẫn tới danh sách gap đã trả lời, hoặc viết ra
+đây]
+Không triển khai ở lượt này: [ID] — vì [lý do]
+
+Truy vết là bắt buộc:
+- Mỗi class hoặc method chính phải nói được nó phục vụ ID nào. Chỗ nào ánh xạ không
+  hiển nhiên, để lại một comment nêu tên ID và lý do.
+- Kết thúc bằng một bảng hai chiều: ID -> nơi được triển khai, và file -> các ID nó
+  phục vụ.
+- Bất kỳ ID nào bạn không đặt được vào đâu phải được khai báo NOT DONE. Không bao giờ
+  để một ID biến mất trong im lặng.
+- Không triển khai hành vi mà không ID nào yêu cầu. Nếu code có vẻ cần nó, đó là một
+  gap — báo cáo lại, đừng tự thêm vào.
+Không sửa một con số xuất hiện trong tài liệu. Nếu một con số trông có vẻ sai, báo
+cáo lại; đừng tự sửa nó.
+</traceability_contract>
+
+## Scope
+- Chỉ phủ đúng phạm vi được nêu tên trong khối source_documents ở trên.
+- Không triển khai bất cứ thứ gì từ một tài liệu không có trong danh sách đó.
+
+## Constraints
+- Tuân `.claude/rules/client/coding-principles.md` và `naming-convention.md`.
+- Luật quyết định kết quả nằm ở `Game.Core.*` và chỉ viết một lần. Tầng Client gọi
+  vào chúng và không bao giờ viết lại.
+- Dừng lại sau tầng Core để tôi duyệt, trước khi bắt đầu tầng Client.
+  [Xoá dòng này ở mode map-the-documents.]
+
+## Deliverable
+[Bảng yêu cầu, danh sách gap và danh sách mâu thuẫn | code cộng bảng truy vết hai
+ chiều cộng một Implementation Note theo `.claude/rules/implementation-note.md`.]
+
+## Done when
+[Mọi câu hỏi cần tôi quyết định nằm trong một danh sách tôi trả lời được trong một
+ lượt | mọi ID được liệt kê hoặc có một chỗ triển khai tôi chỉ ra được, hoặc nằm
+ trong danh sách NOT DONE — không có gì rơi vào khoảng giữa.]

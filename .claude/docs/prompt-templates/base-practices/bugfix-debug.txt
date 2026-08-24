@@ -1,0 +1,83 @@
+## Objective
+Sửa [mô tả một câu về lỗi].
+
+## Evidence
+- Expected: [điều đáng lẽ phải xảy ra] — nguồn: [điều khoản spec | kịch bản GDD | kỳ vọng của tôi]
+- Actual:   [điều thực tế xảy ra — mô tả bằng hành vi quan sát được, không phải chẩn đoán]
+- Frequency: [x trên y lần thử]
+- Environment: [Editor | build | device], [nền tảng], [phiên bản]
+- First seen: [phiên bản / thay đổi / ngày — hoặc "không rõ"]
+
+<error_log>
+[Dán nguyên văn: console output, stack trace, nội dung assertion. Đừng cắt bớt.
+ Xoá trọn khối này khi không có log nào.]
+</error_log>
+
+<repro_steps>
+Từ một trạng thái khởi đầu đã biết: [scene / save / màn hình]
+1. [bước]
+2. [bước]
+3. [bước]
+Làm đúng các bước này thì lỗi ra mọi lần.
+</repro_steps>
+
+<no_known_cause>
+Tôi tái hiện được, nhưng không biết vì sao.
+- Xảy ra khi: [điều kiện]
+- KHÔNG xảy ra khi: [điều kiện] — dòng này quan trọng ngang dòng trên
+- Đã thử và loại trừ: [ ]
+
+Đừng sửa gì ở lượt này. Làm theo thứ tự:
+1. Liệt kê các giả thuyết giải thích trọn vẹn triệu chứng, xếp theo khả năng xảy ra.
+   Giả thuyết nào không giải thích được dòng "KHÔNG xảy ra khi" thì bị loại — nói rõ
+   và bỏ nó.
+2. Với từng giả thuyết: phép kiểm rẻ nhất để loại nó, và kết quả nào sẽ chứng minh nó
+   SAI.
+3. Nêu tên dữ liệu bạn cần mà chưa có sẵn — log ở đâu, đo cái gì.
+Rồi chờ tôi đồng ý, chạy các phép kiểm theo thứ tự, báo cáo từng kết quả, và DỪNG
+ngay khi nguyên nhân đã được xác định.
+Không bao giờ đổi hai thứ cùng lúc: nếu hai thay đổi cùng lúc làm lỗi biến mất, không
+cái nào được chứng minh. Nêu mức độ chắc chắn cho mọi kết luận, và không bao giờ
+trình bày một giả thuyết như một phát hiện.
+</no_known_cause>
+
+<regression_bisect>
+Trước đây cái này chạy tốt.
+- Last known good: [commit / tag / ngày / build version]
+- Known bad: [commit / tag / HEAD]
+- Branch: [ ]
+Phép kiểm tốt/xấu — phải là phép kiểm có/không, không phải phán đoán chủ quan:
+[vd: chạy test X; hoặc: mở scene Y, bấm Z, HP phải đọc ra 80]
+
+<git_status>
+[dán output của `git status`]
+</git_status>
+
+- Tạo một mốc an toàn TRƯỚC KHI đụng vào bất cứ thứ gì.
+- Không push, không force, không viết lại lịch sử đã publish.
+- Hỏi tôi trước bất kỳ lệnh nào có thể làm mất việc.
+- Đây là repo Unity: thủ phạm có thể là một file .meta hoặc một scene/prefab YAML,
+  không chỉ file .cs.
+Trả về commit thủ phạm, phần diff của nó thật sự gây ra lỗi này, cơ chế nó gây ra
+như thế nào, và các lệnh chính xác bạn đã chạy để tôi lặp lại được.
+</regression_bisect>
+
+## Scope
+- Sửa nguyên nhân gốc, không phải triệu chứng. Nếu chỉ vá được triệu chứng, nói rõ
+  điều đó và chỉ ra nguyên nhân thật nằm ở đâu.
+- Không refactor code xung quanh. Ghi chú riêng bất cứ thứ gì khác bạn thấy, ở cuối.
+- Tôi nghi ngờ [file] — xác minh trước khi tin vào đó, và nói tôi biết nếu tôi sai.
+
+## Constraints
+- Tuân `.claude/rules/client/coding-principles.md`.
+- Không làm yếu hay xoá một test đã có để việc này pass.
+- Không để sót debug logging: xoá nó, hoặc gate nó sau một helper chỉ chạy trong editor.
+
+## Deliverable
+1. Nguyên nhân gốc, trong một câu.
+2. Diff.
+3. Vì sao lỗi này lọt xa đến vậy — test hay phép kiểm nào lẽ ra đã bắt được nó.
+
+## Done when
+Làm theo các bước ở trên không còn tái hiện được lỗi, [hành vi liên quan] vẫn hoạt
+động, và — ở chỗ lỗi nằm trong logic test được — giờ đã có một test phủ nó.

@@ -1,0 +1,85 @@
+## Objective
+Điều tra [triệu chứng]. Đây là một lỗi HIẾM — đừng giả định nó tái hiện theo ý muốn.
+Đừng sửa gì ở lượt này.
+
+## What is known
+- Observed rate: [x trên y], trên [Editor | build | device]
+- Last seen: [khi nào, đang làm gì]
+- Seems more likely when: [tải nặng / ngay sau khi load scene / nhiều người chơi /
+  phiên chơi dài / mạng kém / thiết bị cấu hình thấp]
+- Never seen when: [ ]
+- Scattered evidence: [log, screenshot, báo cáo người chơi]
+
+<intermittent_evidence>
+Source: tự test trong studio, hoặc báo cáo từ studio.
+Làm theo thứ tự:
+1. Phân loại nghi vấn: race condition, thứ tự init/teardown, phụ thuộc frame-rate
+   hoặc timestep, trạng thái tích luỹ theo thời gian, một leak, dữ liệu chưa khởi
+   tạo, hoặc non-determinism. Với từng loại: cơ chế nào trong CHÍNH codebase này có
+   thể gây ra nó.
+2. Chỉ ra code có đủ điều kiện để loại đó xảy ra — path:line, kèm lý do. Đây là đọc,
+   không phải sửa.
+3. Đề xuất cách làm nó DỄ xảy ra hơn, để bắt được nó: ép một thứ tự, tiêm độ trễ, chạy
+   đường code đó N lần, ghim một seed, tăng tải.
+4. Đề xuất chỗ đặt logging hoặc assertion để lần xảy ra TIẾP THEO mang theo bằng
+   chứng, kể cả khi hôm nay chưa bắt được.
+</intermittent_evidence>
+
+<production_telemetry>
+Source: người chơi thật.
+- Channel: [Play Console vitals | Crashlytics | App Store Connect]
+- Rate: [% session hoặc user], phiên bản app [ ], từ build [ ]
+- Device or OS concentration: [ ]
+- Correlates with: [bộ nhớ thấp / một dòng GPU / một khu vực / cold start]
+- Symbol state: [đã symbolicate | chưa symbolicate | không có symbol file]
+
+<telemetry_excerpt>
+[Dán nguyên văn stack trace hoặc báo cáo. Đừng cắt bớt.]
+</telemetry_excerpt>
+
+Ba giai đoạn. Dừng sau mỗi giai đoạn và chờ:
+1. FAULT DOMAIN — code của mình, một SDK bên thứ ba, engine, hay thiết bị/driver?
+   Nêu bằng chứng nào chỉ về hướng đó, và bằng chứng nào sẽ bác bỏ nó.
+2. ROOT CAUSE — cơ chế cụ thể, kèm mức độ chắc chắn. Nếu trace chưa symbolicate, nói
+   rõ cần gì để symbolicate thay vì đoán từ tên hàm đã bị obfuscate.
+3. HANDOFF — agent-id nào sở hữu việc sửa, mức độ nghiêm trọng theo tác động nếu bỏ
+   mặc, và chỉ số nào ở ngưỡng nào xác nhận nó đã hết ở bản build tiếp theo.
+Tương quan không phải nguyên nhân. Đánh dấu mọi chỗ bạn đang suy luận thay vì quan sát.
+</production_telemetry>
+
+<determinism_audit>
+Add-on: giữ khối này khi triệu chứng là hai lần chạy, hai máy, hoặc client và server
+bất đồng với nhau.
+Rà `Game.Core.*` để tìm mọi nguồn non-determinism:
+- `UnityEngine.Random`, hoặc bất kỳ RNG nào không được tiêm seed
+- đọc giờ hệ thống hoặc frame-time
+- thứ tự duyệt collection không được đảm bảo
+- phép toán float có thể phân kỳ giữa các nền tảng hoặc kiến trúc
+- bất cứ thứ gì đọc từ trạng thái Unity thay vì được truyền vào dạng đã resolve
+Báo cáo từng chỗ dạng path:line, và nói rõ nó có thực sự ảnh hưởng tới kết quả hay
+vô hại trong ngữ cảnh đó.
+</determinism_audit>
+
+## Scope
+- Chỉ điều tra. Không đổi code production ở lượt này.
+- Không mở rộng thành một cuộc rà soát chung cho các hệ thống lân cận.
+
+## Constraints
+- Không khẳng định đã sửa xong trừ khi bạn tái hiện được trước rồi mới làm nó dừng
+  lại. "Tôi đã đổi gì đó và không thấy lại nữa" không phải bằng chứng cho một lỗi vốn
+  dĩ đã hiếm.
+- Mọi kết luận đi kèm một mức độ chắc chắn và bằng chứng đứng sau nó.
+- "Chưa kết luận được, đây là bước tiếp theo" là một câu trả lời hợp lệ và được mong
+  đợi.
+- Đừng chỉ báo cáo lần chạy duy nhất ủng hộ giả thuyết. Báo cáo những gì tất cả các
+  lần chạy cho thấy.
+
+## Deliverable
+Một danh sách nghi phạm đã xếp hạng, cách ép tái hiện, logging và assertion cần thêm,
+và một mức độ chắc chắn cho từng mục.
+[Với trường hợp telemetry: cộng thêm fault domain, root cause, mức độ nghiêm trọng,
+ và một chủ sở hữu.]
+
+## Done when
+Lần tới việc này xảy ra, tôi có đủ dữ liệu để kết luận — kể cả khi hôm nay chưa bắt
+được nó.
