@@ -117,6 +117,10 @@ Mode 2's whole vocabulary. A "cluster" is one of these rows, never a new groupin
 | File | Entry | Enters when |
 |---|---|---|
 | `feature-intake.md` | **E1** | The GD writes a feature request |
+| | **E2** | `research-decision.md` settled what the Advisor loop waited on — resumes at step 3 |
+| | **E3** | The Tech Spec is written or revised at step 6 — research settled, or a breakdown gap returned |
+| | **E4** | `change-request.md` classified **Moderate** — reopens CP2 |
+| | **E5** | `change-request.md` classified **Major** — reopens CP1 |
 | `research-decision.md` | **E1** | `feature-intake.md` step 5 — a capability the project lacks |
 | | **E2** | `technical-architect` returned `Routed to: cto` |
 | | **E3** | `advisor` returned `Needs-decision` on an option |
@@ -134,8 +138,7 @@ Mode 2's whole vocabulary. A "cluster" is one of these rows, never a new groupin
 | `change-request.md` | **E1** | The GD changes a rule mid-flight |
 | | **E2** | `qa-pipeline.md` CP4 — the spec itself should change |
 
-Each row's own file states what must be carried in. Supply it from the ledger; an entry missing its inputs
-returns `Blocked`, or worse, assumes silently.
+Each row's own file names what it carries; supply that from the ledger. An entry missing its inputs returns `Blocked` — or worse, assumes silently.
 
 ## Direct dispatch — the two classes
 

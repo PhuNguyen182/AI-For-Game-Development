@@ -2,7 +2,8 @@
 
 > **Scope: a feature request arriving from the GD, up to an approved Tech Spec.** Everything after that
 > belongs to `feature-development.md`. Technology questions branch out to `research-decision.md` and come
-> back here at step 6.
+> back at **E2** or **E3**, `feature-development.md` returns a spec gap at **E3**, and a change after CP2
+> comes back from `change-request.md` at **E4** or **E5**.
 
 Per `.claude/docs/agent-template.md`, sequence, parallelism, retry loops and checkpoints live here and
 **never inside an agent file**. Agents are isolated, stateless and cannot dispatch each other — every
@@ -58,15 +59,24 @@ Shapes: `([ ])` start and stop · `[ ]` an agent or a pipeline action · `{ }` a
 `Blocked` returns are deliberately not drawn — any agent can return one at any step, and the action is always
 the same: ask the GD for exactly the input named, then resume from that step.
 
-## Entry
+## Entry points
 
-| | Enters when | Carried in |
-|---|---|---|
-| **E1** | `orchestrator.md` step 0 sized a GD request into this pipeline | The GD's own words unedited, and which tracks are active |
+| | Enters when | Resumes at | Carried in |
+|---|---|---|---|
+| **E1** | `orchestrator.md` step 0 sized a GD request into this pipeline | step 1 | The GD's own words unedited, and which tracks are active |
+| **E2** | `research-decision.md` settled what the Advisor loop was waiting on | step 3 | The Research Report, the options already ruled out, and the round already spent |
+| **E3** | The Tech Spec must be written or revised — `research-decision.md` settled a capability, or `feature-development.md` found the breakdown names no API | step 6 | The tier, the track state, and what step 6 must now incorporate: a Research Report, or the gap that pipeline named |
+| **E4** | `change-request.md` classified the change **Moderate** | **CP2** | The revised Tech Spec and the rework list |
+| **E5** | `change-request.md` classified the change **Major** | **CP1** | The change in the GD's own words, the options already ruled out, and which risks the GD accepted |
 
 Step 0 sizes the **input**; this pipeline triages the **feature**. Triage still runs on everything that
 arrives here, including what looks trivial — sizing decides whether a request is a feature request, never
 what tier it is.
+
+**E2–E5 exist so that a re-entry has an address.** Each resumes mid-pipeline and none re-runs triage — the
+tier was set at step 2 and is held in the ledger, not re-derived. Entering at **E1** instead would restart
+the feature from zero and discard the round count and the ruled-out options, neither of which `advisor` can
+remember on its own.
 
 ## Step order
 
@@ -157,9 +167,9 @@ CP3 and CP4 sit outside this pipeline — see `review-pipeline.md` and `qa-pipel
 | Return | Action |
 |---|---|
 | `advisor` → `Rejected`, `Routed to: gd` — it was asked to choose | Return to the GD; offer `critic` on whichever option they lean toward |
-| `advisor` → `Needs-decision`, `Routed to: rd-engineer` or `cto` | Hand to `research-decision.md` at its step 0, then resume the loop with what it settled |
+| `advisor` → `Needs-decision`, `Routed to: rd-engineer` or `cto` | Hand to `research-decision.md` at its **E3**, then resume the loop here at **E2** — step 3, not step 6 |
 | `critic` → `Rejected`, `Routed to: gd` — it was asked to design the fix | Return to the GD, then re-enter at step 2 once the direction is settled |
-| `technical-architect` → `Rejected`, `Routed to: cto` | Hand to `research-decision.md` at its `cto` step, then re-enter here at step 6 |
+| `technical-architect` → `Rejected`, `Routed to: cto` | Hand to `research-decision.md` at its **E2**, then re-enter here at **E3** — step 6 |
 | any agent → `Blocked` | Ask the GD for exactly the input named. `Blocked` is a correct result, never a silent retry with a guess |
 | Loop reaches round 3 with no lock | Stop and report non-convergence — do not start a fourth round |
 

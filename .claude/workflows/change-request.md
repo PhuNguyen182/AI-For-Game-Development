@@ -38,8 +38,8 @@ flowchart TD
     Cls[technical-architect<br/>Change severity: + the rework list] --> Sev{Severity}
 
     Sev -->|Minor| Spec[Architect updates the<br/>Tech Spec in place]
-    Sev -->|Moderate| CP2{{CHECKPOINT 2 — feature-intake.md<br/>the GD re-approves the spec}}
-    Sev -->|Major| CP1{{CHECKPOINT 1 — feature-intake.md<br/>the Advisor⇄Critic loop re-runs}}
+    Sev -->|Moderate| CP2{{CHECKPOINT 2 — feature-intake.md E4<br/>the GD re-approves the spec}}
+    Sev -->|Major| CP1{{CHECKPOINT 1 — feature-intake.md E5<br/>the Advisor⇄Critic loop re-runs}}
 
     Spec --> Rep[producer → Status Report,<br/>next cycle — not a gate]
 
@@ -53,7 +53,7 @@ flowchart TD
 
 Shapes match the other pipelines: `([ ])` entry and stop · `[ ]` an agent or a pipeline action · `{ }` a
 decision · `{{ }}` a GD checkpoint · `[[ ]]` another workflow file. Both checkpoints belong to
-`feature-intake.md`; this pipeline reopens them, it does not own them.
+`feature-intake.md`; this pipeline reopens them through **E4** and **E5**, it does not own them.
 
 ### Step 1 — halt before classifying
 
@@ -100,8 +100,8 @@ and runs the pipeline forward from there, with its own CP3 and CP4.
 | Return | Action |
 |---|---|
 | `Change severity: Minor` | Record it, no checkpoint. `producer` carries it next cycle; the rework list still goes to E3 when code exists |
-| `Change severity: Moderate` | Re-enter `feature-intake.md` at CP2 with the revised spec |
-| `Change severity: Major` | Re-enter `feature-intake.md` at CP1 — and carry the options earlier rounds already ruled out, because `advisor` cannot remember them |
+| `Change severity: Moderate` | Re-enter `feature-intake.md` at **E4** — CP2 — with the revised spec and the rework list |
+| `Change severity: Major` | Re-enter `feature-intake.md` at **E5** — CP1 — carrying the options earlier rounds already ruled out, because `advisor` cannot remember them |
 | `technical-architect` → `Blocked` | It was handed a summary, or track state was missing. Supply the GD's own words, unedited |
 | `technical-architect` → `Needs-decision`, `Routed to: cto` | The change forces a strategic technology choice. Hand to `research-decision.md` at its `cto` step, then re-enter here |
 | `producer` → `Blocked` | It was asked to report a change without the reports behind it. Never reconstruct status from inference |

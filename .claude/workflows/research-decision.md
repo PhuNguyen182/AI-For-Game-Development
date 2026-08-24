@@ -76,7 +76,7 @@ flowchart TD
     Cto -->|Done| Exit
 
     GDCall --> Exit
-    Exit -->|no| Back[[back to feature-intake.md step 6]]
+    Exit -->|no| Back[[feature-intake.md — E2 into the loop,<br/>or E3 into the Tech Spec]]
     Exit -->|yes| CPX{{GD accepts the result<br/>and any standard it set}}
     CPX --> Stop([Recorded — no feature to resume])
 ```
@@ -147,8 +147,16 @@ the number it hinges on.
 
 ### Step 5 — the exit
 
-As a branch of `feature-intake.md`, the result rides into the checkpoint that pipeline already has — CP1 on
-Complex tier, CP2 on Medium. No extra gate, no extra wait.
+As a branch of `feature-intake.md`, the result rides into the checkpoint that pipeline already has — no extra
+gate, no extra wait. **Which entry it hands back to is set by the entry it left from, not by the tier:**
+
+| Left from | Hands back at | Reaches |
+|---|---|---|
+| **E3**, **E4** — mid-loop, or triage on a technology unknown | `feature-intake.md` **E2** — step 3 | CP1 |
+| **E1**, **E2** — step 5, or the architect mid-spec | `feature-intake.md` **E3** — step 6 | CP2 |
+
+Handing **E3** or **E4** back at step 6 would skip the Advisor⇄Critic loop the feature is Complex *because*
+it needs — the research settled a technology question, never the direction.
 
 On a standalone path (**E5**, **E6**) there is no such checkpoint, and a hard-to-reverse bet would otherwise
 pass unseen. So it ends at its own GD gate: the GD accepts the result and any standard it set, and the run
@@ -158,7 +166,7 @@ stops — there is no feature to resume.
 
 | Return | Action |
 |---|---|
-| `researcher` → `Done`, nothing strategic open | Exit — hand back, or to the GD if standalone |
+| `researcher` → `Done`, nothing strategic open | Exit — hand back at the entry step 5 names, or to the GD if standalone |
 | `researcher` → `Assessed:` above the entry lane | Raise the lane and continue; never lower it |
 | `researcher` → `Needs-decision`, an existing dependency already covers it | To `cto`; it bounces to `technical-architect` if contained |
 | `researcher` or `advisor` → `Routed to: rd-engineer` | Run the step 2 gate. Never dispatch the spike directly |

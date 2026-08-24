@@ -43,7 +43,7 @@ flowchart TD
 
     Brief[Build the per-agent brief<br/>spec sections · handoff fields · track · budget · strikes] --> Core{Breakdown names<br/>a Core task?}
     Core -->|no| Named{An existing Core or<br/>integration API is named?}
-    Named -->|no| Gap[[back to feature-intake.md step 6]]
+    Named -->|no| Gap[[feature-intake.md E3 —<br/>the spec is revised at step 6]]
     Core -->|yes| CS[csharp-engineer → public contract<br/>Complex tier: the contract also reaches the GD, nothing waits]
 
     CS --> CoreRev[[review-pipeline.md — the Core submission.<br/>The one verdict the fan-out waits on]]
@@ -189,7 +189,7 @@ loop they see only through a `Blocked` needing their input, or later at CP3.
 | implementing agent → `Needs-decision`, `Routed to: <tech lead>` | The escalation lane, then resume at the step it left |
 | `netcode-engineer` → `Needs-decision`, `Routed to: cto` | Hand to `research-decision.md` step 0 — `cto` is never entered without a candidate set |
 | `server-authoritative-engineer` → `Blocked`, `Routed to: csharp-engineer` | A rule is missing from the Core. Back to step 1, then resume |
-| `tech-lead-*` → `Needs-decision`, `Routed to: technical-architect` or `cto` | Out of this pipeline: the architect re-enters at `feature-intake.md` step 6, `cto` at `research-decision.md` step 0 |
+| `tech-lead-*` → `Needs-decision`, `Routed to: technical-architect` or `cto` | Out of this pipeline: the architect re-enters at `feature-intake.md` **E3**, `cto` at `research-decision.md` **E2** |
 
 - **The strike ladder.** Strike 2 fires the agent's own Escalate criterion and routes to a tech lead; strike 3
   is `review-pipeline.md`'s three-strikes rule and routes to `technical-architect`. That pipeline counts —

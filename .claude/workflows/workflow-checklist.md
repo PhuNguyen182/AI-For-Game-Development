@@ -128,7 +128,7 @@ The **GD** column is a separate axis: a part can be written but not yet approved
 | 7.5 | Escape upward the moment an escalation criterion turns out to apply | — (pipeline) | ✅ | ✔ |
 | 7.6 | Three modes — full run / entry point / direct agent; the router infers and states, never asks | — (pipeline) | ✅ | ✔ |
 | 7.6a | **Mode 3 is the GD's cost override, and the only one** — sizing is a proposal, stated so it can be overruled | — (pipeline) | ✅ | ✔ |
-| 7.7 | Entry index — **17** addressable entries; a "cluster" is one of these rows, never a new grouping | — (pipeline) | ✅ | ✔ |
+| 7.7 | Entry index — **21** addressable entries; a "cluster" is one of these rows, never a new grouping | — (pipeline) | ✅ | ✔ |
 | 7.8 | Direct dispatch — two classes derived from `tools:`; 11 agents accrue review debt | — (pipeline) | ✅ | ✔ |
 | 7.9 | Review debt attaches to the artifact, is recorded, never enforced, and settles in batch | — (pipeline) | ✅ | ✔ |
 | 7.10 | The global Editor lock — ten agents, one process, across concurrent runs | — (pipeline) | ✅ | ✔ |
@@ -144,47 +144,41 @@ The **GD** column is a separate axis: a part can be written but not yet approved
 | 7.15 | `review-pipeline.md` | Existing entry labelled **E1**; **E2** added for a standalone audit | ✔ |
 | 7.16 | `feature-development.md` | **E3** now names all three defect reporters — the row was already stale | ✔ |
 
+**Closing the re-entry debt** — giving every re-entry an address, so mode 2 can name it and the ledger can feed it:
+
+| # | File | Change | GD |
+|---|---|---|---|
+| 7.17 | `feature-intake.md` | **E2**–**E5** added: research back into the loop (step 3) or into the spec (step 6); `change-request.md` reopening CP2 and CP1. Each states what it carries and that triage does **not** re-run | ⬜ |
+| 7.18 | `research-decision.md` | The single "back to step 6" node was **wrong for E3 and E4** — both leave mid-loop on Complex and must return at step 3, or the Advisor⇄Critic loop is skipped. Step 5 now maps each exit to its entry | ⬜ |
+| 7.19 | `change-request.md` | Moderate → **E4**, Major → **E5**, in the diagram and the routing table | ⬜ |
+| 7.19a | `feature-development.md` | Its own spec-gap return was a **fifth** unaddressed door. Folded into **E3** rather than given a sixth label — both mean "the architect writes step 6", and only the carried-in differs | ⬜ |
+| 7.20 | `orchestrator.md` | Entry index 17 → **21** rows | ⬜ |
+| 7.21 | `workflow-checklist.md` | The settled-decisions archive became a table — the file was **202 lines**, over the 200 cap, and the bullets duplicated reasoning the pipeline files already hold | ⬜ |
+
 ## Open decisions the GD owes
 
-**None.** All seven are settled.
+**None.** All seven are settled, and each one's full reasoning now lives in the pipeline file named below —
+that file is the durable record, not this row.
 
-**Settled and removed:**
-
-- ***G*** — **the passes-review/fails-QA bound is two rounds.** A submission that clears both gates but fails
-  QA twice goes to `technical-architect` for root cause instead of a third fix, because three strikes counts
-  *review* rejections and this loop would otherwise never terminate. Approved as written, with the file
-  stating plainly that the bound is a pipeline decision and not a contract derivation.
-
-- ***A*** — **CP3 gates QA execution, not QA planning.** `qa-lead` in plan mode needs only the Tech Spec and
-  the tier, so it runs as soon as both gates clear and nothing it produces is invalidated by a CP3 rejection.
-  Lives in `review-pipeline.md` step 6.
-- ***D*** — **`review-pipeline.md` owns the two gates.** The reject → author → resubmit loop is a development
-  cycle, not QA execution, and `feature-development.md` depends on a verdict from it mid-flight while QA does
-  not. `qa-pipeline.md` step 2 is now a pointer.
-- ***E*** — **neither `gd` nor `tech-lead-sdk-platform` by default.** `security-reviewer`'s own required-input
-  table names what is missing — where the value is sourced from — so `Needs Confirmation` is an input to
-  supply and re-run, never a verdict to escalate. The ladder is `tech-lead-sdk-platform` (it owns the config
-  source) → the authoring agent → `gd` only when neither can name an origin. In `review-pipeline.md`.
-- ***F*** — **the merged checkpoint is CP4.** `feature-intake.md`'s approved tier table already states it:
-  Simple skips CP1 and CP2, merges CP3 into the single final checkpoint, and keeps CP4. The only competing
-  reading came from the retired legacy roster doc, which the GD ruled out and which has since been deleted.
-
-- ***B*** — a `Routed to: rd-engineer` becomes a GD ask, never an auto-dispatch, and the GD's yes is the
-  explicit summon the agent requires. Pipeline 2 gets a GD gate only on its standalone path. Both now live in
-  `research-decision.md` steps 2 and 5.
-- ***C*** — the client fan-out is **serial, and settled rather than deferred**. One Unity Editor, three agents
-  holding `mcp__unity-mcp__*` tools, and any `.cs` write forces a domain reload that ends another agent's Play
-  Mode verification. Three escapes were tested and rejected — see `feature-development.md` step 2. The one
-  concurrency that does work is review, which holds no Unity tools and writes nothing.
+| | Settled as | Now lives in |
+|---|---|---|
+| **A** | CP3 gates QA **execution**, not QA planning — `qa-lead` in plan mode needs only the spec and the tier, so a CP3 rejection invalidates nothing it produced | `review-pipeline.md` step 6 |
+| **B** | A `Routed to: rd-engineer` becomes a GD ask, never an auto-dispatch — the GD's yes is the explicit summon the agent requires. A GD gate only on the standalone path | `research-decision.md` steps 2, 5 |
+| **C** | The client fan-out is **serial, settled not deferred** — one Editor, three Editor-holding agents, and any `.cs` write forces a domain reload that ends another's Play Mode run. Three escapes tested and rejected | `feature-development.md` step 2 |
+| **D** | `review-pipeline.md` owns both gates — the reject → author → resubmit loop is a development cycle, not QA execution | `qa-pipeline.md` step 2 points at it |
+| **E** | Neither `gd` nor `tech-lead-sdk-platform` by default — `Needs Confirmation` is an input to supply and re-run, never a verdict to escalate. Ladder: `tech-lead-sdk-platform` → the authoring agent → `gd` | `review-pipeline.md` |
+| **F** | The merged checkpoint is **CP4** — the approved tier table already said so; the competing reading came only from the retired roster doc | `feature-intake.md` |
+| **G** | The passes-review/fails-QA bound is **two rounds** — three strikes counts *review* rejections, so this loop would otherwise never terminate. A pipeline decision, not a contract derivation | `qa-pipeline.md` |
 
 ## Debt register
 
-`Open` = owed · `Deferred` = seen, priced, declined on purpose · `Recorded` = a fact, not work. None blocks the layer.
+`Open` = owed · `Settled` = paid, kept for the record · `Deferred` = seen, priced, declined · `Recorded` = a fact, not work. None blocks the layer.
 
 | Debt | State | What closing it takes |
 |---|---|---|
-| **Test code meets no review gate** | Open | `qa-automation-engineer` writes `.cs` after CP3, but `review-pipeline.md` **E1** only accepts a submission from `feature-development.md`. Invariant I2 catches it in the ledger as review debt; closing it properly means giving `qa-pipeline.md` a route to a gate — one round |
-| **Three re-entry targets are unaddressable** | Open | `research-decision.md` hands back to `feature-intake.md` **step 6**, and `change-request.md` reopens **CP1**/**CP2**. None carries an entry label, so mode 2 cannot name them. Either label them or state that re-entries are pipeline-internal — one round, cheap |
+| **Test code meets no review gate** | Open | `qa-automation-engineer` writes `.cs` after CP3, but `review-pipeline.md` **E1** only accepts a submission from `feature-development.md`. Invariant I2 catches it in the ledger as review debt; closing it properly means giving `qa-pipeline.md` a route to a gate — one round. **The GD has read this and chosen to leave it open** |
+| **Re-entry targets are unaddressable** | Settled | Closed by rows 7.17–7.21. Turned out to be **four** doors, not three: the research hand-back is two addresses, not one, because **E3** and **E4** leave mid-loop on Complex and returning them at step 6 would skip the Advisor⇄Critic loop the tier exists for. That was a live defect in an approved diagram, not just a missing label |
+| **`orchestrator.md` is at the 200-line cap** | Recorded | 199 lines after the four new entries — the next addition breaks the cap. The escape is already chosen: the **entry index** moves to its own file, because it is the largest self-contained section and the one that grows every time a pipeline gains a door. Do that rather than cutting a section |
 | **The ledger has never been exercised** | Recorded | No feature has run through `state/ledger.md`, so its column contract is designed rather than proven. Expect the first real run to reshape it; that is normal, not a defect |
 | **Enforcement is advisory only** | Deferred | A `PreToolUse` hook could hard-block a dispatch that skips the router. **Declined on purpose** — writing one before any real miss has occurred is guessing at what will break. Reopen only when a miss supplies the evidence |
 | **The Implementation Note's `Deliberately out of scope` is a proxy** | Deferred | Per `.claude/rules/implementation-note.md`: an agent that sets a nearby problem aside may record it under `Assumptions` and never return `Routed to:`, so the field can be silently empty. Closing it means adding a field to seven agent envelopes — declined until a real round trip proves it worth it |
@@ -194,8 +188,8 @@ The **GD** column is a separate axis: a part can be written but not yet approved
 
 ## Authoring order
 
-Pipeline 1 ✅ → 2 ✅ → 3 ✅ → 4 ✅ → 5 ✅ → `change-request.md` ✅ → orchestrator ✅. Every file is written;
-the first six are GD-approved and pipeline 7 awaits review. One round per GD approval.
+Pipeline 1 ✅ → 2 ✅ → 3 ✅ → 4 ✅ → 5 ✅ → `change-request.md` ✅ → orchestrator ✅. Every file is written
+and all seven are GD-approved; rows **7.17–7.21** are the only ones still awaiting review.
 
 **The workflow layer is complete, and now has ignition.** `.claude/rules/orchestration.md` is the only
 piece loaded automatically — without it the other seven files take effect only when something reads them,
