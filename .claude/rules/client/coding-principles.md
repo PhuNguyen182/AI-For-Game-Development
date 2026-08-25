@@ -118,6 +118,78 @@ Raw string literals, `required` properties, collection expressions (`[...]`), an
 - Validate only at real boundaries: user input, save-data deserialization, network messages (when the backend track is active), third-party SDK callbacks. Internal calls between your own classes can trust their contracts — don't defensive-check state that can't actually happen.
 - Clean up coroutines and event subscriptions on `OnDisable`/`OnDestroy` — leaked coroutines and dangling event handlers are a recurring source of hard-to-reproduce bugs.
 
+## Null safety
+
+Every reference-type value that crosses one of the real boundaries above — or that Unity itself can leave
+unassigned or silently invalidate — must have a **null guarantee** before it is ever dereferenced: either an
+explicit null check that has already run in the same code path, or a mechanism that makes null structurally
+unreachable (a `required` property, a constructor that always assigns it, or the language's nullable
+reference type feature if enabled for this project's confirmed C# version — see the Modern C# syntax caveat
+above). This is not a blanket call to defensive-check everything; it applies at the same boundaries
+`Correctness boundaries` already names, plus the Unity-specific ones below that are easy to forget because
+they don't look like external input:
+
+- A `[SerializeField]` or public Inspector-serialized reference — an unassigned Inspector slot is a routine
+  real-world null, not a hypothetical one, so it does not qualify for the "internal calls can trust their
+  contracts" carve-out even though the field lives on your own class.
+- The result of `GetComponent<T>()`, `Instantiate(...)`, or any Unity API that returns a reference — Unity
+  APIs fail by returning null (or a destroyed reference) rather than by throwing.
+- Any `MonoBehaviour`/`Component` reference held across frames — Unity can destroy the underlying native
+  object at any time, leaving a C# reference that isn't literally `null` but must be treated as gone (see
+  below).
+
+**Plain C# reference types** (`Game.Core.*` types, interfaces, records, `string`, and any other type that
+does not derive from `UnityEngine.Object`) use the ordinary explicit comparison:
+
+```csharp
+if (this.combatState != null)
+{
+    // ...
+}
+```
+
+**Types derived from `UnityEngine.Object`** (`GameObject`, `Component`, `MonoBehaviour`, `Collider`,
+`Rigidbody`, `Transform`, and the like) use Unity's overloaded implicit `bool` check instead of an explicit
+`!= null` comparison:
+
+```csharp
+if (this.collider)
+{
+    // ...
+}
+
+if (!this.ballRigidbody)
+{
+    return;
+}
+```
+
+not:
+
+```csharp
+if (this.collider != null)
+{
+    // ...
+}
+
+if (this.ballRigidbody == null)
+{
+    return;
+}
+```
+
+Reason: Unity overloads `==`/`!=`/`bool` on `UnityEngine.Object` to detect a "fake null" — a managed wrapper
+whose native object has already been destroyed but whose C# reference isn't literally `null` yet.
+`if (this.collider)` reaches that check through the single overloaded `bool` operator directly; `!= null`
+routes through equality-operator overload resolution first. Both give the correct destroyed-object result,
+but the direct `bool` check is the cheaper path at runtime, and it is Unity's own recommended idiom — default
+to it anywhere this runs often (`Update`, physics/collision callbacks, per-frame code).
+
+This exception is narrow and literal: it applies only to `UnityEngine.Object`-derived references. Never apply
+the same implicit-`bool` shortcut to a `Game.Core.*` type, an interface, a `string`, or any other plain C#
+reference — none of those carry Unity's overloaded operator, and `if (value)` would not even compile for most
+of them.
+
 ## Handoff
 
 - Every submission to Code Reviewer includes a short note of assumptions/known limitations (per the Implementation Note handoff format in `.claude/rules/implementation-note.md`).

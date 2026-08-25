@@ -148,7 +148,7 @@ step 2 and `qa-pipeline.md` step 2 already use for their serialisation rules.
 | Class | Who | Rule |
 |---|---|---|
 | **A — leaves no source** (13) | No `Write`/`Edit`. Reports, measurements, verdicts, build artifacts | Direct dispatch is their **normal** mode. No debt, nothing owed |
-| **B — writes source** (13) | Holds `Write`/`Edit` | `technical-architect` writes specs, gated at CP2 rather than by review; `rd-engineer` marks its output disposable. The other **11 accrue review debt** |
+| **B — writes source** (14) | Holds `Write`/`Edit` | `technical-architect` writes specs, gated at CP2 rather than by review; `rd-engineer` marks its output disposable. The other **12 accrue review debt** |
 
 **Review debt is recorded, never enforced.** It settles in batch at the next natural gate. Recording costs
 nothing and blocks nothing — it is the difference between knowing what is unreviewed and not knowing.
@@ -185,7 +185,7 @@ Inside a run, that pipeline's own routing table governs. These are the fallbacks
 | `Needs-decision`, `Routed to: cto` | `research-decision.md` step 0 first. `cto` is barred from returning open options, so entering it without a candidate set leaves it nothing to decide |
 | `Needs-decision`, `Routed to: rd-engineer` | Ask the GD. The spike needs an explicit summon; a recommendation is never converted into a dispatch |
 | `Needs-decision`, `Routed to: technical-architect` | The spec has the gap. If no spec exists, the input was mis-sized — escalate to `feature-intake.md` **E1** |
-| `Needs-decision`, `Routed to: git-expert` | Dispatch it in mode 3. It is never reached by sizing — a git task the router sees is a chore lane row until the GD names the agent |
+| `Needs-decision`, `Routed to: git-expert` or `ci-cd-engineer` | Dispatch in mode 3. Neither is reached by sizing — a git or CI/CD task the router sees is a chore lane row until the GD names the agent |
 | `Done` carrying `Config required:` or `Risks flagged:` | A `Done` can still need the GD. Forward it; never read it as "continue" |
 | Anything with a `Verdict:` | Read `Verdict:`, never `Status:` — a review requesting changes still returns `Status: Done` |
 

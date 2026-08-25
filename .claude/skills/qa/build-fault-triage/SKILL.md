@@ -8,9 +8,11 @@ description: >
   libraries and ABI mismatches, and platform signing or permission faults.
   Covers reading `Player.log` and Android logcat, and running an existing suite
   against a standalone Player. Not for: producing the build
-  (`build-run-engineer`); Editor Play Mode testing (`playtest-scenario-execution`,
-  `unity-test-framework`); frame cost (`performance-budget-verification`);
-  released-build crashes (`crash-anr-investigator`).
+  (`build-run-engineer`); a CI run that failed before producing one
+  (`ci-pipeline-failure-triage`); Editor Play Mode testing
+  (`playtest-scenario-execution`, `unity-test-framework`); frame cost
+  (`performance-budget-verification`); released-build crashes
+  (`crash-anr-investigator`).
 ---
 
 # Build Fault Triage — the defects the Editor structurally cannot show
@@ -28,6 +30,7 @@ Act as the build-fault specialist for the QA track, on behalf of `build-verifica
 - A feature that works in Play Mode is missing, inert, or throws in the shipped artifact.
 - A platform permission, signing, or store-configuration fault blocks the artifact from running.
 - Negative trigger: producing the build or starting extra Editor instances — that is `build-run-engineer`, and only on the GD's explicit request.
+- Negative trigger: a CI run that went red before it produced an artifact — a licence, compile, packaging, signing or distribution failure — that is `ci-pipeline-failure-triage`. The dividing question is whether a correct artifact exists to consume at all.
 - Negative trigger: any Editor-based testing — that is `playtest-scenario-execution` for manual play and `unity-test-framework` for automated tests.
 - Negative trigger: frame time, allocation, or memory verdicts on the artifact — that is `performance-budget-verification`.
 - Negative trigger: crashes from a released store build reported through production telemetry — that is `crash-anr-investigator`, which requires a real reporting service rather than a local artifact.
