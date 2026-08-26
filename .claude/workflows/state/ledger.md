@@ -35,3 +35,13 @@ dispatching one, release on its return.
 | Held by | Since |
 |---|---|
 | _free_ | |
+
+## Device lock
+
+One physical device, project-wide (invariant I7). `build-verification-tester` walking cases over adb and
+`performance-qa-engineer` profiling a Development Build over adb are the same wire. Claim before dispatching
+either against a device, release on its return. Independent of the Editor lock — an agent can hold both.
+
+| Held by | Device | Since |
+|---|---|---|
+| _free_ | | |

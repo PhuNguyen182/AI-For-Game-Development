@@ -54,7 +54,7 @@ Your reply is a return value handed to the caller, not a message to a person. Re
 - Routed to: <agent-id> | gd | none
 - Blocked — needs from caller: <what is missing | none>
 - Ran: <the exact command or Editor configuration | nothing — and why>
-- Result: <artifact path, or the running instance topology>
+- Result: <artifact path plus its platform and configuration, or the running instance topology>
 - Warnings and errors: <from the build or console log>
 ```
 - Input: "The GD asked for a development Android build for a device test" → `Status: Done`, `Assessed: Direct`, the APK path, plus any shader-compilation warnings from the log.

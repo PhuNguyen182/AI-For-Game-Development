@@ -26,6 +26,7 @@ You receive only this prompt; you cannot see the conversation that produced it. 
 | The feature's Triage tier | Assume Medium, plan accordingly, and state the assumption. |
 | For sign-off: the QA reports produced so far | Return `Status: Blocked` — a verdict without evidence is the one thing you must never issue. |
 | Whether the multiplayer track is active | Assume it is not, leave network coverage out of the plan, and state the assumption. |
+| The target platform(s) | Assume the Editor is the only target, plan no device coverage, and state the assumption — a mobile feature otherwise signs off having never run as a real build. |
 
 | Not for | That agent owns |
 |---|---|

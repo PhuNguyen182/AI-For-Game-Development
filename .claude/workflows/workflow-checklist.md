@@ -3,6 +3,10 @@
 > **What this tracks:** the progress of authoring the workflow layer itself — which part of which pipeline is
 > written, and which the GD has reviewed and approved. It is not a per-feature runtime checklist.
 
+**This file is exempt from the 200-line cap** that governs every other document under `.claude/`. It is an
+append-only record — one row per authored part, one row per debt — so it grows by design and a cap would
+force it to start forgetting. Never compress it to fit a line count; add the row.
+
 Status: `⬜ Not started` · `🔄 In progress` · `✅ Written` · `⛔ Blocked on GD`.
 The **GD** column is a separate axis: a part can be written but not yet approved.
 
@@ -101,6 +105,9 @@ The **GD** column is a separate axis: a part can be written but not yet approved
 | 5.11 | A CP4 rejection splits: drift → E3, or a change request → `technical-architect` | — (pipeline) | ✅ | ✔ |
 | 5.12 | Routing table; three strikes stays in pipeline 4; the passes-review/fails-QA bound | — (pipeline) | ✅ | ✔ |
 | 5.13 | Block diagram | — | ✅ | ✔ |
+| 5.14 | The device lane — Step 2b: `/plan-test-coverage` derives the runnable cases, `device-test-walkthrough` runs them on the artifact, no device is a stated gap and never an Editor substitute, and a crash routes to `/investigate-device-crash` and never to the live-ops agent. The device lock it depends on is row **7.10a** | `build-verification-tester` | ✅ | ⬜ |
+| 5.14a | Both round-trip gaps closed in the agent files: `qa-lead` gained an `If absent` row for target platform (assume Editor-only, state it), and `build-run-engineer`'s `Result:` now carries the platform and configuration the verifier needs | `qa-lead`, `build-run-engineer` | ✅ | ⬜ |
+| 5.15 | Approved prose compressed to hold the 200-line cap — Step 2, the CP table, CP4, Step 4, closing bullets. Called out, not slipped in | — (pipeline) | ✅ | ⬜ |
 
 ## Change request — `change-request.md`
 
@@ -132,6 +139,7 @@ The **GD** column is a separate axis: a part can be written but not yet approved
 | 7.8 | Direct dispatch — two classes derived from `tools:`; 11 agents accrue review debt | — (pipeline) | ✅ | ✔ |
 | 7.9 | Review debt attaches to the artifact, is recorded, never enforced, and settles in batch | — (pipeline) | ✅ | ✔ |
 | 7.10 | The global Editor lock — ten agents, one process, across concurrent runs | — (pipeline) | ✅ | ✔ |
+| 7.10a | The global **device lock** — invariant **I7** in `orchestration.md`, with its table in `state/ledger.md`. One physical device: `build-verification-tester` walking cases over adb and `performance-qa-engineer` profiling a Development Build over adb are the same wire. Independent of the Editor lock — an agent can hold both | — (rule + state) | ✅ | ⬜ |
 | 7.11 | The ledger — written at each transition, not at run end | — (state) | ✅ | ✔ |
 | 7.12 | `Routed to:` fallback for when no pipeline is running | — (pipeline) | ✅ | ✔ |
 | 7.13 | Block diagram | — | ✅ | ✔ |
@@ -190,7 +198,7 @@ that file is the durable record, not this row.
 ## Authoring order
 
 Pipeline 1 ✅ → 2 ✅ → 3 ✅ → 4 ✅ → 5 ✅ → `change-request.md` ✅ → orchestrator ✅. Every file is written
-and all seven are GD-approved; rows **7.17–7.21** are the only ones still awaiting review.
+and all seven are GD-approved; rows **5.14–5.15** and **7.17–7.21** are still awaiting review.
 
 **The workflow layer is complete, and now has ignition.** `.claude/rules/orchestration.md` is the only
 piece loaded automatically — without it the other seven files take effect only when something reads them,

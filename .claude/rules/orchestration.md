@@ -44,6 +44,7 @@ built, so little is lost — which is what makes the cheap default safe rather t
 | **I4** | Every retry counter is the orchestrator's — three strikes, the two-round QA bound, the 3-round Advisor⇄Critic cap, the one measure-and-confirm cycle. A round nobody counted is a cap that never fires |
 | **I5** | A design flaw reaches the GD immediately, in every mode — never folded into a later report, never re-filed as an ordinary bug |
 | **I6** | A gap the GD accepts is written into the feature's known limitations before closure, or "nobody checked" becomes indistinguishable from "QA passed" |
+| **I7** | One physical device, project-wide. `build-verification-tester` walking cases over adb and `performance-qa-engineer` profiling a Development Build over adb are the same wire; never run both at once |
 
 ## Rules
 
