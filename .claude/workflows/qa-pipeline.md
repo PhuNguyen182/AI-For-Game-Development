@@ -29,7 +29,7 @@ only that** — its three skills are gated to it and decline a local device trac
 |---|---|---|
 | **E1** | `review-pipeline.md` step 6 — the feature's submissions are clearing | Enough for `qa-lead` to plan; execution stays locked |
 | **E2** | CP3 approved — or the gates cleared, on Simple tier | The coverage assignment from E1. Execution unlocks |
-| **E3** | A defect fix came back through review | The original report and the plan; only the coverage that fix touched is re-run |
+| **E3** | A defect fix came back through review | The original report and the plan; only the coverage that fix touched is re-run — and for device coverage, a **rebuilt** artifact, because the old one still contains the defect |
 
 Each row below is keyed to an agent's own `If absent` behaviour — omit one and you get a `Blocked`, or worse, a silent assumption:
 
@@ -143,8 +143,7 @@ CP4, where only the GD can accept it.
 
 ## Checkpoints
 
-CP1 and CP2 belong to `feature-intake.md`, CP3 to `review-pipeline.md`, and its tier table says which tiers
-each applies to. **This pipeline owns CP4** — whether the feature is done, given what QA actually found.
+CP1 and CP2 belong to `feature-intake.md` — whose tier table says which tiers each applies to — and CP3 to `review-pipeline.md`. **This pipeline owns CP4**: whether the feature is done, given what QA actually found.
 
 ### Checkpoint 4 — the last gate
 
@@ -184,6 +183,7 @@ to `change-request.md`; the split above is what this file owns.
 | `performance-qa-engineer` → `Needs-decision` | A native, GPU or leak cause → `tech-lead-performance`; a budget unachievable for the design → `technical-architect`. Neither is this pipeline's to settle |
 | `build-verification-tester` → `Blocked`, `Routed to: build-run-engineer` | No artifact exists. Ask the **GD** for the build — never dispatch one off pipeline state |
 | `build-verification-tester` reports no device reachable | That coverage is unrun. It goes to `qa-lead`'s gap list at step 4, and on to CP4 if it cannot be closed. Never an Editor substitute |
+| A fix for a device-found defect returns at **E3** | The artifact is stale — the build that found the defect still contains it. Ask the **GD** for a rebuild; without one that coverage stays unrun and joins the gap list. Never re-run the walkthrough against the old build |
 | A device walkthrough classified a **design flaw** | The GD, immediately — same as `playtest-tester`. I5 is not limited to the Editor |
 | A crash or ANR on the device under test | `/investigate-device-crash`. Never `crash-anr-investigator`, which declines a local trace by contract |
 | `build-run-engineer` → `Rejected`, `Routed to: gd` | It was handed pipeline state instead of a GD request. A correct refusal; get the request or drop the branch |

@@ -106,6 +106,7 @@ The **GD** column is a separate axis: a part can be written but not yet approved
 | 5.12 | Routing table; three strikes stays in pipeline 4; the passes-review/fails-QA bound | — (pipeline) | ✅ | ✔ |
 | 5.13 | Block diagram | — | ✅ | ✔ |
 | 5.14 | The device lane — Step 2b: `/plan-test-coverage` derives the runnable cases, `device-test-walkthrough` runs them on the artifact, no device is a stated gap and never an Editor substitute, and a crash routes to `/investigate-device-crash` and never to the live-ops agent. The device lock it depends on is row **7.10a** | `build-verification-tester` | ✅ | ⬜ |
+| 5.14b | **E3 re-entry needs a rebuilt artifact.** The build that found a device defect still contains it, so re-running the walkthrough against it proves nothing — and `build-run-engineer` cannot rebuild without a fresh GD request. Without one, that coverage stays unrun and joins the gap list rather than passing silently | `build-verification-tester`, `build-run-engineer` | ✅ | ⬜ |
 | 5.14a | Both round-trip gaps closed in the agent files: `qa-lead` gained an `If absent` row for target platform (assume Editor-only, state it), and `build-run-engineer`'s `Result:` now carries the platform and configuration the verifier needs | `qa-lead`, `build-run-engineer` | ✅ | ⬜ |
 | 5.15 | Approved prose compressed to hold the 200-line cap — Step 2, the CP table, CP4, Step 4, closing bullets. Called out, not slipped in | — (pipeline) | ✅ | ⬜ |
 

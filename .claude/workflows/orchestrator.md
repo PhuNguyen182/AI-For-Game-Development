@@ -14,7 +14,7 @@ those invariants point at. Read both before dispatching anything.
 | Sizing an input, and picking the lane | The steps inside whichever lane was picked |
 | Cross-run state — every counter, tier, track and baseline | Acting on that state within one run |
 | Acting on `Routed to:` when **no pipeline is running** | Acting on it inside a run, per that file's own routing table |
-| The single-Editor lock, across concurrent runs | Serialising within one run |
+| The Editor and device locks, across concurrent runs | Serialising within one run |
 
 ## Step 0 — size the input
 
@@ -153,9 +153,9 @@ step 2 and `qa-pipeline.md` step 2 already use for their serialisation rules.
 **Review debt is recorded, never enforced.** It settles in batch at the next natural gate. Recording costs
 nothing and blocks nothing — it is the difference between knowing what is unreviewed and not knowing.
 
-**The Editor lock is global.** Ten agents hold `mcp__<server>__*` Editor tools against one process. Two must
-never run at once, even when one was started in mode 2 and the other in mode 3 — the case no single pipeline
-can see, and the gap `feature-development.md` names as *"no orchestrator to arbitrate"*.
+**Both global locks live here.** Ten agents hold `mcp__<server>__*` Editor tools against one process; two also
+drive one physical device over adb (invariant **I7**). Two holders of the same lock never run at once, whatever
+mode started each — the case no single pipeline can see, and `feature-development.md`'s *"no orchestrator to arbitrate"*.
 
 ## The ledger
 
@@ -196,4 +196,4 @@ Inside a run, that pipeline's own routing table governs. These are the fallbacks
 - Mode changes *when* an invariant is met, never *whether* it is owed.
 - A cluster is an entry-index row. Never invent a grouping beside it.
 - Every counter goes in the ledger at the transition, not at the end.
-- Two Editor-holding agents never run at once, whatever mode started each.
+- Two holders of the same lock — Editor or device — never run at once, whatever mode started each.
