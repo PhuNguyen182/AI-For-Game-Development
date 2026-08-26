@@ -1,0 +1,66 @@
+## Objective
+Đây là PROTOTYPE VỨT ĐI ĐƯỢC, không phải code production.
+Câu hỏi duy nhất nó tồn tại để trả lời: [câu hỏi]
+
+## Context
+- Unity version / platform: [ ]
+- Sandbox location: [thư mục tách hẳn khỏi code production]
+- Input scheme: [ ]
+- Placeholder assets I can use: [ ]
+
+<feel_test>
+Những gì tôi phải tự tay làm được:
+- [thao tác] -> [phản hồi mong đợi]
+- [thao tác] -> [phản hồi mong đợi]
+Đủ để tôi phán được trong [N] phút chơi thử.
+
+Được phép cắt — tôi cho phép trước:
+- Hardcode giá trị. Không ScriptableObject, không đường ống config.
+- Art placeholder: primitive, gizmo, debug text.
+- Không test, không README, không lượt tối ưu nào.
+- Không xử lý edge case nào ngoài các thao tác liệt kê ở trên.
+
+Ưu tiên: thời gian ra được thứ chơi được, trên tất cả mọi thứ khác.
+Đưa các giá trị tôi sẽ muốn tinh chỉnh ra Inspector, và liệt kê chúng cho tôi.
+Sau khi tôi chơi xong, nói cho tôi biết phần nào đáng giữ lại và phần nào chắc chắn
+phải viết lại từ đầu.
+</feel_test>
+
+<measurement_spike>
+Ngưỡng quyết định, nêu TRƯỚC khi đo:
+- Pass if:  [chỉ số] [toán tử] [giá trị] trên [thiết bị / nền tảng]
+- Fail if:  [ ]
+- Nếu nó rơi vào khoảng giữa hai mức đó, thứ tôi cần biết để quyết định là: [ ]
+
+Cách đo:
+- Scenario: [chính xác cái gì đang được đo]
+- Platform: [thiết bị thật | Editor — nói rõ ra]
+- Runs: ít nhất [N]. Báo cáo dải giá trị giữa các lần chạy, không phải một con số.
+
+Ràng buộc trung thực:
+- Không báo cáo lần chạy đẹp nhất. Báo cáo dải giá trị.
+- Kết quả trong Editor phải được ghi rõ là chỉ mang tính chỉ báo ở mọi chỗ nó được
+  nhắc tới, và không bao giờ thay cho kết quả trên thiết bị thật.
+- Nếu không đo được vì thiếu [thiết bị / asset / quyền truy cập], trả về Blocked và
+  nói rõ thiếu gì. Đừng ước lượng rồi trình bày như đã đo.
+
+Scope: chỉ đo. Không tối ưu, không dựng kiến trúc, không tích hợp.
+</measurement_spike>
+
+## Scope
+- Không đụng vào code production.
+- Không đặt file vào bên trong thư mục của một tính năng thật.
+- Không dựng abstraction "để sau này dùng" — với đoạn code này không có sau này.
+
+## Constraints
+- Đặt tên vẫn theo `.claude/rules/client/naming-convention.md`, để tôi còn đọc được.
+- Phần còn lại của `coding-principles.md` được tạm ngưng bên trong thư mục sandbox.
+  Ghi một dòng ở đầu mỗi file nói rõ điều đó, để không ai nhầm đây là code production.
+
+## Deliverable
+[Một scene chơi được kèm danh sách giá trị chỉnh được | một bảng số đo kèm kết luận.]
+Kèm một dòng nói rõ prototype này KHÔNG trả lời được điều gì.
+
+## Done when
+[Tôi đã chơi thử và hình thành được phán đoán | Tôi ra được quyết định X chỉ dựa
+ trên bảng này, không cần đo lại.]
