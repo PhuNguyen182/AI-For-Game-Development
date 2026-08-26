@@ -19,7 +19,7 @@ statement. Every `Routed to:` below is a recommendation this pipeline acts on, n
 
 ## Entry points
 
-| | Enters when | Carried in |
+| Entry | Enters when | Carried in |
 |---|---|---|
 | **E1** | A submission from `feature-development.md` | Everything in the table below |
 | **E2** | The GD asks for an audit of code already in the repo | The code in scope, and what it is audited against |

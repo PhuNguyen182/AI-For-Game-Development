@@ -24,7 +24,7 @@ on an explicit GD request only; `crash-anr-investigator` (live-ops) handles rele
 
 ## Entry points
 
-| | Enters when | Carried in |
+| Entry | Enters when | Carried in |
 |---|---|---|
 | **E1** | `review-pipeline.md` step 6 — the feature's submissions are clearing | Enough for `qa-lead` to plan; execution stays locked |
 | **E2** | CP3 approved — or the gates cleared, on Simple tier | The coverage assignment from E1. Execution unlocks |

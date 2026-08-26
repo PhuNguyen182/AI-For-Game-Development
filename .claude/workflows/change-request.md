@@ -19,7 +19,7 @@ owns the rework, and `review-pipeline.md` and `qa-pipeline.md` own re-verifying 
 
 ## Entry points
 
-| | Enters when | Carried in |
+| Entry | Enters when | Carried in |
 |---|---|---|
 | **E1** | The GD changes a rule, a GDD passage or a requirement mid-flight | The change **in the GD's own words**, the approved Tech Spec, and the track state |
 | **E2** | `qa-pipeline.md` CP4 — the feature does what the spec said, and the GD now wants something else | The same, plus the QA reports that surfaced it |

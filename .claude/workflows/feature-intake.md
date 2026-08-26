@@ -61,7 +61,7 @@ the same: ask the GD for exactly the input named, then resume from that step.
 
 ## Entry points
 
-| | Enters when | Resumes at | Carried in |
+| Entry | Enters when | Resumes at | Carried in |
 |---|---|---|---|
 | **E1** | `orchestrator.md` step 0 sized a GD request into this pipeline | step 1 | The GD's own words unedited, and which tracks are active |
 | **E2** | `research-decision.md` settled what the Advisor loop was waiting on | step 3 | The Research Report, the options already ruled out, and the round already spent |

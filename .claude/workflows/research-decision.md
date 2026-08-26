@@ -24,7 +24,7 @@ statement. Every `Routed to:` below is a recommendation this pipeline acts on, n
 
 ## Entry points
 
-| # | Comes from | Enters at |
+| Entry | Comes from | Enters at |
 |---|---|---|
 | **E1** | `feature-intake.md` step 5 — the request names a capability the project lacks | step 0 |
 | **E2** | `technical-architect` returns `Routed to: cto` — a strategic technology choice | step 0 |

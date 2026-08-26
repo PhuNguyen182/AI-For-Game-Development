@@ -22,7 +22,7 @@ statement. Every `Routed to:` below is a recommendation this pipeline acts on, n
 
 ## Entry points
 
-| # | Comes from | Carries |
+| Entry | Comes from | Carries |
 |---|---|---|
 | **E1** | `feature-intake.md` CP2 approved — Medium or Complex | The Tech Spec, its per-`agent-id` task breakdown, and the tier |
 | **E2** | `feature-intake.md` step 2 — Simple tier | The architect's direct notes, addressed to one `agent-id` |
