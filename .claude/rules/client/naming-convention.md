@@ -91,8 +91,18 @@ This is the only exception to the PascalCase-for-public rule. A `public` field o
 
 If a class needs to live in `Game.Core.*`, it must not reference `UnityEngine` types. If it does, it belongs in `Game.Client.*` instead.
 
+## Namespace must mirror the folder path (mandatory)
+
+- Every namespace is derived mechanically from the file's own folder path: take every folder segment **below `Assets`**, PascalCase each segment that isn't already, and join them with `.`. The namespace is never freehand or "close enough" — it is a direct, literal reflection of where the file physically sits in the project.
+- The root segment is still the track prefix from the boundary above (`Game.Core`, `Game.Client`, `Game.Server`) — that prefix is the first folder(s) under `Assets` (e.g. `Assets/Game.Client/...` or `Assets/Scripts/Client/...`, whichever this project's actual folder layout uses), followed by every folder below it down to the file itself. The file's immediate folder is the last namespace segment; the file name itself is never part of the namespace.
+- Moving a file to a different folder means updating its namespace to match in the same change — a namespace that still reflects the file's old location is a defect, not a style nit.
+- A folder segment that is a plural/lowercase directory name (`abilities`, `ui`, `combat`) is PascalCased in the namespace (`Abilities`, `UI`, `Combat`) — the folder name on disk can stay lowercase/plural per the project's asset-organization convention, but the C# namespace segment always follows the PascalCase identifier rule from the casing table above.
+- Example: a file at `Assets/Game.Client/UI/Inventory/InventoryPanel.cs` declares `namespace Game.Client.UI.Inventory;`. A Shared Core file at `Assets/Game.Core/Combat/Abilities/FireballAbility.cs` declares `namespace Game.Core.Combat.Abilities;`.
+- This applies to every `.cs` file without exception — Shared Core, Client integration, editor tooling, and tests alike. An `.asmdef`'s own name is a separate concern (see the Unity assets table above) and does not by itself change what a file's namespace must be.
+
 ## Rules
 
 - Follow the casing table exactly — it is not optional per file or per author.
 - Never use Hungarian-style type prefixes on variables (no `strName`, `bIsActive`).
 - Keep naming consistent even if a specific PR's context suggests a shortcut — consistency across the whole client track matters more than local convenience.
+- Every namespace matches its file's folder path below `Assets`, segment for segment — never approximate, never left stale after a file move.
