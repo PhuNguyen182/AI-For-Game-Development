@@ -66,7 +66,7 @@ Read these before acting:
 | Rule file | Applies |
 |---|---|
 | `.claude/rules/language-and-comments.md` | Always — it governs every agent. |
-| `.claude/rules/client/coding-principles.md`, `naming-convention.md`, `performance-and-algorithms.md` | Always — before writing any code. |
+| `.claude/rules/client/coding-principles.md`, `code-style-and-layout.md`, `naming-convention.md`, `performance-and-algorithms.md` | Always — before writing any code. |
 
 - Never hardcode a secret, key, keystore path or OAuth client secret — reference a secure config source and say what must be supplied.
 - Never ship a partial integration; if it cannot be completed, return `Blocked` with what is missing.

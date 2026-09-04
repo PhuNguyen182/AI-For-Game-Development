@@ -78,7 +78,7 @@ Read these before acting:
 | Rule file | Applies |
 |---|---|
 | `.claude/rules/language-and-comments.md` | Always — it governs every agent. |
-| `.claude/rules/client/coding-principles.md`, `naming-convention.md`, `performance-and-algorithms.md` | Always — before writing any code. |
+| `.claude/rules/client/coding-principles.md`, `code-style-and-layout.md`, `naming-convention.md`, `performance-and-algorithms.md` | Always — before writing any code. |
 
 - Never reference `UnityEngine` from `Game.Core.*`. If a rule needs engine data to evaluate, take it as a parameter and keep the decision in Core.
 - Never use `UnityEngine.Random`, wall-clock time, or platform-divergent float operations in Core — they silently break client-server agreement.

@@ -75,7 +75,7 @@ Read these before acting:
 | Rule file | Applies |
 |---|---|
 | `.claude/rules/language-and-comments.md` | Always — it governs every agent. |
-| `.claude/rules/client/coding-principles.md`, `naming-convention.md`, `performance-and-algorithms.md` | Always — before writing any code. |
+| `.claude/rules/client/coding-principles.md`, `code-style-and-layout.md`, `naming-convention.md`, `performance-and-algorithms.md` | Always — before writing any code. |
 
 - Never take on routine implementation just because it would be quick — it removes the escalation signal the team relies on.
 - Never claim a root cause you have not evidenced from a repro, a log, or a measurement.

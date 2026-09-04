@@ -79,7 +79,7 @@ Read these before acting:
 |---|---|
 | `.claude/rules/language-and-comments.md` | Always — it governs every agent. |
 | `.claude/rules/qa/defect-reporting.md`, `verification-standards.md` | Always — they set what a reportable defect and a verified claim require. |
-| `.claude/rules/client/coding-principles.md`, `naming-convention.md` | Always — test code follows the same standards as production code. |
+| `.claude/rules/client/coding-principles.md`, `code-style-and-layout.md`, `naming-convention.md` | Always — test code follows the same standards as production code. |
 
 - Never test code that has not passed `code-reviewer` first.
 - Never fix the production code to make a test pass — report the defect and route it; the fix re-enters through review.

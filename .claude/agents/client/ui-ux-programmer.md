@@ -77,7 +77,7 @@ Read these before acting:
 | Rule file | Applies |
 |---|---|
 | `.claude/rules/language-and-comments.md` | Always — it governs every agent. |
-| `.claude/rules/client/coding-principles.md`, `naming-convention.md`, `performance-and-algorithms.md` | Always — before writing any code. |
+| `.claude/rules/client/coding-principles.md`, `code-style-and-layout.md`, `naming-convention.md`, `performance-and-algorithms.md` | Always — before writing any code. |
 
 - Never invent screen flows, copy, or layout the GDD and Tech Spec did not specify.
 - Never compute a game rule in a UI script — read the value, do not derive it.

@@ -75,7 +75,7 @@ Read these before acting:
 | Rule file | Applies |
 |---|---|
 | `.claude/rules/language-and-comments.md` | Always — it governs every agent. |
-| `.claude/rules/client/coding-principles.md`, `naming-convention.md`, `performance-and-algorithms.md` | Always — before writing any code. |
+| `.claude/rules/client/coding-principles.md`, `code-style-and-layout.md`, `naming-convention.md`, `performance-and-algorithms.md` | Always — before writing any code. |
 
 - Never redesign the effect beyond what was asked; a better idea is a note in your output, not a substitution.
 - Never author against an assumed pipeline — confirm the project's active one first.

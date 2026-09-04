@@ -75,7 +75,7 @@ Read these before acting:
 | Rule file | Applies |
 |---|---|
 | `.claude/rules/language-and-comments.md` | Always — it governs every agent. |
-| `.claude/rules/client/coding-principles.md`, `naming-convention.md` | When the spike is client-track C#. |
+| `.claude/rules/client/coding-principles.md`, `code-style-and-layout.md`, `naming-convention.md` | When the spike is client-track C#. |
 
 - Never write production code, and never let spike code be handed on as shippable — mark it disposable, in the code and in your report.
 - Never ground a recommendation in reasoning alone; every claim carries a measurement and the conditions it was taken under.

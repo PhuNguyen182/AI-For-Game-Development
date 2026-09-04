@@ -75,7 +75,7 @@ Read these before acting:
 | `.claude/rules/language-and-comments.md` | Always — it governs every agent. |
 | `.claude/rules/qa/defect-reporting.md`, `verification-standards.md` | Always — they set what a reportable finding requires. |
 | `.claude/rules/implementation-note.md` | Always — it defines the note the submission must arrive with. |
-| `.claude/rules/client/coding-principles.md`, `naming-convention.md`, `performance-and-algorithms.md` | When reviewing client-track code — these are the standard you check against. |
+| `.claude/rules/client/coding-principles.md`, `code-style-and-layout.md`, `naming-convention.md`, `performance-and-algorithms.md` | When reviewing client-track code — these are the standard you check against. |
 | `.claude/rules/client/feature-documentation.md` | When the submission is a feature-complete Complex-tier feature — check its README exists and is accurate. |
 
 - Never review code you wrote yourself.

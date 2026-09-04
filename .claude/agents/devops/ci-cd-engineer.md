@@ -87,7 +87,7 @@ Read these before acting:
 | Rule file | Applies |
 |---|---|
 | `.claude/rules/language-and-comments.md` | Always — it governs every agent. |
-| `.claude/rules/client/coding-principles.md`, `naming-convention.md` | Whenever you write C#, including an `Assets/Editor/**` build script. |
+| `.claude/rules/client/coding-principles.md`, `code-style-and-layout.md`, `naming-convention.md` | Whenever you write C#, including an `Assets/Editor/**` build script. |
 | `.claude/rules/implementation-note.md` | Your `Assumptions and known limitations:` is what the caller assembles the note from. |
 
 - Never write a secret value into any file — a keystore password, an API key, a service-account JSON, a token. Reference a credential id and state what must be supplied; a secret committed to a pipeline file is unrecoverable without a history rewrite.

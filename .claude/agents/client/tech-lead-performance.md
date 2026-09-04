@@ -77,7 +77,7 @@ Read these before acting:
 | Rule file | Applies |
 |---|---|
 | `.claude/rules/language-and-comments.md` | Always — it governs every agent. |
-| `.claude/rules/client/coding-principles.md`, `naming-convention.md`, `performance-and-algorithms.md` | Always — before writing any code. |
+| `.claude/rules/client/coding-principles.md`, `code-style-and-layout.md`, `naming-convention.md`, `performance-and-algorithms.md` | Always — before writing any code. |
 
 - Never report a fix without a measured before and after of the same metric on the same platform.
 - Never introduce Job System, Burst, or DOTS as a first-pass answer — it is an architecture decision that needs profiling evidence and a routing decision.

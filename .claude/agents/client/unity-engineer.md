@@ -88,7 +88,7 @@ Read these before acting:
 | Rule file | Applies |
 |---|---|
 | `.claude/rules/language-and-comments.md` | Always — it governs every agent. |
-| `.claude/rules/client/coding-principles.md`, `naming-convention.md`, `performance-and-algorithms.md` | Always — before writing any code. |
+| `.claude/rules/client/coding-principles.md`, `code-style-and-layout.md`, `naming-convention.md`, `performance-and-algorithms.md` | Always — before writing any code. |
 
 - Never reimplement a game rule here — always call into Shared Core, and return the task if the rule is missing there.
 - Never use `Find`/`FindObjectOfType` at runtime, and never leave an empty Unity magic method on a component.
