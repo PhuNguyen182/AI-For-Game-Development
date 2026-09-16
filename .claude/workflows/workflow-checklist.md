@@ -18,14 +18,15 @@ The **GD** column is a separate axis: a part can be written but not yet approved
 | 4. Review | `review-pipeline.md` | ✅ Written · GD approved |
 | 5. QA | `qa-pipeline.md` | ✅ Written · GD approved |
 | — Change request | `change-request.md` | ✅ Written · GD approved |
-| 7. Orchestrator | `orchestrator.md` + `orchestration.md` + `state/ledger.md` | ✅ Written · GD approved |
+| 7. Orchestrator | `orchestrator.md` + `references/` + `orchestration.md` + `state/` | ✅ Written · GD approved |
+| 8. Classification migration | every file above, retiring Simple/Medium/Complex | ✅ Written · ⬜ GD review |
 
 ## 1. Feature intake — `feature-intake.md`
 
 | # | Part | Agents | Status | GD |
 |---|---|---|---|---|
 | 1.1 | Forward the request verbatim + attach track state | — (pipeline) | ✅ | ✔ |
-| 1.2 | Triage → Simple / Medium / Complex, unconditional and first | `technical-architect` | ✅ | ✔ |
+| 1.2 | Classification → A1–A5 with its five axes, unconditional and first (was Simple/Medium/Complex — see §8) | `technical-architect` | ✅ | ⬜ |
 | 1.3 | Advisor⇄Critic loop, GD-in-the-middle, hard cap of 3 rounds | `advisor`, `critic` | ✅ | ✔ |
 | 1.4 | **CHECKPOINT 1** — direction locked, accepted risks recorded | gd | ✅ | ✔ |
 | 1.5 | Research branch — any tier, with the name-the-coverage skip test | → pipeline 2 | ✅ | ✔ |
@@ -56,16 +57,16 @@ The **GD** column is a separate axis: a part can be written but not yet approved
 
 | # | Part | Agents | Status | GD |
 |---|---|---|---|---|
-| 3.1 | Three entry points; Simple tier runs one agent and stops | — (pipeline) | ✅ | ✔ |
+| 3.1 | Three entry points; **D1–D2** runs one agent and stops | — (pipeline) | ✅ | ✔ |
 | 3.2 | Step 0 — the per-agent brief, each row keyed to a `Blocked` | — (pipeline) | ✅ | ✔ |
 | 3.3 | Step 0 — the handoff matrix: which returned field feeds which brief | — (pipeline) | ✅ | ✔ |
 | 3.4 | Shared Core first, forced by four agents' `Blocked` conditions | `csharp-engineer` | ✅ | ✔ |
 | 3.5 | The fan-out waits on the Core submission's review verdict, and only that | `code-reviewer` | ✅ | ✔ |
-| 3.6 | Complex tier — the Core contract reaches the GD as a notice, non-blocking | gd | ✅ | ✔ |
+| 3.6 | **D4–D5** — the Core contract reaches the GD as a notice, non-blocking | gd | ✅ | ✔ |
 | 3.7 | Client fan-out — serial; **settled**, with the three escapes tested and rejected | `technical-artist`, `unity-engineer`, `ui-ux-programmer`, `tech-lead-sdk-platform` | ✅ | ✔ |
 | 3.8 | Backend track — protocol before authority; depends on step 1 only | `netcode-engineer`, `server-authoritative-engineer` | ✅ | ✔ |
 | 3.9 | Escalation lane, never a first dispatch; the SDK lead is exempt | `tech-lead-csharp-unity`, `tech-lead-performance` | ✅ | ✔ |
-| 3.10 | Complex tier `README.md` — final dispatch, one owner per root | `csharp-engineer`, `unity-engineer` | ✅ | ✔ |
+| 3.10 | Feature-root documents at the **A4** floor (`LEDGER.md`/`DEBT.md` at **A3**) — final dispatch, one owner per root | `csharp-engineer`, `unity-engineer` | ✅ | ✔ |
 | 3.11 | **One submission per agent return**, not one bundle per feature | — (pipeline) | ✅ | ✔ |
 | 3.12 | Implementation Note assembled by the pipeline, with its one gap stated | — (rule) | ✅ | ✔ |
 | 3.13 | Routing table, `Blocked` handling, a `Done` that still needs the GD, strike ladder | — (pipeline) | ✅ | ✔ |
@@ -124,24 +125,24 @@ The **GD** column is a separate axis: a part can be written but not yet approved
 | 6.8 | Routing table, incl. the `cto` hand-off when the change forces a tech choice | — (pipeline) | ✅ | ✔ |
 | 6.9 | Block diagram | — | ✅ | ✔ |
 
-## 7. Orchestrator — `orchestrator.md`, `orchestration.md`, `state/ledger.md`
+## 7. Orchestrator — `orchestrator.md`, `references/`, `orchestration.md`, `state/`
 
 | # | Part | Agents | Status | GD |
 |---|---|---|---|---|
 | 7.1 | `.claude/rules/orchestration.md` — the auto-loaded rule that gives the whole layer ignition | — (rule) | ✅ | ✔ |
 | 7.2 | Step 0 — seven lanes read top-down, **first match wins**; four escalation criteria; zero agent calls | — (pipeline) | ✅ | ✔ |
 | 7.2a | The defect lane is scoped to what the pipeline built — no approved spec means nothing to measure | — (pipeline) | ✅ | ✔ |
-| 7.3 | Route by the **cost of being wrong**; the direct lane subsumes what Triage calls Simple | — (pipeline) | ✅ | ✔ |
+| 7.3 | Route by the **cost of being wrong** — the C axis deciding the lane. The lane is never the tier | — (pipeline) | ✅ | ✔ |
 | 7.4 | Sizing classifies the **input**, never a tier — the one interpreted boundary, stated as such | — (pipeline) | ✅ | ✔ |
 | 7.5 | Escape upward the moment an escalation criterion turns out to apply | — (pipeline) | ✅ | ✔ |
 | 7.6 | Three modes — full run / entry point / direct agent; the router infers and states, never asks | — (pipeline) | ✅ | ✔ |
 | 7.6a | **Mode 3 is the GD's cost override, and the only one** — sizing is a proposal, stated so it can be overruled | — (pipeline) | ✅ | ✔ |
-| 7.7 | Entry index — **21** addressable entries; a "cluster" is one of these rows, never a new grouping | — (pipeline) | ✅ | ✔ |
-| 7.8 | Direct dispatch — two classes derived from `tools:`; 11 agents accrue review debt | — (pipeline) | ✅ | ✔ |
+| 7.7 | Entry index — **23** addressable entries; a "cluster" is one of these rows, never a new grouping. **Now its own file**, `references/entry-index.md`, per the cap debt below | — (pipeline) | ✅ | ⬜ |
+| 7.8 | Direct dispatch — two classes derived from `tools:`; **14 / 14**, of which **12** accrue gate debt. Counts now machine-checked by `tools/verify-workflow-layer.ps1`, not asserted | — (pipeline) | ✅ | ⬜ |
 | 7.9 | Review debt attaches to the artifact, is recorded, never enforced, and settles in batch | — (pipeline) | ✅ | ✔ |
 | 7.10 | The global Editor lock — ten agents, one process, across concurrent runs | — (pipeline) | ✅ | ✔ |
-| 7.10a | The global **device lock** — invariant **I7** in `orchestration.md`, with its table in `state/ledger.md`. One physical device: `build-verification-tester` walking cases over adb and `performance-qa-engineer` profiling a Development Build over adb are the same wire. Independent of the Editor lock — an agent can hold both | — (rule + state) | ✅ | ⬜ |
-| 7.11 | The ledger — written at each transition, not at run end | — (state) | ✅ | ✔ |
+| 7.10a | The global **device lock** — invariant **I7** in `orchestration.md`, with its table in `state/project-state.md`. One physical device: `build-verification-tester` walking cases over adb and `performance-qa-engineer` profiling a Development Build over adb are the same wire. Independent of the Editor lock — an agent can hold both | — (rule + state) | ✅ | ⬜ |
+| 7.11 | The ledger — written at each transition, not at run end. **Now one per feature**, per §8 | — (state) | ✅ | ⬜ |
 | 7.12 | `Routed to:` fallback for when no pipeline is running | — (pipeline) | ✅ | ✔ |
 | 7.13 | Block diagram | — | ✅ | ✔ |
 
@@ -149,7 +150,7 @@ The **GD** column is a separate axis: a part can be written but not yet approved
 
 | # | File | Change | GD |
 |---|---|---|---|
-| 7.14 | `feature-intake.md` | Its entry labelled **E1**; sizing vs. Triage boundary stated | ✔ |
+| 7.14 | `feature-intake.md` | Its entry labelled **E1**; sizing vs. classification boundary stated | ✔ |
 | 7.15 | `review-pipeline.md` | Existing entry labelled **E1**; **E2** added for a standalone audit | ✔ |
 | 7.16 | `feature-development.md` | **E3** now names all three defect reporters — the row was already stale | ✔ |
 
@@ -163,6 +164,203 @@ The **GD** column is a separate axis: a part can be written but not yet approved
 | 7.19a | `feature-development.md` | Its own spec-gap return was a **fifth** unaddressed door. Folded into **E3** rather than given a sixth label — both mean "the architect writes step 6", and only the carried-in differs | ⬜ |
 | 7.20 | `orchestrator.md` | Entry index 17 → **21** rows | ⬜ |
 | 7.21 | `workflow-checklist.md` | The settled-decisions archive became a table — the file was **202 lines**, over the 200 cap, and the bullets duplicated reasoning the pipeline files already hold | ⬜ |
+
+## 8. Classification migration — retiring Simple/Medium/Complex
+
+The GD directed that the triage tier be replaced outright by the standard committed in `dd19ae7`, and that
+each feature carry its own ledger. This section is that round. Nothing here is GD-reviewed yet.
+
+**The design decision that made it work.** `task-classification.md` as committed kept both tiers side by side
+and said neither overrides the other. Collapsing them naively would have given a one-line credential edit
+(C4 → A5) an Advisor⇄Critic loop and a full docset, which is exactly the over-process that file exists to
+prevent. So the migration splits what the single number buys, in **Step 4** of that file:
+
+- **D sets the shape** — roles, Tech Spec, which checkpoints fire, which feature-root documents are owed.
+- **C, R and X set the depth** — verification floor, evidence strength, safe-retry discipline. Never a step.
+- **U3 fires CP1 at any D** — an undecided direction is the one thing outside D that adds a step, and it is
+  the more honest trigger of the two, because it names what a design loop actually settles.
+
+| # | Part | Files | Status | GD |
+|---|---|---|---|---|
+| 8.1 | Step 4 of `task-classification.md` rewritten as the single tier model — the axis-buys table, the D shape table, the A depth table | `task-classification.md` | ✅ | ⬜ |
+| 8.2 | Checkpoints re-keyed to **D**, with U3 firing CP1 independently; CP1 spends U down and the tier is recomputed when it closes | `feature-intake.md` | ✅ | ⬜ |
+| 8.3 | The **attempt budget** (`execution-loop.md`, keyed to D) and the **verification floor** (`effort-allocation.md`, keyed to A) added to every dispatch brief, every entry, and the ledger | `feature-development.md`, `references/entry-index.md`, `state/README.md` | ✅ | ⬜ |
+| 8.4 | A Continuation Debt Record is **one strike**, never a free retry, and its known non-solutions travel into the next brief | `feature-development.md`, `review-pipeline.md`, `qa-pipeline.md`, `research-decision.md` | ✅ | ⬜ |
+| 8.5 | `execution-loop.md`'s "persisting the record is not wired up yet" closed — it now lands in the feature ledger's **Continuation debt** table | `execution-loop.md` | ✅ | ⬜ |
+| 8.6 | **`assurance-evaluator` wired into a pipeline** as `qa-pipeline.md` step 4b, A3+ only, after every other verdict. It had no home in any workflow when it was committed | `qa-pipeline.md` | ✅ | ⬜ |
+| 8.7 | Docset floors re-keyed: full docset at **A4**, `LEDGER.md`/`DEBT.md`/`NOTES.md` at **A3**, A1/A2 owes none — keyed to A, not D, because documentation is earned by consequence | `feature-documentation.md`, `coding-principles.md` | ✅ | ⬜ |
+| 8.8 | The artifact budget made operational — what the direct lane and each tier **must not** produce, stated where the work happens rather than only in the rule | `orchestrator.md`, `feature-intake.md`, `effort-allocation.md` | ✅ | ⬜ |
+| 8.9 | Step 0's four escalation criteria re-grounded on the axes (C2+, D3+, C2+, U3), and "the lane is not the tier" stated — a direct-lane A5 still runs at V4 | `orchestrator.md`, `orchestration.md` | ✅ | ⬜ |
+| 8.10 | `technical-architect`'s self-assessment re-keyed to **D**, with the envelope now returning the tier, all five axes, the floor, the budget and the acceptance criteria | `technical-architect.md` | ✅ | ⬜ |
+| 8.11 | `qa-lead` plans against the A-tier **and the verification floor**; `code-reviewer` measures `Verification done:` against that floor | `qa-lead.md`, `code-reviewer.md` | ✅ | ⬜ |
+| 8.12 | Implementation Note gains `Tier:` and `Attempts:`, and `Known limitations:` now carries into `DEBT.md` from **A3** | `implementation-note.md` | ✅ | ⬜ |
+| 8.13 | `research-decision.md` **E4** re-grounded on **U2/U3** instead of "Triage returns Complex" — the axis it was always approximating | `research-decision.md` | ✅ | ⬜ |
+| 8.14 | `change-request.md` re-reads **all five axes** — the one re-entry where D and C genuinely move — and blast radius is stated as a separate classification from the tier | `change-request.md` | ✅ | ⬜ |
+| 8.15 | **One ledger per feature** at `state/<feature-slug>/ledger.md`; `state/project-state.md` holds the in-flight index, open review debt and both global locks; `state/ledger.md` deleted | `state/README.md`, `state/project-state.md`, `orchestrator.md`, `orchestration.md` | ✅ | ⬜ |
+| 8.16 | The two-files-named-ledger collision restated now that both are per-feature: **uppercase beside the code** is documentation, **lowercase under `.claude/`** is state | `state/README.md`, `feature-context-reading.md`, `orchestrator.md` | ✅ | ⬜ |
+| 8.17 | Entry index split into `references/entry-index.md`, closing the `orchestrator.md` cap debt as that row already planned | `references/entry-index.md`, `orchestrator.md` | ✅ | ⬜ |
+
+**What deliberately did not change.** `security.md` keeps its no-exemption wording (the axes only reinforce
+it — anything it covers is C4, therefore A5). `change-request.md` keeps Minor/Moderate/Major, which is blast
+radius, not task difficulty. The Advisor⇄Critic 3-round cap, the three-strikes rule and the two-round QA
+bound are unchanged — they count returns between agents, which the attempt budget does not.
+
+## 9. Holding the line cap — promotion into `references/`
+
+§8's content pushed five pipeline files past the 200-line cap. The GD directed that they be split into
+separate files **grouped into folders, not left loose at the top level** — so the layer now carries one
+`references/` folder, mirroring how skills in this repo are laid out (`SKILL.md` plus `references/*.md`) and
+applying the same promotion rule `client/feature-documentation.md` sets for a feature's own docset: content
+moves when it earns a file, the source keeps a **pointer and never a copy**, one fact has one home.
+
+**What was promoted, and why each was the right cut.** In every case the section is read only in a situation
+its source names — never while following that pipeline top to bottom. That is the test a section had to pass
+to move; the line count only decided how many had to.
+
+| # | Promoted | From | Read only when | GD |
+|---|---|---|---|---|
+| 9.1 | `references/entry-index.md` | `orchestrator.md` | A mode-2 dispatch needs an address | ⬜ |
+| 9.2 | `references/orchestrator-direct-dispatch.md` | `orchestrator.md` | Mode 2 or 3 is the lane, or one returns with no pipeline running | ⬜ |
+| 9.3 | `references/intake-advisor-critic-loop.md` | `feature-intake.md` | **D4–D5 or U3** — most features never enter the loop | ⬜ |
+| 9.4 | `references/research-depth-lanes.md` | `research-decision.md` | Entering the pipeline, to pick the lane | ⬜ |
+| 9.5 | `references/development-brief.md` | `feature-development.md` | Writing a dispatch brief — a per-dispatch lookup, not a step | ⬜ |
+| 9.6 | `references/development-feature-documents.md` | `feature-development.md` | Every task in a root has returned | ⬜ |
+| 9.7 | `references/qa-device-lane.md` | `qa-pipeline.md` | A build exists — `build-run-engineer` refuses anything but a GD request, so most runs never open it. Took the six device routing rows with it | ⬜ |
+| 9.8 | `references/qa-assurance-gate.md` | `qa-pipeline.md` | **A3 and above**, every other verdict in | ⬜ |
+| 9.9 | `references/qa-checkpoint-4.md` | `qa-pipeline.md` | Closing a feature. **`qa-pipeline.md` still owns CP4** — it keeps the three outcomes inline and promotes only the detail, so ownership did not move with the prose | ⬜ |
+| 9.10 | `references/README.md` | — | The folder index: what each file is, what it was promoted from, and the rule against creating one speculatively | ⬜ |
+
+**Result.** Every file in `.claude/workflows/` is now at or under the cap — `feature-intake.md` 199,
+`qa-pipeline.md` 199, `review-pipeline.md` 199, `feature-development.md` 191, `research-decision.md` 186,
+`orchestrator.md` 182, `change-request.md` 132. `workflow-checklist.md` stays exempt by its own header.
+
+**Two things deliberately did not move.** Each pipeline's **routing table** stays with its pipeline — it is
+the operational heart of the file, not a lookup consulted elsewhere; only the six device rows left, and only
+because they are unreachable unless that lane is open. And **cross-run state is not documentation**: it stays
+in `state/`, which is why the layer has two folders rather than one.
+
+## 10. Contradiction round — optional gates, standalone runs, and a check that runs
+
+The GD directed three things in one round: raise the layer to a uniform standard, make **review and QA
+optional and separately asked for**, and make **every pipeline callable on its own**. Everything below is
+that round. Nothing here is GD-reviewed yet.
+
+**The 200-line cap stays, by the GD's explicit direction** — promotion into `references/` is the flexible
+architecture, not a workaround. Five files needed room this round and all five got it by promoting, never by
+deleting reasoning. Six new reference files, and the cap holds at 200 across all of `workflows/`.
+
+### The contradictions closed
+
+| # | Contradiction | How it was closed | GD |
+|---|---|---|---|
+| 10.1 | **C bought process.** `task-classification.md` Step 4 says C/R/X never buys a checkpoint, a document or an extra agent — yet two of Step 0's four criteria are **C2+** and routed to an 8-call pipeline with a mandatory CP4. A one-constant `Game.Core.*` change is D1 and still cost 6+ calls | The **gated-direct lane**: one agent, then both gates at `review-pipeline.md` **E3**, no pipeline and no checkpoint. Four qualifying conditions, a 2-strike bound, escape upward on any failure. `references/gated-direct-lane.md` | ⬜ |
+| 10.2 | **Every inner loop was capped; their composition was not.** Three strikes → architect → **E3** never said what the strike count became, so a second three-strike run was legal forever. Same for the QA bound and CP4 rejections | `references/loop-termination.md` — **one root-cause reset per submission**, shared across every loop, then a feature-level Continuation Debt Record to the GD. CP4 defect rejections bounded at 2 before root cause, 3 before stopping. Invariant **I8** | ⬜ |
+| 10.3 | **Locks were invariants with no recovery path.** I3 and I7 said "never two at once" but nothing released a lock whose holder died — an invariant that cannot be restored stops being one | `Claim expires` on both lock tables, and a three-step reclaim procedure in `state/project-state.md` that stops at the first step to answer. The reclaim is recorded, and whatever the stale holder produced is treated as unverified per `execution-loop.md`'s safe-retry rule. Invariant **I9** | ⬜ |
+| 10.4 | **No terminal state for abandoned work**, though `execution-loop.md` calls `Blocked` and `Partially complete` legitimate outcomes | `Status: In flight \| Closed \| Abandoned`, with why and the last verified state. A feature with no terminal state is one a later session cannot tell from one still running | ⬜ |
+| 10.5 | **Test code reached no gate.** `qa-automation-engineer` writes `.cs`, but `review-pipeline.md` **E1** accepted submissions only from `feature-development.md` — so I2 recorded debt with no route to settle it | `review-pipeline.md` **E3** and `qa-pipeline.md` step 3b. Invariant **I10**. A weakened assertion advertises coverage that does not exist, which `verification-standards.md` calls worse than no suite. **Reverses a previously accepted debt** — see the register | ⬜ |
+| 10.6 | **`orchestration.md` duplicated `orchestrator.md`'s Step 0**, violating the one-fact-one-home rule the layer sets for itself — and did it in the one file that is auto-loaded into every session | The criteria table stays in the router; the rule keeps four lines saying why reading it is not optional. `rules/orchestration.md` is 10 lines shorter in every session | ⬜ |
+| 10.7 | **The layer's self-description had already drifted** — class A stated 13 against an actual 14, the checklist said 11 debt-accruing against the reference's 12, and `unity-engineer:92` / `ui-ux-programmer:81` pointed at **blank lines** | Counts corrected; every line-number cross-reference replaced with quoted text that cannot silently move. Then automated: `tools/verify-workflow-layer.ps1`, **52 claims, all passing**, plus `/verify-workflow-layer` | ⬜ |
+| 10.8 | **Every constant was E0** by the layer's own evidence scale, while it required E2 of everything else | `state/calibration.md` — one row per closed ledger, copied from numbers already recorded, never estimated. It does not make the constants right; it makes them knowable, and says so plainly until they are | ⬜ |
+
+### The GD's three directions
+
+| # | Direction | What it changed | GD |
+|---|---|---|---|
+| 10.9 | **Review and QA are optional and separate** | `references/optional-gates.md` — the two decision points, what the ask must carry (what was built, the tier, the cost of running, **the concrete cost of skipping**), recommend-then-defer by tier, what disappears when each is declined, and how to opt in later. Both pipeline files restate it in their own scope. CP3 and CP4 now fire **only when their gate ran**; `feature-development.md` asks at the Core return rather than at the end, because that is where the cost is highest | ⬜ |
+| 10.10 | **The one thing that stayed mandatory** | **The ask itself, and recording the answer.** `project-state.md`'s debt table now separates **unoffered** from **declined**, with who declined and when. A declined gate is an accepted gap under **I6** and lands in `DEBT.md` before closure is reported. A feature that closed without a gate is never reported as one that passed it | ⬜ |
+| 10.11 | **Every pipeline callable alone** | `references/standalone-runs.md` — what each of the six is worth alone, what the GD supplies in place of the missing upstream, and what comes back instead of a hand-on. Two doors were missing and are now open: `qa-pipeline.md` **E4** (QA on shipped code, or after declining earlier) and `feature-development.md` **E2** broadened to the GD's own notes. Entry index 21 → **23** | ⬜ |
+
+### Promoted this round — the cap held by moving content, never by cutting reasoning
+
+| Promoted | From | Read only when |
+|---|---|---|
+| `optional-gates.md` | `orchestrator.md` | Implementation returned and a gate would otherwise be dispatched |
+| `standalone-runs.md` | `orchestrator.md` | The GD named a pipeline instead of describing a feature |
+| `gated-direct-lane.md` | `orchestrator.md` | An input trips a C2+ criterion and nothing else |
+| `loop-termination.md` | every pipeline with a counter | A cap has been reached |
+| `review-needs-confirmation.md` | `review-pipeline.md` | `security-reviewer` returned that verdict |
+| `review-checkpoint-3.md` | `review-pipeline.md` | Compiling or rejecting CP3 |
+| `qa-entry-inputs.md` | `qa-pipeline.md` | Taking any entry into QA |
+| `qa-execution-order.md` | `qa-pipeline.md` | Dispatching the coverage assignment |
+
+Also moved: the ledger's **what each row protects** table, from `orchestrator.md` into `state/README.md`
+beside the template it describes. One fact, one home — the same rule, applied to the layer's own prose.
+
+### What this round could not fix
+
+**The layer has still never run.** No feature has passed through a ledger, no constant has been measured, and
+no checkpoint has been observed changing an outcome. §10 makes the layer internally consistent and
+machine-checkably so; it cannot make it *validated*. `state/calibration.md` is the instrument, and only real
+features fill it.
+
+## 11. Audit round — reachability, loop closure, and the context tax
+
+Three questions the GD asked, answered with data rather than reading: **which agents does no lane reach**,
+**which checkpoints can be skipped entirely**, and **which loops have no ceiling**. Plus the context tax,
+which §10 had measured and left as a GD decision. Nothing here is GD-reviewed yet.
+
+### Reachability — three agents no lane could reach
+
+Traced mechanically: for each of the 28 agents, does any workflow file name it?
+
+| # | Found | Fixed | GD |
+|---|---|---|---|
+| 11.1 | **`git-expert`** was named by **no workflow file at all** — reachable only if the GD typed its name. §7's debt register had recorded this as "closing it means adding a lane row"; the row was never added | Step 0 lane: a git or version-control task → `git-expert`, mode 3 | ⬜ |
+| 11.2 | **`ci-cd-engineer`** appeared in one reference file and no lane | Step 0 lane: authoring a pipeline, or diagnosing a failed run | ⬜ |
+| 11.3 | **`crash-anr-investigator`** appeared only as "owned elsewhere" inside `qa-pipeline.md`. A GD saying *"Play Console shows a crash spike"* had **no row to land on** — the agent existed for a purpose the router could not route to | Step 0 lane for released-production telemetry, with the `/investigate-device-crash` split stated inline so the two are never confused | ⬜ |
+| 11.4 | Nothing was checking for this | Verifier gains a **reachability check**: every agent must be named by at least one workflow file. It immediately caught a *phantom* id too — prose in a new file referred to an agent that does not exist | ⬜ |
+
+### Checkpoints — one could disappear entirely
+
+| # | Found | Fixed | GD |
+|---|---|---|---|
+| 11.5 | **§10 made CP4 conditional on QA running** — so a D1–D2 feature with both gates declined could close with **no GD gate at any point**. That is worse than the over-process the round was fixing: a feature stops being mentioned rather than being closed | **CP4 always fires.** Closing a feature is the GD's decision; QA signing it off is a different one, and only the second is optional. QA now changes what CP4 *rests on*, never whether it happens. `producer` takes Implementation Notes in place of QA reports, and where there is not even a note it is skipped rather than sent to return `Blocked` | ⬜ |
+| 11.6 | **The assurance gate was buried.** `assurance-evaluator` is the only thing in the layer that checks whether a claimed verification actually happened — and §10 put it behind an optional gate, so at A5 with QA declined, nothing checks it | Kept inside QA — inventing a third mandatory process would violate the GD's own direction — but the ask at **A4+** must now name **this specific loss in these words**. `effort-allocation.md` puts a false claim beyond any waiver, and a GD reading "skip QA" would not predict that this is what they are skipping | ⬜ |
+| 11.7 | CP2 and CP3 rejections had no bound while CP4 had one — an asymmetry introduced by §10 | CP2 bounded at 3, CP3 at 2, both in `loop-termination.md` | ⬜ |
+
+### Loops — eight were individually capped and jointly unbounded
+
+Every loop in the layer had a cap. **The compositions did not.** `loop-termination.md` is now the single home
+for all sixteen bounds, and nine of them are stated there and nowhere else.
+
+| # | The loop that could run forever | Bound | GD |
+|---|---|---|---|
+| 11.8 | `qa-lead` `Not signed off` → re-dispatch step 2 → sign-off → `Not signed off` → … | **2**, then the gap goes to CP4 | ⬜ |
+| 11.9 | `assurance-evaluator` `FAIL` → E3 → review → QA → `FAIL` → … | First `FAIL` is an integrity finding; a **second** is a QA fail and spends that counter | ⬜ |
+| 11.10 | CP2 reject → revise → CP2 → … | **3**, then it is a direction problem, not a drafting one | ⬜ |
+| 11.11 | CP3 reject → E3 → CP3 → … | **2**, sharing the single root-cause reset | ⬜ |
+| 11.12 | implementing agent → tech lead → `Rejected` back → same agent → … | **1 round trip.** A second identical refusal is a disagreement about ownership, which neither party can settle — to `technical-architect` as a routing question | ⬜ |
+| 11.13 | `Blocked` → ask → cannot supply → re-dispatch → `Blocked` → … | **2** on the same missing input. Past it the missing input *is* the finding | ⬜ |
+| 11.14 | Gate declined → re-offered → declined → re-offered … | **1 per boundary, never twice in a run.** A new boundary is a new fact, not a new mood. Nagging trains the GD to stop reading the ask, which costs more than the gate | ⬜ |
+| 11.15 | The root-cause reset was per-submission but not per-*loop-family* | One reset, **shared** across review strikes, the QA bound, CP3 and CP4 — not one each | ⬜ |
+
+### The context tax — closed
+
+§10 measured it (2,071 lines auto-loaded before the GD types) and left it as a decision. The GD took it.
+
+| # | Change | GD |
+|---|---|---|
+| 11.16 | `.claude/rules/client/` and `.claude/rules/qa/` → **`.claude/standards/`**, which is not auto-loaded. **2,071 → 1,366 lines: −34%**, paid back on every session *and* every subagent dispatch. 91 cross-references rewritten | ⬜ |
+| 11.17 | The test for where a file belongs, stated once in `rules/standards-index.md`: **a rule you must obey before you know it exists is loaded; a standard you consult when you reach its domain is read** | ⬜ |
+| 11.18 | Nothing was weakened — every governed agent already carried a required-reading table naming its own files. That table is now the **loading mechanism** rather than a citation, and `development-brief.md` gains a **seventh required field**: the brief names the standards by path | ⬜ |
+| 11.19 | Verifier gains two checks: every standard has a stated reader in the index, and **no file anywhere still points at the pre-move location** | ⬜ |
+
+### Verifier: 52 → **69** machine-checked claims
+
+New this round: reachability, phantom agent ids, standards-have-readers, no-stale-standards-path, and the
+four new reference files under the cap. It caught two real defects while being written — the phantom
+`sdk-engineer` id, and three cap breaches from this round's own additions.
+
+### Promoted this round
+
+`review-entry-inputs.md`, `qa-test-code-gate.md`, `intake-tech-spec.md`, `development-escalation-lane.md` —
+four files, each read only in a situation its source names. Every workflow file is at or under 200.
+
+### Still open, deliberately
+
+**The layer has still never run.** §11 removed every structural conflict it could find and made 69 claims
+machine-checkable. It did not, and cannot, make a single constant measured. `state/calibration.md` remains
+the instrument and real features remain the only thing that fills it.
 
 ## Open decisions the GD owes
 
@@ -185,11 +383,14 @@ that file is the durable record, not this row.
 
 | Debt | State | What closing it takes |
 |---|---|---|
-| **Test code meets no review gate** | Open | `qa-automation-engineer` writes `.cs` after CP3, but `review-pipeline.md` **E1** only accepts a submission from `feature-development.md`. Invariant I2 catches it in the ledger as review debt; closing it properly means giving `qa-pipeline.md` a route to a gate — one round. **The GD has read this and chosen to leave it open** |
+| **Test code meets no review gate** | Settled | Closed in §10 by `review-pipeline.md` **E3** and `qa-pipeline.md` step 3b, plus invariant **I10**. **This reverses a debt the GD had previously read and chosen to leave open** — called out rather than slipped in, and revertible by deleting those three additions |
 | **Re-entry targets are unaddressable** | Settled | Closed by rows 7.17–7.21. Turned out to be **four** doors, not three: the research hand-back is two addresses, not one, because **E3** and **E4** leave mid-loop on Complex and returning them at step 6 would skip the Advisor⇄Critic loop the tier exists for. That was a live defect in an approved diagram, not just a missing label |
-| **`orchestrator.md` is at the 200-line cap** | Recorded | 199 lines after the four new entries — the next addition breaks the cap. The escape is already chosen: the **entry index** moves to its own file, because it is the largest self-contained section and the one that grows every time a pipeline gains a door. Do that rather than cutting a section |
-| **The ledger has never been exercised** | Recorded | No feature has run through `state/ledger.md`, so its column contract is designed rather than proven. Expect the first real run to reshape it; that is normal, not a defect |
-| **Enforcement is advisory only** | Deferred | A `PreToolUse` hook could hard-block a dispatch that skips the router. **Declined on purpose** — writing one before any real miss has occurred is guessing at what will break. Reopen only when a miss supplies the evidence |
+| **`orchestrator.md` is at the 200-line cap** | Settled | Closed in §9 — the entry index moved out exactly as this row planned, and direct dispatch followed it. `orchestrator.md` is 182 lines |
+| **The ledger has never been exercised** | Recorded | No feature has run through a `state/<slug>/ledger.md`, so its column contract is designed rather than proven. Expect the first real run to reshape it; that is normal, not a defect |
+| **Every constant in the layer is E0** | Recorded, now instrumented | 3 strikes, 3 rounds, the 2-round QA bound, budgets 2–5, 1 reset, 2 gated-direct strikes — all **chosen, none measured**, which is the weakest grade `effort-allocation.md` recognises. `state/calibration.md` harvests one row per closed ledger from numbers already recorded, so the constants become knowable without inventing telemetry. **Nothing can close this but real runs** |
+| **`.claude/rules/` carries ~24k words, auto-loaded unconditionally** | Recorded | Measured, not estimated: 2,071 lines across 18 files enter every session before the GD types. ~650 of them are C# client style rules a router, `qa-lead` or `producer` never needs — the `Applies to:` headers are documentation, not a loading mechanism. §10 cut the `orchestration.md`/`orchestrator.md` duplication; the rest needs a scoping decision that is the GD's, not a silent restructure |
+| **Five files exceeded the 200-line cap** | Settled | Closed in §9 by promotion into `workflows/references/`, not by compressing prose. `.claude/rules/` still exceeds it (`execution-loop.md` 279, `task-classification.md` 214 as committed) — out of scope for this round, and recorded here rather than silently fixed |
+| **Enforcement is advisory only** | Partly settled | This row said "reopen only when a miss supplies the evidence". A miss did: four self-describing counts had drifted and two cross-references pointed at blank lines, all found by audit rather than by any check. `tools/verify-workflow-layer.ps1` and `/verify-workflow-layer` close the **self-description** half at 52 machine-checked claims. A `PreToolUse` hook blocking a dispatch that skips the router stays **Deferred** — still no evidence of that miss |
 | **The Implementation Note's `Deliberately out of scope` is a proxy** | Deferred | Per `.claude/rules/implementation-note.md`: an agent that sets a nearby problem aside may record it under `Assumptions` and never return `Routed to:`, so the field can be silently empty. Closing it means adding a field to seven agent envelopes — declined until a real round trip proves it worth it |
 | **Legacy roster doc deleted** | Recorded | `.claude/docs/TEAM_STRUCTURE.md` was removed once its §6 criteria reached `change-request.md` — the only content nothing else carried. Recover with `git checkout a33f02b -- .claude/docs/TEAM_STRUCTURE.md` if something turns out to have been missed |
 | **`git-expert` is reachable only in mode 3** | Recorded | Added at the GD's instruction with no Step 0 lane row, so sizing never routes to it and a git task still lands in the chore lane until the GD names the agent. Class counts and the `Routed to:` fallback are updated; the mermaid is not, because no lane changed. Closing it means adding a lane row — one round, only if auto-routing is wanted |
