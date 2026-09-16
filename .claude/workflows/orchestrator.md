@@ -7,6 +7,10 @@
 `.claude/rules/orchestration.md` carries the invariants and is loaded automatically; this file is the router
 those invariants point at. Read both before dispatching anything.
 
+**Sizing here is `.claude/rules/task-classification.md` applied at its cheapest.** The lane an input takes and
+the tier it runs at are two independent decisions, and this file owns only the first — but both are made from
+the request itself, before any agent call. The retired Simple/Medium/Complex tier appears nowhere below.
+
 ## What lives here, and what does not
 
 | Owned here | Owned by a pipeline file |
@@ -15,6 +19,7 @@ those invariants point at. Read both before dispatching anything.
 | Cross-run state — every counter, tier, track and baseline | Acting on that state within one run |
 | Acting on `Routed to:` when **no pipeline is running** | Acting on it inside a run, per that file's own routing table |
 | The Editor and device locks, across concurrent runs | Serialising within one run |
+| Opening and closing a feature's ledger | Writing to it at each of its own transitions |
 
 ## Step 0 — size the input
 
@@ -26,35 +31,61 @@ first on purpose.
 |---|---|---|
 | A question, or an ask to explain | Answer it, or one read-only agent | 0–1 |
 | A chore — rename, comment, format, config | Directly | 0–1 |
+| **A git or version-control task** — history, recovery, a conflicted scene, a forensic question | `git-expert`, mode 3 | 1 |
+| **A CI/CD task** — authoring a pipeline, or diagnosing a failed run from its log | `ci-cd-engineer`, mode 3 | 1 |
+| **A crash or ANR from released production telemetry** — Play Console, Crashlytics, App Store Connect | `crash-anr-investigator`, mode 3. A crash on a device *under test* is `/investigate-device-crash` instead, and never this agent | 1 |
 | **Judgeable by looking** — UI, layout, a tuned value, an asset, one local single-role behaviour | Directly, or one agent. **No pipeline** | 0–1 |
-| A bug **in something the pipeline built**, where its approved spec still stands | `feature-development.md` **E3** → review | 3 |
+| A bug **in something the pipeline built**, where its approved spec still stands | `feature-development.md` **E3**, then the gate offer | 1–3 |
 | An audit of code already in the repo | `review-pipeline.md` **E2** | 1–2 |
 | A technology question, no feature attached | `research-decision.md` **E5** | 1–4 |
-| **Any escalation criterion below** | `feature-intake.md` **E1** — Triage sets the tier | 8+ |
+| **Consequence only** — trips a **C2+** criterion below, but one role, no contract moves, behaviour already stated | **Gated-direct** — the agent, then both gates at `review-pipeline.md` **E3**. No pipeline, no checkpoint | 3 |
+| **Any escalation criterion below** | `feature-intake.md` **E1** — classification sets the tier | 8+ |
 
 **A bug in something the direct lane built is more direct work, not an E3 defect.** E3 exists to measure a
 submission against an approved spec and to count strikes against it; where no such spec exists there is
 nothing to measure and nobody to charge. Fixing it costs what building it cost.
 
-**The four escalation criteria**, each answerable by a grep or one read of the request:
+**The four escalation criteria**, each answerable by a grep or one read of the request — and each is one of
+`task-classification.md`'s axes at the only resolution available before an agent has looked:
 
-| Criterion | Why looking at it is not enough |
-|---|---|
-| Touches `Game.Core.*` — a game rule, economy, state machine, cooldown | A determinism or authority error stays invisible until it diverges |
-| Needs more than one role | Coordination is what the fan-out and the handoff matrix exist for |
-| Multiplayer-relevant | Client/server disagreement does not show on one screen |
-| Rests on something the GD has not decided yet | CP1 exists for exactly this, and nothing else provides it |
+| Criterion | Axis | Why looking at it is not enough |
+|---|---|---|
+| Touches `Game.Core.*` — a game rule, economy, state machine, cooldown | **C2+** | A determinism or authority error stays invisible until it diverges |
+| Needs more than one role | **D3+** | Coordination is what the fan-out and the handoff matrix exist for |
+| Multiplayer-relevant | **C2+** | Client/server disagreement does not show on one screen |
+| Rests on something the GD has not decided yet | **U3** | CP1 exists for exactly this, and nothing else provides it |
 
 **Route by the cost of being wrong, not by whether behaviour changed.** A Settings button changes behaviour
-and the GD can see it is right; a damage formula cannot be judged by looking. The direct lane therefore
-covers what Triage would call **Simple** — the same class of work, at a much lower price.
+and the GD can see it is right; a damage formula cannot be judged by looking. That is the C axis deciding the
+lane, and it is why the cheap default is safe rather than reckless.
 
-**This sizes the input, never a feature's tier.** Tier is `technical-architect`'s and is never pre-empted:
-`feature-intake.md` triages everything that reaches it. Step 0 only decides whether an input is a feature
-request in that file's sense, which is what its own scope line asks.
+**But C buys the gates, never the pipeline.** `task-classification.md` Step 4 is explicit that C, R and X buy
+depth and never a checkpoint, a document or an extra agent — so a criterion tripped for **consequence alone**
+takes the **gated-direct** row above, not the 8-call lane. Detail, the four qualifying conditions and the
+two-strike bound are in **`references/gated-direct-lane.md`**; read it before picking that row. A criterion
+tripped for **D3+** or **U3** is different in kind — that input needs coordination or a direction, which is
+shape, and shape is what `feature-intake.md` supplies.
+
+**The lane is not the tier, and a cheap lane never buys a low tier.** Step 0 decides only whether an input is
+a feature request in `feature-intake.md`'s sense. Work handled directly is still classified — silently at
+A1/A2, stated at A3 and above — and a direct-lane task that classifies **C3/C4, R2/R3 or X2/X3** runs at that
+tier's verification floor with the safe-retry checks `execution-loop.md` requires, even though no pipeline
+and no checkpoint is involved. A signing-config edit is one line, one lane and one agent, and it is A5.
+
+**What the direct lane must not produce.** `effort-allocation.md`'s artifact budget is a hard limit here, not
+a style note: A1/A2 work produces no plan document, no acceptance contract, no traceability table, no risk
+review, no self-score, and no report longer than the change. A high tier on a direct-lane input buys
+verification and evidence — never paperwork, never a checkpoint, never a second agent. Reaching for a Tech
+Spec is the signal that the input belonged in `feature-intake.md` all along; escalate rather than improvise
+one here.
 
 **Escape upward the moment a criterion turns out to apply** — stop and enter `feature-intake.md`. Little was
-built, so little is lost. That is what makes the cheap default safe rather than reckless.
+built, so little is lost.
+
+**Direct-lane work carries an attempt budget too.** `execution-loop.md` bounds it at 2 for D1–D2 and 3 for
+D3 — a ceiling, never a target. Two failures from the same cause force a change of method rather than a third
+variation of the same one, and an exhausted budget produces a **Continuation Debt Record** in the reply to
+the GD, stated as unfinished work with its resume point. Never folded into a summary that reads as closure.
 
 ## Pipeline at a glance
 
@@ -67,13 +98,15 @@ flowchart TD
     Named -->|nothing named| Size{Step 0 — size the input}
 
     Size -->|a question| Ans([answer it, or one<br/>read-only agent])
-    Size -->|"a chore, or judgeable by looking"| Do[do it directly, or<br/>dispatch one agent]
+    Size -->|"a chore, a domain task,<br/>or judgeable by looking"| Do[do it directly, or<br/>dispatch one agent]
     Size -->|a bug, spec stands| Bug[[feature-development.md E3]]
     Size -->|an audit| Aud[[review-pipeline.md E2]]
     Size -->|a technology question| Res[[research-decision.md E5]]
-    Size -->|any of the four criteria| Full[[Mode 1 — feature-intake.md E1<br/>Triage sets the tier]]
+    Size -->|"consequence only —<br/>one role, no contract moves"| GDL[[gated-direct — one agent,<br/>then review-pipeline.md E3]]
+    Size -->|any of the four criteria| Full[[Mode 1 — feature-intake.md E1<br/>classification sets the tier]]
 
     Do -.->|a criterion turns<br/>out to apply| Full
+    GDL -.->|a condition fails,<br/>or a second strike| Full
 
     M3 --> Wrote{Did it write<br/>production source?}
     Do --> Wrote
@@ -84,8 +117,9 @@ flowchart TD
     Bug --> Led
     Aud --> Led
     Res --> Led
+    GDL --> Debt
     Full --> Led
-    M2 --> Led[Update the ledger at<br/>every transition]
+    M2 --> Led[Write the feature's ledger<br/>at every transition]
     Led --> Out([back to the GD])
 ```
 
@@ -97,102 +131,68 @@ file holds no checkpoint; all four belong to the pipelines it routes into.
 
 | Mode | The GD says | What runs | What it costs |
 |---|---|---|---|
-| **1 — full run** | A feature request, nothing named | Step 0 sends it to a lane; a pipeline lane runs end to end | Whatever that lane costs |
-| **2 — entry point** | Names a pipeline, or an entry in one | That file, from that entry, with the inputs its own entry table names | One pipeline's worth |
+| **1 — routed** | A feature request, nothing named | Step 0 picks a lane; that lane runs, and each optional gate is offered at its own boundary | Whatever the lane costs |
+| **2 — a named pipeline** | Names a pipeline, or an entry in one | That file, from that entry, returning **to the GD** rather than handing on. `references/standalone-runs.md` says what each one is worth alone and what the GD must supply in place of the upstream | One pipeline's worth |
 | **3 — direct agent** | Names one or more `agent-id`s | Exactly those, in the order given, serialised where the Editor lock applies | One call each |
 
-**The router never asks which mode.** It infers, then states what it picked — the same way Triage is
+**The router never asks which mode.** It infers, then states what it picked — the same way the tier is
 assigned rather than put to the GD. Modes decide *when* an invariant is satisfied, never *whether* it is
-owed: a mode-3 dispatch that writes source still owes review, and the ledger still counts.
+owed: a mode-3 dispatch that writes source still owes the gate offer, and the ledger still counts.
 
-**Mode 3 is the GD's cost override, and the only one.** Step 0 gives a default gradient; naming an
-`agent-id` replaces it outright. A Core change the router would send down the 8-call lane runs in one call
-if the GD asks for one agent — the debt is recorded, nothing is blocked, and the judgement was theirs.
-Sizing is a proposal stated out loud precisely so it can be overruled this cheaply.
+**Mode 3 is the GD's cost override, and the only one.** Naming an `agent-id` replaces Step 0's gradient
+outright — a Core change the router would send down the 8-call lane runs in one call. The debt is recorded,
+nothing is blocked, and the judgement was theirs. Sizing is a proposal stated out loud precisely so it can be
+overruled this cheaply.
 
-## Entry index — the addressable entries
+## Entry index
 
-Mode 2's whole vocabulary. A "cluster" is one of these rows, never a new grouping invented beside them.
+Moved to **`references/entry-index.md`** — every addressable door, what each carries, and the four
+values that travel with all of them. It is mode 2's whole vocabulary, and a "cluster" is one of its rows and
+never a new grouping invented beside them. Read it before any mode-2 dispatch.
 
-| File | Entry | Enters when |
-|---|---|---|
-| `feature-intake.md` | **E1** | The GD writes a feature request |
-| | **E2** | `research-decision.md` settled what the Advisor loop waited on — resumes at step 3 |
-| | **E3** | The Tech Spec is written or revised at step 6 — research settled, or a breakdown gap returned |
-| | **E4** | `change-request.md` classified **Moderate** — reopens CP2 |
-| | **E5** | `change-request.md` classified **Major** — reopens CP1 |
-| `research-decision.md` | **E1** | `feature-intake.md` step 5 — a capability the project lacks |
-| | **E2** | `technical-architect` returned `Routed to: cto` |
-| | **E3** | `advisor` returned `Needs-decision` on an option |
-| | **E4** | Triage returned Complex on a technology unknown |
-| | **E5** | The GD asks for research directly, no feature attached |
-| | **E6** | The GD summons a spike, no feature attached — enters at step 3 |
-| `feature-development.md` | **E1** | CP2 approved — Medium or Complex |
-| | **E2** | Simple tier — direct notes to one `agent-id` |
-| | **E3** | A defect returns: from review, from QA, or reported by the GD |
-| `review-pipeline.md` | **E1** | One submission from `feature-development.md` |
-| | **E2** | A standalone audit of code already in the repo |
-| `qa-pipeline.md` | **E1** | `review-pipeline.md` step 6 — planning only, execution locked |
-| | **E2** | CP3 approved, or the gates cleared on Simple tier |
-| | **E3** | A defect fix came back through review |
-| `change-request.md` | **E1** | The GD changes a rule mid-flight |
-| | **E2** | `qa-pipeline.md` CP4 — the spec itself should change |
+## Direct dispatch, and acting on a return
 
-Each row's own file names what it carries; supply that from the ledger. An entry missing its inputs returns `Blocked` — or worse, assumes silently.
+Both moved to **`references/orchestrator-direct-dispatch.md`** — the two agent classes derived from `tools:`,
+which of them accrue review debt, the two global locks, and the `Routed to:` fallback table for when no
+pipeline is running. Read it before any mode-2 or mode-3 dispatch, and when one returns.
 
-## Direct dispatch — the two classes
+## The ledgers — one per feature
 
-Derived from each agent's `tools:` frontmatter, the hard sandbox — the same source `feature-development.md`
-step 2 and `qa-pipeline.md` step 2 already use for their serialisation rules.
+**Each feature owns its own ledger** at `.claude/workflows/state/<feature-slug>/ledger.md`, opened at
+`feature-intake.md` step 2 and written **at each transition** rather than at the end of a run — a counter that
+survives only in context is not a safety mechanism. `state/README.md` holds the layout and the template.
 
-| Class | Who | Rule |
-|---|---|---|
-| **A — leaves no source** (13) | No `Write`/`Edit`. Reports, measurements, verdicts, build artifacts | Direct dispatch is their **normal** mode. No debt, nothing owed |
-| **B — writes source** (14) | Holds `Write`/`Edit` | `technical-architect` writes specs, gated at CP2 rather than by review; `rd-engineer` marks its output disposable. The other **12 accrue review debt** |
+A single shared file forced every concurrent feature through one document, so one feature's strike count sat
+beside an identically-named counter belonging to another. Check `state/project-state.md` before opening one:
+a feature already in flight has a ledger, and a second slug splits its counters silently.
 
-**Review debt is recorded, never enforced.** It settles in batch at the next natural gate. Recording costs
-nothing and blocks nothing — it is the difference between knowing what is unreviewed and not knowing.
+**What each row of the ledger protects is in `state/README.md`**, beside the template it belongs to — one
+fact, one home. Read it when opening or writing one.
 
-**Both global locks live here.** Ten agents hold `mcp__<server>__*` Editor tools against one process; two also
-drive one physical device over adb (invariant **I7**). Two holders of the same lock never run at once, whatever
-mode started each — the case no single pipeline can see, and `feature-development.md`'s *"no orchestrator to arbitrate"*.
+**`state/project-state.md` holds only what cannot be per-feature**: the in-flight index, **open gate debt**
+(a mode-3 dispatch may have no feature at all), and both global locks. A per-feature copy of a global lock is
+not a lock.
 
-## The ledger
+## The two optional gates
 
-`.claude/workflows/state/ledger.md`, written **at each transition** rather than at the end of a run — a
-counter that survives only in context is not a safety mechanism.
+**`review-pipeline.md` and `qa-pipeline.md` are separate, optional processes, and neither runs unasked.** Ask
+about each separately when implementation returns. **`references/optional-gates.md`** owns the shape of the
+ask, what a decline costs, and the two things that are never optional: **the ask itself**, and **recording
+the answer** in `state/project-state.md`. **CP4 still fires either way** — closing a feature is the GD's
+decision, not QA's verdict.
 
-| State | Protects |
-|---|---|
-| Feature · tier · track | `technical-architect` assuming client-only; `qa-lead` assuming Medium |
-| Checkpoint position | Which CP `change-request.md` reopens |
-| Submission id · strikes · QA-fails | Three strikes; the two-round passes-review/fails-QA bound |
-| Advisor⇄Critic round · options ruled out | The 3-round cap; `advisor` re-proposing what was already rejected |
-| Verdicts landed | Acting on one verdict and paying two round trips for one submission |
-| Performance baseline | A run silently becoming the baseline |
-| **Open review debt** | Unreviewed source shipping, indistinguishable from reviewed source |
-| Reporting period | `producer` duplicating or missing status |
-
-## Acting on `Routed to:` with no pipeline running
-
-Inside a run, that pipeline's own routing table governs. These are the fallbacks for modes 2 and 3.
-
-| Return | Action |
-|---|---|
-| `Blocked` | Supply exactly the input named. Never retry with a guess — `Blocked` is a correct result |
-| `Rejected`, `Routed to: <peer>` | Misdispatched. Re-dispatch to the named agent; never argue it back |
-| `Needs-decision`, `Routed to: gd` | To the GD now. A `playtest-tester` design flaw is I5 — immediately, never held |
-| `Needs-decision`, `Routed to: cto` | `research-decision.md` step 0 first. `cto` is barred from returning open options, so entering it without a candidate set leaves it nothing to decide |
-| `Needs-decision`, `Routed to: rd-engineer` | Ask the GD. The spike needs an explicit summon; a recommendation is never converted into a dispatch |
-| `Needs-decision`, `Routed to: technical-architect` | The spec has the gap. If no spec exists, the input was mis-sized — escalate to `feature-intake.md` **E1** |
-| `Needs-decision`, `Routed to: git-expert` or `ci-cd-engineer` | Dispatch in mode 3. Neither is reached by sizing — a git or CI/CD task the router sees is a chore lane row until the GD names the agent |
-| `Done` carrying `Config required:` or `Risks flagged:` | A `Done` can still need the GD. Forward it; never read it as "continue" |
-| Anything with a `Verdict:` | Read `Verdict:`, never `Status:` — a review requesting changes still returns `Status: Done` |
+**Two files are named for a ledger and they are unrelated.** Lowercase under `.claude/workflows/state/` is
+run state; uppercase `LEDGER.md` beside a feature's code is its decision history, read per
+`feature-context-reading.md`. Reading one for the other wastes a dispatch.
 
 ## Rules
 
 - Size every input first, and say which lane was picked.
 - Never block. State the cost, then do what the GD asked — they override at will.
+- Consequence buys the gates, never the pipeline — `references/gated-direct-lane.md` before taking that row.
+- Every cap composes into a stop, never into another round — `references/loop-termination.md`.
+- Run `tools/verify-workflow-layer.ps1` after any change under `.claude/`; a number this layer states about
+  itself is a claim, and an unchecked claim is E0 evidence by `effort-allocation.md`'s own scale.
 - Mode changes *when* an invariant is met, never *whether* it is owed.
 - A cluster is an entry-index row. Never invent a grouping beside it.
 - Every counter goes in the ledger at the transition, not at the end.
