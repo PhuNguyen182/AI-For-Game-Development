@@ -23,7 +23,7 @@ safe, in an order that reaches the dangerous unknowns first.**
 
 ## Relationship to other rules
 
-`.claude/rules/client/feature-documentation.md` owns the writing side — which documents a feature root
+`.claude/standards/client/feature-documentation.md` owns the writing side — which documents a feature root
 carries, what goes in each, and when each becomes owed. This file owns the reading side only: which of them a
 given task must open, in what order, and what to do when they disagree with each other or with the code.
 `orchestration.md` governs what a dispatch must carry; this file governs what the dispatched agent reads once
@@ -44,9 +44,11 @@ trigger fires, per the authoring rule.
 | `DEBT.md` | What is already known to be wrong | Only when the code looks wrong |
 | `NOTES.md` | What is not yet worth a contract | Only when the rest came up short |
 
-`LEDGER.md` at a feature root is that feature's decision history. It is not
-`.claude/workflows/state/ledger.md`, which is the orchestrator's cross-run state — same word, unrelated
-files, and reading one for the other wastes a dispatch.
+`LEDGER.md` at a feature root is that feature's **decision history**. It is not
+`.claude/workflows/state/<feature-slug>/ledger.md`, which is that feature's **run state** — tiers, strike
+counts, checkpoint position. Both are now per-feature, so the filename alone no longer separates them: the
+distinction is **uppercase, beside the code** for documentation versus **lowercase, under `.claude/`** for
+state. Reading one for the other wastes a dispatch.
 
 **Absent is not empty.** A file is missing because its trigger never fired, not because the answer is
 "nothing" — fall back to the source for that question rather than concluding the feature has no contract, no
@@ -81,8 +83,10 @@ This covers most tasks. Everything below is a deviation from it, each with its o
 | **Test** (`qa-lead`, `qa-automation-engineer`, `playtest-tester`) | `README` → `CONTRACTS` — its invariants are the assertions — then `DEBT`, so known debt is not filed as a fresh defect | `ARCHITECTURE`, `LEDGER`, `NOTES` |
 | **New feature root**, no docset yet | the Tech Spec → the `INTEGRATION` and `CONTRACTS` of every feature it touches | its own docset — that is written at completion, not read at the start |
 
-A Simple-tier change against a root with no docset reads the source it touches and nothing else. Opening a
-docset that does not exist is not a step, and inventing one to read is not either.
+An **A1/A2** change against a root with no docset reads the source it touches and nothing else. Opening a
+docset that does not exist is not a step, and inventing one to read is not either. Note that the tier gates
+what a change **writes**, never what it **reads**: an A1 change to a feature that carries a `CONTRACTS.md`
+still reads it before touching anything, because the invariants bind the code regardless of who is editing.
 
 ## When to open the conditional four
 
@@ -106,7 +110,7 @@ context, never a source of truth.
 Documents state intent. Source states what runs. They are not ranked against each other, because a gap
 between them is itself a finding:
 
-- **`CONTRACTS.md` disagrees with the code** — stop and report it per `.claude/rules/qa/defect-reporting.md`,
+- **`CONTRACTS.md` disagrees with the code** — stop and report it per `.claude/standards/qa/defect-reporting.md`,
   citing both anchors. Which one is wrong is a decision for the owning agent or `technical-architect`, never
   a silent pick by whoever noticed it.
 - **A document is stale against the code** — treat it as a stale test: report it, and do not build on it.

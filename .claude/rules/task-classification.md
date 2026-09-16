@@ -5,18 +5,17 @@ direct dispatch, or a returning defect. Like `language-and-comments.md`, this fi
 `.claude/rules/<group>/` folders rather than inside one.
 
 Source: `.claude/docs/frame/AAEAS_v4_2_Runtime_Core.md` §§2–4, adapted to this project's roles, tiers and
-hazards. The Full Assurance Reference beside it is the audit-level expansion — open it only when a
+hazards. It replaces the retired Simple/Medium/Complex triage tier outright — see Step 4. The Full Assurance Reference beside it is the audit-level expansion — open it only when a
 classification is genuinely contested, never as routine input.
 
 ## Why it exists
 
-An input never states how hard it is or what it costs to get it wrong, and both of those are decided before
-any work happens — usually silently, usually by default. Two failure modes follow:
-
-- **Under-rigor on an easy-looking task.** A one-line edit to a signing config, a currency formula, or a
-  published branch is trivial to write and expensive to get wrong. Difficulty is not consequence.
-- **Over-process on a trivial one.** A triage, a spec and a verification plan over a rename costs more than
-  the rename and produces nothing the rename needed.
+An input never states how hard it is or what it costs to get it wrong, and both are decided before any work
+happens — usually silently, by default. Two failure modes follow: **under-rigor on an easy-looking task**, a
+one-line edit to a signing config or a currency formula being trivial to write and expensive to get wrong;
+and **over-process on a trivial one**, a classification round and a verification plan over a rename costing
+more than the rename. Difficulty is not consequence, and the axes below exist to stop one standing in for the
+other.
 
 Classifying takes no agent call and no tool call. It is a judgment made from the request itself, stated in
 one line when it is not obvious, so the GD can correct it at the first turn instead of after the work.
@@ -26,14 +25,16 @@ one line when it is not obvious, so the GD can correct it at the first turn inst
 | File | Owns |
 |---|---|
 | `orchestration.md` | Which **lane** an input takes — the full pipeline, one agent, or handled directly |
-| `technical-architect`'s Triage | The **process weight** a feature carries — Simple/Medium/Complex, how many roles and checkpoints |
-| **This file** | The **rigor** one execution unit runs at — how much care, verification and evidence |
+| **This file** | The **classification** itself — the five axes, the A1–A5 tier, and what each axis buys |
 | `effort-allocation.md` | What that rigor buys, and what it must never buy |
 | `execution-loop.md` | What happens when the first attempt is not good enough |
+| `.claude/workflows/*` | Acting on the classification — which checkpoints fire, which agents are dispatched |
 
-Lane, process weight and rigor are three independent decisions. A Simple-tier change handled directly can
-still demand the highest rigor in this file, and a Complex-tier feature can contain tasks that need almost
-none.
+Lane and classification are independent. A directly-handled input can still demand the highest rigor here,
+and a full-pipeline feature can contain steps that need almost none.
+
+**This file is the project's only task classification.** The Simple/Medium/Complex triage tier it replaced is
+retired — it measured difficulty under a name that read as consequence. Step 4 says what each axis buys.
 
 ## Step 1 — the requirement baseline
 
@@ -82,8 +83,8 @@ is the information.
 | Level | In this project |
 |---|---|
 | D1 | Read a file, answer from a rule, rename a field, adjust one serialized value |
-| D2 | A known-shape change across a few files; most Simple-tier work |
-| D3 | Several dependencies, edge cases or design choices — a Medium-tier feature, a new screen bound to Core state |
+| D2 | A known-shape change across a few files, one role, no new contract |
+| D3 | Several dependencies, edge cases or design choices — several roles, a new screen bound to Core state |
 | D4 | Architecture or interacting dependencies — client prediction and reconciliation, a new Shared Core system, a cross-layer refactor |
 | D5 | System-level — the netcode foundation, Job System/Burst/DOTS adoption, a project-wide migration |
 
@@ -151,34 +152,52 @@ U2      → one tier higher, unless resolved before execution
 U3      → A5 until the unknown is resolved or explicitly bounded
 ```
 
-**Never inflate the tier** to look thorough, to justify more tool calls, to produce more documentation, or
-to avoid making a decision. An inflated tier is the same defect as an under-classified one, pointed the other
-way.
+**Never inflate the tier** to look thorough, to justify more tool calls, to produce more documentation, or to
+avoid a decision — an inflated tier is the same defect as an under-classified one, pointed the other way.
+State the tier in one line only when it is not obvious: at A3 and above, or whenever it came from an axis the
+GD would not expect (a D1 edit landing at A5 because it is R3). At A1/A2, say nothing and do the work.
 
-State the tier in one line only when it is not obvious from the work — at A3 and above, or whenever the tier
-came from an axis the GD would not expect (a D1 edit that lands at A5 because it is R3). At A1/A2, say
-nothing; the classification still happened.
+## Step 4 — what each axis buys
 
-## Step 4 — reconciling with the Triage tier
+The tier is one number, but the axes that produced it are not interchangeable, and collapsing them is how a
+classification turns into ceremony. A D1 edit to a credential is A5 because of **C**, and what that buys is
+verification — not a design loop, not a Tech Spec, not a docset. Read the tier for depth; the axis that set
+it for shape.
 
-`technical-architect`'s Simple/Medium/Complex and this file's A1–A5 measure different things and neither
-overrides the other.
-
-| | Triage tier | Assurance tier |
+| Axis | Buys | Never buys |
 |---|---|---|
-| Scope | One feature, across its whole pipeline | One execution unit — this turn, or one agent's dispatch |
-| Decides | How many roles, which checkpoints, which documents are owed | How much verification, evidence and care |
-| Owned by | `technical-architect` | Whoever is executing |
+| **D — difficulty** | The **shape**: how many roles, whether a Tech Spec is written, which checkpoints fire, which feature-root documents are owed | Extra verification on its own — a hard problem with no consequence still verifies at its own level |
+| **C, R, X — consequence, reversibility, exposure** | The **depth**: the verification level, the evidence strength, how carefully each attempt is prepared and its target confirmed | A checkpoint, a document, or an extra agent. High consequence is a reason to check harder, never to add process |
+| **U — uncertainty** | The **direction gate**: an unresolved consequential unknown is what a design loop exists to settle | Anything, once it is resolved or explicitly bounded — U is the one axis that is meant to be spent down |
 
-Three rules hold the seam:
+### Shape — set by D
 
-- **A Triage tier never lowers an assurance tier.** "It is only Simple tier" does not reduce the verification
-  a C3 or X3 action demands. `security.md` already states this for its own scope; it is general.
-- **An assurance tier never adds process.** A5 rigor inside a directly-handled lane means more verification
-  and more evidence — not a Tech Spec, not a checkpoint, not an extra agent. Only `orchestration.md` and the
-  workflow files add process.
-- **A large mismatch is worth one line to the GD.** Something Triage called Simple that classifies A4/A5 is
-  usually a sign the triage missed a consequence — say so before doing it, not after.
+| D | Roles | Tech Spec | CP1 | CP2 | CP3 | CP4 | Feature-root documents |
+|---|---|---|---|---|---|---|---|
+| **D1–D2** | one | no — direct notes | — | — | merged into CP4 | ✔ | none |
+| **D3** | several | ✔ | — | ✔ | ✔ | ✔ | `LEDGER.md` / `DEBT.md` / `NOTES.md`, on their triggers |
+| **D4–D5** | several, often across tracks | ✔ | ✔ | ✔ | ✔ | ✔ | the full docset, on its triggers |
+
+**U3 fires CP1 at any D.** A direction nobody has decided is exactly what the Advisor⇄Critic loop exists for,
+and it is the only thing outside D that adds a step. A U2 that is resolved before execution adds nothing.
+
+### Depth — set by the A-tier
+
+| A | Verification floor | Attempt budget | Scored by `assurance-evaluator` |
+|---|---:|---:|---|
+| **A1** | V1 | 2 | no — scoring it is the overhead `effort-allocation.md` forbids |
+| **A2** | V1, or V2 the moment it changes state | 2 | no |
+| **A3** | V2 | 3 | ✔ |
+| **A4** | V3 | 4 | ✔ |
+| **A5** | V4 | 5 | ✔ |
+
+Verification levels are `effort-allocation.md`'s; the attempt budget is `execution-loop.md`'s and keys to
+**D**, not A — criticality raises the care taken per attempt, never the number of attempts.
+
+**The tier is assigned once per feature, then per execution unit.** `technical-architect` classifies the
+feature at intake and that tier is held in its ledger; a step inside it may classify **higher** for its own
+dispatch, never lower, and states why — the feature's tier is unchanged. A large gap between D and the final
+tier is worth one line to the GD: a D1 change landing at A5 means the consequence is doing all the work.
 
 ## Rules
 
@@ -190,6 +209,6 @@ Three rules hold the seam:
   not consequence.
 - A material conflict or a missing required input is stated and bounded, never guessed; `Blocked` is a
   correct result.
-- A Triage tier never lowers an assurance tier, and an assurance tier never adds a pipeline step.
+- D sets the shape, C/R/X set the depth, U fires the direction gate — never let one axis buy another's half.
 - State the tier at A3 and above, or whenever it came from an axis the GD would not expect. Below that, stay
   silent and just do the work.

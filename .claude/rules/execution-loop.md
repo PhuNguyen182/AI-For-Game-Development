@@ -61,13 +61,15 @@ budget does not compete with any of them:
 
 - The attempt budget is **inside one execution unit, inside one run** — one agent's own corrective cycles
   before it returns anything.
-- The orchestrator's counters count **returns between agents**, and live in the ledger because nothing else
-  survives a run.
+- The orchestrator's counters count **returns between agents**, and live in the feature's ledger because
+  nothing else survives a run.
 - An agent that exhausts its own budget returns with what it has, rather than looping. That single return is
   then one strike at the pipeline level.
 
 Never create a counter here that has to survive a run. If something must persist, it belongs to
-`orchestration.md` and the ledger, not to this file.
+`orchestration.md` and the feature's ledger, not to this file. The one value that crosses the boundary is
+**attempts used**, which an agent knows only at the moment it returns and the caller records from there —
+`assurance-evaluator` scores iteration against it, and absent it assumes Attempt 1.
 
 ## Maximum improvement per attempt
 
@@ -162,9 +164,14 @@ Where it goes:
 - **The orchestrator or a directly handled input** — into the reply to the GD, stated as unfinished work with
   the resume point, never folded into a summary that reads as closure.
 
-Persisting the record across runs belongs to `.claude/workflows/state/ledger.md` and is **not wired up yet** —
-a later, separate change. Until it is, the record lives in the return that carries it, and a session resuming
-this work is expected to read that return before starting a new cycle rather than restarting from zero.
+**Persisting it across runs is now wired up.** The record goes into that feature's ledger —
+`.claude/workflows/state/<feature-slug>/ledger.md`, under its **Continuation debt** table — written by
+whichever pipeline received the return, at the transition. A session resuming this work reads that table
+before starting a new cycle rather than restarting from zero, and re-running an approach it already lists as
+a known non-solution is the one failure this file calls worse than a novel mistake.
+
+Directly-handled work has no feature ledger. There the record lives in the reply to the GD, and the resume
+point is stated as unfinished work rather than folded into anything that reads as closure.
 
 ## Budget — time, tokens, tools, context
 

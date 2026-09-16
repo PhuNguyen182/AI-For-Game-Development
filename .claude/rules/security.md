@@ -18,8 +18,9 @@ No code, configuration, comment, log statement, test fixture, prompt, or commit 
 this project may contain, expose, transmit, or create a path to expose a real credential, secret, or piece
 of sensitive user data — under any circumstance, in any scope, for any reason, including "just for now",
 "the GD asked for it directly", or "it's only a test". This is the one rule in this project with no severity
-tiers below Critical and no tier-based exemption — Technical Architect's Simple/Medium/Complex triage
-governs process weight elsewhere in this project (per `feature-documentation.md`), never this. A violation
+tiers below Critical and no tier-based exemption — the assurance tier in `task-classification.md` governs
+process weight and verification depth elsewhere in this project, never this. Note the axes run the other way
+here anyway: anything this rule covers is **C4**, which classifies **A5** on its own. A violation
 is grounds for immediate rejection by whichever gate catches it, regardless of what else the submission got
 right.
 
@@ -96,5 +97,6 @@ stated as a rule every writer follows while producing code, not only what the re
 - A violation already in git history, not only the working tree, is never self-remediated by any
   code-writing agent — route it to `cto`, per `security-reviewer`'s own guardrail. Deleting it from the
   working tree alone leaves it in history and creates false confidence that it is gone.
-- This rule carries no tier-based exemption — Triage tier governs process weight elsewhere in this project,
-  never security requirements.
+- This rule carries no tier-based exemption — the assurance tier governs process weight and verification
+  depth elsewhere in this project, never security requirements. A credential-shaped value is C4 and therefore
+  A5 whatever else the work looked like.

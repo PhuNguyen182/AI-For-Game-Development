@@ -29,7 +29,7 @@ statement. Every `Routed to:` below is a recommendation this pipeline acts on, n
 | **E1** | `feature-intake.md` step 5 — the request names a capability the project lacks | step 0 |
 | **E2** | `technical-architect` returns `Routed to: cto` — a strategic technology choice | step 0 |
 | **E3** | `advisor` returns `Needs-decision`, `Routed to: cto` or `rd-engineer` | step 0 |
-| **E4** | Triage returns **Complex** and its open question is a technology unknown | step 0 |
+| **E4** | Classification returns **U2 or U3** and the open question is a technology unknown | step 0 |
 | **E5** | The GD asks for research directly, no feature attached | step 0 |
 | **E6** | The GD summons a spike on a foundational question, no feature attached | step 3 |
 
@@ -37,10 +37,15 @@ statement. Every `Routed to:` below is a recommendation this pipeline acts on, n
 without a candidate set leaves it nothing to decide between. Research runs first and needs no gate of its own
 — only the spike does.
 
-**E4 is narrower than the tier.** A feature is Complex for four reasons; only *genuine uncertainty* belongs
-here. Read the architect's `Open design question:` — a design question goes to `advisor` in
-`feature-intake.md`, a technology question comes here. A new system built entirely from what the project
-already has needs no research at all.
+**E4 is the U axis, and nothing else.** `task-classification.md` gives uncertainty its own axis precisely so
+this entry stops guessing at it: **U2 or U3 on a technology question is the trigger**, at any D. A D5 system
+built entirely from what the project already has is U0 and needs no research; a D1 change resting on an API
+whose current shape nobody has verified is U3 and does. Read the architect's `Open design question:` to split
+the two — a *design* question goes to `advisor` in `feature-intake.md`, a *technology* question comes here.
+
+**This pipeline exists to spend U down.** That is what its result is worth: research or a spike resolves the
+unknown, the tier is recomputed on the way back, and a feature that classified A5 on U3 alone legitimately
+lands lower. Recording the new tier in the feature's ledger is part of the hand-back, not an afterthought.
 
 **E5 and E6 are the standalone paths.** They return to the GD, not into a Tech Spec. E6 is the only entry
 that skips research: the GD summoning it has already given the authorisation a spike needs.
@@ -55,7 +60,7 @@ flowchart TD
     E1([feature-intake step 5<br/>a capability the project lacks]) --> Depth
     E2([feature-intake<br/>the architect routed to cto]) --> Depth
     E3([the Advisor loop<br/>Needs-decision on an option]) --> Depth
-    E4([triage returns Complex<br/>on a technology unknown]) --> Depth
+    E4([U2 or U3 on a<br/>technology unknown]) --> Depth
     E5([GD asks for research directly<br/>no feature attached]) --> Depth
     E6([GD summons a spike<br/>no feature attached]) --> RD[rd-engineer → Feasibility Report]
 
@@ -98,21 +103,9 @@ for exactly the input named, then resume from that step.
 
 ### Step 0 — the depth check
 
-Not every technology question is a technology bet. This step reads the question before anything is dispatched
-and picks how far the run should go, so a one-package answer costs one round instead of four.
-
-| Lane | Observable at entry | Steps | What comes back |
-|---|---|---|---|
-| **Direct** | One capability, nothing strategic to commit, nothing to measure | 1 | A named solution pinned to a version, with its licence and caveats |
-| **Considered** | Several plausible approaches, or the first-party answer is missing or deprecated; reversible at a known cost | 1 → 4 | A ranked shortlist, and the decision that picked one |
-| **Escalate** | Hard to reverse, a paid commitment, or a number nobody can settle by reading | 1 → 2 → 3 → 4 → 5 | A measured decision, and the standard it sets |
-
-| Rule | Detail |
-|---|---|
-| **The lane sets the brief, not just the step list** | A Direct brief asks `researcher` to confirm the first-party answer; an Escalate brief asks it to sweep all three source tiers and name the deciding criterion. This is what makes a Direct run come back in one round. |
-| **Upward only** | `researcher`'s returned `Assessed:` overrides the entry lane **upward, never downward**. The pipeline guesses from the question; the agent that actually looked is the authority. Downgrading would let a cheap-looking brief dodge `cto`. |
-| **Ambiguous starts higher** | When the entry evidence does not clearly fit a lane, start one lane up — the same rule the agents apply to themselves. |
-| **Step 1 is never skipped** | Only E6 reaches a candidate without it, and it does so through a Feasibility Report instead. |
+Moved to **`references/research-depth-lanes.md`** — the Direct / Considered / Escalate lanes, what each is
+observable by at entry, how the lane sets the brief rather than only the step list, and the upward-only rule
+that lets `researcher`'s returned `Assessed:` raise a lane but never lower it.
 
 ### Step 1 — what the pipeline must attach
 
@@ -152,10 +145,10 @@ gate, no extra wait. **Which entry it hands back to is set by the entry it left 
 
 | Left from | Hands back at | Reaches |
 |---|---|---|
-| **E3**, **E4** — mid-loop, or triage on a technology unknown | `feature-intake.md` **E2** — step 3 | CP1 |
+| **E3**, **E4** — mid-loop, or a technology unknown at U2/U3 | `feature-intake.md` **E2** — step 3 | CP1 |
 | **E1**, **E2** — step 5, or the architect mid-spec | `feature-intake.md` **E3** — step 6 | CP2 |
 
-Handing **E3** or **E4** back at step 6 would skip the Advisor⇄Critic loop the feature is Complex *because*
+Handing **E3** or **E4** back at step 6 would skip the Advisor⇄Critic loop the feature reached CP1 *because*
 it needs — the research settled a technology question, never the direction.
 
 On a standalone path (**E5**, **E6**) there is no such checkpoint, and a hard-to-reverse bet would otherwise
@@ -175,11 +168,15 @@ stops — there is no feature to resume.
 | `cto` → `Rejected`, `Routed to: technical-architect` | Hand back; the problem is contained, not strategic |
 | `cto` → `Needs-decision`, `Routed to: gd` | The GD makes the product call, then step 5 |
 | any agent → `Blocked` | Ask the GD for exactly the input named. `Blocked` is a correct result, never a silent retry |
+| `researcher` or `rd-engineer` returns a **Continuation Debt Record** | The question is not answerable within its budget. Record it, and carry the *known non-solutions* into whatever runs next — `cto` deciding against an unmeasured option needs to know which measurements were already attempted and failed |
 
 - **`cto` is never entered without a candidate set.** No path skips step 1 except E6, which reaches it
   through a Feasibility Report instead.
 - **Nothing here writes to the project.** `researcher` has no write tools, `cto` executes nothing, and
-  `rd-engineer` marks its output disposable in both the code and the report.
+  `rd-engineer` marks its output disposable in both the code and the report. R0/R1 throughout, which is why
+  an Escalate lane can afford a spike the feature pipeline could not.
+- **Every exit recomputes U and records the tier.** A research result that leaves the unknown standing is
+  reported as unresolved, per `effort-allocation.md` — never as settled because the round is over.
 
 ## Upstream this pipeline depends on
 

@@ -32,6 +32,9 @@ write or what the GD decides?* If not, it is not worth doing.
 
 ## Minimum process by tier
 
+Tier here is the **assurance tier** from `task-classification.md` — the project's only task classification.
+Where that file's Step 4 splits what each axis buys, this one says what the resulting rigor is spent on.
+
 | Tier | The floor |
 |---|---|
 | **A1** | Execute directly → sanity-check against the request |
@@ -52,9 +55,14 @@ This half matters more than the floors above, because process grows on its own a
 | **A5** | Independent verification theatre — a second pass using the same method and the same reasoning is not independent, and claiming it is, is worse than skipping it |
 
 Overhead this project has specific names for, all of it forbidden unless the tier genuinely earns it: a Tech
-Spec for a one-line fix, an architecture diagram for a rename, a `README.md` for a Simple-tier change (see
+Spec for a one-line fix, an architecture diagram for a rename, a `README.md` below the **A4** floor (see
 `client/feature-documentation.md`), a risk register for a scratch file, three alternatives when only one
 credible path exists, or a progress update that does not help the GD decide anything.
+
+**A high tier from C, R or X buys none of the above.** Consequence raises the verification and the evidence
+this file requires; it never raises the paperwork. A one-line signing-config edit is A5 and still produces no
+plan document — what it produces is a confirmed target, a check that actually ran, and a truthful report of
+what was not covered.
 
 A1 and A2 inherit none of A4/A5's paperwork. That is the single most-violated line in this file.
 
