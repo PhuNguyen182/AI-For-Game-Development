@@ -1,48 +1,103 @@
 # Client Track — Feature Documentation
 
-Applies to: C# Software Engineer, Unity Engineer, UI/UX Programmer, Tech Lead – C# Unity, Tech Lead – SDK/Platform, Tech Lead – Performance, Technical Artist.
+Applies to: C# Software Engineer, Unity Engineer, UI/UX Programmer, Tech Lead – C# Unity, Tech Lead – SDK/Platform, Tech Lead – Performance, Technical Artist. Also to Netcode Engineer and Server-Authoritative Logic Engineer for a `Game.Server.*` feature root, when the backend track is active.
 
 ## Relationship to other rules
 
-This file governs the documentation deliverable owed at the end of every feature or module, on top of the per-submission Implementation Note already required by `coding-principles.md`'s Handoff section. The Implementation Note is a point-in-time handoff message to Code Reviewer for one submission; the README required here is a durable, in-repo document that stays accurate for as long as the feature exists in the codebase. It does not replace the Tech Spec (what was decided, and why) or the Implementation Note (the state of one specific submission) — it documents what actually got built and how to use it.
+This file governs the durable, in-repo documentation a feature carries, on top of the per-submission Implementation Note already required by `coding-principles.md`'s Handoff section. The Implementation Note is a point-in-time handoff to Code Reviewer for one submission; the documents required here stay accurate for as long as the feature exists in the codebase. They do not replace the Tech Spec (what was decided, and why) — they record what actually got built and how to use it.
 
-## Scope — Complex tier only
+This file owns the **writing** side: which documents a feature root carries, what goes in each, and when each becomes owed. `.claude/rules/feature-context-reading.md` owns the **reading** side — which of them a new agent or session opens for a given task, in what order, and what happens when they disagree. Neither is a substitute for the other: a document nobody is required to read is waste, and a reading order over documents nobody wrote is empty.
 
-- This requirement applies only to features Technical Architect's Triage step classifies as **Complex** (new system, cross-cutting impact, multiplayer-relevant, or genuine uncertainty — per `technical-architect`'s Triage step). A Complex-tier feature already gets the full pipeline (Advisor-Critic loop, Tech Spec, architecture diagram) — the README is the durable, in-repo record of what that pipeline actually produced.
-- **Simple and Medium tier work is exempt.** A Simple-tier change (single role, no new architecture decision, brief direct notes) or a Medium-tier change (multi-role but following established patterns, no design risk) does not need a README under this rule — writing one would be bureaucratic overhead disproportionate to the change, which is exactly what KISS/YAGNI in `coding-principles.md` warns against.
-- If Technical Architect reclassifies a feature's tier mid-flight (e.g. a Medium-tier request turns out to need a design decision after all and is escalated to Complex), the README requirement applies from that point forward, same as the rest of the Complex-tier process would.
-- When in doubt about a feature's tier, check with Technical Architect rather than assuming — don't skip the README by guessing a feature down to Medium/Simple, and don't write one speculatively for a Simple/Medium feature that doesn't need it.
+## The docset — seven documents, written one at a time
 
-## Core requirement — one README.md per feature root folder
+A feature root can carry up to seven documents. They are **not** a checklist to satisfy at completion. Each exists to answer exactly one question, and each is written only when something in the work has actually produced that answer.
 
-- Once a Complex-tier feature or self-contained module is functionally complete — all its code is written and it is being handed to Code Reviewer for final approval — its root folder must contain a `README.md`. "Feature root folder" means the top-level directory holding that feature's code (e.g. the folder containing its `Game.Core.*` code, its `Game.Client.*` integration, and/or its UI, depending on how the feature is physically organized).
-- If a feature's Core and Client code live in genuinely separate physical roots (e.g. a Shared Core package folder vs. a Unity `Assets/` feature folder), each root gets its own `README.md`, and each links to the other instead of duplicating its content.
-- One README per feature, at the feature's top level — not one per class or per file, and not buried several folders deep where it won't be the first thing a reader finds.
-- This is a completion requirement, not a per-commit one: a feature mid-implementation doesn't need a finished README yet, but it cannot be considered done — and cannot go to Code Reviewer for final sign-off — without one.
+| File | Holds | Never holds |
+|---|---|---|
+| `README.md` | What the feature does, which Tech Spec it implements, its entry points, the map of its main files/classes, and which features consume it | The Tech Spec's requirements text |
+| `CONTRACTS.md` | The external contract: public API, interfaces, events, data schemas, invariants, and the behavior callers are entitled to rely on | Anything internal — that is what makes it a contract |
+| `INTEGRATION.md` | How another feature talks to this one: integration points, extension points, which API/event to use, where logic may be added, and which classes must not be called directly | A restatement of the public API — `CONTRACTS.md` owns the signatures, this owns the usage |
+| `ARCHITECTURE.md` | The inside: components, data flow, dependency direction, which part owns which logic, and the main processing path | Anything a caller outside the root needs |
+| `LEDGER.md` | Decisions that would otherwise be silently undone: what was decided, why, what was rejected, and what it constrains going forward | A changelog — git already has one |
+| `DEBT.md` | Known technical debt: current workarounds, limitations, code needing refactor, risky areas, and the intended fix | An open defect — that is `defect-reporting.md`'s job |
+| `NOTES.md` | Observations, edge cases, discoveries, and undecided ideas that are not yet a contract and not yet debt | Anything another document already owns |
 
-## Required contents
+**One fact, one home.** A fact duplicated across two documents goes stale in one of them, and the reader cannot tell which. Cross-link instead of copying, in both directions.
 
-Write in English (per `.claude/rules/language-and-comments.md`), in Markdown. Cover every section below; how much detail each one gets follows the same judgment call as the Comment depth policy in `.claude/rules/language-and-comments.md` — a small, single-class feature can cover every section in a sentence or two, while a feature spanning Core/Client/UI/server-authoritative layers needs the fuller treatment.
+**Never create an empty or placeholder file.** A `CONTRACTS.md` containing only headings tells a reader the feature has no invariants, which is worse than its absence — `feature-context-reading.md` treats a missing file as "the trigger never fired" and falls back to the source, which is the correct behavior. A file whose trigger has not fired is not written.
 
-1. **Overview** — one short paragraph: what the feature does, and which Tech Spec it implements (link/reference it, don't re-explain its requirements).
-2. **Architecture** — how the feature is structured: which classes/modules live in `Game.Core.*` vs. `Game.Client.*` (and `Game.Server.*` when the backend track is active), what each major class is responsible for, and how they collaborate. State the dependency direction explicitly (Client depends on Core, never the reverse), and call out anything a reader would otherwise have to reverse-engineer from the code.
-3. **How it works** — the runtime behavior: what triggers the feature, its lifecycle (init/update/teardown), its key state transitions, and any invariants that matter for correctness (ordering constraints, preconditions a caller must satisfy, etc.).
-4. **Public API** — the surface other features/systems are expected to call: public classes, methods, properties, events, and interfaces, each with a one-line purpose and, where usage isn't obvious from the signature alone, a short example. This is the external contract — changing anything listed here is a breaking change for its callers.
-5. **Internal API** — classes/methods that exist to support the feature internally and are not meant to be called from outside it. Marking these explicitly tells other features not to reach in and couple to them (reinforces the Law of Demeter in `coding-principles.md`). If something here later needs to be called externally, promote it to the Public API section deliberately — don't let outside code quietly grow a dependency on an internal.
-6. **Dependencies & integration points** — what this feature depends on (other Shared Core modules, SDKs, other features), and, if known, what already depends on it.
-7. **Known limitations / assumptions** — carry these over from the feature's Implementation Note(s) so they survive in the codebase, not only in a chat handoff that eventually scrolls out of reach.
+## When each document becomes owed
+
+Two conditions, both required: the feature has reached the **tier floor**, and the document's **trigger** has actually fired. Neither alone is enough — a Complex tier with no cross-feature seam does not owe `INTEGRATION.md`, and a real seam inside a Simple-tier change does not owe one either.
+
+| File | Tier floor | Trigger — it becomes owed the moment this is true |
+|---|---|---|
+| `README.md` | Complex | The feature is functionally complete and going to Code Reviewer for final sign-off. This is the anchor: no other document in the set exists without it |
+| `CONTRACTS.md` | Complex | Code outside the feature root calls into it, the Tech Spec names a cross-layer or client-server contract, or the feature is multiplayer-relevant — anywhere client and server must agree on the same rule |
+| `INTEGRATION.md` | Complex | A second feature actually integrates with this one, or the feature ships a deliberate extension point somebody else is expected to use |
+| `ARCHITECTURE.md` | Complex | The feature spans more than one physical root or layer (`Game.Core.*` plus `Game.Client.*`), or its internal data flow cannot be stated in a paragraph inside `README.md` |
+| `LEDGER.md` | Medium | A decision was made that a future reader would otherwise undo — a rejected alternative, a non-obvious constraint, the outcome of an Advisor⇄Critic round, or a tech-lead escalation resolved |
+| `DEBT.md` | Medium | A limitation or workaround is carried past review — including a gap the GD accepted at CP4, per invariant I6 in `orchestration.md` — or an obsolete-API call site was flagged and left in place per `coding-principles.md` |
+| `NOTES.md` | Medium | Optional, always. Written when an observation would otherwise be lost, never because the docset "should" have one |
+
+**Simple tier owes nothing new.** A single-role change with no new architecture decision writes no document under this rule. It still updates any existing document its change makes stale — that is maintenance, not creation.
+
+**`LEDGER.md` and `DEBT.md` drop to the Medium floor on purpose.** They are append-only and cost a few lines, while their absence causes exactly the two failures the reading flow exists to prevent: a deliberate decision undone by the next session, and known debt re-reported as a fresh defect. Every other document stays Complex-only — writing one for a Medium-tier change is the bureaucratic overhead KISS and YAGNI in `coding-principles.md` warn against.
+
+**Tier reclassification applies forward.** If `technical-architect` escalates a feature to Complex mid-flight, the Complex-tier documents are owed from that point, same as the rest of that tier's process. When a tier is genuinely unclear, ask `technical-architect` — never guess a feature down to skip a document, and never write one speculatively.
+
+## Start inside `README.md`, promote out of it
+
+The docset grows from one file, it does not arrive as seven.
+
+1. A Complex-tier feature's first document is `README.md`, and it carries its contract, its integration notes and its internal structure **inline**, as short sections.
+2. When one of those sections grows past what a reader can hold — roughly, past the point where it buries the rest of the README — it is **promoted** into its own file from the table above.
+3. The README then keeps a one-line pointer to the promoted file, not a copy of it.
+
+Promotion is the mechanism the whole rule turns on: a document exists because content earned it, never because a template listed it. A feature that never outgrows its README is fully documented with one file, and that is a correct outcome, not an incomplete one.
+
+## `README.md` — the required minimum
+
+However small the feature, its README covers these four, each in as little as a sentence:
+
+1. **Overview** — what the feature does, and which Tech Spec it implements. Link the spec; never re-explain its requirements.
+2. **Entry points** — where execution starts: the MonoBehaviour, the service, the event that triggers it.
+3. **Map** — the main files/classes and what each is responsible for, stated so a reader does not have to reverse-engineer it. Name the dependency direction explicitly: `Game.Client.*` depends on `Game.Core.*`, never the reverse.
+4. **Consumers** — which features or systems already use this one, where known.
+
+Everything else — invariants, integration points, internal data flow, decisions, debt — starts as an inline section here and moves out under the promotion rule above.
+
+## Placement
+
+- Documents sit at the **feature root**: the top-level directory holding that feature's code. One set per root, at its top level — never one per class, and never buried where it is not the first thing a reader finds.
+- When a feature's Core and Client code live in genuinely separate physical roots (a Shared Core folder and a Unity `Assets/` feature folder), **each root gets its own set**, and each links to the other instead of duplicating it. `CONTRACTS.md` belongs to the root that owns the contract — normally the Core root — and the Client root points at it.
+- Filenames are exactly as written above, uppercase, at the root. A reader and an agent both find them by name.
 
 ## Ownership and maintenance
 
-- Whoever implemented the feature writes the README. When a feature spans multiple roles (e.g. C# Software Engineer for Core, Unity Engineer for Client integration, UI/UX Programmer for UI), they share one README, and each section states which layer it's describing — don't split one feature's documentation across multiple disconnected files.
-- The README is a living document, not a one-time deliverable: when a later Tech Spec change modifies the feature, the owning role updates the existing README in the same submission — treat a stale README as seriously as a stale test.
-- Code Reviewer checks the README's presence and accuracy against the actual code whenever a submission represents a feature-complete state (not for every incremental, in-progress commit). Missing or stale documentation on a feature-complete submission is grounds for "request changes," same as any other rule in `coding-principles.md`.
+- Whoever implemented the feature writes its documents. When a feature spans several roles, they share one set per root and each section states which layer it describes — never split one feature's documentation across disconnected files.
+- **`LEDGER.md` and `DEBT.md` are written at the moment, not at the end.** A decision recorded a week later is a reconstruction; a limitation recorded at completion has usually already been forgotten. Both are appended in the same submission that produced them.
+- These are living documents. A later Tech Spec change that modifies the feature updates the affected documents **in the same submission** — a stale document is treated as seriously as a stale test. A change that invalidates an entry in `LEDGER.md` supersedes that entry in place rather than deleting it; the superseded reasoning is what stops the next session re-litigating it.
+- Content promoted out of `README.md` is moved, not copied — the README is left with a pointer.
+
+## The review gate
+
+`code-reviewer` checks documentation only on a submission that represents a **feature-complete** state, never on an incremental in-progress commit. What it checks:
+
+- Every document whose tier floor and trigger have both fired exists, and is accurate against the code it describes.
+- No document contradicts the code. A `CONTRACTS.md` that disagrees with the implementation is a finding against the submission, regardless of which one is wrong.
+- No empty or placeholder document was added to look complete.
+
+What it does **not** do: request a document whose trigger has not fired. "The docset is incomplete" is not a finding — the docset is complete when the documents that were earned exist. Missing or stale documentation that *was* earned is grounds for "request changes", same as any other rule in `coding-principles.md`.
 
 ## Rules
 
-- This rule engages only for Complex-tier features per Technical Architect's Triage classification — never for Simple or Medium tier.
-- No Complex-tier feature is complete without a `README.md` at its feature root folder — this is a hard gate before final Code Review sign-off for that tier, not an optional nice-to-have.
-- One README per feature root, covering Overview, Architecture, How it works, Public API, Internal API, Dependencies, and Known limitations/assumptions — every section above must be present, even if brief.
-- Never duplicate the Tech Spec's requirements text into the README — link back to the Tech Spec instead of re-explaining it; the README documents what got built and how to use it, not why it was decided.
-- Keep the README scoped to its own feature root — don't use it to document unrelated systems, and don't let unrelated systems' documentation live inside it.
-- Treat the README as a maintained artifact: a Tech Spec change that touches a Complex-tier feature includes updating that feature's README in the same submission.
+- Never write a document before both its tier floor and its trigger are met, and never write an empty or placeholder one.
+- Simple tier creates nothing; it only updates what its change made stale.
+- `README.md` is the anchor — no other document in the set exists without it, and a Complex-tier feature is not complete without it at each feature root.
+- Content starts inline in `README.md` and is promoted into its own file when it outgrows it; promotion moves the content and leaves a pointer, never a copy.
+- One fact, one home — cross-link between documents instead of duplicating, and never duplicate the Tech Spec's requirements text into any of them.
+- `LEDGER.md` and `DEBT.md` are appended in the submission that produced the decision or the limitation, not reconstructed at the end.
+- A Tech Spec change that touches a documented feature updates that feature's affected documents in the same submission.
+- Keep each document scoped to its own feature root — never document an unrelated system inside it.
+- A reviewer checks the documents that were earned; it never demands one whose trigger has not fired.

@@ -27,7 +27,7 @@ Written in English, per `language-and-comments.md`. Keep it short: this is a han
 | **Spec** | Names the clauses, not just the document. A reviewer checking "correct" against the whole spec reviews the wrong thing. |
 | **Changed** | Real paths. A description of the change is not a substitute — `code-reviewer` blocks without the code or diff in scope. |
 | **Assumptions** | Every gap the author filled themselves. This is the single highest-value field: an unstated assumption is indistinguishable from a bug at review time. |
-| **Known limitations** | Survives past the review. For a Complex-tier feature these carry into the feature's `README.md`, per `.claude/rules/client/feature-documentation.md`. |
+| **Known limitations** | Survives past the review. These carry into the feature root's `DEBT.md` — owed from Medium tier upward the moment a limitation is carried past review — per `.claude/rules/client/feature-documentation.md`. |
 | **Deliberately out of scope** | Proves a nearby problem was seen and left alone on purpose, rather than missed — this is what keeps the "stay scoped, flag separately" rule from looking like an oversight. |
 | **Verification done** | Distinguishes "I ran it" from "it compiles". Never claim a check you did not run; QA reads this to decide what still needs covering. |
 

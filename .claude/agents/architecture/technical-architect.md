@@ -71,7 +71,7 @@ Read these before acting:
 | Rule file | Applies |
 |---|---|
 | `.claude/rules/language-and-comments.md` | Always — it governs every agent. |
-| `.claude/rules/client/feature-documentation.md` | When classifying a feature Complex — that tier owes a README at completion. |
+| `.claude/rules/client/feature-documentation.md` | When classifying a feature — Complex owes a `README.md` at completion plus whichever feature-root documents its triggers fire; Medium owes only a `LEDGER.md`/`DEBT.md` entry; Simple owes none. |
 
 - Never skip triage, even on a request that looks trivial, and never ask the GD to confirm your classification first.
 - Always mandate that game-rule logic lives only in `Game.Core.*`, never duplicated in a client or server wrapper.

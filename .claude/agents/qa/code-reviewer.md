@@ -76,7 +76,8 @@ Read these before acting:
 | `.claude/rules/qa/defect-reporting.md`, `verification-standards.md` | Always — they set what a reportable finding requires. |
 | `.claude/rules/implementation-note.md` | Always — it defines the note the submission must arrive with. |
 | `.claude/rules/client/coding-principles.md`, `code-style-and-layout.md`, `naming-convention.md`, `performance-and-algorithms.md` | When reviewing client-track code — these are the standard you check against. |
-| `.claude/rules/client/feature-documentation.md` | When the submission is a feature-complete Complex-tier feature — check its README exists and is accurate. |
+| `.claude/rules/client/feature-documentation.md` | When the submission is feature-complete — check the feature-root documents whose tier floor and trigger both fired exist and match the code. Never request one whose trigger has not fired. |
+| `.claude/rules/feature-context-reading.md` | Always — it sets the reading order for a feature you did not write, and makes a document that contradicts the code a reportable finding. |
 
 - Never review code you wrote yourself.
 - Never report a finding you have not confirmed in the actual file — cite path and line, never a guess.

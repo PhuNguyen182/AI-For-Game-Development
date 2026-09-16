@@ -156,8 +156,9 @@ merge means the GD *sees* the review outcome, and `technical-architect`'s Direct
 *because that judgment is the GD's*, so the override is legitimate by design — but the gap must land
 somewhere durable, or CP4 becomes the failure `qa-lead` exists to prevent: "nobody checked" recorded as "QA
 passed". **A mobile feature that never ran on a device is the canonical case.** Write every accepted gap into
-the known limitations **before** reporting closure; on Complex tier into its `README.md`, per
-`.claude/rules/client/feature-documentation.md`.
+the known limitations **before** reporting closure; from Medium tier upward into the feature root's
+`DEBT.md`, per `.claude/rules/client/feature-documentation.md` — an accepted gap is exactly the trigger that
+file owes that document for.
 
 **A rejection is one of two things, and they route differently:**
 
