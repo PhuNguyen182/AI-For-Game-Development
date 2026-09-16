@@ -1,10 +1,18 @@
 # Feature Development Pipeline
 
-> **Scope: an approved Tech Spec, up to code standing at the review gate.** Everything before it belongs to
-> `feature-intake.md`; the gates themselves belong to `review-pipeline.md`.
+> **Scope: an approved Tech Spec, or direct notes, up to code standing at the gate offer.** Everything before
+> it belongs to `feature-intake.md`; the gates themselves belong to `review-pipeline.md` and `qa-pipeline.md`,
+> and **both are optional** — this pipeline ends by asking, per `references/optional-gates.md`, never by
+> dispatching one on its own initiative.
 
 Sequence, loops and checkpoints live here and never in an agent file — see `feature-intake.md` for the full
 statement. Every `Routed to:` below is a recommendation this pipeline acts on, not an action the agent took.
+
+**This pipeline spends two budgets it does not set.** `feature-intake.md` hands over an **A1–A5 tier with its
+five axes**; from them come the **attempt budget** each agent iterates inside (`execution-loop.md`, keyed to
+**D**) and the **verification floor** its evidence must reach (`effort-allocation.md`, keyed to **A**). The
+retired Simple/Medium/Complex tier appears nowhere below — **D** decides the shape of the fan-out, **A**
+decides how hard each return is checked.
 
 ## The agents this pipeline dispatches
 
@@ -24,11 +32,14 @@ statement. Every `Routed to:` below is a recommendation this pipeline acts on, n
 
 | Entry | Comes from | Carries |
 |---|---|---|
-| **E1** | `feature-intake.md` CP2 approved — Medium or Complex | The Tech Spec, its per-`agent-id` task breakdown, and the tier |
-| **E2** | `feature-intake.md` step 2 — Simple tier | The architect's direct notes, addressed to one `agent-id` |
-| **E3** | A defect returns — from `review-pipeline.md`, from `qa-pipeline.md`, or reported by the GD | The findings, the original brief, and the strike count |
+| **E1** | `feature-intake.md` CP2 approved — **D3–D5** | The Tech Spec, its per-`agent-id` task breakdown, the tier and its axes |
+| **E2** | `feature-intake.md` step 2 — **D1–D2** — or the GD naming the work directly, with no spec round | Direct notes addressed to one `agent-id`, and the tier. From the GD, per `references/standalone-runs.md` |
+| **E3** | A defect returns — from `review-pipeline.md`, from `qa-pipeline.md`, or reported by the GD | The findings, the original brief, the strike count, and attempts already spent |
 
-**E2 runs one agent and stops** — no fan-out, no ordering, no README. A Simple-tier change is one role by definition; the full shape over it is the overhead Triage exists to avoid.
+**E2 runs one agent and stops** — no fan-out, no ordering, no documents. D1–D2 is one role by definition, and
+the full shape over it is the overhead `effort-allocation.md`'s artifact budget forbids. **A high A-tier does
+not reopen it**: an A5 E2 dispatch buys a higher verification floor and a more careful target check, never a
+second agent.
 
 **A GD-reported defect enters at E3 with zero strikes.** If the spec was right and the GD now wants
 something else, that is `change-request.md` — a change request, not a defect.
@@ -38,15 +49,15 @@ something else, that is `change-request.md` — a change request, not a defect.
 ```mermaid
 flowchart TD
     E1([CP2 approved — Tech Spec<br/>and its task breakdown]) --> Brief
-    E2([Simple tier — direct notes,<br/>one agent-id]) --> Brief
+    E2([D1–D2 — direct notes,<br/>one agent-id]) --> Brief
     E3([a submission returns<br/>from review with findings]) --> Brief
 
     Brief[Build the per-agent brief<br/>spec sections · handoff fields · track · budget · strikes] --> Core{Breakdown names<br/>a Core task?}
     Core -->|no| Named{An existing Core or<br/>integration API is named?}
     Named -->|no| Gap[[feature-intake.md E3 —<br/>the spec is revised at step 6]]
-    Core -->|yes| CS[csharp-engineer → public contract<br/>Complex tier: the contract also reaches the GD, nothing waits]
+    Core -->|yes| CS[csharp-engineer → public contract<br/>D4–D5: the contract also reaches the GD, nothing waits]
 
-    CS --> CoreRev[[review-pipeline.md — the Core submission.<br/>The one verdict the fan-out waits on]]
+    CS --> CoreRev{{ASK the GD — review the Core contract?<br/>on yes, the one verdict the fan-out waits on}}
     CoreRev --> Fan
     Named -->|yes| Fan
 
@@ -59,41 +70,26 @@ flowchart TD
     Net --> Auth[server-authoritative-engineer]
     Auth --> Doc
 
-    Doc{Complex tier?} -->|yes| RM[README — one owner per feature root]
+    Doc{A3 or above?} -->|yes| RM[feature-root documents whose floor<br/>and trigger both fired — one owner per root]
     Doc -->|no| Rev
-    RM --> Rev[[review-pipeline.md — the last submission]]
+    RM --> Rev[[ASK the GD — review? then QA?<br/>references/optional-gates.md]]
 ```
 
 Shapes match `feature-intake.md`: `([ ])` entry and stop · `[ ]` an agent or a pipeline action · `{ }` a
-decision · `[[ ]]` another workflow file, with the dotted edge the escalation lane. The GD-checkpoint shape
-never appears — this pipeline holds none. CP2 is behind it, CP3 ahead of it.
+decision · `[[ ]]` another workflow file, with the dotted edge the escalation lane. The `{{ }}` shape appears
+twice and neither is a checkpoint — both are the **gate ask**, which is a question, not an approval. This
+pipeline still holds no checkpoint: CP2 is behind it, CP3 ahead of it and only if review runs.
 
 Two edges are left undrawn. A `Blocked` return: always ask for exactly the input named, then resume from that
-step. And **every agent box hands its own submission to `review-pipeline.md` the moment it returns** — only
-the Core's verdict is waited on, so drawing the rest would bury the spine.
+step. And **every agent's submission goes to whichever gates the GD authorised, the moment it returns** —
+only the Core's verdict is waited on, so drawing the rest would bury the spine.
 
 ### Step 0 — the brief
 
-An agent sees only this brief. Four things every one carries, each keyed to what happens when it is missing:
-
-| Attach | If the pipeline omits it |
-|---|---|
-| That agent's task section, **plus `Module boundaries:` and `Client-server contract:`**, plus the tier | Four agents return `Blocked` on a missing task section. The two cross-cutting fields are a separate matter: `unity-engineer:92` and `ui-ux-programmer:81` are each forbidden to implement a game rule, and no agent can respect a boundary it was never shown. Only the *other* agents' task breakdowns are withheld |
-| Track state, stated explicitly on or off | `netcode-engineer` and `server-authoritative-engineer` return `Blocked`; neither ever assumes the track is on |
-| The per-platform performance budget | `unity-engineer` and `technical-artist` proceed against a guessed budget and only state the assumption |
-| The strike count and prior findings, on an **E3** re-entry | Every implementing agent's Escalate criterion is "already came back rejected twice". It cannot count its own retries, so silence reads as a first attempt |
-
-Plus what an earlier agent already produced for it. Agents cannot see each other's returns, so a field this
-pipeline forgets to forward is a field that does not exist:
-
-| Producer → field | Goes to | Why that agent needs it |
-|---|---|---|
-| `csharp-engineer` → `Public contract:` | `unity-engineer`, `ui-ux-programmer`, `netcode-engineer`, `server-authoritative-engineer` | all four return `Blocked` without the Core types |
-| `csharp-engineer` → `Determinism:` | `netcode-engineer`, `server-authoritative-engineer` | netcode Escalates when the Core "is not deterministic enough to reconcile"; server authority assumes the strictest tolerance that determinism supports |
-| `csharp-engineer` → `Assumptions and known limitations:` | every downstream agent | they build on the assumption too, and have no other way to see it |
-| `technical-artist` → `Authored:` and `Pipeline:` | `unity-engineer` | it integrates that effect into the scene or prefab |
-| `unity-engineer` → `Core calls used:` and `Changed:` | `ui-ux-programmer` | when the UI binds to state the integration exposes rather than to Core directly |
-| `netcode-engineer` → `Message contract:` | `server-authoritative-engineer` | returns `Blocked` without it |
+Moved to **`references/development-brief.md`** — the six things every brief attaches (task section, module
+boundaries and contract, **attempt budget**, **verification floor**, track state, performance budget, strikes
+and attempts on an **E3** re-entry), each keyed to what breaks without it; plus the handoff matrix naming
+which field an earlier agent produced that a later one cannot see without it.
 
 ### Step 1 — Shared Core first, which is not a preference
 
@@ -102,12 +98,16 @@ names no Core task**, the brief must name the existing Core type or integration 
 neither exists, the spec has a gap this pipeline cannot fill: hand back to `technical-architect` rather than
 let a downstream agent invent the rule — it refuses anyway, a round on.
 
-**The fan-out waits for the Core submission's review verdict, and only that one.** Everything downstream is
-built against the public contract, so a wrong contract is rebuilt by four agents rather than one. Review
-costs no Editor time (step 2), so the verdict lands while the fan-out would still have been queuing. This is
-an agent gate, not a checkpoint: the GD is not asked and does not wait.
+**Where review runs, the fan-out waits for the Core submission's verdict, and only that one.** Everything
+downstream is built against the public contract, so a wrong contract is rebuilt by four agents rather than
+one. Review costs no Editor time (step 2), so the verdict lands while the fan-out would still have been
+queuing. It is an agent gate, not a checkpoint — nothing is put to the GD for approval.
 
-**On Complex tier the contract also goes to the GD as a notice**, and the pipeline continues immediately —
+**But review is optional, so the *offer* comes here, not at the end.** Ask when the Core returns, per
+`references/optional-gates.md`, naming this specific cost: declining means four agents build against a
+contract nothing has checked. A decline is recorded as review debt and the fan-out proceeds immediately.
+
+**At D4–D5 the contract also goes to the GD as a notice**, and the pipeline continues immediately —
 review judges whether the code is correct, and only the GD can say it is not what they meant. Neither of the
 two gates the other, and neither is a fifth checkpoint.
 
@@ -118,9 +118,10 @@ Serial, for three compounding reasons: there is one Unity Editor and three of th
 session another is verifying in; and agents cannot coordinate, with no orchestrator to arbitrate.
 
 **Settled, not deferred** — three ways out were tested and all fail. A worktree per agent splits files, not
-the single Editor process. "Author now, verify later" fails because `unity-engineer:44`, `ui-ux-programmer:41`
-and `technical-artist:40` are each *required* to verify in Play Mode. Extra Editor instances need an explicit
-GD request routed to `build-run-engineer`. Review is the one thing that does run concurrently:
+the single Editor process. "Author now, verify later" fails because each of the three is *required* to verify
+in the Editor before returning: `unity-engineer` *"in Play Mode with a screenshot or console evidence"*,
+`ui-ux-programmer` *"at more than one aspect ratio"*, `technical-artist` *"with a scene capture and a
+frame-cost reading"*. Extra Editor instances need a GD request routed to `build-run-engineer`. Review is the one thing that does run concurrently:
 `code-reviewer` and `security-reviewer` hold no Unity tools and write nothing.
 
 Order follows dependency, and the spec's own dependencies override it. Skip any row the breakdown omits.
@@ -144,55 +145,53 @@ a dependency — it may take any slot once the Core has returned. If the netcode
 `netcode-engineer` returns `Needs-decision`, `Routed to: cto` — a technology question, so it enters
 `research-decision.md` step 0 rather than `cto` directly.
 
-### Step 4 — the README, Complex tier only
+### Step 4 — the feature-root documents, A3 and above
 
-Complex tier owes a `README.md` at each feature root before final review sign-off. It is dispatched as its
-own task **after every implementation task in that root has returned**, to one named owner:
-
-| Root | Owner |
-|---|---|
-| The `Game.Core.*` feature root | `csharp-engineer` — the only agent that writes there |
-| The Unity `Assets/` feature root | `unity-engineer` when the breakdown names it, else `ui-ux-programmer`, else `technical-artist` |
-
-The brief attaches every envelope returned for that root — one writer holding the whole picture beats several isolated agents appending to one file, and each root's README links the other instead of duplicating it.
+Moved to **`references/development-feature-documents.md`** — the **A4** floor for the full docset and the
+**A3** floor for `LEDGER.md`/`DEBT.md`/`NOTES.md`, why both key to **A** rather than D, the one-owner-per-root
+dispatch table, and the exception that `LEDGER.md` and `DEBT.md` are appended in the submission that produced
+the decision or the limitation rather than written here.
 
 ### After every return — the submission
 
 **One submission per agent return, not one per feature.** `code-reviewer` counts strikes against "the same
 submission" and CP3 is what aggregates a feature's approvals, so a return goes to `review-pipeline.md` as
-soon as it lands and the README is simply the last submission rather than a bundling step.
+soon as it lands — **on the GD's yes** — and the README is simply the last submission rather than a bundling
+step. Ask once for the feature, not once per submission: the answer is about the work, not the artifact.
 
 | Carried | Source |
 |---|---|
 | The code or diff in scope | The working tree. The pipeline supplies it — some envelopes report what now works rather than which paths changed |
-| The spec section, or the Simple-tier direct notes | The same brief step 0 sent; the reviewer checks against what was actually asked |
+| The spec section, or the D1–D2 direct notes | The same brief step 0 sent; the reviewer checks against what was actually asked |
 | Which agent authored it | The dispatch record. Absent, the reviewer proceeds on a stated assumption that it did not write the code |
+| The tier and the verification floor it owes | The ledger. `code-reviewer` judges `Verification done:` against the floor, not against its own expectation |
 | The Implementation Note | Assembled here, per `.claude/rules/implementation-note.md` — which names each field's source, and the one field it can only approximate |
 
 ## The escalation lane
 
-Never a first dispatch, and not drawn above — reachable from any step, returning to the step it left.
-`tech-lead-performance` returns `Rejected`, `Routed to: unity-engineer` when the obvious fixes are still
-open, and `tech-lead-csharp-unity` names a misrouted escalation as one. It is silent to the GD: a technical
-loop they see only through a `Blocked` needing their input, or later at CP3.
-
-`tech-lead-sdk-platform` is not on this lane — it is dispatched straight from the spec at step 2, because its scope has no routine owner beneath it and an SDK task has nowhere else to start.
+Never a first dispatch, and not drawn above. Moved to **`references/development-escalation-lane.md`** — when
+it opens, the two leads' refusal conditions, the **one round trip** bound before it becomes a routing
+question for `technical-architect`, and why `tech-lead-sdk-platform` is not on it.
 
 ## Routing rules the pipeline owns
 
 | Return | Action |
 |---|---|
-| any agent → `Blocked` | Ask for exactly the input named — the GD when it is theirs, `technical-architect` when the spec has the gap |
-| `csharp-engineer` → `Done` | Submit it for review, send the Complex-tier notice, and hold the fan-out for the verdict |
+| any agent → `Blocked` | Ask for exactly the input named — the GD when it is theirs, `technical-architect` when the spec has the gap. **Twice on the same missing input is the bound**: past it the missing input is itself the finding, reported to the GD as unresolved |
+| `csharp-engineer` → `Done` | Submit it for review, send the D4–D5 notice, and hold the fan-out for the verdict |
 | `tech-lead-sdk-platform` → `Done` with `Config required:` or `Risks flagged:` | A `Done` can still carry what only the GD can act on — keys to supply, a store-rejection risk. Forward it; never let it pass as "continue" |
 | any agent → `Rejected`, `Routed to: <peer>` | The task was misassigned. Re-dispatch to the named agent; never argue it back |
 | implementing agent → `Needs-decision`, `Routed to: <tech lead>` | The escalation lane, then resume at the step it left |
 | `netcode-engineer` → `Needs-decision`, `Routed to: cto` | Hand to `research-decision.md` step 0 — `cto` is never entered without a candidate set |
 | `server-authoritative-engineer` → `Blocked`, `Routed to: csharp-engineer` | A rule is missing from the Core. Back to step 1, then resume |
 | `tech-lead-*` → `Needs-decision`, `Routed to: technical-architect` or `cto` | Out of this pipeline: the architect re-enters at `feature-intake.md` **E3**, `cto` at `research-decision.md` **E2** |
+| any agent returns a **Continuation Debt Record** — its attempt budget is exhausted | A legitimate outcome, not a failure to retry past. Record it whole in the feature's ledger — the known non-solutions and the safe resume point are what a future session cannot reconstruct — then treat the return as **one strike** at the review gate and re-dispatch only with its `Next best action:` attached. Never hand back the same brief for another cycle |
 
 - **The strike ladder.** Strike 2 fires the agent's own Escalate criterion and routes to a tech lead; strike 3
   is `review-pipeline.md`'s three-strikes rule and routes to `technical-architect`. That pipeline counts —
   this one receives the count through **E3** and forwards it in the brief.
+- **Two budgets, two scopes, one ledger.** The attempt budget bounds an agent's corrective cycles *inside one
+  dispatch*; the strike count bounds round trips *between* agents. An exhausted budget becomes one strike, so
+  the two compose rather than competing — and neither survives a run unless it is written down.
 - **Nothing here reviews its own work.** Verification an agent runs on itself is evidence for the gate, not a
   substitute for it; the gates are `review-pipeline.md`'s.

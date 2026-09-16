@@ -1,11 +1,20 @@
 # QA Pipeline
 
-> **Scope: one feature that cleared review, from the QA plan through Checkpoint 4.** Everything up to CP3
-> belongs to `review-pipeline.md`. **This file owns CP4** — the last gate, and the only one where a feature
-> closes carrying a gap the GD chose to accept.
+> **Scope: one feature, from the QA plan through Checkpoint 4.** **This file owns CP4** — the last gate, and
+> the only one where a feature closes carrying a gap the GD chose to accept.
+
+**This pipeline is optional, and separate from review.** It never runs on its own initiative: the
+orchestrator asks the GD whether to run it, states the cost of skipping, and dispatches only on a yes — per
+`references/optional-gates.md`. **It does not require review to have run.** Where it did not, the review
+verdicts are supplied as explicitly absent and every consumer is told so, rather than left to infer. It is
+equally callable alone, on a feature no pipeline built, per `references/standalone-runs.md`.
 
 Sequence, loops and checkpoints live here and never in an agent file (`feature-intake.md` states it in full).
 Every `Routed to:` below is a recommendation this pipeline acts on, not an action the agent took.
+
+**The A-tier sets the evidence this pipeline produces; D sets almost nothing here.** Coverage depth, the
+verification floor, and whether `assurance-evaluator` runs are read from **A** — a feature is worth testing
+hard because it is costly to get wrong (C, R, X), not because it was hard to build.
 
 ## The agents this pipeline dispatches
 
@@ -16,43 +25,34 @@ Every `Routed to:` below is a recommendation this pipeline acts on, not an actio
 | `playtest-tester` | executor (sonnet) | Unity Editor | GDD scenarios played by hand, design-flaw detection |
 | `performance-qa-engineer` | executor (sonnet) | Dev build on device, or Editor (indicative) | Frame time, GC, memory, draw calls vs. budget |
 | `build-verification-tester` | executor (sonnet) | Real build; a real device where one is attached | Startup, critical paths, the suite on the standalone Player, and the supplied case list walked on the device |
+| `assurance-evaluator` | gate (opus) | **Assurance Verdict** | The acceptance state — whether claimed verification is evidenced, and whether effort matched the tier. **A3 and above only** |
 | `producer` | report (sonnet) | — | The end-of-feature report CP4 rests on |
 
 Reachable but owned elsewhere: `code-reviewer` and `security-reviewer` belong to `review-pipeline.md` — QA
-consumes their verdicts as given, never re-decides them; `build-run-engineer` (devops) produces artifacts on
-an explicit GD request only; `crash-anr-investigator` (live-ops) handles released-production telemetry **and
-only that** — its three skills are gated to it and decline a local device trace by contract.
+consumes their verdicts as given and never re-decides them; `build-run-engineer` produces artifacts on an
+explicit GD request only; `crash-anr-investigator` handles released-production telemetry **and only that**.
 
 ## Entry points
 
 | Entry | Enters when | Carried in |
 |---|---|---|
-| **E1** | `review-pipeline.md` step 6 — the feature's submissions are clearing | Enough for `qa-lead` to plan; execution stays locked |
-| **E2** | CP3 approved — or the gates cleared, on Simple tier | The coverage assignment from E1. Execution unlocks |
-| **E3** | A defect fix came back through review | The original report and the plan; only the coverage that fix touched is re-run — and for device coverage, a **rebuilt** artifact, because the old one still contains the defect |
+| **E1** | The GD authorised QA — from `review-pipeline.md` step 6, or straight from `feature-development.md` where review was declined | Enough for `qa-lead` to plan; execution stays locked |
+| **E2** | CP3 approved; or the gates cleared at D1–D2; or review was declined, in which case nothing gates execution but the plan | The coverage assignment from E1. Execution unlocks |
+| **E3** | A defect fix came back — through review where it ran, straight from the author where it did not | The original report and the plan; only the coverage that fix touched is re-run — and for device coverage, a **rebuilt** artifact, because the old one still contains the defect |
+| **E4** | The GD asks for QA directly — on shipped code, on work no pipeline built, or after declining the gate earlier | The behaviour to test and its source, the platform target, and the budget if performance is to be judged. No ledger is assumed: classify the run itself, and mark the review verdicts absent |
 
-Each row below is keyed to an agent's own `If absent` behaviour — omit one and you get a `Blocked`, or worse, a silent assumption:
-
-| Carried in | Why |
-|---|---|
-| The Tech Spec, or the Simple-tier direct notes | `qa-lead` and `qa-automation-engineer` both return `Blocked` — with no stated intent there is nothing to derive coverage from, and an assertion would be arbitrary |
-| The Triage tier | `qa-lead` otherwise assumes Medium and plans at the wrong depth |
-| Whether the multiplayer track is active | Both agents above assume it is not, and silently drop every network-condition case |
-| The GDD scenario, and the expected behaviour or feel | `playtest-tester` returns `Blocked` — without the intent there is nothing to compare against |
-| The performance budget, and the baseline | Without a budget there is no verdict, only numbers; without a baseline the run *becomes* the baseline |
-| Both review verdicts | `qa-lead` consumes them at sign-off, and on Simple tier the GD sees them at CP4 |
-| The target platform(s) | `qa-lead` otherwise assumes the Editor is the only target and plans no device coverage. It states that assumption, so the omission is visible — but a mobile feature still signs off having never run as a real build |
-| The test-case list, in `plan-test-coverage`'s per-case format | Build branch only. Without it `build-verification-tester` runs startup plus the suite and files every scenario under `Not covered`, which reads downstream as "the build was verified" |
-| Whether a device is expected, for a mobile artifact | The agent confirms one itself before touching the artifact; carrying the expectation is what makes a missing device a stated gap rather than silence |
+Every row is keyed to an agent's own `If absent` behaviour — omit one and you get a `Blocked`, or worse, a
+silent assumption. **Moved to `references/qa-entry-inputs.md`**, which also holds what to supply in place of
+the review verdicts when the GD declined that gate.
 
 ## Pipeline at a glance
 
 ```mermaid
 flowchart TD
-    In([from review-pipeline.md<br/>step 6]) --> Plan[qa-lead — plan mode<br/>coverage assignment + exit criteria]
-    In --> Unlock{Tier}
-    Unlock -->|Simple| Exec
-    Unlock -->|"Medium, Complex"| CP3([CP3 approved —<br/>review-pipeline.md owns it])
+    In([the GD authorised this pipeline —<br/>after review, or instead of it]) --> Plan[qa-lead — plan mode<br/>coverage assignment + exit criteria]
+    In --> Unlock{Review ran, and D3–D5?}
+    Unlock -->|no| Exec
+    Unlock -->|yes| CP3([CP3 approved —<br/>review-pipeline.md owns it])
     CP3 --> Exec
     Plan --> Exec[Dispatch only the agent-ids the<br/>coverage assignment actually names]
 
@@ -75,7 +75,11 @@ flowchart TD
     Coll -->|yes| Back[[feature-development.md E3<br/>→ review-pipeline.md → back here]]
     Coll -->|no| Sign[qa-lead — sign-off mode, against<br/>the exit criteria it set itself]
     Sign -->|"Not signed off —<br/>coverage still runnable"| Exec
-    Sign -->|"Signed off, or a gap<br/>only the GD can accept"| Rep[producer → Status Report]
+    Sign -->|"Signed off, or a gap<br/>only the GD can accept"| Score{A3 or above?}
+    Score -->|no| Rep[producer → Status Report]
+    Score -->|yes| AE[assurance-evaluator → Assurance Verdict<br/>claims vs. evidence · acceptance state]
+    AE -->|"FAIL — a claim no report supports"| Back
+    AE -->|"REVISE, or PASS and above"| Rep
     Rep --> CP4{{CHECKPOINT 4<br/>the GD closes the feature}}
     CP4 -->|"reject — drift from the spec"| Back
     CP4 -->|"reject — the spec should change"| CR[[change-request.md]]
@@ -87,39 +91,27 @@ input named at Entry, then resume there.
 
 ### Step 1 — the plan, which does not wait for CP3
 
-`qa-lead` in plan mode needs only the Tech Spec and the tier, and no submission's verdict changes either — so
-it runs alongside review and its assignment is ready the moment CP3 clears. Depth scales with tier. What it
-returns is the contract for everything below: a **coverage assignment** naming which `agent-id` covers what,
-and the **exit criteria** its own sign-off is judged against. Dispatch only the agent-ids it names, never all
-four by default — unasked-for coverage is the same waste as speculative code.
+`qa-lead` in plan mode needs only the Tech Spec, the tier and the verification floor, and no submission's
+verdict changes any of them — so it runs alongside review where review ran, ready the moment CP3 clears.
+Depth scales with A. What it returns is the contract for everything below: a **coverage assignment** naming
+which `agent-id` covers what, and the **exit criteria** its own sign-off is judged against.
+
+**The exit criteria state the evidence level, not just the behaviour.** V2 is a targeted direct test; V3
+adds edge and failure cases, a dependency pass and a regression check; V4 adds validation against the
+acceptance criteria and a separate final pass. A criterion without one is one two agents will read apart.
 
 ### Step 2 — execution, and the two locks
 
-**Three of the four executors are serial, and the tools frontmatter forces it** — `qa-automation-engineer`,
-`playtest-tester` and `performance-qa-engineer` all hold `mcp__<server>__*` against one Editor process, each
-barred from starting a second. Same hard sandbox as `feature-development.md` step 2, stated there.
-
-`build-verification-tester` holds **no Editor tooling at all**, which is why it runs alongside those three.
-That freedom is about the Editor and nothing else: it **serialises with `performance-qa-engineer` whenever
-both target the same physical device** — a walkthrough over adb and a Development Build profiled over adb are
-the same wire. That is invariant I7, as hard as the Editor lock.
-
-**The order within the three is the pipeline's choice, not a contract.** `qa-automation-engineer` goes first
-because it alone writes `.cs`, so its domain reload lands before anyone enters Play Mode;
-`performance-qa-engineer` goes last because it needs a quiet Editor for a run-to-run spread — and a design flaw found in playtest would make measuring this build pointless anyway.
+Moved to **`references/qa-execution-order.md`** — the three Editor-bound executors that serialise and the one
+that does not, why their internal order is the pipeline's choice, both global locks and when each is claimed,
+and the rule against dispatching an agent the coverage assignment did not name.
 
 ### Step 2b — the device lane, which exists only when a build does
 
-`build-run-engineer` refuses anything but an explicit GD request, so no build means no device lane. When there is one, its `Result:` — the artifact path plus the platform and configuration it was built at — is what the verifier is dispatched with, and three things then happen in this order, the order being the contract:
-
-1. **The cases are derived, not improvised.** `/plan-test-coverage` turns the spec into per-case
-   `Starting state / Actions / Expected`; hand over only those marked `Observe via: build/device` that
-   `qa-lead` already named. The command produces cases; it never decides which are owed.
-2. **The device is confirmed before the artifact is touched.** No device is `Blocked` on that coverage — not
-   a licence to substitute an Editor run. The artifact-only checks still run; the rest becomes a gap.
-3. **A crash stops that case's path** — logs pulled, nothing silently relaunched past it, trace to `/investigate-device-crash`.
-
-This lane is the only thing in the project that can satisfy `verification-standards.md`'s *"it works on the target platform"* row; everything else here is Editor-bound and never more than indicative.
+Moved to **`references/qa-device-lane.md`** — deriving the per-case list rather than improvising it,
+confirming the device *before* the artifact is touched, and stopping a case's path on a crash. It also holds
+the device lock (invariant **I7**) as it applies here, and the rule that a stale artifact cannot re-verify a
+fix it still contains.
 
 ### Step 3 — what comes back
 
@@ -131,70 +123,75 @@ This lane is the only thing in the project that can satisfy `verification-standa
 | A **design flaw**, from `playtest-tester` or a device walkthrough | The GD, immediately. Never folded into the next report, never re-filed as an ordinary bug |
 | An Editor-only performance number | Onward, but labelled indicative every time it is quoted. It never satisfies a device claim |
 | A device walkthrough result | The only device claim this project can make. Its absence is a gap, never a pass |
-| A crash or ANR mid-walkthrough | `/investigate-device-crash`, with the logs the walkthrough already pulled. Never `crash-anr-investigator` |
 | `Not covered` / `Not measured` on any report | Straight into `qa-lead`'s gap list at step 4 — the field is mandatory and is never `none` unless coverage genuinely was exhaustive |
+
+### Step 3b — the test code this pipeline wrote
+
+`qa-automation-engineer` is the only agent here holding `Write`/`Edit`, and its `.cs` is source like any
+other. Moved to **`references/qa-test-code-gate.md`** — the **E3** route into `review-pipeline.md`, the
+two-strike cap, and why invariant **I10** made this a hole rather than debt.
 
 ### Step 4 — sign-off
 
 `qa-lead` judges the reports against the exit criteria **it wrote itself** at step 1 and never returns
 `Signed off` while a gap remains. That refusal is the point of the role, so the pipeline acts on the gap:
-coverage never run → re-dispatch those agent-ids at step 2; a gap that cannot be closed → to `producer` and
-CP4, where only the GD can accept it.
+coverage never run → re-dispatch those agent-ids at step 2; a gap that cannot be closed → on to step 4b,
+and to CP4 where only the GD can accept it.
+
+### Step 4b — the assurance gate, A3 and above
+
+Moved to **`references/qa-assurance-gate.md`** — what `assurance-evaluator` is dispatched with (every verdict,
+the Implementation Notes, the H/M/Q list, the tier, and **attempts used**), the acceptance states and where
+each routes, and why a false verification claim is beyond any GD waiver rather than a score to average away.
 
 ## Checkpoints
 
-CP1 and CP2 belong to `feature-intake.md` — whose tier table says which tiers each applies to — and CP3 to `review-pipeline.md`. **This pipeline owns CP4**: whether the feature is done, given what QA actually found.
+CP1 and CP2 belong to `feature-intake.md`, CP3 to `review-pipeline.md` and only when review ran. **This
+pipeline owns CP4's mechanics** — but **CP4 itself always fires**, because closing a feature is the GD's
+decision and not QA's verdict. Where QA was declined the same gate runs from `references/optional-gates.md`
+on whatever exists. What this pipeline supplies is the evidence under it, never the permission to hold it.
 
 ### Checkpoint 4 — the last gate
 
-`producer` compiles the end-of-feature report and the GD closes the feature. Its input is every QA report,
-`qa-lead`'s verdict quoted as stated, and — on Simple tier, where CP3 merged into this gate — both review
-verdicts. It orders and attributes; it never adjudicates, and no Implementation Summary appears here: the
-merge means the GD *sees* the review outcome, and `technical-architect`'s Direct tier exists to skip it.
+`producer` compiles the end-of-feature report and the GD closes the feature. Three outcomes: **approve**
+(the feature closes, accepted gaps recorded); **reject as a defect** (it does not do what the approved spec
+said → `feature-development.md` **E3**); **reject as a change request** (it does what the spec said and the
+GD now wants something else → `technical-architect` for `Change severity:`).
 
-**Accepting a gap is a decision, not a shortcut.** `qa-lead` is barred from signing off an unmet criterion
-*because that judgment is the GD's*, so the override is legitimate by design — but the gap must land
-somewhere durable, or CP4 becomes the failure `qa-lead` exists to prevent: "nobody checked" recorded as "QA
-passed". **A mobile feature that never ran on a device is the canonical case.** Write every accepted gap into
-the known limitations **before** reporting closure; from Medium tier upward into the feature root's
-`DEBT.md`, per `.claude/rules/client/feature-documentation.md` — an accepted gap is exactly the trigger that
-file owes that document for.
+The detail is in **`references/qa-checkpoint-4.md`** — `producer`'s exact input, why an accepted gap must
+land in the known limitations and the feature root's `DEBT.md` **before** closure is reported, and the full
+rejection split. Read it before closing any feature.
 
-**A rejection is one of two things, and they route differently:**
+**A declined gate is an accepted gap like any other**, and lands in the same two places before closure is
+reported. "Review was not run on this" and "no device ever ran this" are the same kind of fact, and I6 covers
+both.
 
-| The GD's objection | It is | Route |
-|---|---|---|
-| It does not do what the approved spec said | A defect | `feature-development.md` **E3**, then back through review and whatever coverage it touched. The spec still stands |
-| It does what the spec said, and the GD now wants something else | A change request | `technical-architect` for `Change severity:` — Minor updates the spec in place, Moderate rolls back to CP2, Major to CP1 |
-
-The GD names what is wrong; `technical-architect` classifies what it costs — `producer` is barred from
-technical judgment and `qa-lead` has already returned its verdict. The Minor/Moderate/Major mechanics belong
-to `change-request.md`; the split above is what this file owns.
+**Rejections as a defect are bounded on repetition, never on the GD.** The second sends
+`technical-architect` for root cause before the fix is dispatched; a third stops and goes back as a
+feature-level Continuation Debt Record — **`references/loop-termination.md`**. A rejection classified as a
+change request never counts here; `change-request.md` resets that counter with the strikes.
 
 ## Routing rules the pipeline owns
 
 | Return | Action |
 |---|---|
 | `qa-lead` `Verdict: Planned` | Hold the coverage assignment until E2 unlocks execution |
-| `qa-lead` `Not signed off`, gaps name coverage never run | Re-dispatch exactly those agent-ids at step 2. Not a defect, and not a strike |
+| `qa-lead` `Not signed off`, gaps name coverage never run | Re-dispatch exactly those agent-ids at step 2. Not a defect, and not a strike — but **bounded at 2**: a third means more of the same coverage cannot meet the criteria, so the gap goes to CP4. `references/loop-termination.md` |
 | `qa-lead` `Not signed off`, the gap cannot be closed | To `producer` and CP4 — accepting an unmet criterion is the GD's call alone |
 | `qa-lead` → `Needs-decision`, `Routed to: technical-architect` | The spec states no testable behaviour, or two reports contradict each other. A spec problem, not a QA one |
 | any executor `Done` with `Defects:` | Route each defect to its named owner at E3. `Done` is correct — do not re-dispatch the executor |
 | `playtest-tester` → `Needs-decision`, `Routed to: gd` | A design flaw. Straight to the GD, now |
 | `performance-qa-engineer` → `Needs-decision` | A native, GPU or leak cause → `tech-lead-performance`; a budget unachievable for the design → `technical-architect`. Neither is this pipeline's to settle |
-| `build-verification-tester` → `Blocked`, `Routed to: build-run-engineer` | No artifact exists. Ask the **GD** for the build — never dispatch one off pipeline state |
-| `build-verification-tester` reports no device reachable | That coverage is unrun. It goes to `qa-lead`'s gap list at step 4, and on to CP4 if it cannot be closed. Never an Editor substitute |
-| A fix for a device-found defect returns at **E3** | The artifact is stale — the build that found the defect still contains it. Ask the **GD** for a rebuild; without one that coverage stays unrun and joins the gap list. Never re-run the walkthrough against the old build |
-| A device walkthrough classified a **design flaw** | The GD, immediately — same as `playtest-tester`. I5 is not limited to the Editor |
-| A crash or ANR on the device under test | `/investigate-device-crash`. Never `crash-anr-investigator`, which declines a local trace by contract |
-| `build-run-engineer` → `Rejected`, `Routed to: gd` | It was handed pipeline state instead of a GD request. A correct refusal; get the request or drop the branch |
+| anything returning from the **device lane** | Its own routing table, in `references/qa-device-lane.md` — six rows covering a missing artifact, no device reachable, a stale build at **E3**, a design flaw, a crash, and a refused build request |
+| `assurance-evaluator` → `Acceptance: FAIL` | To the named owner at **E3**. An unsupported verification claim is an integrity failure, not a quality score — no GD waiver reaches it. The **first** `FAIL` is not a QA round; a **second** on the same submission is one, and spends that counter |
+| `assurance-evaluator` → `Rejected` on A1/A2 work | Correct refusal. Skip step 4b and go to `producer`; never argue it back or re-dispatch at a raised tier |
+| any executor returns a **Continuation Debt Record** | Its coverage is unrun, not failed. Record it in the feature's ledger and put it on `qa-lead`'s gap list — never report the partial run as coverage |
 | any agent → `Blocked` | Supply exactly the input named at Entry, then resume from that step |
 
-- **Three strikes belongs to `review-pipeline.md`.** Every QA-found defect re-enters through review, so that
-  pipeline's counter already picks up the churn. QA counts nothing.
-- **A submission that keeps passing review and failing QA is not a code problem.** Two rounds is the bound —
-  `technical-architect` for root cause, not a third fix. A pipeline decision no agent contract states, made
-  because an unbounded loop is the exact failure three strikes exists to stop.
-- **A design flaw never re-enters the engineering loop** — from the Editor or from a device, at any point.
+- **A submission that keeps passing and failing QA is not a code problem.** Two rounds is the bound —
+  `technical-architect` for root cause, not a third fix. It spends the same single root-cause reset review
+  does, and a second breach stops: **`references/loop-termination.md`**. Three strikes itself belongs to
+  `review-pipeline.md`; QA counts only its own two rounds and attempts used, both in the ledger.
+- **A design flaw never re-enters the engineering loop**, from the Editor or a device, at any point.
 - **Retry counts, "same submission" identity, which reports landed and which baseline is current are the
-  caller's** — every agent here states it cannot hold them across runs.
+  caller's** — no agent here can hold them across runs.
