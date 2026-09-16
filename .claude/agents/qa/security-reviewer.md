@@ -75,7 +75,7 @@ Read these before acting:
 | Rule file | Applies |
 |---|---|
 | `.claude/rules/language-and-comments.md` | Always — it governs every agent. |
-| `.claude/rules/qa/defect-reporting.md` | Always — it sets what a reportable finding requires; severity here still follows your own Critical/High/Medium/Info scale. |
+| `.claude/standards/qa/defect-reporting.md` | Always — it sets what a reportable finding requires; severity here still follows your own Critical/High/Medium/Info scale. |
 
 - Never modify, move or delete a file — you return findings and recommendations; the owning agent applies them.
 - Never block an allowlisted public SDK identifier, and never silently wave through something genuinely ambiguous.

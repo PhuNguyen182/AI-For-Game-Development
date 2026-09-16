@@ -28,29 +28,31 @@ A feature root can carry up to seven documents. They are **not** a checklist to 
 
 ## When each document becomes owed
 
-Two conditions, both required: the feature has reached the **tier floor**, and the document's **trigger** has actually fired. Neither alone is enough — a Complex tier with no cross-feature seam does not owe `INTEGRATION.md`, and a real seam inside a Simple-tier change does not owe one either.
+Two conditions, both required: the feature has reached the **tier floor**, and the document's **trigger** has actually fired. Neither alone is enough — an A4 feature with no cross-feature seam does not owe `INTEGRATION.md`, and a real seam inside an A2 change does not owe one either.
+
+The floor is the **assurance tier** from `.claude/rules/task-classification.md`, assigned by `technical-architect` at intake and held in that feature's ledger. It keys to **A**, not to D: a feature earns documentation because getting it wrong is expensive, which is what C, R and X measure — a D2 change to an economy path classifies A4 and is worth documenting, while a genuinely hard D4 refactor of throwaway tooling is not.
 
 | File | Tier floor | Trigger — it becomes owed the moment this is true |
 |---|---|---|
-| `README.md` | Complex | The feature is functionally complete and going to Code Reviewer for final sign-off. This is the anchor: no other document in the set exists without it |
-| `CONTRACTS.md` | Complex | Code outside the feature root calls into it, the Tech Spec names a cross-layer or client-server contract, or the feature is multiplayer-relevant — anywhere client and server must agree on the same rule |
-| `INTEGRATION.md` | Complex | A second feature actually integrates with this one, or the feature ships a deliberate extension point somebody else is expected to use |
-| `ARCHITECTURE.md` | Complex | The feature spans more than one physical root or layer (`Game.Core.*` plus `Game.Client.*`), or its internal data flow cannot be stated in a paragraph inside `README.md` |
-| `LEDGER.md` | Medium | A decision was made that a future reader would otherwise undo — a rejected alternative, a non-obvious constraint, the outcome of an Advisor⇄Critic round, or a tech-lead escalation resolved |
-| `DEBT.md` | Medium | A limitation or workaround is carried past review — including a gap the GD accepted at CP4, per invariant I6 in `orchestration.md` — or an obsolete-API call site was flagged and left in place per `coding-principles.md` |
-| `NOTES.md` | Medium | Optional, always. Written when an observation would otherwise be lost, never because the docset "should" have one |
+| `README.md` | **A4** | The feature is functionally complete and going to Code Reviewer for final sign-off. This is the anchor: no other document in the set exists without it |
+| `CONTRACTS.md` | **A4** | Code outside the feature root calls into it, the Tech Spec names a cross-layer or client-server contract, or the feature is multiplayer-relevant — anywhere client and server must agree on the same rule |
+| `INTEGRATION.md` | **A4** | A second feature actually integrates with this one, or the feature ships a deliberate extension point somebody else is expected to use |
+| `ARCHITECTURE.md` | **A4** | The feature spans more than one physical root or layer (`Game.Core.*` plus `Game.Client.*`), or its internal data flow cannot be stated in a paragraph inside `README.md` |
+| `LEDGER.md` | **A3** | A decision was made that a future reader would otherwise undo — a rejected alternative, a non-obvious constraint, the outcome of an Advisor⇄Critic round, or a tech-lead escalation resolved |
+| `DEBT.md` | **A3** | A limitation or workaround is carried past review — including a gap the GD accepted at CP4, per invariant I6 in `orchestration.md` — or an obsolete-API call site was flagged and left in place per `coding-principles.md` |
+| `NOTES.md` | **A3** | Optional, always. Written when an observation would otherwise be lost, never because the docset "should" have one |
 
-**Simple tier owes nothing new.** A single-role change with no new architecture decision writes no document under this rule. It still updates any existing document its change makes stale — that is maintenance, not creation.
+**A1 and A2 owe nothing new.** A change at that tier writes no document under this rule. It still updates any existing document its change makes stale — that is maintenance, not creation.
 
-**`LEDGER.md` and `DEBT.md` drop to the Medium floor on purpose.** They are append-only and cost a few lines, while their absence causes exactly the two failures the reading flow exists to prevent: a deliberate decision undone by the next session, and known debt re-reported as a fresh defect. Every other document stays Complex-only — writing one for a Medium-tier change is the bureaucratic overhead KISS and YAGNI in `coding-principles.md` warn against.
+**`LEDGER.md` and `DEBT.md` drop to the A3 floor on purpose.** They are append-only and cost a few lines, while their absence causes exactly the two failures the reading flow exists to prevent: a deliberate decision undone by the next session, and known debt re-reported as a fresh defect. Every other document stays A4-and-above — writing one for an A3 change is the bureaucratic overhead KISS and YAGNI in `coding-principles.md` warn against, and the artifact budget in `effort-allocation.md` forbids outright.
 
-**Tier reclassification applies forward.** If `technical-architect` escalates a feature to Complex mid-flight, the Complex-tier documents are owed from that point, same as the rest of that tier's process. When a tier is genuinely unclear, ask `technical-architect` — never guess a feature down to skip a document, and never write one speculatively.
+**Reclassification applies forward.** If a feature's tier rises mid-flight — `change-request.md` re-reads every axis, and new scope or a newly touched economy path genuinely moves D or C — the documents at the new floor are owed from that point, same as the rest of that tier's process. When a tier is genuinely unclear, ask `technical-architect` — never guess a feature down to skip a document, and never write one speculatively. A tier that rose only because **U3** was unresolved falls again when CP1 spends it down, and the documents fall with it.
 
 ## Start inside `README.md`, promote out of it
 
 The docset grows from one file, it does not arrive as seven.
 
-1. A Complex-tier feature's first document is `README.md`, and it carries its contract, its integration notes and its internal structure **inline**, as short sections.
+1. An A4-or-above feature's first document is `README.md`, and it carries its contract, its integration notes and its internal structure **inline**, as short sections.
 2. When one of those sections grows past what a reader can hold — roughly, past the point where it buries the rest of the README — it is **promoted** into its own file from the table above.
 3. The README then keeps a one-line pointer to the promoted file, not a copy of it.
 
@@ -93,8 +95,8 @@ What it does **not** do: request a document whose trigger has not fired. "The do
 ## Rules
 
 - Never write a document before both its tier floor and its trigger are met, and never write an empty or placeholder one.
-- Simple tier creates nothing; it only updates what its change made stale.
-- `README.md` is the anchor — no other document in the set exists without it, and a Complex-tier feature is not complete without it at each feature root.
+- A1/A2 creates nothing; it only updates what its change made stale.
+- `README.md` is the anchor — no other document in the set exists without it, and an A4-or-above feature is not complete without it at each feature root.
 - Content starts inline in `README.md` and is promoted into its own file when it outgrows it; promotion moves the content and leaves a pointer, never a copy.
 - One fact, one home — cross-link between documents instead of duplicating, and never duplicate the Tech Spec's requirements text into any of them.
 - `LEDGER.md` and `DEBT.md` are appended in the submission that produced the decision or the limitation, not reconstructed at the end.

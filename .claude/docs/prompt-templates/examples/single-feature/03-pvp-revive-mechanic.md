@@ -71,7 +71,7 @@ Ràng buộc lên đoạn code đó:
 - Out of scope this round: không làm hồi sinh hàng loạt (nhiều người cùng hồi sinh một người để rút ngắn thời gian) — để bản sau.
 
 ## Constraints
-- Tuân `.claude/rules/client/coding-principles.md`, `naming-convention.md` và
+- Tuân `.claude/standards/client/coding-principles.md`, `naming-convention.md` và
   `performance-and-algorithms.md`.
 - Không dùng API nào đã đánh dấu `[Obsolete]`.
 - Undecided — hỏi tôi, đừng tự chốt: có cho phép hồi sinh bị ngắt bởi crowd-control (stun) không — chưa quyết.

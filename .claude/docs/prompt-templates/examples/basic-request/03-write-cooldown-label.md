@@ -18,7 +18,7 @@ Task kind: write-something-small
 - Find the same problem elsewhere: ghi ra cuối, không tự sửa.
 
 ## Constraints
-- Tuân `.claude/rules/client/coding-principles.md` và `naming-convention.md`.
+- Tuân `.claude/standards/client/coding-principles.md` và `naming-convention.md`.
 - Không dùng API nào đã đánh dấu `[Obsolete]`.
 - Dừng lại và báo tôi TRƯỚC KHI làm tiếp, nếu việc này hoá ra chạm `Game.Core.*`,
   cần nhiều hơn một vai trò, ảnh hưởng multiplayer, hoặc dựa trên thứ tôi chưa

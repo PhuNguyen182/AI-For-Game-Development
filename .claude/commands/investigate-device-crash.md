@@ -27,7 +27,7 @@ idevice_id -l
 
 - If exactly one device answers and no platform argument was given, use it.
 - If both Android and iOS devices answer, or neither does, require the platform to be disambiguated — from `$1` if given, otherwise ask the user. Do not pick one arbitrarily.
-- If nothing is connected at all: stop here and report `Status: Blocked` — "no device connected" is a correct, honest result, not a failure to work around, per `.claude/rules/qa/verification-standards.md`.
+- If nothing is connected at all: stop here and report `Status: Blocked` — "no device connected" is a correct, honest result, not a failure to work around, per `.claude/standards/qa/verification-standards.md`.
 
 ## Step 2 — Identify the target app
 
@@ -66,7 +66,7 @@ Reuse this project's existing domain knowledge rather than re-deriving it:
 
 ## Step 5 — Report
 
-Produce a report carrying every element `.claude/rules/qa/defect-reporting.md` requires, plus the root cause and fix direction the user asked for:
+Produce a report carrying every element `.claude/standards/qa/defect-reporting.md` requires, plus the root cause and fix direction the user asked for:
 
 ```
 ## Device Crash/ANR Investigation — <package/bundle id>

@@ -46,7 +46,7 @@ reporting. Read each file in scope and grep for the following signal patterns; a
 candidate finding, not an automatic one — confirm it actually sits in a hot path / crosses a real
 boundary before reporting it.
 
-**Runtime performance** — `.claude/rules/client/performance-and-algorithms.md`
+**Runtime performance** — `.claude/standards/client/performance-and-algorithms.md`
 - `new`, string interpolation/concatenation, or LINQ (`.Where(`, `.Select(`, `.OrderBy(`, etc.)
   inside `Update`/`FixedUpdate`/`LateUpdate`.
 - `GetComponent<` / `GetComponent(` called inside a per-frame method instead of cached in
@@ -68,7 +68,7 @@ boundary before reporting it.
 - Nested loops over a collection whose size scales with entity/player/inventory count, with no
   spatial partitioning, indexing, or explicit bound.
 
-**Memory efficiency** — `.claude/rules/client/performance-and-algorithms.md` (Memory discipline)
+**Memory efficiency** — `.claude/standards/client/performance-and-algorithms.md` (Memory discipline)
 - `+=` event subscription with no matching `-=` findable in `OnDisable`/`OnDestroy` for the same
   handler.
 - `StartCoroutine(` with no visible `StopCoroutine`/stop condition, or one not cleared on
@@ -82,7 +82,7 @@ boundary before reporting it.
 - High-frequency `Instantiate`/`Destroy` of the same prefab type with no `ObjectPool<T>`/pooling
   pattern nearby.
 
-**Hidden crash/ANR risk** — `.claude/rules/client/coding-principles.md` (Null safety, Exception
+**Hidden crash/ANR risk** — `.claude/standards/client/coding-principles.md` (Null safety, Exception
 handling) plus the fault-domain reasoning below
 - A `[SerializeField]`/public Inspector field dereferenced without a prior null/bool guard.
 - The result of `GetComponent<T>()`, `Instantiate(...)`, or another reference-returning Unity API
@@ -120,7 +120,7 @@ handling) plus the fault-domain reasoning below
 
 Optimize for a reader who scans in ten seconds: one line per field, no restating the rule text at
 length, no filler sentences ("this could potentially maybe cause..."). Every finding still carries
-the five elements `.claude/rules/qa/defect-reporting.md` requires, one Severity from its table
+the five elements `.claude/standards/qa/defect-reporting.md` requires, one Severity from its table
 (impact *if* the risk materializes, since nothing here is a confirmed shipped defect), and a fix
 direction that names the concrete change without writing it:
 
@@ -153,7 +153,7 @@ block exactly as above, keeping code excerpts, identifiers, file paths, and line
 - Never edit the code — this command reviews and reports only; the owning agent (per `Owner`)
   applies any fix.
 - Never claim a confirmed performance regression or a confirmed crash/ANR from a static read — that
-  requires a measurement or a real device, per `.claude/rules/qa/verification-standards.md`. Every
+  requires a measurement or a real device, per `.claude/standards/qa/verification-standards.md`. Every
   finding here is a risk, stated as a risk.
 - Never widen scope into full Tech-Spec correctness review, security review, or unrelated
   refactors — note them and route to `code-reviewer`/`security-reviewer` instead of reviewing them

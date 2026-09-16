@@ -34,7 +34,7 @@ given:
 1. **Docs/spec** — `--spec <path>` if given, or a Tech Spec/GDD/design note the user's request
    points at. Read it in full.
 2. **The request itself** — if the user described the intended behavior directly in the prompt
-   (no doc, Simple-tier change), treat that description as the spec.
+   (no doc, a D1–D2 change), treat that description as the spec.
 3. **The code** — if `$ARGUMENTS` gives paths, read them; otherwise derive scope from
    `git diff --name-only HEAD -- '*.cs'` + `git diff --staged --name-only -- '*.cs'`. The code is
    always read even when a doc exists — a doc states intent, the code states what actually runs,
@@ -55,7 +55,7 @@ lifecycle. Do not re-derive this reasoning by hand — the skill produces it dir
   too, and a documented behavior the code doesn't have is a defect, not a test-planning problem
   (name it, route it to the owning agent per `defect-reporting.md`, don't silently test around it).
 - Carry the skill's severity/impact ranking into the final report's ordering — most-impactful case
-  first, per `.claude/rules/qa/defect-reporting.md`'s Severity table.
+  first, per `.claude/standards/qa/defect-reporting.md`'s Severity table.
 
 ## Step 3 — Write the test flow (how to actually run each case)
 
@@ -82,7 +82,7 @@ dangerous. This is the step most test plans skip, and it's the one the user expl
    assume isolation. Specifically check for:
    - Other classes calling the same public method/property, or subscribing to the same event.
    - The same `Game.Core.*` rule consumed by more than one `Game.Client.*` caller (a Shared Core
-     change affects every caller at once, per `.claude/rules/client/coding-principles.md`'s Shared
+     change affects every caller at once, per `.claude/standards/client/coding-principles.md`'s Shared
      Core integrity section).
    - A `static`/singleton field or service that this code reads or writes, and who else touches it.
    - A shared prefab, scene, or Addressables asset referenced from more than one feature.
@@ -98,13 +98,13 @@ dangerous. This is the step most test plans skip, and it's the one the user expl
 
 Detailed but direct — every section exists because the user needs it, but no restated rule text,
 no filler sentences, no padding a thin result to look thorough. Every impact finding still carries
-the elements `.claude/rules/qa/defect-reporting.md` requires, with an exact line number.
+the elements `.claude/standards/qa/defect-reporting.md` requires, with an exact line number.
 
 **Only include a section or field when there's something to put in it.** `Status`, `Sources used`,
 and `Test cases` are always present — there's no report without them. Every other section
 (`Doc/code mismatch`, `Cross-feature impact`) appears only when it actually found something; drop
 it entirely rather than writing "none"/"no dependents found" as a placeholder. `Not covered` is the
-one exception that stays even when empty-looking, per `.claude/rules/qa/verification-standards.md`
+one exception that stays even when empty-looking, per `.claude/standards/qa/verification-standards.md`
 — but keep it to the real gaps (unavailable sources, what static search can't see), not a restated
 boilerplate line.
 

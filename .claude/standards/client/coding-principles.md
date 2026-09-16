@@ -6,7 +6,7 @@ Sources: [Microsoft Learn — Identifier names](https://learn.microsoft.com/en-u
 
 ## Relationship to other rules
 
-This file owns architecture-level design principles, correctness/safety boundaries, and submission handoff. Mechanical style — explicit access modifiers, brace/indentation layout, statement shape, and modern-operator preference — is governed by the sibling file `.claude/rules/client/code-style-and-layout.md`; read both before writing any code, they are not substitutes for each other.
+This file owns architecture-level design principles, correctness/safety boundaries, and submission handoff. Mechanical style — explicit access modifiers, brace/indentation layout, statement shape, and modern-operator preference — is governed by the sibling file `.claude/standards/client/code-style-and-layout.md`; read both before writing any code, they are not substitutes for each other.
 
 ## Shared Core integrity
 
@@ -16,7 +16,7 @@ This file owns architecture-level design principles, correctness/safety boundari
 
 ## Core design principles (mandatory)
 
-These are non-negotiable, not stylistic preferences. Code Reviewer checks every submission against them, and a violation is grounds for "request changes" regardless of the feature's Triage tier.
+These are non-negotiable, not stylistic preferences. Code Reviewer checks every submission against them, and a violation is grounds for "request changes" regardless of the feature's assurance tier.
 
 ### SOLID
 
@@ -195,5 +195,6 @@ of them.
 
 - Every submission to Code Reviewer includes a short note of assumptions/known limitations (per the Implementation Note handoff format in `.claude/rules/implementation-note.md`).
 - Stay scoped to what the Tech Spec asked for. Don't refactor unrelated code, don't add speculative extensibility, don't fix unrelated issues in the same submission — flag them separately instead.
-- When a Complex-tier feature (per Technical Architect's Triage) reaches completion, its handoff also includes the feature-root documents owed under `.claude/rules/client/feature-documentation.md` — always `README.md`, plus whichever of `CONTRACTS.md`, `INTEGRATION.md` and `ARCHITECTURE.md` that file's triggers have actually fired for. Simple tier owes none of them; Medium tier owes only a `LEDGER.md` or `DEBT.md` entry when its trigger fires.
+- When an **A4-or-above** feature (per the assurance tier in `.claude/rules/task-classification.md`) reaches completion, its handoff also includes the feature-root documents owed under `.claude/standards/client/feature-documentation.md` — always `README.md`, plus whichever of `CONTRACTS.md`, `INTEGRATION.md` and `ARCHITECTURE.md` that file's triggers have actually fired for. A1/A2 owes none of them; A3 owes only a `LEDGER.md` or `DEBT.md` entry when its trigger fires.
+- Verify to the floor your dispatch stated — V1 at A1/A2, V2 at A3, V3 at A4, V4 at A5, per `.claude/rules/effort-allocation.md` — and report in the Implementation Note exactly what you ran and what you did not. Reading code is review; running it is verification, and a check nobody ran is never reported as passed.
 - Before writing code against an existing feature, read its documents in the order `.claude/rules/feature-context-reading.md` sets — that file also governs what to do when a document disagrees with the code.

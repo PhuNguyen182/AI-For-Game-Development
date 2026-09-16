@@ -57,7 +57,7 @@ class AbilityRunner : MonoBehaviour   // Missing access modifier on the type.
 }
 ```
 
-- Code Reviewer checks this on every submission, same as SOLID/KISS/YAGNI in `coding-principles.md` — a missing access modifier is grounds for "request changes" regardless of the feature's Triage tier.
+- Code Reviewer checks this on every submission, same as SOLID/KISS/YAGNI in `coding-principles.md` — a missing access modifier is grounds for "request changes" regardless of the feature's assurance tier.
 
 ## Layout
 

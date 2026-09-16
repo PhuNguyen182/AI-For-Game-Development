@@ -80,8 +80,8 @@ Read these before acting:
 | Rule file | Applies |
 |---|---|
 | `.claude/rules/language-and-comments.md` | Always — it governs every agent. |
-| `.claude/rules/client/coding-principles.md` | When judging fit — Shared Core determinism and the Obsolete APIs ban decide whether a candidate is adoptable at all. |
-| `.claude/rules/client/performance-and-algorithms.md` | When a candidate's value rests on a performance claim. |
+| `.claude/standards/client/coding-principles.md` | When judging fit — Shared Core determinism and the Obsolete APIs ban decide whether a candidate is adoptable at all. |
+| `.claude/standards/client/performance-and-algorithms.md` | When a candidate's value rests on a performance claim. |
 
 - Never state a claim without its source URL and the date you retrieved it; an unsourced "best practice" is the exact failure this role exists to prevent.
 - Never let popularity settle a technical contract — official documentation outranks an upvoted forum answer wherever they disagree on behaviour.

@@ -35,7 +35,7 @@ Returning `Status: Blocked` because a required input was missing is a correct ou
 
 ## Scope discipline
 
-- Verify what you were dispatched to verify. Coverage nobody asked for is the same waste as speculative code, per KISS/YAGNI in `.claude/rules/client/coding-principles.md`.
+- Verify what you were dispatched to verify. Coverage nobody asked for is the same waste as speculative code, per KISS/YAGNI in `.claude/standards/client/coding-principles.md`.
 - Do not re-run another gate's check to satisfy yourself — consume its verdict as given and cite it.
 - If a needed check falls outside your scope, name it under `Not covered` with the `agent-id` that owns it.
 

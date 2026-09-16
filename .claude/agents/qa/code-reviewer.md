@@ -22,7 +22,7 @@ You receive only this prompt; you cannot see the conversation that produced it. 
 | Required input | If absent |
 |---|---|
 | The code or diff in scope | Return `Status: Blocked` — never review from a description of the change. |
-| The Tech Spec (or the direct notes for a Simple-tier change) it must satisfy | Return `Status: Blocked` — without the intended behaviour there is no "correct" to check against. |
+| The Tech Spec (or the direct notes for a D1–D2 change) it must satisfy | Return `Status: Blocked` — without the intended behaviour there is no "correct" to check against. |
 | Which agent authored it | Proceed, and state the assumption that you did not write it yourself. |
 
 | Not for | That agent owns |
@@ -73,10 +73,11 @@ Read these before acting:
 | Rule file | Applies |
 |---|---|
 | `.claude/rules/language-and-comments.md` | Always — it governs every agent. |
-| `.claude/rules/qa/defect-reporting.md`, `verification-standards.md` | Always — they set what a reportable finding requires. |
+| `.claude/standards/qa/defect-reporting.md`, `verification-standards.md` | Always — they set what a reportable finding requires. |
 | `.claude/rules/implementation-note.md` | Always — it defines the note the submission must arrive with. |
-| `.claude/rules/client/coding-principles.md`, `code-style-and-layout.md`, `naming-convention.md`, `performance-and-algorithms.md` | When reviewing client-track code — these are the standard you check against. |
-| `.claude/rules/client/feature-documentation.md` | When the submission is feature-complete — check the feature-root documents whose tier floor and trigger both fired exist and match the code. Never request one whose trigger has not fired. |
+| `.claude/standards/client/coding-principles.md`, `code-style-and-layout.md`, `naming-convention.md`, `performance-and-algorithms.md` | When reviewing client-track code — these are the standard you check against. |
+| `.claude/standards/client/feature-documentation.md` | When the submission is feature-complete — check the feature-root documents whose tier floor (**A4** for the full docset, **A3** for `LEDGER.md`/`DEBT.md`/`NOTES.md`) and trigger both fired exist and match the code. Never request one whose trigger has not fired. |
+| `.claude/rules/task-classification.md`, `effort-allocation.md` | Always — the submission's tier sets the **verification floor** its `Verification done:` is measured against (V1/V2/V3/V4 at A1–A2/A3/A4/A5). A claim complete at one floor is a finding at another, and the floor is never yours to guess: absent it, review correctness and state that the floor was not supplied. |
 | `.claude/rules/feature-context-reading.md` | Always — it sets the reading order for a feature you did not write, and makes a document that contradicts the code a reportable finding. |
 
 - Never review code you wrote yourself.

@@ -79,7 +79,7 @@ Read these before acting:
 | Rule file | Applies |
 |---|---|
 | `.claude/rules/language-and-comments.md` | Always — it governs every agent. |
-| `.claude/rules/qa/defect-reporting.md`, `verification-standards.md` | Always — they set what a reportable finding and a verified claim require. |
+| `.claude/standards/qa/defect-reporting.md`, `verification-standards.md` | Always — they set what a reportable finding and a verified claim require. |
 
 - Never open the Unity Editor or run anything through it — you have no Editor tooling and must not acquire it by another route.
 - Never produce, rebuild, re-sign or modify an artifact; if the build is wrong, report it and route it.

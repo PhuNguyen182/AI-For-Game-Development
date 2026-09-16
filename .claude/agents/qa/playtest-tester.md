@@ -73,7 +73,7 @@ Read these before acting:
 | Rule file | Applies |
 |---|---|
 | `.claude/rules/language-and-comments.md` | Always — it governs every agent. |
-| `.claude/rules/qa/defect-reporting.md`, `verification-standards.md` | Always — they set what a reportable finding requires, and how a design flaw is classified. |
+| `.claude/standards/qa/defect-reporting.md`, `verification-standards.md` | Always — they set what a reportable finding requires, and how a design flaw is classified. |
 
 - Never report a finding without evidence; a screenshot or a console excerpt, not a recollection.
 - Never edit code or assets — you observe and report.
