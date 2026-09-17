@@ -9,6 +9,20 @@ This is the GD's standing direction, and it is consistent with the rule the whol
 *never enforce by blocking — state the cost, then do what the GD asked.* What this file adds is the shape of
 the ask, and the one thing that is not optional: **a declined gate is recorded, never silent.**
 
+## Who asks, and where — the two are different questions
+
+Three files each describe an ask, and reading them apart it looks as though three parties own it. They do
+not, and the split is the same one the rest of the layer uses:
+
+| Owned by | What |
+|---|---|
+| **This file** | The **shape** of every ask — the four things it carries, the recommendation, the bound of one offer per boundary, and the record that follows either answer. It is the single home; no pipeline restates it |
+| **The pipeline that reaches the boundary** | **Where** each ask fires. `feature-development.md` step 1 asks about the Core contract, because that is the moment four agents are about to build against it. `review-pipeline.md` step 6 asks about QA, because that is the moment both verdicts are in. Neither is a second copy of the rule — each is a location |
+| **`orchestrator.md`** | Every ask that belongs to **no** pipeline: a mode-3 dispatch that wrote source, a gated-direct submission, a debt row re-offered at a later boundary |
+
+"The orchestrator asks the GD" above is shorthand for the third row, and it is the one that has no pipeline
+to hold it. It has never meant that a pipeline mid-run routes its own boundary back through the router.
+
 ## The two decision points
 
 ```text
