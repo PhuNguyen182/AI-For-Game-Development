@@ -391,6 +391,37 @@ counters stay in `<state-root>/project-state.md`. Opening a ledger for them woul
 feature writes the first `LEDGER.md` under the new shape, and that is also the first evidence any of it
 works.
 
+## 13. `feature-intake.md` review round — ten findings, and a check that sees routing
+
+An adversarial per-pipeline review of `feature-intake.md`, read against the three agent contracts it
+dispatches and against `research-decision.md`. Ten findings, eight of them closed here. Nothing GD-reviewed
+yet. The full record, with the evidence behind each finding, is in `.claude/docs/feature-intake-update.md`.
+
+| # | Part | Where it landed | GD |
+|---|---|---|---|
+| 13.1 | **A D1–D2 feature returning from research had no route back.** `feature-intake.md`'s **E3** row and `research-decision.md`'s exit table both sent it to step 6 — which runs at D3–D5 only, reaching a CP2 that fires at D3–D5 only. Followed literally it produces a Tech Spec for a one-role change, the artifact budget's own named violation. **The mermaid was already correct**: its `Resume` node branches on shape and both tables did not | `feature-intake.md` E3 row, `research-decision.md` step 5 | ⬜ |
+| 13.2 | **The loop had no dispatch brief.** `critic` blocks without the direction *in detail* and without the goal, and the GD picks a direction by name — so the loop's most ordinary path was a `Blocked` the caller caused. Six rows, each keyed to a real `If absent`, plus the `advisor`→`critic` handoff row. Folded into the loop's own file rather than given a new one: it serves two agents inside one loop, where `development-brief.md` serves seven across a pipeline | `references/intake-advisor-critic-loop.md` | ⬜ |
+| 13.3 | **The Tech Spec envelope had no `Assumptions:` field.** Every implementing agent has one; the document the whole fan-out is measured against did not, and CP2 is where the GD approves it unseen | `technical-architect.md` envelope + guardrail, `references/intake-tech-spec.md` | ⬜ |
+| 13.4 | **A Major change now resets the Advisor⇄Critic round count**, and it is the one cap a re-entry clears. Major invalidates the direction those rounds settled, so charging them to the new one left a feature that spent two rounds with one. The ruled-out options still travel | `change-request.md`, `references/entry-index.md`, `references/loop-termination.md` | ⬜ |
+| 13.5 | **`Tier history:` and `Research:` added to the ledger.** CP1's reclassification overwrote the tier in force while the loop ran, so `assurance-evaluator` scored A5 effort against a final A3. And the named coverage that justifies skipping research had no home but conversation context | `state/templates/feature-ledger.md` | ⬜ |
+| 13.6 | **A CP2 rejection now splits before it is acted on**, as CP3 and CP4 already did: the spec misread the request (redraft) versus the direction is now wrong (**CP1** at **E5**). The bound at three was finding the second kind after three architect dispatches | `feature-intake.md` CP table, `references/intake-tech-spec.md` | ⬜ |
+| 13.7 | **`Open design question:` is now classified `design \| architecture \| technology \| none`.** At D3, where no loop runs, that field is the only thing that raises a missing capability — a hole step 5 already admitted and nothing closed | `technical-architect.md`, `feature-intake.md` step 5 | ⬜ |
+| 13.8 | **Routing is now machine-checked, not only structure.** Two claims: an entry resuming at a shape-gated step must state the shape, and no file may send work to a door the target pipeline does not declare. **Negative-tested** — reverting 13.1 fails the first; the second found a live second instance (**E2** → step 3, the loop, stated no shape) and a sentence naming `change-request.md` **E4**/**E5**, which are this pipeline's doors and not that one's. 78 claims, all passing | `tools/verify-workflow-layer.ps1`, `feature-intake.md` | ⬜ |
+| 13.9 | **One owner named for the gate offer.** `optional-gates.md` owns the ask's *shape*; the pipeline that reaches a boundary owns *where* it fires; the orchestrator owns every ask belonging to no pipeline. Three files each read as the asker before this | `references/optional-gates.md` | ⬜ |
+
+### What this round deliberately did not do
+
+**`technical-architect` was not given authority to recommend a direction.** At D4–D5 an `architecture`
+question — how to structure something with what the project already has — reaches the Advisor⇄Critic loop,
+where `advisor` is barred from ranking, `critic` only attacks the leaning option, `cto` owns technology
+rather than structure, and the architect is not consulted until step 6. **No agent may say which option fits
+this codebase.** That may be the intended price of the GD deciding alone, or a misallocated decision — it is
+the GD's call, so the limitation was written down with its existing escape (a mode-3 dispatch to
+`technical-architect` before locking CP1) rather than silently resolved. Recorded in the debt register.
+
+**No enforcement was added beyond the verifier.** The hooks and the ledger-append helper that would close
+`F1` and `F2` in `.claude/docs/workflow-layer-assessment.md` change harness behaviour and belong to the GD.
+
 ## Open decisions the GD owes
 
 **None.** All seven are settled, and each one's full reasoning now lives in the pipeline file named below —
@@ -419,6 +450,7 @@ that file is the durable record, not this row.
 | **Every constant in the layer is E0** | Recorded, now instrumented | 3 strikes, 3 rounds, the 2-round QA bound, budgets 2–5, 1 reset, 2 gated-direct strikes — all **chosen, none measured**, which is the weakest grade `effort-allocation.md` recognises. `state/calibration.md` harvests one row per closed ledger from numbers already recorded, so the constants become knowable without inventing telemetry. **Nothing can close this but real runs** |
 | **`.claude/rules/` carries ~24k words, auto-loaded unconditionally** | Recorded | Measured, not estimated: 2,071 lines across 18 files enter every session before the GD types. ~650 of them are C# client style rules a router, `qa-lead` or `producer` never needs — the `Applies to:` headers are documentation, not a loading mechanism. §10 cut the `orchestration.md`/`orchestrator.md` duplication; the rest needs a scoping decision that is the GD's, not a silent restructure |
 | **Five files exceeded the 200-line cap** | Settled | Closed in §9 by promotion into `workflows/references/`, not by compressing prose. `.claude/rules/` still exceeds it (`execution-loop.md` 279, `task-classification.md` 214 as committed) — out of scope for this round, and recorded here rather than silently fixed |
+| **No agent may rank an architecture direction** | Open | §13 found it and wrote it down rather than resolving it. A `design` question is `advisor`'s and the GD's by right; an `architecture` question reaches the same loop, where nothing is permitted to say which option fits this codebase. Closing it means either a `Recommended direction:` field on `technical-architect` for `architecture`-classified questions, or accepting the mode-3 escape as sufficient. **A philosophy decision, not a defect fix** |
 | **Enforcement is advisory only** | Partly settled | This row said "reopen only when a miss supplies the evidence". A miss did: four self-describing counts had drifted and two cross-references pointed at blank lines, all found by audit rather than by any check. `tools/verify-workflow-layer.ps1` and `/verify-workflow-layer` close the **self-description** half at 52 machine-checked claims. A `PreToolUse` hook blocking a dispatch that skips the router stays **Deferred** — still no evidence of that miss |
 | **The Implementation Note's `Deliberately out of scope` is a proxy** | Deferred | Per `.claude/rules/implementation-note.md`: an agent that sets a nearby problem aside may record it under `Assumptions` and never return `Routed to:`, so the field can be silently empty. Closing it means adding a field to seven agent envelopes — declined until a real round trip proves it worth it |
 | **Legacy roster doc deleted** | Recorded | `.claude/docs/TEAM_STRUCTURE.md` was removed once its §6 criteria reached `change-request.md` — the only content nothing else carried. Recover with `git checkout a33f02b -- .claude/docs/TEAM_STRUCTURE.md` if something turns out to have been missed |
