@@ -299,3 +299,36 @@ has run once, its ceiling is about 8.0.**
 2. **Commit** — nine files are uncommitted in the working tree.
 3. **Next** — item 2 in Part 5 was offered and not yet started: write the verifier check that would have
    caught I9, regression-test it by temporarily reverting the fix, then restore.
+
+---
+
+## Part 7 — Re-evaluated against a real run: 9.0 → 8.2
+
+The 9.0 above was scored on a pipeline that had been **read**, never executed. It has now been executed —
+five real agent dispatches, steps 1 through 5 plus CP1, on a live-title voice-chat feature classified
+A5 / D4 C4 U3 R2 X2. The run record, the full findings and the proposed fixes are in
+`research-decision-update.md`. What it did to this pipeline's score:
+
+| Axis | Part 4 | After the run | What moved it |
+|---|---:|---:|---|
+| Entry points and addressing | 9.5 | **7.5** | **R2** — the `technical-architect` → `cto` row hands a *pre-CP1* escalation back at step 6, skipping the loop and CP1. The I9 family again, in the one row the last pass did not check. Plus **R1**, below |
+| Agent-brief contract | 8.5 | **8.0** | The loop brief table **held live** — `critic` returned `Blocked … none`, which is what it was written to prevent. Against that: step 6 has no brief specification at all, and `advisor`'s constraint list omits the social graph (**R4**) |
+| Checkpoint logic | 9.0 | **7.5** | **R6** — "CP1 spends U down … drop U to U1" is unconditional. At D4–D5 CP1 always precedes step 5, so it disarms `research-decision.md` **E4** for exactly the shape most likely to need it |
+| Counters and caps | 9.0 | **9.0** | Held — nothing found |
+| Honesty about its own gaps | 9.0 | **9.0** | Held |
+| **Result custody** *(axis the run forced into existence)* | — | **4.0** | **R5** — `critic` returned 11 ranked findings, four of them acceptance-criteria gaps, and `intake-tech-spec.md` never mentions `critic`, Risk Findings or accepted risks. They die at CP1 |
+
+**8.2** on the original five axes, **7.5** including custody.
+
+Two findings land on work done in *this* note, and both are worth stating plainly:
+
+- **I3's `Assumptions:` field worked.** The architect returned eleven of them, including "push-to-talk is
+  assumed as the default input mode" — which `critic` then attacked as its Critical #1. That is the field
+  doing precisely what Part 1 claimed it would.
+- **Change 7's classified `Open design question:` did not.** It is single-valued, and the live D4/U3
+  classification legitimately had a `technology` question *and* three `design` questions at once. The
+  architect had to put the design half in prose outside the envelope (**R3**). A defect introduced by a fix,
+  found only by running it.
+
+The honest reading: **the 9.0 was 0.8 points of optimism plus one unscored axis.** That gap is the difference
+`effort-allocation.md` names between review and verification, measured.
