@@ -31,12 +31,19 @@ feature's design history wants the half above.
 - Slug: <feature-slug>
 - Status: In flight | Closed | Abandoned <if Abandoned: why, and the last verified state>
 - Tier: A<n>, from <the axis that set it> · axes D<n> C<n> U<n> R<n> X<n>
+- Tier history: <A<n> from <axis>, <when and why it moved> → ... — appended, never overwritten. CP1 spending
+  U down is the ordinary case; `assurance-evaluator` scores effort against the tier in force when it was
+  spent, and a ledger showing only the final tier makes an A5 loop look like A3 overspending>
 - Shape: <roles, and whether a Tech Spec is owed — set by D, per task-classification.md Step 4>
 - Track: client | client + multiplayer
 - Checkpoint: none | CP1 | CP2 | CP3 | CP4
 - Verification floor: V<n>
 - Attempt budget: <n>, from D<n>
-- Advisor⇄Critic: round <n> of 3 · ruled out: <the options earlier rounds rejected>
+- Advisor⇄Critic: round <n> of 3 · ruled out: <the options earlier rounds rejected> · <reset by a Major
+  change on <date>, per change-request.md — the rounds settled a direction that no longer exists | never reset>
+- Research: <branched to research-decision.md, and what it settled> | <skipped — covered by the package, API
+  or existing system named at feature-intake.md step 5. "If you cannot name it, you are guessing" makes the
+  name the whole evidence, and it travels to CP2>
 - Documents owed: <which feature-root documents this tier's floor and triggers have made owed>
 - Baseline: <the performance figure, and how it was taken>
 - Reported: <the last period `producer` covered>
