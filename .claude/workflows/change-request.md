@@ -124,6 +124,13 @@ and runs the pipeline forward from there, with its own CP3 and CP4.
   `loop-termination.md` that was charged against a spec the GD has now moved. Those submissions are now measured against a different spec, and a carried-over strike or a
   half-spent budget would charge the author for the GD's change. Both counters are the caller's — no agent
   holds either.
+- **A Major also resets the Advisor⇄Critic round count to zero**, and it is the only severity that does.
+  Major is defined above as invalidating an assumption `critic` tested or a risk the GD accepted at CP1 — so
+  the rounds already spent were spent settling a *different* question, and carrying them forward hands the
+  new direction whatever is left of the cap. A feature that used two rounds before would re-enter **E5** with
+  one, and report non-convergence on a direction nobody had properly deliberated. What does **not** reset is
+  the **ruled-out options list**: those were rejected on their own merits, and `advisor` still cannot
+  remember them.
 - **A decision the change overturns is superseded in the feature root's `LEDGER.md`, not deleted** — from
   **A3** upward, per `feature-documentation.md`. The superseded reasoning is what stops the next session
   re-litigating a direction the GD has already moved off.

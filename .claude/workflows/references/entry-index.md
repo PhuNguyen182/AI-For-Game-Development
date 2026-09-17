@@ -59,7 +59,12 @@ scope genuinely can move D, and a newly touched economy path genuinely can move 
 
 An entry resumes a pipeline; it does not restart the feature. Strike counts, QA-fail counts, the Advisor⇄Critic
 round number and attempts already spent all carry across the door, because the counter is the caller's and
-lives in the ledger. The two deliberate exceptions are stated in the files that own them: a **GD-reported
+lives in the ledger. The deliberate exceptions are stated in the files that own them: a **GD-reported
 defect** enters `feature-development.md` **E3** at zero strikes, and a **change request** resets the strike
 count and the attempt budget on every submission it invalidates — in both cases because the author is not
 being charged for somebody else's change.
+
+The third is narrower: a **Major** change entering **E5** also resets the **Advisor⇄Critic round count**,
+because Major means the direction those rounds settled no longer holds, so they were spent on a different
+question. `change-request.md` owns it. The **ruled-out options** still travel — they were rejected on their
+own merits, and `advisor` cannot hold them across runs either way.

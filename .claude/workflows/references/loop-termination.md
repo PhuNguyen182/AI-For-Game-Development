@@ -74,6 +74,12 @@ approved spec said; the spec moved. `change-request.md` already resets the strik
 budget on every submission it invalidates, and it resets these three counters with them — the author is not
 charged for the GD's change.
 
+**A Major change additionally resets the Advisor⇄Critic round count**, and it is the one cap in this table
+that a re-entry clears. Major is defined as invalidating an assumption `critic` tested or a risk the GD
+accepted at CP1: the rounds already spent settled a direction that no longer exists, so charging them to the
+new one hands it whatever is left of the cap — one round, on a feature that used two. Every other cap here
+survives a re-entry, per `references/entry-index.md`.
+
 ## The QA-side loops
 
 **Sign-off re-dispatch is bounded at 2.** `qa-lead` returning `Not signed off` with coverage still runnable
