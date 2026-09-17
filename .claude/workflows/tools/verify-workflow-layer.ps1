@@ -145,6 +145,117 @@ foreach ($name in $pipelineFiles)
 Assert-Claim 'entry-index row count' ($indexRows.Count -eq $declared) `
     "index has $($indexRows.Count) rows, pipelines declare $declared"
 
+# ------------------------------------------------------------------ routing
+#
+# The two checks below are semantic, not structural, and they exist because
+# every check above this line passed for months while feature-intake E3 sent
+# *every* returning feature to step 6 -- a step that runs at D3-D5 only. A
+# D1-D2 feature coming back from the research branch landed on a step that
+# does not run for it and a checkpoint that does not fire for it, and the
+# literal reading produced a Tech Spec for a one-role change: the artifact
+# budget's own named violation. Counting doors and pointers cannot see that.
+
+Write-Host ''
+Write-Host 'Routing -- an entry resuming at a shape-gated step states the shape'
+
+foreach ($name in $pipelineFiles)
+{
+    $text        = Get-Content -Path (Join-Path $workflows $name) -Raw
+    $stepSection = [regex]::Match($text, '(?s)##\s+Step order(.*?)(\r?\n##\s|\z)').Groups[1].Value
+
+    if (-not $stepSection)
+    {
+        continue
+    }
+
+    # step number -> its 'Runs for' cell
+    $runsFor = @{}
+
+    foreach ($row in [regex]::Matches($stepSection, '(?m)^\|\s*(\d+)\s*\|([^|]*)\|([^|]*)\|'))
+    {
+        $runsFor[$row.Groups[1].Value] = $row.Groups[3].Value
+    }
+
+    # 'same as step N' inherits N's gate
+    foreach ($step in @($runsFor.Keys))
+    {
+        if ($runsFor[$step] -match 'same as step (\d+)')
+        {
+            $inherited = $Matches[1]
+
+            if ($runsFor.ContainsKey($inherited))
+            {
+                $runsFor[$step] = $runsFor[$inherited]
+            }
+        }
+    }
+
+    $entrySection = [regex]::Match($text, '(?s)##\s+Entry points(.*?)(\r?\n##\s|\z)').Groups[1].Value
+
+    foreach ($row in [regex]::Matches($entrySection, '(?m)^\|\s*\*\*(E\d)\*\*\s*\|.*$'))
+    {
+        $door = $row.Groups[1].Value
+        $line = $row.Value
+
+        foreach ($hit in [regex]::Matches($line, 'step (\d+)'))
+        {
+            $step = $hit.Groups[1].Value
+
+            if (-not $runsFor.ContainsKey($step) -or $runsFor[$step] -notmatch 'D[1-5]')
+            {
+                continue
+            }
+
+            Assert-Claim ("{0} {1} -> step {2} states its shape" -f $name, $door, $step) `
+                ($line -match 'D[1-5]') `
+                ("step $step runs at '$($runsFor[$step].Trim())' and this row names no shape")
+        }
+    }
+}
+
+Write-Host ''
+Write-Host 'Routing -- every cross-file entry reference names a door that exists'
+
+$declaredDoors = @{}
+
+foreach ($name in $pipelineFiles)
+{
+    $text    = Get-Content -Path (Join-Path $workflows $name) -Raw
+    $section = [regex]::Match($text, '(?s)##\s+Entry points(.*?)(\r?\n##\s|\z)').Groups[1].Value
+
+    $declaredDoors[$name] = @(
+        [regex]::Matches($section, '(?m)^\|\s*\*\*(E\d)\*\*\s*\|') |
+            ForEach-Object { $_.Groups[1].Value }
+    )
+}
+
+$badRefs = [System.Collections.Generic.List[string]]::new()
+
+foreach ($file in (Get-ChildItem -Path $workflows -Recurse -Filter '*.md' -File))
+{
+    if ($file.Name -eq 'workflow-checklist.md')
+    {
+        continue
+    }
+
+    foreach ($line in (Get-Content -Path $file.FullName))
+    {
+        foreach ($hit in [regex]::Matches($line, '`([a-z-]+\.md)`[^|`]{0,40}?\*\*(E\d)\*\*'))
+        {
+            $target = $hit.Groups[1].Value
+            $door   = $hit.Groups[2].Value
+
+            if ($declaredDoors.ContainsKey($target) -and $declaredDoors[$target] -notcontains $door)
+            {
+                $badRefs.Add(('{0} sends work to {1} {2}' -f $file.Name, $target, $door))
+            }
+        }
+    }
+}
+
+Assert-Claim 'no reference to an undeclared entry' ($badRefs.Count -eq 0) `
+    (($badRefs | Sort-Object -Unique) -join '; ')
+
 # -------------------------------------------------- references are reachable
 
 Write-Host ''
