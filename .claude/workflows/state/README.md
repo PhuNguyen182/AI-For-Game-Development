@@ -5,103 +5,110 @@
 > **at each transition**, not at the end of a run: a counter that survives only in conversation context is
 > not a safety mechanism. Owned by `orchestrator.md`.
 
-## Layout
+## Nothing under `.claude/` is written at runtime
 
-```text
-.claude/workflows/state/
-  README.md            ← this file: the layout, and the per-feature ledger template
-  project-state.md     ← what cannot be per-feature: the in-flight index and both global locks
-  <feature-slug>/
-    ledger.md          ← one feature's own cross-run state
-```
+`.claude/` is the **framework**, copied unchanged into every project that adopts it. State is the
+**project's**, and it belongs beside the project's own work. A run that creates a directory or writes a
+counter under `.claude/` puts one project's history inside the template every other project starts from, and
+the next project inherits a stranger's strike counts.
 
-**One ledger per feature, never one shared file.** A shared ledger forced every concurrent feature through
-one document, so a second feature's block was appended under the first and the counters that matter — strikes
-against *this* submission, the round *this* Advisor loop has reached — sat next to identically-named counters
-belonging to something else. A feature's state now lives at one path, opens when classification
-assigns its tier, and is marked closed when CP4 closes it.
+So this folder holds the state layer's **rules and its templates**. It holds no state. A file appearing under
+it during a run is a defect, and `tools/verify-workflow-layer.ps1` fails on it.
 
-**What is not per-feature stays in `project-state.md`.** The Editor lock (invariant I3) and the device lock
-(I7) are project-wide by definition — a per-feature copy of a global lock is not a lock. Open review debt
-lives there too, because a mode-3 dispatch that writes source may have no feature to attach to.
+## Where state actually lives
 
-## Two files named for a ledger, and they are unrelated
-
-| Path | Holds | Read by |
+| State | Path | Written by |
 |---|---|---|
-| `.claude/workflows/state/<feature-slug>/ledger.md` | **Run state** — tiers, checkpoint position, strike counts, attempts used. Lowercase, under `.claude/` | `orchestrator.md`, at every transition |
-| `<feature-root>/LEDGER.md` | **Decision history** — what was decided, why, what was rejected. Uppercase, beside the feature's code | An agent about to undo a design that looks wrong, per `feature-context-reading.md` |
+| One feature's run state | `<feature-root>/LEDGER.md`, its **`## Run state`** half | `orchestrator.md`, at every transition |
+| The in-flight index, both global locks, gate debt belonging to no feature | `<state-root>/project-state.md` | `orchestrator.md`, at every transition |
+| One row per closed feature, measuring this layer's own constants | `<state-root>/calibration.md` | whoever marks a ledger closed |
 
-Lowercase and under `.claude/` is state; uppercase and beside the code is documentation. Reading one for the
-other wastes a dispatch, which is why the distinction is stated in both files.
+**`<state-root>` is `.workflow/` at the project root**, unless that project's own `CLAUDE.md` names a
+different path. Commit it: the in-flight index and the calibration rows are history worth keeping. The two
+locks are its only machine-local rows, and a lock left behind by a run on another machine is exactly what the
+reclaim procedure below exists for.
+
+Templates for all three are in `templates/`. Copy them; never point a live record back into `.claude/`.
+
+## One ledger per feature — and now literally one file
+
+**A feature's ledger is `LEDGER.md` at its own feature root**, the same file
+`.claude/rules/feature-context-reading.md` already sends a reader to. It carries two halves, and they are not
+the same kind of thing:
+
+| Half | Holds | Read when |
+|---|---|---|
+| `## Decisions` | **Decision history** — what was decided, why, what was rejected, what it constrains | A design looks wrong and you are about to undo it |
+| `## Run state` | **Run state** — tier and axes, checkpoint position, strike counts, attempts used, accepted gaps, continuation debt | Every transition, by the orchestrator |
+
+There used to be two files — `LEDGER.md` beside the code and a lowercase `ledger.md` under `.claude/` — and
+the rule separating them was that one was uppercase. That is not a distinction a reader can act on, it cost a
+wasted dispatch every time somebody opened the wrong one, and the lowercase half was state written into the
+framework. One file, two headings, and the confusion has nothing left to attach to.
+
+**A single shared ledger file is still forbidden.** One document holding every concurrent feature put one
+feature's strike count beside an identically-named counter belonging to another.
+
+## Opening one
+
+`feature-intake.md` step 2 opens the ledger, from `templates/feature-ledger.md`, before step 3 dispatches
+anything — the tier, the axes and the round count all have to survive a run, and step 2 is the first moment
+any of them exists.
+
+**The feature root comes from the architect's classification return**, which names the intended root
+alongside the tier. For a change to an existing feature that root already holds code; for a new one, the
+directory is created and `LEDGER.md` is its first file. Check `<state-root>/project-state.md` first: a
+feature already in flight has a ledger, and a second slug splits its counters silently.
+
+**When CP1 moves the root**, the ledger moves with the feature and the move is recorded as a superseded entry
+in its `## Decisions` half. A provisional root is normal at U3; a second ledger is not.
+
+**Work with no feature root has no ledger** — a gated-direct submission, a mode-3 direct dispatch, a
+standalone gate run. Its counters live in `<state-root>/project-state.md` until it escalates, per
+`references/gated-direct-lane.md`.
 
 ## Lifecycle
 
 | When | Do |
 |---|---|
-| `technical-architect` returns a classification | Create `<feature-slug>/ledger.md` from the template below, with the tier and the axes filled in |
+| `technical-architect` returns a classification | Create `<feature-root>/LEDGER.md` from the template, tier and axes filled in, and add its row to `<state-root>/project-state.md` |
 | Any transition — a checkpoint, a dispatch, a verdict, a strike, an attempt | Write it, then dispatch. Never the other way round |
-| CP4 approved, or the GD accepts the work with a gate declined | Move the accepted gaps — **a declined gate is one** — into the feature root's `DEBT.md` first, then mark the ledger `Closed` and leave it in place |
+| CP4 approved, or the GD accepts the work with a gate declined | Move the accepted gaps — **a declined gate is one** — into the feature root's `DEBT.md` first, then mark the run state `Closed` and leave it in place |
 | The GD drops the feature, or it is superseded | Mark it `Abandoned`, record why and the last verified state, and leave it in place. A feature with no terminal state is one a later session cannot tell from one still in flight |
-| A lock is reclaimed from a stale holder | Record who held it, when, and which check answered — per `project-state.md`'s reclaim procedure |
+| A ledger is marked `Closed` or `Abandoned` | Copy its numbers into `<state-root>/calibration.md`, then clear its row from the in-flight index |
+| A lock is reclaimed from a stale holder | Record who held it, when, and which check answered — per the procedure below |
 
-The slug is the feature's name in kebab-case — the same one used for its feature root where one exists.
-Never invent a second slug for a feature that already has a ledger.
+The slug is the feature's name in kebab-case, the same one its feature root uses. Never invent a second slug
+for a feature that already has a ledger.
 
-## Per-feature ledger template
+## Reclaiming a stale lock — invariant I9
 
-Copy this into `<feature-slug>/ledger.md`. Delete no row: a row with nothing in it is a fact, and an absent
-row is a question nobody asked.
+Both global locks live in `<state-root>/project-state.md`: the Editor lock (**I3**) and the device lock
+(**I7**). A run can die holding either — a session ends mid-dispatch, an agent times out, the Editor crashes.
+**An invariant with no recovery path stops being one the first time that happens**, so a held lock is never
+permanent and is never cleared by guessing either.
 
-```markdown
-# Ledger — <feature name>
+`Claim expires` is written at claim time — the dispatch's expected duration, generously rounded. Past it the
+lock is *suspect*, not free. Reclaim in this order, stopping at the first step that answers:
 
-- Slug: <feature-slug>
-- Status: In flight | Closed | Abandoned <if Abandoned: why, and the last verified state>
-- Tier: A<n>, from <the axis that set it> · axes D<n> C<n> U<n> R<n> X<n>
-- Shape: <roles, and whether a Tech Spec is owed — set by D, per task-classification.md Step 4>
-- Track: client | client + multiplayer
-- Checkpoint: none | CP1 | CP2 | CP3 | CP4
-- Verification floor: V<n>
-- Attempt budget: <n>, from D<n>
-- Advisor⇄Critic: round <n> of 3 · ruled out: <the options earlier rounds rejected>
-- Documents owed: <which feature-root documents this tier's floor and triggers have made owed>
-- Baseline: <the performance figure, and how it was taken>
-- Reported: <the last period `producer` covered>
-- Gates: review <offered? run | declined by the GD on <date> | not yet offered> · QA <same>
-- Root-cause resets: 0/1 — shared across every loop that can reach `technical-architect`
-- Rejections: CP2 0/3 · CP3 0/2 · CP4-as-defect 0/2 · sign-off re-dispatch 0/2 · assurance FAIL 0/1
+1. **Is the holder still running?** A dispatch in flight in this session holds its lock whatever the clock
+   says. Never reclaim from a live holder.
+2. **Does the resource itself say?** For the Editor, `unity status` per `unity-tooling-preference.md`; for a
+   device, `adb devices`. A resource that is idle and answering is not being driven by anyone.
+3. **Ask the GD**, naming the holder, the claim time, and what is waiting. A concurrent session on another
+   machine is invisible from here, and only they can see both.
 
-| Submission | Author | Strikes /3 | QA fails /2 | Attempts used | Verdicts landed |
-|---|---|---|---|---|---|
-| | | | | | |
+Then write the reclaim as its own row in the feature's ledger — **who held it, when it was reclaimed, and
+which of the three steps answered**. A lock silently taken back is the same class of failure as a counter
+that lived only in context.
 
-A gated-direct submission caps at **2** strikes rather than 3 and holds no ledger of its own — its counters
-live in `project-state.md` until it escalates. See `references/gated-direct-lane.md`.
-
-## Accepted gaps
-
-Written **before** closure, per invariant I6, and mirrored into the feature root's `DEBT.md` from A3 upward.
-
-| Gap | Accepted by | When | Recorded in |
-|---|---|---|---|
-| _none_ | | | |
-
-## Continuation debt
-
-An agent that exhausted its attempt budget returns a Continuation Debt Record per `execution-loop.md`. It is
-recorded here whole — the known non-solutions and the safe resume point are the two a future session cannot
-reconstruct.
-
-| Objective | Attempts / budget | Known non-solutions | Safe resume point |
-|---|---|---|---|
-| _none_ | | | |
-```
+**Whatever the stale holder produced is unverified.** A dispatch that never returned may have half-applied an
+Editor mutation or left a device mid-case. Inspect the real state before the next claim, per
+`execution-loop.md`'s safe-retry rule: no success response never means no side effect.
 
 ## What each row protects
 
-Moved here from `orchestrator.md` — one fact, one home, beside the template it describes. Every row exists
-because something specific breaks without it.
+Every row of the run state exists because something specific breaks without it.
 
 | State, per feature | Protects against |
 |---|---|
@@ -124,7 +131,7 @@ budget — was **chosen, not measured**. They are E0 on `effort-allocation.md`'s
 the weakest claim that file recognises, and it is the one place this layer does not meet the standard it sets
 for everything else.
 
-`calibration.md` is how that gets paid off without inventing telemetry: when a ledger is marked `Closed` or
-`Abandoned`, copy what the run actually spent into it — one row, from numbers already in the ledger. Nothing
-is estimated and nothing is reconstructed. After enough real features the rows say whether a constant is
-right, and until then they say honestly that nobody knows.
+`<state-root>/calibration.md` is how that gets paid off without inventing telemetry: when a ledger is marked
+`Closed` or `Abandoned`, copy what the run actually spent into it — one row, from numbers already in the
+ledger. Nothing is estimated and nothing is reconstructed. After enough real features the rows say whether a
+constant is right, and until then they say honestly that nobody knows.

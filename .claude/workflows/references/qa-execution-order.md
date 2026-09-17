@@ -19,8 +19,8 @@ because it alone writes `.cs`, so its domain reload lands before anyone enters P
 
 ## The two locks, claimed before dispatch
 
-Both are global, both live in `state/project-state.md`, and both are claimed **before** the dispatch and
-released on the return — never assumed free because no other run is visible from here.
+Both are global, both live in `<state-root>/project-state.md`, and both are claimed **before** the dispatch
+and released on the return — never assumed free because no other run is visible from here.
 
 | Lock | Invariant | Held by |
 |---|---|---|
@@ -28,7 +28,7 @@ released on the return — never assumed free because no other run is visible fr
 | Physical device | **I7** | `performance-qa-engineer` profiling over adb, `build-verification-tester` walking cases over adb |
 
 They are independent: an agent can hold both. A lock whose holder cannot be confirmed running is reclaimed by
-the procedure in `state/project-state.md`, never silently — invariant **I9**.
+the procedure in `state/README.md`, never silently — invariant **I9**.
 
 ## Dispatch only what was named
 

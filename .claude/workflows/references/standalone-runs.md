@@ -34,7 +34,9 @@ still governs; this is only what changes when there is nothing upstream to read 
 
 **Classify the standalone run itself.** It does not inherit a tier from code somebody else wrote, and it does
 not inherit one from a feature it is not part of. Classify per `task-classification.md`, state it at A3 and
-above, and open a ledger only if the run will outlive one dispatch.
+above, and open a ledger only if the run will outlive one dispatch **and** there is a feature root to hold
+one. With no feature root there is nowhere for a ledger to live — its counters go in
+`<state-root>/project-state.md` instead.
 
 ## What comes back
 

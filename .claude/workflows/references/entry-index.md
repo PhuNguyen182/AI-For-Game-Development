@@ -8,7 +8,7 @@
 door into either one is still addressable in mode 2, per `standalone-runs.md`.
 
 Each row's own file names what the entry carries. **Supply it from the feature's ledger**
-(`.claude/workflows/state/<feature-slug>/ledger.md`), never from memory of an earlier run. An entry missing
+(`<feature-root>/LEDGER.md`, its `## Run state` half), never from memory of an earlier run. An entry missing
 its inputs returns `Blocked` — or worse, assumes silently, which is the failure every `If absent` row in
 every agent file exists to make visible.
 

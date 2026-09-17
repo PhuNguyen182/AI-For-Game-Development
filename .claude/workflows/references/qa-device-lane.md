@@ -36,7 +36,7 @@ open. That pipeline keeps a single pointer row to this table.
 
 - **A design flaw never re-enters the engineering loop**, from a device any more than from the Editor. It
   goes to the GD immediately, per invariant **I5**.
-- **The device lock is invariant I7** and is claimed in `state/project-state.md` before dispatch:
+- **The device lock is invariant I7** and is claimed in `<state-root>/project-state.md` before dispatch:
   `build-verification-tester` walking cases over adb and `performance-qa-engineer` profiling a Development
   Build over adb are the same wire, so the two never run at once. It is independent of the Editor lock — an
   agent can hold both.

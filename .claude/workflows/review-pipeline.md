@@ -157,7 +157,7 @@ back to CP2.
 **QA is a separate optional pipeline and a separate ask.** Clearing both gates is not an instruction to start
 testing: put the question to the GD per `references/optional-gates.md`, carrying what was built, the tier, the
 cost of a coverage run and the concrete cost of skipping it. A decline is recorded as QA debt in
-`state/project-state.md`, never treated as coverage.
+`<state-root>/project-state.md`, never treated as coverage.
 
 **On a yes, CP3 gates QA execution, not QA planning.** `qa-lead` in plan mode needs only the Tech Spec, the
 tier and the verification floor, so it runs as soon as the gates clear — nothing it produces is invalidated

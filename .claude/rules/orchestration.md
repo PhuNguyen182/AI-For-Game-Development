@@ -14,10 +14,16 @@ required-input table this project has, and none of it happens on its own. This f
 the work belongs to.** The router picks the input's lane; the ledger carries the state no agent can hold
 across runs. Neither costs an agent call.
 
-Ledgers are **one per feature**, at `.claude/workflows/state/<feature-slug>/ledger.md`; the in-flight index,
-open gate debt and both global locks are in `.claude/workflows/state/project-state.md`. The layout and the
-template are in `state/README.md`. There is no shared ledger file any more — a single document forced every
-concurrent feature's counters into one place, where one feature's strike count sat beside another's.
+Ledgers are **one per feature**, and a feature's ledger is `LEDGER.md` **at its own feature root** — the same
+file `feature-context-reading.md` sends a reader to, carrying its decision history and its run state as two
+halves of one document. The in-flight index, open gate debt and both global locks are in
+`<state-root>/project-state.md`. The layout and the templates are in `workflows/state/README.md`.
+
+**`<state-root>` is `.workflow/` at the project root**, unless this project's own `CLAUDE.md` names another
+path. **Nothing under `.claude/` is ever written at runtime**: this directory is the framework, copied
+unchanged into every project that adopts it, and a counter written into it becomes one project's history
+inside the template every other project starts from. State belongs beside the project's own work — at the
+feature root, or under `<state-root>`, never here.
 
 ## Size the input before choosing a process
 
@@ -39,14 +45,14 @@ them; it states why reading them is not optional:
 | # | Invariant |
 |---|---|
 | **I1** | Required inputs travel with the dispatch. The dangerous omissions are silent: with no track state `technical-architect` assumes client-only, with no tier and verification floor `qa-lead` plans at a depth it chose itself, and neither says so. The four that travel with **every** dispatch — tier and its five axes, attempt budget, verification floor, track — are in `workflows/references/entry-index.md` |
-| **I2** | Gate debt attaches to the artifact, not to the run. Code written outside a pipeline owes **the gate offer** — the gates themselves are the GD's to authorise or decline, per `workflows/references/optional-gates.md`. `state/project-state.md` records the answer either way, **unoffered** or **declined**, and settles in batch. Recording never blocks a dispatch |
+| **I2** | Gate debt attaches to the artifact, not to the run. Code written outside a pipeline owes **the gate offer** — the gates themselves are the GD's to authorise or decline, per `workflows/references/optional-gates.md`. `<state-root>/project-state.md` records the answer either way, **unoffered** or **declined**, and settles in batch. Recording never blocks a dispatch |
 | **I3** | One Unity Editor, project-wide. 10 agents hold `mcp__<server>__*` Editor tools against a single process; never run two at once, whatever mode each was started in |
 | **I4** | Every retry counter is the orchestrator's — three strikes, the two-round QA bound, the 3-round Advisor⇄Critic cap, the one measure-and-confirm cycle. A round nobody counted is a cap that never fires. `execution-loop.md`'s attempt budget is the one counter an agent holds itself, **inside a single dispatch**; the moment it returns, its attempts-used becomes ledger state like everything else |
 | **I5** | A design flaw reaches the GD immediately, in every mode — never folded into a later report, never re-filed as an ordinary bug |
 | **I6** | A gap the GD accepts is written into the feature's known limitations before closure, or "nobody checked" becomes indistinguishable from "QA passed" |
 | **I7** | One physical device, project-wide. `build-verification-tester` walking cases over adb and `performance-qa-engineer` profiling a Development Build over adb are the same wire; never run both at once |
 | **I8** | Every cap composes into a stop, never into another round. A submission gets **one** root-cause reset across every loop it enters; past that the work goes to the GD as a Continuation Debt Record. `workflows/references/loop-termination.md` holds the ladder |
-| **I9** | A lock is released by whoever claimed it. A lock whose holder cannot be confirmed running is **reclaimed by the procedure in `state/project-state.md`, never silently** — an invariant with no recovery path stops being one the first time a run dies holding it |
+| **I9** | A lock is released by whoever claimed it. A lock whose holder cannot be confirmed running is **reclaimed by the procedure in `workflows/state/README.md`, never silently** — an invariant with no recovery path stops being one the first time a run dies holding it |
 | **I10** | Source that reaches no gate is a hole, not debt. Every agent that writes `.cs` has a route to `review-pipeline.md` — including `qa-automation-engineer`, whose tests enter at **E3** after QA closes |
 
 ## Rules
@@ -54,7 +60,8 @@ them; it states why reading them is not optional:
 - Read the router before dispatching, and state the lane you picked.
 - Never enforce by blocking. These are directions the GD overrides at will — state the cost, then do what
   they asked.
-- Never let a counter live only in context. Anything that matters across runs belongs in that feature's ledger.
+- Never let a counter live only in context. Anything that matters across runs belongs in that feature's
+  `LEDGER.md`, or in `<state-root>/project-state.md` when it belongs to no feature — never under `.claude/`.
 - An agent that exhausted its attempt budget returns a Continuation Debt Record, not a silent partial result.
   Record it whole — the known non-solutions and the safe resume point are what the next session cannot
   reconstruct — and treat the return as one strike, never as a free retry.

@@ -8,8 +8,9 @@
 file owns only how the dispatch is placed and who receives it.
 
 `feature-documentation.md` floors the full docset — `README.md` plus whichever of `CONTRACTS.md`,
-`INTEGRATION.md` and `ARCHITECTURE.md` have fired — at **A4**, and `LEDGER.md`/`DEBT.md`/`NOTES.md` at
-**A3**. Both floors key to **A**, not D: a feature is worth documenting because getting it wrong is
+`INTEGRATION.md` and `ARCHITECTURE.md` have fired — at **A4**, and `LEDGER.md`'s `## Decisions` half,
+`DEBT.md` and `NOTES.md` at **A3**. `LEDGER.md` itself is already on disk at any tier, because the
+orchestrator opened this feature's run state in it; the dispatch adds decisions to it, never a new file. Both floors key to **A**, not D: a feature is worth documenting because getting it wrong is
 expensive, which is what C, R and X measure. **A1–A2 owes nothing** and writes nothing.
 
 **Only documents whose trigger has also fired are dispatched.** The floor is necessary, never sufficient, and

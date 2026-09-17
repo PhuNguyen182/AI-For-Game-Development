@@ -56,8 +56,8 @@ answer.
 - **The ask itself.** Skipping a gate silently, or deciding on the GD's behalf that it was not worth offering,
   is the one failure this file exists to prevent.
 - **Recording the decline.** Per invariant **I2**, review debt attaches to the artifact, not to the run. A
-  declined gate writes a row in `state/project-state.md` — path, who wrote it, when, which gate was declined,
-  and that the GD declined it. It blocks nothing and settles in batch whenever they opt in.
+  declined gate writes a row in `<state-root>/project-state.md` — path, who wrote it, when, which gate was
+  declined, and that the GD declined it. It blocks nothing and settles in batch whenever they opt in.
 - **The verification floor.** V1–V4 is the *author's* obligation from `effort-allocation.md`, discharged
   inside the dispatch. A declined gate means nobody independently checked the claim — it never means the
   claim was not owed. `Verification done:` is still written, and still measured against the floor by whoever

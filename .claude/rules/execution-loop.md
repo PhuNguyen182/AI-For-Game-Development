@@ -165,7 +165,7 @@ Where it goes:
   the resume point, never folded into a summary that reads as closure.
 
 **Persisting it across runs is now wired up.** The record goes into that feature's ledger —
-`.claude/workflows/state/<feature-slug>/ledger.md`, under its **Continuation debt** table — written by
+`<feature-root>/LEDGER.md`, under the **Continuation debt** table in its `## Run state` half — written by
 whichever pipeline received the return, at the transition. A session resuming this work reads that table
 before starting a new cycle rather than restarting from zero, and re-running an approach it already lists as
 a known non-solution is the one failure this file calls worse than a novel mistake.

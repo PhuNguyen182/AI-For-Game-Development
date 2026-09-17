@@ -40,15 +40,20 @@ trigger fires, per the authoring rule.
 | `INTEGRATION.md` | How do I talk to it from outside, and what must I not call | Read, unless the task stays entirely inside the root |
 | `CONTRACTS.md` | What must not break | Read before writing anything |
 | `ARCHITECTURE.md` | How does it work inside | Only when changing the inside |
-| `LEDGER.md` | Why is it built this way | Only when a design looks wrong |
+| `LEDGER.md` | Why is it built this way — and, in its other half, where this feature's run stands | Only when a design looks wrong |
 | `DEBT.md` | What is already known to be wrong | Only when the code looks wrong |
 | `NOTES.md` | What is not yet worth a contract | Only when the rest came up short |
 
-`LEDGER.md` at a feature root is that feature's **decision history**. It is not
-`.claude/workflows/state/<feature-slug>/ledger.md`, which is that feature's **run state** — tiers, strike
-counts, checkpoint position. Both are now per-feature, so the filename alone no longer separates them: the
-distinction is **uppercase, beside the code** for documentation versus **lowercase, under `.claude/`** for
-state. Reading one for the other wastes a dispatch.
+**`LEDGER.md` is one file with two halves, and only one of them is yours.** Its `## Decisions` half is the
+feature's **decision history** — what was decided, why, what was rejected — and it is the half this file
+sends you to. Its `## Run state` half is the orchestrator's **cross-run state** — tier and axes, checkpoint
+position, strike counts, attempts used, accepted gaps, continuation debt — written at every transition per
+`.claude/workflows/state/README.md`. Read past the heading that answers your question and you are reading
+somebody else's bookkeeping; edit it in a submission and you have overwritten a counter nothing else holds.
+
+There used to be a second file for the run state, under `.claude/`. There is not any more: nothing under
+`.claude/` is written at runtime, because that directory is the framework every project copies rather than
+any one project's history.
 
 **Absent is not empty.** A file is missing because its trigger never fired, not because the answer is
 "nothing" — fall back to the source for that question rather than concluding the feature has no contract, no
@@ -95,7 +100,8 @@ component, changes data flow, is a refactor, or the ownership of a piece of logi
 
 **`LEDGER.md`** — a design looks wrong or arbitrary, you are about to change or undo an existing decision, or
 you cannot tell why the system works the way it does. Read it *before* changing the thing that looks wrong,
-not after: the whole point is catching a deliberate decision before undoing it.
+not after: the whole point is catching a deliberate decision before undoing it. Read its `## Decisions` half
+and stop there — the `## Run state` half below it answers a question you were not asking.
 
 **`DEBT.md`** — the task touches legacy code, a workaround, or a large TODO; the architecture in that area
 looks unclean; you are considering a refactor; or a defect smells like an already-known limitation. It
@@ -158,8 +164,9 @@ not carry what the agent needed.
 - Never read the whole docset by default, and never read a document that cannot change the work in hand.
 - A missing document means its trigger never fired — fall back to the source, never assume the answer is
   "none".
-- Read `LEDGER.md` before undoing a design that looks wrong, and `DEBT.md` before filing a defect against
-  code that looks wrong.
+- Read `LEDGER.md`'s `## Decisions` half before undoing a design that looks wrong, and `DEBT.md` before
+  filing a defect against code that looks wrong. Its `## Run state` half is the orchestrator's — never read
+  it for design history, and never edit it in a submission.
 - A document that disagrees with the code is a finding to report, not a conflict to resolve silently.
 - When two documents disagree, the order above decides — and the loser is reported as stale.
 - The Tech Spec in hand outranks the docset; the source outranks every claim about what the code does.

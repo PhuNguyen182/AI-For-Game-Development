@@ -123,8 +123,8 @@ natural boundary. **"Re-offered" is not "re-asked".**
 - **A new boundary is a new fact, not a new mood.** The next feature touching that root, a release, a defect
   traced to the ungated code, or the GD asking. Each of those is new information; the passage of time is not.
 - **The recommendation is stated once, in the ask.** Never repeated after they answer, and never restated in
-  the closing report as a complaint. The debt row in `state/project-state.md` is the durable record, and it
-  is neutral by design.
+  the closing report as a complaint. The debt row in `<state-root>/project-state.md` is the durable record,
+  and it is neutral by design.
 
 ## What a terminated loop must never do
 

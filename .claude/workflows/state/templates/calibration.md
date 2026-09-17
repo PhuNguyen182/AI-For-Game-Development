@@ -1,11 +1,9 @@
-# Calibration
+# Template — `<state-root>/calibration.md`
 
-> **What the layer's constants actually cost, measured from closed ledgers.** One row per feature, written
-> when its ledger is marked `Closed` or `Abandoned`, copied from numbers already in that ledger. Nothing here
-> is estimated, reconstructed or projected — `execution-loop.md` forbids invented telemetry, and a calibration
-> table built from guesses would be worse than none.
+> Copy the fenced block below to `<state-root>/calibration.md`. This file is the template; it is never itself
+> the record. When and by whom a row is written is in `../README.md`.
 
-## Why this file exists
+## Why the record exists
 
 Every bound in this layer was chosen by judgement: **3** review strikes, **3** Advisor⇄Critic rounds, the
 **2**-round QA bound, the **2–5** attempt budget, **1** measure-and-confirm cycle, **1** root-cause reset,
@@ -15,21 +13,8 @@ Every bound in this layer was chosen by judgement: **3** review strikes, **3** A
 measurement or tool output — behind any material claim. By that scale the layer's own constants are its
 weakest part, and the honest response is not to defend them but to instrument them.
 
-This file is that instrument. It costs one row per feature and it is the only thing that can ever move a
+The record is that instrument. It costs one row per feature and it is the only thing that can ever move a
 constant from "chosen" to "known".
-
-## The rows
-
-Copy each value from the closed ledger. Leave a cell blank rather than filling it from memory — a blank is a
-fact, an invented number is not.
-
-| Feature | Tier · axes | Attempts used / budget | Max strikes on one submission | QA rounds | Advisor⇄Critic rounds | Root-cause resets | CP4 defect rejections | Gates run | Checkpoints that changed the outcome | Closed |
-|---|---|---|---|---|---|---|---|---|---|---|
-| _none yet_ | | | | | | | | | | |
-
-**"Checkpoints that changed the outcome"** is the one judgement call, and it is the most valuable column: name
-each checkpoint where the GD's answer actually altered what was built. A checkpoint that never changed an
-outcome across many features is overhead `effort-allocation.md`'s artifact budget would delete.
 
 ## Reading the table — not before there is something to read
 
@@ -47,6 +32,27 @@ outcome across many features is overhead `effort-allocation.md`'s artifact budge
 | Gates declined most of the time, and no defect followed | The default recommendation is miscalibrated for this project's work — say so to the GD rather than repeating the same advice |
 | Gates declined, and defects followed | Also worth saying, and worth saying with the rows that show it |
 
-**Changing a constant is a change to the layer, not a tuning knob.** It goes to the GD with the rows behind
-it, and the old value is superseded in `workflow-checklist.md`'s debt register rather than quietly
+**Changing a constant is a change to the framework, not a tuning knob.** It goes to the GD with the rows
+behind it, and the old value is superseded in `workflow-checklist.md`'s debt register rather than quietly
 overwritten — the same discipline `feature-documentation.md` sets for a feature's own `LEDGER.md`.
+
+## The block to copy
+
+```markdown
+# Calibration
+
+> **What the layer's constants actually cost, measured from closed ledgers.** One row per feature, written
+> when its ledger is marked `Closed` or `Abandoned`, copied from numbers already in that ledger. Nothing here
+> is estimated, reconstructed or projected — `execution-loop.md` forbids invented telemetry, and a
+> calibration table built from guesses would be worse than none.
+
+Copy each value from the closed ledger. Leave a cell blank rather than filling it from memory — a blank is a
+fact, an invented number is not. **"Checkpoints that changed the outcome"** is the one judgement call, and it
+is the most valuable column: name each checkpoint where the GD's answer actually altered what was built. A
+checkpoint that never changed an outcome across many features is overhead `effort-allocation.md`'s artifact
+budget would delete.
+
+| Feature | Tier · axes | Attempts used / budget | Max strikes on one submission | QA rounds | Advisor⇄Critic rounds | Root-cause resets | CP4 defect rejections | Gates run | Checkpoints that changed the outcome | Closed |
+|---|---|---|---|---|---|---|---|---|---|---|
+| _none yet_ | | | | | | | | | | |
+```

@@ -19,6 +19,7 @@ The **GD** column is a separate axis: a part can be written but not yet approved
 | 5. QA | `qa-pipeline.md` | ✅ Written · GD approved |
 | — Change request | `change-request.md` | ✅ Written · GD approved |
 | 7. Orchestrator | `orchestrator.md` + `references/` + `orchestration.md` + `state/` | ✅ Written · GD approved |
+| 12. State out of the framework | per-feature `LEDGER.md`, `<state-root>/`, `state/templates/` | ✅ Written · ⬜ GD review |
 | 8. Classification migration | every file above, retiring Simple/Medium/Complex | ✅ Written · ⬜ GD review |
 
 ## 1. Feature intake — `feature-intake.md`
@@ -362,6 +363,34 @@ four files, each read only in a situation its source names. Every workflow file 
 machine-checkable. It did not, and cannot, make a single constant measured. `state/calibration.md` remains
 the instrument and real features remain the only thing that fills it.
 
+## 12. State moves out of the framework
+
+The GD's direction: **a real run must never create or write a file under `.claude/`**, because this repository
+is a template applied to every project — and each feature's ledger belongs at that feature's own root, as
+`feature-context-reading.md` already had it. §7 had put per-feature run state at
+`.claude/workflows/state/<feature-slug>/ledger.md`, which made the framework the place one project's strike
+counts accumulated. Nothing here is GD-reviewed yet.
+
+| # | Part | Where it landed | GD |
+|---|---|---|---|
+| 12.1 | **Per-feature run state moved to the feature root**, merged into `LEDGER.md` as a `## Run state` half beside its `## Decisions` half. One ledger per feature, and now literally one file | `state/README.md`, `state/templates/feature-ledger.md`, `feature-context-reading.md`, `feature-documentation.md` | ⬜ |
+| 12.2 | **The two-files-named-ledger distinction is deleted, not restated.** §8 row 8.16 had separated them by letter case — uppercase beside the code, lowercase under `.claude/` — which is not a distinction a reader can act on, and which Windows would not even let sit in one directory. **This supersedes 8.16** | `state/README.md`, `orchestrator.md`, `feature-context-reading.md` | ⬜ |
+| 12.3 | **Everything that cannot be per-feature moved to `<state-root>`** — `.workflow/` at the project root unless a project's `CLAUDE.md` says otherwise. The in-flight index, open gate debt, the gated-direct counters and both global locks | `<state-root>/project-state.md`, from `state/templates/project-state.md` | ⬜ |
+| 12.4 | **`workflows/state/` now holds rules and templates only.** `project-state.md` and `calibration.md` became templates under `state/templates/`; the lock-reclaim procedure and the what-each-row-protects table stayed in `state/README.md`, which is framework rule rather than project record | `state/README.md`, `state/templates/` | ⬜ |
+| 12.5 | **The architect's return now names the feature root**, because the ledger has nowhere to live until somebody states it. At **U3** the root is provisional and the ledger moves with the feature rather than a second one being opened | `technical-architect.md` output envelope, `feature-intake.md` step 2 | ⬜ |
+| 12.6 | **The rule is machine-checked, not just written.** Two new claims: nothing but `README.md` and `templates/` under `workflows/state/`, and no file under `.claude/` still pointing at a retired state path. Both were negative-tested — a planted `state/my-feature/ledger.md` and a planted pointer each fail the run. 75 claims, all passing | `tools/verify-workflow-layer.ps1` | ⬜ |
+
+### What this round deliberately did not do
+
+**Work with no feature root still has no ledger**, and that is unchanged rather than overlooked: a
+gated-direct submission, a mode-3 dispatch and a standalone gate run have nowhere to put one, so their
+counters stay in `<state-root>/project-state.md`. Opening a ledger for them would be the paperwork
+`effort-allocation.md`'s artifact budget forbids.
+
+**No existing ledger was migrated**, because none exists — the layer has still never run. The first real
+feature writes the first `LEDGER.md` under the new shape, and that is also the first evidence any of it
+works.
+
 ## Open decisions the GD owes
 
 **None.** All seven are settled, and each one's full reasoning now lives in the pipeline file named below —
@@ -386,7 +415,7 @@ that file is the durable record, not this row.
 | **Test code meets no review gate** | Settled | Closed in §10 by `review-pipeline.md` **E3** and `qa-pipeline.md` step 3b, plus invariant **I10**. **This reverses a debt the GD had previously read and chosen to leave open** — called out rather than slipped in, and revertible by deleting those three additions |
 | **Re-entry targets are unaddressable** | Settled | Closed by rows 7.17–7.21. Turned out to be **four** doors, not three: the research hand-back is two addresses, not one, because **E3** and **E4** leave mid-loop on Complex and returning them at step 6 would skip the Advisor⇄Critic loop the tier exists for. That was a live defect in an approved diagram, not just a missing label |
 | **`orchestrator.md` is at the 200-line cap** | Settled | Closed in §9 — the entry index moved out exactly as this row planned, and direct dispatch followed it. `orchestrator.md` is 182 lines |
-| **The ledger has never been exercised** | Recorded | No feature has run through a `state/<slug>/ledger.md`, so its column contract is designed rather than proven. Expect the first real run to reshape it; that is normal, not a defect |
+| **The ledger has never been exercised** | Recorded | No feature has run through a feature-root `LEDGER.md` (a `state/<slug>/ledger.md` before §12 moved it), so its column contract is designed rather than proven. Expect the first real run to reshape it; that is normal, not a defect |
 | **Every constant in the layer is E0** | Recorded, now instrumented | 3 strikes, 3 rounds, the 2-round QA bound, budgets 2–5, 1 reset, 2 gated-direct strikes — all **chosen, none measured**, which is the weakest grade `effort-allocation.md` recognises. `state/calibration.md` harvests one row per closed ledger from numbers already recorded, so the constants become knowable without inventing telemetry. **Nothing can close this but real runs** |
 | **`.claude/rules/` carries ~24k words, auto-loaded unconditionally** | Recorded | Measured, not estimated: 2,071 lines across 18 files enter every session before the GD types. ~650 of them are C# client style rules a router, `qa-lead` or `producer` never needs — the `Applies to:` headers are documentation, not a loading mechanism. §10 cut the `orchestration.md`/`orchestrator.md` duplication; the rest needs a scoping decision that is the GD's, not a silent restructure |
 | **Five files exceeded the 200-line cap** | Settled | Closed in §9 by promotion into `workflows/references/`, not by compressing prose. `.claude/rules/` still exceeds it (`execution-loop.md` 279, `task-classification.md` 214 as committed) — out of scope for this round, and recorded here rather than silently fixed |

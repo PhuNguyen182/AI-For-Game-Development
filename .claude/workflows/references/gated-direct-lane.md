@@ -61,9 +61,10 @@ The escalation carries both rejection sets and the code, so classification start
 rather than from the original request. It is the same escape the router already owes on any other criterion
 turning out to apply — little was built, so little is lost.
 
-**Counters live in `state/project-state.md`, not in a feature ledger.** A lane that caps at two strikes and
-holds no checkpoint position has nothing worth a ledger of its own; opening one would be the paperwork this
-lane exists to avoid. If the work escalates to **E1**, `feature-intake.md` step 2 opens the ledger then, and
+**Counters live in `<state-root>/project-state.md`, not in a feature ledger.** This lane has no feature
+root,
+so it has nowhere to put one; and a lane that caps at two strikes and holds no checkpoint position has
+nothing worth a ledger anyway. If the work escalates to **E1**, `feature-intake.md` step 2 opens the ledger then, and
 the two strikes travel into it.
 
 ## Escape upward, at any point

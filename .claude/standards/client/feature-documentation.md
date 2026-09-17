@@ -18,7 +18,7 @@ A feature root can carry up to seven documents. They are **not** a checklist to 
 | `CONTRACTS.md` | The external contract: public API, interfaces, events, data schemas, invariants, and the behavior callers are entitled to rely on | Anything internal — that is what makes it a contract |
 | `INTEGRATION.md` | How another feature talks to this one: integration points, extension points, which API/event to use, where logic may be added, and which classes must not be called directly | A restatement of the public API — `CONTRACTS.md` owns the signatures, this owns the usage |
 | `ARCHITECTURE.md` | The inside: components, data flow, dependency direction, which part owns which logic, and the main processing path | Anything a caller outside the root needs |
-| `LEDGER.md` | Decisions that would otherwise be silently undone: what was decided, why, what was rejected, and what it constrains going forward | A changelog — git already has one |
+| `LEDGER.md` | Two halves of one file. `## Decisions` — decisions that would otherwise be silently undone: what was decided, why, what was rejected, and what it constrains going forward. `## Run state` — the orchestrator's cross-run counters for this feature, per `.claude/workflows/state/README.md` | A changelog — git already has one. And in `## Decisions`, anything the run state owns |
 | `DEBT.md` | Known technical debt: current workarounds, limitations, code needing refactor, risky areas, and the intended fix | An open defect — that is `defect-reporting.md`'s job |
 | `NOTES.md` | Observations, edge cases, discoveries, and undecided ideas that are not yet a contract and not yet debt | Anything another document already owns |
 
@@ -38,11 +38,17 @@ The floor is the **assurance tier** from `.claude/rules/task-classification.md`,
 | `CONTRACTS.md` | **A4** | Code outside the feature root calls into it, the Tech Spec names a cross-layer or client-server contract, or the feature is multiplayer-relevant — anywhere client and server must agree on the same rule |
 | `INTEGRATION.md` | **A4** | A second feature actually integrates with this one, or the feature ships a deliberate extension point somebody else is expected to use |
 | `ARCHITECTURE.md` | **A4** | The feature spans more than one physical root or layer (`Game.Core.*` plus `Game.Client.*`), or its internal data flow cannot be stated in a paragraph inside `README.md` |
-| `LEDGER.md` | **A3** | A decision was made that a future reader would otherwise undo — a rejected alternative, a non-obvious constraint, the outcome of an Advisor⇄Critic round, or a tech-lead escalation resolved |
+| `LEDGER.md` | **A3** for `## Decisions`; **none** for `## Run state` | `## Decisions`: a decision was made that a future reader would otherwise undo — a rejected alternative, a non-obvious constraint, the outcome of an Advisor⇄Critic round, or a tech-lead escalation resolved. `## Run state`: the feature entered `feature-intake.md`, at any tier — the orchestrator opens it at step 2 and this rule's tier floors do not gate it |
 | `DEBT.md` | **A3** | A limitation or workaround is carried past review — including a gap the GD accepted at CP4, per invariant I6 in `orchestration.md` — or an obsolete-API call site was flagged and left in place per `coding-principles.md` |
 | `NOTES.md` | **A3** | Optional, always. Written when an observation would otherwise be lost, never because the docset "should" have one |
 
 **A1 and A2 owe nothing new.** A change at that tier writes no document under this rule. It still updates any existing document its change makes stale — that is maintenance, not creation.
+
+**The run state is not yours.** `## Run state` is opened and written by the orchestrator, at every
+transition, for any feature that went through intake — including one whose tier owes no documentation at
+all. Never edit it in a code submission, and never treat a `LEDGER.md` that carries only run state as a
+placeholder file: it holds real state, and its empty `## Decisions` half means what an absent document means
+everywhere else — the trigger has not fired.
 
 **`LEDGER.md` and `DEBT.md` drop to the A3 floor on purpose.** They are append-only and cost a few lines, while their absence causes exactly the two failures the reading flow exists to prevent: a deliberate decision undone by the next session, and known debt re-reported as a fresh defect. Every other document stays A4-and-above — writing one for an A3 change is the bureaucratic overhead KISS and YAGNI in `coding-principles.md` warn against, and the artifact budget in `effort-allocation.md` forbids outright.
 
@@ -99,7 +105,7 @@ What it does **not** do: request a document whose trigger has not fired. "The do
 - `README.md` is the anchor — no other document in the set exists without it, and an A4-or-above feature is not complete without it at each feature root.
 - Content starts inline in `README.md` and is promoted into its own file when it outgrows it; promotion moves the content and leaves a pointer, never a copy.
 - One fact, one home — cross-link between documents instead of duplicating, and never duplicate the Tech Spec's requirements text into any of them.
-- `LEDGER.md` and `DEBT.md` are appended in the submission that produced the decision or the limitation, not reconstructed at the end.
+- `LEDGER.md`'s `## Decisions` half and `DEBT.md` are appended in the submission that produced the decision or the limitation, not reconstructed at the end. `## Run state` belongs to the orchestrator; a submission never touches it.
 - A Tech Spec change that touches a documented feature updates that feature's affected documents in the same submission.
 - Keep each document scoped to its own feature root — never document an unrelated system inside it.
 - A reviewer checks the documents that were earned; it never demands one whose trigger has not fired.

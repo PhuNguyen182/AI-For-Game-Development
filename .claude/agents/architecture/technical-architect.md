@@ -59,6 +59,7 @@ Your reply is a return value handed to the caller, not a message to a person. Re
 - Attempt budget: <n> — per execution-loop.md, from D
 - Acceptance criteria: <what "done" means, testable, one per H/M requirement>
 - Open design question: <what is still unsettled — a design question, or a technology the project lacks | none>
+- Feature root: <the directory that holds this feature's code and its LEDGER.md — the caller opens the ledger there; provisional at U3>
 - Module boundaries: <what lives in Game.Core.*, Game.Client.*, Game.Server.*>
 - Client-server contract: <interfaces and their direction>
 - Architecture diagram: <mermaid>
@@ -79,7 +80,7 @@ Read these before acting:
 | `.claude/rules/language-and-comments.md` | Always — it governs every agent. |
 | `.claude/rules/task-classification.md` | Always — it is the classification you assign, and the only one this project has. |
 | `.claude/rules/effort-allocation.md`, `execution-loop.md` | Always — they turn your tier into the verification floor and the attempt budget the spec must state. |
-| `.claude/standards/client/feature-documentation.md` | When classifying a feature — **A4** floors the full docset, **A3** floors `LEDGER.md`/`DEBT.md`/`NOTES.md`, A1/A2 owes none. Each is still gated on its own trigger; never name one whose trigger has not fired. |
+| `.claude/standards/client/feature-documentation.md` | When classifying a feature — **A4** floors the full docset, **A3** floors `LEDGER.md`'s `## Decisions` half plus `DEBT.md` and `NOTES.md`, A1/A2 owes none. Each is still gated on its own trigger; never name one whose trigger has not fired. `LEDGER.md` itself exists at every tier, because the caller opens this feature's run state in it. |
 
 - Never skip the classification, even on a request that looks trivial, and never ask the GD to confirm it first.
 - Never collapse the tier into one number in what you return. Downstream pipelines read different axes, and a caller handed only `A4` cannot tell whether it owes a design loop or only harder verification.

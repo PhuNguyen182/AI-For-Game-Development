@@ -301,6 +301,81 @@ if (Test-Path $standardsDir)
         ("still points at the pre-move location: $(($stale | Sort-Object -Unique) -join ', ')")
 }
 
+# ------------------------------------ no runtime state written under .claude/
+
+# .claude/ is the framework, copied unchanged into every project that adopts it.
+# A ledger, a lock or a calibration row written into it is one project's history
+# sitting in the template the next project starts from. workflows/state/ holds
+# the state layer's rules and its templates, and nothing else.
+
+Write-Host ''
+Write-Host 'Runtime state -- .claude/ is the framework, so no run writes state into it'
+
+$stateDir     = Join-Path $workflows 'state'
+$templatesDir = Join-Path $stateDir 'templates'
+$stray        = [System.Collections.Generic.List[string]]::new()
+
+foreach ($item in (Get-ChildItem -Path $stateDir -Force))
+{
+    if ($item.PSIsContainer)
+    {
+        if ($item.Name -ne 'templates')
+        {
+            $stray.Add(('{0}/' -f $item.Name))
+        }
+
+        continue
+    }
+
+    if ($item.Name -ne 'README.md')
+    {
+        $stray.Add($item.Name)
+    }
+}
+
+Assert-Claim 'no state under workflows/state' ($stray.Count -eq 0) `
+    ("only README.md and templates/ belong here; found: $($stray -join ', ')")
+
+# A template that pipelines cite by name and nobody kept is a dangling copy-from.
+foreach ($name in @('feature-ledger.md', 'project-state.md', 'calibration.md'))
+{
+    Assert-Claim ("template present: {0}" -f $name) (Test-Path (Join-Path $templatesDir $name)) `
+        'a pipeline tells the orchestrator to copy this, and it is not there'
+}
+
+# Nothing may still route state back into the framework.
+$retired = @(
+    'workflows/state/<feature-slug>',
+    'state/<feature-slug>/ledger.md',
+    '`state/project-state.md`',
+    '`state/calibration.md`'
+)
+
+$pointsBack = [System.Collections.Generic.List[string]]::new()
+
+foreach ($file in (Get-ChildItem -Path $claude -Recurse -Filter '*.md' -File))
+{
+    # workflow-checklist.md is an append-only record: it states where state used
+    # to live, which is history rather than an instruction to write there.
+    if ($file.Name -eq 'workflow-checklist.md')
+    {
+        continue
+    }
+
+    $text = Get-Content -Path $file.FullName -Raw
+
+    foreach ($path in $retired)
+    {
+        if ($text -match [regex]::Escape($path))
+        {
+            $pointsBack.Add(('{0} -> {1}' -f $file.Name, $path))
+        }
+    }
+}
+
+Assert-Claim 'no pointer at the retired state paths' ($pointsBack.Count -eq 0) `
+    ("would send a run to write under .claude/: $(($pointsBack | Sort-Object -Unique) -join '; ')")
+
 # --------------------------------------------------------------- the result
 
 Write-Host ''

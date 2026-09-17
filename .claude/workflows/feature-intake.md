@@ -85,7 +85,7 @@ survive it are in `references/entry-index.md` — on an ordinary re-entry only *
 | # | Step | Runs for | Produces |
 |---|---|---|---|
 | 1 | Forward the request **verbatim**, with track state attached | every request | — |
-| 2 | `technical-architect` — classify + the open design question; open the feature's ledger | every request | **tier + axes** |
+| 2 | `technical-architect` — classify + the open design question; open the feature's ledger | every request | **tier + axes + feature root** |
 | 3 | `advisor` — widen the options | D4–D5, or U3 at any D | **Options** |
 | 4 | `critic` — attack the leaning direction | same as step 3 | **Risk Findings** → **CP1** |
 | 5 | Branch to `research-decision.md` | any tier, on demand | Research Report |
@@ -115,10 +115,11 @@ decides how many checkpoints apply, so it cannot itself sit behind one. The arch
 floor, and the two gate pipelines plus `feature-documentation.md` read **A**. Collapsing them into one number
 here is what forces every downstream file to guess which half it was handed.
 
-**Open the feature's ledger here** — `.claude/workflows/state/<feature-slug>/ledger.md`, from the template in
-`state/README.md`, before step 3 dispatches anything. The tier, the axes and the round count all have to
-survive a run and step 2 is the first moment any exists. Check `state/project-state.md` first: a feature
-already in flight has a ledger, and a second one under a different slug splits its counters.
+**Open the feature's ledger here** — `<feature-root>/LEDGER.md`, from `state/templates/feature-ledger.md`,
+before step 3 dispatches anything: the tier, the axes and the round count must survive a run, and step 2 is
+the first moment any exists. Check `<state-root>/project-state.md` first — a feature already in flight has a
+ledger, and a second slug splits its counters. **The architect's return names the feature root**, since the
+ledger has nowhere to live until it does; at **U3** it is provisional, and CP1 moving it moves the ledger.
 
 ### Steps 3–4 — the Advisor⇄Critic loop
 

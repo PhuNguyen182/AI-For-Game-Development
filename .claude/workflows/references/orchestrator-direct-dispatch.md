@@ -16,7 +16,8 @@ step 2 and `qa-pipeline.md` step 2 already use for their serialisation rules.
 
 **A mode-3 dispatch that writes source owes the gate offer, not the gate.** Review and QA are optional, per
 `optional-gates.md` — what is owed is the *ask*, with the cost of skipping stated. The GD's answer lands in
-`state/project-state.md` either way: **unoffered** while the ask is still owed, **declined** once they said no.
+`<state-root>/project-state.md` either way: **unoffered** while the ask is still owed, **declined** once
+they said no.
 
 **Gate debt is recorded, never enforced.** It blocks no dispatch and settles in batch whenever the GD opts
 in. Recording costs nothing — it is the difference between knowing what no gate has seen and not knowing.

@@ -820,19 +820,32 @@ for copy-paste.
 
 ## State: the ledger and the two locks
 
-`.claude/workflows/state/ledger.md` holds the cross-run state **no agent can hold.** It is written **at each
-transition**, not at the end of a run — a counter that survives only in conversation context is not a safety
-mechanism.
+Cross-run state is the state **no agent can hold.** It is written **at each transition**, not at the end of a
+run — a counter that survives only in conversation context is not a safety mechanism.
 
-| State | Protects against |
+**None of it is written under `.claude/`.** That directory is the framework, copied unchanged into every
+project that adopts it; state written into it would be one project's history sitting in the next project's
+template. It lives in two places instead, and `.claude/workflows/state/README.md` holds the rules and the
+templates for both:
+
+| State | Where it lives |
 |---|---|
-| Feature · tier · track | `technical-architect` silently assuming client-only; `qa-lead` silently assuming Medium |
+| One feature's run state | `<feature-root>/LEDGER.md`, its `## Run state` half — one ledger per feature, beside that feature's own code |
+| The in-flight index, both global locks, gate debt belonging to no feature | `<state-root>/project-state.md` — `.workflow/` at the project root unless your `CLAUDE.md` names another path |
+
+A feature's `LEDGER.md` carries two halves: `## Decisions` is its decision history, read before undoing a
+design that looks wrong, and `## Run state` is the orchestrator's bookkeeping. One file, two owners — a
+submission never edits the second.
+
+| Run state | Protects against |
+|---|---|
+| Feature · tier · axes · track | `technical-architect` silently assuming client-only; `qa-lead` planning at a depth nobody set |
 | Checkpoint position | Not knowing which CP a change request reopens |
 | Submission id · strikes · QA-fails | The three-strikes rule and the two-round passes-review/fails-QA bound never firing |
 | Advisor⇄Critic round · options ruled out | Blowing the 3-round cap; `advisor` re-proposing an option already rejected |
 | Verdicts landed | Acting on one verdict and paying two round trips for one submission |
 | Performance baseline | A run silently *becoming* the baseline |
-| **Open review debt** | Unreviewed source shipping, indistinguishable from reviewed source |
+| **Open gate debt** | Unreviewed source shipping, indistinguishable from reviewed source |
 | Reporting period | `producer` duplicating or missing status |
 
 ### Review debt
@@ -844,8 +857,9 @@ costs nothing; it is simply the difference between knowing what is unreviewed an
 ### The Editor lock
 
 One Unity Editor process, project-wide. Ten agents hold Editor tools against it. **Two holders never run at
-once**, whatever mode started each — a case no single pipeline can see, which is why the lock lives in the
-ledger rather than in a workflow.
+once**, whatever mode started each — a case no single pipeline can see, which is why the lock lives in
+`<state-root>/project-state.md` rather than in a workflow. A per-feature copy of a global lock is not a lock.
+A holder that dies leaves the lock *suspect*, not free: `state/README.md` carries the three-step reclaim.
 
 ### The device lock
 
@@ -902,7 +916,7 @@ lock — one agent can hold both.
 │   │   ├── review-pipeline.md      # one submission → both gates → CP3
 │   │   ├── qa-pipeline.md          # cleared review → QA → CP4
 │   │   ├── change-request.md       # a spec change → its blast radius
-│   │   ├── state/ledger.md         # cross-run state, the two locks, review debt
+│   │   ├── state/                   # the state layer's rules + templates — never state itself
 │   │   └── workflow-checklist.md   # authoring progress (exempt from the 200-line cap)
 │   │
 │   └── settings.json               # 35 pre-approved read-only git commands
@@ -1004,7 +1018,7 @@ file.** When you add a step:
 | Concern | Home |
 |---|---|
 | Sequence, parallelism, retry loops, checkpoints | `.claude/workflows/*` |
-| Cross-run state; choosing who runs next from a `Routed to:` value | `orchestrator.md` + `state/ledger.md` |
+| Cross-run state; choosing who runs next from a `Routed to:` value | `orchestrator.md` + `<feature-root>/LEDGER.md` + `<state-root>/project-state.md` |
 | How a technique works | the skill |
 | Coding standards, naming, working language | `.claude/rules/*` |
 | Who owns a decision, and what they refuse | the agent file |

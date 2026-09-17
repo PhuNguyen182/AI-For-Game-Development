@@ -22,7 +22,7 @@ debt with no route to settle it is not debt, it is a hole. Before **E3** existed
 
 The gate is still **offered, not imposed** — review is optional here exactly as everywhere else, per
 `optional-gates.md`. What changed is that declining it is now a decision the GD made, recorded in
-`state/project-state.md`, rather than a door that was never built.
+`<state-root>/project-state.md`, rather than a door that was never built.
 
 ## What the ask should say
 

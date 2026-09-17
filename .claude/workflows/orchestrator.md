@@ -158,32 +158,32 @@ pipeline is running. Read it before any mode-2 or mode-3 dispatch, and when one 
 
 ## The ledgers — one per feature
 
-**Each feature owns its own ledger** at `.claude/workflows/state/<feature-slug>/ledger.md`, opened at
-`feature-intake.md` step 2 and written **at each transition** rather than at the end of a run — a counter that
-survives only in context is not a safety mechanism. `state/README.md` holds the layout and the template.
+**Each feature owns its own ledger** — `LEDGER.md` **at its own feature root**, opened at `feature-intake.md`
+step 2 and written **at each transition** rather than at the end of a run, because a counter that survives
+only in context is not a safety mechanism. `state/README.md` holds the layout, what each row protects, and
+the templates to copy from. A single shared file put one feature's strike count beside an identically-named
+counter belonging to another; check `<state-root>/project-state.md` before opening one, because a feature
+already in flight has a ledger and a second slug splits its counters silently.
 
-A single shared file forced every concurrent feature through one document, so one feature's strike count sat
-beside an identically-named counter belonging to another. Check `state/project-state.md` before opening one:
-a feature already in flight has a ledger, and a second slug splits its counters silently.
+**`<state-root>/project-state.md` holds only what cannot be per-feature**: the in-flight index, **open gate
+debt** (a mode-3 dispatch may have no feature at all), the gated-direct counters, and both global locks. A
+per-feature copy of a global lock is not a lock. `<state-root>` is `.workflow/` at the project root unless
+this project's `CLAUDE.md` says otherwise.
 
-**What each row of the ledger protects is in `state/README.md`**, beside the template it belongs to — one
-fact, one home. Read it when opening or writing one.
-
-**`state/project-state.md` holds only what cannot be per-feature**: the in-flight index, **open gate debt**
-(a mode-3 dispatch may have no feature at all), and both global locks. A per-feature copy of a global lock is
-not a lock.
+**Never write state under `.claude/`.** That directory is the framework every project copies; state written
+into it becomes one project's history in the next project's template, and `tools/verify-workflow-layer.ps1`
+fails when it finds any.
 
 ## The two optional gates
 
 **`review-pipeline.md` and `qa-pipeline.md` are separate, optional processes, and neither runs unasked.** Ask
 about each separately when implementation returns. **`references/optional-gates.md`** owns the shape of the
 ask, what a decline costs, and the two things that are never optional: **the ask itself**, and **recording
-the answer** in `state/project-state.md`. **CP4 still fires either way** — closing a feature is the GD's
+the answer** in `<state-root>/project-state.md`. **CP4 still fires either way** — closing a feature is the GD's
 decision, not QA's verdict.
 
-**Two files are named for a ledger and they are unrelated.** Lowercase under `.claude/workflows/state/` is
-run state; uppercase `LEDGER.md` beside a feature's code is its decision history, read per
-`feature-context-reading.md`. Reading one for the other wastes a dispatch.
+**One `LEDGER.md`, two halves, two owners.** `## Run state` is yours, written at every transition;
+`## Decisions` is the feature's decision history, read per `feature-context-reading.md`.
 
 ## Rules
 
