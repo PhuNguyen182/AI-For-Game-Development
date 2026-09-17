@@ -146,10 +146,17 @@ gate, no extra wait. **Which entry it hands back to is set by the entry it left 
 | Left from | Hands back at | Reaches |
 |---|---|---|
 | **E3**, **E4** — mid-loop, or a technology unknown at U2/U3 | `feature-intake.md` **E2** — step 3 | CP1 |
-| **E1**, **E2** — step 5, or the architect mid-spec | `feature-intake.md` **E3** — step 6 | CP2 |
+| **E1**, **E2** — step 5, or the architect mid-spec | `feature-intake.md` **E3** — step 6 at **D3–D5**, the direct-notes hand-off at **D1–D2** | CP2 at D3–D5; nothing at D1–D2 |
 
 Handing **E3** or **E4** back at step 6 would skip the Advisor⇄Critic loop the feature reached CP1 *because*
 it needs — the research settled a technology question, never the direction.
+
+**The second row branches on shape, and one direction of getting it wrong is expensive.** `feature-intake.md`
+lets **D1–D2** take its step 5 as well — a one-role change can still need a package the project does not
+have — and that feature has no step 6 to return to and no CP2 to reach. Its return is the direct notes,
+exactly as if this pipeline had never run. Handing it back at step 6 instead produces a Tech Spec for a
+D1–D2 change, which is `effort-allocation.md`'s own named example of what the artifact budget forbids. That
+pipeline's diagram already branches here, at its `Resume` node; its entry table is what did not.
 
 On a standalone path (**E5**, **E6**) there is no such checkpoint, and a hard-to-reverse bet would otherwise
 pass unseen. So it ends at its own GD gate: the GD accepts the result and any standard it set, and the run

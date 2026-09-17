@@ -9,9 +9,9 @@ diagram, the patterns chosen, a per-`agent-id` task breakdown, and **which featu
 `feature-documentation.md` floors the full docset at **A4** and `LEDGER.md`/`DEBT.md`/`NOTES.md` at **A3**,
 each still gated on its own trigger. One whose trigger has not fired is never requested.
 
-**The spec also states the acceptance criteria and the verification floor** — V2/V3/V4 at A3/A4/A5, per
-`effort-allocation.md`. Without it QA has a coverage plan and no standard of evidence to plan against, and
-every downstream claim of "verified" means whatever its author took it to mean.
+**The spec also states the acceptance criteria, the verification floor and its assumptions** — the floor is
+V2/V3/V4 at A3/A4/A5, per `effort-allocation.md`. Without it QA has a coverage plan and no standard of
+evidence to plan against, and every downstream claim of "verified" means whatever its author took it to mean.
 
 ## What a spec that skips these costs
 
@@ -22,8 +22,22 @@ Each omission has a named downstream failure, which is why they are listed rathe
 | **Module boundaries** and the **client-server contract** | `unity-engineer` and `ui-ux-programmer` are each forbidden to implement a game rule, and neither can respect a boundary it was never shown |
 | The **per-`agent-id` task breakdown** | Four implementing agents return `Blocked` — a spec is not a brief, and the pipeline cannot split one it was not given |
 | The **acceptance criteria** | `assurance-evaluator` returns `Blocked`: completion scored against a requirement list assembled after the fact is hindsight, not measurement |
+| The **assumptions** | The GD approves at CP2 a spec whose silences were filled where they cannot see them. `implementation-note.md` calls an unstated assumption indistinguishable from a bug at review time — and a spec's assumption is inherited by the whole fan-out before any review exists to catch it, surfacing at CP3 as drift by four agents rather than as one line somebody could have corrected |
 | The **verification floor** | `qa-lead` plans at a depth it chose itself and reports it as the depth that was owed |
 | **Which feature-root documents are owed** | They are reconstructed at the end, which `feature-documentation.md` says is exactly what `LEDGER.md` and `DEBT.md` must never be |
+
+## A CP2 rejection is one of two things — ask on the first one
+
+CP3 and CP4 both split their rejections before acting: drift versus a change request, a defect versus a
+change request. **CP2 had no such split**, and its two kinds route to opposite places:
+
+| The GD's objection | It is | Route |
+|---|---|---|
+| "This is not what I asked for" | The **spec** misread the request | Back to `technical-architect` at step 6. The direction still stands |
+| "Reading this, I want something different" | The **direction** is wrong | **CP1**, re-entered at **E5** with the options already ruled out. A redraft cannot reach it |
+
+One question at the first rejection separates them. Without it the pipeline discovers the second kind only at
+the bound below — three `technical-architect` dispatches to learn what one question answers.
 
 ## CP2 rejections are bounded at three
 

@@ -3,7 +3,7 @@
 > **Scope: a feature request arriving from the GD, up to an approved Tech Spec.** Everything after that
 > belongs to `feature-development.md`. Technology questions branch out to `research-decision.md` and come
 > back at **E2** or **E3**, `feature-development.md` returns a spec gap at **E3**, and a change after CP2
-> comes back from `change-request.md` at **E4** or **E5**.
+> re-enters *here* at **E4** or **E5**, sent by `change-request.md` — which declares no such doors itself.
 
 Per `.claude/docs/agent-template.md`, sequence, parallelism, retry loops and checkpoints live here and
 **never inside an agent file**. Agents are isolated, stateless and cannot dispatch each other — every
@@ -69,8 +69,8 @@ the same: ask the GD for exactly the input named, then resume from that step.
 | Entry | Enters when | Resumes at | Carried in |
 |---|---|---|---|
 | **E1** | `orchestrator.md` step 0 sized a GD request into this pipeline | step 1 | The GD's own words unedited, and which tracks are active |
-| **E2** | `research-decision.md` settled what the Advisor loop was waiting on | step 3 | The Research Report, the options already ruled out, and the round already spent |
-| **E3** | The Tech Spec must be written or revised — `research-decision.md` settled a capability, or `feature-development.md` found the breakdown names no API | step 6 | The tier and its axes, the track state, and what step 6 must now incorporate: a Research Report, or the gap that pipeline named |
+| **E2** | `research-decision.md` settled what the Advisor loop was waiting on | step 3 — the loop, so **D4–D5 or U3** by definition | The Research Report, the options already ruled out, and the round already spent |
+| **E3** | The research branch settled a capability, or `feature-development.md` found the breakdown names no API | **step 6 at D3–D5 · the direct-notes hand-off at D1–D2** — the diagram's `Resume` node branches on shape and this row is what did not | The tier and its axes, the track state, and what must now be incorporated: a Research Report, or the gap that pipeline named |
 | **E4** | `change-request.md` classified the change **Moderate** | **CP2** | The revised Tech Spec and the rework list |
 | **E5** | `change-request.md` classified the change **Major** | **CP1** | The change in the GD's own words, the options already ruled out, and which risks the GD accepted |
 
@@ -101,7 +101,7 @@ one-line fix is its named example of what this pipeline must not generate.
 Two inputs are the pipeline's to supply, and getting either wrong corrupts everything downstream. **The GD's
 own words, unedited** — `technical-architect` refuses to classify a summary of a summary, so do not
 paraphrase, condense or pre-classify. And **which tracks are active** (client only, or client plus
-multiplayer/backend): without it the architect silently assumes client-only and writes a spec a multiplayer
+multiplayer/backend): without it the architect assumes client-only, *says so*, and writes a spec a multiplayer
 feature will not fit. Track state is cross-run state, so it is the caller's to hold, never the architect's.
 
 ### Step 2 — classification is unconditional and first
@@ -131,8 +131,8 @@ is not the attempt budget. Read it when the classification puts a feature into t
 
 Any shape can need a capability the project does not have. When the request or the chosen direction names
 one, dispatch `research-decision.md` **before** step 6 — a Tech Spec written on a guessed technology is
-rework. Detecting it is the pipeline's job: at D4–D5 `advisor` will name it, but D3 skips the loop entirely
-and nothing else raises it. An unnamed capability is also a **U2 the spec would inherit** — resolving it here
+rework. Detecting it is the pipeline's job: read the architect's classified `Open design question:` — a
+`technology` value is this branch, and at D3, where no loop runs, that field is the only thing that raises it. An unnamed capability is also a **U2 the spec would inherit** — resolving it here
 is the cheapest place the tier ever drops.
 
 **Skip it when the answer is already in the project — and name what covers it.** Research returning "you
@@ -157,7 +157,7 @@ QA signing it off**: a declined QA gate changes what CP4 rests on, never whether
 | CP | Where | Fires at | The GD approves | Rejecting means |
 |---|---|---|---|---|
 | **1** | End of the Advisor⇄Critic loop | D4–D5, or U3 at any D | The locked direction, and which risks they accept and live with | Back into the loop, within the 3-round cap |
-| **2** | After the Tech Spec | D3–D5 | The Tech Spec envelope from step 6 | Back to `technical-architect` — **not** to CP1 — bounded at 3, then the direction is the problem |
+| **2** | After the Tech Spec | D3–D5 | The Tech Spec envelope from step 6 | Ask which it is, on the **first** rejection: the *spec* misread the request → back to `technical-architect`, bounded at 3; the *direction* is now wrong → that is CP1 at **E5**, never a redraft |
 | **3** | `review-pipeline.md` | D3–D5, review authorised; merged into CP4 at D1–D2 | What was built, against the spec | Drift to its author — bounded at 2, per `loop-termination.md` |
 | **4** | `qa-pipeline.md`, or the closure gate when QA was declined | **every shape, always** | Closing the feature, gaps and declined gates included | A defect — bounded at 2 — or a change request, which is not bounded |
 
