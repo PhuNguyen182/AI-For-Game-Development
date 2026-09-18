@@ -4,7 +4,9 @@
 > the promotion rule in `client/feature-documentation.md`: it is never a first dispatch, so most features
 > never open it.
 
-Never a first dispatch, and not drawn above — reachable from any step, returning to the step it left.
+Never a first dispatch — reachable from **any** step, returning to the step it left. The pipeline's diagram
+draws it as a dotted edge off the client fan-out only, because that is where it opens most often; step 1 and
+step 3 reach it too, through `csharp-engineer`'s and `netcode-engineer`'s own Escalate criteria.
 `tech-lead-performance` returns `Rejected`, `Routed to: unity-engineer` when the obvious fixes are still
 open, and `tech-lead-csharp-unity` names a misrouted escalation as one. It is silent to the GD: a technical
 loop they see only through a `Blocked` needing their input, or later at CP3.
@@ -13,7 +15,11 @@ loop they see only through a `Blocked` needing their input, or later at CP3.
 escalates a second time and is refused a second time, the two disagree about whose problem it is and neither
 can settle that — it goes to `technical-architect` as a routing question, not to either of them again.
 
-`tech-lead-sdk-platform` is not on this lane — it is dispatched straight from the spec at step 2, because its scope has no routine owner beneath it and an SDK task has nowhere else to start.
+**Silent to the GD is not silent to the gates.** Both leads hold `Write`/`Edit` and both return
+`Fix: <what changed, and where>`, so a lead's fix is a submission like any other — and its
+`Pattern decision:`, where the scope is project-wide, binds roots this feature will never touch.
+`references/development-exit-and-custody.md` holds both: which door the code takes, and where the pattern is
+recorded so it survives the run that produced it.
 
 ## Why it is bounded at one round trip
 

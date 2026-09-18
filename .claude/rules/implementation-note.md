@@ -37,16 +37,17 @@ Written in English, per `language-and-comments.md`. Keep it short: this is a han
 
 ## Who assembles it
 
-The note is assembled by the pipeline that dispatched the work — `.claude/workflows/feature-development.md` step 5 — rather than returned whole by the agent. No implementing agent's output envelope carries all six fields, and only the pipeline knows which spec clauses it actually sent. Each field has exactly one source:
+The note is assembled by the pipeline that dispatched the work — `.claude/workflows/feature-development.md` step 5 — rather than returned whole by the agent. No implementing agent's output envelope carries all eight fields — two of them, `Attempts:` and `Verification done:`, are carried by **no** envelope at all, which is why `workflows/references/development-brief.md` asks the agent to state both back. Only the pipeline knows which spec clauses it actually sent. Each field has exactly one source:
 
 | Field | Comes from |
 |---|---|
 | **Spec** | The dispatch brief the pipeline wrote. It is the only party that knows which clauses it sent. |
-| **Tier**, **Attempts** | The feature's ledger and the dispatch brief. Both are the caller's counters — no agent can hold either across runs, and an agent's own attempts-used is only knowable at the moment it returns. |
+| **Tier** | The feature's ledger and the dispatch brief — the caller's, because no agent holds a tier across runs. |
+| **Attempts** | **What the agent stated back**, because the brief asked for it: no envelope has an attempts field, and attempts-used is knowable only at the moment of the return. Never a default `1` — `assurance-evaluator` reads that as a first pass and scores an iterated submission as one. |
 | **Changed** | The working-tree diff, read against the envelope's `Files:` / `Changed:` / `Authored:` / `Implemented:` — some envelopes report what now works rather than which paths changed. |
 | **Assumptions**, **Known limitations** | The envelope's `Assumptions and known limitations:`. |
 | **Deliberately out of scope** | A `Routed to:` the agent returned alongside `Status: Done` — it named an owner for something it saw and left alone. **This is the one approximation in the table.** An agent that notices a nearby problem and leaves it alone may instead record it under `Assumptions and known limitations:`, and returns `Routed to:` only when it actually routes — so this field can be empty when something was in fact set aside. Read it as evidence when present, never as proof of absence. |
-| **Verification done** | The envelope's own verification field where it has one — `Performance:`, `Responsiveness verified:`, `Cost:`, `Behaviour under loss and latency:`. Where an envelope carries none, record that absence; never a check nobody ran. |
+| **Verification done** | The envelope's own verification field where it has one — `Performance:`, `Responsiveness verified:`, `Cost:`, `Behaviour under loss and latency:`. **`csharp-engineer`, `server-authoritative-engineer` and `tech-lead-sdk-platform` have none**, so the brief asks them directly; record what they state, including *why* a check was impossible where it was. Never a check nobody ran, and never left blank while the account of it sits under `Known limitations:` — a review gate reported exactly that split as a finding. |
 
 ## Rules
 

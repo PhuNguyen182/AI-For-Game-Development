@@ -17,6 +17,8 @@ never a copy, and one fact has one home. It also matches how skills are laid out
 | `research-depth-lanes.md` | `research-decision.md` | Entering that pipeline, to pick the lane before anything is dispatched |
 | `research-exit-and-custody.md` | `research-decision.md` | Leaving that pipeline — which door, what travels with the result, and the standalone acceptance gate |
 | `development-brief.md` | `feature-development.md` | Writing any dispatch brief, and forwarding a field one agent produced for another |
+| `development-exit-and-custody.md` | `feature-development.md` | **Any agent returns** — what the submission carries, which door it takes, and where every other returned field is recorded |
+| `development-fan-out.md` | `feature-development.md` | Somebody proposes running the client agents in parallel, or adding a fourth agent to that fan-out |
 | `development-feature-documents.md` | `feature-development.md` | Every implementation task in a root has returned and the documents are owed |
 | `qa-device-lane.md` | `qa-pipeline.md` | A build exists and device coverage was assigned — the only lane that can satisfy a target-platform claim |
 | `qa-assurance-gate.md` | `qa-pipeline.md` | The work is **A3 or above** and every other verdict is in |
