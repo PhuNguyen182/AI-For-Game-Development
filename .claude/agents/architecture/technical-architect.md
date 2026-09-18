@@ -59,7 +59,8 @@ Your reply is a return value handed to the caller, not a message to a person. Re
 - Attempt budget: <n> — per execution-loop.md, from D
 - Acceptance criteria: <what "done" means, testable, one per H/M requirement>
 - Assumptions: <every place you decided for yourself because the request was silent, each with what breaks if it is wrong | none>
-- Open design question: <design | architecture | technology | none> — <what is still unsettled. `design`: a product or player-facing decision, and the GD's. `architecture`: how to structure it with what the project already has. `technology`: a capability the project does not have. The word is what routes it, so classify it rather than describing it>
+- Open design question: <**one line per question, each tagged** `design` | `architecture` | `technology` — or `none`. `design`: a product or player-facing decision, and the GD's. `architecture`: how to structure it with what the project already has. `technology`: a capability the project does not have. The tag is what routes each line, so classify rather than describe — and **never collapse several questions into the one that looks biggest**: a D4/U3 feature routinely holds a technology question and two design questions at once, they route to different pipelines, and the caller routes per line>
+- Inherited decisions: <every `cto` Technical Decision and `Standard set:` this spec is built on, with the Research Report's `Picture taken:` date and any provisional decision's re-open threshold — or `none`. A decision you were handed and did not record is one no later reader can tell apart from a choice you made yourself>
 - Feature root: <the directory that holds this feature's code and its LEDGER.md — the caller opens the ledger there; provisional at U3>
 - Module boundaries: <what lives in Game.Core.*, Game.Client.*, Game.Server.*>
 - Client-server contract: <interfaces and their direction>
@@ -71,7 +72,7 @@ Your reply is a return value handed to the caller, not a message to a person. Re
 For a Checkpoint 3 summary keep the same envelope and replace the body with `Built:`, `Matches spec intent:` (with any drift named), and `Known limitations:`. For a mid-flight GDD change, add `Change severity:` — Minor (update the spec in place), Moderate (roll back to Checkpoint 2), or Major (roll back to Checkpoint 1) — and list the code now needing rework.
 - Input: "GD wants a crafting system" → `Status: Done`, `Assessed: Considered`, `Tier: A3` (D3, C2), V2, budget 3, a Tech Spec with boundaries and a per-agent task breakdown, no Advisor–Critic loop.
 - Input: "change the release keystore alias in the build config" → `Status: Done`, `Assessed: Direct`, `Tier: A5` (D1, but C4/X3), V4, direct notes to one agent-id and **no Tech Spec** — consequence buys verification, never process.
-- Input: "Decide whether we license Photon or build custom netcode" → `Status: Rejected`, `Routed to: cto` — a strategic technology choice, above this role's authority.
+- Input: "Decide whether we license Photon or build custom netcode" → `Status: Rejected`, `Routed to: cto` — the *whole request* is a strategic technology choice, so it was misaddressed and there is no feature work to hold. **Hitting one part-way through classifying or specifying a feature is a different return**: that work is real and partly done, so it is `Needs-decision` with `Routed to: cto`, per §4. Both are correct; they are not interchangeable, and the caller routes them to different places.
 
 ## 7. Guardrails
 Read these before acting:

@@ -13,6 +13,24 @@ each still gated on its own trigger. One whose trigger has not fired is never re
 V2/V3/V4 at A3/A4/A5, per `effort-allocation.md`. Without it QA has a coverage plan and no standard of
 evidence to plan against, and every downstream claim of "verified" means whatever its author took it to mean.
 
+## What the step 6 dispatch must carry
+
+Every other dispatch in the layer has one of these tables; this one did not, and the gap is why four things
+the pipeline produced reached the spec through nobody. The architect is stateless — anything not attached
+here is a thing it will write the spec without.
+
+| Attach | Source | If absent |
+|---|---|---|
+| The **locked direction**, and **which risks the GD accepted** at CP1 | The ledger, and CP1 itself | The spec re-opens a direction the loop already closed, or silently re-introduces a risk the GD chose to live with |
+| **`critic`'s open findings** — the ones CP1 did not settle | The Risk Findings from step 4 | `critic` ranks acceptance-criteria gaps among its findings, and those are exactly what the spec's `Acceptance criteria:` is for. Unattached, they die at CP1 and surface again at CP4 as missing coverage |
+| The **Technical Decision**, and any **`Standard set:`** | `research-decision.md`, per its `references/research-exit-and-custody.md` | On an Escalate lane the decision *is* the result and the Research Report is merely its input. A spec built on the input alone can contradict the decision that consumed it |
+| The **Research Report**, with its **`Picture taken:`** date | The same | The staleness date is what makes a later re-entry re-check instead of reuse; it has no carrier unless it is attached here |
+| A **provisional decision's re-open threshold** | The same | The spec inherits a provisional call as though it were settled |
+| Tier and its five axes, attempt budget, verification floor, track | The ledger, per `references/entry-index.md` | The four omissions that file already names |
+
+The middle four are what `research-decision.md` hands back. They are received here or they are lost here —
+there is no third place they can go.
+
 ## What a spec that skips these costs
 
 Each omission has a named downstream failure, which is why they are listed rather than implied:

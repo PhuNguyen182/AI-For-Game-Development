@@ -31,8 +31,8 @@ to prevent. Each is keyed to the agent's own `If absent` behaviour, the same dis
 
 | Dispatch | Attach | If the pipeline omits it |
 |---|---|---|
-| `advisor`, every round | The architect's `Open design question:`, verbatim | `Blocked` — *"a broad topic yields a survey nobody can act on"* |
-| `advisor`, every round | **The constraints that would rule an option out** — platform, track, genre, monetization, and whatever the GD has already fixed | It answers against constraints it guessed and says which. A shortlist filtered for a project that does not exist |
+| `advisor`, every round | The architect's `Open design question:` lines tagged `design` and `architecture`, **verbatim and all of them** — never a `technology` line, which is `research-decision.md`'s, and never one line standing in for several | `Blocked` — *"a broad topic yields a survey nobody can act on"*. Sending only the line that looked biggest is how the loop's trigger and its payload come apart: the shape fires the loop, but the question it is handed may be the one that belongs elsewhere |
+| `advisor`, every round | **The constraints that would rule an option out** — platform, track, genre, monetization, the **social graph** (who players are matched with: strangers, or only people they already know), and whatever the GD has already fixed | It answers against constraints it guessed and says which. A shortlist filtered for a project that does not exist. The social graph earns its place on this list by evidence: a live run returned *"no matchmaking-with-strangers detail was given, so I flag where a precedent's moderation posture assumed strangers vs. only known teammates"* — it decides every safety, moderation and communication question the loop ever sees |
 | `advisor`, rounds 2 and 3 | The options earlier rounds ruled out, and why | It re-proposes what the GD just rejected — it cannot hold them across runs |
 | `critic` | **The whole `### <Option name>` block `advisor` returned** for the direction the GD picked — Precedent, Trade-off, Assumes | `Blocked` — *"a one-line summary yields only generic objections"* |
 | `critic` | **What the feature is meant to achieve** — the acceptance criteria, or the GDD passage behind it | `Blocked` — *"a risk is only a risk relative to a goal"* |
@@ -55,8 +55,10 @@ is one the caller causes.
 
 ## The limit this loop has, stated rather than hidden
 
-The architect classifies its `Open design question:` as `design`, `architecture` or `technology`. The third
-goes to `research-decision.md`. **Both of the first two arrive here, and the loop serves them unequally.**
+The architect tags **each** of its `Open design question:` lines `design`, `architecture` or `technology`, and
+the caller routes per line — a D4/U3 feature routinely carries one of each, so this loop and
+`research-decision.md` can both be owed on the same feature. Every `technology` line goes there; **both of
+the other two arrive here, and the loop serves them unequally.**
 
 A `design` question is exactly what `advisor` is for: the GD owns the answer, precedent is what they lack,
 and refusing to rank protects a decision that is genuinely theirs.

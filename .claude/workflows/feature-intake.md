@@ -61,8 +61,7 @@ flowchart TD
 Shapes: `([ ])` start and stop · `[ ]` an agent or a pipeline action · `{ }` a decision ·
 `{{ }}` a GD checkpoint · `[[ ]]` another workflow file. The dotted edge is the strategic-escalation exit.
 
-`Blocked` returns are deliberately not drawn — any agent can return one at any step, and the action is always
-the same: ask the GD for exactly the input named, then resume from that step.
+`Blocked` returns are not drawn — always ask the GD for exactly the input named, then resume from that step.
 
 ## Entry points
 
@@ -74,11 +73,10 @@ the same: ask the GD for exactly the input named, then resume from that step.
 | **E4** | `change-request.md` classified the change **Moderate** | **CP2** | The revised Tech Spec and the rework list |
 | **E5** | `change-request.md` classified the change **Major** | **CP1** | The change in the GD's own words, the options already ruled out, and which risks the GD accepted |
 
-Step 0 sizes the **input**; this pipeline classifies the **feature**, on everything that arrives. **E2–E5
-exist so a re-entry has an address**: each resumes mid-pipeline and none re-classifies from scratch, since
-the tier sits in that feature's ledger — entering at **E1** would discard the round count and the ruled-out
-options, neither of which `advisor` can remember. Which axes a re-entry re-reads and which counters
-survive it are in `references/entry-index.md` — on an ordinary re-entry only **U** moves.
+Step 0 sizes the **input**; this pipeline classifies the **feature**. **E2–E5 exist so a re-entry has an
+address**: each resumes mid-pipeline and none re-classifies from scratch, since the tier sits in that
+feature's ledger — entering at **E1** would discard the round count and the ruled-out options, neither of
+which `advisor` can remember. `references/entry-index.md` has which axes move; ordinarily only **U** does.
 
 ## Step order
 
@@ -93,16 +91,14 @@ survive it are in `references/entry-index.md` — on an ordinary re-entry only *
 
 **D1–D2 runs steps 1, 2 and (if needed) 5**, then hands the direct notes to the one owning agent — no Tech
 Spec, no CP1, no CP2. A high A-tier does not change that: an A5 from C or X buys verification downstream,
-never a step here. That is `effort-allocation.md`'s artifact budget stated as sequence, and a Tech Spec for a
-one-line fix is its named example of what this pipeline must not generate.
+never a step here. A Tech Spec for a one-line fix is `effort-allocation.md`'s named artifact-budget violation.
 
 ### Step 1 — what the pipeline must attach
 
 Two inputs are the pipeline's to supply, and getting either wrong corrupts everything downstream. **The GD's
-own words, unedited** — `technical-architect` refuses to classify a summary of a summary, so do not
-paraphrase, condense or pre-classify. And **which tracks are active** (client only, or client plus
-multiplayer/backend): without it the architect assumes client-only, *says so*, and writes a spec a multiplayer
-feature will not fit. Track state is cross-run state, so it is the caller's to hold, never the architect's.
+own words, unedited** — `technical-architect` refuses to classify a summary of a summary. And **which tracks
+are active**: without it the architect assumes client-only, *says so*, and writes a spec a multiplayer feature
+will not fit. Track state is cross-run state, so it is the caller's to hold, never the architect's.
 
 ### Step 2 — classification is unconditional and first
 
@@ -110,10 +106,9 @@ Classification runs on **every** request, and the GD is never asked to confirm t
 decides how many checkpoints apply, so it cannot itself sit behind one. The architect returns the A-tier,
 **each of the five axes separately**, and the open design question step 3 needs.
 
-**The axes travel, not just the tier**, because each consumer reads a different one: this pipeline reads
-**D** and **U**, `feature-development.md` reads **D** for the attempt budget and **A** for the verification
-floor, and the two gate pipelines plus `feature-documentation.md` read **A**. Collapsing them into one number
-here is what forces every downstream file to guess which half it was handed.
+**The axes travel, not just the tier**, because each consumer reads a different one: this pipeline reads **D**
+and **U**, `feature-development.md` reads **D** for the attempt budget and **A** for the verification floor,
+and both gate pipelines plus `feature-documentation.md` read **A**. Collapsed, every file downstream guesses.
 
 **Open the feature's ledger here** — `<feature-root>/LEDGER.md`, from `state/templates/feature-ledger.md`,
 before step 3 dispatches anything: the tier, the axes and the round count must survive a run, and step 2 is
@@ -131,9 +126,11 @@ is not the attempt budget. Read it when the classification puts a feature into t
 
 Any shape can need a capability the project does not have. When the request or the chosen direction names
 one, dispatch `research-decision.md` **before** step 6 — a Tech Spec written on a guessed technology is
-rework. Detecting it is the pipeline's job: read the architect's classified `Open design question:` — a
-`technology` value is this branch, and at D3, where no loop runs, that field is the only thing that raises it. An unnamed capability is also a **U2 the spec would inherit** — resolving it here
-is the cheapest place the tier ever drops.
+rework. Detecting it is the pipeline's job: read the architect's `Open design question:` lines and **route per
+line** — a feature routinely carries one tagged `technology` beside two the loop owns, so the trigger and the
+payload are not the same thing. At D3, where no loop runs, that tag is the only thing raising this branch. An
+unnamed capability is also a **U2 the spec would inherit**, so resolving it here is the cheapest place the
+tier ever drops.
 
 **Skip it when the answer is already in the project — and name what covers it.** Research returning "you
 already have this" burns a round, but a guess dressed as a skip costs a Tech Spec. If you cannot name the
@@ -156,18 +153,20 @@ QA signing it off**: a declined QA gate changes what CP4 rests on, never whether
 
 | CP | Where | Fires at | The GD approves | Rejecting means |
 |---|---|---|---|---|
-| **1** | End of the Advisor⇄Critic loop | D4–D5, or U3 at any D | The locked direction, and which risks they accept and live with | Back into the loop, within the 3-round cap |
+| **1** | End of the Advisor⇄Critic loop | D4–D5, or U3 at any D | The locked direction, and which risks they accept and live with — and **`critic`'s remaining findings are not discarded here**: they travel to step 6, per `references/intake-tech-spec.md`, because several of them are usually acceptance-criteria gaps | Back into the loop, within the 3-round cap |
 | **2** | After the Tech Spec | D3–D5 | The Tech Spec envelope from step 6 | Ask which it is, on the **first** rejection: the *spec* misread the request → back to `technical-architect`, bounded at 3; the *direction* is now wrong → that is CP1 at **E5**, never a redraft |
 | **3** | `review-pipeline.md` | D3–D5, review authorised; merged into CP4 at D1–D2 | What was built, against the spec | Drift to its author — bounded at 2, per `loop-termination.md` |
 | **4** | `qa-pipeline.md`, or the closure gate when QA was declined | **every shape, always** | Closing the feature, gaps and declined gates included | A defect — bounded at 2 — or a change request, which is not bounded |
 
 **With both gates declined the feature still closes at CP4** — on the GD's own acceptance, with both debts
-recorded. What never happens is closure reported as though a gate had passed, and what never happens is a
-feature quietly ceasing to be mentioned.
+recorded. What never happens is closure reported as though a gate had passed, or a feature quietly dropped.
 
-**CP1 spends U down, so reclassify when it closes.** A locked direction with its risks accepted is no longer
-a consequential unknown: drop U to U1, recompute the tier, write both into the ledger. A feature that sat at
-A5 only on U3 legitimately lands lower, and carrying the inflated tier forward is padding, not caution.
+**CP1 spends down what CP1 actually settled — never the whole axis.** A locked direction with its risks
+accepted is no longer a consequential unknown, so drop U for the `design` and `architecture` questions it
+closed, recompute the tier, and append both to the ledger's `Tier history:`. **A `technology` line still open
+holds U where it is** until step 5 settles it: dropping to U1 here would disarm `research-decision.md`'s
+**E4** for exactly the D4–D5 shape that most needs it, since CP1 always precedes step 5 at that shape. A
+feature that sat at A5 only on a settled U3 legitimately lands lower; one still holding an unknown does not.
 
 ## Routing rules the pipeline owns
 
@@ -176,7 +175,8 @@ A5 only on U3 legitimately lands lower, and carrying the inflated tier forward i
 | `advisor` → `Rejected`, `Routed to: gd` — it was asked to choose | Return to the GD; offer `critic` on whichever option they lean toward |
 | `advisor` → `Needs-decision`, `Routed to: rd-engineer` or `cto` | Hand to `research-decision.md` at its **E3**, then resume the loop here at **E2** — step 3, not step 6 |
 | `critic` → `Rejected`, `Routed to: gd` — it was asked to design the fix | Return to the GD, then re-enter at step 2 once the direction is settled |
-| `technical-architect` → `Rejected`, `Routed to: cto` | Hand to `research-decision.md` at its **E2**, then re-enter here at **E3** — step 6 |
+| `technical-architect` → `Routed to: cto` **from step 2** — `Needs-decision`, the classification hit a strategic technology choice | To `research-decision.md` **E2**. It returns **before** the direction is locked, so re-enter at **E2** — step 3, the loop — at **D4–D5 or U3**, and at **E3** where no loop fires for that shape. Never step 6: CP1 has not happened yet |
+| `technical-architect` → `Routed to: cto` **from step 6** — mid-spec, CP1 already locked | To `research-decision.md` **E2**, then re-enter here at **E3** — step 6 |
 | any agent → `Blocked` | Ask the GD for exactly the input named. `Blocked` is a correct result, never a silent retry with a guess |
 | Loop reaches round 3 with no lock | Stop and report non-convergence — do not start a fourth round |
 | `technical-architect` exhausts its attempt budget | It returns a Continuation Debt Record per `execution-loop.md`, not a silent partial spec. Record it in the ledger, then take its `Next best action:` to the GD — never re-dispatch the same brief for a fourth try |
