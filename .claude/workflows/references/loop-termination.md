@@ -18,6 +18,7 @@ same discipline one level up, to the counters `orchestration.md` invariant **I4*
 | Gated-direct strikes | 2 | One gated-direct submission | `references/gated-direct-lane.md` |
 | QA fails | 2 | One submission passing review and failing QA | `qa-pipeline.md` |
 | Measure-and-confirm | 1 | One `cto` decision | `research-decision.md` |
+| **Standalone gate re-decides** | **1** | One standalone result at its acceptance gate | **here** |
 | `Needs Confirmation` asks | 3 | One credential-shaped value | `references/review-needs-confirmation.md` |
 | **Root-cause resets** | **1 per submission** | Every loop above, shared | **here** |
 | **CP2 rejections** | **3** | One Tech Spec | **here** |
@@ -29,7 +30,7 @@ same discipline one level up, to the counters `orchestration.md` invariant **I4*
 | **Identical `Blocked`** | **2** | One dispatch and one missing input | **here** |
 | **Gate re-offers** | **1 per boundary**, never twice in a run | One artifact | **here** |
 
-Nine of those sixteen are stated here and nowhere else, because each one is a *composition* of loops that
+Ten of those seventeen are stated here and nowhere else, because each one is a *composition* of loops that
 were individually bounded and jointly were not.
 
 ## The root-cause reset — once, and only once
@@ -131,6 +132,18 @@ natural boundary. **"Re-offered" is not "re-asked".**
 - **The recommendation is stated once, in the ask.** Never repeated after they answer, and never restated in
   the closing report as a complaint. The debt row in `<state-root>/project-state.md` is the durable record,
   and it is neutral by design.
+
+## The standalone acceptance gate — one re-decide
+
+`research-decision.md` **E5**/**E6** end at a GD gate rather than a checkpoint, because a standalone run has
+no CP2 behind it. Its two rejections are not the same loop, and only one of them is a loop at all:
+
+- **The standard is rejected** — terminal. It is simply not recorded and no ADR is dispatched; `cto`'s
+  decision still stands for that run. Nothing is re-dispatched, so nothing needs bounding.
+- **The decision is rejected** — back to step 4 **once**, carrying what the GD objected to.
+
+Past that the call is the GD's to make directly. A second refusal means `cto` cannot reach an answer they
+will accept, and a third dispatch buys the same one again — the loop is over, not slower.
 
 ## What a terminated loop must never do
 

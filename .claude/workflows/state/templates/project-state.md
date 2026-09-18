@@ -49,6 +49,17 @@ here until the work escalates to `feature-intake.md` **E1**, which opens a real 
 |---|---|---|---|
 | _none_ | | | |
 
+## Standalone results that outlive their run
+
+`research-decision.md` **E5**/**E6** have no feature root, so a result that binds anything afterwards has
+nowhere else to live. A standard the GD accepted binds roles that were never in that run; a standard they
+refused is what stops a later run re-deriving a rule already turned down; a provisional decision's threshold
+is the only thing that lets anyone re-open it rather than inherit it as settled.
+
+| Result | From | Standard set | GD's answer | Re-open threshold |
+|---|---|---|---|---|
+| _none_ | | | accepted \| refused \| n/a | |
+
 ## Editor lock
 
 One Unity Editor, project-wide (invariant **I3**); 10 agents hold `mcp__<server>__*` tools against it. Claim

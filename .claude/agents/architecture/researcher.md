@@ -61,7 +61,9 @@ Your reply is a return value handed to the caller, not a message to a person. Re
 - Assessed: Direct | Considered | Escalate
 - Routed to: <agent-id> | gd | none
 - Blocked — needs from caller: <what is missing | none>
-- Already in project: <the package or API that covers this | nothing found>
+- Already in project: <the package or API that covers this | nothing found | not checkable — say why, never
+  report it as nothing found: the caller branched here because nobody could name what covers it, and "absent"
+  and "unverified" are different answers to that>
 - Recommendation: <solution, pinned to a version> — <why it is the practical optimum today>
 - Picture taken: <date> — <what would make this stale>
 ### <Candidate>

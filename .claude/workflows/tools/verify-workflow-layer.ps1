@@ -321,6 +321,7 @@ $vocabulary = @(
     'agent-id', 'agent-ids', 'feature-slug', 'feature-root', 'measure-and-confirm',
     'three-strikes', 'Needs-decision', 'Co-Authored-By', 'plan-test-coverage',
     'investigate-device-crash', 'device-test-walkthrough', 'secret-and-supply-chain-scan',
+    'engineering-standard-adr-authoring',
     'read-only', 'client-server', 'run-to-run', 'per-case', 'pass-fail', 'Game-Core'
 )
 

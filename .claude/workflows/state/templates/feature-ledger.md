@@ -44,11 +44,18 @@ feature's design history wants the half above.
 - Research: <branched to research-decision.md, and what it settled> | <skipped — covered by the package, API
   or existing system named at feature-intake.md step 5. "If you cannot name it, you are guessing" makes the
   name the whole evidence, and it travels to CP2>
+- Research staleness: <the `Picture taken:` date of every Research Report this feature rests on, and what
+  would make each stale — a later re-entry for the same capability re-checks rather than reuses>
+- Standards set: <every `Standard set:` a `cto` decision produced, and whether its ADR was written. The
+  standard binds roles outside this feature, so a blank row after a `cto` gate is a dropped project rule>
+- Provisional decisions: <the decision, and the one measurement that would falsify it with its threshold —
+  the number is what lets a later session re-open it instead of inheriting it as settled>
 - Documents owed: <which feature-root documents this tier's floor and triggers have made owed>
 - Baseline: <the performance figure, and how it was taken>
 - Reported: <the last period `producer` covered>
 - Gates: review <offered? run | declined by the GD on <date> | not yet offered> · QA <same>
 - Root-cause resets: 0/1 — shared across every loop that can reach `technical-architect`
+- Measure-and-confirm: 0/1 — one `cto` decision's confirm cycle, per `research-decision.md` step 4
 - Rejections: CP2 0/3 · CP3 0/2 · CP4-as-defect 0/2 · sign-off re-dispatch 0/2 · assurance FAIL 0/1
 - Locks reclaimed: <who held it, when it was reclaimed, which of the three steps answered — or none>
 

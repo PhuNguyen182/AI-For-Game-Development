@@ -15,6 +15,7 @@ never a copy, and one fact has one home. It also matches how skills are laid out
 | `orchestrator-direct-dispatch.md` | `orchestrator.md` | A mode-2 or mode-3 dispatch is the chosen lane, and when one returns with no pipeline running |
 | `intake-advisor-critic-loop.md` | `feature-intake.md` | The classification put a feature at **D4–D5, or U3** — otherwise it never runs |
 | `research-depth-lanes.md` | `research-decision.md` | Entering that pipeline, to pick the lane before anything is dispatched |
+| `research-exit-and-custody.md` | `research-decision.md` | Leaving that pipeline — which door, what travels with the result, and the standalone acceptance gate |
 | `development-brief.md` | `feature-development.md` | Writing any dispatch brief, and forwarding a field one agent produced for another |
 | `development-feature-documents.md` | `feature-development.md` | Every implementation task in a root has returned and the documents are owed |
 | `qa-device-lane.md` | `qa-pipeline.md` | A build exists and device coverage was assigned — the only lane that can satisfy a target-platform claim |
