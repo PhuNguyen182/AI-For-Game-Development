@@ -13,12 +13,19 @@ Set by the entry it left from, never by the tier.
 | **E3**, **E4** | `feature-intake.md` **E2** — step 3 | CP1 |
 | **E2**, where the architect escalated from **its step 2** — before the direction was locked | `feature-intake.md` **E2** — step 3 at **D4–D5 or U3**; its **E3** where that shape fires no loop | CP1, then CP2 |
 | **E1**, and **E2** where the architect escalated from **its step 6** — mid-spec, CP1 already locked | `feature-intake.md` **E3** — step 6 at **D3–D5**, the direct-notes hand-off at **D1–D2** | CP2 at D3–D5; nothing at D1–D2 |
+| **E2**, where **`feature-development.md`** escalated — `netcode-engineer` or either tech lead, mid-build | **`feature-development.md`**, resuming the step it left: step 3 for netcode, the escalating step for a lead | Nothing new — CP2 is behind it and the fan-out is already running |
 | **E5**, **E6** | The GD — the standalone acceptance gate below | Nothing; there is no feature to resume |
 
-**E2 is one door with two origins**, and they are not interchangeable: `technical-architect` can reach `cto`
-while classifying at step 2, or while writing the spec at step 6. Sending a step-2 escalation back at step 6
-skips the Advisor⇄Critic loop **and CP1** on a feature whose shape made both mandatory — the single most
-expensive way to get this table wrong. `feature-intake.md`'s routing table splits the same row the same way.
+**E2 is one door with three origins**, and they are not interchangeable. `technical-architect` can reach
+`cto` while classifying at step 2 or while writing the spec at step 6; sending a step-2 escalation back at
+step 6 skips the Advisor⇄Critic loop **and CP1** on a feature whose shape made both mandatory.
+`feature-intake.md`'s routing table splits the same row the same way.
+
+**The third origin is `feature-development.md`, and it is the one this table did not have.** Its entry row
+names the architect because that was E2's first caller, but `netcode-engineer` escalating an unset netcode
+foundation and either tech lead escalating a technology choice arrive at the same door — mid-build, with CP2
+long approved. Handing either back into `feature-intake.md` reopens a Tech Spec the fan-out is already
+building against, which is the same defect as the step-2/step-6 confusion above, one pipeline further on.
 
 **E1 and E4 can both be literally true of one branch** — `feature-intake.md` step 5 named a capability the
 project lacks *and* classification returned U3 on a technology unknown. They exit to opposite doors, so the
