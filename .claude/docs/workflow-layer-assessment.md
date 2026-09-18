@@ -167,3 +167,76 @@ holding this layer down are enforceability and operational readiness, and neithe
 prose. One finding arrived after this note was written and belongs against **F5** — a routing defect that
 spanned two pipelines and survived all 75 automated checks, because the verifier tests structural claims and
 not semantic routing. It is recorded as I9 in the companion note.
+
+---
+
+## Continuation Debt Record — as of 2026-09-18
+
+Per `.claude/rules/execution-loop.md`. This is the layer-level record; each pipeline's own note carries its
+findings. The GD accepted **8.9** on the two finished pipelines and stated the bar is higher still, so this
+is a waypoint, not a close.
+
+**Status:** Partially complete.
+
+**Objective.** Raise the workflow layer to a score of 9.0 or better, pipeline by pipeline as the GD
+designates, fixing what each review finds.
+
+**Attempts used / budget.** `feature-intake.md` 3 of 4 (read → run → fix). `research-decision.md` 2 of 4
+(run → fix). Neither exhausted; both stopped because acceptance was reached, not because budget ran out.
+
+**Unmet requirements.**
+
+- Neither finished pipeline reaches 9.0 — both sit at **8.9**, and the GD wants better than 9.0.
+- Five pipelines are unreviewed: `feature-development.md`, `review-pipeline.md`, `qa-pipeline.md`,
+  `change-request.md`, `orchestrator.md`.
+- The layer score is unchanged in the axes that bind it: **operational readiness** and **enforceability**.
+
+**Best achieved result.** All 17 findings across the two pipelines closed. `verify-workflow-layer.ps1` at
+**80 claims, all holding** — up from 78, and it caught a genuine error in this round's own edits. Both
+pipeline files at 199 lines against the 200 cap. One new reference, four new ledger rows, one new
+`project-state.md` section, one new bound registered in `loop-termination.md`.
+
+**Last verified state.** Working tree committed at the end of this round; verifier green; no file over cap.
+
+**Likely root cause of what remains.** Every remaining deduction traces to one fact: **nothing written has
+been executed.** `<state-root>/.workflow/` does not exist, no ledger has ever been instantiated, and this
+repository contains only the framework — no Unity project, no device. Prose cannot reach those axes, and no
+amount of further editing will.
+
+**What changed across attempts.** Reading scored `feature-intake.md` 9.0; running it scored 8.2 and produced
+twelve defects careful reading had missed, two of them inside fixes written the round before. Running
+`research-decision.md`'s standalone half moved it 7.0 → 5.9 before fixes, then 8.9 after. **Running relocates
+the score rather than raising it** — it buys readiness and spends consistency, which is the honest direction.
+
+**Residual issues and severity.**
+
+| Issue | Severity |
+|---|---|
+| Every new destination — ledger rows, carry tables, routing rows — has received nothing, ever | **High**: a destination that has never received is a specification, not a mechanism |
+| `rd-engineer → Done → cto`, step 3's build-and-device split, and the standalone gate's conditional firing are written and unrun | **High**: E1 evidence where the same claims elsewhere are E2 |
+| `Open design question:` was re-typed to multi-line — replacing a field a live run falsified with one no run has touched | **Medium**: the fix is sound by inspection and untested by execution |
+| Fix **J** not done; the custody class closed instance by instance | **Medium**: the class recurs in the four unreviewed pipelines by default |
+| **I10** — whether `technical-architect` may rank an `architecture` direction | **Open, GD's call**: documented with a workaround, deliberately not decided |
+| Scores are self-assessed by the author of the fixes | **Medium**: **E0** on this project's own scale |
+
+**Known non-solutions — do not retry these.**
+
+- **Fixing an instance does not close its class.** I9 was fixed in one file and recurred as R2 in another;
+  R2 was then fixed and recurred *again* in a reference file created minutes earlier to fix it. Only a
+  machine check has ever closed a class here.
+- **Re-reading a file you just edited cannot find the seam defect**, because the defect is no longer in that
+  file. Grep both directions across `workflows/`, `references/` and the agent contracts instead.
+- **Adding prose does not move enforceability or readiness.** The `feature-intake` round changed nine files
+  and moved the layer score by zero. That is recorded evidence, not a prediction.
+- **Structural verifier checks do not catch routing defects.** 78/78 passed with twelve live.
+
+**Next best action.** Fix **J** — the two semantic verifier checks, negative-tested by reverting a known
+defect and restoring it. It is the only remaining work that raises a binding axis without a real project,
+and it covers the four unreviewed pipelines for free.
+
+**Required input or dependency.** For anything beyond J: a real Unity project with a real device, and one
+feature run end to end through a real ledger. Not obtainable in this repository.
+
+**Safe resume point.** Both finished pipelines are committed and verifier-green; start from
+`.claude/workflows/tools/verify-workflow-layer.ps1` and add the two checks. No half-applied edit is
+outstanding, and no pipeline is mid-review.

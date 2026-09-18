@@ -336,3 +336,105 @@ instead of a paragraph.
 cheap to repeat — dispatch the real agents, follow the files literally, and record where they run out. It
 found twelve defects in two pipelines that careful reading had missed, including two in fixes written the
 round before.
+
+---
+
+## Part 7 — The standalone half, run and then closed
+
+Parts 0–6 scored this pipeline on its **branch** path. The standalone half — **E5**, **E6**, step 3 and the
+gate at the end — had never been entered. It has now, with two more real dispatches, and the pipeline has
+been fixed against what they found. This part is the record of both.
+
+### What was run
+
+| Entry | Agent | Returned | What it bought |
+|---|---|---|---|
+| **E5** — GD asks for research directly | `researcher` | `Done`, `Assessed: Direct`, `Routed to: none`, `Blocked: none` | The **Direct lane** verified at **E2**, first time |
+| **E6** — GD summons a spike | `rd-engineer` | `Blocked`, `Routed to: gd`, four named needs | **R17**, below |
+
+**Two of E6's four blockers are this repository, not the specification** — there is no Unity project here and
+no device attached, because this repo is the framework. They are not counted as findings. The third is.
+
+**Three contracts held under test.** The pass/fail threshold was deliberately withheld from `rd-engineer`,
+and it proposed one from the project's budgets and said so — the `If absent` row working as written.
+`researcher` returned `Already in project: nothing confirmed` and stated it *"was not fabricated as 'none
+found'"*. Both returned `Blocked — needs from caller: none` where the brief was complete.
+
+### Findings R13–R17
+
+**R17 — the Escalate lane could not complete.** `rd-engineer`'s own guardrail forbids producing a platform
+build; a measurement on the one device needs one. `build-run-engineer` appears **0 times** in
+`research-decision.md`, and so do `device`, `I7` and the device lock. Worse, the file asserted *"Nothing here
+writes to the project … **R0/R1 throughout**, which is why an Escalate lane can afford a spike"* — a
+self-justification that is false for exactly the lane it justifies. An on-device spike is R2 and X2.
+
+**R15 — the standalone half had no carrying contract.** `standalone-runs.md`'s "What the GD supplies" table
+had rows for four pipelines and not for this one; E6 also has no step 0 and had no attach spec at step 3. The
+brief for the run above had to be assembled by hand from the agent contract.
+
+**R14 — `rd-engineer` → `Done` had no routing row**, while the diagram sent it to `cto` unconditionally and
+the step table made step 4 conditional. Three sources, two answers, and `Done` is E6's *normal* outcome.
+Same class as **R1**, on the other agent.
+
+**R13 — `CPX` was a mermaid node and two sentences.** No checkpoint table, no "Rejecting means", and the name
+appeared nowhere else in the layer. E5 then showed it also fires where there is nothing to gate: a Direct
+lane never reaches `cto`, so it produces no standard, no commitment and nothing to re-open.
+
+**R16 — `Already in project:` had no value for "could not check".** Harmless on E5; on **E1** it is not, since
+`feature-intake.md` step 5 branches here precisely because nobody could name what covers the capability, and
+*absent* and *unverified* are different answers to that.
+
+### Fixes applied — 8 files, +93 / −51, and one new reference
+
+| Closes | Change |
+|---|---|
+| **R17** | `### Step 3` written: the spike splits — `rd-engineer` writes the harness, `build-run-engineer` produces the build on the GD's request, the device lock is claimed and released (**I7**). The `R0/R1 throughout` claim corrected: Direct and Considered are R0/R1, Escalate is **R2 and X2** |
+| **R15** | Step 3's attach table, each row keyed to a real `If absent` — including the **current baseline**, which the live `rd-engineer` asked for and no file carried. Plus the missing `research-decision.md` row in `standalone-runs.md` |
+| **R14** | Routing row added; the diagram edge split into two conditional edges matching step 4's `Runs for` |
+| **R13** | Named the **standalone acceptance gate**; made it conditional on a standard, a commitment or a threshold, so a Direct lane does not fire it; gave both rejections a defined outcome; registered the bound in `loop-termination.md` (16 caps → 17, 9 stated-here → 10) |
+| **R7** | The **E1** vs **E4** discriminator stated: E1 enters from step 5, E4 from step 2 — before the loop |
+| **R8** | Routing row for a return naming two destinations |
+| **R9, R10** | A custody table in the new reference: all five outputs, each with a destination. `Standards set:`, `Research staleness:` and `Provisional decisions:` added to the ledger; a section for standalone results added to `project-state.md` |
+| **R11** | A rule for a research result that moves an axis — neither an ordinary re-entry nor a change request |
+| **R12** | `Measure-and-confirm: 0/1` in the ledger; step 4 no longer sends a provisional decision back to a gate the GD already declined |
+| **R16** | `not checkable` added to `researcher`'s `Already in project:`, with why it differs from `nothing found` |
+
+Two beyond the findings: step 4 gained the **attach spec** Part 3 marked absent, and step 2's table was
+folded into step 3's to remove the duplication the step 3 table had just created.
+
+**New reference: `references/research-exit-and-custody.md`** (92 lines) — the exit doors, the discriminator,
+the custody table, the scope-expansion rule and the standalone gate. Step 5 in the pipeline is now a pointer.
+
+### Verification
+
+| Check | Result |
+|---|---|
+| `tools/verify-workflow-layer.ps1` before | **OK — 78 claims, all hold** (E2, baseline) |
+| after | **OK — 80 claims, all hold** (E2) |
+| The verifier against this session's own work | **It failed the run mid-way**: `engineering-standard-adr-authoring` in backticks read as an agent-id. It is a skill; added to the `$vocabulary` allowlist beside `secret-and-supply-chain-scan`. **E2 that the checker is live on this file, not passing by shape** |
+| 200-line cap | `research-decision.md` **199** |
+
+### Score — 5.9 → 8.9, and why not 9.0
+
+| Axis | Part 3 | Now |
+|---|---:|---:|
+| Entry points and addressing | 5.5 | **9.0** |
+| Agent-brief contract | 6.0 | **9.0** |
+| Gate and exit logic | 5.5 | **9.0** |
+| Counters and caps | 6.0 | **9.0** |
+| Honesty about its own gaps | 6.5 | **8.5** |
+| Result custody | 3.0 | **8.5** |
+
+**8.9** on five axes, **8.8** on six. The two held at 8.5 fail for one reason each, and it is the same reason:
+
+- **Honesty** — a false claim was replaced by an **unverified** one. The file now describes a build-and-device
+  path nobody has executed.
+- **Custody** — three of five destinations are rows in a ledger template that has **never been instantiated**.
+  `.workflow/` still does not exist. A destination that has never received anything is a specification.
+
+**Prose reached ~8.9 and the rest is not reachable by writing.** Re-running E6 against the new step 3 needs a
+real Unity project and a real device. What *is* reachable here is fix **J** — the two verifier checks — which
+converts custody from written-down to machine-checked, and is the only remaining path to 9.0 in this repo.
+
+**Scored by the author of the fixes**, which is **E0** on this project's own scale. Awaiting an independent
+pass, as in Part 4.

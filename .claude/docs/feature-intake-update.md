@@ -332,3 +332,72 @@ Two findings land on work done in *this* note, and both are worth stating plainl
 
 The honest reading: **the 9.0 was 0.8 points of optimism plus one unscored axis.** That gap is the difference
 `effort-allocation.md` names between review and verification, measured.
+
+---
+
+## Part 8 — R1–R6 closed, and the seam with `research-decision.md` joined
+
+Part 7 re-scored this pipeline **8.2** after running it, and left its six findings proposed rather than
+fixed. They are fixed now, in the same round that closed `research-decision.md` — deliberately together,
+because three of the six are one half of a join whose other half lives in that file.
+
+### What changed
+
+| Closes | Change | Where |
+|---|---|---|
+| **R1** | `technical-architect`'s §4-vs-§6 contradiction resolved **without forcing one value**, because both were right for different cases: the *whole request* being a `cto` question is `Rejected` (misaddressed, no feature work held); hitting one part-way through classifying or specifying is `Needs-decision` (the work is real and partly done). §6 now states the distinction; the pipeline routes both | `technical-architect.md`, `feature-intake.md` |
+| **R2** | The architect→`cto` routing row **split by origin**. From **step 2** — pre-CP1 — it returns at **E2**, step 3 at D4–D5/U3 and **E3** where that shape fires no loop; from **step 6** it returns at **E3**. One row was covering both and picking the step-6 answer, which on the live D4/U3 run would have skipped steps 3, 4 **and CP1** | `feature-intake.md` |
+| **R3** | `Open design question:` is now **one line per question, each tagged**, and the caller **routes per line**. The old field was single-valued while a D4/U3 feature legitimately holds a `technology` question and several `design` ones at once — which is how the loop's trigger and its payload came apart | `technical-architect.md`, `feature-intake.md`, `research-decision.md`, `intake-advisor-critic-loop.md` |
+| **R4** | The **social graph** added to `advisor`'s constraint list, with the live return that earned it quoted in the row | `intake-advisor-critic-loop.md` |
+| **R5** | `## What the step 6 dispatch must carry` written — the table every other dispatch in the layer already had. CP1's row now states that `critic`'s remaining findings are **not discarded**, because several are routinely acceptance-criteria gaps | `intake-tech-spec.md`, `feature-intake.md` |
+| **R6** | **CP1 spends down what CP1 settled**, not the whole axis. A `technology` line still open holds U where it is; dropping to U1 unconditionally disarmed `research-decision.md`'s **E4** for exactly the D4–D5 shape that most needs it, since CP1 always precedes step 5 there | `feature-intake.md` |
+
+### The seam, and a defect found inside this round's own work
+
+The step 6 dispatch table is where `research-decision.md`'s new custody chain lands. Written separately they
+would not have met: that pipeline now hands back a Technical Decision, a `Standard set:`, a `Picture taken:`
+date and a provisional re-open threshold, and before this round **step 6 had no specification of what it
+receives at all**, so all four would have been dropped at the door.
+
+**A cross-check caught R2 still live in the file written to fix it.** `research-exit-and-custody.md`, created
+earlier the same session, sent **E2** back at step 6 unconditionally — the same defect, in the same shape, in
+new text. It was found by grepping the seam rather than by re-reading, which is the only reason it was found
+at all. Both files now split that row the same way, and each names the other.
+
+`intake-advisor-critic-loop.md` was also still describing the question field as single-valued in two places,
+and `advisor`'s brief row now says it receives the `design` and `architecture` lines — **all of them, never
+one standing in for several, and never the `technology` line**.
+
+### Verification
+
+| Check | Result |
+|---|---|
+| `tools/verify-workflow-layer.ps1` | **OK — 80 claims, every one holds** (E2) |
+| 200-line cap | `feature-intake.md` **199**, `research-decision.md` **199** |
+| The seam, both directions | Grepped, not assumed — and that is what found the R2 recurrence |
+| The checklist's own stale count | "52 machine-checked claims" corrected to **80** |
+
+### Score — 8.2 → 8.9
+
+| Axis | Part 7 | Now | What moved it |
+|---|---:|---:|---|
+| Entry points and addressing | 7.5 | **9.0** | R1 and R2, on both sides of the seam |
+| Agent-brief contract | 8.0 | **9.0** | Step 6 has a carry table; `advisor`'s constraints and payload both corrected |
+| Checkpoint logic | 7.5 | **9.0** | R6 — CP1 spends down only what it settled |
+| Counters and caps | 9.0 | **9.0** | Held; nothing found |
+| Honesty about its own gaps | 9.0 | **9.0** | Held |
+| Result custody | 4.0 | **8.5** | R5 closed; the three-of-five caveat below |
+
+**8.9** on five axes, **8.9** on six. **Not 9.0**, and the reason is the same one that capped
+`research-decision.md`: several destinations are rows in a ledger template that has never been instantiated,
+and nothing written this round has been executed. **R3's fix in particular replaces a field that a live run
+falsified — with a field no live run has yet touched.**
+
+Scored by the author of the fixes: **E0**, awaiting an independent pass.
+
+### What is deliberately still open
+
+- **I10** — whether `technical-architect` may rank an `architecture` direction. Untouched on purpose; it is a
+  philosophy decision, and the checklist's debt row still reads `Open`.
+- **Fix J** — the two verifier checks that would make the custody class machine-checked rather than written
+  down. It is the only remaining route to 9.0 that does not require a real Unity project.
