@@ -256,6 +256,126 @@ foreach ($file in (Get-ChildItem -Path $workflows -Recurse -Filter '*.md' -File)
 Assert-Claim 'no reference to an undeclared entry' ($badRefs.Count -eq 0) `
     (($badRefs | Sort-Object -Unique) -join '; ')
 
+# ----------------------------------------------------------- custody (fix J)
+#
+# The two checks below close the class the debt register calls "an agent
+# produces something no pipeline row receives". It was closed instance by
+# instance before, and recurred every time: R1, R9 and R10 in the research
+# round, then four more found by running feature-development. A prose fix
+# closes an instance; only a check closes the class.
+#
+# Scope is the three pipelines that have been reviewed against a real run.
+# The other three are listed as unreviewed rather than silently asserted --
+# extending the scope is the next round's work, not a claim this one may make.
+
+Write-Host ''
+Write-Host 'Custody -- every destination an agent can name has a routing row'
+
+$custodyReviewed  = @('feature-intake.md', 'research-decision.md', 'feature-development.md')
+$custodyUnchecked = @($pipelineFiles | Where-Object { $custodyReviewed -notcontains $_ })
+
+$refFiles = Get-ChildItem -Path $refs -Filter '*.md' -File
+
+# A pipeline's scope is its own text plus only the references that belong to
+# IT -- development-*, intake-*, research-*. The shared references are excluded
+# deliberately: entry-index.md, optional-gates.md, loop-termination.md and
+# standalone-runs.md between them name most of the roster, so counting them as
+# scope would let almost any destination pass on somebody else's sentence.
+$refPrefix = @{
+    'feature-intake.md'      = 'intake-'
+    'research-decision.md'   = 'research-'
+    'feature-development.md' = 'development-'
+}
+
+function Get-PipelineScope
+{
+    param([string] $Text, [string] $Pipeline, [switch] $RoutingOnly)
+
+    $scope = if ($RoutingOnly)
+    {
+        [regex]::Match($Text, '(?s)##\s+Routing rules the pipeline owns(.*)$').Groups[1].Value
+    }
+    else
+    {
+        $Text
+    }
+
+    foreach ($ref in $refFiles)
+    {
+        if ($ref.Name.StartsWith($refPrefix[$Pipeline]) -and $Text -match [regex]::Escape($ref.Name))
+        {
+            $scope += (Get-Content -Path $ref.FullName -Raw)
+        }
+    }
+
+    return $scope
+}
+
+$orphanRoutes   = [System.Collections.Generic.List[string]]::new()
+$orphanProduces = [System.Collections.Generic.List[string]]::new()
+
+foreach ($name in $custodyReviewed)
+{
+    $text      = Get-Content -Path (Join-Path $workflows $name) -Raw
+    $agentsSec = [regex]::Match($text, '(?s)##\s+The agents this pipeline dispatches(.*?)(\r?\n##\s)').Groups[1].Value
+    $routing   = Get-PipelineScope -Text $text -Pipeline $name -RoutingOnly
+    # Everything except the agents table itself -- an artifact matching its own
+    # declaration is what made the first version of this check pass on a file
+    # that received none of its nine.
+    $elsewhere = Get-PipelineScope -Text $text.Replace($agentsSec, '') -Pipeline $name
+
+    $dispatched = @(
+        [regex]::Matches($agentsSec, '(?m)^\|\s*`([a-z0-9-]+)`') |
+            ForEach-Object { $_.Groups[1].Value }
+    )
+
+    foreach ($id in $dispatched)
+    {
+        $file = $agentFiles | Where-Object { $_.BaseName -eq $id }
+
+        if (-not $file)
+        {
+            continue
+        }
+
+        $agentText = Get-Content -Path $file.FullName -Raw
+
+        $destinations = @(
+            [regex]::Matches($agentText, 'Routed to:\s*`?([a-z0-9-]+)`?') |
+                ForEach-Object { $_.Groups[1].Value }
+        ) | Where-Object { ($agentIds -contains $_) -or ($_ -eq 'gd') } | Sort-Object -Unique
+
+        foreach ($destination in $destinations)
+        {
+            if ($routing -notmatch [regex]::Escape($destination))
+            {
+                $orphanRoutes.Add(('{0}: {1} -> {2} has no routing row' -f $name, $id, $destination))
+            }
+        }
+    }
+
+    # Every artifact the agents table declares under Produces must be named
+    # again somewhere the pipeline actually acts on it.
+    $produces = @(
+        [regex]::Matches($agentsSec, '(?m)^\|[^|]*\|[^|]*\|\s*\*\*([^*]+)\*\*\s*\|') |
+            ForEach-Object { $_.Groups[1].Value.Trim() }
+    ) | Sort-Object -Unique
+
+    foreach ($artifact in $produces)
+    {
+        if ($elsewhere -cnotmatch [regex]::Escape($artifact))
+        {
+            $orphanProduces.Add(('{0}: "{1}" is declared and never received' -f $name, $artifact))
+        }
+    }
+}
+
+Assert-Claim 'no destination without a routing row' ($orphanRoutes.Count -eq 0) ($orphanRoutes -join '; ')
+Assert-Claim 'no Produces artifact nothing receives' ($orphanProduces.Count -eq 0) ($orphanProduces -join '; ')
+
+Write-Host ("  INFO  custody scope: {0} reviewed; not yet asserted for {1}" -f `
+    ($custodyReviewed -join ', '), ($custodyUnchecked -join ', '))
+
 # -------------------------------------------------- references are reachable
 
 Write-Host ''
