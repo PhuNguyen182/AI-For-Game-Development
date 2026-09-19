@@ -32,7 +32,7 @@ $checks   = 0
 # and it is removed the moment the underlying defect is fixed.
 $acceptedGaps = @{
     'every named skill is registrable' =
-        'GD-deferred 2026-09-19: all 90 project skills sit one level too deep to register. Fix is to move skills/<group>/<name>/ up to skills/<name>/ -- mechanical, reversible, deliberately not taken this round.'
+        'GD-deferred 2026-09-19: all 90 project skills sit one level too deep to register. Fix is to move skills/<group>/<name>/ up to skills/<name>/ -- mechanical, reversible, deliberately not taken this round. Evidence has since gone past "a gate read its skill by hand": in the QA round qa-lead found risk-based-test-planning unresolvable and SUBSTITUTED a different skill, stating it. An outage that changes which technique an agent applies is no longer only a tooling gap.'
 }
 
 function Assert-Claim
@@ -284,7 +284,7 @@ Write-Host ''
 Write-Host 'Custody -- every destination an agent can name has a routing row'
 
 $custodyReviewed  = @('feature-intake.md', 'research-decision.md', 'feature-development.md',
-                      'review-pipeline.md')
+                      'review-pipeline.md', 'qa-pipeline.md')
 $custodyUnchecked = @($pipelineFiles | Where-Object { $custodyReviewed -notcontains $_ })
 
 $refFiles = Get-ChildItem -Path $refs -Filter '*.md' -File
@@ -299,6 +299,7 @@ $refPrefix = @{
     'research-decision.md'   = 'research-'
     'feature-development.md' = 'development-'
     'review-pipeline.md'     = 'review-'
+    'qa-pipeline.md'         = 'qa-'
 }
 
 function Get-PipelineScope
@@ -333,6 +334,17 @@ foreach ($name in $custodyReviewed)
     $text      = Get-Content -Path (Join-Path $workflows $name) -Raw
     $agentsSec = [regex]::Match($text, '(?s)##\s+The agents this pipeline dispatches(.*?)(\r?\n##\s)').Groups[1].Value
     $routing   = Get-PipelineScope -Text $text -Pipeline $name -RoutingOnly
+
+    # An absent section is a finding, not an exception. Without this guard
+    # `$text.Replace('', '')` throws and the run ABORTS at this line, skipping
+    # every claim after it -- including the skill and runtime-state checks. Found
+    # by negative-testing a renamed heading, not by reading the script.
+    if (-not $agentsSec)
+    {
+        $orphanProduces.Add(('{0}: no "## The agents this pipeline dispatches" section to check' -f $name))
+        continue
+    }
+
     # Everything except the agents table itself -- an artifact matching its own
     # declaration is what made the first version of this check pass on a file
     # that received none of its nine.
@@ -396,8 +408,121 @@ foreach ($name in $custodyReviewed)
 Assert-Claim 'no destination without a routing row' ($orphanRoutes.Count -eq 0) ($orphanRoutes -join '; ')
 Assert-Claim 'no Produces artifact nothing receives' ($orphanProduces.Count -eq 0) ($orphanProduces -join '; ')
 
+# The check above reads the agents table's THIRD column. qa-pipeline.md's third
+# column was 'Runs in', not 'Produces' -- so the check extracted one incidental
+# bolded phrase, found it named elsewhere, and PASSED while six of that
+# pipeline's eight deliverables were named nowhere in its own text or its own
+# references -- which is what the restored-column FAIL actually listed. A check that
+# passes for the wrong reason turns an open defect into a green claim, so the
+# column the check depends on is now itself asserted.
+
+$missingProduces = @(
+    foreach ($name in $pipelineFiles)
+    {
+        $text      = Get-Content -Path (Join-Path $workflows $name) -Raw
+        $agentsSec = [regex]::Match($text,
+            '(?s)##\s+The agents this pipeline dispatches(.*?)(\r?\n##\s)').Groups[1].Value
+
+        # No section, or no header row, is a FAILURE and never a skip: the
+        # custody checks key to this same heading, so a pipeline that loses it
+        # makes BOTH of them pass vacuously. A silent `continue` here is the
+        # bypass this check exists to close.
+        if (-not $agentsSec)
+        {
+            '{0}: no "## The agents this pipeline dispatches" section -- both custody checks pass vacuously' -f $name
+            continue
+        }
+
+        # No `$` anchor: with `[^\r\n]*$` a CRLF file never matches, because `$`
+        # wants the position before `\n` and the class stops before `\r`. The
+        # first version of this check had it, so two of the six pipelines
+        # produced an empty header and were skipped by a silent `continue` --
+        # the exact bypass an independent review predicted, confirmed by running
+        # it rather than by reading it.
+        $header = [regex]::Match($agentsSec, '(?m)^\|\s*Agent\s*\|[^\r\n]*').Value
+
+        # POSITION, not presence. `| Agent | Tier | Owns | Produces |` names the
+        # column and still puts `Owns` in the cell the custody check reads, which
+        # is the same blindness reached by a column swap.
+        if ($header -notmatch '^\|\s*Agent\s*\|[^|]*\|\s*Produces\s*\|')
+        {
+            '{0}: agents table header is "{1}" -- Produces must be the THIRD column' -f `
+                $name, $(if ($header) { $header.Trim() } else { '(no | Agent | header row)' })
+            continue
+        }
+
+        # And the column has to carry something. The pre-round table held `—`
+        # in two rows; a row reverted to `—` passes a column-only check while
+        # that deliverable leaves custody in silence.
+        foreach ($row in [regex]::Matches($agentsSec, '(?m)^\|\s*`([a-z0-9-]+)`\s*\|[^|]*\|([^|]*)\|'))
+        {
+            if ($row.Groups[2].Value -notmatch '\*\*[^*]+\*\*')
+            {
+                '{0}: `{1}` declares no artifact ("{2}")' -f `
+                    $name, $row.Groups[1].Value, $row.Groups[2].Value.Trim()
+            }
+        }
+    }
+)
+
+Assert-Claim 'every agents table declares a Produces column, third, and fills it' ($missingProduces.Count -eq 0) `
+    (($missingProduces -join '; ') + ' -- the custody check reads column 3 positionally, so anything else makes it blind')
+
 Write-Host ("  INFO  custody scope: {0} reviewed; not yet asserted for {1}" -f `
     ($custodyReviewed -join ', '), ($custodyUnchecked -join ', '))
+
+# ------------------------------------------- the gate offer has one owner
+#
+# optional-gates.md owns the SHAPE of every gate ask; the pipeline that reaches
+# a boundary owns WHERE it fires. "The orchestrator asks the GD" is shorthand
+# for the one case that belongs to no pipeline, and that file now says outright
+# that a pipeline consuming the rule never restates it. It has been corrected in
+# the owning file twice and recurred in a consuming file both times -- review
+# first, then QA, five rounds after the layer assessment logged it as F6. That
+# is a class, not an instance, and only a check has ever closed a class here.
+
+Write-Host ''
+Write-Host 'The gate offer -- no pipeline restates the ask as the orchestrator''s'
+
+$restated = [System.Collections.Generic.List[string]]::new()
+
+# Scope is every pipeline AND every reference except optional-gates.md, which
+# owns the rule and is the one file allowed to say it. A first version scanned
+# the six pipelines only and matched the single recurring sentence; a
+# restatement one file over, in a reference, would have passed.
+$askScope = @(
+    ($pipelineFiles | ForEach-Object { Join-Path $workflows $_ }) +
+    (Get-ChildItem -Path $refs -Filter '*.md' -File |
+        Where-Object { $_.Name -ne 'optional-gates.md' } |
+        ForEach-Object { $_.FullName })
+)
+
+foreach ($path in $askScope)
+{
+    foreach ($line in (Get-Content -Path $path))
+    {
+        # Naming the orchestrator as the asker is CORRECT for an ask belonging
+        # to no pipeline -- that is the third row of optional-gates.md's own
+        # ownership table, and review-pipeline.md says exactly that. A first
+        # widening flagged it, which is how a check starts being ignored. So the
+        # forbidden shape is the orchestrator asking *the GD*, the sentence that
+        # has now recurred three times; a line qualifying itself with "no
+        # pipeline" is excluded outright.
+        if ($line -match '(?i)\bno pipeline\b')
+        {
+            continue
+        }
+
+        if ($line -match '(?i)\borchestrator\b[^.\r\n]{0,40}?\b(asks?|ask|offers?)\b[^.\r\n]{0,25}?\bthe GD\b' -or
+            $line -match '(?i)\b(asked|offered)\b[^.\r\n]{0,30}?\bby the orchestrator\b')
+        {
+            $restated.Add(('{0}: {1}' -f (Split-Path $path -Leaf), $line.Trim()))
+        }
+    }
+}
+
+Assert-Claim 'no consuming file restates the gate ask as the orchestrator''s' ($restated.Count -eq 0) `
+    (($restated -join '; ') + ' -- whichever party reached the boundary asks; optional-gates.md owns and states it')
 
 # -------------------------------------------------- references are reachable
 
