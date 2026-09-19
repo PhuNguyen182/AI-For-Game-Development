@@ -1,5 +1,11 @@
 # `feature-intake.md` — Review and Update (working note)
 
+> **Historical record — read [`README.md`](README.md) first.** This is the log of one review round, not a
+> specification. The layer that runs is `.claude/workflows/`; the current state of it is
+> `.claude/workflows/workflow-checklist.md`. **Two things here go stale by design**: every number about the
+> layer (verifier claim counts, "still unreviewed" lists, "nothing is committed") is as of this round, and
+> **later parts supersede earlier ones** — the last score in the file is the one that stands.
+
 > **Status: scratch.** The record of one pipeline's deep review on 2026-09-17, the ten findings it produced,
 > the eight changes made against them, and the re-score afterwards. Kept so none of it has to be
 > reconstructed from a conversation. Nothing in the layer points at this file; delete it once the open

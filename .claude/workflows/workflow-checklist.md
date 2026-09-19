@@ -395,7 +395,7 @@ works.
 
 An adversarial per-pipeline review of `feature-intake.md`, read against the three agent contracts it
 dispatches and against `research-decision.md`. Ten findings, eight of them closed here. Nothing GD-reviewed
-yet. The full record, with the evidence behind each finding, is in `.claude/docs/feature-intake-update.md`.
+yet. The full record, with the evidence behind each finding, is in `.claude/docs/reviews/feature-intake.md`.
 
 | # | Part | Where it landed | GD |
 |---|---|---|---|
@@ -420,7 +420,7 @@ the GD's call, so the limitation was written down with its existing escape (a mo
 `technical-architect` before locking CP1) rather than silently resolved. Recorded in the debt register.
 
 **No enforcement was added beyond the verifier.** The hooks and the ledger-append helper that would close
-`F1` and `F2` in `.claude/docs/workflow-layer-assessment.md` change harness behaviour and belong to the GD.
+`F1` and `F2` in `.claude/docs/reviews/workflow-layer.md` change harness behaviour and belong to the GD.
 
 ## 14. `feature-development.md` review round — run, not read, and the custody class finally machine-checked
 
@@ -428,7 +428,7 @@ The third per-pipeline review, by the same method as §13's second half: the pip
 four real dispatches (`csharp-engineer`, `tech-lead-sdk-platform`, `netcode-engineer`, then `code-reviewer`
 on the Core submission) following the files literally. Twenty-six findings, **D1–D26**, all closed except
 four halves that live in pipelines this round was told not to touch. The full record is in
-`.claude/docs/feature-development-update.md`. Nothing GD-reviewed yet.
+`.claude/docs/reviews/feature-development.md`. Nothing GD-reviewed yet.
 
 **One root cause under most of them.** The routing table read `Status:` and `Routed to:` and nothing else, so
 in all three implementing returns the highest-value content sat in a field no row mentioned: six risks on a
@@ -458,7 +458,7 @@ The fifth per-pipeline review, same method as §13's second half and §14: the p
 dispatches (`qa-lead` plan, `qa-automation-engineer`, `qa-lead` sign-off, `assurance-evaluator`, `producer`)
 following the files literally, on an A4 feature with the **review gate declined**, which is this pipeline's
 riskiest untested claim. Nineteen findings, **QA1–QA19**, nine of them High. The full record is in
-`.claude/docs/qa-pipeline-update.md`. Nothing GD-reviewed yet.
+`.claude/docs/reviews/qa-pipeline.md`. Nothing GD-reviewed yet.
 
 **The finding that matters most.** Step 4 said `qa-lead` judges against the exit criteria *it wrote itself* at
 step 1 — but it is stateless, nothing carried them back, and no `If absent` row makes it say so. Run live, the
@@ -479,10 +479,10 @@ that decides whether a feature passes.
 | 15.10 | E1/E4 were two doors for one entry — `optional-gates.md` sent a declined gate opted into later to **E1**, this pipeline declared **E4**. Told apart by the ledger now | `qa-pipeline.md`, `optional-gates.md`, `entry-index.md` | ⬜ |
 | 15.11 | Multi-destination `Routed to:` had no row here, fourth pipeline running. Live, one executor returned **three** | `qa-pipeline.md` | ⬜ |
 | 15.12 | **95 claims**, 94 holding, one accepted gap (the skill relocation, still GD-deferred). **Six negative tests over five bypass paths**, all failing on the defect and passing on restore | `tools/verify-workflow-layer.ps1` | ⬜ |
-| 15.13 | **The round was then put through the layer's own gates.** `code-reviewer` returned **`Request changes`** — ten findings, three High — against the fixes above: the `Produces` check tested the token's *presence* rather than its *position* and never checked the cells; a reference contradicted a rule file this same round had changed; `playtest-tester` has neither `Defects:` nor `Regressions:`, so QA13 was closed for one agent and not the class. All ten closed | `.claude/docs/qa-pipeline-update.md` Part 4b | ⬜ |
+| 15.13 | **The round was then put through the layer's own gates.** `code-reviewer` returned **`Request changes`** — ten findings, three High — against the fixes above: the `Produces` check tested the token's *presence* rather than its *position* and never checked the cells; a reference contradicted a rule file this same round had changed; `playtest-tester` has neither `Defects:` nor `Regressions:`, so QA13 was closed for one agent and not the class. All ten closed | `.claude/docs/reviews/qa-pipeline.md` Part 4b | ⬜ |
 | 15.14 | **Negative-testing those fixes exposed two defects nobody predicted.** (1) The new check's header regex ended `[^\r\n]*$`, which never matches a CRLF file — so it shipped **vacuous on every CRLF file**, silently skipped by its own `continue`. Two pipelines were observed being skipped; an independent run afterwards found **all six** files CRLF, so the blast radius was at least two and plausibly all six — stated as observed rather than rounded either way. (2) A renamed agents heading **crashed the verifier** at `$text.Replace($agentsSec, '')`, aborting the run and skipping every later claim, including the skill and runtime-state checks — a pre-existing bug from §14's fix J. Both fixed; a column swap **on a CRLF file** is now one of the five tested bypass paths, which is what proves those two files are read at all | `tools/verify-workflow-layer.ps1` | ⬜ |
 | 15.15 | **A fix was wrong on first attempt and is recorded as such.** Widening the gate-ask check flagged `review-pipeline.md`'s *correct* sentence naming the orchestrator as the asker for an ask belonging to no pipeline — the legitimate third row of `optional-gates.md`'s ownership table. A check that flags correct text is how a check stops being read. It now targets the forbidden shape only | `tools/verify-workflow-layer.ps1` | ⬜ |
-| 15.16 | **Scored independently, not only self-marked.** `assurance-evaluator` ran last and returned **`CONDITIONAL PASS`** — weighted **8.8** against the A4 floor of 9.0, and **8.75** on the six axes against the round's self-score of 8.9. It confirmed four axes and marked two down. **No independent party has executed the verifier**: both gates lack a shell, so the claim counts rest on the author's run plus one shell-capable re-run | `.claude/docs/qa-pipeline-update.md` Part 4b | ⬜ |
+| 15.16 | **Scored independently, not only self-marked.** `assurance-evaluator` ran last and returned **`CONDITIONAL PASS`** — weighted **8.8** against the A4 floor of 9.0, and **8.75** on the six axes against the round's self-score of 8.9. It confirmed four axes and marked two down. **No independent party has executed the verifier**: both gates lack a shell, so the claim counts rest on the author's run plus one shell-capable re-run | `.claude/docs/reviews/qa-pipeline.md` Part 4b | ⬜ |
 
 ## 16. `orchestrator.md` review round — the router, run rather than read, over three rounds
 
@@ -547,6 +547,47 @@ made the reachability trigger match nothing and pass vacuously.
 - **Nothing executed end to end.** `.workflow/` still does not exist; every ledger destination named this
   round has received nothing. Not reachable by writing.
 
+## 17. The review records, grouped
+
+The GD asked which of two files to use: `workflows/feature-intake.md` or `docs/feature-intake-update.md`.
+The question was the finding. There was never a second version — the `-update.md` files are **review
+records**, one per round — but they sat beside `agent-template.md` under `.claude/docs/` with a name that
+read as v1/v2, and nothing said which governed.
+
+| Was | Is |
+|---|---|
+| `.claude/docs/<pipeline>-update.md` | `.claude/docs/reviews/<pipeline>.md` |
+| `.claude/docs/workflow-layer-assessment.md` | `.claude/docs/reviews/workflow-layer.md` |
+| — | `.claude/docs/reviews/README.md` — the index, and what these are *not* good for |
+| — | `.claude/docs/reviews/orchestrator.md` — the **seventh** round, which had no record |
+
+The path now says what they are, and `.claude/docs/` holds only templates again.
+
+**Three stale traps were in them, and the index names all three** rather than the files being edited to hide
+it: every layer number in a record is as of that round (claim counts 78/80/86/95/98, "still unreviewed"
+lists, "nothing is committed"); **each record is cumulative and its later parts supersede its earlier ones**
+— `feature-intake.md` scores the same pipeline 9.0, then 8.2, then 8.9, so a reader who stops halfway takes
+a number the file already retracted; and every score was marked by the author of the fixes except rounds 5–7.
+
+| # | Part | Status | GD |
+|---|---|---|---|
+| 17.1 | Seven records moved and renamed; the six citations in this file follow them | ✅ | ⬜ |
+| 17.2 | `reviews/README.md` — the index, the reading trap, and what the records are *not* for | ✅ | ⬜ |
+| 17.3 | `reviews/orchestrator.md` written — the round existed only in §16 | ✅ | ⬜ |
+| 17.4 | A historical banner on each record, pointing at this file for current state | ✅ | ⬜ |
+| 17.5 | **Three checks**: every record has an index row · every row names a record that exists · **no pipeline or rule may depend on one**. Negative-tested four ways, including a rule citing one by backslash path | ✅ | ⬜ |
+
+**17.5 is the part that matters.** An index nobody recounts is the stale self-description this layer has
+shipped three times. The third check is the load-bearing one: `workflow-checklist.md` may **cite** a record
+as evidence, but the moment a pipeline or an auto-loaded rule *depends* on one, a scratch note becomes
+load-bearing — and these are explicitly disposable.
+
+**One defect in this round's own work, found by running it.** The dependency check's regex was mangled to
+`docs[/\]reviews` — an unterminated character class, which under `ErrorActionPreference = 'Stop'` **aborted
+the run** and silently skipped every later claim. That is the same abort class `ConvertTo-StatedCount` was
+written for one round earlier, arriving through a different door: the earlier fix handled a bad cast, not a
+bad pattern. Caught because the run was inspected rather than assumed green.
+
 ## Open decisions the GD owes
 
 **None.** All seven are settled, and each one's full reasoning now lives in the pipeline file named below —
@@ -576,7 +617,7 @@ that file is the durable record, not this row.
 | **`.claude/rules/` carries ~24k words, auto-loaded unconditionally** | Recorded | Measured, not estimated: 2,071 lines across 18 files enter every session before the GD types. ~650 of them are C# client style rules a router, `qa-lead` or `producer` never needs — the `Applies to:` headers are documentation, not a loading mechanism. §10 cut the `orchestration.md`/`orchestrator.md` duplication; the rest needs a scoping decision that is the GD's, not a silent restructure |
 | **Five files exceeded the 200-line cap** | Settled | Closed in §9 by promotion into `workflows/references/`, not by compressing prose. `.claude/rules/` still exceeds it (`execution-loop.md` 279, `task-classification.md` 214 as committed) — out of scope for this round, and recorded here rather than silently fixed |
 | **No agent may rank an architecture direction** | Open | §13 found it and wrote it down rather than resolving it. A `design` question is `advisor`'s and the GD's by right; an `architecture` question reaches the same loop, where nothing is permitted to say which option fits this codebase. Closing it means either a `Recommended direction:` field on `technical-architect` for `architecture`-classified questions, or accepting the mode-3 escape as sufficient. **A philosophy decision, not a defect fix** |
-| **Enforcement is advisory only** | Partly settled | This row said "reopen only when a miss supplies the evidence". A miss did: four self-describing counts had drifted and two cross-references pointed at blank lines, all found by audit rather than by any check. `tools/verify-workflow-layer.ps1` and `/verify-workflow-layer` close the **self-description** half at **107** machine-checked claims, with **21 negative tests** behind the router round's seven — 19 planted defects all failing, 2 must-still-PASS controls, 6 restores, output preserved to a log — 52 structural, then two semantic routing checks, one more per promoted reference, in §15 two more (every agents table must declare `Produces` as its third column and fill it — the property the custody check silently depends on — and no consuming file may restate the gate ask as the orchestrator asking the GD), and in the `change-request.md` round the custody check's scope reaching all six pipelines. The semantic checks are the only part that has ever caught a *behavioural* defect, and each round has caught at least one in its own edits. A `PreToolUse` hook blocking a dispatch that skips the router stays **Deferred** — still no evidence of that miss |
+| **Enforcement is advisory only** | Partly settled | This row said "reopen only when a miss supplies the evidence". A miss did: four self-describing counts had drifted and two cross-references pointed at blank lines, all found by audit rather than by any check. `tools/verify-workflow-layer.ps1` and `/verify-workflow-layer` close the **self-description** half at **110** machine-checked claims, with **25 negative tests** behind the router round's seven checks and the review index's three — 19 planted defects all failing, 2 must-still-PASS controls, 6 restores, output preserved to a log — 52 structural, then two semantic routing checks, one more per promoted reference, in §15 two more (every agents table must declare `Produces` as its third column and fill it — the property the custody check silently depends on — and no consuming file may restate the gate ask as the orchestrator asking the GD), and in the `change-request.md` round the custody check's scope reaching all six pipelines. The semantic checks are the only part that has ever caught a *behavioural* defect, and each round has caught at least one in its own edits. A `PreToolUse` hook blocking a dispatch that skips the router stays **Deferred** — still no evidence of that miss |
 | **The Implementation Note's `Deliberately out of scope` is a proxy** | Deferred | Per `.claude/rules/implementation-note.md`: an agent that sets a nearby problem aside may record it under `Assumptions` and never return `Routed to:`, so the field can be silently empty. Closing it means adding a field to seven agent envelopes — declined until a real round trip proves it worth it |
 | **Legacy roster doc deleted** | Recorded | `.claude/docs/TEAM_STRUCTURE.md` was removed once its §6 criteria reached `change-request.md` — the only content nothing else carried. Recover with `git checkout a33f02b -- .claude/docs/TEAM_STRUCTURE.md` if something turns out to have been missed |
 | **`git-expert` and `ci-cd-engineer` were reachable only in mode 3** | Settled | Both now have a step-0 lane row, and the router round corrected what the rows said about themselves: sizing landing on one agent is **mode 1**, not the GD's mode-3 override, so the rows no longer claim a mode the GD alone can enter. `orchestrator-direct-dispatch.md` had carried *"neither is reached by sizing"* for two rounds after the rows were added — stale in the file a router reads **on a return**, which is the worst place for it. Both debt rows above were the other half of that staleness and are replaced by this one |

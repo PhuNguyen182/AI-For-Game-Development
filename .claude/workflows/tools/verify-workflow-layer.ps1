@@ -1090,6 +1090,76 @@ foreach ($file in (Get-ChildItem -Path $claude -Recurse -Filter '*.md' -File))
 Assert-Claim 'no pointer at the retired state paths' ($pointsBack.Count -eq 0) `
     ("would send a run to write under .claude/: $(($pointsBack | Sort-Object -Unique) -join '; ')")
 
+# ------------------------------------------- the review records are indexed
+#
+# .claude/docs/reviews/ holds one record per review round. They are history,
+# not specification -- nothing in workflows/ or rules/ may depend on one. What
+# they DO need is to stay findable: they were named <pipeline>-update.md beside
+# the agent templates, which read as though every pipeline had two versions,
+# and the GD asked which to use. The folder plus an index is the fix, and an
+# index nobody recounts is exactly the stale self-description this script
+# exists to catch -- so the index is asserted, both ways.
+
+Write-Host ''
+Write-Host 'Review records -- every round is indexed, every index row exists'
+
+$reviewsDir = Join-Path $claude 'docs' 'reviews'
+
+if (-not (Test-Path $reviewsDir))
+{
+    Assert-Claim 'review records are indexed' $false 'no .claude/docs/reviews directory'
+}
+else
+{
+    $reviewIndex = Get-Content -Path (Join-Path $reviewsDir 'README.md') -Raw
+    $records     = @(
+        Get-ChildItem -Path $reviewsDir -Filter '*.md' -File |
+            Where-Object { $_.Name -ne 'README.md' } |
+            ForEach-Object { $_.Name }
+    )
+
+    # Every record has a row; every row names a record that exists.
+    $linked = @(
+        [regex]::Matches($reviewIndex, '\]\(([a-z0-9-]+\.md)\)') |
+            ForEach-Object { $_.Groups[1].Value }
+    ) | Where-Object { $_ -ne 'README.md' } | Sort-Object -Unique
+
+    $unindexed = @($records | Where-Object { $linked -notcontains $_ })
+    $dangling  = @($linked  | Where-Object { $records -notcontains $_ })
+
+    Assert-Claim 'every review record has an index row' ($unindexed.Count -eq 0) `
+        "not in README.md: $($unindexed -join ', ')"
+
+    Assert-Claim 'every index row names a record that exists' ($dangling.Count -eq 0) `
+        "README.md links a missing file: $($dangling -join ', ')"
+
+    # And nothing in the layer may DEPEND on one -- citing history is fine,
+    # which is what workflow-checklist.md does; a pipeline or rule reaching for
+    # a review record would make a scratch note load-bearing.
+    $dependants = @(
+        foreach ($file in (Get-ChildItem -Path $workflows -Recurse -Filter '*.md' -File))
+        {
+            if ($file.Name -eq 'workflow-checklist.md') { continue }
+
+            if ((Get-Content -Path $file.FullName -Raw) -match 'docs[\\/]reviews')
+            {
+                $file.Name
+            }
+        }
+    ) + @(
+        foreach ($file in (Get-ChildItem -Path (Join-Path $claude 'rules') -Filter '*.md' -File))
+        {
+            if ((Get-Content -Path $file.FullName -Raw) -match 'docs[\\/]reviews')
+            {
+                $file.Name
+            }
+        }
+    )
+
+    Assert-Claim 'no pipeline or rule depends on a review record' ($dependants.Count -eq 0) `
+        "$($dependants -join ', ') -- these are history; workflow-checklist.md alone may cite them"
+}
+
 # ------------------------------------------- the checklist's own claim count
 #
 # LAST, because it counts every check above it plus itself. The debt register

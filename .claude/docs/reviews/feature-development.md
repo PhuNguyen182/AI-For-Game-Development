@@ -1,5 +1,11 @@
 # `feature-development.md` — Review, scored against a real run
 
+> **Historical record — read [`README.md`](README.md) first.** This is the log of one review round, not a
+> specification. The layer that runs is `.claude/workflows/`; the current state of it is
+> `.claude/workflows/workflow-checklist.md`. **Two things here go stale by design**: every number about the
+> layer (verifier claim counts, "still unreviewed" lists, "nothing is committed") is as of this round, and
+> **later parts supersede earlier ones** — the last score in the file is the one that stands.
+
 > **Working note.** Third in the series, after `feature-intake-update.md` and `research-decision-update.md`.
 > Same method as the second: the pipeline was not read into a score, it was **run** — four real agent
 > dispatches following the files literally, recording where they hit a wall.

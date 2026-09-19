@@ -1,5 +1,11 @@
 # Workflow Layer — Assessment (working note)
 
+> **Historical record — read [`README.md`](README.md) first.** This is the log of one review round, not a
+> specification. The layer that runs is `.claude/workflows/`; the current state of it is
+> `.claude/workflows/workflow-checklist.md`. **Two things here go stale by design**: every number about the
+> layer (verifier claim counts, "still unreviewed" lists, "nothing is committed") is as of this round, and
+> **later parts supersede earlier ones** — the last score in the file is the one that stands.
+
 > **Status: scratch.** A working record of the architecture review held on 2026-09-17, kept so the findings
 > survive the session that produced them. It is not a rule, not a standard, and nothing in the layer points
 > at it. Delete it once its findings have either been acted on or recorded somewhere durable.

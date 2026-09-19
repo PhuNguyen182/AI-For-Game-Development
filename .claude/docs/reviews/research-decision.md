@@ -1,5 +1,11 @@
 # `research-decision.md` — Review, scored against a real run
 
+> **Historical record — read [`README.md`](README.md) first.** This is the log of one review round, not a
+> specification. The layer that runs is `.claude/workflows/`; the current state of it is
+> `.claude/workflows/workflow-checklist.md`. **Two things here go stale by design**: every number about the
+> layer (verifier claim counts, "still unreviewed" lists, "nothing is committed") is as of this round, and
+> **later parts supersede earlier ones** — the last score in the file is the one that stands.
+
 > **Working note.** Companion to `workflow-layer-assessment.md` and `feature-intake-update.md`. This one is
 > different from both: it was not written by reading the layer. It was written by **running** it.
 
