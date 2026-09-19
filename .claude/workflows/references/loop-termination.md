@@ -82,10 +82,11 @@ budget on every submission it invalidates, and it resets these three counters wi
 charged for the GD's change.
 
 **A Major change additionally resets the Advisor⇄Critic round count**, and it is the one cap in this table
-that a re-entry clears. Major is defined as invalidating an assumption `critic` tested or a risk the GD
-accepted at CP1: the rounds already spent settled a direction that no longer exists, so charging them to the
-new one hands it whatever is left of the cap — one round, on a feature that used two. Every other cap here
-survives a re-entry, per `references/entry-index.md`.
+that a re-entry clears. `change-request.md` Step 3 owns Major's definition and states it in two shapes; either
+way, the rounds already spent (if any) settled a direction that no longer exists, so charging them to the new
+one hands it whatever is left of the cap — one round, on a feature that used two, or the full three where this
+is the feature's first CP1 and there were no prior rounds to spend. Every other cap here survives a re-entry,
+per `references/entry-index.md`.
 
 ## The QA-side loops
 

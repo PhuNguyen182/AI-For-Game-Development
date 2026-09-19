@@ -37,6 +37,7 @@ never a copy, and one fact has one home. It also matches how skills are laid out
 | `qa-test-code-gate.md` | `qa-pipeline.md` | `qa-automation-engineer` has written a suite |
 | `intake-tech-spec.md` | `feature-intake.md` | Writing or revising a Tech Spec at step 6 — **D3–D5** only |
 | `development-escalation-lane.md` | `feature-development.md` | A routine implementation pass has already failed |
+| `change-severity-and-custody.md` | `change-request.md` | A Major reopens CP1 for a feature with no prior one, or one dispatch returns both a severity and a `cto` routing |
 
 ## Rules
 

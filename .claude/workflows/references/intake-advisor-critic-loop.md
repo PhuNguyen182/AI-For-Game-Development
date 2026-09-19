@@ -51,7 +51,7 @@ is one the caller causes.
 | **A clean critic** | `critic` returning `Done` with an empty findings list is a **pass**, not a missing result. Proceed to CP1. |
 | **Escalation** | `critic` is a leaf — it reports to the GD and routes to nobody, at every level. |
 | **The cap is not the budget** | 3 rounds here is a pipeline counter and is unrelated to `execution-loop.md`'s attempt budget, which bounds one agent's own corrective cycles inside one dispatch. Both are counted, in the same ledger, and neither is spent because it was available. |
-| **A Major change resets the round count** | And only a Major. The rounds settled a direction it invalidated, so they were spent on a different question — `change-request.md` owns it, `references/loop-termination.md` records it as the one cap a re-entry clears. The ruled-out options still travel. |
+| **A Major change resets the round count** | And only a Major. The rounds settled a direction it invalidated (or, on a feature's first CP1, there were no rounds and the reset is 0 to 0) — `change-request.md` owns it, `references/loop-termination.md` records it as the one cap a re-entry clears. The ruled-out options still travel. |
 
 ## The limit this loop has, stated rather than hidden
 

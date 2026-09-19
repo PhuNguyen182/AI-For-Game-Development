@@ -71,7 +71,7 @@ Shapes: `([ ])` start and stop · `[ ]` an agent or a pipeline action · `{ }` a
 | **E2** | `research-decision.md` settled what the Advisor loop was waiting on | step 3 — the loop, so **D4–D5 or U3** by definition | The Research Report, the options already ruled out, and the round already spent |
 | **E3** | The research branch settled a capability, or `feature-development.md` found the breakdown names no API | **step 6 at D3–D5 · the direct-notes hand-off at D1–D2** — the diagram's `Resume` node branches on shape and this row is what did not | The tier and its axes, the track state, and what must now be incorporated: a Research Report, or the gap that pipeline named |
 | **E4** | `change-request.md` classified the change **Moderate** | **CP2** | The revised Tech Spec and the rework list |
-| **E5** | `change-request.md` classified the change **Major** | **CP1** | The change in the GD's own words, the options already ruled out, and which risks the GD accepted |
+| **E5** | `change-request.md` classified the change **Major** | **step 3** — the loop re-runs and concludes at CP1, always at **D4–D5 or U3** by Major's own criterion, exactly as **E2**'s trigger does | The change in the GD's own words, the options already ruled out, and which risks the GD accepted — the last two are `none` on a feature reopening CP1 for the first time, a legitimate empty history |
 
 Step 0 sizes the **input**; this pipeline classifies the **feature**. **E2–E5 exist so a re-entry has an
 address**: each resumes mid-pipeline and none re-classifies from scratch, since the tier sits in that

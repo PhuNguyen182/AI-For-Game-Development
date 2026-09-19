@@ -276,15 +276,16 @@ Assert-Claim 'no reference to an undeclared entry' ($badRefs.Count -eq 0) `
 # round, then four more found by running feature-development. A prose fix
 # closes an instance; only a check closes the class.
 #
-# Scope is the three pipelines that have been reviewed against a real run.
-# The other three are listed as unreviewed rather than silently asserted --
-# extending the scope is the next round's work, not a claim this one may make.
+# Scope is all six pipelines -- change-request.md was the last to be reviewed
+# against a real run and is now included. Extending scope only after a real
+# run, rather than asserting it on inspection alone, is what this comment
+# tracks; $custodyUnchecked stays as the record of which ones still need one.
 
 Write-Host ''
 Write-Host 'Custody -- every destination an agent can name has a routing row'
 
 $custodyReviewed  = @('feature-intake.md', 'research-decision.md', 'feature-development.md',
-                      'review-pipeline.md', 'qa-pipeline.md')
+                      'review-pipeline.md', 'qa-pipeline.md', 'change-request.md')
 $custodyUnchecked = @($pipelineFiles | Where-Object { $custodyReviewed -notcontains $_ })
 
 $refFiles = Get-ChildItem -Path $refs -Filter '*.md' -File
@@ -300,6 +301,7 @@ $refPrefix = @{
     'feature-development.md' = 'development-'
     'review-pipeline.md'     = 'review-'
     'qa-pipeline.md'         = 'qa-'
+    'change-request.md'      = 'change-'
 }
 
 function Get-PipelineScope
@@ -468,8 +470,15 @@ $missingProduces = @(
 Assert-Claim 'every agents table declares a Produces column, third, and fills it' ($missingProduces.Count -eq 0) `
     (($missingProduces -join '; ') + ' -- the custody check reads column 3 positionally, so anything else makes it blind')
 
-Write-Host ("  INFO  custody scope: {0} reviewed; not yet asserted for {1}" -f `
-    ($custodyReviewed -join ', '), ($custodyUnchecked -join ', '))
+if ($custodyUnchecked.Count -gt 0)
+{
+    Write-Host ("  INFO  custody scope: {0} reviewed; not yet asserted for {1}" -f `
+        ($custodyReviewed -join ', '), ($custodyUnchecked -join ', '))
+}
+else
+{
+    Write-Host ("  INFO  custody scope: all six pipelines reviewed and asserted")
+}
 
 # ------------------------------------------- the gate offer has one owner
 #

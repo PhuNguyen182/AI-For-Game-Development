@@ -27,7 +27,7 @@ statement. Every `Routed to:` below is a recommendation this pipeline acts on, n
 | Entry | Comes from | Enters at |
 |---|---|---|
 | **E1** | `feature-intake.md` step 5 — the request names a capability the project lacks | step 0 |
-| **E2** | Any caller returns `Routed to: cto` — `technical-architect` at its step 2 or step 6, or `feature-development.md`'s `netcode-engineer` and tech leads mid-build. **Which caller and which step sets the return address**, per `references/research-exit-and-custody.md` | step 0 |
+| **E2** | Any caller returns `Routed to: cto` — `technical-architect` at its step 2 or step 6, `feature-development.md`'s `netcode-engineer` and tech leads mid-build, or `change-request.md` classifying a mid-flight change. **Which caller and which step sets the return address**, per `references/research-exit-and-custody.md` | step 0 |
 | **E3** | `advisor` returns `Needs-decision`, `Routed to: cto` or `rd-engineer` | step 0 |
 | **E4** | Classification at `feature-intake.md` **step 2** returns **U2 or U3** on a technology unknown — *before* its loop, which is what separates this from **E1** | step 0 |
 | **E5** | The GD asks for research directly, no feature attached | step 0 |
@@ -79,7 +79,7 @@ flowchart TD
     Cto -->|Done| Exit
 
     GDCall --> Exit
-    Exit -->|no| Back[[feature-intake.md — E2 into the loop,<br/>or E3 into the Tech Spec]]
+    Exit -->|no| Back[[back to whichever origin called —<br/>research-exit-and-custody.md's door table]]
     Exit -->|yes| SAG{{Standalone acceptance gate — fires only on<br/>a standard, a commitment or a threshold}}
     SAG --> Stop([Recorded — no feature to resume])
 ```
@@ -177,7 +177,7 @@ staleness date and a provisional decision's re-open threshold are written at the
 | `rd-engineer` → `Needs-decision`, `Routed to: cto` or `gd` | Follow it — the spike found the question is not answerable at that scale |
 | `cto` → `Rejected`, `Routed to: technical-architect` | Hand back; the problem is contained, not strategic |
 | `cto` → `Needs-decision`, `Routed to: gd` | The GD makes the product call, then step 5 |
-| `researcher` or `rd-engineer` → `Rejected`, `Routed to:` an implementer — `unity-engineer` in both agents' own worked examples | The request was production work, not research: *"you research, you never integrate"*. Commonest at **E5**/**E6**, where the GD names the task directly. This pipeline dispatches no implementer, so hand it to `feature-development.md` **E2** with the notes, or return it to the GD on a standalone run. Never argue it back |
+| `researcher` or `rd-engineer` → `Rejected`, `Routed to:` an implementer — `unity-engineer` in both agents' own worked examples | The request was production work, not research: *"you research, you never integrate"*. Commonest at **E5**/**E6**, where the GD names the task directly. This pipeline dispatches no implementer, so hand it to `feature-development.md` **E2** with the notes, or return it to the GD on a standalone run — or, on a `change-request.md`-origin dispatch, back to `change-request.md` instead, since its Step 1 halt forbids dispatching new work against the spec under question. Never argue it back |
 | any agent → `Blocked` | Ask the GD for exactly the input named. `Blocked` is a correct result, never a silent retry |
 | any agent names **two** destinations in one return | `Routed to:` is single-valued, so the second is the one that gets dropped. Both are correct and they are sequential: record both, then act on them in the order the return states — never match the first row in this table and stop |
 | `researcher` or `rd-engineer` returns a **Continuation Debt Record** | The question is not answerable within its budget. Record it, and carry the *known non-solutions* into whatever runs next — `cto` deciding against an unmeasured option needs to know which measurements were already attempted and failed |
@@ -197,3 +197,4 @@ staleness date and a provisional decision's re-open threshold are written at the
 | `feature-intake.md` routing table | The `advisor` → `Needs-decision`, `Routed to: rd-engineer \| cto` row — entry point **E3** |
 | `technical-architect`'s `Open design question:` | A technology unknown as well as a design one — entry point **E4** reads it to decide which pipeline the question belongs to |
 | `feature-development.md` routing table | Its `netcode-engineer` and `tech-lead-*` → `cto` rows — **E2**'s third origin, and the only one that resumes mid-build rather than in a spec |
+| `change-request.md` routing table | Its `technical-architect` → `cto` row — **E2**'s fourth origin, returning to `change-request.md` to finish classifying whatever severity the rest of the request still needs, never straight into a Tech Spec |

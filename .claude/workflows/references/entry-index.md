@@ -18,7 +18,7 @@ every agent file exists to make visible.
 | | **E2** | `research-decision.md` settled what the Advisor loop waited on — resumes at step 3 |
 | | **E3** | The Tech Spec is written or revised at step 6 — research settled, or a breakdown gap returned |
 | | **E4** | `change-request.md` classified **Moderate** — reopens CP2 |
-| | **E5** | `change-request.md` classified **Major** — reopens CP1 |
+| | **E5** | `change-request.md` classified **Major** — resumes the loop at step 3 (always D4–D5 or U3, by Major's own criterion), concluding at CP1; `none` beyond the GD's words is a legitimate empty history on a feature's first CP1 |
 | `research-decision.md` | **E1** | `feature-intake.md` step 5 — a capability the project lacks |
 | | **E2** | `technical-architect` returned `Routed to: cto` |
 | | **E3** | `advisor` returned `Needs-decision` on an option |
@@ -37,6 +37,7 @@ every agent file exists to make visible.
 | | **E4** | The GD asks for QA directly and **no ledger holds the work** — shipped code, or work no pipeline built |
 | `change-request.md` | **E1** | The GD changes a rule mid-flight |
 | | **E2** | `qa-pipeline.md` CP4 — the spec itself should change |
+| | **E3** | `research-decision.md` settled the technology half of a bundled change — resumes at step 2 |
 
 ## What every entry carries, whatever its own file adds
 
@@ -66,5 +67,6 @@ being charged for somebody else's change.
 
 The third is narrower: a **Major** change entering **E5** also resets the **Advisor⇄Critic round count**,
 because Major means the direction those rounds settled no longer holds, so they were spent on a different
-question. `change-request.md` owns it. The **ruled-out options** still travel — they were rejected on their
-own merits, and `advisor` cannot hold them across runs either way.
+question — or, on a feature reopening CP1 for the first time, there were no prior rounds and the reset is 0 to
+0. `change-request.md` owns it. The **ruled-out options** still travel — they were rejected on their own
+merits, and `advisor` cannot hold them across runs either way.
