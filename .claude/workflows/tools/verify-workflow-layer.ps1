@@ -23,6 +23,18 @@ $agentsDir = Join-Path $claude 'agents'
 $failures = [System.Collections.Generic.List[string]]::new()
 $checks   = 0
 
+# Gaps the GD has been shown the cost of and chose to defer. A deferred gap is
+# still a real defect: it still FAILs, it still prints, and it is still counted
+# as a claim that does not hold. What this list changes is only whether the run
+# reads as NEW drift -- because a tool that is permanently red stops being read,
+# which is the same failure optional-gates.md names about a re-offered ask.
+# Never add a row here to make a run green. A row is the GD's decision, dated,
+# and it is removed the moment the underlying defect is fixed.
+$acceptedGaps = @{
+    'every named skill is registrable' =
+        'GD-deferred 2026-09-19: all 90 project skills sit one level too deep to register. Fix is to move skills/<group>/<name>/ up to skills/<name>/ -- mechanical, reversible, deliberately not taken this round.'
+}
+
 function Assert-Claim
 {
     param([string] $Name, [bool] $Holds, [string] $Detail)
@@ -271,7 +283,8 @@ Assert-Claim 'no reference to an undeclared entry' ($badRefs.Count -eq 0) `
 Write-Host ''
 Write-Host 'Custody -- every destination an agent can name has a routing row'
 
-$custodyReviewed  = @('feature-intake.md', 'research-decision.md', 'feature-development.md')
+$custodyReviewed  = @('feature-intake.md', 'research-decision.md', 'feature-development.md',
+                      'review-pipeline.md')
 $custodyUnchecked = @($pipelineFiles | Where-Object { $custodyReviewed -notcontains $_ })
 
 $refFiles = Get-ChildItem -Path $refs -Filter '*.md' -File
@@ -285,6 +298,7 @@ $refPrefix = @{
     'feature-intake.md'      = 'intake-'
     'research-decision.md'   = 'research-'
     'feature-development.md' = 'development-'
+    'review-pipeline.md'     = 'review-'
 }
 
 function Get-PipelineScope
@@ -356,9 +370,18 @@ foreach ($name in $custodyReviewed)
 
     # Every artifact the agents table declares under Produces must be named
     # again somewhere the pipeline actually acts on it.
+    # Take the whole Produces cell, then every bolded artifact inside it. The
+    # earlier form anchored on a LONE '**x**' filling the cell, so the moment a
+    # row declared two artifacts it matched nothing and the row went unchecked
+    # in silence -- found by negative test, not by reading.
     $produces = @(
-        [regex]::Matches($agentsSec, '(?m)^\|[^|]*\|[^|]*\|\s*\*\*([^*]+)\*\*\s*\|') |
-            ForEach-Object { $_.Groups[1].Value.Trim() }
+        foreach ($row in [regex]::Matches($agentsSec, '(?m)^\|[^|]*\|[^|]*\|([^|]*)\|'))
+        {
+            foreach ($hit in [regex]::Matches($row.Groups[1].Value, '\*\*([^*]+)\*\*'))
+            {
+                $hit.Groups[1].Value.Trim()
+            }
+        }
     ) | Sort-Object -Unique
 
     foreach ($artifact in $produces)
@@ -535,6 +558,111 @@ if (Test-Path $standardsDir)
 
 # ------------------------------------ no runtime state written under .claude/
 
+# ------------------------------------------- loop-termination counts itself
+#
+# loop-termination.md opens by claiming it is "the single home for every bound
+# in the layer", then states two counts in prose: how many caps the table holds
+# and how many are stated only there. Adding a row and not updating the prose
+# is a one-line edit away at all times, and this layer has shipped a stale
+# self-count before. The claim is checkable, so it is checked.
+
+Write-Host ''
+Write-Host 'Loop termination -- the cap table matches the counts stated beside it'
+
+$loopText = Get-Content -Path (Join-Path $refs 'loop-termination.md') -Raw
+$capTable = [regex]::Match($loopText, '(?s)\|\s*Counter\s*\|\s*Bound.*?\n\s*\n').Value
+
+$capRows = @([regex]::Matches($capTable, '(?m)^\|.*\|\s*$')) |
+    Where-Object { $_.Value -notmatch '^\|\s*Counter\s*\|' -and $_.Value -notmatch '^\|[-\s|:]+\|\s*$' }
+
+$hereRows = @([regex]::Matches($capTable, '\|\s*\*\*here\*\*\s*\|'))
+
+$words = @{
+    'ten' = 10; 'eleven' = 11; 'twelve' = 12; 'thirteen' = 13; 'fourteen' = 14
+    'fifteen' = 15; 'sixteen' = 16; 'seventeen' = 17; 'eighteen' = 18
+    'nineteen' = 19; 'twenty' = 20
+}
+
+$stated = [regex]::Match($loopText, '(?i)([a-z]+)\s+of\s+those\s+([a-z]+)\s+are\s+stated\s+here')
+
+Assert-Claim 'loop-termination states its own cap count' `
+    ($stated.Success -and $words[$stated.Groups[2].Value.ToLower()] -eq $capRows.Count) `
+    ("prose says $($stated.Groups[2].Value), table holds $($capRows.Count)")
+
+Assert-Claim 'loop-termination states its own stated-here count' `
+    ($stated.Success -and $words[$stated.Groups[1].Value.ToLower()] -eq $hereRows.Count) `
+    ("prose says $($stated.Groups[1].Value), table marks $($hereRows.Count)")
+
+# --------------------------------------------------- skills actually resolve
+#
+# Every agent's section 5 names skills it is told to invoke, several of them
+# "Always". The harness registers a skill at .claude/skills/<name>/SKILL.md --
+# one level, not two. A live review round found BOTH gate skills unresolvable
+# (Unknown skill), and both gates fell back to reading SKILL.md by hand and
+# said so. A gate whose mandatory scan silently does not run still returns a
+# verdict, which is the one failure security.md builds that gate to prevent.
+# Structural checks cannot see this: the file exists, it is just not where the
+# harness looks.
+
+Write-Host ''
+Write-Host 'Skills -- every skill an agent is told to invoke must be registrable'
+
+$skillsRoot  = Join-Path $claude 'skills'
+$namedSkills = [System.Collections.Generic.List[string]]::new()
+
+foreach ($file in $agentFiles)
+{
+    $text    = Get-Content -Path $file.FullName -Raw
+    $section = [regex]::Match($text, '(?s)##\s+5\.\s+Skills you use(.*?)(\n##\s|\z)').Groups[1].Value
+
+    foreach ($hit in [regex]::Matches($section, '(?m)^\|\s*`([a-z0-9-]+)`\s*\|'))
+    {
+        if (-not $namedSkills.Contains($hit.Groups[1].Value))
+        {
+            $namedSkills.Add($hit.Groups[1].Value)
+        }
+    }
+}
+
+$unresolvable = [System.Collections.Generic.List[string]]::new()
+
+foreach ($skill in $namedSkills)
+{
+    # Registrable means exactly .claude/skills/<name>/SKILL.md.
+    if (-not (Test-Path -Path (Join-Path $skillsRoot (Join-Path $skill 'SKILL.md'))))
+    {
+        $nested = Get-ChildItem -Path $skillsRoot -Recurse -Filter 'SKILL.md' -File -ErrorAction SilentlyContinue |
+            Where-Object { $_.Directory.Name -eq $skill }
+
+        $unresolvable.Add($(if ($nested)
+            {
+                '{0} (present at skills/{1}/{0}/ -- one level too deep to register)' -f $skill, $nested[0].Directory.Parent.Name
+            }
+            else
+            {
+                '{0} (no SKILL.md anywhere)' -f $skill
+            }))
+    }
+}
+
+$nestedCount = @($unresolvable | Where-Object { $_ -match 'too deep' }).Count
+$missing     = @($unresolvable | Where-Object { $_ -match 'no SKILL.md' })
+
+$skillDetail = if ($nestedCount -eq $unresolvable.Count -and $nestedCount -gt 0)
+{
+    '{0} of {1} unresolvable -- ALL of them one level too deep. The harness registers skills/<name>/SKILL.md; these sit at skills/<group>/<name>/SKILL.md, so none loads. Example: {2}' -f `
+        $unresolvable.Count, $namedSkills.Count, $unresolvable[0]
+}
+else
+{
+    '{0} of {1} unresolvable ({2} nested too deep, {3} absent). First few: {4}' -f `
+        $unresolvable.Count, $namedSkills.Count, $nestedCount, $missing.Count,
+        (($unresolvable | Select-Object -First 3) -join '; ')
+}
+
+Assert-Claim ('every named skill is registrable ({0} named)' -f $namedSkills.Count) `
+    ($unresolvable.Count -eq 0) $skillDetail
+
 # .claude/ is the framework, copied unchanged into every project that adopts it.
 # A ledger, a lock or a calibration row written into it is one project's history
 # sitting in the template the next project starts from. workflows/state/ holds
@@ -613,15 +741,26 @@ Assert-Claim 'no pointer at the retired state paths' ($pointsBack.Count -eq 0) `
 Write-Host ''
 Write-Host ('-' * 62)
 
-if ($failures.Count -eq 0)
+$accepted = @($failures | Where-Object { $name = $_; @($acceptedGaps.Keys | Where-Object { $name.StartsWith($_) }).Count -gt 0 })
+$drift    = @($failures | Where-Object { $name = $_; @($acceptedGaps.Keys | Where-Object { $name.StartsWith($_) }).Count -eq 0 })
+
+foreach ($gap in $accepted)
 {
-    Write-Host ("OK  {0} claims checked, every one holds." -f $checks)
+    $key = @($acceptedGaps.Keys | Where-Object { $gap.StartsWith($_) })[0]
+    Write-Host ("ACCEPTED GAP  {0}" -f $key)
+    Write-Host ("              {0}" -f $acceptedGaps[$key])
+}
+
+if ($drift.Count -eq 0)
+{
+    Write-Host ("OK  {0} claims checked; {1} hold, {2} accepted gap(s) above and no new drift." -f `
+        $checks, ($checks - $accepted.Count), $accepted.Count)
     exit 0
 }
 
-Write-Host ("DRIFT  {0} of {1} claims no longer hold:" -f $failures.Count, $checks)
+Write-Host ("DRIFT  {0} of {1} claims no longer hold:" -f $drift.Count, $checks)
 
-foreach ($failure in $failures)
+foreach ($failure in $drift)
 {
     Write-Host ("  - {0}" -f $failure)
 }
