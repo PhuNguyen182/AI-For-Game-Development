@@ -10,7 +10,7 @@ description: >
   (`crash-anr-reporting-gate`); resolving addresses
   (`crash-anr-symbolication`); writing the fix (`csharp-engineer`,
   `unity-engineer`, `tech-lead-sdk-platform`); pre-release defects
-  (`qa-automation-engineer`).
+  (`qa-automation-engineer`, `build-fault-triage`).
 ---
 
 # Crash and ANR Fault-Domain Triage — which layer is actually responsible
@@ -41,7 +41,7 @@ Act as the investigative reasoning step of the crash pipeline, on behalf of `cra
 - Negative trigger: any unresolved frame at the top of the stack — send it back to `crash-anr-symbolication`, because a domain read off offsets is a guess.
 - Negative trigger: whether the report is production telemetry at all — that was `crash-anr-reporting-gate`.
 - Negative trigger: implementing the fix, the mitigation, the engine upgrade, or the SDK update — those belong to `csharp-engineer`, `unity-engineer`, `tech-lead-csharp-unity`, `tech-lead-performance` and `tech-lead-sdk-platform` respectively; this skill produces the diagnosis and the routing.
-- Negative trigger: a defect found before release — that is `qa-automation-engineer` and `playtest-tester`, a different pipeline entirely.
+- Negative trigger: a defect found before release — that is `qa-automation-engineer` and `playtest-tester` in the Editor, and `build-fault-triage` in a player build that never shipped; a different pipeline entirely.
 
 ## 4. How to use this skill
 1. **Walk the domains in the fixed order and stop at the first match** — game code, then Unity engine, then third-party SDK, then system library, per [fault-domain-signals.md](references/fault-domain-signals.md) and the roots in [root-links.md](references/root-links.md). The order exists so a fixable defect in code this project owns is never blamed on a layer nobody here can change.
@@ -59,7 +59,7 @@ Act as the investigative reasoning step of the crash pipeline, on behalf of `cra
 - Distinguishing a fixable game-code defect from a condition only mitigation reaches.
 - Producing the domain-specific next action: fix, mitigation, engine upgrade or bug report, SDK update or vendor contact, device segmentation.
 - Routing the finding to exactly one correctly scoped owner, as a Root Cause Report.
-- Out of scope: writing the fix (`csharp-engineer`, `unity-engineer`); designing the mitigation's implementation (`tech-lead-performance`); the engine version decision (`tech-lead-csharp-unity`); SDK and store action (`tech-lead-sdk-platform`); symbolication (`crash-anr-symbolication`); pre-release defects (`qa-automation-engineer`).
+- Out of scope: writing the fix (`csharp-engineer`, `unity-engineer`); designing the mitigation's implementation (`tech-lead-performance`); the engine version decision (`tech-lead-csharp-unity`); SDK and store action (`tech-lead-sdk-platform`); symbolication (`crash-anr-symbolication`); pre-release defects (`qa-automation-engineer`, `build-fault-triage`).
 
 ## 6. Output format
 ```

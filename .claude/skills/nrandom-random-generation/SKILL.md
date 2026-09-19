@@ -13,8 +13,10 @@ description: >
   and replayable across client prediction and server authority, replacing
   `UnityEngine.Random`/`System.Random`. Not for: cryptographically secure
   randomness (`System.Security.Cryptography.RandomNumberGenerator` directly —
-  no skill in this project owns it), Burst/Job System native random
-  (`unity-job-system-and-burst`), general Task/async composition
+  no skill in this project owns it), the struct `Unity.Mathematics.Random` a
+  Burst-compiled or job/ECS site needs where an interface call cannot go
+  (`unity-mathematics`, `unity-job-system-and-burst`), general Task/async
+  composition
   (`dotnet-concurrency-and-async`), Span/buffer/collection selection unrelated
   to weighted RNG (`dotnet-memory-and-collections`).
 ---
@@ -45,7 +47,7 @@ Act as the NRandom specialist for the client track — the tool reached for when
 - Shuffling a deck/sequence, or picking a uniformly random element, in a way that must be reproducible.
 - Randomizing a spawn position, rotation, or VFX color/tint in `Game.Client.*`.
 - Negative trigger: the randomness must be cryptographically secure (tokens, anti-collusion secrets) — NRandom's own documentation explicitly disclaims this use; use `System.Security.Cryptography.RandomNumberGenerator` directly instead.
-- Negative trigger: bulk parallel random generation inside a Burst-compiled job over `NativeArray<T>` — that's `unity-job-system-and-burst`.
+- Negative trigger: a random draw inside Burst-compiled, job, or ECS code — `IRandom` is an interface call Burst cannot devirtualize, so the struct generator there is `Unity.Mathematics.Random` (`unity-mathematics`), scheduled per `unity-job-system-and-burst`.
 - Negative trigger: the task is general async/Task composition or Span/collection selection with no RNG involved — that's `dotnet-concurrency-and-async`/`dotnet-memory-and-collections`.
 
 ## 4. How to use this skill
@@ -63,7 +65,7 @@ Act as the NRandom specialist for the client track — the tool reached for when
 - Wire a seeded, injectable `IRandom` into `Game.Core.*` gameplay-rule code as the deterministic RNG `coding-principles.md`'s Shared Core integrity section requires.
 - Build weighted loot/drop tables and randomized sequence operations with `WeightedList<T>` and `NRandom.Linq`.
 - Add Vector/Quaternion/Color randomization via `NRandom.Numerics`/`NRandom.Unity` at the correct layer.
-- Out of scope: cryptographically secure randomness (flag it — no skill in this project owns it, do not substitute NRandom), Burst/Job System native random (`unity-job-system-and-burst`), general Task/async composition (`dotnet-concurrency-and-async`), Span/buffer/collection selection unrelated to weighted RNG (`dotnet-memory-and-collections`).
+- Out of scope: cryptographically secure randomness (flag it — no skill in this project owns it, do not substitute NRandom), the struct RNG Burst/job/ECS code needs (`unity-mathematics`, `unity-job-system-and-burst`), general Task/async composition (`dotnet-concurrency-and-async`), Span/buffer/collection selection unrelated to weighted RNG (`dotnet-memory-and-collections`).
 
 ## 6. Output format
 ```

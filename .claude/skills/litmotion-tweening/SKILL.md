@@ -10,10 +10,16 @@ description: >
   composition, `LMotion.Punch`/`LMotion.Shake`, custom
   `IMotionAdapter`/`IMotionOptions`, and the Inspector-driven
   `LitMotion.Animation` package.
-  Use for any code- or Inspector-authored interpolation of a value over time.
-  Not for: general reactive streams (`r3-reactive-extensions`), plain async
-  orchestration (`unitask-async-programming`), shader/particle VFX
-  (`vfx-particle-authoring`), physics-driven movement (`unity-3d-physics`).
+  Use for any code- or Inspector-authored interpolation of a value over time
+  via LitMotion specifically. This project also maintains a `dotween-tweening`
+  skill for the same job with a different engine; which one governs new work is
+  a standing per-module/project decision, never assumed by this skill alone.
+  Not for: DOTween's own API surface (`dotween-tweening`), general reactive
+  streams (`r3-reactive-extensions`), plain async orchestration
+  (`unitask-async-programming`), shader/particle VFX
+  (`vfx-particle-authoring`), physics-driven movement (`unity-3d-physics`),
+  uGUI component construction, layout and event wiring around the component
+  being animated (`ugui`).
 ---
 
 # LitMotion — Zero-Allocation Tweening for Unity
@@ -55,6 +61,7 @@ Act as the tweening/animation specialist for the client track — the tool Unity
 - Negative trigger: orchestrating unrelated async game logic with no motion involved — that's `unitask-async-programming`.
 - Negative trigger: a shader-driven or particle-system visual effect — that's `vfx-particle-authoring`/`technical-artist`; LitMotion animates discrete properties, not GPU-simulated effects.
 - Negative trigger: physically simulated movement driven by forces/collisions rather than a fixed-duration interpolation — that's `unity-3d-physics`/`unity-2d-physics`.
+- Negative trigger: building, laying out, or event-wiring the uGUI component whose property is being animated — that's `ugui`; this skill binds to an already-built component, and must never leave a motion and a Layout Group/Content Size Fitter driving the same `RectTransform` property at once.
 - Negative trigger: any `Game.Core.*` code — LitMotion's core package depends on `UnityEngine` (Vector3, Color, MonoBehaviour scheduling), which `coding-principles.md`'s Shared Core integrity section forbids in Core. Drive Core state changes from `Game.Client.*` motions instead.
 
 ## 4. How to use this skill
@@ -77,7 +84,7 @@ Act as the tweening/animation specialist for the client track — the tool Unity
 - Authoring a custom `IMotionAdapter`/`IMotionOptions` for an unsupported type, or a custom `LitMotionAnimationComponent`/`PropertyAnimationComponent<T>` for the Inspector-driven package.
 - Auditing `MotionHandle` disposal, closure allocation in `Bind()`, and scheduler/timing choices in existing code.
 - Porting DOTween/LeanTween/PrimeTween/LitMotion-v1 tween code to current LitMotion idioms.
-- Out of scope: general reactive stream composition (`r3-reactive-extensions`), unrelated async orchestration (`unitask-async-programming`), shader/particle VFX (`vfx-particle-authoring`), physics-driven movement (`unity-3d-physics`/`unity-2d-physics`), any `Game.Core.*` usage.
+- Out of scope: general reactive stream composition (`r3-reactive-extensions`), unrelated async orchestration (`unitask-async-programming`), shader/particle VFX (`vfx-particle-authoring`), physics-driven movement (`unity-3d-physics`/`unity-2d-physics`), uGUI component construction and layout (`ugui`), any `Game.Core.*` usage.
 
 ## 6. Output format
 ```

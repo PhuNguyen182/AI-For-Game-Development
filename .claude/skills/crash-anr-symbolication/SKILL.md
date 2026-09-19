@@ -10,7 +10,8 @@ description: >
   for: confirming the report source (`crash-anr-reporting-gate`); attributing
   the fault (`crash-anr-fault-domain-triage`); producing the build or wiring
   the upload (`build-run-engineer`, `tech-lead-sdk-platform`); Editor stack
-  traces (`qa-automation-engineer`).
+  traces (`qa-automation-engineer`) or faults in a pre-release player build
+  (`build-fault-triage`).
 ---
 
 # Crash and ANR Symbolication — is this trace readable at all
@@ -41,7 +42,7 @@ Act as the build and symbol hygiene checkpoint of the crash pipeline, on behalf 
 - Negative trigger: whether the report is a production signal at all — that was `crash-anr-reporting-gate`, and this skill assumes it passed.
 - Negative trigger: deciding which layer is at fault — that is `crash-anr-fault-domain-triage`; reading meaning into a trace here is exactly what this gate exists to defer.
 - Negative trigger: producing a build, or configuring the symbol upload step — those are `build-run-engineer` and `tech-lead-sdk-platform`; this skill states what is needed and routes it.
-- Negative trigger: an Editor or development-build stack trace, which resolves on its own because nothing stripped it — that is `qa-automation-engineer`'s pipeline, and there is no symbolication question to answer.
+- Negative trigger: an Editor or development-build stack trace, which resolves on its own because nothing stripped it — an Editor trace belongs to `qa-automation-engineer`'s pipeline and a pre-release player build's to `build-fault-triage`, and neither poses a symbolication question.
 
 ## 4. How to use this skill
 1. **Check the faulting frame before counting resolved frames** — a trace can be mostly readable and still useless, because the frame that actually crashed is the one that decides the fault domain. Treat an unresolved top frame exactly as you would treat a fully unresolved trace.
@@ -58,7 +59,7 @@ Act as the build and symbol hygiene checkpoint of the crash pipeline, on behalf 
 - Naming the specific artefact required for the platform and build type in hand.
 - Separating managed from native symbolication on an IL2CPP title.
 - Routing the next action: attach existing symbols, or request a new symboled build.
-- Out of scope: confirming the report's source (`crash-anr-reporting-gate`); attributing the fault (`crash-anr-fault-domain-triage`); producing builds (`build-run-engineer`); wiring the upload pipeline (`tech-lead-sdk-platform`); Editor stack traces (`qa-automation-engineer`).
+- Out of scope: confirming the report's source (`crash-anr-reporting-gate`); attributing the fault (`crash-anr-fault-domain-triage`); producing builds (`build-run-engineer`); wiring the upload pipeline (`tech-lead-sdk-platform`); Editor stack traces (`qa-automation-engineer`); pre-release player-build faults (`build-fault-triage`).
 
 ## 6. Output format
 ```

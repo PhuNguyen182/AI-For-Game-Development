@@ -3,27 +3,28 @@ name: ugui
 description: >
   Unity UI (uGUI) technique — the GameObject-based `Canvas`/`RectTransform`
   runtime UI system (`UnityEngine.UI`, `UnityEngine.EventSystems`, and
-  TextMeshPro's `TMPro` namespace as its text renderer): Canvas render
+  TextMeshPro's `TMPro`): Canvas render
   modes and sorting, `CanvasScaler` scale modes, `CanvasGroup`,
   `RectTransform` anchors/pivot, Auto Layout (`LayoutGroup`,
   `ContentSizeFitter`, `LayoutElement`, `AspectRatioFitter`), visual
-  components (`Image` Simple/Sliced/Tiled/Filled, `RawImage`, legacy
-  `Text`, `Mask`/`RectMask2D`, Shadow/Outline effects), interaction
-  components (`Selectable`, `Button`, `Toggle`/`ToggleGroup`, `Slider`,
-  `Scrollbar`, `Dropdown`, `InputField`, `ScrollRect`) and their Color
+  components (`Image`, `RawImage`, legacy `Text`, `Mask`/`RectMask2D`,
+  Shadow/Outline), interaction components (`Selectable`, `Button`,
+  `Toggle`, `Slider`, `Scrollbar`, `Dropdown`, `InputField`, `ScrollRect`)
+  and their Color
   Tint/Sprite Swap/Animation transitions, the `EventSystem`/Raycaster/
   Input Module pipeline, TextMeshPro UI text (`TMP_Text`, `TMP_InputField`,
-  `TMP_Dropdown`, its full rich text tag set, Style Sheets, Font Asset
-  Creator, Sprite Assets, SDF shaders), the UI (Canvas) Profiler module and
-  batching rules, and extending the system (`Graphic`, `LayoutGroup`,
-  custom raycasters/input modules). Use for building or debugging any
+  `TMP_Dropdown`, rich text tags, Font Asset Creator), the UI
+  (Canvas) Profiler module and batching rules, and extending the system
+  (`Graphic`, custom raycasters/input modules). Use for building or debugging any
   runtime Canvas-based HUD, menu, or diegetic/world-space UI. Not for:
   UI Toolkit/`UIDocument` screens (`ui-toolkit`), Animator clips or state
   machines behind a UI transition beyond wiring the Selectable Animation
   mode itself (`unity-animation`), input device polling and
   `.inputactions` authoring (`unity-input-system` — this skill only
   consumes the events its `EventSystem` delivers), and any gameplay rule
-  or state decision behind a bound value (`csharp-engineer`).
+  or state decision behind a bound value (`csharp-engineer`), Flexalon
+  box-model layout (`flexalon-layouts`), and recycling very long lists
+  (`osa-optimized-scrollview-adapter`).
 ---
 
 # Unity UI (uGUI) — Canvas, RectTransform, Interaction, TextMeshPro
@@ -82,6 +83,9 @@ what a UI displays as a game-rule outcome.
 - Negative trigger: the Animator Controller's own clips/state machine content once a Selectable's Animation transition is wired to it — that's `unity-animation`; this skill owns wiring the transition itself (per [animation-and-transitions.md](references/animation-and-transitions.md)), not authoring arbitrary Animator content beyond it.
 - Negative trigger: reading the input device or authoring `.inputactions` — that's `unity-input-system`; this skill only reacts to the events its `EventSystem`/Input Module delivers, and defers to that skill for `InputSystemUIInputModule` specifically.
 - Negative trigger: whether a bound value is currently allowed, what it means for the game, or any cooldown/resource/economy check — that's `csharp-engineer`'s Shared Core, per `coding-principles.md`'s Shared Core integrity section.
+- Negative trigger: arranging Canvas content through Flexalon's box-model components (`FlexalonObject`, `FlexalonFlexibleLayout`, Flexalon UI) — that's `flexalon-layouts`; coordinate with it so a Flexalon layout and a Layout Group/Content Size Fitter never drive the same `RectTransform`.
+- Negative trigger: a Spine-exported skeleton rendered inside the Canvas through `SkeletonGraphic` — that's `spine-animation`; this skill owns the Canvas, anchoring and Layout hierarchy around it, and must not leave a Layout Group or Content Size Fitter sizing the `RectTransform` the skeleton drives.
+- Negative trigger: a list long enough that one GameObject per row is untenable — that's `osa-optimized-scrollview-adapter`, the recycling adapter that replaces the plain `ScrollRect`; this skill still owns the Canvas, Viewport and `RectMask2D` hierarchy it sits inside.
 - Negative trigger: animating an already-built uGUI component's property over time (a fade, a slide-in, a punch/shake) — that's `dotween-tweening` or `litmotion-tweening`; this skill builds and wires the component, it doesn't own tweening it. Coordinate with whichever tweening skill is in play so a tween and a Layout Group/Content Size Fitter never drive the same `RectTransform` property at once, per [rect-transform-and-layout.md](references/rect-transform-and-layout.md).
 
 ## 4. How to use this skill
@@ -111,7 +115,7 @@ what a UI displays as a game-rule outcome.
 - UI batching/draw-call diagnosis via the UI Profiler module, and canvas-splitting for performance.
 - Extending the system: custom `Graphic`/`LayoutGroup`/input module authoring.
 - World-space/diegetic UI setup, multi-resolution design, and scripted UI instantiation.
-- Out of scope: UI Toolkit/`UIDocument` screens (`ui-toolkit`), Animator clip/state-machine content beyond wiring a Selectable transition (`unity-animation`), input device polling and `.inputactions` authoring (`unity-input-system`), any gameplay rule or state decision behind a bound value (`csharp-engineer`).
+- Out of scope: UI Toolkit/`UIDocument` screens (`ui-toolkit`), Animator clip/state-machine content beyond wiring a Selectable transition (`unity-animation`), input device polling and `.inputactions` authoring (`unity-input-system`), Flexalon box-model layout (`flexalon-layouts`), recycling adapters for very long lists (`osa-optimized-scrollview-adapter`), animating a built component's property over time (`dotween-tweening`, `litmotion-tweening`), the Spine skeleton inside a `SkeletonGraphic` (`spine-animation`), any gameplay rule or state decision behind a bound value (`csharp-engineer`).
 
 ## 6. Output format
 ```

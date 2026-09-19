@@ -11,8 +11,10 @@ description: >
   asset, clip, humanoid rig, or playback script. Not for: Timeline sequencing
   and the Animation Rigging package (no owning skill — flag the gap); cameras
   reacting to Animator state (`unity-cinemachine-authoring`); sprite art
-  (`unity-2d-sprite`); Spine runtimes (`spine-animation`); the rule behind a
-  state change (`csharp-engineer`).
+  (`unity-2d-sprite`); Spine runtimes (`spine-animation`); the logical gameplay
+  state graph a parameter reflects (`stateless-state-machines`); UI transition
+  wiring on a Canvas Selectable or a UI Toolkit screen (`ugui`, `ui-toolkit`);
+  the rule behind a state change (`csharp-engineer`).
 ---
 
 # Unity Animation — Mecanim, Avatars, Controllers, Blend Trees, Playables
@@ -54,6 +56,8 @@ Act as the Mecanim specialist for the client track — the tool reached for when
 - Negative trigger: a Spine-rigged character — that is `spine-animation`, a separate runtime with its own state machine that does not go through Mecanim.
 - Negative trigger: where a parameter's value comes from before it reaches the Animator — the stick or button behind it is `unity-input-system`, an agent's velocity is `unity-navmesh-navigation`; this skill owns the parameter and what it drives, not its source.
 - Negative trigger: the ragdoll a death animation hands over to, and the bodies and joints behind it — that is `unity-3d-physics`; this skill owns the blend back into animation, not the simulation.
+- Negative trigger: the logical state graph the animation depicts — which states exist, which transitions are legal, what guards them — that is `stateless-state-machines`; a gameplay decision made inside a `StateMachineBehaviour` puts the rule in a layer the server cannot mirror, so the graph drives Animator parameters and the Animator reflects them.
+- Negative trigger: a UI transition — a Canvas `Selectable`'s Animation transition mode, or a UI Toolkit screen's own transitions — that is `ugui` and `ui-toolkit`; this skill authors the Animator Controller and its clips once `ugui` has wired the transition to one, and UI Toolkit has no Animation Clip integration to author against at all.
 - Negative trigger: whether the attack that the animation depicts actually lands, or when a cooldown expires — that is `csharp-engineer`'s Shared Core, per `coding-principles.md`'s Shared Core integrity rule.
 
 ## 4. How to use this skill
@@ -80,7 +84,7 @@ Act as the Mecanim specialist for the client track — the tool reached for when
 - Authoring Override Controllers for visual variants sharing one graph.
 - Building hand-written playable graphs where the state machine cannot express the blend.
 - Diagnosing and budgeting animation cost: rig type, transform optimisation, culling, renderer count.
-- Out of scope: Timeline sequencing and the Animation Rigging package (no owning skill — flag the gap); cameras reacting to Animator state (`unity-cinemachine-authoring`); sprite art and slicing (`unity-2d-sprite`); spline geometry (`unity-2d-spriteshape`); Spine-rigged characters (`spine-animation`); the input or agent velocity behind a parameter (`unity-input-system`, `unity-navmesh-navigation`); ragdoll simulation (`unity-3d-physics`); the gameplay rule behind a state change (`csharp-engineer`).
+- Out of scope: Timeline sequencing and the Animation Rigging package (no owning skill — flag the gap); cameras reacting to Animator state (`unity-cinemachine-authoring`); sprite art and slicing (`unity-2d-sprite`); spline geometry (`unity-2d-spriteshape`); Spine-rigged characters (`spine-animation`); the input or agent velocity behind a parameter (`unity-input-system`, `unity-navmesh-navigation`); ragdoll simulation (`unity-3d-physics`); the logical state graph behind the animation (`stateless-state-machines`); UI transition wiring (`ugui`, `ui-toolkit`); the gameplay rule behind a state change (`csharp-engineer`).
 
 ## 6. Output format
 ```

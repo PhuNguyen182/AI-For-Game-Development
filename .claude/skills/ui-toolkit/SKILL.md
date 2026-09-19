@@ -11,8 +11,10 @@ description: >
   `CreateInspectorGUI`, `CreatePropertyGUI`), text/font assets, and the UI
   Test Framework package. Use for building or debugging a runtime HUD/menu
   or an Editor window/inspector in UI Toolkit. Not for: uGUI/Canvas UI
-  (`ugui`), Animator-driven UI (`unity-animation`), input device polling and
-  action binding (`unity-input-system`), and any gameplay rule behind the UI
+  (`ugui`), Odin attribute-driven inspectors, `OdinEditorWindow` and Odin
+  drawers (`odin-inspector`), Animator-driven UI (`unity-animation`), input device polling and
+  action binding (`unity-input-system`), the NUnit harness and test assembly a
+  UI test sits in (`unity-test-framework`), and any gameplay rule behind the UI
   (`csharp-engineer`).
 ---
 
@@ -66,6 +68,8 @@ and binding; you never decide what a UI displays as a game-rule outcome.
 - Writing UI Toolkit tests, or assessing a uGUI/IMGUI migration.
 - Negative trigger: the screen genuinely belongs on uGUI's `Canvas` — per [choosing-ui-system.md](references/choosing-ui-system.md), that's `ugui`; route to it rather than forcing the screen into UI Toolkit.
 - Negative trigger: Animator-driven UI animation (keyframed clips, blend trees driving a widget) — that's `unity-animation`; UI Toolkit itself has no Timeline/Animation Clip integration.
+- Negative trigger: an inspector or Editor window driven by Odin attributes (`[ShowIf]`, `[TableList]`, `OdinEditorWindow`, `OdinValueDrawer<T>`) rather than UXML/USS — that's `odin-inspector`; one window is built on one of the two, never both.
+- Negative trigger: the test assembly, NUnit attributes, Play Mode harness and run filters a UI test lives in — that's `unity-test-framework`; this skill owns only what the UI Test Framework package drives and asserts against a `VisualElement` tree.
 - Negative trigger: reading the input device or authoring `.inputactions` — that's `unity-input-system`; this skill only reacts to the events that system (or UI Toolkit's own default runtime input) delivers.
 - Negative trigger: whether a button press is currently allowed, what a value on screen means for the game, or any cooldown/resource check — that's `csharp-engineer`'s Shared Core, per `coding-principles.md`'s Shared Core integrity section.
 
@@ -94,7 +98,7 @@ and binding; you never decide what a UI displays as a game-rule outcome.
 - Text and font asset decisions, including migrating off static font assets.
 - Draw-call and dynamic-atlas performance diagnosis and fixes.
 - UI Toolkit test authoring support and uGUI/IMGUI migration assessment.
-- Out of scope: uGUI/Canvas UI (`ugui`), Animator-driven UI animation (`unity-animation`), input device polling and action binding (`unity-input-system`), any gameplay rule or state decision behind the UI (`csharp-engineer`).
+- Out of scope: uGUI/Canvas UI (`ugui`), the test harness a UI test runs inside (`unity-test-framework`), Odin-driven Editor UI (`odin-inspector`), Animator-driven UI animation (`unity-animation`), input device polling and action binding (`unity-input-system`), any gameplay rule or state decision behind the UI (`csharp-engineer`).
 
 ## 6. Output format
 ```

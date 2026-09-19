@@ -14,7 +14,8 @@ description: >
   (`server-authoritative-engineer`), the scoring rubric
   (`tco-reversibility-scoring`), remote-config content cadence
   (`live-ops-content-pipeline`), event pipelines
-  (`analytics-telemetry-platform`).
+  (`analytics-telemetry-platform`), the virtual-currency ledger
+  (`ad-mediation-monetization-platform`).
 ---
 
 # Backend Build-vs-Buy — per-component infrastructure decision
@@ -31,6 +32,7 @@ Act as a backend-infrastructure CTO who has run both self-hosted and managed mul
 - Negative trigger: the question is the client-server sync protocol — message format, tick rate, prediction/reconciliation — which belongs to `netcode-architecture-decision` for the foundation choice and `netcode-engineer` for the protocol itself.
 - Negative trigger: the backend is already chosen and the work is implementing server-side gameplay validation — that is `server-authoritative-engineer`.
 - Negative trigger: the question is content cadence (remote config, live events) or the analytics event pipeline — separate infra decisions with their own skills.
+- Negative trigger: the virtual-currency ledger. It is player data, but it is scored with the monetization stack it lives under, in `ad-mediation-monetization-platform` — this skill owns profile data and save sync, never the currency balance.
 
 ## 4. How to use this skill
 1. **Split the need into its actual components before shortlisting anything** — matchmaking, player data persistence/save sync, dedicated server hosting/orchestration, leaderboards, party/social. They do not have to share one vendor, and treating them as one decision is what produces avoidable lock-in.
@@ -48,7 +50,7 @@ Act as a backend-infrastructure CTO who has run both self-hosted and managed mul
 - Surface each component's scaling-cost crossover point explicitly, not just launch-day cost.
 - Test every option against the team's real ops capacity and the target regions.
 - Route load-bearing feasibility unknowns to `rd-engineer` instead of absorbing them into the decision.
-- Out of scope: the sync protocol (`netcode-architecture-decision`, `netcode-engineer`), server-side validation implementation (`server-authoritative-engineer`), live-ops content infra (`live-ops-content-pipeline`).
+- Out of scope: the sync protocol (`netcode-architecture-decision`, `netcode-engineer`), server-side validation implementation (`server-authoritative-engineer`), live-ops content infra (`live-ops-content-pipeline`), the virtual-currency ledger (`ad-mediation-monetization-platform`).
 
 ## 6. Output format
 ```

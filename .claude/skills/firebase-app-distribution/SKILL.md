@@ -38,7 +38,7 @@ Act as the tester-distribution specialist for the devops track, on behalf of `ci
 - Tester groups, membership, or who receives which build must be decided in the pipeline.
 - Release notes must carry enough for a tester to report a defect against the right build.
 - An iOS build reached App Distribution but installs for nobody.
-- Negative trigger: producing or signing the artifact — that is `unity-batchmode-cli` and `fastlane-mobile-delivery`.
+- Negative trigger: producing or signing the artifact — that is `unity-batchmode-cli` and `fastlane-mobile-delivery`. When the upload is written as a plugin action, the lane and `Pluginfile` hosting it stay `fastlane-mobile-delivery`'s; this skill owns the action's parameters, its authentication and its verification.
 - Negative trigger: the job, the credential binding, and the human approval before the upload — that is `jenkins-pipeline-authoring`.
 - Negative trigger: Crashlytics, Analytics, Remote Config, or any Firebase SDK compiled into the game — that is `tech-lead-sdk-platform`, a different Firebase entirely.
 - Negative trigger: submitting to Google Play or App Store review, and TestFlight — that is `tech-lead-sdk-platform`; App Distribution is not a store channel.

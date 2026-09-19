@@ -5,16 +5,14 @@ description: >
   `DOTween.To()` (generic getter/setter tweens), Shortcuts
   (`transform.DOMove`, `material.DOColor`, and the full uGUI/TextMeshPro
   shortcut catalogue), `Sequence` (`Append`/`Join`/`Insert`/`Prepend`/
-  `AppendCallback`), `Set-` chain methods (`SetEase`, `SetLoops`, `SetId`,
-  `SetTarget`, `SetAutoKill`, `SetRecyclable`, `SetRelative`, `SetUpdate`),
-  chained callbacks (`OnComplete`/`OnKill`/`OnUpdate`/etc.), instance and
-  filtered-static control (`Play`/`Pause`/`Kill`/`DOTween.KillAll`),
-  `DOPath`/`DOLocalPath` path tweens, Safe Mode and recycling, and both
-  native (`AsyncWaitForCompletion`, `WaitForCompletion` coroutine waits)
-  and UniTask-integrated (`UNITASK_DOTWEEN_SUPPORT`, `.ToUniTask()`-style
-  await/`WithCancellation`) async support. Use for any code-authored
-  interpolation of a value over time via DOTween specifically — including
-  its uGUI/TextMeshPro shortcuts and its UniTask integration. This project
+  `AppendCallback`), the `Set-` chain (`SetEase`, `SetLoops`, `SetId`,
+  `SetTarget`, `SetAutoKill`, `SetRecyclable`, `SetUpdate`), chained
+  callbacks (`OnComplete`/`OnKill`), instance and filtered-static control
+  (`Play`/`Pause`/`Kill`/`DOTween.KillAll`), `DOPath`/`DOLocalPath`, Safe
+  Mode and recycling, and awaiting completion natively
+  (`AsyncWaitForCompletion`) or through UniTask
+  (`UNITASK_DOTWEEN_SUPPORT`). Use for any code-authored interpolation of a
+  value over time via DOTween specifically. This project
   also maintains a `litmotion-tweening` skill for the same job with a
   different (zero-allocation) engine; which one governs new work is a
   standing per-module/project decision, never assumed by this skill alone

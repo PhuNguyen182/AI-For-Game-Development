@@ -7,7 +7,8 @@ description: >
   and Deferred+ rendering paths, the URP Asset's render scale, shadow distance
   and cascade settings, SRP Batcher compatibility, Rendering Layers, the 2D
   Renderer and `Light2D`, and camera stacking through
-  `UniversalAdditionalCameraData`. Use when URP must be configured or a
+  `UniversalAdditionalCameraData` — which also carries the per-camera
+  post-process anti-aliasing mode. Use when URP must be configured or a
   pass does not run.
   Not for: which pipeline to use (`render-pipeline-urp-hdrp`); HDRP
   (`unity-hdrp-rendering`); shader content (`shader-authoring`); Volumes and
@@ -44,6 +45,7 @@ Act as the URP configuration specialist for the client track — the tool reache
 - Choosing or changing the rendering path for a quality tier, or diagnosing lights that stop affecting an object past a certain count.
 - Configuring the 2D Renderer: `Renderer2DData`, `Light2D`, 2D shadows, Tilemap and Sprite lighting integration.
 - Setting up camera stacking through `UniversalAdditionalCameraData`, or compositing separately rendered layers.
+- Setting the per-camera post-process anti-aliasing mode — FXAA, SMAA or TAA — which lives on that same component and is not a Volume Override, so `unity-post-processing` routes it here rather than to its own catalog. MSAA is separate again, on the URP Asset.
 - Mapping URP Asset settings — render scale, shadow distance, cascade count, per-tier feature toggles — to the project's actual device tiers.
 - Confirming SRP Batcher is enabled and that shaders genuinely qualify for it.
 - Negative trigger: which pipeline the project runs, or whether it should be URP at all — that is `render-pipeline-urp-hdrp`, whose answer this skill requires as input.
@@ -73,7 +75,7 @@ Act as the URP configuration specialist for the client track — the tool reache
 - Custom render passes as `ScriptableRendererFeature` plus `ScriptableRenderPass` on the Render Graph API, registered on the correct Renderer.
 - Rendering path selection per tier, justified by a Profiler capture.
 - 2D Renderer configuration: `Renderer2DData`, `Light2D`, 2D shadows.
-- Camera stacking through `UniversalAdditionalCameraData`.
+- Camera stacking and the per-camera post-process anti-aliasing mode through `UniversalAdditionalCameraData`, plus MSAA on the URP Asset.
 - Rendering Layers for light and decal scoping.
 - URP Asset quality-tier mapping and SRP Batcher verification.
 - Out of scope: pipeline targeting (`render-pipeline-urp-hdrp`); HDRP (`unity-hdrp-rendering`); shader content (`shader-authoring`); Volumes and post-processing (`unity-post-processing`); lighting design and baking (`unity-lighting`); plain camera scripting (`unity-camera-fundamentals`); entity rendering (`unity-entities-graphics`).

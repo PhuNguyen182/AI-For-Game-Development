@@ -11,12 +11,15 @@ description: >
   foundation — replicating entity state, writing RPCs/commands, tuning
   prediction/interpolation/bandwidth, or debugging via the PlayMode
   Tool/Network Profiler. Not for: choosing NfE or the sync model
-  (`netcode-architecture-decision`); general ECS entity/component/system
+  (`netcode-architecture-decision`); the GameObject/MonoBehaviour netcode
+  stack (`netcode-for-gameobjects`); general ECS entity/component/system
   modeling (`unity-ecs-architecture`); job scheduling and Burst compilation
   (`unity-job-system-and-burst`, `unity-burst-compiler`); non-predicted
   physics authoring (`unity-physics`); ghost rendering
-  (`unity-entities-graphics`); UGS dashboard/account setup
-  (`tech-lead-sdk-platform`).
+  (`unity-entities-graphics`); reading the device behind an input command —
+  actions, bindings, rebinding (`unity-input-system`); the UTP driver,
+  pipelines, TLS and Relay data under the connection (`unity-transport`); UGS
+  dashboard/account setup (`tech-lead-sdk-platform`).
 ---
 
 # Netcode for Entities — Server-Authoritative Multiplayer with Client Prediction
@@ -83,12 +86,23 @@ or diagnosed.
   to zero after a predicted rollback.
 - Negative trigger: whether to adopt NfE at all, or which synchronization
   model the game needs — that's `netcode-architecture-decision`.
+- Negative trigger: `NetworkObject`/`NetworkBehaviour`/`NetworkVariable` on a
+  GameObject project — that's `netcode-for-gameobjects`, Unity's other netcode
+  stack; a project runs one of the two, never both on the same object.
 - Negative trigger: entity/component/system/query layout for non-networked
   ECS gameplay — that's `unity-ecs-architecture`; this skill only adds the
   networking layer on top.
 - Negative trigger: Job System scheduling, `JobHandle` chains, or Burst
   compilation constraints — `unity-job-system-and-burst` and
   `unity-burst-compiler`, unchanged by anything here.
+- Negative trigger: the UTP layer under the driver — `NetworkDriver` lifecycle,
+  pipeline stages, TLS, the `RelayServerData` allocation itself — that's
+  `unity-transport`; this skill owns which Worlds get a driver and when a
+  connection enters gameplay, never the driver's own API.
+- Negative trigger: reading the device itself — the action asset, bindings,
+  composites, rebinding, `PlayerInput` — that's `unity-input-system`, which
+  hands this skill a resolved value; what that value is gathered into, and
+  where, stays here.
 - Negative trigger: non-predicted Unity Physics authoring — colliders,
   joints, layers — that's `unity-physics`; this skill covers only how
   physics folds into the prediction loop.
@@ -135,11 +149,14 @@ or diagnosed.
 - Setting up and reading PlayMode Tool network emulation and the Network
   Profiler to back every claim with a measurement.
 - Out of scope: choosing NfE or the sync model
-  (`netcode-architecture-decision`); non-networked ECS modeling
+  (`netcode-architecture-decision`); the GameObject netcode stack
+  (`netcode-for-gameobjects`); non-networked ECS modeling
   (`unity-ecs-architecture`); Job/Burst mechanics
   (`unity-job-system-and-burst`, `unity-burst-compiler`); non-predicted
   physics authoring (`unity-physics`); ghost rendering
-  (`unity-entities-graphics`); UGS account/dashboard setup
+  (`unity-entities-graphics`); action assets, bindings and rebinding behind an
+  input command (`unity-input-system`); the UTP driver, pipelines, TLS and Relay
+  data under the connection (`unity-transport`); UGS account/dashboard setup
   (`tech-lead-sdk-platform`).
 
 ## 6. Output format

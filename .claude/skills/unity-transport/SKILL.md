@@ -11,8 +11,9 @@ description: >
   debugging a raw driver/pipeline, enabling encryption or Relay, jobifying
   the driver update loop, or wiring a custom transport into NGO. Not for:
   `UnityTransport` component Inspector fields or NGO-level state sync
-  (`netcode-for-gameobjects`), choosing a netcode foundation
-  (`netcode-architecture-decision`), the reconciliation/tick protocol above
+  (`netcode-for-gameobjects`), which Worlds get a driver and when a connection
+  enters gameplay on the DOTS stack (`netcode-for-entities`), choosing a netcode
+  foundation (`netcode-architecture-decision`), the reconciliation/tick protocol above
   the wire (`netcode-engineer`), server anti-cheat validation
   (`server-authoritative-engineer`).
 ---
@@ -49,6 +50,7 @@ Act as the Unity Transport implementation specialist for the client track — th
 - Targeting WebGL (`WebSocketNetworkInterface`), or writing/wiring a custom transport against `Unity.Netcode.NetworkTransport` for NGO.
 - Reading connection/bandwidth statistics or diagnosing a disconnect reason/status code.
 - Negative trigger: configuring the `UnityTransport` component's own Inspector fields, or anything at the `NetworkVariable`/Rpc/`NetworkObject` level — that is `netcode-for-gameobjects`; this skill only supplies the transport underneath it.
+- Negative trigger: the DOTS/ECS netcode stack's own use of a driver — which Worlds get one, `NetworkStreamInGame`, the connection state a ghost needs before it simulates — that is `netcode-for-entities`; this skill owns the driver API underneath either stack.
 - Negative trigger: whether UTP/NGO is even the right netcode foundation for this project, versus Mirror/Photon/custom — that is `netcode-architecture-decision`; this skill assumes UTP is already chosen.
 - Negative trigger: the reconciliation/prediction protocol, tick rate, or message format riding on top of the transport — `netcode-engineer` owns that decision; this skill supplies the API used to send the bytes.
 - Negative trigger: server-side validation/anti-cheat of any data carried over the wire — `server-authoritative-engineer`.
@@ -72,7 +74,7 @@ Act as the Unity Transport implementation specialist for the client track — th
 - Move driver polling into a Burst job via `NetworkDriver.Concurrent`/`MultiNetworkDriver` once profiling justifies it.
 - Enable TLS/DTLS encryption, or configure Unity Relay for NAT traversal/cross-play sessions.
 - Implement or wire a custom transport against `Unity.Netcode.NetworkTransport` for NGO, including WebGL socket support.
-- Out of scope: `UnityTransport` component configuration and NGO-level sync (`netcode-for-gameobjects`), the netcode foundation decision (`netcode-architecture-decision`), reconciliation/tick protocol design (`netcode-engineer`), server-side anti-cheat validation (`server-authoritative-engineer`).
+- Out of scope: `UnityTransport` component configuration and NGO-level sync (`netcode-for-gameobjects`), World and connection wiring on the DOTS stack (`netcode-for-entities`), the netcode foundation decision (`netcode-architecture-decision`), reconciliation/tick protocol design (`netcode-engineer`), server-side anti-cheat validation (`server-authoritative-engineer`).
 
 ## 6. Output format
 ```

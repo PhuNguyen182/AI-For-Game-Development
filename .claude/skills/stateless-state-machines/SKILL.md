@@ -11,8 +11,11 @@ description: >
   ability's cooldown graph, a UI screen flow, an enemy's behaviour states. Not for: a continuous value stream a subscriber composes
   over time (`r3-reactive-extensions`), the async body inside an `OnEntryAsync`
   (`unitask-async-programming`), generating a snapshot codec for that state
-  (`source-generator-authoring`), a two-state case with no real transition
-  rules, which is a bool (`coding-principles.md`).
+  (`source-generator-authoring`), an Animator Controller's own state machine
+  driving clips (`unity-animation`), an enum whose cases are kinds of thing
+  rather than states of one thing (`unity-scriptableobject-architecture`), a
+  two-state case with no real transition rules, which is a bool
+  (`coding-principles.md`).
 ---
 
 # Stateless-For-Unity — Explicit State Machines
@@ -32,6 +35,8 @@ Act as the state-machine design specialist for the client track: the one who dec
 - Negative trigger: a value evolving continuously that subscribers compose over time — that's `r3-reactive-extensions`; this skill models discrete named states and the legal moves between them.
 - Negative trigger: the async work inside an `OnEntryAsync` callback — that's `unitask-async-programming`; this skill only decides which transitions are async.
 - Negative trigger: generating snapshot/restore code for the state field — that's `source-generator-authoring`; this skill decides the state is externally held, not how its codec is emitted.
+- Negative trigger: the Animator Controller's own state machine — states that select clips, transitions with exit times, `StateMachineBehaviour` — that's `unity-animation`; this skill owns the logical graph a rule obeys, which drives Animator parameters rather than living inside them.
+- Negative trigger: a growing `switch` whose cases are kinds of thing rather than states of one thing — weapon or damage types needing new entries without editing the switch — that's `unity-scriptableobject-architecture`'s Extendable Enum; this skill declares states and the legal moves between them.
 - Negative trigger: two states with no real guard or transition rules — that is a bool, and building a machine for it is the speculative complexity YAGNI forbids in `coding-principles.md`.
 
 ## 4. How to use this skill
@@ -54,7 +59,7 @@ Act as the state-machine design specialist for the client track: the one who dec
 - Choosing internal versus external state ownership against snapshot, rollback, and save requirements.
 - Defining unpermitted-trigger behaviour via `Ignore`/`OnUnhandledTrigger`/`CanFire` instead of accepting the default throw.
 - Modeling guarded transitions (`PermitIf`), reentry (`PermitReentry`), and hierarchies (`SubstateOf`).
-- Out of scope: continuous value streams (`r3-reactive-extensions`), the async body behind `OnEntryAsync` (`unitask-async-programming`), snapshot codec generation (`source-generator-authoring`), a two-state case that is a bool (`coding-principles.md`).
+- Out of scope: continuous value streams (`r3-reactive-extensions`), the async body behind `OnEntryAsync` (`unitask-async-programming`), snapshot codec generation (`source-generator-authoring`), the Animator Controller's clip-driving state machine (`unity-animation`), an enum of variants rather than states (`unity-scriptableobject-architecture`), a two-state case that is a bool (`coding-principles.md`).
 
 ## 6. Output format
 ```

@@ -8,11 +8,13 @@ description: >
   Profiler packages, `ProfilerMarker`, `ProfilerRecorder`,
   `Profiler.BeginSample`, and Development Build profiling over adb or WiFi
   against a real device. Use when a frame hitch, GC spike, draw-call jump or
-  memory growth needs a number. Not for: choosing the fix
+  memory growth needs a number. Not for: turning that number into a pass or
+  fail against a budget (`performance-budget-verification`); choosing the fix
   (`unity-engineer`); deep native, GPU or leak root-causing
   (`tech-lead-performance`); rendering configuration itself
   (`unity-urp-rendering`, `unity-hdrp-rendering`); job scheduling
-  (`unity-job-system-and-burst`); Burst output (`unity-burst-compiler`).
+  (`unity-job-system-and-burst`); Burst output (`unity-burst-compiler`); the
+  Audio module's voice, DSP and streaming metrics (`unity-audio-mixer`).
 ---
 
 # Unity Profiler Diagnostics — Modules, Frame Debugger, Memory Snapshots, Custom Markers
@@ -43,10 +45,12 @@ Act as the measurement specialist for the client track — the tool reached for 
 - Editor numbers look fine but the build on the target device does not, or a mobile claim needs a device-representative capture.
 - A system's cost is real but invisible in the Profiler hierarchy — a third-party plugin, a batch of similar calls, or work hidden inside a native call.
 - A runtime debug overlay needs to read a profiler counter back in the running game.
+- Negative trigger: deciding whether the number passes — a budget in milliseconds against a named device tier, warm-up frames discarded, repeated runs and the spread that separates a regression from noise — that is `performance-budget-verification`; this skill produces the measurement that verdict is made from.
 - Negative trigger: applying the fix once the bottleneck is localized — allocation removal, pooling, data-structure choice, LOD and batching setup — that is `unity-engineer`'s work, guided by `performance-and-algorithms.md`.
 - Negative trigger: a bottleneck that stays unexplained after a competent capture — a native plugin, a GPU-level intervention, a leak the snapshot diff cannot localize — escalates to `tech-lead-performance`; this skill supplies the measurement that justifies the escalation.
 - Negative trigger: choosing a rendering path, Renderer Feature, or quality tier — that is `unity-urp-rendering` and `unity-hdrp-rendering`; this skill supplies the frame-time evidence those choices are argued from.
 - Negative trigger: job dependency chains, batch sizing, and scheduling overhead are `unity-job-system-and-burst`, and reading the Burst Inspector's generated assembly is `unity-burst-compiler` — this skill only establishes that worker threads are or are not the cost.
+- Negative trigger: the Profiler's Audio module — voice counts against Max Real Voices, the Virtual column, DSP versus streaming CPU — that is `unity-audio-mixer`; a silent or stuttering sound is answered by those columns, which the modules listed above never show.
 
 ## 4. How to use this skill
 1. **Name the question before opening a module** — module choice is determined by the question, not by habit, per [profiler-window-and-modules.md](references/profiler-window-and-modules.md). Script cost goes to CPU Usage, "is the GPU the limit" goes to GPU Usage or Highlights, batching goes to Rendering then the Frame Debugger, and growth over a session goes to a Memory Profiler snapshot pair. Opening CPU Usage for a GPU-bound frame produces a real number that answers nothing; [root-links.md](references/root-links.md) states which tool owns which class of question.
@@ -69,7 +73,7 @@ Act as the measurement specialist for the client track — the tool reached for 
 - Proving or disproving a before-and-after performance claim with a Profile Analyzer comparison.
 - Investigating memory growth through a Memory Profiler snapshot diff.
 - Adding `ProfilerMarker`/`ProfilerRecorder` instrumentation and runtime counter readback.
-- Out of scope: applying the optimization (`unity-engineer`); deep native, GPU, or leak root-causing (`tech-lead-performance`); rendering configuration (`unity-urp-rendering`, `unity-hdrp-rendering`); job scheduling analysis (`unity-job-system-and-burst`); Burst compilation output (`unity-burst-compiler`).
+- Out of scope: the pass/fail verdict against a budget (`performance-budget-verification`); the Audio module (`unity-audio-mixer`); applying the optimization (`unity-engineer`); deep native, GPU, or leak root-causing (`tech-lead-performance`); rendering configuration (`unity-urp-rendering`, `unity-hdrp-rendering`); job scheduling analysis (`unity-job-system-and-burst`); Burst compilation output (`unity-burst-compiler`).
 
 ## 6. Output format
 ```

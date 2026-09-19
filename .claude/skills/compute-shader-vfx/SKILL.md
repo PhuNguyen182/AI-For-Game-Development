@@ -13,7 +13,8 @@ description: >
   parallel work (`unity-job-system-and-burst`); the shader consuming the
   buffer (`shader-authoring`); particle graph structure
   (`vfx-particle-authoring`); ECS mesh deformation
-  (`unity-entities-graphics`).
+  (`unity-entities-graphics`); the CPU-side `Mesh` deformed geometry must
+  exist in (`unity-3d-mesh`).
 ---
 
 # Compute Shaders for Visual Effects
@@ -35,6 +36,7 @@ Act as the GPU compute specialist for visual effects on the client track — the
 - Negative trigger: the shader that reads the buffer and shades the result — that is `shader-authoring`.
 - Negative trigger: the particle graph's emission and simulation structure — that is `vfx-particle-authoring`; this skill writes a custom kernel it consumes.
 - Negative trigger: compute skinning and blend shapes for ECS entities — that is `unity-entities-graphics`, which has its own deformation system with its own limits.
+- Negative trigger: geometry the CPU still has to read — a `Mesh` a collider cooks from, a gameplay system measures, or the project saves — that is `unity-3d-mesh`; the same deciding question as the job-system line above, and a readback added to recover that data is the sign the work belonged there.
 
 ## 4. How to use this skill
 1. **Define the buffer contract before writing a kernel** — the HLSL `struct` must match the C# one in field order, type sizes, and resulting stride, because a mismatch does not throw; it reinterprets memory and produces plausible-looking garbage. State the stride explicitly on both sides.
@@ -59,7 +61,7 @@ Act as the GPU compute specialist for visual effects on the client track — the
 - Dispatch sizing, `[numthreads]` selection, and kernel bounds correctness.
 - Indirect draw wiring and buffer lifecycle management.
 - Platform compute-support checks and fallback design.
-- Out of scope: non-visual compute throughput (`tech-lead-performance`); CPU-side parallel work (`unity-job-system-and-burst`); the consuming shader (`shader-authoring`); particle graph structure (`vfx-particle-authoring`); ECS mesh deformation (`unity-entities-graphics`).
+- Out of scope: non-visual compute throughput (`tech-lead-performance`); CPU-side parallel work (`unity-job-system-and-burst`); the CPU-readable `Mesh` (`unity-3d-mesh`); the consuming shader (`shader-authoring`); particle graph structure (`vfx-particle-authoring`); ECS mesh deformation (`unity-entities-graphics`).
 
 ## 6. Output format
 ```

@@ -64,6 +64,7 @@ inside `Game.Client.*`.
 - Negative trigger: decorating an existing SO field's Inspector presentation (grouping, conditional visibility, custom drawers) — that's `odin-inspector`; this skill only decides the SO's architecture, not how its fields render.
 - Negative trigger: a messaging/reactive-stream requirement already served by MessagePipe or R3 — that's `messagepipe-event-messaging`/`r3-reactive-extensions`; reach for an Event Channel SO only when the asset-based, Inspector-referenceable shape is the actual reason, not by default.
 - Negative trigger: how a dependency reaches a MonoBehaviour or its lifetime scope — that's `vcontainer-dependency-injection`; an SO reference assigned in the Inspector is not itself a DI concern.
+- Negative trigger: a `switch` whose branches are states of one object with legal moves between them, rather than kinds of thing needing new entries — that's `stateless-state-machines`; an Extendable Enum adds cases without editing the switch, it does not model transitions or guard them.
 
 ## 4. How to use this skill
 1. **Settle the Shared Core boundary before writing any ScriptableObject method** — an SO carries `UnityEngine.ScriptableObject`, so it can never live in `Game.Core.*`; any decision-making logic inside it (a damage formula, a drop table) still belongs in `Game.Core.*`, called from the SO rather than reimplemented inside it, per `coding-principles.md`'s Shared Core integrity section.
@@ -85,7 +86,7 @@ inside `Game.Client.*`.
 - Implementing a Command SO with `Execute()`/`Undo()`, including the designer-authored-asset vs `CreateInstance`-at-runtime distinction.
 - Implementing a Runtime Set with correct `OnEnable`/`OnDisable` self-registration.
 - Applying Dual Serialization to any SO field mutated at runtime.
-- Out of scope: the game-rule logic behind any of these patterns' decision points (`csharp-engineer`), Inspector-attribute presentation of an existing SO field (`odin-inspector`), MessagePipe/R3 messaging infrastructure (`messagepipe-event-messaging`, `r3-reactive-extensions`), DI wiring and lifetime scope (`vcontainer-dependency-injection`).
+- Out of scope: the game-rule logic behind any of these patterns' decision points (`csharp-engineer`), a state graph with transitions and guards (`stateless-state-machines`), Inspector-attribute presentation of an existing SO field (`odin-inspector`), MessagePipe/R3 messaging infrastructure (`messagepipe-event-messaging`, `r3-reactive-extensions`), DI wiring and lifetime scope (`vcontainer-dependency-injection`).
 
 ## 6. Output format
 ```

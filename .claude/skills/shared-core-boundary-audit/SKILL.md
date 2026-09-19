@@ -10,7 +10,9 @@ description: >
   reach-through chains. Use when reviewing any submission that touches
   gameplay rules, damage, cooldowns, economy maths, or crosses the Core and
   Client line. Not for: authoring the rules (`csharp-engineer`); asserting
-  them in tests (`unity-test-framework`); secrets and dangerous files
+  them in tests (`unity-test-framework`); building the standing compile-time
+  diagnostic for a violation that keeps recurring
+  (`roslyn-analyzer-codefix`); secrets and dangerous files
   (`secret-and-supply-chain-scan`); performance findings
   (`unity-profiler-diagnostics`).
 ---
@@ -32,6 +34,7 @@ Act as the layering and determinism auditor for the QA track, on behalf of `code
 - Negative trigger: asserting the rule's behaviour in a test — that is `unity-test-framework`, run by `qa-automation-engineer`.
 - Negative trigger: leaked secrets, dangerous files, or fraudulent logic — that is `secret-and-supply-chain-scan`, a separate gate with its own verdict.
 - Negative trigger: allocation, frame cost, or any performance judgment — that is `unity-profiler-diagnostics`; a hot-path finding here is noted and routed, never adjudicated.
+- Negative trigger: building the compile-time diagnostic that would stop a violation recurring — that is `roslyn-analyzer-codefix`, which enforces these same two rules as an analyzer. This audit greps one diff and reports; when it reports the same mechanically decidable violation across submissions, say so, because that recurrence is exactly the analyzer's own entry condition.
 
 ## 4. How to use this skill
 1. **Establish which layer each changed file belongs to before reading any logic** — namespace and assembly definition decide it, not the folder. A file whose namespace says `Game.Core` while its asmdef references a `UnityEngine` module is already a finding, and every later step reads differently depending on the answer.
@@ -50,7 +53,7 @@ Act as the layering and determinism auditor for the QA track, on behalf of `code
 - Detecting game-rule logic duplicated into, or living only in, a MonoBehaviour.
 - Confirming the dependency direction and flagging reach-through chains.
 - Producing a boundary verdict with `path:line` findings, routed to an owning agent.
-- Out of scope: writing or moving the code (`csharp-engineer`, `unity-engineer`); test coverage of the rule (`unity-test-framework`); secrets and dangerous files (`secret-and-supply-chain-scan`); performance verdicts (`unity-profiler-diagnostics`); deciding where a new rule belongs (`technical-architect`).
+- Out of scope: writing or moving the code (`csharp-engineer`, `unity-engineer`); test coverage of the rule (`unity-test-framework`); secrets and dangerous files (`secret-and-supply-chain-scan`); performance verdicts (`unity-profiler-diagnostics`); the standing compile-time analyzer for a recurring violation (`roslyn-analyzer-codefix`); deciding where a new rule belongs (`technical-architect`).
 
 ## 6. Output format
 ```

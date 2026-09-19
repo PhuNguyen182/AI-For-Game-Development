@@ -8,7 +8,7 @@ description: >
   Weighs cadence need, segmentation and A/B targeting, staged rollout and
   rollback safety, and schema versioning against config-consuming code. Use
   when choosing the infrastructure behind live content cadence.
-  Not for: designing the events or economy themselves (GD), event analytics (`analytics-telemetry-platform`), backend platform choice (`backend-build-vs-buy`), post-release crash triage (`crash-anr-fault-domain-triage`), the scoring rubric (`tco-reversibility-scoring`).
+  Not for: designing the events or economy themselves (GD), shipping new assets rather than tuning values already in the build (`unity-addressables`), event analytics (`analytics-telemetry-platform`), backend platform choice (`backend-build-vs-buy`), post-release crash triage (`crash-anr-fault-domain-triage`), the scoring rubric (`tco-reversibility-scoring`).
 ---
 
 # Live-Ops Content Pipeline — remote config for content and economy cadence
@@ -24,6 +24,7 @@ Act as a live-service infrastructure CTO who has run an economy on remote config
 - Deciding whether a dedicated platform is warranted at all, against a GDD that may only need occasional patches.
 - An existing config approach has produced an incident — a bad value, a slow rollback, or an old client breaking on a new key — and the platform choice itself is in question.
 - Negative trigger: designing what the events, rewards, or economy curves actually are — that is the GD's design work, which this infrastructure only delivers.
+- Negative trigger: delivering new assets — items, characters, maps — rather than tuning values already in the build; that is `unity-addressables` or a CDN, and no config platform can do it.
 - Negative trigger: which events get instrumented and where the data lands — that is `analytics-telemetry-platform`.
 - Negative trigger: the backend service, auth, and player-data platform underneath — that is `backend-build-vs-buy`.
 - Negative trigger: post-release crash and ANR triage from production telemetry — that is `crash-anr-fault-domain-triage`, an unrelated concern despite the shared "live-ops" label.
@@ -48,7 +49,7 @@ Act as a live-service infrastructure CTO who has run an economy on remote config
 - Establish the rollback blast window as a measured number rather than a vendor feature checkbox.
 - Define schema versioning and old-client behaviour before the first key is added.
 - Set the code-side consumption standard that keeps the choice reversible.
-- Out of scope: designing event and economy content (GD), analytics instrumentation (`analytics-telemetry-platform`), backend and player-data platform (`backend-build-vs-buy`), crash and ANR triage (`crash-anr-fault-domain-triage`), the scoring rubric (`tco-reversibility-scoring`).
+- Out of scope: designing event and economy content (GD), asset delivery (`unity-addressables`), analytics instrumentation (`analytics-telemetry-platform`), backend and player-data platform (`backend-build-vs-buy`), crash and ANR triage (`crash-anr-fault-domain-triage`), the scoring rubric (`tco-reversibility-scoring`).
 
 ## 6. Output format
 ```

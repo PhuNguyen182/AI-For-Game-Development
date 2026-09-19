@@ -9,7 +9,10 @@ description: >
   keep / keep-with-mitigation / replace-now / replace-on-timeline verdict.
   Use before committing to a foundational dependency, or when a repeated
   failure traces back to one.
-  Not for: reviewing this project's own code (`code-reviewer`), trivial
+  Not for: whether this project could adopt a candidate not yet in it —
+  IL2CPP, engine version, `Game.Core.*` determinism
+  (`practical-fit-screening`), reviewing this project's own code
+  (`code-reviewer`), trivial
   swappable utilities, SDK integration work (`tech-lead-sdk-platform`),
   the scoring rubric (`tco-reversibility-scoring`), recording the outcome as
   a standard (`engineering-standard-adr-authoring`).
@@ -30,6 +33,7 @@ Act as a vendor-risk technical due-diligence reviewer: the person who asks what 
 - Negative trigger: the code under question is this project's own — that is `code-reviewer`'s job, and this rubric measures nothing useful about it.
 - Negative trigger: a trivial, easily-swappable utility with no gameplay-critical surface — formalising that risk costs more than the risk.
 - Negative trigger: the dependency is already chosen and the work is integrating it — that is `tech-lead-sdk-platform`.
+- Negative trigger: the candidate is not in the project yet and the question is whether this project could adopt it at all — scripting backend, engine and language version, `Game.Core.*` determinism, duplication against `Packages/manifest.json` — that is `practical-fit-screening`; this rubric judges vendor survival, not adoptability.
 
 ## 4. How to use this skill
 1. **Read maintenance signal from activity and succession, not from stars or download counts** — recent commit and release cadence, historical response time to breaking issues, and whether a single maintainer or a company/community with succession backs it. Popularity is a lagging indicator; an abandoned project stays popular for years.
@@ -48,7 +52,7 @@ Act as a vendor-risk technical due-diligence reviewer: the person who asks what 
 - Catch vendor risk before it becomes a repeated production failure rather than after.
 - Name a concrete mitigation whenever the verdict is "keep with mitigation", not a general intention to reduce coupling.
 - Escalate precedent-setting verdicts into a recorded standard.
-- Out of scope: this project's own code quality (`code-reviewer`), day-to-day SDK integration (`tech-lead-sdk-platform`), trivial swappable utilities.
+- Out of scope: this project's own code quality (`code-reviewer`), day-to-day SDK integration (`tech-lead-sdk-platform`), trivial swappable utilities, the adoption gates on a candidate not yet in the project (`practical-fit-screening`).
 
 ## 6. Output format
 ```

@@ -7,8 +7,9 @@ description: >
   and the GUID break a regenerated one causes, the ignore surface
   (`Library/`, `Temp/`, `Logs/`, `UserSettings/` versus tracked
   `ProjectSettings/` and `Packages/packages-lock.json`), recurring
-  `ProjectVersion.txt` conflicts, Git LFS pointer corruption, and why the
-  Editor must be closed before a working-tree rewrite. Not for: generic
+  `ProjectVersion.txt` conflicts, which assets belong in Git LFS and how a
+  pointer file presents, and why the Editor must be closed before a
+  working-tree rewrite. Not for: generic
   history repair (`git-recovery`), anchoring a command
   (`git-safety-anchor`), tracing a commit (`git-forensics`).
 ---
@@ -39,7 +40,7 @@ Act as the Unity repository specialist for the devops track — the skill reache
 - `.gitignore` or `.gitattributes` is being written or audited for this project.
 - A texture, audio clip, or model checks out as a small text file, or `git lfs` reports missing objects.
 - A working-tree rewrite is planned and the Editor's state has to be accounted for.
-- Negative trigger: recovering commits or repairing a corrupt object store — that's `git-recovery`.
+- Negative trigger: recovering commits or repairing a corrupt object store — that's `git-recovery`, including an LFS object missing or corrupt in the store; this skill owns which Unity assets are LFS-tracked and whether a checked-out asset is content rather than a pointer.
 - Negative trigger: producing the backup ref before a command runs — that's `git-safety-anchor`.
 - Negative trigger: which commit changed this asset and when — that's `git-forensics`.
 
@@ -65,7 +66,7 @@ Act as the Unity repository specialist for the devops track — the skill reache
 - Author or audit `.gitignore` and `.gitattributes` for this project, with the reason for each entry.
 - Decide a `ProjectVersion.txt` or `packages-lock.json` conflict rather than merging it.
 - Confirm LFS-tracked assets checked out as content, and diagnose pointer-file symptoms.
-- Out of scope: recovering lost commits or repairing the object store (`git-recovery`), producing the anchor for a destructive command (`git-safety-anchor`), tracing a change to its commit (`git-forensics`), and the content decision about which version of a scene is correct (`unity-engineer`).
+- Out of scope: recovering lost commits, or repairing the object store including a missing LFS object (`git-recovery`), producing the anchor for a destructive command (`git-safety-anchor`), tracing a change to its commit (`git-forensics`), and the content decision about which version of a scene is correct (`unity-engineer`).
 
 ## 6. Output format
 ```

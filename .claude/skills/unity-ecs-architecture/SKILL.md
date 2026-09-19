@@ -58,6 +58,7 @@ Act as the ECS data- and system-architecture specialist for the client track —
 - Negative trigger: `PhysicsCollider`/`PhysicsVelocity`/`PhysicsMass`, collider shapes, joints, or spatial queries — that is `unity-physics`, a specialist built on this skill's mechanics rather than a replacement for them.
 - Negative trigger: `RenderMeshArray`/`MaterialMeshInfo`, DOTS Instancing shader compatibility, material overrides, or Companion Components — that is `unity-entities-graphics`.
 - Negative trigger: a GPU-driven visual effect — that is `compute-shader-vfx`.
+- Negative trigger: replicating an entity's state across a network — ghosts, `[GhostField]`, `IRpcCommand`, the predicted simulation group — that is `netcode-for-entities`, layered on top of this skill's modeling rather than a part of it.
 - Negative trigger: no prior decision justifying ECS for this feature — that call belongs to `tech-lead-performance`; converting a small MonoBehaviour feature "because ECS is faster" is the escalation `performance-and-algorithms.md` forbids skipping.
 
 ## 4. How to use this skill
@@ -84,7 +85,7 @@ Act as the ECS data- and system-architecture specialist for the client track —
 - `EntityCommandBuffer` batching, including deterministic sort keys for parallel writes.
 - `BlobAssetReference<T>` introduction for immutable shared bulk data.
 - Diagnosis of chunk fragmentation, stale baked data, and post-structural-change handle invalidation.
-- Out of scope: whether a feature warrants ECS at all (`tech-lead-performance`); job scheduling and allocator lifetime (`unity-job-system-and-burst`); Burst compilation tuning (`unity-burst-compiler`); container selection (`unity-collections`); maths types (`unity-mathematics`); physics components (`unity-physics`); rendering components (`unity-entities-graphics`); the Profiler capture that justifies the work (`unity-profiler-diagnostics`); GPU-driven effects (`compute-shader-vfx`).
+- Out of scope: whether a feature warrants ECS at all (`tech-lead-performance`); job scheduling and allocator lifetime (`unity-job-system-and-burst`); Burst compilation tuning (`unity-burst-compiler`); container selection (`unity-collections`); maths types (`unity-mathematics`); physics components (`unity-physics`); rendering components (`unity-entities-graphics`); the Profiler capture that justifies the work (`unity-profiler-diagnostics`); GPU-driven effects (`compute-shader-vfx`); networked ghost replication and prediction (`netcode-for-entities`).
 
 ## 6. Output format
 ```

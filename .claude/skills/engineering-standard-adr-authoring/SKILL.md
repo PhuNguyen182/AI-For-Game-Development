@@ -25,7 +25,7 @@ Act as a CTO who treats standards as versioned artifacts with a history, and who
 - A repeated review or escalation pattern shows a standard was assumed but never written down anywhere checkable.
 - Negative trigger: a single feature's technical design — that is a Tech Spec, owned by `technical-architect`.
 - Negative trigger: the per-submission handoff note an engineer writes for Code Reviewer — a lighter, point-in-time artifact, not a durable standard.
-- Negative trigger: the durable in-repo documentation a completed Complex-tier feature owes — that is the README governed by the `feature-documentation.md` rule.
+- Negative trigger: the durable in-repo documentation a feature owes on completion from A3 upward — that is the README governed by the `feature-documentation.md` rule.
 - Negative trigger: making the underlying technology choice — that belongs to the domain CTO skill; this skill records what was already decided.
 - Negative trigger: the cost/reversibility arithmetic behind that choice — that rubric is `tco-reversibility-scoring`.
 

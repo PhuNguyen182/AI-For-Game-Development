@@ -9,7 +9,8 @@ description: >
   when choosing which cases a test suite should actually contain. Not for:
   writing the tests (`unity-test-framework`); playing scenarios by hand
   (`playtest-scenario-execution`); measuring performance
-  (`performance-budget-verification`); the spec's own acceptance criteria
+  (`performance-budget-verification`); walking the cases on a device
+  (`device-test-walkthrough`); the spec's own acceptance criteria
   (`technical-architect`).
 ---
 
@@ -30,6 +31,7 @@ Act as the test-design specialist for the QA track, on behalf of `qa-lead` when 
 - Negative trigger: writing or running the tests — that is `unity-test-framework`, run by `qa-automation-engineer`.
 - Negative trigger: playing a GDD scenario by hand and judging feel — that is `playtest-scenario-execution`.
 - Negative trigger: measuring frame time, memory, or allocation against a budget — that is `performance-budget-verification`.
+- Negative trigger: walking the cases against an installed build on a real device — that is `device-test-walkthrough`, which consumes the cases this plan marks `Observe via: build/device`.
 - Negative trigger: deciding what the feature must *do* — that is the Tech Spec's acceptance criteria, owned by `technical-architect`; this skill decides what evidence proves it.
 
 ## 4. How to use this skill
@@ -41,7 +43,7 @@ Act as the test-design specialist for the QA track, on behalf of `qa-lead` when 
 6. **Rank every case by impact against likelihood, and record what the ranking dropped** — impact uses `defect-reporting.md`'s Severity criteria so a plan and a defect report speak the same language. When coverage is cut for time, the plan states what was cut; silent truncation reads downstream as "this was covered".
 7. **Assign each case to the QA agent whose scope actually contains it** — deterministic rule logic to `qa-automation-engineer`, GDD scenarios and feel to `playtest-tester`, budgets to `performance-qa-engineer`, real-artifact behaviour to `build-verification-tester`. A case with no owner is a gap, not an assignment.
 8. **Write exit criteria as evidence, never as effort** — "the boundary cases pass and the playtest report shows the intended pacing" is checkable; "QA has been done" is not. Per `verification-standards.md`, each criterion names what must be observed for the feature to count as verified.
-9. **Scale the plan to the feature's Triage tier** — a Simple-tier change gets a few lines, a Complex-tier feature gets the full treatment. Speculative coverage of a case the spec does not require is the same waste as speculative code, per `coding-principles.md`'s YAGNI section.
+9. **Scale the plan to the feature's assurance tier**, per `task-classification.md` — an A1/A2 change gets a few lines, an A4/A5 feature gets the full treatment. Speculative coverage of a case the spec does not require is the same waste as speculative code, per `coding-principles.md`'s YAGNI section.
 
 ## 5. Specific goals / tasks this skill performs
 - Extracting testable claims from a Tech Spec and returning the untestable ones.
@@ -50,12 +52,12 @@ Act as the test-design specialist for the QA track, on behalf of `qa-lead` when 
 - Ranking cases by impact against likelihood, and recording what the ranking dropped.
 - Assigning each case to the owning QA agent.
 - Writing exit criteria stated as observable evidence.
-- Out of scope: writing or running tests (`unity-test-framework`); manual scenario play (`playtest-scenario-execution`); performance measurement (`performance-budget-verification`); the feature's acceptance criteria and Triage tier (`technical-architect`).
+- Out of scope: writing or running tests (`unity-test-framework`); manual scenario play (`playtest-scenario-execution`); device execution of the cases (`device-test-walkthrough`); performance measurement (`performance-budget-verification`); the feature's acceptance criteria and assurance tier (`technical-architect`).
 
 ## 6. Output format
 ```
 ## Test Plan — <feature>
-- Tier: <Simple / Medium / Complex, and the plan depth it justifies>
+- Tier: <A1–A5, and the plan depth it justifies>
 - Testable claims: <spec clause → the observable outcome it promises>
 - Untestable claims: <clause, and what is missing — or none>
 - Partitions: <input → equivalence classes, and the value chosen from each>
@@ -84,7 +86,7 @@ Act as the test-design specialist for the QA track, on behalf of `qa-lead` when 
 - Output: declined as a plan, though both cases stay in it. A happy path plus a null check covers neither boundary of the cooldown range nor the haste cap, which is where off-by-one and clamping defects actually live; per §4 step 3 a plan without boundary cases has not covered the rule. Produced the derived case list instead and noted that it is finite and reviewable, which "what we usually do" is not.
 
 **Example 3**
-- Input: a Simple-tier fix correcting a typo in a UI label, with a request for a full test plan.
+- Input: an A1 fix correcting a typo in a UI label, with a request for a full test plan.
 - Output: a three-line plan, deliberately. Per §4 step 9 the plan scales to the tier, and deriving partitions for a static string would be the bureaucratic overhead `feature-documentation.md` and YAGNI both warn against. Exit criterion is a single visual confirmation, assigned to `playtest-tester`, with the tier stated so the brevity reads as a decision rather than an omission.
 
 ## 8. Edge cases & guardrails

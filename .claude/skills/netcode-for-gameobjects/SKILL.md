@@ -10,11 +10,13 @@ description: >
   multiplayer state sync, spawning/ownership, scene or session management, or
   transport setup for a Unity multiplayer feature, or diagnosing a desync or
   wrong-direction RPC. Not for: choosing NGO itself over Mirror/Photon/custom
-  (`netcode-architecture-decision`), the gameplay rule a synced value
+  (`netcode-architecture-decision`), the DOTS/ECS ghost and prediction
+  stack (`netcode-for-entities`), the gameplay rule a synced value
   represents (`csharp-engineer`), server-side anti-cheat validation
   (`server-authoritative-engineer`), the reconciliation/tick-rate protocol
-  design (`netcode-engineer`), non-network Unity performance work
-  (`tech-lead-performance`).
+  design (`netcode-engineer`), the raw UTP driver, pipelines, TLS and
+  `RelayServerData` beneath the `UnityTransport` component (`unity-transport`),
+  non-network Unity performance work (`tech-lead-performance`).
 ---
 
 # Netcode for GameObjects — Multiplayer State Sync, Spawning, Scenes
@@ -49,7 +51,9 @@ Act as the Netcode for GameObjects implementation specialist for the client trac
 - Setting up scene management, session management, or reconnection for a multiplayer session.
 - Choosing or implementing against Client-Server vs. Distributed Authority topology-specific API behavior.
 - Configuring `UnityTransport`, Unity Relay, or diagnosing a networked feature with artificial latency/packet loss.
+- Negative trigger: anything below that component — a raw `NetworkDriver` and its update loop, `NetworkPipeline` stage choice, TLS via `SecureNetworkProtocolParameter`, the `RelayServerData` allocation itself, `WebSocketNetworkInterface`, a custom transport implementing `Unity.Netcode.NetworkTransport`, or a disconnect reason code — that is `unity-transport`; this skill owns the component's own fields and everything above it.
 - Negative trigger: whether NGO is even the right netcode foundation for this project, versus Mirror/Photon/custom — that is `netcode-architecture-decision`; this skill assumes NGO is already chosen.
+- Negative trigger: the same work on a DOTS/ECS project — ghosts, `[GhostField]`, the command stream, the predicted simulation group — that is `netcode-for-entities`, Unity's other netcode stack; a project runs one of the two, never both on the same object.
 - Negative trigger: the gameplay rule/formula the synced value represents (damage math, cooldowns, economy) — that is `Game.Core.*` per `coding-principles.md`'s Shared Core integrity section, owned by `csharp-engineer`; this skill only carries the resolved value across the wire.
 - Negative trigger: server-side validation/anti-cheat of a synced value — `server-authoritative-engineer`.
 - Negative trigger: designing the reconciliation/prediction protocol itself (tick rate, rollback strategy, snapshot cadence) — `netcode-engineer` owns that decision; this skill supplies the NGO API used to implement it.
@@ -74,7 +78,7 @@ Act as the Netcode for GameObjects implementation specialist for the client trac
 - Configure `NetworkTransform` (or `NetworkRigidbody`/`NetworkAnimator`) for a synced object's movement or animation.
 - Set up `NetworkSceneManager`-driven scene loading/additive scenes, or session management/reconnection, for a multiplayer session.
 - Configure connection approval, max players, and `UnityTransport`/Unity Relay for a new session.
-- Out of scope: the gameplay rule/formula a `NetworkVariable` carries (`csharp-engineer`, `Game.Core.*`), server-side validation/anti-cheat of the synced value (`server-authoritative-engineer`), reconciliation/prediction protocol design (`netcode-engineer`), the build-vs-license netcode foundation decision (`netcode-architecture-decision`).
+- Out of scope: the gameplay rule/formula a `NetworkVariable` carries (`csharp-engineer`, `Game.Core.*`), server-side validation/anti-cheat of the synced value (`server-authoritative-engineer`), reconciliation/prediction protocol design (`netcode-engineer`), the build-vs-license netcode foundation decision (`netcode-architecture-decision`), the DOTS/ECS ghost stack (`netcode-for-entities`), the raw UTP driver, pipelines, TLS and Relay data beneath the transport component (`unity-transport`).
 
 ## 6. Output format
 ```

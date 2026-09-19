@@ -8,7 +8,8 @@ description: >
   moment a claim is made rather than afterwards, reading the console for silent
   failures that never surface on screen, and the technical defect against
   design flaw against as-designed classification call. Not for: automated Edit
-  and Play Mode tests (`unity-test-framework`); real platform builds
+  and Play Mode tests (`unity-test-framework`); test cases on a real device
+  (`device-test-walkthrough`); build-only fault diagnosis
   (`build-fault-triage`); frame cost and memory (`performance-budget-verification`);
   choosing which scenarios to run (`risk-based-test-planning`).
 ---
@@ -27,7 +28,7 @@ Act as the hands-on scenario tester for the QA track, on behalf of `playtest-tes
 - A behaviour is technically correct but reportedly wrong in play, and the gap needs evidencing.
 - A UI flow needs walking end to end to confirm it behaves as designed.
 - Negative trigger: writing or running automated Edit and Play Mode tests — that is `unity-test-framework`, run by `qa-automation-engineer`.
-- Negative trigger: anything requiring a real platform build or several Editor instances — that is `build-fault-triage`, and producing the build needs the GD's explicit request through `build-run-engineer`.
+- Negative trigger: anything requiring a real platform build or several Editor instances — walking cases on the device is `device-test-walkthrough` and diagnosing a build-only fault is `build-fault-triage`, while producing the build needs the GD's explicit request through `build-run-engineer`.
 - Negative trigger: frame cost, allocation, or memory judgments — that is `performance-budget-verification`.
 - Negative trigger: deciding which scenarios are owed in the first place — that is `risk-based-test-planning`, owned by `qa-lead`.
 
@@ -48,7 +49,7 @@ Act as the hands-on scenario tester for the QA track, on behalf of `playtest-tes
 - Establishing the reproduction rate of a timing-dependent finding.
 - Classifying each finding as technical defect, design flaw, or as-designed.
 - Routing defects to the owning agent and design flaws directly to the GD.
-- Out of scope: automated tests (`unity-test-framework`); platform builds and multi-instance runs (`build-fault-triage`, `build-run-engineer`); performance verdicts (`performance-budget-verification`); scenario selection and exit criteria (`risk-based-test-planning`).
+- Out of scope: automated tests (`unity-test-framework`); device execution of test cases (`device-test-walkthrough`); build-only fault diagnosis (`build-fault-triage`); platform builds and multi-instance runs (`build-run-engineer`); performance verdicts (`performance-budget-verification`); scenario selection and exit criteria (`risk-based-test-planning`).
 
 ## 6. Output format
 ```

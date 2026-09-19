@@ -12,7 +12,8 @@ description: >
   Unity.Collections NativeArray/NativeList and Burst jobs
   (`unity-collections`, `unity-job-system-and-burst`), zero-allocation LINQ
   (`zlinq-zero-allocation-linq`), zero-allocation string building
-  (`zstring-zero-allocation-strings`).
+  (`zstring-zero-allocation-strings`), synchronization primitives and async
+  coordination (`dotnet-concurrency-and-async`).
 ---
 
 # .NET Memory and Collections — Span, Memory, ArrayPool, and Collection Selection
@@ -41,6 +42,7 @@ Act as the .NET memory and collections specialist for the client track — the t
 - Negative trigger: the buffer/collection is `NativeArray<T>`/`NativeList<T>` consumed by a Burst-compiled job — that's `unity-collections`/`unity-job-system-and-burst`.
 - Negative trigger: composing a query over a sequence with zero-allocation LINQ syntax — that's `zlinq-zero-allocation-linq`.
 - Negative trigger: building a string without allocation — that's `zstring-zero-allocation-strings`.
+- Negative trigger: the synchronization primitive itself — `lock`/`Interlocked`/`SemaphoreSlim`, a `Channel<T>` handoff, or anything `async`/`CancellationToken` — that's `dotnet-concurrency-and-async`. This skill decides only which container the shared state lives in.
 
 ## 4. How to use this skill
 1. **Confirm the buffer's lifetime and whether it must cross an `await`/`yield` boundary before picking `Span<T>` vs. `Memory<T>`** — `Span<T>` is a stack-only `ref struct` and cannot be stored on the heap, captured in an async state machine, or boxed; `Memory<T>` can, per [span-memory-and-buffers.md](references/span-memory-and-buffers.md).
@@ -55,7 +57,7 @@ Act as the .NET memory and collections specialist for the client track — the t
 - Slice/parse buffers (save-data, network payload bytes/chars) with `Span<T>`/`ReadOnlySpan<T>` without extra allocations.
 - Rent/return pooled arrays via `ArrayPool<T>` for transient hot-path buffers instead of `new T[]` per call.
 - Pick the correct thread-safety story for a shared collection: a plain generic collection, a `System.Collections.Concurrent` type, or an immutable snapshot.
-- Out of scope: `Unity.Collections` `NativeArray`/`NativeList` and Burst-compiled jobs (`unity-collections`, `unity-job-system-and-burst`), allocation-free LINQ query composition (`zlinq-zero-allocation-linq`), allocation-free string building (`zstring-zero-allocation-strings`).
+- Out of scope: `Unity.Collections` `NativeArray`/`NativeList` and Burst-compiled jobs (`unity-collections`, `unity-job-system-and-burst`), allocation-free LINQ query composition (`zlinq-zero-allocation-linq`), allocation-free string building (`zstring-zero-allocation-strings`), synchronization primitives and async coordination (`dotnet-concurrency-and-async`).
 
 ## 6. Output format
 ```
