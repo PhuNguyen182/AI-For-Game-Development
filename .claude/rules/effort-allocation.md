@@ -4,151 +4,123 @@ Applies to: every agent and the orchestrator, on every input. Like `language-and
 above the `.claude/rules/<group>/` folders rather than inside one.
 
 Source: `.claude/docs/frame/AAEAS_v4_2_Runtime_Core.md` §§5–8 and §15, adapted to this project.
-
-## Why it exists
-
-`task-classification.md` says how much rigor a task earns. This file says what that rigor is spent on, and —
-more importantly — what it must never be spent on. Rigor is a cost: every plan, every extra read, every
-alternative considered and every paragraph of report is paid for in time, context and the GD's attention.
-Effort that does not change the outcome is not diligence; it is waste that looks like diligence.
+`task-classification.md` says how much rigor a task earns; this file says what that rigor is spent on and —
+more importantly — what it must never be spent on. Every plan, extra read, alternative considered or report
+paragraph is paid for in time, context and the GD's attention. Effort that doesn't change the outcome is not
+diligence — it's waste that looks like diligence.
 
 ## The marginal value rule
 
-One more action — a read, a search, a tool call, a refactor, a paragraph — is justified only when:
+One more action — a read, search, tool call, refactor, paragraph — is justified only when:
 
 ```text
-expected quality gain
-+ expected risk reduction
-+ expected rework avoided
-+ expected decision-confidence gain
-
->
-
-marginal time + tokens + tool calls + added complexity
+expected quality gain + expected risk reduction + expected rework avoided + expected decision-confidence gain
+> marginal time + tokens + tool calls + added complexity
 ```
 
-No arithmetic is required and none should be invented. The judgment is the point: *would this change what I
-write or what the GD decides?* If not, it is not worth doing.
+No arithmetic required or invented — the judgment is: *would this change what I write or what the GD
+decides?* If not, skip it.
 
 ## Minimum process by tier
 
-Tier here is the **assurance tier** from `task-classification.md` — the project's only task classification.
-Where that file's Step 4 splits what each axis buys, this one says what the resulting rigor is spent on.
+Tier = the **assurance tier** from `task-classification.md`, the project's only classification. That file's
+Step 4 splits what each axis buys; this says what the resulting rigor is spent on.
 
 | Tier | The floor |
 |---|---|
 | **A1** | Execute directly → sanity-check against the request |
 | **A2** | Targeted inspection → execute → direct verification of what changed |
-| **A3** | Acceptance baseline → concise plan → execute → targeted tests or evidence → verify against the baseline |
+| **A3** | Acceptance baseline → concise plan → execute → targeted tests/evidence → verify against baseline |
 | **A4** | A3 + dependency/design/risk review + edge cases and a regression check |
-| **A5** | A4 + explicit residual-risk review + a separate final verification pass + independent or orthogonal evidence where one is actually available |
+| **A5** | A4 + explicit residual-risk review + a separate final verification pass + independent/orthogonal evidence where actually available |
 
 ## The artifact budget — what each tier must not produce
 
-This half matters more than the floors above, because process grows on its own and nothing prunes it.
+This matters more than the floors above, because process grows on its own and nothing prunes it.
 
 | Tier | Must not produce |
 |---|---|
-| **A1 / A2** | A plan document, an acceptance contract, a traceability table, a risk review, a self-score, or a report longer than the change |
+| **A1/A2** | A plan document, acceptance contract, traceability table, risk review, self-score, or a report longer than the change |
 | **A3** | An ADR, an alternatives survey, a test matrix beyond the paths the change touches |
-| **A4** | A design-decision record for a decision that was never in doubt |
-| **A5** | Independent verification theatre — a second pass using the same method and the same reasoning is not independent, and claiming it is, is worse than skipping it |
+| **A4** | A design-decision record for a decision never in doubt |
+| **A5** | Independent verification theatre — a second pass with the same method/reasoning isn't independent, and claiming it is is worse than skipping it |
 
-Overhead this project has specific names for, all of it forbidden unless the tier genuinely earns it: a Tech
-Spec for a one-line fix, an architecture diagram for a rename, a `README.md` below the **A4** floor (see
-`client/feature-documentation.md`), a risk register for a scratch file, three alternatives when only one
-credible path exists, or a progress update that does not help the GD decide anything.
+Also forbidden unless the tier genuinely earns it: a Tech Spec for a one-line fix, an architecture diagram
+for a rename, a `README.md` below the **A4** floor (see `client/feature-documentation.md`), a risk register
+for a scratch file, three alternatives when one credible path exists, or a progress update that doesn't help
+the GD decide anything.
 
-**A high tier from C, R or X buys none of the above.** Consequence raises the verification and the evidence
-this file requires; it never raises the paperwork. A one-line signing-config edit is A5 and still produces no
-plan document — what it produces is a confirmed target, a check that actually ran, and a truthful report of
-what was not covered.
-
-A1 and A2 inherit none of A4/A5's paperwork. That is the single most-violated line in this file.
+**A high tier from C, R or X buys none of the above** — consequence raises verification and evidence, never
+paperwork. A one-line signing-config edit is A5 and still produces no plan document — only a confirmed
+target, a check that actually ran, and a truthful report of what wasn't covered. **A1/A2 inherit none of
+A4/A5's paperwork — the single most-violated line here.**
 
 ## What effort buys — the seven dimensions
 
-Effort is spent to move these, in this order of importance, and nothing else:
+In this order of importance, and nothing else:
 
-1. **Precision & correctness** — requirement fidelity, technical and factual accuracy, claims bounded by evidence.
+1. **Precision & correctness** — requirement fidelity, technical/factual accuracy, claims bounded by evidence.
 2. **Completion & scope coverage** — every H and M requirement, no premature "done".
 3. **Execution effectiveness** — directness, right tool, right order, low rework.
 4. **Implementation-time efficiency** — little avoidable latency, critical-path unknowns resolved early.
-5. **Input/output cost efficiency** — proportional context, tokens, tool calls, retries and output length.
-6. **Maintainability & scalability** — structure that fits the real lifecycle and scale, not a hypothetical one.
-7. **Output performance & work progression** — measured performance where it is required, and verified reduction of remaining work.
+5. **Input/output cost efficiency** — proportional context, tokens, tool calls, retries, output length.
+6. **Maintainability & scalability** — structure fitting the real lifecycle/scale, not a hypothetical one.
+7. **Output performance & work progression** — measured performance where required, verified reduction of remaining work.
 
-Precision and completion dominate at every tier and never trade down. As the tier rises, weight shifts from
-time and cost toward maintainability and measured performance — a trivial task is judged mostly on being
-right and cheap, a system-level one on being right and durable.
+Precision and completion dominate at every tier and never trade down. Rising tier shifts weight from time/
+cost toward maintainability and measured performance.
 
 ## Verification and evidence
 
 | Level | Requires |
 |---|---|
-| **V1** | Sanity check: the result is consistent with what was asked, and has no obvious defect |
+| **V1** | Sanity check: consistent with what was asked, no obvious defect |
 | **V2** | V1 + a targeted direct test or piece of evidence for what changed |
-| **V3** | V2 + material edge and failure cases + a dependency/risk pass + a regression check |
-| **V4** | V3 + validation against the acceptance criteria + a separate final verification pass + residual-risk review |
+| **V3** | V2 + material edge/failure cases + a dependency/risk pass + a regression check |
+| **V4** | V3 + validation against acceptance criteria + a separate final verification pass + residual-risk review |
 | **V5** | V4 + a materially independent method, source, reviewer or test path |
 
 Minimum by tier: **A1→V1, A2→V1, A3→V2, A4→V3, A5→V4.** A2 rises to V2 whenever direct objective
-verification is cheap, or whenever the task changes state — "basic verification" is never an excuse to skip
-an available check.
+verification is cheap or the task changes state — "basic verification" never excuses skipping an available
+check.
 
-Evidence strength behind any claim:
+Evidence strength: `E0` unsupported assertion, `E1` internal consistency/direct inspection, `E2` a direct
+test/measurement/tool output/primary source, `E3` E2 plus a materially distinct corroborating method/source,
+`E4` reproducible, orthogonal, or independently reviewed.
 
-```text
-E0  unsupported assertion
-E1  internal consistency or direct inspection
-E2  a direct test, measurement, tool output or primary source
-E3  E2 plus a materially distinct corroborating method or source
-E4  reproducible, orthogonal, or independently reviewed
-```
-
-Four rules that hold regardless of tier:
-
-- Repeating the same reasoning is not verification, and self-review is not independent verification.
-- Confidence is not evidence. Reading code is review; running it is verification.
-- Verification that was unavailable is reported as unavailable — never as passed, never silently omitted.
-- QA-track agents additionally follow `qa/verification-standards.md`, which is stricter inside its domain and
-  wins there — an Editor result never satisfies a device claim, a metric without a budget is not a verdict.
+Regardless of tier: repeating the same reasoning is not verification, and self-review is not independent
+verification; confidence is not evidence — reading code is review, running it is verification; unavailable
+verification is reported as unavailable, never as passed or silently omitted; QA-track agents additionally
+follow `qa/verification-standards.md`, stricter in its domain and winning there — an Editor result never
+satisfies a device claim, a metric without a budget is not a verdict.
 
 ## The gates that no amount of good work compensates for
 
-These are not scored against anything. Any one of them fails the task outright:
+Any one fails the task outright: fabricated evidence, or claiming a test/build/measurement/review ran when
+it didn't; an H requirement violated without authorization; an M requirement dropped silently; a
+consequential action against an unverified target/parameter set when verification was reasonably possible;
+any violation of `security.md` (no tier exemption, none granted here either).
 
-- Fabricated evidence, or a claim that a test, build, measurement or review was run when it was not.
-- An H requirement violated without authorization.
-- An M requirement dropped silently.
-- A consequential action taken against an unverified target or parameter set when verification was
-  reasonably possible.
-- Any violation of `security.md` — that file carries no tier exemption and none is granted here.
+At **C3**, the applicable safety/integrity/security/reversibility check is not optional. At **C4**,
+independent verification is used wherever reasonably available; where none is, state the limitation rather
+than paper over it.
 
-At **C3**, the applicable safety, integrity, security or reversibility check is not optional. At **C4**,
-independent verification is used wherever one is reasonably available; where none is, the limitation is
-stated rather than papered over.
-
-The GD can waive a requirement or accept a gap — that is their call, and `orchestration.md` is explicit that
-these rules are directions they override at will. A waiver only counts when it is **explicit and informed**:
-the cost was stated first, and they reaffirmed. What no waiver reaches is the integrity half of the list —
-fabricated evidence and a false verification claim are not requirements to be traded, they are reports that
-are untrue.
+The GD can waive a requirement or accept a gap — their call, per `orchestration.md`. A waiver counts only
+when **explicit and informed**: cost stated first, then reaffirmed. No waiver reaches the integrity half —
+fabricated evidence and a false verification claim are untrue reports, not tradeable requirements.
 
 ## Scoring — only when a verdict is asked for
 
-This project keeps no performance ledger, so scores are not accumulated and a score is not a routine
-deliverable. One is produced only when the GD asks for a verdict, or when a rule or workflow explicitly
-requires one. Producing one unasked is exactly the overhead this file forbids.
+No performance ledger here — scores aren't accumulated and are never a routine deliverable, only produced
+when the GD asks or a rule/workflow explicitly requires one. Producing one unasked is the overhead this file
+forbids.
 
-**The author never scores their own work.** Self-review is not independent verification, and a score is the
-one output where that distinction decides whether the number means anything. The independent gate is
-`assurance-evaluator`, which runs last and consumes the verdicts `code-reviewer`, `security-reviewer` and
-`qa-lead` already returned rather than re-deriving them. It does not run below A3 — scoring trivial work is
-the overhead above. Everyone else still self-checks against the gates in this file before returning; that
-check is a checklist, not a score, and it is never reported as one.
+**The author never scores their own work** — self-review isn't independent verification. The independent
+gate is `assurance-evaluator`, running last, consuming the verdicts `code-reviewer`/`security-reviewer`/
+`qa-lead` already returned rather than re-deriving them; it never runs below A3. Everyone else self-checks
+against these gates before returning — a checklist, not a score, never reported as one.
 
-When a score is owed, use 0–10 per applicable dimension, weighted by tier:
+When owed, score 0–10 per applicable dimension, weighted by tier:
 
 | Dimension | A1 | A2 | A3 | A4 | A5 |
 |---|---:|---:|---:|---:|---:|
@@ -160,18 +132,14 @@ When a score is owed, use 0–10 per applicable dimension, weighted by tier:
 | Maintainability & scalability | 1 | 3 | 5 | 8 | 9 |
 | Performance & progression | 2 | 4 | 6 | 8 | 10 |
 
-Tier targets: **A1 ≥ 8.0, A2 ≥ 8.3, A3 ≥ 8.5, A4 ≥ 9.0, A5 ≥ 9.2** — a floor, not a ceiling, and it is read
-only after the gates above have passed. A genuinely inapplicable dimension is normalized out; marking one
-inapplicable to raise the number is prohibited.
+Tier targets — a floor, not a ceiling, read only after the gates pass: **A1≥8.0, A2≥8.3, A3≥8.5, A4≥9.0,
+A5≥9.2**. Normalize out a genuinely inapplicable dimension; marking one inapplicable to raise the number is
+prohibited.
 
-Calibration that keeps a self-score honest:
-
-- Precision caps at 6 when a material assumption was presented as fact.
-- Completion cannot pass while an M requirement is unresolved.
-- Execution effectiveness caps at 6 for repeated redundant work.
-- Performance caps at 6 when a required measurable claim was never measured.
-- Above 9.5 requires E3 evidence or better. Self-confidence never justifies a near-perfect score.
-- Use 0.5-point steps; finer precision only where something was actually measured.
+Calibration: precision caps at 6 when a material assumption was presented as fact; completion can't pass
+while an M requirement is unresolved; execution effectiveness caps at 6 for repeated redundant work;
+performance caps at 6 when a required measurable claim was never measured; above 9.5 requires E3+ evidence —
+self-confidence never justifies a near-perfect score; use 0.5-point steps, finer only where actually measured.
 
 ## Rules
 
