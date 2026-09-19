@@ -7,12 +7,18 @@
 CP4 is the last gate, and the only one where a feature closes carrying a gap the GD chose to accept.
 
 `producer` compiles the end-of-feature report and the GD closes the feature. Its input is every QA report,
-`qa-lead`'s verdict quoted as stated, the Assurance Verdict where A3 or above produced one, and — at D1–D2,
+`qa-lead`'s verdict quoted as stated, the Assurance Verdict at A3 or above, and — at D1–D2,
 where CP3 merged into this gate — both review verdicts **where review ran**. Where it did not, the report
 says so in those words rather than omitting the line; a missing section reads as nothing found. It orders and
-attributes; it never adjudicates, and
-no Implementation Summary appears here: the merge means the GD *sees* the review outcome, and the architect's
-Direct depth exists to skip it.
+attributes; it never adjudicates, and no Implementation Summary appears here: the merge means the GD *sees*
+the review outcome, and the architect's Direct depth exists to skip it.
+
+**At A3 and above the Assurance Verdict is owed, and its absence is stated rather than left out.** `producer`
+reports what it is given and infers nothing — *"an unreported item is reported as unknown"* is its guardrail,
+but it has no field for an input it was never told to expect. Live, a CP4 dispatch that omitted the verdict
+produced a complete-looking report that never mentioned one was due, and offered the GD an accepted gap over
+a finding no waiver reaches. So the dispatch either carries the verdict or says **why there is none** — the
+work is A1/A2, the gate returned `Rejected`, or QA was declined outright.
 
 **An acceptance state is not a sign-off, and neither replaces the other.** `qa-lead` says whether the feature
 was covered; `assurance-evaluator` says whether what was claimed is evidenced and whether the effort fit. A

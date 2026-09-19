@@ -35,3 +35,16 @@ the procedure in `state/README.md`, never silently — invariant **I9**.
 `qa-lead`'s coverage assignment names which `agent-id` covers what. **Dispatch exactly those**, never all
 four by default. Unasked-for coverage is the same waste as speculative code, and `effort-allocation.md`'s
 artifact budget forbids a test matrix beyond the paths the change touches at A3.
+
+## Coverage the plan assigned but the pipeline cannot dispatch
+
+`qa-lead` plans from the spec and the platform targets, so at any mobile target it will legitimately assign
+**device** coverage — `build-verification-tester` on the artifact, `performance-qa-engineer` on a Development
+Build. Neither can be dispatched unless a build exists, and `build-run-engineer` acts only on an explicit GD
+request. Live, a plan assigned both against a project with no build and no attached device.
+
+**Check the assignment against what exists before dispatching any of it**, and where it names device coverage
+with no artifact, **ask the GD for the build then** — carrying what `qa-lead` assigned it to prove. Dispatching
+anyway to collect the `Blocked` is a round spent learning what the plan already said: the device lane's rows
+are the recovery, not the route. Where the GD declines, that coverage is unrun from the outset and joins the
+gap list at step 4 rather than being re-dispatched, per `qa-exit-and-custody.md`.

@@ -16,7 +16,8 @@ Written in English, per `language-and-comments.md`. Keep it short: this is a han
 ## Implementation Note — <feature or submission>
 - Spec: <the Tech Spec, or the direct notes for a D1–D2 change, and the clauses this submission satisfies>
 - Tier: <A1–A5, and the verification floor it owes — V1/V2/V3/V4>
-- Attempts: <used / budget — or "1 / n" when the first attempt stood>
+- Attempts: <used / budget — or "1 / n" when the first attempt stood. Past the first, also what the last
+  attempt materially improved over the one before it>
 - Changed: <the files and what each one now does>
 - Assumptions: <every decision made where the spec was silent — or "none">
 - Known limitations: <what this submission does not do, and what breaks if a caller assumes otherwise>
@@ -30,7 +31,7 @@ Written in English, per `language-and-comments.md`. Keep it short: this is a han
 | **Changed** | Real paths. A description of the change is not a substitute — `code-reviewer` blocks without the code or diff in scope. |
 | **Assumptions** | Every gap the author filled themselves. This is the single highest-value field: an unstated assumption is indistinguishable from a bug at review time. |
 | **Tier** | What the reviewer measures `Verification done:` against. Without it, "verified" means whatever the author took it to mean, and a claim complete at V1 reads as a finding at V3. |
-| **Attempts** | What `assurance-evaluator` scores iteration on. Absent, it assumes Attempt 1 and silently scores an iterated submission as a first pass. An exhausted budget is reported as a Continuation Debt Record per `execution-loop.md`, never as a quiet partial result. |
+| **Attempts** | What `assurance-evaluator` scores iteration on. Absent, it assumes Attempt 1 and silently scores an iterated submission as a first pass. **The count alone is not enough**: `execution-loop.md` requires every retry to state what materially improved, and the gate scores exactly that — handed only `2 / 3`, it has a dimension it is told to score and nothing that can evidence it. A live assurance gate reported the iteration unevidenced and declined to assume improvement, which is correct and is a gap in the note rather than in the work. An exhausted budget is reported as a Continuation Debt Record per `execution-loop.md`, never as a quiet partial result. |
 | **Known limitations** | Survives past the review. These carry into the feature root's `DEBT.md` — owed from **A3** upward the moment a limitation is carried past review — per `.claude/standards/client/feature-documentation.md`. |
 | **Deliberately out of scope** | Proves a nearby problem was seen and left alone on purpose, rather than missed — this is what keeps the "stay scoped, flag separately" rule from looking like an oversight. |
 | **Verification done** | Distinguishes "I ran it" from "it compiles". Never claim a check you did not run; QA reads this to decide what still needs covering. |
@@ -43,7 +44,7 @@ The note is assembled by the pipeline that dispatched the work — `.claude/work
 |---|---|
 | **Spec** | The dispatch brief the pipeline wrote. It is the only party that knows which clauses it sent. |
 | **Tier** | The feature's ledger and the dispatch brief — the caller's, because no agent holds a tier across runs. |
-| **Attempts** | **What the agent stated back**, because the brief asked for it: no envelope has an attempts field, and attempts-used is knowable only at the moment of the return. Never a default `1` — `assurance-evaluator` reads that as a first pass and scores an iterated submission as one. |
+| **Attempts** | **What the agent stated back**, because the brief asked for it: no envelope has an attempts field, and attempts-used is knowable only at the moment of the return. Never a default `1` — `assurance-evaluator` reads that as a first pass and scores an iterated submission as one. Past the first attempt the brief asks for **what improved** alongside the count, for the reason in the table above; where the agent did not state it, record that it did not rather than leaving the field to read as a bare count. |
 | **Changed** | The working-tree diff, read against the envelope's `Files:` / `Changed:` / `Authored:` / `Implemented:` — some envelopes report what now works rather than which paths changed. |
 | **Assumptions**, **Known limitations** | The envelope's `Assumptions and known limitations:`. |
 | **Deliberately out of scope** | A `Routed to:` the agent returned alongside `Status: Done` — it named an owner for something it saw and left alone. **This is the one approximation in the table.** An agent that notices a nearby problem and leaves it alone may instead record it under `Assumptions and known limitations:`, and returns `Routed to:` only when it actually routes — so this field can be empty when something was in fact set aside. Read it as evidence when present, never as proof of absence. |

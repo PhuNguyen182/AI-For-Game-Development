@@ -32,6 +32,7 @@ open. That pipeline keeps a single pointer row to this table.
 | A fix for a device-found defect returns at **E3** | The artifact is stale — the build that found the defect still contains it. Ask the **GD** for a rebuild; without one that coverage stays unrun and joins the gap list. Never re-run the walkthrough against the old build |
 | A device walkthrough classified a **design flaw** | The GD, immediately — same as `playtest-tester`. I5 is not limited to the Editor |
 | A crash or ANR on the device under test | `/investigate-device-crash`. Never `crash-anr-investigator`, which declines a local trace by contract |
+| `build-verification-tester` → `Needs-decision` on a **build-only fault** | By the evidenced cause, and its Escalate row names **three** owners, not one: `build-run-engineer` where the artifact itself is wrong, `unity-engineer` where client code fails only after IL2CPP or stripping, `tech-lead-sdk-platform` where an SDK or store integration does. A row that routes only the first drops the two that are usually the actual cause |
 | `build-run-engineer` → `Rejected`, `Routed to: gd` | It was handed pipeline state instead of a GD request. A correct refusal; get the request or drop the branch |
 
 - **A design flaw never re-enters the engineering loop**, from a device any more than from the Editor. It

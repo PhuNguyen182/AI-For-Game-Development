@@ -9,8 +9,16 @@ like any other — a weakened assertion or a test asserting the wrong behaviour 
 coverage it does not have, which `verification-standards.md` calls worse than no suite at all.
 
 **Its submission has a route to a gate: `review-pipeline.md` E3**, offered to the GD as its own ask per
-`optional-gates.md` once the suite is written and green. It carries an author and a strike count capped at
-two, and no CP3 — there is no Tech Spec for a test suite. Declined, it is recorded as review debt against
+`optional-gates.md` once the suite is written. It carries an author and a strike count capped at
+two, and no CP3 — there is no Tech Spec for a test suite.
+
+**"Written" is the trigger, not "written and green."** This file previously said green, and a live run
+produced the case that wording excludes: the suite was authored in full and **never executed**, because the
+environment had no toolchain. A suite nobody has run is the one most worth reading — nothing has checked that
+its assertions hold, or that they assert anything — so conditioning the offer on a green run reopens
+invariant **I10**'s hole for exactly the submission that needs the gate most. Offer it, and say in the ask
+that the suite is unrun; a gate reviewing an unexecuted suite is reviewing assertions, which is what
+`code-reviewer` does anyway. Declined, it is recorded as review debt against
 those paths exactly like any other declined gate. This closes invariant **I10**: source that reaches no gate
 is a hole, not debt, and the hole was that **E1** accepted submissions only from `feature-development.md`.
 

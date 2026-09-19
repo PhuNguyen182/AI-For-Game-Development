@@ -94,6 +94,19 @@ sends those `agent-id`s back to step 2, and the result returns to sign-off. Twic
 exit criteria cannot be met by running more of the same coverage: the gap goes to CP4 as a gap only the GD
 can accept, which is what `qa-pipeline.md` already does for a gap that cannot be closed.
 
+**The bound counts rounds, and only *runnable* coverage may spend one.** Coverage that is **unrunnable** —
+no toolchain, no build, no device, no seam in the code to assert against — is not coverage that has not been
+run yet, and a re-dispatch buys the identical return. It goes straight to the gap list. Live, a QA run
+returned three of four assignments unrunnable and one executed `0 / 0`; charging that to this counter would
+have spent both rounds proving the first return was true. The distinction is the same one the `Blocked`
+bound below draws: repetition is bounded because repeating cannot help, not because two is a ration.
+
+**And it is read off the report, never judged.** A re-dispatch is owed unless the return *states* the blocker
+as environmental — an environment check it actually performed, `Results: 0 / 0`, or a `Not covered:` naming
+the missing toolchain, build, device or seam. Absent that, the coverage is simply not yet run and the bound
+applies as written. Leaving "unrunnable" to the caller's judgment would turn a mechanical bound into a
+discretionary one, which is the failure this whole file exists to prevent.
+
 **An `Acceptance: FAIL` from `assurance-evaluator` is charged once as itself, then as a QA fail.** The first
 `FAIL` returns to the named owner at **E3** as an integrity finding and is not a QA round. A second `FAIL` on
 the same submission **is** a QA fail and spends that counter — because at that point the loop is no longer

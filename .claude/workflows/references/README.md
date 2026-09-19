@@ -24,6 +24,7 @@ never a copy, and one fact has one home. It also matches how skills are laid out
 | `qa-assurance-gate.md` | `qa-pipeline.md` | The work is **A3 or above** and every other verdict is in |
 | `qa-checkpoint-4.md` | `qa-pipeline.md` | Closing a feature. `qa-pipeline.md` still owns CP4; this is its detail |
 | `qa-entry-inputs.md` | `qa-pipeline.md` | Taking any entry into QA — and when review did not run |
+| `qa-exit-and-custody.md` | `qa-pipeline.md` | **Any QA agent returns** — the eight deliverables, every door out, and where each returned field is recorded |
 | `qa-execution-order.md` | `qa-pipeline.md` | Dispatching the coverage assignment; both locks and when each is claimed |
 | `review-needs-confirmation.md` | `review-pipeline.md` | `security-reviewer` returned `Needs Confirmation` |
 | `review-checkpoint-3.md` | `review-pipeline.md` | Compiling or rejecting CP3. `review-pipeline.md` still owns it |

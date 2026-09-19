@@ -51,7 +51,12 @@ feature's design history wants the half above.
 - Provisional decisions: <the decision, and the one measurement that would falsify it with its threshold —
   the number is what lets a later session re-open it instead of inheriting it as settled>
 - Documents owed: <which feature-root documents this tier's floor and triggers have made owed>
-- Baseline: <the performance figure, and how it was taken>
+- QA plan: <`qa-lead`'s coverage assignment — which agent-id covers what — and its exit criteria, verbatim,
+  written at the step 1 transition. Both travel back into the step 4 sign-off dispatch: `qa-lead` is
+  stateless, has no `If absent` row for either, and a sign-off without them re-derives the bar in silence>
+- Baseline: <the performance figure, how it was taken, and by which report — written at the return that
+  produced it, because a first measurement is exactly the run this row exists to stop becoming the baseline
+  unnoticed>
 - Reported: <the last period `producer` covered>
 - Gates: review <offered? run | declined by the GD on <date> | not yet offered> · QA <same>
 - Root-cause resets: 0/1 — shared across every loop that can reach `technical-architect`
@@ -59,9 +64,15 @@ feature's design history wants the half above.
 - Rejections: CP2 0/3 · CP3 0/2 · CP4-as-defect 0/2 · sign-off re-dispatch 0/2 · assurance FAIL 0/1
 - Locks reclaimed: <who held it, when it was reclaimed, which of the three steps answered — or none>
 
-| Submission | Author | Strikes /3 | QA fails /2 | Attempts used | Verdicts landed |
+| Submission | Author | Strikes / its bound | QA fails /2 | Attempts used | Verdicts landed |
 |---|---|---|---|---|---|
 | | | | | | |
+
+**The strike bound is not the same for every row, which is why the header does not state one.** An ordinary
+submission caps at **3**; a `qa-automation-engineer` suite at `review-pipeline.md` **E3** caps at **2**, a
+different counter from the gated-direct 2, per `references/qa-test-code-gate.md`. Write both numbers in the
+cell — `1 /3`, `1 /2` — because a header that states one bound is a header that lies on every other row, at
+exactly the moment a counter is written under pressure.
 
 ### Accepted gaps
 

@@ -146,7 +146,7 @@ door:
 |---|---|
 | Review, on code already in the repo | `review-pipeline.md` **E2** — the audit door. No author, no strike, no CP3; findings are a report |
 | Review, on a submission still identifiable with its brief and author | `review-pipeline.md` **E1** or **E3**, with the strike count starting at zero |
-| QA, on a feature already closed | `qa-pipeline.md` **E1**, with the spec and tier from the ledger. If the ledger is closed, reopen it rather than opening a second slug |
+| QA, on a feature already closed | `qa-pipeline.md` **E1**, with the spec and tier from the ledger. If the ledger is closed, reopen it rather than opening a second slug. **Not E4**, which that pipeline declares for work no ledger holds: taking it here would discard the tier, the floor and every counter the feature already spent |
 
 Clearing a debt row requires the gate to have actually returned. Marking one settled because the code looks
 fine is the fabricated verification `effort-allocation.md` puts beyond any waiver.

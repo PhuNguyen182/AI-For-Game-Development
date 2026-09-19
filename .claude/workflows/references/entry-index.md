@@ -31,10 +31,10 @@ every agent file exists to make visible.
 | `review-pipeline.md` | **E1** | One submission from `feature-development.md` |
 | | **E2** | A standalone audit of code already in the repo |
 | | **E3** | A submission with an author but no feature pipeline — the gated-direct lane, or QA's test code |
-| `qa-pipeline.md` | **E1** | `review-pipeline.md` step 6 — planning only, execution locked |
+| `qa-pipeline.md` | **E1** | `review-pipeline.md` step 6, **or `feature-development.md`'s end-of-work ask where review was declined**, **or a declined gate opted into later** — planning only, execution locked |
 | | **E2** | CP3 approved, or the gates cleared at **D1–D2** |
 | | **E3** | A defect fix came back — through review where it ran, from the author where it did not |
-| | **E4** | The GD asks for QA directly — shipped code, work no pipeline built, or a gate declined earlier |
+| | **E4** | The GD asks for QA directly and **no ledger holds the work** — shipped code, or work no pipeline built |
 | `change-request.md` | **E1** | The GD changes a rule mid-flight |
 | | **E2** | `qa-pipeline.md` CP4 — the spec itself should change |
 
