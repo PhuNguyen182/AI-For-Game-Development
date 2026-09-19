@@ -8,9 +8,13 @@
 door into either one is still addressable in mode 2, per `standalone-runs.md`.
 
 Each row's own file names what the entry carries. **Supply it from the feature's ledger**
-(`<feature-root>/LEDGER.md`, its `## Run state` half), never from memory of an earlier run. An entry missing
-its inputs returns `Blocked` — or worse, assumes silently, which is the failure every `If absent` row in
-every agent file exists to make visible.
+(`<feature-root>/LEDGER.md`, its `## Run state` half) where one exists, never from memory of an earlier run.
+An entry missing its inputs returns `Blocked` — or worse, assumes silently, which is the failure every
+`If absent` row in every agent file exists to make visible.
+
+**Which door the router reaches each row through** is `orchestrator.md` step 0's lane table. Every door the GD
+**originates** has a lane row there — with one exception, `qa-pipeline.md` **E1**, which is reached by opting
+into a gate declined earlier rather than by a fresh request. The rest are reached by a pipeline handing on.
 
 | File | Entry | Enters when |
 |---|---|---|
@@ -39,10 +43,19 @@ every agent file exists to make visible.
 | | **E2** | `qa-pipeline.md` CP4 — the spec itself should change |
 | | **E3** | `research-decision.md` settled the technology half of a bundled change — resumes at step 2 |
 
-## What every entry carries, whatever its own file adds
+## What every re-entry carries, whatever its own file adds
 
-Four values travel with **every** re-entry into a feature's pipeline, because no agent can derive one of them
-and none survives a run on its own:
+Four values travel with **every re-entry** into a feature's pipeline, because no agent can derive one of them
+and none survives a run on its own. **A re-entry, not every entry** — the two are not the same, and the
+heading said "entry" for two rounds while the sentence under it said "re-entry":
+
+- **`feature-intake.md` E1 carries two of the four**, and correctly. The tier does not exist until that
+  pipeline's step 2 produces it, and the ledger this table names as the source is opened *by* that step. Its
+  own row says what it does carry — the GD's words unedited, and the track. Blocking E1 for want of a tier,
+  or inventing one before `technical-architect` classifies, are both wrong.
+- **A door with no ledger behind it** — a standalone run, a gated-direct submission, a mode-3 dispatch —
+  derives them instead. Where each comes from is in `orchestrator-exits-and-custody.md`; `Blocked` is right
+  only when a value can neither be derived nor asked for.
 
 | Value | Source | Read by |
 |---|---|---|

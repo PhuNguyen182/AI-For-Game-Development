@@ -21,7 +21,7 @@ owns the rework, and `review-pipeline.md` and `qa-pipeline.md` own re-verifying 
 
 | Entry | Enters when | Carried in |
 |---|---|---|
-| **E1** | The GD changes a rule, a GDD passage or a requirement mid-flight | The change **in the GD's own words**, the approved Tech Spec, the track state, and the feature's current tier and axes |
+| **E1** | The GD changes a rule, a GDD passage or a requirement mid-flight — `orchestrator.md` step 0 sizes it here | The change **in the GD's own words**, the approved Tech Spec, the track state, and the feature's current tier and axes |
 | **E2** | `qa-pipeline.md` CP4 — the feature does what the spec said, and the GD now wants something else | The same, plus the QA reports that surfaced it |
 | **E3** | `research-decision.md` settled the technology half of a bundled change | Resumes at **step 2** — the Technical Decision, any `Standard set:`, the Research Report's `Picture taken:` date, and whichever severity the rest of the request already classified |
 

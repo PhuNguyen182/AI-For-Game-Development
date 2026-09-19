@@ -51,6 +51,22 @@ function Assert-Claim
     $script:failures.Add(("{0}: {1}" -f $Name, $Detail))
 }
 
+function ConvertTo-StatedCount
+{
+    # Returns -1 for "the claim was reworded away", which FAILs loudly. Without
+    # it, [int] '' THROWS under $ErrorActionPreference = 'Stop': the run aborts
+    # at that line and every later claim -- including the skill and runtime-state
+    # checks -- is silently skipped while the script exits non-zero on a cast
+    # error. The criteria check already handled this; the three count checks did
+    # not. Same class as the Replace('') abort a previous round found.
+    param([string] $Raw)
+
+    if ([string]::IsNullOrWhiteSpace($Raw)) { return -1 }
+    if ($Raw -match '^[0-9]+$')             { return [int] $Raw }
+
+    return -1
+}
+
 # ---------------------------------------------------------------- the agents
 
 $agentFiles = Get-ChildItem -Path $agentsDir -Recurse -Filter '*.md' -File
@@ -136,7 +152,8 @@ foreach ($file in (Get-ChildItem -Path $workflows -Recurse -Filter '*.md' -File)
 Write-Host ''
 Write-Host 'Entry points -- every door a pipeline defines has a row in the index'
 
-$indexText = Get-Content -Path (Join-Path $refs 'entry-index.md') -Raw
+$indexText        = Get-Content -Path (Join-Path $refs 'entry-index.md') -Raw
+$orchestratorRaw  = Get-Content -Path (Join-Path $workflows 'orchestrator.md') -Raw
 $indexRows = [regex]::Matches($indexText, '(?m)^\|[^|]*\|\s*\*\*(E\d)\*\*\s*\|')
 
 $pipelineFiles = @(
@@ -156,6 +173,125 @@ foreach ($name in $pipelineFiles)
 
 Assert-Claim 'entry-index row count' ($indexRows.Count -eq $declared) `
     "index has $($indexRows.Count) rows, pipelines declare $declared"
+
+# The checklist states the same two numbers in prose, and prose does not
+# recount itself. "seven lanes" survived four lane rows being added and "23
+# addressable entries" survived a 24th, both found by hand in the router round
+# -- the same stale-self-count class loop-termination.md is already checked for.
+$checklistText = Get-Content -Path (Join-Path $workflows 'workflow-checklist.md') -Raw
+
+$statedEntries = [regex]::Match($checklistText, 'Entry index — \*\*(\d+)\*\* addressable entries').Groups[1].Value
+Assert-Claim 'workflow-checklist states the entry count' ((ConvertTo-StatedCount $statedEntries) -eq $declared) `
+    "checklist says '$statedEntries', pipelines declare $declared"
+
+# Anchored on the lane table's OWN header and stopping at the blank line after
+# it. A first version took every 3-column row inside the whole `## Step 0`
+# section and counted the escalation-criteria rows as lanes -- 19 for 14. It
+# reported a real drift for the wrong reason, which is how a check gets ignored.
+$laneBlock = [regex]::Match($orchestratorRaw,
+    '(?m)^\| Input \| Handling \| Calls \|\r?\n\|[-| ]+\|\r?\n((?:\|[^\r\n]*\r?\n)+)').Groups[1].Value
+$laneRows  = [regex]::Matches($laneBlock, '(?m)^\|').Count
+
+# The lane table's ORDER, not just its count. The round's flagship defect was an
+# ordering violation -- three catch-alls above every specific row, so a
+# `Game.Core.*` cooldown matched "a tuned value" four rows above the
+# gated-direct row written for it. The fix was to reorder; the check that
+# followed counted rows. Counting cannot see order, so the exact class that
+# caused the defect stayed asserted. An independent assurance pass named this
+# the highest-value item left. The property: every row naming a destination
+# (any backticked agent-id or pipeline door in its Handling cell) precedes
+# every catch-all that names none.
+$laneHandling = @(
+    [regex]::Matches($laneBlock, '(?m)^\|([^|]*)\|([^|]*)\|') |
+        ForEach-Object { $_.Groups[2].Value }
+)
+
+$namesDestination = @($laneHandling | ForEach-Object { [bool]([regex]::IsMatch($_, '`[^`]+`')) })
+$lastWith         = [array]::LastIndexOf($namesDestination, $true)
+$firstWithout     = [array]::IndexOf($namesDestination, $false)
+
+Assert-Claim 'step 0 is ordered specific before general' `
+    ($firstWithout -lt 0 -or $firstWithout -gt $lastWith) `
+    ("lane row $($firstWithout + 1) names no destination but row $($lastWith + 1) does" +
+     " -- a catch-all must take only what nothing more specific claimed")
+
+$statedLanes = [regex]::Match($checklistText, 'Step 0 — \*\*(\d+) lanes\*\*').Groups[1].Value
+Assert-Claim 'workflow-checklist states the step-0 lane count' ((ConvertTo-StatedCount $statedLanes) -eq $laneRows) `
+    "checklist says '$statedLanes', step 0 has $laneRows rows"
+
+# The criteria count is stated in THREE files, one of which (orchestration.md)
+# is auto-loaded into every session. It read "four" in all three while the
+# table gained a fifth row -- the row that lets the router see any C3/C4 path
+# that is not `Game.Core.*` or multiplayer. Before that row, a signing-config
+# edit matched the CHORE lane, two rows under this file's own sentence calling
+# it A5. A count stated in three places and recounted in none is the same
+# stale-self-count class as the lane and entry counts above.
+$criteriaRows = [regex]::Matches(
+    [regex]::Match($orchestratorRaw,
+        '(?m)^\| Criterion \| Axis \|[^\r\n]*\r?\n\|[-| ]+\|\r?\n((?:\|[^\r\n]*\r?\n)+)').Groups[1].Value,
+    '(?m)^\|').Count
+
+$criteriaClaims = @(
+    @{ File = 'orchestrator.md'  ; Text = $orchestratorRaw ; Rx = 'The (\w+) escalation criteria' }
+    @{ File = 'orchestrator.md'  ; Text = $orchestratorRaw ; Rx = 'any of the (\w+) criteria' }
+    @{ File = 'orchestration.md' ; Text = (Get-Content -Path (Join-Path $claude 'rules\orchestration.md') -Raw)
+                                 ; Rx = '(\w+) escalation criteria live in' }
+    @{ File = 'workflow-checklist.md' ; Text = $checklistText ; Rx = '\*\*(\w+)\*\* escalation criteria' }
+)
+
+$criteriaWords = @{ one = 1; two = 2; three = 3; four = 4; five = 5; six = 6; seven = 7; eight = 8; nine = 9; ten = 10 }
+
+$badCriteria = @(
+    foreach ($claim in $criteriaClaims)
+    {
+        $m = [regex]::Match($claim.Text, $claim.Rx)
+
+        if (-not $m.Success)
+        {
+            '{0}: no criteria count found for /{1}/ -- the claim was reworded, so nothing recounts it' -f $claim.File, $claim.Rx
+            continue
+        }
+
+        $raw   = $m.Groups[1].Value.ToLower()
+        $value = if ($criteriaWords.ContainsKey($raw)) { $criteriaWords[$raw] } elseif ($raw -match '^\d+$') { [int] $raw } else { -1 }
+
+        if ($value -ne $criteriaRows)
+        {
+            '{0} says "{1}" ({2}), the table has {3} rows' -f $claim.File, $m.Groups[1].Value, $value, $criteriaRows
+        }
+    }
+)
+
+Assert-Claim 'every file states the same escalation-criteria count' ($badCriteria.Count -eq 0) `
+    (($badCriteria -join '; ') + ' -- orchestration.md is auto-loaded, so a stale count there reaches every session')
+
+# Same class, third recurrence in one round: the exits reference says how many
+# of orchestration.md's ten invariants the router acts on, and the table under
+# that sentence is the thing that recounts. It read "six" over seven IDs, was
+# corrected to "eight" over nine, and only a grep caught the second. One row
+# there covers TWO invariants (I3 and I7), which is exactly why counting rows
+# instead of IDs got it wrong twice.
+$exitsText = Get-Content -Path (Join-Path $refs 'orchestrator-exits-and-custody.md') -Raw
+
+$invariantTable = [regex]::Match($exitsText,
+    '(?s)##\s+Which invariant each of the router''s own rules is(.*?)(\r?\n##\s|\z)').Groups[1].Value
+
+# Table ROWS only. The intro sentence names the one invariant the router does
+# NOT act on, and a section-wide scan counted it as mapped -- the check finding
+# its own scope bug on first run, which is the point of running it.
+$invariantIds = @(
+    [regex]::Matches($invariantTable, '(?m)^\|[^\r\n]*') |
+        ForEach-Object { [regex]::Matches($_.Value, '\*\*(I\d+)\*\*') } |
+        ForEach-Object { $_.Groups[1].Value }
+) | Sort-Object -Unique
+
+$statedInvariants = ConvertTo-StatedCount (
+    [regex]::Match($exitsText, 'acts on \*\*(\w+)\*\*').Groups[1].Value |
+        ForEach-Object { if ($criteriaWords.ContainsKey($_)) { $criteriaWords[$_] } else { $_ } })
+
+Assert-Claim 'the exits reference states how many invariants it maps' `
+    ($statedInvariants -eq $invariantIds.Count) `
+    "says $statedInvariants, the table maps $($invariantIds.Count): $($invariantIds -join ', ')"
 
 # ------------------------------------------------------------------ routing
 #
@@ -267,6 +403,78 @@ foreach ($file in (Get-ChildItem -Path $workflows -Recurse -Filter '*.md' -File)
 
 Assert-Claim 'no reference to an undeclared entry' ($badRefs.Count -eq 0) `
     (($badRefs | Sort-Object -Unique) -join '; ')
+
+# ------------------------------- every GD-triggered door has a step-0 lane
+#
+# The router's own custody class, and the mirror of fix J one level up: an
+# agent produces something no pipeline row receives -- here, a PIPELINE
+# declares a door the ROUTER cannot reach. Found by running step 0 against
+# seven real GD inputs, re-confirmed on a second run of ten: `change-request`, `E4` and `E6` appeared ZERO times in
+# orchestrator.md, so a mid-flight spec change -- which reopens a checkpoint
+# and resets five counters -- was reachable only if the GD named the file,
+# which a GD describing the change does not do. Counting doors cannot see it:
+# all three had an entry-index row and a standalone-runs row.
+#
+# The trigger test is an ORIGINATION VERB, not a mention. "The GD authorised
+# QA" (qa-pipeline E1) is a door a pipeline walks through after the GD said
+# yes, not an input they sent, and it correctly does not need a lane.
+
+Write-Host ''
+Write-Host 'Reachability -- every door the GD triggers has a step-0 lane'
+
+# The LANE TABLE, not the whole `## Step 0` section. A first version captured
+# the section, prose and all -- and the escape-upward sentence ("stop and enter
+# `feature-intake.md` **E1**") satisfied the pattern with ZERO lane rows
+# present, so deleting a lane row could leave the check green. The `[^|]` guard
+# below keeps a match inside one table row; it cannot help against prose, which
+# has no `|` at all. `$laneBlock` is already anchored on the table's own header.
+$laneTable = $laneBlock
+
+$noLane = @(
+    if (-not $laneTable)
+    {
+        'orchestrator.md: no `| Input | Handling | Calls |` lane table found -- every door below would
+         pass vacuously. The check anchors on the TABLE HEADER, not on the `## Step 0` heading, so
+         renaming the heading is safe and renaming the header is not.'
+    }
+    else
+    {
+        foreach ($name in $pipelineFiles)
+        {
+            $text    = Get-Content -Path (Join-Path $workflows $name) -Raw
+            $section = [regex]::Match($text, '(?s)##\s+Entry points(.*?)(\r?\n##\s|\z)').Groups[1].Value
+
+            foreach ($row in [regex]::Matches($section, '(?m)^\|\s*\*\*(E\d)\*\*\s*\|([^|]*)\|'))
+            {
+                $door = $row.Groups[1].Value
+                $when = $row.Groups[2].Value
+
+                # "sized a GD request" is a GD origination too. Requiring `the
+                # GD` followed immediately by a verb skipped feature-intake E1 --
+                # the door the whole 8-call lane hangs on -- and tested only 6 of
+                # 24 doors. Allow the article and a short gap, and accept `sized`.
+                if ($when -notmatch '(?i)\b(the|a)\s+GD\b[^|]{0,40}?\b(asks?|changes?|summons?|writes?|nam\w+|sized?)' -and
+                    $when -notmatch '(?i)\bsized\s+a\s+GD\b')
+                {
+                    continue
+                }
+
+                # Same cell: [^|] keeps the file and its door inside one lane
+                # row's Handling column, so a filename in one row and a door in
+                # another cannot satisfy each other.
+                $pattern = '`' + [regex]::Escape($name) + '`[^|\r\n]{0,80}?\*\*' + $door + '\*\*'
+
+                if ($laneTable -notmatch $pattern)
+                {
+                    '{0} {1} ("{2}") has no step-0 lane row' -f $name, $door, $when.Trim()
+                }
+            }
+        }
+    }
+)
+
+Assert-Claim 'no GD-triggered door without a step-0 lane' ($noLane.Count -eq 0) `
+    (($noLane -join '; ') + ' -- reachable only if the GD names the file, which a GD describing the work does not do')
 
 # ----------------------------------------------------------- custody (fix J)
 #
@@ -499,7 +707,15 @@ $restated = [System.Collections.Generic.List[string]]::new()
 # owns the rule and is the one file allowed to say it. A first version scanned
 # the six pipelines only and matched the single recurring sentence; a
 # restatement one file over, in a reference, would have passed.
+# orchestrator.md was OUTSIDE this scope until the router round, which is the
+# one file the forbidden sentence actually names. Negative-tested: the sentence
+# planted in orchestrator.md PASSED while the identical sentence in
+# qa-pipeline.md FAILED. A check blind to the file it is about is the QA3 class
+# -- a check that passes for the wrong reason turns an open defect into a green
+# claim. The "no pipeline" exclusion below keeps the router's own legitimate
+# third-row case (an ask belonging to no pipeline) from false-positiving.
 $askScope = @(
+    @(Join-Path $workflows 'orchestrator.md') +
     ($pipelineFiles | ForEach-Object { Join-Path $workflows $_ }) +
     (Get-ChildItem -Path $refs -Filter '*.md' -File |
         Where-Object { $_.Name -ne 'optional-gates.md' } |
@@ -517,7 +733,11 @@ foreach ($path in $askScope)
         # forbidden shape is the orchestrator asking *the GD*, the sentence that
         # has now recurred three times; a line qualifying itself with "no
         # pipeline" is excluded outright.
-        if ($line -match '(?i)\bno pipeline\b')
+        # "No pipeline, no checkpoint" is a lane row's HANDLING, not the
+        # ownership qualifier -- and a markdown table row is ONE line, so the
+        # broad form exempted two whole lane rows from the check that had just
+        # been widened to cover this file. Only the ownership phrase is excluded.
+        if ($line -match '(?i)\bbelong\w*\s+to\s+no\s+pipeline\b')
         {
             continue
         }
@@ -869,6 +1089,26 @@ foreach ($file in (Get-ChildItem -Path $claude -Recurse -Filter '*.md' -File))
 
 Assert-Claim 'no pointer at the retired state paths' ($pointsBack.Count -eq 0) `
     ("would send a run to write under .claude/: $(($pointsBack | Sort-Object -Unique) -join '; ')")
+
+# ------------------------------------------- the checklist's own claim count
+#
+# LAST, because it counts every check above it plus itself. The debt register
+# states how many claims this script makes, and that number has gone stale
+# three times in this series -- "52 machine-checked claims" survived two
+# rounds, and "97" survived into the router round. It is the one number in the
+# layer that changes every time anyone touches this file, so it is the one
+# most worth asserting.
+
+Write-Host ''
+Write-Host 'Self-description -- the debt register states this script''s own claim count'
+
+$statedClaims = [regex]::Match($checklistText,
+    'close the \*\*self-description\*\* half at \*\*(\d+)\*\* machine-checked claims').Groups[1].Value
+
+# +1 for this assertion, which has not run yet when the condition is evaluated.
+Assert-Claim 'workflow-checklist states this script''s claim count' `
+    ((ConvertTo-StatedCount $statedClaims) -eq ($checks + 1)) `
+    "checklist says '$statedClaims', this run makes $($checks + 1)"
 
 # --------------------------------------------------------------- the result
 

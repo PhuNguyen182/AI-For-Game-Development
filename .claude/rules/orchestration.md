@@ -28,7 +28,7 @@ feature root, or under `<state-root>`, never here.
 ## Size the input before choosing a process
 
 Most inputs are not feature requests, and the full pipeline costs eight agent calls. **The lane table and the
-four escalation criteria live in `orchestrator.md` step 0 — one fact, one home.** This file does not restate
+five escalation criteria live in `orchestrator.md` step 0 — one fact, one home.** This file does not restate
 them; it states why reading them is not optional:
 
 - **The default is direct.** No criterion tripped means no classification round, no Tech Spec, no checkpoint.

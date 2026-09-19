@@ -41,7 +41,7 @@ released-production telemetry **and only that**, never a device under test.
 | **E1** | The GD authorised QA — from `review-pipeline.md` step 6, or straight from `feature-development.md` where review was declined | Enough for `qa-lead` to plan; execution stays locked |
 | **E2** | CP3 approved; or the gates cleared at D1–D2; or review was declined, in which case nothing gates execution but the plan | The coverage assignment from E1. Execution unlocks |
 | **E3** | A defect fix came back — through review where it ran, straight from the author where it did not | The original report and the plan; only the coverage that fix touched is re-run — and for device coverage, a **rebuilt** artifact, because the old one still contains the defect |
-| **E4** | The GD asks for QA directly, and **no ledger holds this work** — shipped code, or work no pipeline built | The behaviour to test and its source, the platform target, and the budget if performance is to be judged. No ledger is assumed: classify the run itself, and mark the review verdicts absent |
+| **E4** | The GD asks for QA directly, and **no ledger holds this work** — shipped code, or work no pipeline built; `orchestrator.md` step 0 sizes it here | The behaviour to test and its source, the platform target, and the budget if performance is to be judged. No ledger is assumed: classify the run itself, and mark the review verdicts absent |
 
 **E1 and E4 are told apart by the ledger, not by who asked.** A gate declined earlier and opted into later
 enters at **E1**, reopening that feature's ledger rather than opening a second slug, per

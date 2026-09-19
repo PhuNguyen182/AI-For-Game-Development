@@ -25,6 +25,8 @@ in. Recording costs nothing — it is the difference between knowing what no gat
 **Both global locks live here.** 10 agents hold `mcp__<server>__*` Editor tools against one process; two also
 drive one physical device over adb (invariant **I7**). Two holders of the same lock never run at once, whatever
 mode started each — the case no single pipeline can see, and `feature-development.md`'s *"no orchestrator to arbitrate"*.
+**A lock whose holder died is reclaimed by invariant I9's three-step procedure, never silently** — it is in
+`state/README.md`, with what to record, and `orchestrator-exits-and-custody.md` says when to reach for it.
 
 ## Acting on `Routed to:` with no pipeline running
 
@@ -38,6 +40,7 @@ Inside a run, that pipeline's own routing table governs. These are the fallbacks
 | `Needs-decision`, `Routed to: cto` | `research-decision.md` step 0 first. `cto` is barred from returning open options, so entering it without a candidate set leaves it nothing to decide |
 | `Needs-decision`, `Routed to: rd-engineer` | Ask the GD. The spike needs an explicit summon; a recommendation is never converted into a dispatch |
 | `Needs-decision`, `Routed to: technical-architect` | The spec has the gap. If no spec exists, the input was mis-sized — escalate to `feature-intake.md` **E1** |
-| `Needs-decision`, `Routed to: git-expert` or `ci-cd-engineer` | Dispatch in mode 3. Neither is reached by sizing — a git or CI/CD task the router sees is a chore lane row until the GD names the agent |
+| `Needs-decision`, `Routed to: git-expert`, `ci-cd-engineer` or `crash-anr-investigator` | Dispatch it. **All three are reached by sizing** — step 0 carries a lane row for each, and landing on one agent that way is mode 1, not the GD's mode-3 override. This row read *"neither is reached by sizing"* for two rounds after those rows were added |
+| A return naming **the engineer who can fix it** — `crash-anr-investigator`'s Root Cause Report, a tech lead's `Fix:` owner | **Not a misdispatch**, which is what the `Rejected` row above would have made of it. It is a handoff to an owner: dispatch that agent with the report attached, and where it writes source the gate offer is owed like any other |
 | `Done` carrying `Config required:` or `Risks flagged:` | A `Done` can still need the GD. Forward it; never read it as "continue" |
 | Anything with a `Verdict:` | Read `Verdict:`, never `Status:` — a review requesting changes still returns `Status: Done` |

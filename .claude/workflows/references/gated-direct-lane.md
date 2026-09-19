@@ -8,8 +8,8 @@
 `task-classification.md` Step 4 is explicit: **C, R and X buy depth — the verification floor, the evidence
 strength, the care taken per attempt — and never a checkpoint, a document, or an extra agent.** D buys shape.
 
-Step 0's escalation criteria did not hold that line. Two of the four are **C2+**, and routing on either one
-sent the input into `feature-intake.md` — which is `technical-architect`, a fan-out, both gates, `qa-lead`,
+Step 0's escalation criteria did not hold that line. Three of the five are consequence criteria, and
+routing on any one sent the input into `feature-intake.md` — which is `technical-architect`, a fan-out, both gates, `qa-lead`,
 `producer` and a mandatory **CP4**. A one-constant change to a `Game.Core.*` cooldown is D1: no Tech Spec, no
 CP1, no CP2, no CP3 — and still six or more calls, because consequence had quietly bought the whole pipeline.
 
@@ -23,7 +23,7 @@ consequence buys **the gates**, which is evidence, and nothing else.
 | **Exactly one role** owns the change | Two roles is **D3+**, and coordination is what the fan-out and the handoff matrix exist for. Nothing here supplies either |
 | **No public contract, interface or module boundary moves** | A contract is what four downstream agents build against. A moving one needs a spec somebody approved, not a gate somebody passed |
 | **The intended behaviour is already stated** — an approved spec, a GDD passage, or a request unambiguous on its face | `code-reviewer` returns `Blocked` without an intended behaviour. If nothing states it, there is nothing to review against and the input belongs in `feature-intake.md` |
-| It trips a criterion for **consequence only** — `Game.Core.*`, or multiplayer-relevant | If it also trips **D3+** or **U3**, the pipeline is not overhead: it is the coordination or the direction the input actually needs |
+| It trips a criterion for **consequence only** — `Game.Core.*`, multiplayer-relevant, **or a consequence path** (a credential or signing config, IAP or billing, a store submission, PII, save-data migration, published git history, a released build, a shipped performance budget) | If it also trips **D3+** or **U3**, the pipeline is not overhead: it is the coordination or the direction the input actually needs. **The third clause was missing** while this file's own worked example below is a signing-config edit — so the lane refused the input it was written for, and `orchestrator.md` step 0 sent it to the chore row instead |
 
 Fail any one and this lane is not available. **Ambiguous starts higher** — the same rule the agents apply to
 themselves — so an input that only *probably* qualifies goes to `feature-intake.md` **E1**.

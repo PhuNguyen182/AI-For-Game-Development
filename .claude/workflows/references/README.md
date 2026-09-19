@@ -13,6 +13,7 @@ never a copy, and one fact has one home. It also matches how skills are laid out
 |---|---|---|
 | `entry-index.md` | `orchestrator.md` | Any mode-2 dispatch — it is that mode's whole vocabulary, plus the four values every entry carries |
 | `orchestrator-direct-dispatch.md` | `orchestrator.md` | A mode-2 or mode-3 dispatch is the chosen lane, and when one returns with no pipeline running |
+| `orchestrator-exits-and-custody.md` | `orchestrator.md` | **A lane ends**, a pipeline hands back, or a dispatch has no feature ledger behind it — the exits, closing a ledger, the four values with no ledger, and the **I9** reclaim |
 | `intake-advisor-critic-loop.md` | `feature-intake.md` | The classification put a feature at **D4–D5, or U3** — otherwise it never runs |
 | `research-depth-lanes.md` | `research-decision.md` | Entering that pipeline, to pick the lane before anything is dispatched |
 | `research-exit-and-custody.md` | `research-decision.md` | Leaving that pipeline — which door, what travels with the result, and the standalone acceptance gate |

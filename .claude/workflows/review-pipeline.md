@@ -38,7 +38,7 @@ artifacts is a distinct body on its one envelope** — `references/review-exit-a
 | Entry | Enters when | Carried in |
 |---|---|---|
 | **E1** | A submission from `feature-development.md`; **a tech lead's `Fix:`** (I10); **third-party content at the supply-chain pre-gate**, `security-reviewer` alone; or a declined gate opted into later, author still identifiable | Everything below |
-| **E2** | The GD asks for an audit of code already in the repo | The code in scope, and what it is audited against |
+| **E2** | The GD asks for an audit of code already in the repo — `orchestrator.md` step 0 sizes it here | The code in scope, and what it is audited against |
 | **E3** | A submission with an author but no feature pipeline behind it — the **gated-direct lane**, or test code from `qa-pipeline.md` | The table below, minus the Tech Spec section: the behaviour it was written against, and the strike count, which caps at **2** rather than 3. **The two origins escalate to different places** at that cap — see the routing table |
 
 **One submission per E1 entry.** A feature produces several — the Shared Core, each client agent, each

@@ -4,7 +4,7 @@
 > 2**, stated per pipeline: what each one does when nothing upstream ran, what the GD must supply in place of
 > that upstream, and what it returns instead of handing on.
 
-The seven files are not one chain with seven segments. Each answers a different question and each is worth
+The six pipelines are not one chain with six segments. Each answers a different question and each is worth
 running alone — an audit without a feature, QA on code that shipped months ago, research with nothing
 attached, a spec for something somebody else will build. **The chain is one way to compose them, never the
 only way in.**

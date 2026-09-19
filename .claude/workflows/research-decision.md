@@ -30,8 +30,8 @@ statement. Every `Routed to:` below is a recommendation this pipeline acts on, n
 | **E2** | Any caller returns `Routed to: cto` — `technical-architect` at its step 2 or step 6, `feature-development.md`'s `netcode-engineer` and tech leads mid-build, or `change-request.md` classifying a mid-flight change. **Which caller and which step sets the return address**, per `references/research-exit-and-custody.md` | step 0 |
 | **E3** | `advisor` returns `Needs-decision`, `Routed to: cto` or `rd-engineer` | step 0 |
 | **E4** | Classification at `feature-intake.md` **step 2** returns **U2 or U3** on a technology unknown — *before* its loop, which is what separates this from **E1** | step 0 |
-| **E5** | The GD asks for research directly, no feature attached | step 0 |
-| **E6** | The GD summons a spike on a foundational question, no feature attached | step 3 |
+| **E5** | The GD asks for research directly, no feature attached — `orchestrator.md` step 0 sizes it here | step 0 |
+| **E6** | The GD summons a spike on a foundational question, no feature attached — sized here by `orchestrator.md` step 0, where asking *is* the summon | step 3 |
 
 **E2 and E3 do not jump to `cto`.** It is barred from returning another round of open options, so entering it
 without a candidate set leaves it nothing to decide between. Research runs first; only the spike needs a gate.

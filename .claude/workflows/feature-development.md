@@ -32,7 +32,7 @@ sets the fan-out's shape, **A** how hard each return is checked; Simple/Medium/C
 | Entry | Comes from | Carries |
 |---|---|---|
 | **E1** | `feature-intake.md` CP2 approved — **D3–D5** | The Tech Spec, its per-`agent-id` task breakdown, the tier and its axes |
-| **E2** | `feature-intake.md` step 2 — **D1–D2** — or the GD naming the work directly, with no spec round | Direct notes addressed to one `agent-id`, and the tier. From the GD, per `references/standalone-runs.md` |
+| **E2** | `feature-intake.md` step 2 — **D1–D2** — or the GD naming the work directly, with no spec round; `orchestrator.md` step 0 sizes that here | Direct notes addressed to one `agent-id`, and the tier. From the GD, per `references/standalone-runs.md` |
 | **E3** | Rework returns — a defect from `review-pipeline.md`, from `qa-pipeline.md` or from the GD; a rejection from the gated-direct lane; or `change-request.md`'s rework list | The findings or the rework list, the original brief, the strike count, and attempts already spent |
 
 Every row also carries the four values `references/entry-index.md` defines once — tier and axes, attempt
