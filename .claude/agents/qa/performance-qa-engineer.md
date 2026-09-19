@@ -2,7 +2,7 @@
 name: performance-qa-engineer
 description: "Independent performance verification gate — measures frame time, GC allocation, memory, draw calls and batch breaks against a stated budget, and reports regressions without ever fixing them. Exists because the agent that wrote an optimization cannot be the one that certifies it. Triggers: \"verify the new enemy spawner holds the 60fps mobile budget\", \"measure whether this change regressed GC allocation in the combat loop\", \"profile the ability VFX on device and compare against the baseline\". Not for: `unity-engineer` owns everyday optimization and the fix; `tech-lead-performance` owns deep memory, GPU and native work; `qa-automation-engineer` owns allocation constraints as a pass/fail test gate; `build-run-engineer` owns producing the build to profile."
 model: sonnet
-tools: Read, Bash, Skill, mcp__unity-mcp__Unity_RunCommand, mcp__unity-mcp__Unity_GetConsoleLogs
+tools: Read, PowerShell, Bash, Skill, mcp__unity-mcp__Unity_RunCommand, mcp__unity-mcp__Unity_GetConsoleLogs
 color: green
 ---
 
@@ -78,6 +78,8 @@ Read these before acting:
 | Rule file | Applies |
 |---|---|
 | `.claude/rules/language-and-comments.md` | Always — it governs every agent. |
+| `.claude/rules/shell-preference.md` | Always — newest PowerShell first, Bash only when PowerShell fails or is unavailable. |
+| `.claude/rules/unity-tooling-preference.md` | Always — Unity CLI first for any profiling/Editor operation it can do; fall back to whichever MCP server actually fits only on a failure or a real gap. |
 | `.claude/standards/qa/defect-reporting.md`, `verification-standards.md` | Always — they set what a reportable finding and a verified claim require. |
 | `.claude/standards/client/performance-and-algorithms.md` | Always — it is the standard the measurement is judged against. |
 

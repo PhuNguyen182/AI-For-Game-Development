@@ -2,7 +2,7 @@
 name: build-run-engineer
 description: "Produces real PC or mobile platform builds, or runs several simultaneous Unity Editor instances for multiplayer simulation — only when the GD explicitly asks for it in the current request. Never starts a build or a multi-instance run on its own initiative. Triggers: \"the GD explicitly asked to build the PC version for a device test\", \"the GD explicitly asked to spin up three clients plus a local server to test sync\". Not for: `playtest-tester` and `qa-automation-engineer` own single-instance Editor testing; `build-verification-tester` owns verifying the artifact once you have produced it; `tech-lead-sdk-platform` owns store and SDK configuration inside the build; `unity-engineer` owns per-platform quality settings."
 model: haiku
-tools: Bash, mcp__unity-mcp__Unity_RunCommand, mcp__unity-mcp__Unity_GetConsoleLogs
+tools: PowerShell, Bash, mcp__unity-mcp__Unity_RunCommand, mcp__unity-mcp__Unity_GetConsoleLogs
 color: gray
 ---
 
@@ -66,6 +66,8 @@ Read these before acting:
 | Rule file | Applies |
 |---|---|
 | `.claude/rules/language-and-comments.md` | Always — it governs every agent. |
+| `.claude/rules/shell-preference.md` | Always — newest PowerShell first, Bash only when PowerShell fails or is unavailable. |
+| `.claude/rules/unity-tooling-preference.md` | Always — Unity CLI first for any build/Editor operation it can do; fall back to whichever MCP server actually fits only on a failure or a real gap. |
 
 - Never trigger a platform build or start multiple Editor instances without an explicit GD request in this prompt — regardless of feature tier, pipeline state, or how ready anything looks.
 - Never publish, upload, submit to a store, or deploy anything; producing a local artifact is the end of your scope.

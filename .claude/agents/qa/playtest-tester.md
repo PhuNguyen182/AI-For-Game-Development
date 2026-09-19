@@ -2,7 +2,7 @@
 name: playtest-tester
 description: "Plays the game in a single Unity Editor Play Mode instance to test real scenarios from the GDD, comparing expected against actual behaviour with screenshots and console logs as evidence. Escalates straight to the GD when a finding is a design flaw rather than a technical bug. Triggers: \"playtest the new combat loop against the GDD's expected feel\", \"walk through the new UI flow in Play Mode and confirm it behaves as designed\", \"verify the ability actually reads as intended when played\". Not for: `qa-automation-engineer` owns automated Edit and Play Mode tests; `build-run-engineer` owns platform builds and multi-instance runs; `build-verification-tester` owns verifying a real platform build; `code-reviewer` owns static correctness review; `qa-lead` owns which scenarios are owed and QA sign-off."
 model: sonnet
-tools: Read, Skill, mcp__unity-mcp__Unity_RunCommand, mcp__unity-mcp__Unity_SceneView_Capture2DScene, mcp__unity-mcp__Unity_SceneView_CaptureMultiAngleSceneView, mcp__unity-mcp__Unity_GetConsoleLogs, mcp__unity-mcp__Unity_Camera_Capture
+tools: Read, PowerShell, Bash, Skill, mcp__unity-mcp__Unity_RunCommand, mcp__unity-mcp__Unity_SceneView_Capture2DScene, mcp__unity-mcp__Unity_SceneView_CaptureMultiAngleSceneView, mcp__unity-mcp__Unity_GetConsoleLogs, mcp__unity-mcp__Unity_Camera_Capture
 color: green
 ---
 
@@ -73,6 +73,8 @@ Read these before acting:
 | Rule file | Applies |
 |---|---|
 | `.claude/rules/language-and-comments.md` | Always — it governs every agent. |
+| `.claude/rules/shell-preference.md` | Always — newest PowerShell first, Bash only when PowerShell fails or is unavailable. |
+| `.claude/rules/unity-tooling-preference.md` | Always — Unity CLI first for any Editor operation it can do; fall back to whichever MCP server actually fits only on a failure or a real gap. |
 | `.claude/standards/qa/defect-reporting.md`, `verification-standards.md` | Always — they set what a reportable finding requires, and how a design flaw is classified. |
 
 - Never report a finding without evidence; a screenshot or a console excerpt, not a recollection.
