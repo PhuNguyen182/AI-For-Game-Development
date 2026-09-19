@@ -484,6 +484,69 @@ that decides whether a feature passes.
 | 15.15 | **A fix was wrong on first attempt and is recorded as such.** Widening the gate-ask check flagged `review-pipeline.md`'s *correct* sentence naming the orchestrator as the asker for an ask belonging to no pipeline — the legitimate third row of `optional-gates.md`'s ownership table. A check that flags correct text is how a check stops being read. It now targets the forbidden shape only | `tools/verify-workflow-layer.ps1` | ⬜ |
 | 15.16 | **Scored independently, not only self-marked.** `assurance-evaluator` ran last and returned **`CONDITIONAL PASS`** — weighted **8.8** against the A4 floor of 9.0, and **8.75** on the six axes against the round's self-score of 8.9. It confirmed four axes and marked two down. **No independent party has executed the verifier**: both gates lack a shell, so the claim counts rest on the author's run plus one shell-capable re-run | `.claude/docs/qa-pipeline-update.md` Part 4b | ⬜ |
 
+## 16. `orchestrator.md` review round — the router, run rather than read, over three rounds
+
+The last unreviewed file in the layer, and the one every other file depends on. Three rounds at rising
+strictness, per the GD's direction. **The router dispatches no agent, so "running it" means making something
+follow step 0 literally** — two independent routing agents, seventeen real GD inputs between them, then an
+independent `code-reviewer` pass over the round's own diff *before* any final score.
+
+| Round | What ran | Result |
+|---|---|---|
+| **1** | Step 0 applied literally to seven GD inputs | **6 of 7 routed wrong.** 15 findings, 7 High |
+| **2** | Ten inputs against the *fixed* file, plus an explicit ordering audit | 13 findings — **6 of them defects round 1 introduced** |
+| **3** | `code-reviewer` on the whole diff, before scoring | **Request changes** — 17 findings, 2 High |
+
+### The four that mattered
+
+| # | Finding |
+|---|---|
+| **A** | *"First match wins — the cheaper row is listed first on purpose"* **inverted the file's own safety gradient.** Three catch-alls sat above every specific row: a `Game.Core.*` cooldown matched *"a tuned value"* four rows above the gated-direct row **written for that exact change**; a signing-config edit matched *"config"*; a production crash matched *"A question"*. Fixed by ordering the table **specific before general**, with the three residue rows last |
+| **B** | **The criteria table could see two of `task-classification.md`'s ten C3/C4 categories.** Round 1 reordered the table and left its entry condition untouched, so a credential/store/IAP/PII/save-data change tripped nothing and fell to the **chore** lane — no gates, no `security-reviewer`, no debt. A fifth **C3+** consequence-path criterion closes it. Round 3 then found the fix incomplete in `gated-direct-lane.md`, whose condition 4 still refused the input |
+| **C** | **Three doors had no route.** `change-request`, `E4` and `E6` appeared **zero times** in `orchestrator.md`: a mid-flight spec change — which halts work, reopens a checkpoint and resets five counters — was reachable only if the GD named the file |
+| **D** | **Step 0 routed to "mode 3"**, which the same file defines as the GD's override that *replaces* step 0. `orchestrator-direct-dispatch.md` had carried *"neither is reached by sizing"* for two rounds after those lane rows were added |
+
+### What was added
+
+`references/orchestrator-exits-and-custody.md` — the router declared **no exits** while being the one file
+every terminal return passes through. It now holds ten exit doors, the four-step ledger close (claimed in
+`orchestrator.md`'s ownership table and specified nowhere), where the four values come from **with no ledger**
+(most of what the router handles), the **I9** reclaim, and which of `orchestration.md`'s ten invariants the
+router acts on.
+
+### Verifier: 98 → **107** claims, seven new checks, twenty-one negative tests
+
+> **The baseline in this heading was wrong, and an independent assurance pass caught it.** It read "86 →
+> 106" — but **86** is §14's figure, and the true pre-round count is **98**, measured by running the script
+> against a clean `git archive HEAD` tree. The round credited itself with **+20** where the diff supports
+> **+9**. It is the one number in §16 that nothing recounts, in a round whose headline finding is stale
+> self-counts, and it is recorded here rather than quietly corrected.
+
+| Check | What it closes | Negative-tested by |
+|---|---|---|
+| Every **GD-triggered door** has a step-0 lane | The router's own custody class — a pipeline declares a door the router cannot reach | 6 tests: two deleted lanes, a renamed **table header**, a cross-cell split, and the door the check was itself blind to |
+| Gate-ask scope now includes `orchestrator.md` | **The check could not see the file the forbidden sentence names.** Planted there it PASSed; identical in `qa-pipeline.md` it FAILed | plant + restore |
+| Checklist states the lane count · the entry count · **this script's own claim count** | Stale self-counts, three times in this series | 3 tests, incl. the claim count, which caught two of this round's own edits |
+| Every file states the same **escalation-criteria count** | Stated in four files, one of them auto-loaded | 4 tests, incl. **rewording the count away** |
+| The exits reference states how many **invariants** it maps | Same class, third recurrence in one round | 4 tests, incl. splitting a two-ID row — which must still PASS, since it counts IDs, not rows |
+| **Step 0 is ordered specific before general** | **The class of the round's own flagship defect.** The reorder fixed the instance; the check that followed counted *rows*, and counting cannot see order. Added after an independent pass named it the highest-value item left | 3 tests: the flagship defect **replanted** (a catch-all hoisted to row 1) → FAIL; a destination row placed below a catch-all → FAIL; two specific rows swapped → **PASS**, the control |
+
+**Every negative test's output is preserved**, not read from a console and reported: the six harnesses write
+to `negative-tests.log`, and the run is re-executable by anyone with a shell via `-Root` against a copied
+tree. An independent pass flagged the unlogged outcomes as **E1-as-preserved**; this is what closes it.
+
+**Three defects were found in this round's own checks, by running them rather than reading them**: the gate-ask
+scope hole, an over-broad `no pipeline` exclusion that exempted two whole lane rows (a markdown row is one
+line), and `[int] ''` throwing under `ErrorActionPreference = 'Stop'` — which **aborts the run** and silently
+skips every later claim. A fourth was self-inflicted: two literal backspace bytes in a regex, which would have
+made the reachability trigger match nothing and pass vacuously.
+
+### Deliberately not done
+
+- **RP15**, the skill relocation. Still GD-deferred, still the one failing claim, 66 skills unloadable.
+- **Nothing executed end to end.** `.workflow/` still does not exist; every ledger destination named this
+  round has received nothing. Not reachable by writing.
+
 ## Open decisions the GD owes
 
 **None.** All seven are settled, and each one's full reasoning now lives in the pipeline file named below —
