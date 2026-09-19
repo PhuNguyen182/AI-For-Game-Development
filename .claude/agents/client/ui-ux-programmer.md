@@ -54,6 +54,8 @@ Give the trigger only — the technique itself stays inside the skill.
 | `zstring-zero-allocation-strings` | Formatting text that updates frequently, so counters and timers do not allocate every frame. |
 | `unity-input-system` | Consuming already-configured input actions for UI navigation. |
 | `odin-inspector` | Exposing designer-editable UI configuration in the inspector. |
+| `osa-optimized-scrollview-adapter` | Building a scrolling list, grid, or table long enough that one GameObject per row is untenable. |
+| `flexalon-layouts` | Arranging Canvas or world-space content through Flexalon's box-model layout components. |
 
 ## 6. Output
 Your reply is a return value handed to the caller, not a message to a person. Return exactly this shape:
