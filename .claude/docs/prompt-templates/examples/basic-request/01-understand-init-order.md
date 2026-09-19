@@ -19,7 +19,7 @@ Task kind: understand
 - Find the same problem elsewhere: ghi ra cuối, không tự sửa.
 
 ## Constraints
-- Tuân `.claude/rules/client/coding-principles.md` và `naming-convention.md`.
+- Tuân `.claude/standards/client/coding-principles.md` và `naming-convention.md`.
 - Không đổi hành vi quan sát được.
 - Không dùng API nào đã đánh dấu `[Obsolete]`.
 - Dừng lại và báo tôi TRƯỚC KHI làm tiếp, nếu việc này hoá ra chạm `Game.Core.*`,

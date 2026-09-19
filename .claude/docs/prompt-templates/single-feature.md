@@ -103,7 +103,7 @@ Constraints on that code:
 - Out of scope this round: [what I do NOT want built now]
 
 ## Constraints
-- Follow `.claude/rules/client/coding-principles.md`, `naming-convention.md`,
+- Follow `.claude/standards/client/coding-principles.md`, `naming-convention.md`,
   and `performance-and-algorithms.md`.
 - Do not introduce any API marked `[Obsolete]`.
 - Undecided — ask me, do not settle it yourself: [list | none]

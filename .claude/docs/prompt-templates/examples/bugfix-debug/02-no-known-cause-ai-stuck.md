@@ -45,7 +45,7 @@ trình bày một giả thuyết như một phát hiện.
   trong cùng một frame — xác minh trước khi tin vào đó, và nói tôi biết nếu tôi sai.
 
 ## Constraints
-- Follow `.claude/rules/client/coding-principles.md`.
+- Follow `.claude/standards/client/coding-principles.md`.
 - Do not weaken or delete an existing test to make this pass.
 - Do not leave debug logging behind: remove it, or gate it behind an editor-only helper.
 

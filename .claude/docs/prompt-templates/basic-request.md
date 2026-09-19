@@ -53,7 +53,7 @@ Task kind: [understand | rename-or-format | tune-a-visible-value | write-somethi
 - Find the same problem elsewhere: list it at the end, do not fix it.
 
 ## Constraints
-- Follow `.claude/rules/client/coding-principles.md` and `naming-convention.md`.
+- Follow `.claude/standards/client/coding-principles.md` and `naming-convention.md`.
 - Do not change observable behaviour. [Delete when the task IS the change.]
 - Do not introduce any API marked `[Obsolete]`.
 - Stop and tell me BEFORE proceeding if this turns out to touch `Game.Core.*`,

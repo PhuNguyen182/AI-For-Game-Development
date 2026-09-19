@@ -61,7 +61,7 @@ Ràng buộc lên đoạn code đó:
 - Out of scope this round: không làm scaling sát thương theo level, không làm crit — để bản sau.
 
 ## Constraints
-- Tuân `.claude/rules/client/coding-principles.md`, `naming-convention.md` và
+- Tuân `.claude/standards/client/coding-principles.md`, `naming-convention.md` và
   `performance-and-algorithms.md`.
 - Không dùng API nào đã đánh dấu `[Obsolete]`.
 - Undecided — hỏi tôi, đừng tự chốt: VFX cụ thể (particle nào) chưa chốt, dùng placeholder trước.

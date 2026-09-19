@@ -87,7 +87,7 @@ Scope: measure only. No optimization, no architecture, no integration.
 - Do not build abstraction "for later" — there is no later for this code.
 
 ## Constraints
-- Naming still follows `.claude/rules/client/naming-convention.md`, so I can read it.
+- Naming still follows `.claude/standards/client/naming-convention.md`, so I can read it.
 - The rest of `coding-principles.md` is suspended inside the sandbox folder. Put one
   line at the top of each file saying so, so nobody mistakes this for production code.
 

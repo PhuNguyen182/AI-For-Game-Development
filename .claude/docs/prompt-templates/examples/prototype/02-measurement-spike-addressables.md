@@ -43,7 +43,7 @@ Scope: chỉ đo. Không tối ưu, không dựng kiến trúc, không tích h�
 - Không dựng abstraction "để sau này dùng" — với đoạn code này không có sau này.
 
 ## Constraints
-- Đặt tên vẫn theo `.claude/rules/client/naming-convention.md`, để tôi còn đọc được.
+- Đặt tên vẫn theo `.claude/standards/client/naming-convention.md`, để tôi còn đọc được.
 - Phần còn lại của `coding-principles.md` được tạm ngưng bên trong thư mục sandbox.
   Ghi một dòng ở đầu mỗi file nói rõ điều đó, để không ai nhầm đây là code production.
 

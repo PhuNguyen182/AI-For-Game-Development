@@ -4,6 +4,10 @@ Applies to: C# Software Engineer, Unity Engineer, UI/UX Programmer, Tech Lead �
 
 Sources: [Microsoft Learn — Identifier names](https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/identifier-names) and [Microsoft Learn — .NET Coding Conventions](https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/coding-conventions), adapted for Unity/game-client context where noted.
 
+## Relationship to other rules
+
+This file owns architecture-level design principles, correctness/safety boundaries, and submission handoff. Mechanical style — explicit access modifiers, brace/indentation layout, statement shape, and modern-operator preference — is governed by the sibling file `.claude/standards/client/code-style-and-layout.md`; read both before writing any code, they are not substitutes for each other.
+
 ## Shared Core integrity
 
 - Game-rule logic (damage formulas, state machines, cooldowns, economy math — anything that decides an outcome) lives **only** in `Game.Core.*`. MonoBehaviours and other `Game.Client.*` code call into it; they never reimplement it.
@@ -12,7 +16,7 @@ Sources: [Microsoft Learn — Identifier names](https://learn.microsoft.com/en-u
 
 ## Core design principles (mandatory)
 
-These are non-negotiable, not stylistic preferences. Code Reviewer checks every submission against them, and a violation is grounds for "request changes" regardless of the feature's Triage tier.
+These are non-negotiable, not stylistic preferences. Code Reviewer checks every submission against them, and a violation is grounds for "request changes" regardless of the feature's assurance tier.
 
 ### SOLID
 
@@ -93,15 +97,6 @@ Every method body should read at one consistent level of abstraction. Don't mix 
 - Outside hot paths, use string interpolation (`$"{a}, {b}"`) for one-off strings, and `StringBuilder` when appending in a loop.
 - Keep platform-specific branches behind a clean abstraction (an interface-based platform service), not scattered `#if UNITY_ANDROID` / `#if UNITY_IOS` directives across gameplay code.
 
-## Layout
-
-- 4-space indentation, no tabs.
-- Allman brace style — opening brace on its own line, matching the block's indentation.
-- One statement and one declaration per line.
-- Blank line between method/property definitions.
-- Use parentheses to make operator precedence explicit in non-trivial expressions, even when not strictly required.
-- No fixed character-per-line limit is enforced (Microsoft's own 65-character guidance is for their docs website, not production code) — keep lines readable, wrap when a line's intent gets hard to scan, particularly for method signatures with many parameters.
-
 ## Modern C# syntax — check the project's language version first
 
 Raw string literals, `required` properties, collection expressions (`[...]`), and primary constructors are all real Microsoft-recommended patterns, but they require a C# language version Unity's compiler toolchain (Mono or IL2CPP, depending on the target platform) must actually support. Confirm the project's configured C# version before using any of them — don't assume the latest syntax compiles on this project's Unity version.
@@ -139,12 +134,18 @@ they don't look like external input:
   below).
 
 **Plain C# reference types** (`Game.Core.*` types, interfaces, records, `string`, and any other type that
-does not derive from `UnityEngine.Object`) use the ordinary explicit comparison:
+does not derive from `UnityEngine.Object`) use the `is null`/`is not null` pattern rather than an explicit
+`==`/`!=` comparison — per the modern-operator preference in `code-style-and-layout.md`:
 
 ```csharp
-if (this.combatState != null)
+if (this.combatState is not null)
 {
     // ...
+}
+
+if (this.combatState is null)
+{
+    return;
 }
 ```
 
@@ -194,4 +195,6 @@ of them.
 
 - Every submission to Code Reviewer includes a short note of assumptions/known limitations (per the Implementation Note handoff format in `.claude/rules/implementation-note.md`).
 - Stay scoped to what the Tech Spec asked for. Don't refactor unrelated code, don't add speculative extensibility, don't fix unrelated issues in the same submission — flag them separately instead.
-- When a Complex-tier feature (per Technical Architect's Triage) reaches completion, its handoff also includes the `README.md` required by `.claude/rules/client/feature-documentation.md`. Simple/Medium tier work is exempt from this.
+- When an **A4-or-above** feature (per the assurance tier in `.claude/rules/task-classification.md`) reaches completion, its handoff also includes the feature-root documents owed under `.claude/standards/client/feature-documentation.md` — always `README.md`, plus whichever of `CONTRACTS.md`, `INTEGRATION.md` and `ARCHITECTURE.md` that file's triggers have actually fired for. A1/A2 owes none of them; A3 owes only a `LEDGER.md` or `DEBT.md` entry when its trigger fires.
+- Verify to the floor your dispatch stated — V1 at A1/A2, V2 at A3, V3 at A4, V4 at A5, per `.claude/rules/effort-allocation.md` — and report in the Implementation Note exactly what you ran and what you did not. Reading code is review; running it is verification, and a check nobody ran is never reported as passed.
+- Before writing code against an existing feature, read its documents in the order `.claude/rules/feature-context-reading.md` sets — that file also governs what to do when a document disagrees with the code.

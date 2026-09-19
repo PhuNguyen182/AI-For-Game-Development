@@ -37,7 +37,7 @@ chờ tôi đồng ý.
 - Out of scope this round: không làm slider cho volume hay độ sáng màn hình — đó là tính năng khác.
 
 ## Constraints
-- Tuân `.claude/rules/client/coding-principles.md`, `naming-convention.md` và
+- Tuân `.claude/standards/client/coding-principles.md`, `naming-convention.md` và
   `performance-and-algorithms.md`.
 - Không dùng API nào đã đánh dấu `[Obsolete]`.
 - Undecided — hỏi tôi, đừng tự chốt: none

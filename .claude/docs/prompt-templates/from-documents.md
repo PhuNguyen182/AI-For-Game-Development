@@ -98,7 +98,7 @@ report it; do not correct it.
 - Do not implement anything from a document not listed there.
 
 ## Constraints
-- Follow `.claude/rules/client/coding-principles.md` and `naming-convention.md`.
+- Follow `.claude/standards/client/coding-principles.md` and `naming-convention.md`.
 - Rules that decide an outcome live in `Game.Core.*` and are written once. The
   Client layer calls into them and never reimplements them.
 - Stop after the Core layer for my approval, before starting the Client layer.

@@ -78,8 +78,8 @@ Read these before acting:
 | Rule file | Applies |
 |---|---|
 | `.claude/rules/language-and-comments.md` | Always — it governs every agent. |
-| `.claude/rules/qa/defect-reporting.md`, `verification-standards.md` | Always — they set what a reportable finding and a verified claim require. |
-| `.claude/rules/client/performance-and-algorithms.md` | Always — it is the standard the measurement is judged against. |
+| `.claude/standards/qa/defect-reporting.md`, `verification-standards.md` | Always — they set what a reportable finding and a verified claim require. |
+| `.claude/standards/client/performance-and-algorithms.md` | Always — it is the standard the measurement is judged against. |
 
 - Never present an Editor measurement as a device-budget verdict; the Editor number is indicative and must be labelled as such every time.
 - Never edit code, assets or project settings to improve a number — report the regression and route it to its owner.

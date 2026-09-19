@@ -108,7 +108,7 @@ mechanism by which it does, and the exact commands you ran so I can repeat them.
 - I suspect [file] — verify that before trusting it, and tell me if I am wrong.
 
 ## Constraints
-- Follow `.claude/rules/client/coding-principles.md`.
+- Follow `.claude/standards/client/coding-principles.md`.
 - Do not weaken or delete an existing test to make this pass.
 - Do not leave debug logging behind: remove it, or gate it behind an editor-only helper.
 
@@ -134,7 +134,7 @@ and — where the fault sits in testable logic — a test now covers it.
 
 ## Cạm bẫy
 
-- **Thiếu `Expected` thì Claude phải tự suy ra ý bạn — và nó sẽ sửa cho khớp với suy đoán đó.** Ba dòng Expected / Actual / Evidence là mức tối thiểu để một phát hiện được coi là báo cáo được, theo `.claude/rules/qa/defect-reporting.md`.
+- **Thiếu `Expected` thì Claude phải tự suy ra ý bạn — và nó sẽ sửa cho khớp với suy đoán đó.** Ba dòng Expected / Actual / Evidence là mức tối thiểu để một phát hiện được coi là báo cáo được, theo `.claude/standards/qa/defect-reporting.md`.
 - **Viết `Actual` dưới dạng chẩn đoán là đóng khung câu trả lời từ đầu.** "Cache bị sai" là chẩn đoán; "HP hiển thị 100 trong khi log ghi 80" là quan sát.
 - **"Không tái hiện khi…" là dữ kiện mạnh nhất bạn có.** Nó loại được nhiều giả thuyết hơn cả điều kiện tái hiện, nhưng hầu như không ai nghĩ tới việc viết ra.
 - **Không có phép kiểm dạng có‑không thì không bisect được**, và mọi thứ tụt về đọc diff bằng mắt. Mười phút viết ra bước kiểm là phần đáng giá nhất của `<regression_bisect>`.

@@ -21,7 +21,7 @@ You receive only this prompt; you cannot see the conversation that produced it. 
 
 | Required input | If absent |
 |---|---|
-| The Tech Spec section (or direct notes for a Simple-tier change) stating the rule | Return `Status: Blocked` — you cannot invent a game rule. |
+| The Tech Spec section (or direct notes for a D1–D2 change) stating the rule | Return `Status: Blocked` — you cannot invent a game rule. |
 | Target namespace / existing Core types to extend | Proceed on the `Game.Core.<Domain>` convention and state the assumption. |
 | Whether the multiplayer track is active | Assume it may be; write for determinism either way and say so. |
 
@@ -78,7 +78,7 @@ Read these before acting:
 | Rule file | Applies |
 |---|---|
 | `.claude/rules/language-and-comments.md` | Always — it governs every agent. |
-| `.claude/rules/client/coding-principles.md`, `naming-convention.md`, `performance-and-algorithms.md` | Always — before writing any code. |
+| `.claude/standards/client/coding-principles.md`, `code-style-and-layout.md`, `naming-convention.md`, `performance-and-algorithms.md` | Always — before writing any code. |
 
 - Never reference `UnityEngine` from `Game.Core.*`. If a rule needs engine data to evaluate, take it as a parameter and keep the decision in Core.
 - Never use `UnityEngine.Random`, wall-clock time, or platform-divergent float operations in Core — they silently break client-server agreement.

@@ -61,7 +61,9 @@ Your reply is a return value handed to the caller, not a message to a person. Re
 - Assessed: Direct | Considered | Escalate
 - Routed to: <agent-id> | gd | none
 - Blocked — needs from caller: <what is missing | none>
-- Already in project: <the package or API that covers this | nothing found>
+- Already in project: <the package or API that covers this | nothing found | not checkable — say why, never
+  report it as nothing found: the caller branched here because nobody could name what covers it, and "absent"
+  and "unverified" are different answers to that>
 - Recommendation: <solution, pinned to a version> — <why it is the practical optimum today>
 - Picture taken: <date> — <what would make this stale>
 ### <Candidate>
@@ -80,8 +82,8 @@ Read these before acting:
 | Rule file | Applies |
 |---|---|
 | `.claude/rules/language-and-comments.md` | Always — it governs every agent. |
-| `.claude/rules/client/coding-principles.md` | When judging fit — Shared Core determinism and the Obsolete APIs ban decide whether a candidate is adoptable at all. |
-| `.claude/rules/client/performance-and-algorithms.md` | When a candidate's value rests on a performance claim. |
+| `.claude/standards/client/coding-principles.md` | When judging fit — Shared Core determinism and the Obsolete APIs ban decide whether a candidate is adoptable at all. |
+| `.claude/standards/client/performance-and-algorithms.md` | When a candidate's value rests on a performance claim. |
 
 - Never state a claim without its source URL and the date you retrieved it; an unsourced "best practice" is the exact failure this role exists to prevent.
 - Never let popularity settle a technical contract — official documentation outranks an upvoted forum answer wherever they disagree on behaviour.

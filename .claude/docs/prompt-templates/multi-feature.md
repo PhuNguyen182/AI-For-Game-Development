@@ -110,7 +110,7 @@ recommendation — do it now, defer, or redesign. Wait for my approval before ac
 - Do not expand the batch. If something is missing, name it; do not add it.
 
 ## Constraints
-- Follow `.claude/rules/client/coding-principles.md` and `naming-convention.md`.
+- Follow `.claude/standards/client/coding-principles.md` and `naming-convention.md`.
 - Give cost estimates in agent calls, per step, before anything starts.
 - YAGNI outranks generality: a small correct API beats a general wrong one.
 

@@ -41,7 +41,7 @@ Trả về bảng: feature | tier | depends on | risk | cost. Rồi tới thứ 
 - Không mở rộng lô. Thiếu gì thì nêu tên, đừng tự thêm vào.
 
 ## Constraints
-- Tuân `.claude/rules/client/coding-principles.md` và `naming-convention.md`.
+- Tuân `.claude/standards/client/coding-principles.md` và `naming-convention.md`.
 - Đưa ước lượng chi phí theo số lượt gọi agent, cho từng bước, trước khi bắt đầu.
 - YAGNI đứng trên tính tổng quát: một API nhỏ mà đúng hơn một API tổng quát mà sai.
 
