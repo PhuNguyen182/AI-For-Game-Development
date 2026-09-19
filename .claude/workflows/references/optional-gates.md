@@ -17,11 +17,23 @@ not, and the split is the same one the rest of the layer uses:
 | Owned by | What |
 |---|---|
 | **This file** | The **shape** of every ask — the four things it carries, the recommendation, the bound of one offer per boundary, and the record that follows either answer. It is the single home; no pipeline restates it |
-| **The pipeline that reaches the boundary** | **Where** each ask fires. `feature-development.md` step 1 asks about the Core contract, because that is the moment four agents are about to build against it. `review-pipeline.md` step 6 asks about QA, because that is the moment both verdicts are in. Neither is a second copy of the rule — each is a location |
+| **The pipeline that reaches the boundary** | **Where** each ask fires. `feature-development.md` step 1 asks about the Core contract, because that is the moment four agents are about to build against it. `review-pipeline.md` step 6 asks about QA, because that is the moment both verdicts are in. `qa-pipeline.md` step 3b asks about reviewing a test suite. Neither is a second copy of the rule — each is a location |
 | **`orchestrator.md`** | Every ask that belongs to **no** pipeline: a mode-3 dispatch that wrote source, a gated-direct submission, a debt row re-offered at a later boundary |
 
 "The orchestrator asks the GD" above is shorthand for the third row, and it is the one that has no pipeline
-to hold it. It has never meant that a pipeline mid-run routes its own boundary back through the router.
+to hold it. It has never meant that a pipeline mid-run routes its own boundary back through the router. **A
+pipeline that consumes this rule never restates it as "the orchestrator asks"** — that wording was corrected
+here and then survived in two files that quote it, which is why the location table above names each asker
+rather than leaving it to be inferred.
+
+### The one ask whose location moves
+
+**QA is asked at `review-pipeline.md` step 6 — unless review was declined, and then that step never runs.**
+The ask does not disappear with the gate that would have made it; it moves to the boundary that *did* get
+reached, which is `feature-development.md`'s end-of-work ask, where it fires alongside the review offer
+rather than after it. The rule is the same one in the table: **whichever party reaches the boundary asks**,
+and a declined gate removes a location without removing the question. Both gates declined still leaves two
+recorded debt rows and a feature that closes at **CP4**.
 
 ## The two decision points
 

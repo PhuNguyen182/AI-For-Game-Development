@@ -14,6 +14,23 @@ two, and no CP3 — there is no Tech Spec for a test suite. Declined, it is reco
 those paths exactly like any other declined gate. This closes invariant **I10**: source that reaches no gate
 is a hole, not debt, and the hole was that **E1** accepted submissions only from `feature-development.md`.
 
+## Where the second strike goes — not where the other E3 origin goes
+
+**E3** carries two kinds of submission and they escape the cap in opposite directions. The gated-direct lane
+escalates to `feature-intake.md` **E1**, because two rejections on a one-role change is evidence the input
+was mis-sized and classification should start over from what was learned.
+
+**A test suite has nothing for that door to classify.** There is no feature request behind it, no direction
+to settle and no Tech Spec to produce — intake would be handed a `.cs` file and asked what the GD wants
+built. So at the second strike the suite returns to **`qa-lead` as unrun coverage**: the exit criteria that
+suite was written to satisfy are still unmet, which is exactly the gap `qa-pipeline.md` step 4 already knows
+how to carry — re-dispatch within its own two-round sign-off bound, or to **CP4** as a gap only the GD can
+accept. Two gate rejections on a suite means the coverage is not trustworthy, and *"not trustworthy"* is a
+coverage verdict, never a feature request.
+
+The cap itself is registered in `references/loop-termination.md` beside the gated-direct one, so the two are
+visibly different counters rather than one number applied twice.
+
 ## Why this is not optional-by-omission
 
 `orchestration.md` invariant **I2** says review debt attaches to the artifact rather than to the run — but a

@@ -69,7 +69,14 @@ Your reply is a return value handed to the caller, not a message to a person. Re
 - Task breakdown: <per agent-id>
 - Documents owed: <the feature-root documents whose tier floor and trigger have both fired | none>
 ```
-For a Checkpoint 3 summary keep the same envelope and replace the body with `Built:`, `Matches spec intent:` (with any drift named), and `Known limitations:`. For a mid-flight GDD change, add `Change severity:` — Minor (update the spec in place), Moderate (roll back to Checkpoint 2), or Major (roll back to Checkpoint 1) — and list the code now needing rework.
+For a Checkpoint 3 summary keep the same envelope and replace the body with `Built:`, `Matches spec intent:` (with any drift named), and `Known limitations:`. For a mid-flight GDD change, add `Change severity:` — Minor (update the spec in place), Moderate (roll back to Checkpoint 2), or Major (roll back to Checkpoint 1) — and list the code now needing rework. **For a three-strikes root cause** keep the same envelope and replace the body with:
+```
+- Root cause: <the one thing that made three rejections the same failure, not three failures>
+- Evidence across rejections: <which verdict showed what — the pattern is the finding, never a summary of the latest one>
+- Known non-solutions: <what has already been tried and failed, so the next cycle does not buy it again>
+- Next best action: <what the author does now, addressed to the agent-id that owns it>
+```
+A cause is not a verdict and not a fix: you are not re-reviewing the code, and `Verdict:` is not yours to return here.
 - Input: "GD wants a crafting system" → `Status: Done`, `Assessed: Considered`, `Tier: A3` (D3, C2), V2, budget 3, a Tech Spec with boundaries and a per-agent task breakdown, no Advisor–Critic loop.
 - Input: "change the release keystore alias in the build config" → `Status: Done`, `Assessed: Direct`, `Tier: A5` (D1, but C4/X3), V4, direct notes to one agent-id and **no Tech Spec** — consequence buys verification, never process.
 - Input: "Decide whether we license Photon or build custom netcode" → `Status: Rejected`, `Routed to: cto` — the *whole request* is a strategic technology choice, so it was misaddressed and there is no feature work to hold. **Hitting one part-way through classifying or specifying a feature is a different return**: that work is real and partly done, so it is `Needs-decision` with `Routed to: cto`, per §4. Both are correct; they are not interchangeable, and the caller routes them to different places.

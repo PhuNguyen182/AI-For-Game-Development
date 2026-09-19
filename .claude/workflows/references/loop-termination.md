@@ -16,6 +16,7 @@ same discipline one level up, to the counters `orchestration.md` invariant **I4*
 | Advisor⇄Critic rounds | 3 | One feature's direction loop | `feature-intake.md` |
 | Review strikes | 3 | **One submission** | `review-pipeline.md` |
 | Gated-direct strikes | 2 | One gated-direct submission | `references/gated-direct-lane.md` |
+| **Test-code strikes** | **2** | One `qa-automation-engineer` suite at `review-pipeline.md` **E3** | `references/qa-test-code-gate.md` |
 | QA fails | 2 | One submission passing review and failing QA | `qa-pipeline.md` |
 | Measure-and-confirm | 1 | One `cto` decision | `research-decision.md` |
 | **Standalone gate re-decides** | **1** | One standalone result at its acceptance gate | **here** |
@@ -30,8 +31,13 @@ same discipline one level up, to the counters `orchestration.md` invariant **I4*
 | **Identical `Blocked`** | **2** | One dispatch and one missing input | **here** |
 | **Gate re-offers** | **1 per boundary**, never twice in a run | One artifact | **here** |
 
-Ten of those seventeen are stated here and nowhere else, because each one is a *composition* of loops that
+Ten of those eighteen are stated here and nowhere else, because each one is a *composition* of loops that
 were individually bounded and jointly were not.
+
+**The two E3 caps are both 2 and they are not the same cap.** `review-pipeline.md` **E3** takes submissions
+from two origins, and each has its own counter and its own escape: a gated-direct submission escalates to
+`feature-intake.md` **E1**, a test suite goes back to `qa-lead` as unrun coverage. Counting them as one is
+how a suite ends up classified as a feature request.
 
 ## The root-cause reset — once, and only once
 
