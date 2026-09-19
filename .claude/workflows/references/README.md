@@ -32,6 +32,7 @@ never a copy, and one fact has one home. It also matches how skills are laid out
 | `gated-direct-lane.md` | `orchestrator.md` | An input trips a **C2+** criterion and nothing else |
 | `loop-termination.md` | every pipeline with a counter | A cap has been reached — and **before adding any loop**: it is the single home for every bound in the layer |
 | `review-entry-inputs.md` | `review-pipeline.md` | Dispatching a submission to either gate |
+| `review-exit-and-custody.md` | `review-pipeline.md` | **Either gate returns** — which door each result takes, the custody table for every field no `Status:`/`Verdict:` row names, and the supply-chain pre-gate |
 | `qa-test-code-gate.md` | `qa-pipeline.md` | `qa-automation-engineer` has written a suite |
 | `intake-tech-spec.md` | `feature-intake.md` | Writing or revising a Tech Spec at step 6 — **D3–D5** only |
 | `development-escalation-lane.md` | `feature-development.md` | A routine implementation pass has already failed |

@@ -8,6 +8,13 @@
 required-input table names exactly what is missing: **where the value is actually sourced from**. So this is
 an input to supply and re-run, never a verdict to escalate, and never a strike.
 
+**It does not run when a rejection arrived beside it.** `Needs Confirmation` from `security-reviewer` next to
+a `Request changes` from `code-reviewer` is not this ladder: the submission is going back to its author
+anyway, so the unresolved value travels with the findings and the security gate re-runs on the resubmission.
+Running the ladder while the author is already rewriting the file buys a round trip against code that is
+about to change. The ladder is for the case where this verdict is the **only** thing between the submission
+and clear. Either way it is not a strike — the `Request changes` is.
+
 Ask in this order:
 
 | Ask | When |
