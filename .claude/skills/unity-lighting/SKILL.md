@@ -8,10 +8,11 @@ description: >
   and box projection, Adaptive Probe Volume authoring, lighting-side Rendering
   Layers, and the URP lighting HLSL a custom lit shader consults. Use when a
   scene must be lit, baked, or its shadows and reflections tuned. Not for:
-  pipeline choice (`render-pipeline-urp-hdrp`); HDRP pipeline settings
-  (`unity-hdrp-rendering`); rendering path, Renderer Features and `Light2D`
-  (`unity-urp-rendering`); post-process Volumes (`unity-post-processing`);
-  shader content (`shader-authoring`).
+  pipeline choice — `render-pipeline-urp-hdrp`; HDRP pipeline settings —
+  `unity-hdrp-rendering`; rendering path, Renderer Features and `Light2D` —
+  `unity-urp-rendering`; post-process Volumes — `unity-post-processing`;
+  shader content — `shader-authoring`; how an entity subscene renders and
+  the lighting limits that package documents — `unity-entities-graphics`.
 ---
 
 # Unity Lighting — Sources, Global Illumination, Shadows, Reflections, Probe Volumes
@@ -52,6 +53,7 @@ Act as the lighting specialist for Built-in RP and URP, and as the probe and lig
 - Negative trigger: rendering path, Renderer Features, camera stacking, or `Light2D` and the 2D Renderer — that is `unity-urp-rendering`, whose rendering-path choice this skill's light limits depend on.
 - Negative trigger: post-processing Volumes and their overrides — that is `unity-post-processing`; a `VolumeProfile` and a `ProbeVolume` share a word and nothing else.
 - Negative trigger: the Shader Graph or HLSL of a custom lighting model — that is `shader-authoring`; this skill supplies the API surface it calls.
+- Negative trigger: a bake whose geometry lives in an ECS subscene, or a `Light` that vanished when its prefab was baked into entities — that is `unity-entities-graphics`, which documents this package's own subscene lightmap limits and Companion Component list; a bad bake there is one of those before it is a lightmapper problem.
 - Negative trigger: a gameplay rule that reads light state — stealth detection, a day-night trigger, a light-based puzzle — that decision lives in `Game.Core.*` per `coding-principles.md`.
 
 ## 4. How to use this skill
@@ -78,7 +80,7 @@ Act as the lighting specialist for Built-in RP and URP, and as the probe and lig
 - Adaptive Probe Volume authoring on any SRP: placement, density, Baking Sets, streaming, leak removal.
 - Lighting-side Rendering Layer masks, including across APV boundaries.
 - Supplying URP's lighting HLSL surface to a custom shader author.
-- Out of scope: pipeline choice (`render-pipeline-urp-hdrp`); HDRP pipeline settings and the APV enablement toggle (`unity-hdrp-rendering`); rendering path, Renderer Features, `Light2D` (`unity-urp-rendering`); post-process Volumes (`unity-post-processing`); shader content (`shader-authoring`); gameplay rules reading light state (`csharp-engineer`).
+- Out of scope: pipeline choice (`render-pipeline-urp-hdrp`); HDRP pipeline settings and the APV enablement toggle (`unity-hdrp-rendering`); rendering path, Renderer Features, `Light2D` (`unity-urp-rendering`); post-process Volumes (`unity-post-processing`); shader content (`shader-authoring`); entity subscene rendering and its documented lighting limits (`unity-entities-graphics`); gameplay rules reading light state (`csharp-engineer`).
 
 ## 6. Output format
 ```

@@ -1,22 +1,25 @@
 ---
 name: odin-inspector
 description: >
-  Sirenix Odin Inspector: attributes like ShowIf, HideIf, EnableIf,
-  DisableIf, BoxGroup, TabGroup, FoldoutGroup, HorizontalGroup, Button,
-  ButtonGroup, ValueDropdown, AssetSelector, InlineEditor, PreviewField,
-  ListDrawerSettings, TableList, TableMatrix, DictionaryDrawerSettings,
-  ValidateInput, Required, and OnValueChanged; Odin serialization
-  (SerializedMonoBehaviour, SerializedScriptableObject, [OdinSerialize]);
-  and editor extensibility (OdinEditor, OdinEditorWindow,
-  OdinMenuEditorWindow, OdinValueDrawer<T>, OdinAttributeDrawer<TAttribute>,
-  OdinAttributeProcessor, PropertyTree, InspectorProperty). Use when
-  decorating a MonoBehaviour, ScriptableObject, or [Serializable] field for
-  the Inspector, serializing a type Unity can't (interfaces, dictionaries,
-  polymorphic references), or writing a custom Odin drawer or menu-based
-  editor window. Not for: runtime gameplay rules (`csharp-engineer`'s
-  Shared Core), Unity's native UGUI or UI Toolkit runtime UI
-  (`ui-ux-programmer`), MonoBehaviour lifecycle and profiling
-  (`unity-engineer`).
+  Sirenix Odin Inspector: attributes such as ShowIf/HideIf/EnableIf/DisableIf
+  conditionals, BoxGroup/TabGroup/FoldoutGroup/HorizontalGroup layout,
+  Button/ButtonGroup actions, ValueDropdown/AssetSelector/InlineEditor/
+  PreviewField selection and preview, ListDrawerSettings/TableList/
+  TableMatrix/DictionaryDrawerSettings collection display, and
+  ValidateInput/Required/OnValueChanged validation; Odin serialization via
+  SerializedMonoBehaviour/SerializedScriptableObject and the OdinSerialize
+  attribute; and editor extensibility via
+  OdinEditor/OdinEditorWindow/OdinMenuEditorWindow, OdinValueDrawer<T>,
+  OdinAttributeDrawer<TAttribute>, PropertyTree, and InspectorProperty. Use
+  when decorating a MonoBehaviour, ScriptableObject, or Serializable field
+  for the Inspector, serializing a type Unity can't handle — interfaces,
+  dictionaries, polymorphic references — or writing a custom Odin drawer or
+  menu-based editor window. Not for: gameplay rules in
+  `csharp-engineer`'s Shared Core; Unity's native UGUI/UI Toolkit UI, owned
+  by `ui-ux-programmer`; an Editor window, inspector, or property drawer in
+  UXML/USS, owned by `ui-toolkit`; the ScriptableObject's own architecture
+  pattern, owned by `unity-scriptableobject-architecture`; MonoBehaviour
+  lifecycle and profiling, owned by `unity-engineer`.
 ---
 
 # Sirenix Odin Inspector — Attributes, Serialization & Editor Extensibility
@@ -52,6 +55,8 @@ Act as the Odin Inspector specialist for the client track — the tool reached f
 - Debugging why an Odin attribute's conditional string (`ShowIf`, `ValidateInput`, `OnValueChanged`) isn't firing, or why a type isn't drawing as expected.
 - Negative trigger: the actual damage/cooldown/economy decision an `[OnValueChanged]` callback would trigger — that decision belongs in `Game.Core.*` per `coding-principles.md`'s Shared Core integrity section, not `csharp-engineer`'s domain via this skill.
 - Negative trigger: building runtime (in-game, player-facing) UI with UGUI or UI Toolkit — that is `ui-ux-programmer`'s domain, not the Inspector.
+- Negative trigger: an Editor window, inspector, or property drawer authored in UXML/USS against `UnityEngine.UIElements` — that is `ui-toolkit`; this skill owns the Odin path (`OdinEditorWindow`, `OdinValueDrawer<T>`, `PropertyTree`), and one window is built on one of the two, never both.
+- Negative trigger: which ScriptableObject pattern the data should use at all — Event Channel, Runtime Set, Variable asset — that is `unity-scriptableobject-architecture`; this skill only decides how an existing SO's fields render and serialize.
 - Negative trigger: general MonoBehaviour performance work (pooling, `Update()` allocations, profiler passes) unrelated to Inspector/editor tooling — that is `unity-engineer`'s domain.
 
 ## 4. How to use this skill
@@ -69,7 +74,7 @@ Act as the Odin Inspector specialist for the client track — the tool reached f
 - Decide whether Odin serialization (`SerializedMonoBehaviour`/`SerializedScriptableObject`/`[OdinSerialize]`) is actually needed for a given field's type, versus Unity's own serializer already handling it.
 - Scaffold a custom `OdinEditor`, `OdinEditorWindow`, `OdinMenuEditorWindow`, `OdinDrawer`, or `OdinAttributeProcessor` when attributes alone are insufficient.
 - Diagnose a non-firing conditional string, a missing drawer, or an unexpected serialization gap.
-- Out of scope: the runtime behavior an Inspector button or callback triggers (`csharp-engineer`'s Shared Core), Odin Validator project-wide validation rule authoring beyond `SelfValidator<T>`/`ISelfValidator` basics (`tech-lead-csharp-unity` for deep custom validator systems), player-facing runtime UI (`ui-ux-programmer`).
+- Out of scope: the runtime behavior an Inspector button or callback triggers (`csharp-engineer`'s Shared Core), Odin Validator project-wide validation rule authoring beyond `SelfValidator<T>`/`ISelfValidator` basics (`tech-lead-csharp-unity` for deep custom validator systems), player-facing runtime UI (`ui-ux-programmer`), UXML/USS-authored Editor UI (`ui-toolkit`), the SO's own architecture pattern (`unity-scriptableobject-architecture`).
 
 ## 6. Output format
 ```

@@ -2,7 +2,7 @@
 name: technical-artist
 description: "Authors shaders, VFX, and compute shaders whose deliverable is a visual effect, from the Tech Spec or a direct GD visual requirement. Delegate when the ask is how something looks. Triggers: \"build a stylized water shader from the Tech Spec\", \"implement a compute-shader-driven particle VFX for the new ability\", \"create the screen distortion effect for the ultimate\". Not for: `tech-lead-performance` owns compute shaders whose purpose is raw optimization; `unity-engineer` owns render pipeline and lighting configuration plus scene integration; `ui-ux-programmer` owns UI construction."
 model: sonnet
-tools: Read, Write, Edit, Skill, mcp__unity-mcp__Unity_RunCommand, mcp__unity-mcp__Unity_SceneView_Capture2DScene, mcp__unity-mcp__Unity_GetConsoleLogs
+tools: Read, Write, Edit, PowerShell, Bash, Skill, mcp__unity-mcp__Unity_RunCommand, mcp__unity-mcp__Unity_SceneView_Capture2DScene, mcp__unity-mcp__Unity_GetConsoleLogs
 color: blue
 ---
 
@@ -75,6 +75,8 @@ Read these before acting:
 | Rule file | Applies |
 |---|---|
 | `.claude/rules/language-and-comments.md` | Always — it governs every agent. |
+| `.claude/rules/shell-preference.md` | Always — newest PowerShell first, Bash only when PowerShell fails or is unavailable. |
+| `.claude/rules/unity-tooling-preference.md` | Always — Unity CLI first for any Editor operation it can do; fall back to whichever MCP server actually fits only on a failure or a real gap. |
 | `.claude/standards/client/coding-principles.md`, `code-style-and-layout.md`, `naming-convention.md`, `performance-and-algorithms.md` | Always — before writing any code. |
 
 - Never redesign the effect beyond what was asked; a better idea is a note in your output, not a substitution.

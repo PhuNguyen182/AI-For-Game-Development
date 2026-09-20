@@ -1,20 +1,22 @@
 ---
 name: unitask-async-programming
 description: >
-  UniTask (`Cysharp.Threading.Tasks`) — allocation-free async/await on Unity's
-  `PlayerLoop`: `UniTask`/`UniTask<T>`/`UniTaskVoid`, `PlayerLoopTiming`,
-  `GetCancellationTokenOnDestroy()`, pooled `CancellationTokenSource` and
-  `TimeoutController`, `.Preserve()`/`UniTask.Lazy` for re-await, `.Forget()`,
-  `UniTaskCompletionSource`, `.AsUniTask()`, and `Channel<T>`/async LINQ for
-  pull-based streams. Use for any one-shot operation with a definite
-  completion — an animation finishing, an RPC returning, a delay, an
-  Addressables load — replacing `Task` and `IEnumerator` coroutines in
-  `Game.Client.*`. Never inside `Game.Core.*`: the assembly references
-  `UnityEngine`. Not for: continuous event streams (`r3-reactive-extensions`),
-  startup sequencing (`vcontainer-dependency-injection`), pub/sub dispatch
-  (`messagepipe-event-messaging`), transition graphs
-  (`stateless-state-machines`), RPC contracts (`magiconion-rpc-networking`),
-  Addressables load and release discipline (`unity-addressables`).
+  UniTask, via `Cysharp.Threading.Tasks`, is allocation-free async/await
+  on Unity's `PlayerLoop`: `UniTask`/`UniTask<T>`/`UniTaskVoid`,
+  `PlayerLoopTiming`, `GetCancellationTokenOnDestroy`, pooled
+  `CancellationTokenSource` and `TimeoutController`, `.Preserve`/
+  `UniTask.Lazy` for re-await, `.Forget`, `UniTaskCompletionSource`,
+  `.AsUniTask`, and `Channel<T>`/async LINQ for pull-based streams. Use
+  for any one-shot operation with a definite completion — an animation
+  finishing, an RPC returning, a delay, an Addressables load — replacing
+  `Task` and `IEnumerator` coroutines in `Game.Client.*`. Never inside
+  `Game.Core.*`, since the assembly references `UnityEngine`. Not for:
+  continuous event streams, owned by `r3-reactive-extensions`; startup
+  sequencing, owned by `vcontainer-dependency-injection`; pub/sub
+  dispatch, owned by `messagepipe-event-messaging`; transition graphs,
+  owned by `stateless-state-machines`; RPC contracts, owned by
+  `magiconion-rpc-networking`; and Addressables load and release
+  discipline, owned by `unity-addressables`.
 ---
 
 # UniTask — Allocation-Free Async/Await for Unity

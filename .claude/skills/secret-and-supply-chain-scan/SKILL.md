@@ -1,17 +1,19 @@
 ---
 name: secret-and-supply-chain-scan
 description: >
-  Scan for credentials and hostile code in a Unity repository — private keys,
-  `.keystore`, `.jks`, `.p12`, `.mobileprovision`, `.env`, `google-services.json`,
-  `GoogleService-Info.plist`, AWS and Google API key shapes, JWT and bearer
-  tokens — plus Unity supply-chain risk that auto-executes on import:
-  `[InitializeOnLoad]`, `[InitializeOnLoadMethod]`, `[DidReloadScripts]`,
-  Editor folder scripts inside an imported package, and DLLs with no source.
-  Distinguishes these from public identifiers that only look secret: AdMob App
-  and Ad Unit IDs, IAP SKUs, bundle IDs, Steam App IDs. Not for: correctness
-  and spec drift (`shared-core-boundary-audit`); fixing an integration
-  (`tech-lead-sdk-platform`); key rotation and history rewrite decisions
-  (`cto`).
+  Scan for credentials and hostile code in a Unity repository — private
+  keys, `.keystore`, `.jks`, `.p12`, `.mobileprovision`, `.env`,
+  `google-services.json`, `GoogleService-Info.plist`, AWS and Google API
+  key shapes, and JWT and bearer tokens — plus Unity supply-chain risk that
+  auto-executes on import: the InitializeOnLoad, InitializeOnLoadMethod,
+  and DidReloadScripts attributes, Editor folder scripts inside an
+  imported package, and DLLs with no source. Distinguishes these from
+  public identifiers that only look secret: AdMob App and Ad Unit IDs, IAP
+  SKUs, bundle IDs, and Steam App IDs. Not for: correctness and spec
+  drift, owned by `shared-core-boundary-audit`; fixing an integration,
+  owned by `tech-lead-sdk-platform`; whether a credential ever entered git
+  history and is still reachable, owned by `git-forensics`; key rotation
+  and history rewrite decisions, owned by `cto`.
 ---
 
 # Secret and Supply-Chain Scan — credentials, hostile imports, and false positives
@@ -30,6 +32,7 @@ Act as the security scanner for the QA track, on behalf of `security-reviewer`. 
 - A value looks sensitive and nobody can say where it came from.
 - Negative trigger: correctness, Tech Spec drift, and Shared Core duplication — that is `shared-core-boundary-audit`, whose verdict is separate from this one.
 - Negative trigger: performing or repairing the SDK integration itself — that is `tech-lead-sdk-platform`; this skill reports and stops.
+- Negative trigger: whether a credential ever entered git history and is still reachable there — that is `git-forensics`, which sweeps every reachable object; this skill reads the working tree only, so a clean scan here never means a clean history.
 - Negative trigger: deciding to rotate a key or rewrite git history — that is `cto`, because both are hard to reverse and affect more than this submission.
 - Negative trigger: a crash or fault in a released build — that is `crash-anr-investigator`, not a security finding.
 
@@ -51,7 +54,7 @@ Act as the security scanner for the QA track, on behalf of `security-reviewer`. 
 - Detecting unreviewable binaries and source-less plugins.
 - Detecting logic whose behaviour contradicts its stated purpose.
 - Producing a security verdict of Clear, Blocked, or Needs Confirmation, with routed findings.
-- Out of scope: correctness and spec compliance (`shared-core-boundary-audit`); repairing an integration (`tech-lead-sdk-platform`); rotating keys or rewriting history (`cto`); released-build faults (`crash-anr-investigator`).
+- Out of scope: correctness and spec compliance (`shared-core-boundary-audit`); repairing an integration (`tech-lead-sdk-platform`); sweeping git history for a credential (`git-forensics`); rotating keys or rewriting history (`cto`); released-build faults (`crash-anr-investigator`).
 
 ## 6. Output format
 ```

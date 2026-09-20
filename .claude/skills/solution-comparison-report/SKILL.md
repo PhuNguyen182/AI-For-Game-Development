@@ -8,11 +8,11 @@ description: >
   unmeasured ones, pins the recommendation to a version, and routes by what
   it commits the project to: `cto` for a hard-to-reverse or paid bet,
   `rd-engineer` for a spike, `technical-architect` for a Tech Spec. Use once
-  candidates pass screening. Not for: finding candidates
-  (`technology-scouting-sweep`), grading sources
-  (`source-credibility-grading`), the adoption gates
-  (`practical-fit-screening`), scoring a strategic bet
-  (`tco-reversibility-scoring`).
+  candidates pass screening. Not for: finding candidates, owned by
+  `technology-scouting-sweep`; grading sources, owned by
+  `source-credibility-grading`; the adoption gates, owned by
+  `practical-fit-screening`; scoring a strategic bet, owned by
+  `tco-reversibility-scoring`.
 ---
 
 # Solution Comparison Report — ranking screened candidates into one recommendation

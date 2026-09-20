@@ -1,7 +1,7 @@
 ---
 name: unity-input-system
 description: >
-  Technique for Unity's Input System package (`UnityEngine.InputSystem`) —
+  Technique for Unity's Input System package, `UnityEngine.InputSystem` —
   `InputAction`, `InputActionAsset`, `InputActionMap`, action types, bindings
   and composite bindings, Interactions and Processors, Control Schemes,
   `PlayerInput` notification behaviours, `PlayerInputManager` split-screen,
@@ -9,10 +9,11 @@ description: >
   `OnScreenButton` and `OnScreenStick`, interactive rebinding and binding
   overrides, and the Active Input Handling setting. Use when player input must
   be read, bound, rebound, or routed into UI. Not for: what a press means as a
-  game rule (`csharp-engineer`); UI layout (`ui-ux-programmer`); Animator
-  parameters (`unity-animation`); camera axis controllers
-  (`unity-cinemachine-authoring`); XR Interaction Toolkit and XR rendering
-  (no owning skill — flag the gap).
+  game rule — `csharp-engineer`; UI layout — `ui-ux-programmer`; Animator
+  parameters — `unity-animation`; camera axis controllers —
+  `unity-cinemachine-authoring`; gathering an action's value into a per-tick
+  command struct for a predicted netcode simulation — `netcode-for-entities`;
+  XR Interaction Toolkit and XR rendering, no owning skill, flag the gap.
 ---
 
 # Unity Input System — Actions, Bindings, PlayerInput, Rebinding, UI Input
@@ -53,6 +54,7 @@ Act as the input specialist for the client track — the tool reached for whenev
 - Negative trigger: the Animator parameters or blend trees a movement value feeds — that is `unity-animation`; this skill delivers the value.
 - Negative trigger: a Cinemachine camera that does not respond to a stick — the axis controller component belongs to `unity-cinemachine-authoring`, which this skill feeds; the binding behind it is this skill's.
 - Negative trigger: destination and pathfinding decisions behind a click-to-move gesture — that is `unity-navmesh-navigation`; this skill supplies the screen position.
+- Negative trigger: handing an action's value to a predicted netcode simulation — the per-tick command struct, which system group gathers it, and why a resimulated tick must never read a live action — that is `netcode-for-entities`; this skill reads the device and stops at the gathering system it feeds.
 - Negative trigger: XR rendering configuration or the XR Interaction Toolkit package — raw tracked-device input is a boundary case here and nothing beyond it is; no skill in this project owns that surface, so say so rather than improvising.
 
 ## 4. How to use this skill
@@ -80,7 +82,7 @@ Act as the input specialist for the client track — the tool reached for whenev
 - On-screen touch controls, and `InputSystemUIInputModule` setup on a scene's `EventSystem`.
 - Deciding Active Input Handling and migrating legacy `UnityEngine.Input` call sites to actions.
 - Diagnosing non-firing, double-firing, or wrongly paired input through the Input Debugger and Device Simulator.
-- Out of scope: the game rule behind a press (`csharp-engineer`); UI layout and widget design (`ui-ux-programmer`); Animator parameters and blend trees (`unity-animation`); camera axis controllers and camera behaviour (`unity-cinemachine-authoring`); destination and pathfinding decisions (`unity-navmesh-navigation`); XR Interaction Toolkit and XR rendering (no owning skill — flag the gap).
+- Out of scope: the game rule behind a press (`csharp-engineer`); UI layout and widget design (`ui-ux-programmer`); Animator parameters and blend trees (`unity-animation`); camera axis controllers and camera behaviour (`unity-cinemachine-authoring`); destination and pathfinding decisions (`unity-navmesh-navigation`); per-tick input commands inside a predicted netcode simulation (`netcode-for-entities`); XR Interaction Toolkit and XR rendering (no owning skill — flag the gap).
 
 ## 6. Output format
 ```

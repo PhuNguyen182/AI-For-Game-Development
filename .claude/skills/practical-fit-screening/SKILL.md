@@ -4,14 +4,17 @@ description: >
   Hard-gate screen deciding whether this project can actually adopt a
   candidate package, SDK or technique. Gates: duplication against
   `Packages/manifest.json` and existing assemblies, engine and C# language
-  version, scripting backend (IL2CPP AOT stripping, `System.Reflection.Emit`,
-  generic virtual calls), platform and binary-size cost, licence via SPDX
-  identifier and LICENSE file, `Game.Core.*` determinism boundary,
-  maintenance bus factor, integration and exit cost. Use before ranking any
-  candidate. Not for: finding candidates (`technology-scouting-sweep`),
-  grading a source's trust (`source-credibility-grading`), ranking the
-  survivors (`solution-comparison-report`), measuring on device
-  (`rd-engineer`), integrating the winner (`tech-lead-sdk-platform`).
+  version, scripting backend risk — IL2CPP AOT stripping,
+  `System.Reflection.Emit`, generic virtual calls — platform and
+  binary-size cost, licence via SPDX identifier and LICENSE file,
+  `Game.Core.*` determinism boundary, maintenance bus factor, and
+  integration and exit cost. Use before ranking any candidate. Not for:
+  the long-run vendor-health keep/replace verdict on a dependency, owned by
+  `tech-vendor-dependency-risk-assessment`; finding candidates, owned by
+  `technology-scouting-sweep`; grading a source's trust, owned by
+  `source-credibility-grading`; ranking the survivors, owned by
+  `solution-comparison-report`; measuring on device, owned by
+  `rd-engineer`; integrating the winner, owned by `tech-lead-sdk-platform`.
 ---
 
 # Practical Fit Screening — can this project actually adopt the candidate
@@ -32,6 +35,7 @@ Act as the adoption gate for the research track — the screen every external ca
 - Negative trigger: candidates already passed and must be ranked into a recommendation — that's `solution-comparison-report`.
 - Negative trigger: the gate needs numbers from a real build or device — that's a spike, owned by `rd-engineer`.
 - Negative trigger: the winner is chosen and needs wiring into the project — that's `tech-lead-sdk-platform` or the owning implementation role.
+- Negative trigger: the dependency is already in the project and the question is whether it is still safe to build on — maintenance decay, a licence change, a maintainer stepping away — that's `tech-vendor-dependency-risk-assessment`, which ends in keep/mitigate/replace; this screen only answers whether a candidate is adoptable here at all.
 
 ## 4. How to use this skill
 1. **Check what the project already has before screening anything external** — read `Packages/manifest.json`, the assembly definitions and the existing skill set. A capability already covered turns the question into "what does the existing one fail to do", which is a different question with a different owner.
@@ -41,7 +45,7 @@ Act as the adoption gate for the research track — the screen every external ca
 5. **Check the engine and C# language version the candidate requires against the project's own, per coding-principles.md's Modern C# syntax section** — the project's configured compiler decides what compiles, not the package's README.
 6. **Gate anything destined for `Game.Core.*` on determinism, per coding-principles.md's Shared Core integrity section** — a candidate pulling `UnityEngine` types, wall-clock time or unseeded randomness into Core is disqualified there whatever its quality, and may still pass for `Game.Client.*`.
 7. **Weigh mobile cost as a gate, not a footnote** — added binary size, per-ABI native libraries, and runtime allocation behaviour in hot paths, per performance-and-algorithms.md's Memory discipline section. Mobile is the tighter budget, so a candidate that only fits on PC fails a cross-platform feature.
-8. **Score the soft criteria only for candidates that cleared every hard gate** — maintenance signal and bus factor, adoption breadth, integration effort, documentation quality, and how the project would remove it later.
+8. **Score the soft criteria only for candidates that cleared every hard gate** — maintenance signal and bus factor, adoption breadth, integration effort, documentation quality, and how the project would remove it later. They separate candidates from each other; a foundational dependency's keep-or-replace verdict on vendor health itself belongs to `tech-vendor-dependency-risk-assessment`, not to this screen.
 9. **Rate exit cost by how far the candidate's types would spread** — one hidden behind an interface is cheap to replace; one whose types appear in gameplay signatures across the codebase is a structural commitment that outlives the feature.
 10. **State every gate's verdict, including the ones that passed** — an unstated pass is indistinguishable from a gate nobody ran, which is how a licence problem reaches production.
 11. **Mark a gate `UNKNOWN` and name what would settle it whenever the answer needs a real build or device** — route that to `rd-engineer` rather than guessing a pass, because a guessed gate is worse than an open one.
@@ -52,7 +56,7 @@ Act as the adoption gate for the research track — the screen every external ca
 - The duplication check against what the project already contains, run first.
 - Soft criteria scored only for survivors: maintenance, integration cost, exit cost, mobile cost.
 - Gates needing measurement marked `UNKNOWN` with the spike that would settle them.
-- Out of scope: finding candidates (`technology-scouting-sweep`), source trust (`source-credibility-grading`), ranking (`solution-comparison-report`), device measurement (`rd-engineer`), integration (`tech-lead-sdk-platform`).
+- Out of scope: finding candidates (`technology-scouting-sweep`), source trust (`source-credibility-grading`), ranking (`solution-comparison-report`), device measurement (`rd-engineer`), integration (`tech-lead-sdk-platform`), the vendor-health keep/replace verdict (`tech-vendor-dependency-risk-assessment`).
 
 ## 6. Output format
 ```

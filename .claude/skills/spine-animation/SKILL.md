@@ -2,21 +2,22 @@
 name: spine-animation
 description: >
   spine-unity runtime integration: `SkeletonRenderer`, `SkeletonAnimation`,
-  `SkeletonGraphic`, `SkeletonMecanim`, the
-  `Skeleton`/`AnimationState`/`TrackEntry` API (`SetAnimation`,
-  `AddAnimation`, `SetEmptyAnimation`, `SetSkin`, `SetupPoseSlots`,
-  `FindBone`), `[SpineBone]`/`[SpineSlot]`/`[SpineAnimation]` attributes,
-  followers (`BoneFollower`, `PointFollower`,
-  `BoundingBoxFollower`), `SkeletonUtility`, `SkeletonRootMotion`,
-  `SkeletonRenderSeparator`, `SkeletonRenderTexture`, `SkeletonGhost`,
-  `AtlasUtilities` repacking, the `Spine/*` shader catalog, PMA vs. straight
-  alpha, Spine Timeline tracks, and the on-demand-loading/Addressables
-  extension. Not for: non-Spine Mecanim authoring (`unity-animation`), the
-  native Sprite pipeline (`unity-2d-sprite`), 2D physics simulation
-  (`unity-2d-physics`), writing new shaders (`shader-authoring`), pipeline
-  configuration (`unity-urp-rendering`), particle VFX
-  (`vfx-particle-authoring`), the general Addressables contract
-  (`unity-addressables`).
+  `SkeletonGraphic`, `SkeletonMecanim`, the `Skeleton`/`AnimationState`/
+  `TrackEntry` API such as `SetAnimation`, `AddAnimation`,
+  `SetEmptyAnimation`, `SetSkin`, `SetupPoseSlots`, `FindBone`, the
+  SpineBone, SpineSlot and SpineAnimation attributes, followers such as
+  `BoneFollower`, `PointFollower`, `BoundingBoxFollower`, `SkeletonUtility`,
+  `SkeletonRootMotion`, `SkeletonRenderSeparator`, `SkeletonRenderTexture`,
+  `SkeletonGhost`, `AtlasUtilities` repacking, the `Spine/*` shader
+  catalog, PMA versus straight alpha, Spine Timeline tracks, and the
+  on-demand-loading/Addressables extension. Not for: non-Spine Mecanim
+  authoring, owned by `unity-animation`; the native Sprite pipeline, owned
+  by `unity-2d-sprite`; 2D physics simulation, owned by `unity-2d-physics`;
+  the Canvas, `RectTransform` and Layout Group hierarchy a
+  `SkeletonGraphic` sits in, owned by `ugui`; writing new shaders, owned by
+  `shader-authoring`; pipeline configuration, owned by
+  `unity-urp-rendering`; particle VFX, owned by `vfx-particle-authoring`;
+  the general Addressables contract, owned by `unity-addressables`.
 ---
 
 # Spine Animation — Unity Runtime Integration
@@ -58,6 +59,7 @@ Act as the 2D skeletal-animation specialist for the client track — the tool Un
 - Negative trigger: simulating physics on the `PolygonCollider2D`/`Rigidbody2D` once `BoundingBoxFollower` has produced it — that's `unity-2d-physics`.
 - Negative trigger: authoring a new shader or general HLSL/Shader Graph technique — that's `shader-authoring`; this skill only selects and configures the existing `Spine/*` catalog.
 - Negative trigger: URP/HDRP pipeline configuration — Renderer Features, URP Asset, Volumes — that's `unity-urp-rendering`/`render-pipeline-urp-hdrp`.
+- Negative trigger: the Canvas render mode, `CanvasScaler`, anchoring, or Layout Group around a `SkeletonGraphic` — that's `ugui`; this skill owns the skeleton component itself, and a Layout Group must not be left sizing the same `RectTransform` the skeleton drives.
 - Negative trigger: generic particle VFX authoring — that's `vfx-particle-authoring`.
 - Negative trigger: the general Addressables loading and reference-counting contract for non-Spine assets — that's `unity-addressables`; this skill covers only Spine's own extension.
 - Negative trigger: any `Game.Core.*` code — Spine's runtime depends on `UnityEngine`, so Shared Core only ever receives an already-decided outcome from `Game.Client.*`.
@@ -87,7 +89,7 @@ Act as the 2D skeletal-animation specialist for the client track — the tool Un
 - Configuring render separation, custom materials, tint black, outlines, and PMA/straight-alpha correctness for the confirmed pipeline.
 - Building fade or motion-trail effects, authoring Spine Timeline tracks, and wiring the on-demand-loading extension.
 - Diagnosing Spine-specific import, visual, and performance symptoms before escalating them as generic Unity issues.
-- Out of scope: non-Spine Mecanim authoring (`unity-animation`); native Sprite pipeline (`unity-2d-sprite`); 2D physics simulation (`unity-2d-physics`); new shader authoring (`shader-authoring`); pipeline configuration (`unity-urp-rendering`/`render-pipeline-urp-hdrp`); particle VFX (`vfx-particle-authoring`); the general Addressables contract (`unity-addressables`); any `Game.Core.*` usage.
+- Out of scope: non-Spine Mecanim authoring (`unity-animation`); native Sprite pipeline (`unity-2d-sprite`); the Canvas hierarchy a `SkeletonGraphic` lives in (`ugui`); 2D physics simulation (`unity-2d-physics`); new shader authoring (`shader-authoring`); pipeline configuration (`unity-urp-rendering`/`render-pipeline-urp-hdrp`); particle VFX (`vfx-particle-authoring`); the general Addressables contract (`unity-addressables`); any `Game.Core.*` usage.
 
 ## 6. Output format
 ```

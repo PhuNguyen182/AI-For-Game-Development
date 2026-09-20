@@ -3,19 +3,21 @@ name: unity-entities-graphics
 description: >
   Technique for `com.unity.entities.graphics`, the package that renders ECS
   entities by feeding `Unity.Entities` data to URP or HDRP through
-  `BatchRendererGroup`: the rendering component set (`RenderMeshArray`,
-  `MaterialMeshInfo`, `RenderMeshDescription`, `RenderBounds`,
-  `RenderMeshUnmanaged`), `RenderMeshUtility.AddComponents` runtime creation,
-  DOTS Instancing shader compatibility, `[MaterialProperty]` and Material
-  Override Asset overrides, Hybrid Per Instance properties, Companion
-  Components, compute mesh deformation, and instances-per-draw-command
-  batching. Use when entities must render, or render wrongly.
-  Not for: the URP versus HDRP decision (`render-pipeline-urp-hdrp`); pipeline
-  configuration (`unity-urp-rendering`, `unity-hdrp-rendering`); shader node or
-  HLSL content (`shader-authoring`); general entity and system design
-  (`unity-ecs-architecture`); scheduling (`unity-job-system-and-burst`); Burst
-  tuning (`unity-burst-compiler`); maths types (`unity-mathematics`); bespoke
-  GPU compute passes (`compute-shader-vfx`).
+  `BatchRendererGroup`: the rendering component set including
+  `RenderMeshArray`, `MaterialMeshInfo`, `RenderMeshDescription`,
+  `RenderBounds`, and `RenderMeshUnmanaged`; `RenderMeshUtility.AddComponents`
+  runtime creation; DOTS Instancing shader compatibility; the MaterialProperty
+  attribute and Material Override Asset overrides; Hybrid Per Instance
+  properties; Companion Components; compute mesh deformation; and
+  instances-per-draw-command batching. Use when entities must render, or render
+  wrongly. Not for: the URP versus HDRP decision —
+  `render-pipeline-urp-hdrp`; pipeline configuration — `unity-urp-rendering`
+  or `unity-hdrp-rendering`; shader node or HLSL content —
+  `shader-authoring`; general entity and system design —
+  `unity-ecs-architecture`; scheduling — `unity-job-system-and-burst`; Burst
+  tuning — `unity-burst-compiler`; maths types — `unity-mathematics`;
+  bespoke GPU compute passes — `compute-shader-vfx`; light setup, lightmap
+  UVs, the bake itself, and probe authoring — `unity-lighting`.
 ---
 
 # Unity Entities Graphics — Rendering ECS Entities Through URP & HDRP
@@ -59,6 +61,7 @@ Act as the Entities Graphics specialist for the client track — the tool reache
 - Negative trigger: scheduling the system that writes an override component, or its container lifetime — that is `unity-job-system-and-burst`.
 - Negative trigger: HPC# compliance or `FloatMode` on that system — that is `unity-burst-compiler`.
 - Negative trigger: choosing `Unity.Mathematics` types — that is `unity-mathematics`, even though override components are typically `float4`.
+- Negative trigger: light placement and Modes, lightmap UVs, the bake configuration itself, or probe authoring — that is `unity-lighting`, whichever pipeline it runs on; this skill owns only what this package documents about lighting a subscene, such as its lightmap limits and the ambient-light effect of a directional light inside one.
 - Negative trigger: a bespoke compute pass driving a visual effect outside this package's own deformation system — that is `compute-shader-vfx`; the Compute Deformation path here is fixed-purpose skinning and blend shapes, not a general GPU simulation hook.
 
 ## 4. How to use this skill
@@ -86,7 +89,7 @@ Act as the Entities Graphics specialist for the client track — the tool reache
 - Deciding on Companion Components and disclosing their access and hierarchy cost.
 - Scoping compute mesh deformation with its limitations stated.
 - Measuring instances per draw command and diagnosing batch fragmentation and known issues.
-- Out of scope: the URP versus HDRP decision (`render-pipeline-urp-hdrp`); pipeline configuration (`unity-urp-rendering`, `unity-hdrp-rendering`); shader content (`shader-authoring`); general ECS design and the adoption gate (`unity-ecs-architecture`); job scheduling (`unity-job-system-and-burst`); Burst tuning (`unity-burst-compiler`); maths types (`unity-mathematics`).
+- Out of scope: the URP versus HDRP decision (`render-pipeline-urp-hdrp`); pipeline configuration (`unity-urp-rendering`, `unity-hdrp-rendering`); shader content (`shader-authoring`); general ECS design and the adoption gate (`unity-ecs-architecture`); job scheduling (`unity-job-system-and-burst`); Burst tuning (`unity-burst-compiler`); maths types (`unity-mathematics`); light setup, lightmap UVs, the bake and probe authoring (`unity-lighting`).
 
 ## 6. Output format
 ```

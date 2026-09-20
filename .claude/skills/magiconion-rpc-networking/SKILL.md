@@ -4,16 +4,16 @@ description: >
   Unity-side client of a MagicOnion RPC connection: code-first gRPC where a
   shared C# interface is the schema — `IService<T>` returning `UnaryResult<T>`
   for request/response, `StreamingHub<THub,TReceiver>` for bidirectional
-  channels, `MagicOnionClient.Create<T>()`, `GrpcChannelx` over
+  channels, `MagicOnionClient.Create<T>`, `GrpcChannelx` over
   `YetAnotherHttpHandler` for HTTP/2 under Unity, receiver callbacks,
   heartbeats, reconnection. Serialized with MemoryPack, awaited as UniTask. Use
   it when the backend track is active and MagicOnion is already the chosen
-  transport. Not for: choosing that transport or designing the sync model
-  (`netcode-architecture-decision`, `netcode-engineer`), the DTOs on the wire
-  (`memorypack-serialization`), async body mechanics
-  (`unitask-async-programming`), fanning a received call out in-process
-  (`messagepipe-event-messaging`), the server implementation
-  (`server-authoritative-engineer`).
+  transport. Not for: choosing that transport or designing the sync model,
+  owned by `netcode-architecture-decision` and `netcode-engineer`; the DTOs
+  on the wire, owned by `memorypack-serialization`; async body mechanics,
+  owned by `unitask-async-programming`; fanning a received call out
+  in-process, owned by `messagepipe-event-messaging`; and the server
+  implementation, owned by `server-authoritative-engineer`.
 ---
 
 # MagicOnion — RPC Client Consumption on the Unity Side

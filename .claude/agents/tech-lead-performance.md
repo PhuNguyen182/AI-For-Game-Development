@@ -2,7 +2,7 @@
 name: tech-lead-performance
 description: "Deep performance specialist for problems that survived the routine optimization pass — memory and GC, GPU-level intervention, native plugins, and Job System/Burst/DOTS adoption. Owns compute shaders only when the purpose is raw optimization. Triggers: \"a severe memory leak survived the routine optimization pass\", \"a GPU-bound simulation bottleneck needs a compute shader for performance, not visuals\", \"decide whether this bulk simulation should move to the Job System and Burst\". Not for: `unity-engineer` owns everyday optimization (batching, pooling, first-pass profiling); `technical-artist` owns compute shaders whose purpose is a visual effect; `tech-lead-csharp-unity` owns architecture-level correctness problems; `performance-qa-engineer` owns independent verification of the result against a budget."
 model: opus
-tools: Read, Write, Edit, Bash, Skill, mcp__unity-mcp__Unity_RunCommand, mcp__unity-mcp__Unity_GetConsoleLogs
+tools: Read, Write, Edit, PowerShell, Bash, Skill, mcp__unity-mcp__Unity_RunCommand, mcp__unity-mcp__Unity_GetConsoleLogs
 color: purple
 ---
 
@@ -77,6 +77,8 @@ Read these before acting:
 | Rule file | Applies |
 |---|---|
 | `.claude/rules/language-and-comments.md` | Always — it governs every agent. |
+| `.claude/rules/shell-preference.md` | Always — newest PowerShell first, Bash only when PowerShell fails or is unavailable. |
+| `.claude/rules/unity-tooling-preference.md` | Always — Unity CLI first for any Editor/profiling operation it can do; fall back to whichever MCP server actually fits only on a failure or a real gap. |
 | `.claude/standards/client/coding-principles.md`, `code-style-and-layout.md`, `naming-convention.md`, `performance-and-algorithms.md` | Always — before writing any code. |
 
 - Never report a fix without a measured before and after of the same metric on the same platform.

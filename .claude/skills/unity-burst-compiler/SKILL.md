@@ -1,20 +1,21 @@
 ---
 name: unity-burst-compiler
 description: >
-  Technique for the Burst compiler itself: the High Performance C# (HPC#)
-  subset and its type restrictions, `[BurstCompile]` placement and options
-  (`FloatMode`, `FloatPrecision`, `CompileSynchronously`, `DisableSafetyChecks`,
-  `[assembly: BurstCompile]`), reading generated assembly in the Burst
-  Inspector, `Unity.Burst.Intrinsics` SSE/AVX2/Neon, Burst AOT Settings and CPU
-  architecture targets, `FunctionPointer<T>`, `SharedStatic<T>`, and
-  `[NoAlias]` aliasing. Use when code that should be Burst-compiled is not, or
-  when compiled output must be tuned or verified.
-  Not for: scheduling, `JobHandle` chains, allocator lifetime
-  (`unity-job-system-and-burst`); whether Burst is warranted
-  (`tech-lead-performance`); the capture proving it (`unity-profiler-diagnostics`);
-  entity and system design (`unity-ecs-architecture`); container type choice
-  (`unity-collections`); `float3` maths (`unity-mathematics`); GPU-driven effects
-  (`compute-shader-vfx`).
+  Technique for the Burst compiler itself: the High Performance C#, HPC#,
+  subset and its type restrictions, the BurstCompile attribute's placement and
+  options such as `FloatMode`, `FloatPrecision`, `CompileSynchronously`, and
+  `DisableSafetyChecks`, plus the assembly-level BurstCompile attribute,
+  reading generated assembly in the Burst Inspector, `Unity.Burst.Intrinsics`
+  SSE, AVX2, and Neon, Burst AOT Settings and CPU architecture targets,
+  `FunctionPointer<T>`, `SharedStatic<T>`, and NoAlias aliasing. Use when code
+  that should be Burst-compiled is not, or when compiled output must be tuned
+  or verified. Not for: scheduling, `JobHandle` chains, and allocator lifetime
+  — `unity-job-system-and-burst`; whether Burst is warranted —
+  `tech-lead-performance`; the capture proving it —
+  `unity-profiler-diagnostics`; entity and system design —
+  `unity-ecs-architecture`; container type choice — `unity-collections`;
+  `float3` maths — `unity-mathematics`; GPU-driven effects —
+  `compute-shader-vfx`.
 ---
 
 # Unity Burst Compiler — HPC# Compilation, Verification & Tuning

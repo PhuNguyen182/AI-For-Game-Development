@@ -2,16 +2,17 @@
 name: unity-navmesh-navigation
 description: >
   Technique for Unity's navigation stack across both of its layers — the
-  built-in `UnityEngine.AI` module (`NavMesh` queries, `NavMeshAgent`
-  steering, `NavMeshObstacle` carving, `NavMeshBuilder` and `NavMeshData`,
-  `NavMeshLinkData` runtime links) and the `com.unity.ai.navigation` package
-  (`NavMeshSurface` baking, `NavMeshModifier` and `NavMeshModifierVolume` area
-  overrides, the authored `NavMeshLink`, agent types and area costs in the
-  Navigation window). Use when a character must path, a mesh must bake or
-  stream, or a gap needs a connector. Not for: choosing the destination
-  (`csharp-engineer`); the input behind a click-to-move
-  (`unity-input-system`); locomotion blending (`unity-animation`); physics
-  unrelated to navigation (`unity-3d-physics`, `unity-physics`).
+  built-in `UnityEngine.AI` module, covering `NavMesh` queries,
+  `NavMeshAgent` steering, `NavMeshObstacle` carving, `NavMeshBuilder` and
+  `NavMeshData`, and `NavMeshLinkData` runtime links — and the
+  `com.unity.ai.navigation` package, covering `NavMeshSurface` baking,
+  `NavMeshModifier` and `NavMeshModifierVolume` area overrides, the authored
+  `NavMeshLink`, and agent types and area costs in the Navigation window.
+  Use when a character must path, a mesh must bake or stream, or a gap
+  needs a connector. Not for: choosing the destination — `csharp-engineer`;
+  the input behind a click-to-move — `unity-input-system`; locomotion
+  blending — `unity-animation`; physics unrelated to navigation —
+  `unity-3d-physics`, `unity-physics`.
 ---
 
 # Unity NavMesh Navigation — Baking, Agents, Obstacles, Links, Runtime Building

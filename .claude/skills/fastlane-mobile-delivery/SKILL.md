@@ -7,11 +7,11 @@ description: >
   `cocoapods`, `match`/`sync_code_signing`, `app_store_connect_api_key`,
   `setup_ci` temporary keychains, `export_method` and `export_options`, and
   `bundle exec fastlane <platform> <lane>`. Covers keystore and certificate
-  handling on an ephemeral CI agent. Not for: the Unity build itself
-  (`unity-batchmode-cli`); the job that calls the lane
-  (`jenkins-pipeline-authoring`); the tester upload
-  (`firebase-app-distribution`); store submission and policy
-  (`tech-lead-sdk-platform`).
+  handling on an ephemeral CI agent. Not for: the Unity build itself, owned
+  by `unity-batchmode-cli`; the job that calls the lane, owned by
+  `jenkins-pipeline-authoring`; the tester upload, owned by
+  `firebase-app-distribution`; and store submission and policy, owned by
+  `tech-lead-sdk-platform`.
 ---
 
 # Fastlane Mobile Delivery — packaging and signing Android and iOS

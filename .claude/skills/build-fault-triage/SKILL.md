@@ -6,13 +6,13 @@ description: >
   `link.xml` entries, reflection and generic virtual methods stripped away,
   `ExecutionEngineException`, `TypeInitializationException`, missing native
   libraries and ABI mismatches, and platform signing or permission faults.
-  Covers reading `Player.log` and Android logcat, and running an existing suite
-  against a standalone Player. Not for: producing the build
-  (`build-run-engineer`); a CI run that failed before producing one
-  (`ci-pipeline-failure-triage`); Editor Play Mode testing
-  (`playtest-scenario-execution`, `unity-test-framework`); frame cost
-  (`performance-budget-verification`); released-build crashes
-  (`crash-anr-investigator`).
+  Covers reading `Player.log` and Android logcat, and running an existing
+  suite against a standalone Player. Not for: producing the build, owned
+  by `build-run-engineer`; a CI run that failed before producing one,
+  owned by `ci-pipeline-failure-triage`; Editor Play Mode testing, owned
+  by `playtest-scenario-execution` and `unity-test-framework`; frame
+  cost, owned by `performance-budget-verification`; released-build
+  crashes, owned by `crash-anr-investigator`.
 ---
 
 # Build Fault Triage — the defects the Editor structurally cannot show

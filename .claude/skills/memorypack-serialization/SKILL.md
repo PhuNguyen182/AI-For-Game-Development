@@ -1,16 +1,20 @@
 ---
 name: memorypack-serialization
 description: >
-  MemoryPack — zero-encoding binary serialization for C#: `[MemoryPackable]`
-  partial types, `[MemoryPackOrder]`, `[MemoryPackIgnore]`,
-  `[MemoryPackInclude]`, `[MemoryPackConstructor]`, `[MemoryPackOnDeserialized]`
-  callbacks, `[MemoryPackUnion]` polymorphism, and
-  `MemoryPackSerializer.Serialize`/`Deserialize` over `Span<byte>` or `Stream`.
-  No `UnityEngine` dependency, so DTOs are safe inside `Game.Core.*`. Use when
-  defining or changing a type that persists to disk or crosses the network —
-  a save snapshot, a message DTO, a rollback/prediction state — especially when
-  it must stay compatible with data already written.
-  Not for: RPC contract and transport design (`magiconion-rpc-networking`), generators around the DTOs (`source-generator-authoring`), human-readable or designer-authored data (`csvhelper-csv-data`), text building (`zstring-zero-allocation-strings`).
+  MemoryPack is zero-encoding binary serialization for C#: the
+  `MemoryPackable` attribute for partial types, `MemoryPackOrder`,
+  `MemoryPackIgnore`, `MemoryPackInclude`, `MemoryPackConstructor`,
+  `MemoryPackOnDeserialized` callbacks, `MemoryPackUnion` polymorphism,
+  and `MemoryPackSerializer.Serialize`/`Deserialize` over `Span<byte>` or
+  `Stream`. No `UnityEngine` dependency, so DTOs are safe inside
+  `Game.Core.*`. Use when defining or changing a type that persists to
+  disk or crosses the network — a save snapshot, a message DTO, a
+  rollback/prediction state — especially when it must stay compatible
+  with data already written. Not for: RPC contract and transport design,
+  owned by `magiconion-rpc-networking`; generators around the DTOs,
+  owned by `source-generator-authoring`; human-readable or
+  designer-authored data, owned by `csvhelper-csv-data`; and text
+  building, owned by `zstring-zero-allocation-strings`.
 ---
 
 # MemoryPack — Zero-Encoding Binary Serialization

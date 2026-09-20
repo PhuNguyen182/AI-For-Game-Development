@@ -8,9 +8,9 @@ description: >
   `git reflog --all`, `git fsck --lost-found`, `git shortlog -sn`,
   `git rev-list --all`. Answers which commit introduced a line, a string, a
   behaviour or a credential, where deleted work went, and who holds context
-  on a file. Not for: backing up before a command runs
-  (`git-safety-anchor`), restoring lost state (`git-recovery`), Unity asset
-  specifics (`git-unity-repo`).
+  on a file. Not for: backing up before a command runs, owned by
+  `git-safety-anchor`; restoring lost state, owned by `git-recovery`; and
+  Unity asset specifics, owned by `git-unity-repo`.
 ---
 
 # Git Forensics — Tracing a Change to Its Commit, and Attributing It Honestly

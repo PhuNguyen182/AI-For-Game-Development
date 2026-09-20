@@ -1,18 +1,21 @@
 ---
 name: unity-test-framework
 description: >
-  Technique for Unity's Test Framework package (`UnityEngine.TestTools`,
-  `UnityEditor.TestTools.TestRunner.Api`) — a customised NUnit integration for
-  Edit Mode and Play Mode tests: test assemblies, `UnityTest` coroutine tests,
-  async task tests, `UnitySetUp` and `UnityTearDown`, `RequiresPlayMode`,
-  `ConditionalIgnore`, `PrebuildSetup`, `LogAssert`, the `Utils` equality
-  comparers, allocation `Constraints`, `MonoBehaviourTest<T>`, the Test Runner
-  window, the `-runTests` command line, and `TestRunnerApi`. Use when tests
-  must be written, scoped, or run. Not for: the game rules under test
-  (`csharp-engineer`); manual walkthroughs against the GDD
-  (`playtest-tester`); real platform builds (`build-run-engineer`); Profiler
-  measurement (`unity-profiler-diagnostics`); plain NUnit fundamentals
-  (NUnit's own documentation).
+  Technique for Unity's Test Framework package — a customised NUnit
+  integration for Edit Mode and Play Mode tests: test assemblies, `UnityTest`
+  coroutine/async task tests, `UnitySetUp`/`UnityTearDown`,
+  `RequiresPlayMode`, `ConditionalIgnore`, `PrebuildSetup`, `LogAssert`,
+  `Utils` equality comparers, allocation `Constraints`,
+  `MonoBehaviourTest<T>`, the Test Runner window, the `-runTests` CLI, and
+  `TestRunnerApi`. Use when tests must be written, run, or a run scoped with
+  filters. Not for: which cases a suite should contain —
+  `risk-based-test-planning`; the CI job running and publishing results —
+  `jenkins-pipeline-authoring`; the `-runTests` command line itself —
+  `unity-batchmode-cli`; driving a `VisualElement` tree — `ui-toolkit`; the
+  game rules under test — `csharp-engineer`; manual walkthroughs against the
+  GDD — `playtest-tester`; real platform builds — `build-run-engineer`;
+  Profiler measurement — `unity-profiler-diagnostics`; plain NUnit
+  fundamentals — NUnit's own docs.
 ---
 
 # Unity Test Framework — Edit Mode, Play Mode, Assertions, CI
@@ -46,13 +49,16 @@ Act as the automated-testing specialist for the QA track, testing client-track c
 - A test must span frames, await an async operation, or enter and leave Play Mode partway through.
 - Parameterizing a test, or conditionally skipping one by runtime condition, platform, or argument.
 - Asserting that the code under test logs something specific, or logs nothing unexpected.
-- Wiring headless CI runs and consuming the resulting NUnit XML report.
+- Scoping a headless run with filters and producing the NUnit XML report the CI job publishes.
 - Building Editor tooling that drives test runs programmatically.
 - A test is flaky, or passes for a reason nobody can name.
 - Negative trigger: authoring the game rule the test verifies — damage formulas, state machines, economy maths — that is `csharp-engineer`'s Shared Core, per `coding-principles.md`'s Shared Core integrity rule.
+- Negative trigger: deciding which cases the suite should contain — partitions, boundaries, decision tables, transition coverage, and what gets dropped for scope — that is `risk-based-test-planning`, owned by `qa-lead`. "Scoping" here means narrowing a run with filters, never deriving the case list.
 - Negative trigger: walking Play Mode by hand and comparing feel against the GDD — that is `playtest-tester`, a different activity that happens to share Play Mode with this one.
 - Negative trigger: producing a real platform build or running several Editor instances — that is `build-run-engineer`, and only on the GD's explicit request. Running the existing suite against an artifact that already exists is `build-verification-tester`, which uses this skill's standalone-Player and command-line coverage.
 - Negative trigger: measuring frame time, GC pressure, or memory — that is `unity-profiler-diagnostics`; the allocation constraint here is a pass-or-fail gate, not a measurement.
+- Negative trigger: the CI job that invokes the run, the agent it lands on, and the publisher that turns the NUnit XML into a build result — that is `jenkins-pipeline-authoring`, and the Unity invocation itself is `unity-batchmode-cli`; this skill owns what the tests assert and how the run is scoped, not the job around it.
+- Negative trigger: driving or asserting against a UI Toolkit `VisualElement` tree through the separate UI Test Framework package — that is `ui-toolkit`; this skill owns the assembly, harness and run the test executes in, not that package's own driver surface.
 - Negative trigger: plain NUnit attributes and assertion style that are not Unity additions — defer to NUnit's own documentation rather than restating it.
 
 ## 4. How to use this skill
@@ -78,10 +84,10 @@ Act as the automated-testing specialist for the QA track, testing client-track c
 - Parameterizing tests correctly for the attribute in use, and conditionally ignoring cases.
 - Asserting on expected and unexpected log output, on Unity value types, and on allocation behaviour.
 - Building pre-build setup and post-build cleanup steps with the correct execution order.
-- Wiring headless CI runs and consuming the NUnit XML report.
+- Scoping a headless run and producing the NUnit XML the CI job publishes.
 - Building Editor tooling on `TestRunnerApi`.
 - Writing network-condition cases once the backend track is active, with the same mechanics.
-- Out of scope: the game rules under test (`csharp-engineer`); manual GDD walkthroughs (`playtest-tester`); platform builds and multi-instance runs (`build-run-engineer`, on explicit request only); Profiler measurement (`unity-profiler-diagnostics`); plain NUnit fundamentals (NUnit's own documentation).
+- Out of scope: the game rules under test (`csharp-engineer`); which cases the suite owes (`risk-based-test-planning`); manual GDD walkthroughs (`playtest-tester`); platform builds and multi-instance runs (`build-run-engineer`, on explicit request only); the CI job and NUnit XML publishing (`jenkins-pipeline-authoring`, `unity-batchmode-cli`); Profiler measurement (`unity-profiler-diagnostics`); the UI Test Framework package's own driver surface (`ui-toolkit`); plain NUnit fundamentals (NUnit's own documentation).
 
 ## 6. Output format
 ```

@@ -3,14 +3,19 @@ name: r3-reactive-extensions
 description: >
   R3 — reactive streams for Unity and the UniRx successor: `Observable<T>`,
   `Observer<T>`, `Subject<T>`, `ReactiveProperty<T>`,
-  `SerializableReactiveProperty<T>`, operators (`Where`, `Select`,
-  `DistinctUntilChanged`, `Throttle`, `CombineLatest`, `Pairwise`,
-  `SelectMany`, `Switch`), frame-based `FrameProvider` timing (`IntervalFrame`,
-  `DelayFrame`) versus wall-clock `TimeProvider`, the `OnErrorResume` error
-  model, and `AddTo`/`DisposableBag`/`ObservableTracker`. Use for a
-  continuously observed value or event stream — health changing, an input
-  stream, a cooldown ticking, UI data binding. `Game.Client.*` only.
-  Not for: one-shot awaits (`unitask-async-programming`), single addressed messages (`messagepipe-event-messaging`), subscription lifetime scoping in DI (`vcontainer-dependency-injection`), formatting the text a sink writes (`zstring-zero-allocation-strings`), discrete named states and the legal transitions between them (`stateless-state-machines`).
+  `SerializableReactiveProperty<T>`, operators such as
+  `Where`/`Select`/`DistinctUntilChanged`/`Throttle`/`CombineLatest`/
+  `Pairwise`/`SelectMany`/`Switch`, frame-based `FrameProvider` timing via
+  `IntervalFrame`/`DelayFrame` versus wall-clock `TimeProvider`, the
+  `OnErrorResume` error model, and `AddTo`/`DisposableBag`/`ObservableTracker`.
+  Use for a continuously observed value or event stream — health changing,
+  an input stream, a cooldown ticking, UI data binding. `Game.Client.*`
+  only. Not for: one-shot awaits, owned by `unitask-async-programming`;
+  single addressed messages, owned by `messagepipe-event-messaging`;
+  subscription lifetime scoping in DI, owned by
+  `vcontainer-dependency-injection`; formatting the text a sink writes,
+  owned by `zstring-zero-allocation-strings`; discrete named states and the
+  legal transitions between them, owned by `stateless-state-machines`.
 ---
 
 # R3 — Reactive Extensions for Continuous Event Streams

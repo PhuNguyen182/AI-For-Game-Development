@@ -2,15 +2,16 @@
 name: git-recovery
 description: >
   Get a repository out of a state its owner did not intend: lost commits, a
-  `rebase`/`merge`/`cherry-pick` stopped midway (`REBASE_HEAD`, `MERGE_HEAD`,
-  `ORIG_HEAD`, `--continue`/`--abort`/`--skip`), a force-push that overwrote
-  work, detached `HEAD` carrying commits, a deleted branch, a corrupt index
-  or object store, `clean -xdf` aftermath, broken submodules, an LFS pointer
-  committed without LFS. Uses `git reflog --all`, `git fsck --lost-found`,
-  `git cat-file`. Also covers deliberate rewriting with `rebase -i`,
-  `filter-repo` and `worktree`. Not for: anchoring before a command runs
-  (`git-safety-anchor`), tracing which commit caused a defect
-  (`git-forensics`), Unity scene and `.meta` handling (`git-unity-repo`).
+  `rebase`/`merge`/`cherry-pick` stopped midway and spanning `REBASE_HEAD`,
+  `MERGE_HEAD`, `ORIG_HEAD`, and `--continue`/`--abort`/`--skip`, a
+  force-push that overwrote work, detached `HEAD` carrying commits, a
+  deleted branch, a corrupt index or object store, `clean -xdf` aftermath,
+  broken submodules, an LFS object missing or corrupt in the store. Uses
+  `git reflog --all`, `git fsck --lost-found`, `git cat-file`. Also covers
+  deliberate rewriting with `rebase -i`, `filter-repo`, and `worktree`.
+  Not for: anchoring before a command runs, owned by `git-safety-anchor`;
+  tracing which commit caused a defect, owned by `git-forensics`; and
+  Unity scene and `.meta` handling, owned by `git-unity-repo`.
 ---
 
 # Git Recovery — Unintended States, Lost Work, and Deliberate History Rewriting
@@ -43,6 +44,7 @@ Act as the repository repair specialist for the devops track — the skill reach
 - Negative trigger: the command has not run yet and the ask is to make it safe — that's `git-safety-anchor`.
 - Negative trigger: which commit introduced a defect, or who last touched a line — that's `git-forensics`.
 - Negative trigger: how to merge a `.unity` scene, or why a `.meta` GUID changed — that's `git-unity-repo`.
+- Negative trigger: which Unity assets belong in LFS, and whether a checked-out asset is content or a pointer file — that's `git-unity-repo`; this skill repairs an LFS object missing or corrupt in the store, not the tracking decision or the checkout check.
 
 ## 4. How to use this skill
 1. **Establish the actual repository state before choosing a repair** — read `git status`, `git rev-parse --abbrev-ref HEAD`, and the presence of `rebase-merge/`, `rebase-apply/`, `MERGE_HEAD` or `CHERRY_PICK_HEAD` under the git directory, because the same symptom has different repairs depending on which of these is set, per [interrupted-and-overwritten-state.md](references/interrupted-and-overwritten-state.md). Parse only plumbing output when scripting a check, per the stability table in [root-links.md](references/root-links.md).
@@ -67,7 +69,7 @@ Act as the repository repair specialist for the devops track — the skill reach
 - Restore a submodule to its recorded commit, and fix an LFS pointer checked out as text.
 - Execute an authorized history rewrite, and report the new shas alongside the anchor that reverses it.
 - State explicitly which requested recoveries are not possible, and why.
-- Out of scope: creating the anchor (`git-safety-anchor`), attributing a change to a commit or an author (`git-forensics`), Unity scene, prefab and GUID semantics (`git-unity-repo`), and authorizing a published-history rewrite (`cto`).
+- Out of scope: creating the anchor (`git-safety-anchor`), attributing a change to a commit or an author (`git-forensics`), Unity scene, prefab, GUID and LFS-tracking semantics (`git-unity-repo`), and authorizing a published-history rewrite (`cto`).
 
 ## 6. Output format
 ```

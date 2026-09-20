@@ -8,9 +8,9 @@ description: >
   Trails and Renderer modules, simulation space, blend and sort mode, overdraw
   budget, per-tier scaling, and pooling. Use for any ability, impact, ambience
   or trail effect built from particles. Not for: the shader an output stage
-  renders with (`shader-authoring`); custom simulation kernels
-  (`compute-shader-vfx`); pipeline choice (`render-pipeline-urp-hdrp`); the
-  bloom that makes an effect glow (`unity-post-processing`).
+  renders with — `shader-authoring`; custom simulation kernels —
+  `compute-shader-vfx`; pipeline choice — `render-pipeline-urp-hdrp`; the
+  bloom that makes an effect glow — `unity-post-processing`.
 ---
 
 # VFX and Particle Authoring — VFX Graph and the Built-in Particle System

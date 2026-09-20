@@ -1,22 +1,24 @@
 ---
 name: unity-3d-mesh
 description: >
-  Unity built-in 3D mesh authoring — the `Mesh` class (`vertices`,
+  Unity built-in 3D mesh authoring — the `Mesh` class, including `vertices`,
   `triangles`, `normals`, `tangents`, `colors`, `uv` through `uv8`,
-  `subMeshCount`, `bounds`, `indexFormat`), `SetVertices`, `SetTriangles`,
+  `subMeshCount`, `bounds`, and `indexFormat`; `SetVertices`, `SetTriangles`,
   `SetIndices`, `SetVertexBufferParams`, `SetIndexBufferParams`, and
-  `SetSubMesh`, the Job System `MeshDataArray` and `MeshData` via
-  `AcquireReadOnlyMeshData` and `AllocateWritableMeshData`,
+  `SetSubMesh`; the Job System `MeshDataArray` and `MeshData` via
+  `AcquireReadOnlyMeshData` and `AllocateWritableMeshData`;
   `RecalculateNormals`, `RecalculateBounds`, `RecalculateTangents`,
-  `MarkDynamic`, `Optimize`, `CombineMeshes`, `MeshFilter`, `MeshRenderer`,
-  `GameObject.CreatePrimitive` with `PrimitiveType`, mesh and vertex
-  compression, and Read/Write Enabled. Use when building or debugging a
+  `MarkDynamic`, `Optimize`, `CombineMeshes`, `MeshFilter`, `MeshRenderer`;
+  `GameObject.CreatePrimitive` with `PrimitiveType`; mesh/vertex
+  compression; and Read/Write Enabled. Use when building or debugging a
   procedural mesh, a mesh asset, or its Filter/Renderer wiring. Not for:
-  skinning, blend shapes, bones (`unity-animation`), `MeshCollider`
-  cooking (`unity-3d-physics`), materials/shaders (`shader-authoring`),
-  LOD/batching escalation (`unity-engineer`, `tech-lead-performance`),
-  model import settings (`unity-engineer`), sprite meshes
-  (`unity-2d-sprite`).
+  skinning, blend shapes, or bones — `unity-animation`; `MeshCollider`
+  cooking — `unity-3d-physics`; materials and shaders — `shader-authoring`;
+  LOD/batching escalation — `unity-engineer` or `tech-lead-performance`;
+  model import settings — `unity-engineer`; sprite meshes —
+  `unity-2d-sprite`; GPU-side deformation that never returns to the CPU —
+  `compute-shader-vfx`; scheduling the jobs the Advanced Mesh API runs in —
+  `unity-job-system-and-burst`.
 ---
 
 # Unity 3D Mesh — Anatomy, Scripting API & Procedural Generation
@@ -53,6 +55,8 @@ Act as the 3D mesh authoring specialist for the client track — the skill reach
 - Negative trigger: LOD Group, the Mesh LOD generator, or a batching/GPU-instancing cost that survives this skill's advice — escalate to `unity-engineer` first, `tech-lead-performance` if it persists.
 - Negative trigger: FBX or other 3D-model import settings — that's `unity-engineer`'s asset pipeline.
 - Negative trigger: `Sprite`/`SpriteRenderer` 2D mesh geometry — that's `unity-2d-sprite`.
+- Negative trigger: geometry deformed on the GPU and never read back — a compute kernel writing vertices into a buffer an indirect draw consumes — that's `compute-shader-vfx`; this skill owns the `Mesh` the CPU can still read, collide against, and save, and the deciding question is whether anything but the renderer needs the result.
+- Negative trigger: scheduling the jobs the Advanced Mesh API runs in — `JobHandle` chains, allocator lifetime, disposal of the `MeshDataArray` — that's `unity-job-system-and-burst`; this skill owns the vertex-buffer layout and the mesh data those jobs write.
 - Negative trigger: deciding which mesh or material a game state should show — that's `csharp-engineer`'s Shared Core, per `coding-principles.md`'s Shared Core integrity section.
 
 ## 4. How to use this skill
@@ -77,7 +81,7 @@ Act as the 3D mesh authoring specialist for the client track — the skill reach
 - Read/Write Enabled, mesh compression, and vertex compression configuration.
 - `CombineMeshes` versus static batching selection for static geometry groups.
 - Primitive GameObject creation via `GameObject.CreatePrimitive`.
-- Out of scope: skinning/blend shapes (`unity-animation`), `MeshCollider` physics (`unity-3d-physics`), shaders/materials (`shader-authoring`), LOD/batching escalation (`unity-engineer`, `tech-lead-performance`), model import settings (`unity-engineer`), sprite meshes (`unity-2d-sprite`), gameplay rules (`csharp-engineer`).
+- Out of scope: skinning/blend shapes (`unity-animation`), `MeshCollider` physics (`unity-3d-physics`), GPU-only deformation (`compute-shader-vfx`), job scheduling and allocator lifetime behind the Advanced Mesh API (`unity-job-system-and-burst`), shaders/materials (`shader-authoring`), LOD/batching escalation (`unity-engineer`, `tech-lead-performance`), model import settings (`unity-engineer`), sprite meshes (`unity-2d-sprite`), gameplay rules (`csharp-engineer`).
 
 ## 6. Output format
 ```

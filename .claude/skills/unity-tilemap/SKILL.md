@@ -1,7 +1,7 @@
 ---
 name: unity-tilemap
 description: >
-  Unity built-in Tilemap authoring (`UnityEngine.Tilemaps`) — the
+  Unity built-in Tilemap authoring, `UnityEngine.Tilemaps` — the
   `Grid`/`Tilemap` hierarchy, Cell Layout Rectangle, Hexagon, Isometric and
   Isometric Z as Y, Tile Palette creation by drag-in or Tile Set Importer,
   `Tile` assets and Collider Type, painting brushes and Brush Picks,
@@ -10,9 +10,9 @@ description: >
   `TileBase` and `GridBrushBase`, plus 2D Tilemap Extras `RuleTile`,
   `AnimatedTile`, Auto Tile and `GridInformation`. Use for tile-based level
   building, auto-tiling, and tile collision. Not for: sprite import and
-  atlasing (`unity-2d-sprite`), bodies and joints (`unity-2d-physics`),
-  spline geometry (`unity-2d-spriteshape`), `Light2D`
-  (`unity-urp-rendering`), level-generation rules (`csharp-engineer`).
+  atlasing — `unity-2d-sprite`; bodies and joints — `unity-2d-physics`;
+  spline geometry — `unity-2d-spriteshape`; `Light2D` —
+  `unity-urp-rendering`; level-generation rules — `csharp-engineer`.
 ---
 
 # Unity Tilemap — Grid Authoring, Painting, Rendering, Collision & Custom Tiles

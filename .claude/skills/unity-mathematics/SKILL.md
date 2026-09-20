@@ -3,17 +3,20 @@ name: unity-mathematics
 description: >
   `Unity.Mathematics` — the shader-like, SIMD-friendly C# math library:
   `float2`/`float3`/`float4` and their `int`/`bool`/`double` variants,
-  `float3x3`/`float4x4`, `quaternion`, swizzling (`v.xz`, `v.rgb`), the static
-  `math` class (`math.normalize`, `math.saturate`, `math.distancesq`), `noise`
-  (`cnoise`/`snoise`/`cellular`), and the explicit-state `Random` struct. Every
-  type is a blittable unmanaged struct with no `UnityEngine` dependency, so it
-  is the math library for `Game.Core.*`, Burst jobs, and ECS components alike,
-  and `Unity.Mathematics.Random` is the seeded, injectable RNG Shared Core
-  requires instead of `UnityEngine.Random`. Not for: job scheduling
-  (`unity-job-system-and-burst`), container choice (`unity-collections`), Burst
-  tuning and `FloatMode` (`unity-burst-compiler`), ECS component design
-  (`unity-ecs-architecture`), physics components (`unity-physics`), material
-  overrides (`unity-entities-graphics`).
+  `float3x3`/`float4x4`, `quaternion`, swizzling like `v.xz`/`v.rgb`, the
+  static `math` class such as `math.normalize`, `math.saturate`,
+  `math.distancesq`, `noise` such as `cnoise`/`snoise`/`cellular`, and the
+  explicit-state `Random` struct. Every type is a blittable unmanaged struct
+  with no `UnityEngine` dependency, so it is the math library for
+  `Game.Core.*`, Burst jobs, and ECS components alike, and
+  `Unity.Mathematics.Random` is the seeded struct RNG Burst, job and ECS
+  code needs instead of `UnityEngine.Random`. Not for: an injected `IRandom`
+  roll, weighted loot table or shuffle outside Burst —
+  `nrandom-random-generation`; job scheduling —
+  `unity-job-system-and-burst`; container choice — `unity-collections`;
+  Burst tuning and `FloatMode` — `unity-burst-compiler`; ECS component
+  design — `unity-ecs-architecture`; physics components — `unity-physics`;
+  material overrides — `unity-entities-graphics`.
 ---
 
 # Unity Mathematics — Vector/Matrix Types, math, Random & noise
@@ -43,13 +46,14 @@ Act as the math-library specialist for the client track — the tool reached for
 - Using `quaternion` instead of `UnityEngine.Quaternion` for rotation math outside a MonoBehaviour's own `Transform` access, or `float3x3`/`float4x4` (`float4x4.TRS`, `float4x4.LookAt`) instead of hand-rolled matrix arithmetic.
 - Using swizzling (`v.xyz`, `v.xy`, `v.zyx`) to rearrange vector components instead of constructing a new vector field-by-field.
 - Using the static `math` class (`math.sin`, `math.sqrt`, `math.normalize`, `math.dot`, `math.cross`, `math.lerp`, `math.clamp`, `math.saturate`) instead of `Mathf`/`System.Math` inside `Game.Core.*` or a Burst-compiled job.
-- A Shared Core system needs a seeded, deterministic RNG — `Unity.Mathematics.Random` with an explicitly managed, injected seed instead of `UnityEngine.Random`.
+- A Burst-compiled, job, or ECS Shared Core site needs a seeded, deterministic RNG — `Unity.Mathematics.Random` with an explicitly managed, injected seed instead of `UnityEngine.Random`.
 - Choosing and applying a `noise` function (`noise.cnoise`, `noise.snoise`, `noise.cellular`) for procedural generation.
 - Negative trigger: scheduling jobs, `JobHandle` dependency chains, or `NativeContainer`/collection type choice — that's `unity-job-system-and-burst`/`unity-collections`.
 - Negative trigger: Burst compilation tuning (HPC# subset, `FloatMode`, intrinsics, AOT settings) — that's `unity-burst-compiler`, even when the code being tuned is full of these types.
 - Negative trigger: modeling ECS entities/components/systems/queries — that's `unity-ecs-architecture`, even when a component's fields are typed with `float3`/`quaternion`.
 - Negative trigger: choosing physics components, collider shapes, joints/motors, or spatial queries — that's `unity-physics`, even though every physics parameter here is `float3`/`quaternion`-typed.
 - Negative trigger: choosing rendering/material-override components — that's `unity-entities-graphics`, even though override components are commonly `float4`-typed.
+- Negative trigger: a gameplay roll, weighted loot table, or shuffle built on an injected `IRandom` in ordinary managed code — that's `nrandom-random-generation`; the `Random` here is the struct generator for Burst, job, and ECS sites, where an interface call cannot go.
 
 ## 4. How to use this skill
 1. **Identify the context before choosing any type**, per [shared-core-and-burst-compatibility.md](references/shared-core-and-burst-compatibility.md) (against the version pinned in [root-links.md](references/root-links.md)) — `Game.Core.*`, a Burst-compiled job, and an ECS component each require these types over their `UnityEngine` equivalents. For Shared Core this is not preference: `coding-principles.md`'s Shared Core integrity section forbids the `UnityEngine` dependency outright.
@@ -70,7 +74,7 @@ Act as the math-library specialist for the client track — the tool reached for
 - Applying swizzling for readable, allocation-free component rearrangement.
 - Setting up `Unity.Mathematics.Random` with a properly managed, injected seed for deterministic RNG needs.
 - Selecting and applying `noise` functions for procedural generation.
-- Out of scope: job scheduling and `NativeContainer` lifetime (`unity-job-system-and-burst`); collection type choice (`unity-collections`); Burst compilation tuning, including the deeper determinism guarantees `FloatMode` controls (`unity-burst-compiler`); ECS component/system/query design (`unity-ecs-architecture`).
+- Out of scope: job scheduling and `NativeContainer` lifetime (`unity-job-system-and-burst`); collection type choice (`unity-collections`); Burst compilation tuning, including the deeper determinism guarantees `FloatMode` controls (`unity-burst-compiler`); ECS component/system/query design (`unity-ecs-architecture`); injected `IRandom` gameplay rolls and weighted tables (`nrandom-random-generation`).
 
 ## 6. Output format
 ```
@@ -110,7 +114,7 @@ Act as the math-library specialist for the client track — the tool reached for
 
 ## 8. Edge cases & guardrails
 - Never present a type migration as having fixed determinism — these types resolve only the `UnityEngine`-dependency half; SIMD codegen, `FloatMode`, and transcendental precision remain `unity-burst-compiler`'s territory.
-- Never use `UnityEngine.Random` in `Game.Core.*` — always `Unity.Mathematics.Random` with an explicit, injected, nonzero seed.
+- Never use `UnityEngine.Random` in `Game.Core.*` — a seeded generator with an explicit, injected, nonzero seed instead: `Unity.Mathematics.Random` at a Burst, job, or ECS site, and `nrandom-random-generation`'s `IRandom` for an ordinary managed gameplay roll.
 - Never leave a `Random` seed at zero/default or derive it from wall-clock time in Shared Core — both break the determinism `coding-principles.md` requires, and neither fails loudly.
 - Never reach for `float4` when `float2`/`float3` fits — the unused lanes cost copy width on every pass for nothing.
 - Never "fix" the library's lowercase type names (`float3`, `quaternion`) to PascalCase — they are Unity's deliberate shader-parity convention, explicitly not a `naming-convention.md` violation.

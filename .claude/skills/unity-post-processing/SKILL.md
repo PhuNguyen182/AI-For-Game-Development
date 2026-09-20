@@ -9,10 +9,10 @@ description: >
   `FullScreenPassRendererFeature` or a scripted `ScriptableRendererFeature`
   plus `VolumeComponent`, and legacy Post Processing Stack v2 on the Built-in
   pipeline. Use when a full-screen effect must be added, tuned, or authored.
-  Not for: pipeline choice (`render-pipeline-urp-hdrp`); HDRP Volumes
-  (`unity-hdrp-rendering`); Renderer Features generally
-  (`unity-urp-rendering`); Adaptive Probe Volumes (`unity-lighting`); shader
-  content (`shader-authoring`).
+  Not for: pipeline choice — `render-pipeline-urp-hdrp`; HDRP Volumes —
+  `unity-hdrp-rendering`; Renderer Features generally —
+  `unity-urp-rendering`; Adaptive Probe Volumes — `unity-lighting`; shader
+  content — `shader-authoring`.
 ---
 
 # Unity Post-Processing — Volumes, Effect Catalog, Custom Effects, Legacy PPv2
@@ -59,7 +59,7 @@ Act as the post-processing specialist: choose the effect, set up the Volume that
 5. **Set `overrideState`, not just the parameter value, whenever a Volume parameter is written from code** — the Inspector checkbox beside each property is that flag, and a parameter with it false is skipped by the blend no matter what value it holds. `Override()` sets both, which is why it exists.
 6. **Edit `sharedProfile` only when the change is meant to reach the asset on disk** — reading `profile` instantiates a runtime copy, so it is the right call for a per-camera variation and the wrong one for a scene-wide tweak, exactly as `sharedMaterial` is to `material`.
 7. **Pick each override from what it decides rather than from what it is called**, per [effect-catalog.md](references/effect-catalog.md) — a warm look is White Balance rather than a tinted Color Filter, a focus pull is Depth of Field rather than a vignette, and Bloom's Threshold set below the scene's own sky luminance makes the whole sky bloom.
-8. **Check the effect exists on the target pipeline before designing around it**, per [pipeline-availability.md](references/pipeline-availability.md) — Auto Exposure, Fog, and Screen Space Reflection are absent from URP, Panini Projection and Split Toning are absent from Built-in RP, and post-process anti-aliasing is a Camera setting in URP rather than an override anyone can find in the catalog.
+8. **Check the effect exists on the target pipeline before designing around it**, per [pipeline-availability.md](references/pipeline-availability.md) — Auto Exposure, Fog, and Screen Space Reflection are absent from URP, Panini Projection and Split Toning are absent from Built-in RP, and post-process anti-aliasing is a field on the camera's URP component rather than an override anyone can find in the catalog — `unity-urp-rendering` owns that component, so route it rather than searching the Volume list.
 9. **Choose the custom-effect path by whether the effect needs blendable parameters**, per [custom-effects.md](references/custom-effects.md) — `FullScreenPassRendererFeature` plus a Fullscreen Shader Graph needs no C# and gives no Volume blending; the scripted feature plus a `VolumeComponent` costs both and buys per-Volume tuning. Pick the second only when something must actually blend.
 10. **Pick the injection point from what the pass reads and whether its output should be graded** — an effect injected before post-processing is subsequently tonemapped and colour-graded, one injected after is not, and the same shader looks correct in one project and blown out in another for exactly this reason.
 11. **Treat turning post-processing on as the mobile cost, not the effect count** — a tile-based GPU resolves the framebuffer out of tile memory once the stack is enabled, so the meaningful decision on a low tier is whether that tier carries post-processing at all. Any claim that removing an effect helped ships with a Profiler GPU capture, per `performance-and-algorithms.md`'s Verification section.
@@ -113,7 +113,7 @@ Act as the post-processing specialist: choose the effect, set up the Volume that
 ## 8. Edge cases & guardrails
 - Never debug a profile before checking the Camera's Post Processing toggle and the URP Asset's HDR setting — both silently disable work that is otherwise correct.
 - Never assume an effect exists across pipelines — URP has no Auto Exposure, Fog, or Screen Space Reflection, and Built-in RP has no Panini Projection, Shadows Midtones Highlights, or Split Toning.
-- Never look for anti-aliasing in URP's override catalog — it is a Camera setting, and time lost searching the Volume list is the usual outcome.
+- Never look for anti-aliasing in URP's override catalog — it is a field on the camera's URP component, owned by `unity-urp-rendering`, and time lost searching the Volume list is the usual outcome.
 - Never assign a Volume parameter's `.value` from code and stop there — without `overrideState` the blend ignores it, and nothing reports the omission.
 - Never read `volume.profile` for a scene-wide change — it instantiates a copy, so the edit reaches one instance and never the asset.
 - Never map PPv2's `ColorGrading` onto URP's separate overrides one to one — PPv2 folds Channel Mixer, Color Adjustments, Color Curves, Lift Gamma Gain, and tonemapping into that single class, and there is no standalone PPv2 tonemapper type.

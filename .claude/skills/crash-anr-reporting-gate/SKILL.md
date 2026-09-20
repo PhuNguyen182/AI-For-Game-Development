@@ -3,14 +3,17 @@ name: crash-anr-reporting-gate
 description: >
   Gate that confirms a real production crash and ANR reporting service is
   actually integrated and reporting — Google Play Console Android vitals,
-  Firebase Crashlytics, or App Store Connect — before any trace is read. Use
-  at the start of every crash or ANR investigation whenever live reporting is
-  not already confirmed for this engagement, or the report's source is
-  unstated or unverifiable. Not for: reading the trace once the gate passes
-  (`crash-anr-symbolication`); attributing the fault
-  (`crash-anr-fault-domain-triage`); performing the integration
-  (`tech-lead-sdk-platform`); pre-release Editor or QA logs
-  (`qa-automation-engineer`, `playtest-tester`).
+  Firebase Crashlytics, or App Store Connect — before any trace is read.
+  Use at the start of every crash or ANR investigation whenever live
+  reporting is not already confirmed for this engagement, or the
+  report's source is unstated or unverifiable. Not for: reading the
+  trace once the gate passes, owned by `crash-anr-symbolication`;
+  attributing the fault, owned by `crash-anr-fault-domain-triage`;
+  performing the integration, owned by `tech-lead-sdk-platform`;
+  choosing the reporting vendor when none is committed, owned by
+  `analytics-telemetry-platform`; pre-release Editor logs, owned by
+  `qa-automation-engineer` and `playtest-tester`; or a fault in a
+  pre-release player build, owned by `build-fault-triage`.
 ---
 
 # Crash and ANR Reporting Gate — is there a trustworthy signal at all
@@ -38,22 +41,22 @@ Act as the gatekeeper of the crash investigation pipeline, on behalf of `crash-a
 - Negative trigger: this engagement already passed the gate — go straight to `crash-anr-symbolication` rather than re-running the check for its own sake.
 - Negative trigger: reading, resolving, or interpreting a trace — those are `crash-anr-symbolication` and `crash-anr-fault-domain-triage`; this skill never opens a stack trace.
 - Negative trigger: performing the integration itself — that is `tech-lead-sdk-platform`, who owns Crashlytics and platform SDK wiring; this skill requests it and stops.
-- Negative trigger: Editor console output, a local QA build capture, or a playtest log — these never pass this gate because they are outside the investigation's scope entirely; redirect to `qa-automation-engineer` or `playtest-tester`.
+- Negative trigger: Editor console output, a local QA build capture, or a playtest log — these never pass this gate because they are outside the investigation's scope entirely; redirect an Editor or playtest log to `qa-automation-engineer` or `playtest-tester`, and a fault in a pre-release player build to `build-fault-triage`.
 
 ## 4. How to use this skill
 1. **Name the claimed source before anything else** — Play Console Android vitals, Crashlytics, or App Store Connect, per [root-links.md](references/root-links.md) and [reporting-services.md](references/reporting-services.md). A source nobody will name is already the answer, and an unnamed source is not a fourth option to work around.
-2. **Redirect pre-release data instead of failing it** — an Editor log or a QA build capture is not a gate failure to be remediated, it is a different activity owned by `qa-automation-engineer` and `playtest-tester`. Say so and stop; requesting a Crashlytics integration in response would be answering a question nobody asked.
+2. **Redirect pre-release data instead of failing it** — an Editor log or a QA build capture is not a gate failure to be remediated, it is a different activity — owned by `qa-automation-engineer` and `playtest-tester` for Editor and playtest data, and by `build-fault-triage` for a fault in a player build that never shipped. Say so and stop; requesting a Crashlytics integration in response would be answering a question nobody asked.
 3. **Confirm the service is reporting, not merely installed** — an integration that has not received an event in the period the release has been live is indistinguishable from no integration for this purpose, per [reporting-services.md](references/reporting-services.md). Check that the dashboard has data for the version under investigation.
 4. **Treat anything unconfirmed as absent** — "we set it up a while ago" is a No, not a qualified Yes. Ask rather than assume, per §8; a gate that passes on optimism defeats its own purpose.
 5. **Pass only when the report in hand came from the confirmed service** — a live dashboard plus a screenshot from somewhere else is still a fail, because the trace being investigated is not the one the service can reproduce or count.
-6. **Block with a routed action, and say where the flow resumes** — name the service to integrate, route it to `tech-lead-sdk-platform`, then stop. Once the integration ships, the investigation restarts at `crash-anr-symbolication` from a **fresh** report produced by that service; the report that failed this gate is not retroactively made usable, because the build that produced it never carried the SDK.
+6. **Block with a routed action, and say where the flow resumes** — name the service to integrate, route it to `tech-lead-sdk-platform`, then stop. Where no service is committed at all, the vendor choice itself is `analytics-telemetry-platform`'s decision, not this gate's: name the gap and route it there rather than picking one. Once the integration ships, the investigation restarts at `crash-anr-symbolication` from a **fresh** report produced by that service; the report that failed this gate is not retroactively made usable, because the build that produced it never carried the SDK.
 
 ## 5. Specific goals / tasks this skill performs
 - Establishing the claimed source of a crash or ANR report.
 - Separating production telemetry from pre-release Editor and QA data, and redirecting the latter.
 - Confirming a reporting service is both integrated and actively receiving data for the version under investigation.
 - Producing a pass that hands off to `crash-anr-symbolication`, or a block routed to `tech-lead-sdk-platform`.
-- Out of scope: performing the integration (`tech-lead-sdk-platform`); reading or resolving a trace (`crash-anr-symbolication`); attributing a fault (`crash-anr-fault-domain-triage`); pre-release defect work (`qa-automation-engineer`, `playtest-tester`).
+- Out of scope: performing the integration (`tech-lead-sdk-platform`); choosing the reporting vendor when none is committed (`analytics-telemetry-platform`); reading or resolving a trace (`crash-anr-symbolication`); attributing a fault (`crash-anr-fault-domain-triage`); pre-release defect work (`qa-automation-engineer`, `playtest-tester`, `build-fault-triage`).
 
 ## 6. Output format
 ```

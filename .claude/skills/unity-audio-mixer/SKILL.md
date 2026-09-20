@@ -2,17 +2,18 @@
 name: unity-audio-mixer
 description: >
   Technique for Unity's audio system and Audio Mixer: `AudioSource`,
-  `AudioListener`, `AudioClip` import/compression/streaming, `AudioMixer`,
-  `AudioMixerGroup`, exposed parameters (`SetFloat`/`GetFloat`/`ClearFloat`),
-  snapshots (`TransitionTo`), Sends/Receives, Duck Volume, AudioSource
-  Filters versus Mixer Effects (Low/High Pass, Echo, Distortion, Reverb,
-  Chorus, Flange, Compressor, Pitch Shifter), Audio Random Container,
-  ambisonic decoder plugins, the Native Audio Plugin SDK, and the Audio
-  Profiler. Use when wiring, routing, or diagnosing sound in a Unity scene.
-  Not for: non-audio Profiler modules (`unity-profiler-diagnostics`);
-  third-party audio middleware/platform SDKs (`tech-lead-sdk-platform`);
-  netcode audio timing (`netcode-engineer`); the gameplay rule triggering a
-  sound (`csharp-engineer`); audio-reactive VFX (`technical-artist`).
+  `AudioListener`, `AudioClip` import, compression, and streaming,
+  `AudioMixer`, `AudioMixerGroup`, exposed parameters via `SetFloat`,
+  `GetFloat`, and `ClearFloat`, snapshots via `TransitionTo`, Sends and
+  Receives, Duck Volume, AudioSource Filters versus Mixer Effects such as
+  Low/High Pass, Echo, Distortion, Reverb, Chorus, Flange, Compressor, and
+  Pitch Shifter, Audio Random Container, ambisonic decoder plugins, the Native
+  Audio Plugin SDK, and the Audio Profiler. Use when wiring, routing, or
+  diagnosing sound in a Unity scene. Not for: non-audio Profiler modules —
+  `unity-profiler-diagnostics`; third-party audio middleware or platform SDKs
+  — `tech-lead-sdk-platform`; netcode audio timing — `netcode-engineer`;
+  the gameplay rule triggering a sound — `csharp-engineer`; audio-reactive
+  VFX — `technical-artist`.
 ---
 
 # Unity Audio & Audio Mixer — Playback, Routing, Effects, Diagnostics

@@ -3,14 +3,19 @@ name: messagepipe-event-messaging
 description: >
   MessagePipe — decoupled in-process message dispatch: keyless and keyed
   `IPublisher<T>` and `ISubscriber<T>`, `IRequestHandler<TRequest,TResponse>`
-  and `IRequestAllHandler`, `IAsyncPublisher` and `IAsyncSubscriber`
-  (UniTask-backed, parallel or sequential), `IBufferedPublisher` and
+  and `IRequestAllHandler`, `IAsyncPublisher` and `IAsyncSubscriber` backed
+  by UniTask for parallel or sequential dispatch, `IBufferedPublisher` and
   `IBufferedSubscriber` for latest-value replay, filter middleware for
   cross-cutting behaviour, and `DisposableBag` disposal — registered through
-  `RegisterMessagePipe()`. Use for one discrete addressed event reaching
+  `RegisterMessagePipe`. Use for one discrete addressed event reaching
   systems that must not reference each other, such as an item pickup seen by
-  inventory, UI, and analytics at once.
-  Not for: continuous streams a subscriber composes over time (`r3-reactive-extensions`), the async body of a handler (`unitask-async-programming`), DI registration and lifetime (`vcontainer-dependency-injection`), cross-process wire contracts (`magiconion-rpc-networking`).
+  inventory, UI, and analytics at once. Not for: continuous streams a
+  subscriber composes over time, owned by `r3-reactive-extensions`; the
+  async body of a handler, owned by `unitask-async-programming`; DI
+  registration and lifetime, owned by `vcontainer-dependency-injection`; an
+  event a designer wires between assets in the Inspector, owned by
+  `unity-scriptableobject-architecture`; and cross-process wire contracts,
+  owned by `magiconion-rpc-networking`.
 ---
 
 # MessagePipe — Decoupled In-Process Event Messaging
@@ -29,6 +34,7 @@ Act as the in-process messaging specialist for the client track: the one who des
 - Negative trigger: a continuously observed value a subscriber filters and transforms over time — that is `r3-reactive-extensions`; the two pair naturally, with a pipeline's terminal `Subscribe` publishing once.
 - Negative trigger: writing the async logic inside a handler — that is `unitask-async-programming`; this skill decides only that the handler is async-shaped and how dispatch is configured.
 - Negative trigger: the handler's registration and lifetime scope — that is `vcontainer-dependency-injection`, which owns the `RegisterMessagePipe()` call these types are registered through.
+- Negative trigger: the decoupled event is meant to be an asset a designer picks and wires in the Inspector — a `GameEvent`/`GameEventListener` pair or an `EventChannelSO<T>` — that is `unity-scriptableobject-architecture`; the `UnityEvent` sprawl this skill replaces is that pattern's own mechanism, so the test is whether the publisher and subscriber are both code, or whether the wiring itself is content.
 - Negative trigger: a message crossing a process or machine boundary — that is `magiconion-rpc-networking`; MessagePipe never leaves the process.
 
 ## 4. How to use this skill
@@ -49,7 +55,7 @@ Act as the in-process messaging specialist for the client track: the one who des
 - Write filter middleware for logging, validation, and exception boundaries around a message type.
 - Choose buffered pub/sub where a late subscriber needs the current value.
 - Audit subscription disposal and enable the analyzer that catches the omissions.
-- Out of scope: continuous reactive streams (`r3-reactive-extensions`), the async body of a handler (`unitask-async-programming`), DI registration and lifetime (`vcontainer-dependency-injection`), cross-process wire contracts (`magiconion-rpc-networking`).
+- Out of scope: continuous reactive streams (`r3-reactive-extensions`), the async body of a handler (`unitask-async-programming`), DI registration and lifetime (`vcontainer-dependency-injection`), Inspector-wired asset events (`unity-scriptableobject-architecture`), cross-process wire contracts (`magiconion-rpc-networking`).
 
 ## 6. Output format
 ```

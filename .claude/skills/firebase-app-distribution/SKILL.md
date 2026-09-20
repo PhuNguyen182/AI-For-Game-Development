@@ -7,10 +7,11 @@ description: >
   `--release-notes-file`, the `firebase_app_distribution` fastlane plugin,
   service-account authentication through `GOOGLE_APPLICATION_CREDENTIALS`,
   `firebase-tools` version pinning, APK/AAB/IPA acceptance, and the ad-hoc
-  UDID constraint on iOS. Not for: producing or signing the artifact
-  (`fastlane-mobile-delivery`, `unity-batchmode-cli`); the job and its
-  approval gate (`jenkins-pipeline-authoring`); Crashlytics, Analytics and
-  Remote Config inside the game (`tech-lead-sdk-platform`).
+  UDID constraint on iOS. Not for: producing or signing the artifact,
+  owned by `fastlane-mobile-delivery` or `unity-batchmode-cli`; the job
+  and its approval gate, owned by `jenkins-pipeline-authoring`; and
+  Crashlytics, Analytics, and Remote Config inside the game, owned by
+  `tech-lead-sdk-platform`.
 ---
 
 # Firebase App Distribution — getting a build to testers
@@ -38,7 +39,7 @@ Act as the tester-distribution specialist for the devops track, on behalf of `ci
 - Tester groups, membership, or who receives which build must be decided in the pipeline.
 - Release notes must carry enough for a tester to report a defect against the right build.
 - An iOS build reached App Distribution but installs for nobody.
-- Negative trigger: producing or signing the artifact — that is `unity-batchmode-cli` and `fastlane-mobile-delivery`.
+- Negative trigger: producing or signing the artifact — that is `unity-batchmode-cli` and `fastlane-mobile-delivery`. When the upload is written as a plugin action, the lane and `Pluginfile` hosting it stay `fastlane-mobile-delivery`'s; this skill owns the action's parameters, its authentication and its verification.
 - Negative trigger: the job, the credential binding, and the human approval before the upload — that is `jenkins-pipeline-authoring`.
 - Negative trigger: Crashlytics, Analytics, Remote Config, or any Firebase SDK compiled into the game — that is `tech-lead-sdk-platform`, a different Firebase entirely.
 - Negative trigger: submitting to Google Play or App Store review, and TestFlight — that is `tech-lead-sdk-platform`; App Distribution is not a store channel.

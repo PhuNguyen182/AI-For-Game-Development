@@ -1,24 +1,25 @@
 ---
 name: vcontainer-dependency-injection
 description: >
-  VContainer dependency injection for the client track: `LifetimeScope`,
-  `IContainerBuilder.Register<T>` with `Lifetime.Singleton`/`Scoped`/`Transient`,
-  `RegisterComponentInHierarchy<T>`, `RegisterComponentInNewPrefab<T>`,
-  `RegisterFactory`, keyed registration (`.Keyed()`/`[Key]`),
-  `RegisterEntryPoint<T>`, `[Inject]` constructor/method/property injection,
-  `EnqueueParent`, the full `IInitializable`/`IPostInitializable`/`IStartable`/
-  `IAsyncStartable`/`IPostStartable`/`ITickable`/`IFixedTickable`/`ILateTickable`
-  (and their `IPost*` counterparts) entry-point interfaces, and the Roslyn
-  Source Generator that replaces reflection-based injection at runtime. Use it
-  when a class needs a dependency it should not construct itself, when
-  replacing a singleton or `FindObjectOfType` lookup, when scoping per-scene or
-  per-session state, when startup order currently rests on `Awake`/`Start`
-  timing, or when IL2CPP/AOT reflection cost or stripping needs the source
-  generator turned on. Not for: the async body an `IAsyncStartable` calls
-  (`unitask-async-programming`), pub/sub logic behind a registered publisher
-  (`messagepipe-event-messaging`), the pipeline a scoped subscription observes
-  (`r3-reactive-extensions`), `Game.Core.*` code, which takes plain interfaces
-  and never a container (`coding-principles.md`).
+  VContainer dependency injection for the client track: `LifetimeScope`;
+  `IContainerBuilder.Register<T>` with
+  `Lifetime.Singleton`/`Scoped`/`Transient`;
+  `RegisterComponentInHierarchy<T>`/`RegisterComponentInNewPrefab<T>`;
+  `RegisterFactory`; keyed registration; `RegisterEntryPoint<T>`;
+  Inject-attribute constructor/method/property injection; `EnqueueParent`;
+  the `IInitializable`/`IPostInitializable`/`IStartable`/`IAsyncStartable`/
+  `IPostStartable`/`ITickable`/`IFixedTickable`/`ILateTickable` entry-point
+  interfaces; and the Roslyn Source Generator replacing runtime reflection.
+  Use when a class should not construct its own dependency, when replacing
+  a singleton or `FindObjectOfType` lookup, when scoping per-scene/
+  per-session state, or when startup order or IL2CPP/AOT stripping needs
+  the generator on. Not for: the async body an `IAsyncStartable` calls —
+  `unitask-async-programming`; pub/sub logic behind a registered publisher —
+  `messagepipe-event-messaging`; the pipeline a scoped subscription
+  observes — `r3-reactive-extensions`; `Game.Core.*` code, using plain
+  interfaces, never a container — `coding-principles.md`; and an
+  asset-based decoupling layer designers wire in the Inspector, such as
+  Runtime Sets or Event Channels — `unity-scriptableobject-architecture`.
 ---
 
 # VContainer — Composition Root for the Client Track
@@ -38,6 +39,7 @@ Act as the composition-root specialist for the client track: the one who decides
 - Negative trigger: writing the `async` body behind `IAsyncStartable.StartAsync` — that's `unitask-async-programming`.
 - Negative trigger: the publish/subscribe or request/response logic behind a registered `IPublisher<T>`/`ISubscriber<T>` — that's `messagepipe-event-messaging`; the `RegisterMessagePipe` call itself stays here.
 - Negative trigger: the `Observable<T>` pipeline a scoped subscription observes — that's `r3-reactive-extensions`; this skill only guarantees the subscription dies with its scope.
+- Negative trigger: a singleton or `FindObjectOfType` whose replacement should be an asset a designer wires in the Inspector — a Runtime Set tracking active instances, an Event Channel, a Variable asset — that's `unity-scriptableobject-architecture`; both skills exist to remove the same call, and the test is whether the consumer should receive the dependency through its constructor or reference an asset that other systems also reference.
 - Negative trigger: any `Game.Core.*` type — Shared Core takes its dependencies as plain constructor parameters against interfaces; the container that satisfies them exists only in `Game.Client.*`.
 - A profiler or `tech-lead-performance` traces IL2CPP stripping or reflection-based injection cost on a hot resolution path — that is exactly the case the Source Generator exists for; see step 12 below.
 
@@ -63,7 +65,7 @@ Act as the composition-root specialist for the client track: the one who decides
 - Registering scene and prefab `MonoBehaviour`s, factories (`RegisterFactory`), keyed multi-implementation registrations (`.Keyed()`/`[Key]`), and wiring `RegisterMessagePipe`/`AddMessagePipe` into a `Configure()`.
 - Sequencing startup via `IInitializable`/`IPostInitializable`/`IStartable`/`IAsyncStartable`/`IPostStartable` and moving per-frame work onto `ITickable`/`IFixedTickable`/`ILateTickable` (and their `IPost*` counterparts).
 - Enabling and scoping the Roslyn Source Generator for a measured IL2CPP/AOT reflection-cost or stripping problem, without changing any `[Inject]`/`[Key]` authoring code.
-- Out of scope: the async body behind `IAsyncStartable` (`unitask-async-programming`), pub/sub logic (`messagepipe-event-messaging`), reactive pipelines (`r3-reactive-extensions`), any `Game.Core.*` code (`csharp-engineer`).
+- Out of scope: the async body behind `IAsyncStartable` (`unitask-async-programming`), pub/sub logic (`messagepipe-event-messaging`), reactive pipelines (`r3-reactive-extensions`), asset-based decoupling wired in the Inspector — Runtime Sets, Event Channels, Variable assets (`unity-scriptableobject-architecture`), any `Game.Core.*` code (`csharp-engineer`).
 
 ## 6. Output format
 ```

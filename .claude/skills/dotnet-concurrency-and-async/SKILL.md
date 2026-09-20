@@ -1,18 +1,20 @@
 ---
 name: dotnet-concurrency-and-async
 description: >
-  Concurrency and asynchronous programming in pure .NET — Task, Task<TResult>,
-  async/await, ValueTask, ValueTask<TResult>, CancellationToken,
-  CancellationTokenSource, TaskCompletionSource<TResult>, IAsyncEnumerable<T>,
-  System.Threading.Channels' Channel<T>, System.Threading.Tasks.Parallel.For,
-  Parallel.ForEach, lock, Monitor, SemaphoreSlim, Interlocked. Use when writing
-  async I/O, cooperative cancellation, producer/consumer pipelines, CPU-bound
-  parallel loops, or thread-safe shared state in Game.Core.*, Game.Server.*,
-  or an SDK/platform wrapper with no UnityEngine dependency — including
-  bridging that code into Unity's PlayerLoop. Not for: Unity PlayerLoop-native
-  async (`unitask-async-programming`), reactive push streams
-  (`r3-reactive-extensions`), Burst/Job System bulk parallelism
-  (`unity-job-system-and-burst`).
+  Concurrency and asynchronous programming in pure .NET — Task,
+  Task<TResult>, async and await, ValueTask, ValueTask<TResult>,
+  CancellationToken, CancellationTokenSource, TaskCompletionSource<TResult>,
+  IAsyncEnumerable<T>, System.Threading.Channels' Channel<T>,
+  System.Threading.Tasks.Parallel.For, Parallel.ForEach, lock, Monitor,
+  SemaphoreSlim, and Interlocked. Use when writing async I/O, cooperative
+  cancellation, producer or consumer pipelines, CPU-bound parallel loops,
+  or thread-safe shared state in Game.Core.*, Game.Server.*, or an SDK or
+  platform wrapper with no UnityEngine dependency — including bridging
+  that code into Unity's PlayerLoop. Not for: Unity PlayerLoop-native
+  async, owned by `unitask-async-programming`; reactive push streams,
+  owned by `r3-reactive-extensions`; Burst or Job System bulk
+  parallelism, owned by `unity-job-system-and-burst`; collection and
+  buffer selection, owned by `dotnet-memory-and-collections`.
 ---
 
 # .NET Concurrency and Async — Task, Cancellation, Channels, Parallel, and Threading Primitives
@@ -43,6 +45,7 @@ Act as the .NET concurrency specialist for the client track — the tool reached
 - Negative trigger: the async work is driven by Unity's PlayerLoop/MonoBehaviour lifecycle (coroutines, per-frame update timing) — that's `unitask-async-programming`.
 - Negative trigger: a reactive, push-based event stream (subscribe/observe semantics) — that's `r3-reactive-extensions`.
 - Negative trigger: Burst-compiled bulk simulation over `NativeArray<T>` — that's `unity-job-system-and-burst`.
+- Negative trigger: which container holds the shared state, or how a buffer is allocated and pooled — that's `dotnet-memory-and-collections`. This skill owns the primitive that coordinates access (`lock`/`Interlocked`/`SemaphoreSlim`/`Channel<T>`); it never picks the collection type that access lands on.
 
 ## 4. How to use this skill
 1. **Confirm the code has no UnityEngine dependency and isn't driven by Unity's PlayerLoop before reaching for raw `System.Threading.Tasks` types** — `Game.Core.*` and SDK/platform wrappers stay on the BCL; PlayerLoop-integrated work belongs to `unitask-async-programming` instead, per `naming-convention.md`'s namespace boundary.
@@ -61,7 +64,7 @@ Act as the .NET concurrency specialist for the client track — the tool reached
 - Build a producer/consumer pipeline with `Channel<T>`, or a measured, bounded-concurrency CPU-bound loop with `Parallel.For`/`ForEach`/`ForEachAsync`.
 - Protect genuinely shared mutable state with the lightest correct primitive (`Interlocked`/`lock`/`SemaphoreSlim`).
 - Bridge a `Task`-returning `Game.Core.*`/`Game.Server.*` method to Unity's PlayerLoop via UniTask interop when `Game.Client.*` needs to await it.
-- Out of scope: Unity PlayerLoop-native async/coroutines (`unitask-async-programming`), reactive push-based event streams (`r3-reactive-extensions`), Burst-compiled Job System bulk parallelism (`unity-job-system-and-burst`).
+- Out of scope: Unity PlayerLoop-native async/coroutines (`unitask-async-programming`), reactive push-based event streams (`r3-reactive-extensions`), Burst-compiled Job System bulk parallelism (`unity-job-system-and-burst`), collection-type and buffer-pooling choice (`dotnet-memory-and-collections`).
 
 ## 6. Output format
 ```

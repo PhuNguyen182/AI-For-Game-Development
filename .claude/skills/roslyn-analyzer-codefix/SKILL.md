@@ -1,18 +1,21 @@
 ---
 name: roslyn-analyzer-codefix
 description: >
-  Custom Roslyn `DiagnosticAnalyzer`s, with an optional `CodeFixProvider`, that
-  enforce this project's own rules as compile-time diagnostics: the
-  `Game.Core`/`UnityEngine` namespace boundary, Shared Core determinism
-  (`UnityEngine.Random`, wall-clock time), the mandatory `this.` qualifier,
-  `&&`/`||` over `&`/`|`, naming casing. Covers diagnostic IDs and severity,
+  Custom Roslyn `DiagnosticAnalyzer`s, with an optional `CodeFixProvider`,
+  that enforce this project's own rules as compile-time diagnostics: the
+  `Game.Core`/`UnityEngine` namespace boundary, Shared Core determinism via
+  `UnityEngine.Random` and wall-clock time, the mandatory `this.` qualifier,
+  `&&`/`||` over `&`/`|`, and naming casing. Covers diagnostic IDs and
+  severity,
   `RegisterSymbolAction`/`RegisterSyntaxNodeAction`/`RegisterCompilationStartAction`,
-  `EnableConcurrentExecution`, `ConfigureGeneratedCodeAnalysis`, `.editorconfig`
-  severity overrides, `netstandard2.0` packaging and Unity's `RoslynAnalyzer`
-  label. Use it when a mechanically checkable rule keeps recurring across
-  submissions. Not for: generating code (`source-generator-authoring`), rules
-  that need human judgement (`code-reviewer`), a violation seen once
-  (`coding-principles.md`).
+  `EnableConcurrentExecution`, `ConfigureGeneratedCodeAnalysis`,
+  `.editorconfig` severity overrides, `netstandard2.0` packaging, and
+  Unity's `RoslynAnalyzer` label. Use it when a mechanically checkable rule
+  keeps recurring across submissions. Not for: generating code, owned by
+  `source-generator-authoring`; rules that need human judgement, owned by
+  `code-reviewer`; auditing one submission's diff for these same boundary
+  and determinism violations, owned by `shared-core-boundary-audit`; a
+  violation seen once, owned by `coding-principles.md`.
 ---
 
 # Roslyn Analyzer and Code Fix Authoring
@@ -29,6 +32,7 @@ Act as the Roslyn analyzer specialist. You are encoding this project's own rule 
 - An existing analyzer misfires: a diagnostic firing on valid code, or firing on generated code the author cannot change.
 - Negative trigger: emitting repetitive code — that's `source-generator-authoring`, a different Roslyn surface (`IIncrementalGenerator`, not `DiagnosticAnalyzer`).
 - Negative trigger: a rule whose application needs human judgement — "this logic belongs in Shared Core", "this abstraction is premature" — which stays with `code-reviewer`; a compiler pass cannot decide it and an analyzer that pretends otherwise trains people to suppress it.
+- Negative trigger: auditing a submission's diff for the boundary and determinism violations themselves — that is `shared-core-boundary-audit`, the per-diff gate that greps for exactly these rules and is usually where the recurrence below is first noticed; this skill turns what that gate keeps reporting into a standing compile-time check.
 - Negative trigger: a single finding from one review — fix the instance; standing tooling for a violation that has not recurred is the tooling-ahead-of-need YAGNI forbids in `coding-principles.md`.
 
 ## 4. How to use this skill
@@ -51,7 +55,7 @@ Act as the Roslyn analyzer specialist. You are encoding this project's own rule 
 - Enforcing the mandatory `this.` qualifier and `&&`/`||` over `&`/`|`, each with a mechanical auto-fix.
 - Flagging casing violations against `naming-convention.md`'s table.
 - Analyzer project setup: `netstandard2.0`, concurrent execution, generated-code exclusion, `.editorconfig` severity, Unity packaging.
-- Out of scope: emitting code (`source-generator-authoring`), rules requiring judgement (`code-reviewer`), one-off findings that have not recurred (`coding-principles.md`).
+- Out of scope: emitting code (`source-generator-authoring`), rules requiring judgement (`code-reviewer`), the per-diff boundary and determinism audit itself (`shared-core-boundary-audit`), one-off findings that have not recurred (`coding-principles.md`).
 
 ## 6. Output format
 ```

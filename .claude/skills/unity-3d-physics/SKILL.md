@@ -1,20 +1,19 @@
 ---
 name: unity-3d-physics
 description: >
-  Unity built-in 3D physics (PhysX) on GameObjects — `Rigidbody` mass,
-  drag, interpolation, collision detection mode, constraints, sleep;
-  `Collider` shapes and `MeshCollider` cooking, `PhysicsMaterial`,
-  `CharacterController` `Move`/`SimpleMove`, `FixedJoint`, `HingeJoint`,
-  `SpringJoint`, `CharacterJoint`, `ConfigurableJoint`,
-  `ArticulationBody`, Ragdoll Wizard, `Cloth`, `OnCollisionEnter`,
-  `Physics.Raycast`, the layer matrix, and `Physics.simulationMode`.
-  Use when a body tunnels, jitters, sinks, will not sleep, or a ragdoll
-  or joint chain is unstable. Not for: 2D physics
-  (`unity-2d-physics`), DOTS physics (`unity-physics`), pathfound agent
-  movement (`unity-navmesh-navigation`), animation blending
-  (`unity-animation`), shader-only cloth looks (`technical-artist`),
-  damage and state rules (`csharp-engineer`), escalated optimisation
-  (`tech-lead-performance`).
+  Unity built-in 3D physics, PhysX, on GameObjects — `Rigidbody` mass, drag,
+  interpolation, collision detection mode, constraints, sleep; `Collider`
+  shapes and `MeshCollider` cooking, `PhysicsMaterial`, `CharacterController`
+  `Move` and `SimpleMove`, `FixedJoint`, `HingeJoint`, `SpringJoint`,
+  `CharacterJoint`, `ConfigurableJoint`, `ArticulationBody`, Ragdoll Wizard,
+  `Cloth`, `OnCollisionEnter`, `Physics.Raycast`, the layer matrix, and
+  `Physics.simulationMode`. Use when a body tunnels, jitters, sinks, will not
+  sleep, or a ragdoll or joint chain is unstable. Not for: 2D physics —
+  `unity-2d-physics`; DOTS physics — `unity-physics`; pathfound agent
+  movement — `unity-navmesh-navigation`; animation blending —
+  `unity-animation`; shader-only cloth looks — `technical-artist`; damage and
+  state rules — `csharp-engineer`; escalated optimisation —
+  `tech-lead-performance`.
 ---
 
 # Unity 3D Physics — PhysX Bodies, Characters, Joints, Ragdolls & Cloth

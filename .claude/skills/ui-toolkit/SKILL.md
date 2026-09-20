@@ -1,19 +1,21 @@
 ---
 name: ui-toolkit
 description: >
-  Unity UI Toolkit (`UnityEngine.UIElements`) technique — UXML structure, UI
-  Builder, `VisualElement`/`UxmlElement` custom controls, USS styling
-  (Flexbox layout, selectors, pseudo-classes, BEM naming), typed events
-  (`RegisterCallback<T>`, trickle-down/bubble-up, Manipulators), runtime
-  hosting (`UIDocument`, Panel Renderer, `PanelSettings` scale modes, world
-  space, dynamic atlas), data binding (`INotifyBindablePropertyChanged`,
-  `SerializedObject.Bind()`), Editor tooling (`CreateGUI`,
-  `CreateInspectorGUI`, `CreatePropertyGUI`), text/font assets, and the UI
-  Test Framework package. Use for building or debugging a runtime HUD/menu
-  or an Editor window/inspector in UI Toolkit. Not for: uGUI/Canvas UI
-  (`ugui`), Animator-driven UI (`unity-animation`), input device polling and
-  action binding (`unity-input-system`), and any gameplay rule behind the UI
-  (`csharp-engineer`).
+  Unity UI Toolkit technique for `UnityEngine.UIElements` — UXML and UI
+  Builder, `VisualElement`/`UxmlElement` custom controls, USS styling and
+  Flexbox layout, typed events such as `RegisterCallback<T>`/Manipulators,
+  runtime hosting via `UIDocument`/Panel Renderer and
+  `PanelSettings`, data binding via `INotifyBindablePropertyChanged` and
+  `SerializedObject.Bind`, Editor tooling via `CreateGUI`,
+  `CreateInspectorGUI`, `CreatePropertyGUI`, text/font assets, and the
+  UI Test Framework package. Use for building or debugging a runtime
+  HUD/menu or an Editor window/inspector in UI Toolkit. Not for:
+  uGUI/Canvas UI, owned by `ugui`; Odin attribute-driven inspectors and
+  drawers, owned by `odin-inspector`; Animator-driven UI, owned by
+  `unity-animation`; input device polling and action binding, owned by
+  `unity-input-system`; the NUnit harness a UI test sits in, owned by
+  `unity-test-framework`; and any gameplay rule behind the UI, owned by
+  `csharp-engineer`.
 ---
 
 # Unity UI Toolkit — UXML, USS, Events, Runtime Hosting, Editor Tooling
@@ -66,6 +68,8 @@ and binding; you never decide what a UI displays as a game-rule outcome.
 - Writing UI Toolkit tests, or assessing a uGUI/IMGUI migration.
 - Negative trigger: the screen genuinely belongs on uGUI's `Canvas` — per [choosing-ui-system.md](references/choosing-ui-system.md), that's `ugui`; route to it rather than forcing the screen into UI Toolkit.
 - Negative trigger: Animator-driven UI animation (keyframed clips, blend trees driving a widget) — that's `unity-animation`; UI Toolkit itself has no Timeline/Animation Clip integration.
+- Negative trigger: an inspector or Editor window driven by Odin attributes (`[ShowIf]`, `[TableList]`, `OdinEditorWindow`, `OdinValueDrawer<T>`) rather than UXML/USS — that's `odin-inspector`; one window is built on one of the two, never both.
+- Negative trigger: the test assembly, NUnit attributes, Play Mode harness and run filters a UI test lives in — that's `unity-test-framework`; this skill owns only what the UI Test Framework package drives and asserts against a `VisualElement` tree.
 - Negative trigger: reading the input device or authoring `.inputactions` — that's `unity-input-system`; this skill only reacts to the events that system (or UI Toolkit's own default runtime input) delivers.
 - Negative trigger: whether a button press is currently allowed, what a value on screen means for the game, or any cooldown/resource check — that's `csharp-engineer`'s Shared Core, per `coding-principles.md`'s Shared Core integrity section.
 
@@ -94,7 +98,7 @@ and binding; you never decide what a UI displays as a game-rule outcome.
 - Text and font asset decisions, including migrating off static font assets.
 - Draw-call and dynamic-atlas performance diagnosis and fixes.
 - UI Toolkit test authoring support and uGUI/IMGUI migration assessment.
-- Out of scope: uGUI/Canvas UI (`ugui`), Animator-driven UI animation (`unity-animation`), input device polling and action binding (`unity-input-system`), any gameplay rule or state decision behind the UI (`csharp-engineer`).
+- Out of scope: uGUI/Canvas UI (`ugui`), the test harness a UI test runs inside (`unity-test-framework`), Odin-driven Editor UI (`odin-inspector`), Animator-driven UI animation (`unity-animation`), input device polling and action binding (`unity-input-system`), any gameplay rule or state decision behind the UI (`csharp-engineer`).
 
 ## 6. Output format
 ```

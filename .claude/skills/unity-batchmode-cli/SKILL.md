@@ -9,9 +9,11 @@ description: >
   `Android.bundleVersionCode`, `iOS.buildNumber`, licence activation and
   `-returnlicense`, Unity Hub CLI editor installs from `ProjectVersion.txt`,
   and `Library/` cache reuse. Use when a build must run with no human at the
-  keyboard. Not for: the CI job that calls it (`jenkins-pipeline-authoring`);
-  signing and packaging (`fastlane-mobile-delivery`); the `-runTests` surface
-  (`unity-test-framework`); diagnosing a red run (`ci-pipeline-failure-triage`).
+  keyboard. Not for: the CI job that calls it — `jenkins-pipeline-authoring`;
+  the Addressables content build the entry point must run before the player —
+  `unity-addressables`; signing and packaging — `fastlane-mobile-delivery`;
+  the `-runTests` surface — `unity-test-framework`; diagnosing a red run —
+  `ci-pipeline-failure-triage`.
 ---
 
 # Unity Batchmode CLI — headless builds, exit codes, licensing
@@ -45,6 +47,7 @@ Act as the headless-Unity specialist for the devops track, on behalf of `ci-cd-e
 - Negative trigger: signing, packaging, `.aab`/`.ipa` production and keychain handling — that is `fastlane-mobile-delivery`.
 - Negative trigger: `-runTests`, `-testPlatform`, `-testResults` and the NUnit XML they produce — that surface belongs to `unity-test-framework`; this skill only positions the test stage in the invocation order.
 - Negative trigger: deciding what a red run means and who owns it — that is `ci-pipeline-failure-triage`.
+- Negative trigger: what an Addressables content build produces, which groups and Profile it uses, and when a catalog ships or updates — that is `unity-addressables`; on a project using the package the entry point runs that build before `BuildPlayer`, and a player built without it ships against whatever content was last built locally.
 - Negative trigger: player settings, quality settings and stripping level as project decisions — those are `unity-engineer`'s, even when a build script reads them.
 
 ## 4. How to use this skill
@@ -65,7 +68,7 @@ Act as the headless-Unity specialist for the devops track, on behalf of `ci-cd-e
 - Provisioning an editor version and a licence on an ephemeral agent, and returning the licence afterwards.
 - Deciding what a job caches between runs and when a clean import is mandatory.
 - Extracting a verdict and the surrounding evidence from a batchmode log.
-- Out of scope: the CI job definition (`jenkins-pipeline-authoring`); signing and packaging (`fastlane-mobile-delivery`); test authoring and the `-runTests` surface (`unity-test-framework`); uploading the artifact (`firebase-app-distribution`); failure routing (`ci-pipeline-failure-triage`).
+- Out of scope: the CI job definition (`jenkins-pipeline-authoring`); the Addressables content build the entry point invokes (`unity-addressables`); signing and packaging (`fastlane-mobile-delivery`); test authoring and the `-runTests` surface (`unity-test-framework`); uploading the artifact (`firebase-app-distribution`); failure routing (`ci-pipeline-failure-triage`).
 
 ## 6. Output format
 ```

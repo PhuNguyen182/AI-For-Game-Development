@@ -10,12 +10,12 @@ description: >
   `ICollisionEventsJob`, `ITriggerEventsJob`, `IBodyPairsJob`, `IContactsJob`,
   `IJacobiansJob`; authoring, runtime body creation, multiple worlds, ghost
   collisions. Use when entities must simulate or be queried.
-  Not for: built-in PhysX bodies (`unity-3d-physics`); built-in Box2D
-  (`unity-2d-physics`); the ECS-adoption decision and general entity design
-  (`unity-ecs-architecture`); scheduling (`unity-job-system-and-burst`);
-  container choice (`unity-collections`); `float3` maths (`unity-mathematics`);
-  Burst tuning (`unity-burst-compiler`); prediction protocols
-  (`netcode-engineer`).
+  Not for: built-in PhysX bodies — `unity-3d-physics`; built-in Box2D —
+  `unity-2d-physics`; the ECS-adoption decision and general entity design —
+  `unity-ecs-architecture`; scheduling — `unity-job-system-and-burst`;
+  container choice — `unity-collections`; `float3` maths — `unity-mathematics`;
+  Burst tuning — `unity-burst-compiler`; prediction protocols —
+  `netcode-engineer`.
 ---
 
 # Unity Physics — Deterministic ECS Rigid Bodies & Spatial Queries

@@ -3,18 +3,20 @@ name: unity-job-system-and-burst
 description: >
   Technique for moving measured, CPU-bound bulk work onto worker threads with
   Unity's C# Job System: `IJob`, `IJobFor`, `IJobParallelFor`,
-  `IJobParallelForTransform`, `Schedule`/`ScheduleParallel`, `JobHandle`
+  `IJobParallelForTransform`, `Schedule` and `ScheduleParallel`, `JobHandle`
   chaining, `CombineDependencies`, batch sizing, `NativeArray` and
-  `NativeContainer` safety, `[ReadOnly]`, `Allocator.Temp`/`TempJob`/`Persistent`
-  lifetime and disposal, plus applying and verifying `[BurstCompile]`.
+  `NativeContainer` safety, ReadOnly, `Allocator.Temp`, `TempJob`, and
+  `Persistent` lifetime and disposal, plus applying BurstCompile.
   Use when a Profiler capture already shows a parallelizable main-thread
-  bottleneck, or when a job races, leaks, or stalls.
-  Not for: whether to parallelize at all (`tech-lead-performance`); the capture
-  that proves it (`unity-profiler-diagnostics`); HPC# subset, `FloatMode`,
-  intrinsics, AOT (`unity-burst-compiler`); container type choice
-  (`unity-collections`); entity, system, and query design
-  (`unity-ecs-architecture`); which physics job interface fits (`unity-physics`);
-  `float3` maths (`unity-mathematics`); GPU-driven effects (`compute-shader-vfx`).
+  bottleneck, or when a job races, leaks, or stalls. Not for: whether to
+  parallelize — `tech-lead-performance`; the capture proving it —
+  `unity-profiler-diagnostics`; HPC# subset, `FloatMode`, intrinsics, and AOT
+  — `unity-burst-compiler`; container type choice — `unity-collections`;
+  entity, system, and query design — `unity-ecs-architecture`; which physics
+  job interface fits — `unity-physics`; `float3` maths —
+  `unity-mathematics`; GPU-driven effects — `compute-shader-vfx`;
+  off-main-thread work not blittable per-element data such as `Task`, `async`,
+  `lock`, or a producer-consumer queue — `dotnet-concurrency-and-async`.
 ---
 
 # Unity Job System & Burst — Multithreaded CPU-Bound Work
@@ -52,6 +54,7 @@ Act as the Job System and Burst specialist for the client track — the tool rea
 - Negative trigger: which physics job interface a task calls for (`ICollisionEventsJob`, `IContactsJob`, `IJacobiansJob`) — that is `unity-physics`; scheduling whichever one is chosen stays here.
 - Negative trigger: `Unity.Mathematics` type or function choice — that is `unity-mathematics`.
 - Negative trigger: a GPU-driven visual effect — that is `compute-shader-vfx`, despite both being "many elements in parallel".
+- Negative trigger: off-main-thread work that is not blittable per-element data over native memory — parsing, I/O, a producer/consumer pipeline, anything reached through `Task`, `async`, or a `lock` — that is `dotnet-concurrency-and-async`; a capture proves the main thread is busy, never that the work can become a job.
 - Negative trigger: an ordinary hot-path fix — a per-frame allocation, a missing pool, a wrong collection — needs no threading at all; apply `performance-and-algorithms.md`'s baseline directly.
 
 ## 4. How to use this skill
@@ -75,7 +78,7 @@ Act as the Job System and Burst specialist for the client track — the tool rea
 - Dependency wiring via `JobHandle` and `CombineDependencies`, replacing implicit ordering assumptions.
 - Applying `[BurstCompile]` and confirming compilation in the Burst Inspector.
 - Diagnosing races, leaks, discarded results, `WaitForJobGroup` stalls, and run-to-run nondeterminism.
-- Out of scope: whether the bottleneck warrants threading (`tech-lead-performance`); the Profiler capture that proves it (`unity-profiler-diagnostics`); Burst compilation tuning (`unity-burst-compiler`); container type selection (`unity-collections`); ECS modeling (`unity-ecs-architecture`); physics job interface choice (`unity-physics`); maths types (`unity-mathematics`); GPU-driven effects (`compute-shader-vfx`).
+- Out of scope: whether the bottleneck warrants threading (`tech-lead-performance`); the Profiler capture that proves it (`unity-profiler-diagnostics`); Burst compilation tuning (`unity-burst-compiler`); container type selection (`unity-collections`); ECS modeling (`unity-ecs-architecture`); physics job interface choice (`unity-physics`); maths types (`unity-mathematics`); GPU-driven effects (`compute-shader-vfx`); managed or `Task`-based concurrency outside the Job System (`dotnet-concurrency-and-async`).
 
 ## 6. Output format
 ```

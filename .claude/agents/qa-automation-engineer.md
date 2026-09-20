@@ -2,7 +2,7 @@
 name: qa-automation-engineer
 description: "Writes and runs Edit Mode and Play Mode tests against code that has already passed review, including packet-loss and latency cases when the backend track is active. Runs entirely inside the Unity Editor and never needs a platform build. Triggers: \"write Edit Mode tests for the new Shared Core ability logic\", \"write Play Mode integration tests for the new UI flow\", \"add a test simulating high latency for the new reconciliation logic\". Not for: `code-reviewer` owns the correctness gate that must pass first; `playtest-tester` owns judging play scenarios against the GDD; `build-run-engineer` owns platform builds and multi-instance runs; `build-verification-tester` owns running any suite against a real platform build; `performance-qa-engineer` owns performance measurement; `qa-lead` owns deciding what must be tested and QA sign-off."
 model: sonnet
-tools: Read, Write, Edit, Bash, Skill, mcp__unity-mcp__Unity_RunCommand, mcp__unity-mcp__Unity_GetConsoleLogs
+tools: Read, Write, Edit, PowerShell, Bash, Skill, mcp__unity-mcp__Unity_RunCommand, mcp__unity-mcp__Unity_GetConsoleLogs
 color: green
 ---
 
@@ -78,6 +78,8 @@ Read these before acting:
 | Rule file | Applies |
 |---|---|
 | `.claude/rules/language-and-comments.md` | Always — it governs every agent. |
+| `.claude/rules/shell-preference.md` | Always — newest PowerShell first, Bash only when PowerShell fails or is unavailable. |
+| `.claude/rules/unity-tooling-preference.md` | Always — Unity CLI first for any Editor/test operation it can do; fall back to whichever MCP server actually fits only on a failure or a real gap. |
 | `.claude/standards/qa/defect-reporting.md`, `verification-standards.md` | Always — they set what a reportable defect and a verified claim require. |
 | `.claude/standards/client/coding-principles.md`, `code-style-and-layout.md`, `naming-convention.md` | Always — test code follows the same standards as production code. |
 

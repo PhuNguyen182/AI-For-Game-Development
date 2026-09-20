@@ -1,14 +1,19 @@
 ---
 name: engineering-standard-adr-authoring
 description: >
-  Lightweight Architecture Decision Record format for recording a cross-project
-  engineering standard the CTO sets — ADR number, Status
-  (Proposed/Active/Superseded by ADR-n), Context, Decision, Applies-to scope
-  with a point-forward date, and rejected alternatives — so the standard is a
-  durable, checkable artifact rather than prose buried in one Technical
-  Decision. Use whenever a Technical Decision's "Standard set" field is
-  non-empty, or when an existing standard is amended or superseded.
-  Not for: feature-level Tech Specs (`technical-architect`), per-submission Implementation Notes (individual engineers), feature README files (`feature-documentation.md` rule), making the decision itself (the domain CTO skills), the scoring rubric (`tco-reversibility-scoring`).
+  Lightweight Architecture Decision Record format for recording a
+  cross-project engineering standard the CTO sets — ADR number, Status
+  such as Proposed, Active, or Superseded by ADR-n, Context, Decision,
+  Applies-to scope with a point-forward date, and rejected alternatives
+  — so the standard is a durable, checkable artifact rather than prose
+  buried in one Technical Decision. Use whenever a Technical Decision's
+  Standard-set field is non-empty, or when an existing standard is
+  amended or superseded. Not for: feature-level Tech Specs, owned by
+  `technical-architect`; per-submission Implementation Notes, owned by
+  individual engineers; feature README files, owned by the
+  `feature-documentation.md` rule; making the decision itself, owned by
+  the domain CTO skills; and the scoring rubric, owned by
+  `tco-reversibility-scoring`.
 ---
 
 # Engineering Standard ADR Authoring — recording a cross-project standard
@@ -25,7 +30,7 @@ Act as a CTO who treats standards as versioned artifacts with a history, and who
 - A repeated review or escalation pattern shows a standard was assumed but never written down anywhere checkable.
 - Negative trigger: a single feature's technical design — that is a Tech Spec, owned by `technical-architect`.
 - Negative trigger: the per-submission handoff note an engineer writes for Code Reviewer — a lighter, point-in-time artifact, not a durable standard.
-- Negative trigger: the durable in-repo documentation a completed Complex-tier feature owes — that is the README governed by the `feature-documentation.md` rule.
+- Negative trigger: the durable in-repo documentation a feature owes on completion from A3 upward — that is the README governed by the `feature-documentation.md` rule.
 - Negative trigger: making the underlying technology choice — that belongs to the domain CTO skill; this skill records what was already decided.
 - Negative trigger: the cost/reversibility arithmetic behind that choice — that rubric is `tco-reversibility-scoring`.
 

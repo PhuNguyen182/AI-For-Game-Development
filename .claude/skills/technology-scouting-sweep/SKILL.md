@@ -4,15 +4,16 @@ description: >
   Tiered external search discipline for a capability the project lacks.
   Tier 1 official docs — Unity Manual, Unity Scripting Reference, Microsoft
   Learn, vendor docs, version-pinned. Tier 2 maintained GitHub repositories,
-  filtered with `stars:`, `pushed:`, `archived:`, `language:` qualifiers plus
-  release and issue history, and OpenUPM registry presence. Tier 3
+  filtered with `stars:`, `pushed:`, `archived:`, `language:` qualifiers
+  plus release and issue history, and OpenUPM registry presence. Tier 3
   established forums — Unity Discussions, Stack Overflow, GameDev Stack
   Exchange — where visible consensus exists. Use when building a candidate
   set or judging a sweep saturated. Not for: grading a source's
-  trustworthiness (`source-credibility-grading`), screening candidates
-  against project constraints (`practical-fit-screening`), ranking survivors
-  into one recommendation (`solution-comparison-report`), measuring a
-  candidate (`rd-engineer`).
+  trustworthiness, owned by `source-credibility-grading`; screening
+  candidates against project constraints, owned by
+  `practical-fit-screening`; ranking survivors into one recommendation,
+  owned by `solution-comparison-report`; measuring a candidate, owned by
+  `rd-engineer`.
 ---
 
 # Technology Scouting Sweep — finding candidate solutions in tiered source order

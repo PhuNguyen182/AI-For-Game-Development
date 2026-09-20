@@ -4,13 +4,13 @@ description: >
   Technique for Unity's native `Camera` component and plain `Transform` camera
   scripting: perspective and orthographic projection, vertical field of view
   and aspect behaviour, physical camera and gate fit, clip planes and depth
-  precision, culling masks and per-layer cull distances, camera depth and
-  clear flags, viewport rects for split screen, `RenderTexture` output, world,
-  screen and viewport conversions, `ScreenPointToRay` picking, and hand-rolled
-  follow, bounds clamp and shake. Use when a `Camera` must be configured or
-  scripted directly. Not for: Cinemachine (`unity-cinemachine-authoring`); URP
-  camera stacking and renderer settings (`unity-urp-rendering`); post-process
-  effects (`unity-post-processing`); pointer input (`unity-input-system`).
+  precision, culling masks and per-layer cull distances, camera depth and clear
+  flags, viewport rects for split screen, `RenderTexture` output, world, screen
+  and viewport conversions, `ScreenPointToRay` picking, and hand-rolled follow,
+  bounds clamp and shake. Use when a `Camera` must be configured or scripted
+  directly. Not for: Cinemachine — `unity-cinemachine-authoring`; URP camera
+  stacking and renderer settings — `unity-urp-rendering`; post-process
+  effects — `unity-post-processing`; pointer input — `unity-input-system`.
 ---
 
 # Unity Camera Fundamentals — The Camera Component and Transform-Level Scripting

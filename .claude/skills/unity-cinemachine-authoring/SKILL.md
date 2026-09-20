@@ -4,14 +4,14 @@ description: >
   Technique for authoring camera behaviour with Cinemachine 3: the
   `CinemachineBrain` that drives the render camera, `CinemachineCamera`
   composed from a Position Control and Rotation Control pair, priority and
-  blend resolution, `CinemachineConfiner2D` and `CinemachineConfiner3D`
-  bounds, `CinemachineDeoccluder` obstruction handling, Impulse sources and
-  listeners for shake, `CinemachineTargetGroup` with group framing,
-  State-Driven and ClearShot selection, Timeline shot clips, and Channels for
-  split screen. Use for any `Cinemachine` component or API. Not for: plain
-  `Camera` and `Transform` scripting (`unity-camera-fundamentals`); the
-  Animator a State-Driven camera reads (`unity-animation`); axis input
-  (`unity-input-system`); screen effects (`unity-post-processing`).
+  blend resolution, `CinemachineConfiner2D` and `CinemachineConfiner3D` bounds,
+  `CinemachineDeoccluder` obstruction handling, Impulse sources and listeners
+  for shake, `CinemachineTargetGroup` with group framing, State-Driven and
+  ClearShot selection, Timeline shot clips, and Channels for split screen. Use
+  for any `Cinemachine` component or API. Not for: plain `Camera` and
+  `Transform` scripting — `unity-camera-fundamentals`; the Animator a
+  State-Driven camera reads — `unity-animation`; axis input —
+  `unity-input-system`; screen effects — `unity-post-processing`.
 ---
 
 # Unity Cinemachine Authoring — Procedural Camera Behaviour on Cinemachine 3

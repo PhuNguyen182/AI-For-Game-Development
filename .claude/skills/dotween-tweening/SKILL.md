@@ -1,30 +1,23 @@
 ---
 name: dotween-tweening
 description: >
-  DOTween — the chained, component-shortcut Unity tweening engine:
-  `DOTween.To()` (generic getter/setter tweens), Shortcuts
-  (`transform.DOMove`, `material.DOColor`, and the full uGUI/TextMeshPro
-  shortcut catalogue), `Sequence` (`Append`/`Join`/`Insert`/`Prepend`/
-  `AppendCallback`), `Set-` chain methods (`SetEase`, `SetLoops`, `SetId`,
-  `SetTarget`, `SetAutoKill`, `SetRecyclable`, `SetRelative`, `SetUpdate`),
-  chained callbacks (`OnComplete`/`OnKill`/`OnUpdate`/etc.), instance and
-  filtered-static control (`Play`/`Pause`/`Kill`/`DOTween.KillAll`),
-  `DOPath`/`DOLocalPath` path tweens, Safe Mode and recycling, and both
-  native (`AsyncWaitForCompletion`, `WaitForCompletion` coroutine waits)
-  and UniTask-integrated (`UNITASK_DOTWEEN_SUPPORT`, `.ToUniTask()`-style
-  await/`WithCancellation`) async support. Use for any code-authored
-  interpolation of a value over time via DOTween specifically — including
-  its uGUI/TextMeshPro shortcuts and its UniTask integration. This project
-  also maintains a `litmotion-tweening` skill for the same job with a
-  different (zero-allocation) engine; which one governs new work is a
-  standing per-module/project decision, never assumed by this skill alone
-  — see its own `coexistence-and-migration.md`. Not for: LitMotion's own
-  API surface (`litmotion-tweening`), general async orchestration beyond
-  awaiting a tween (`unitask-async-programming`), uGUI component
-  setup/layout/event-wiring beyond animating an existing component
-  (`ugui`), reactive event streams (`r3-reactive-extensions`), shader/
-  particle VFX (`vfx-particle-authoring`), physics-driven movement not
-  expressed as a tween (`unity-3d-physics`/`unity-2d-physics`).
+  DOTween is Unity's chained, component-shortcut tweening engine —
+  `DOTween.To` generic tweens, Shortcuts like `transform.DOMove`,
+  `Sequence` chaining via `Append`/`Join`/`Insert`/`Prepend`, the `Set-`
+  chain such as `SetEase`/`SetLoops`/`SetAutoKill`, `OnComplete`/`OnKill`
+  callbacks, `Play`/`Pause`/`Kill`/`DOTween.KillAll` control, `DOPath`,
+  Safe Mode and recycling, and awaiting completion via
+  `AsyncWaitForCompletion` or UniTask. Use for code-authored
+  interpolation via DOTween specifically. This project also maintains
+  `litmotion-tweening` for the same job with a different,
+  zero-allocation engine; which governs new work is a per-module
+  decision, never assumed here — see `coexistence-and-migration.md`.
+  Not for: LitMotion's API — `litmotion-tweening`; async orchestration
+  beyond awaiting a tween — `unitask-async-programming`; uGUI
+  setup/event wiring beyond the animated component — `ugui`; reactive
+  streams — `r3-reactive-extensions`; shader/particle VFX —
+  `vfx-particle-authoring`; and physics-driven movement not expressed
+  as a tween — `unity-3d-physics`/`unity-2d-physics`.
 ---
 
 # DOTween — Chained Tweening for Unity

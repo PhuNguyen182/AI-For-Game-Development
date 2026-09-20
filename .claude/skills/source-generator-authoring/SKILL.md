@@ -1,18 +1,19 @@
 ---
 name: source-generator-authoring
 description: >
-  C# Incremental Source Generators (`IIncrementalGenerator`) that replace
-  mechanically repetitive hand-written code in the Shared Core — snapshot and
-  restore codecs for rollback, deterministic equality and hashing, ability or
-  effect registries that displace reflection-based discovery — emitted at
-  compile time from `partial` declarations and marker attributes, via
-  `SyntaxProvider.ForAttributeWithMetadataName`, `context.AddSource`,
-  `netstandard2.0` generator assemblies and Unity's `RoslynAnalyzer` asset
-  label. Use it once a structurally derivable pattern repeats across types and
-  copying it by hand has started to drift. Not for: enforcing a rule or
-  reporting a violation (`roslyn-analyzer-codefix`), the formatter MemoryPack
-  already generates (`memorypack-serialization`), a one-off with no repetition,
-  which YAGNI forbids (`coding-principles.md`).
+  C# Incremental Source Generators, via `IIncrementalGenerator`, that
+  replace mechanically repetitive hand-written code in the Shared Core —
+  snapshot and restore codecs for rollback, deterministic equality and
+  hashing, ability or effect registries that displace reflection-based
+  discovery — emitted at compile time from `partial` declarations and
+  marker attributes, via `SyntaxProvider.ForAttributeWithMetadataName`,
+  `context.AddSource`, `netstandard2.0` generator assemblies and Unity's
+  `RoslynAnalyzer` asset label. Use once a structurally derivable pattern
+  repeats across types and copying it by hand has started to drift. Not
+  for: enforcing a rule or reporting a violation, owned by
+  `roslyn-analyzer-codefix`; the formatter MemoryPack already generates,
+  owned by `memorypack-serialization`; a one-off with no repetition, which
+  YAGNI forbids per `coding-principles.md`.
 ---
 
 # Source Generator Authoring — Compile-Time Code for the Shared Core
