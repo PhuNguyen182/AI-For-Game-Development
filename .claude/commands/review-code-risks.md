@@ -1,7 +1,7 @@
 ---
 description: Static review of C#/Unity code for runtime performance, memory efficiency, and hidden crash/ANR risk — concise report, fix direction only, never edits code
 argument-hint: "[file-or-directory-path...]"
-allowed-tools: Read, Grep, Glob, Bash, Skill
+allowed-tools: Powershell, Read, Grep, Glob, Bash, Skill
 ---
 
 # Review code for performance, memory, and hidden crash/ANR risk
