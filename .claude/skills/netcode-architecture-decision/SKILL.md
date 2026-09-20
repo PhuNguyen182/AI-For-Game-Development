@@ -3,13 +3,16 @@ name: netcode-architecture-decision
 description: >
   Build-vs-license framework for the multiplayer netcode foundation — Mirror,
   FishNet, Photon Fusion, Photon Quantum, Unity Netcode for GameObjects, or
-  custom on Unity Transport/LiteNetLib — and for the synchronization model
-  itself: client-server authoritative prediction/reconciliation, deterministic
-  lockstep, or GGPO-style rollback. Keyed to genre latency and determinism
-  needs, CCU-based pricing, and committed platform reach. Use when asked
-  whether to build custom netcode or license a framework, or to fix the sync
-  model before protocol work starts.
-  Not for: reconciliation protocol, message format, tick rate (`netcode-engineer`), server hosting (`backend-build-vs-buy`), cheat posture (`anti-cheat-strategy`), the scoring rubric (`tco-reversibility-scoring`), feasibility spikes (`rd-engineer`).
+  custom on Unity Transport or LiteNetLib — and for the synchronization
+  model itself: client-server authoritative prediction and reconciliation,
+  deterministic lockstep, or GGPO-style rollback. Keyed to genre latency and
+  determinism needs, CCU-based pricing, and committed platform reach. Use
+  when asked whether to build custom netcode or license a framework, or to
+  fix the sync model before protocol work starts. Not for: reconciliation
+  protocol, message format and tick rate, owned by `netcode-engineer`;
+  server hosting, owned by `backend-build-vs-buy`; cheat posture, owned by
+  `anti-cheat-strategy`; the scoring rubric, owned by
+  `tco-reversibility-scoring`; feasibility spikes, owned by `rd-engineer`.
 ---
 
 # Netcode Architecture Decision — foundation and synchronization model

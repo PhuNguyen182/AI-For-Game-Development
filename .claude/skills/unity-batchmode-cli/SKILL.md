@@ -9,10 +9,11 @@ description: >
   `Android.bundleVersionCode`, `iOS.buildNumber`, licence activation and
   `-returnlicense`, Unity Hub CLI editor installs from `ProjectVersion.txt`,
   and `Library/` cache reuse. Use when a build must run with no human at the
-  keyboard. Not for: the CI job that calls it (`jenkins-pipeline-authoring`);
-  the Addressables content build the entry point must run before the player
-  (`unity-addressables`); signing and packaging (`fastlane-mobile-delivery`); the `-runTests` surface
-  (`unity-test-framework`); diagnosing a red run (`ci-pipeline-failure-triage`).
+  keyboard. Not for: the CI job that calls it — `jenkins-pipeline-authoring`;
+  the Addressables content build the entry point must run before the player —
+  `unity-addressables`; signing and packaging — `fastlane-mobile-delivery`;
+  the `-runTests` surface — `unity-test-framework`; diagnosing a red run —
+  `ci-pipeline-failure-triage`.
 ---
 
 # Unity Batchmode CLI — headless builds, exit codes, licensing

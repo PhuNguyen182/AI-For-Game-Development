@@ -2,16 +2,18 @@
 name: jenkins-pipeline-authoring
 description: >
   Technique for writing a Unity project's `Jenkinsfile` as declarative
-  pipeline code — `pipeline`, `agent { label }`, `stages`, `when`,
-  `environment { credentials() }`, `withCredentials`, `parameters`,
-  `options { timeout, disableConcurrentBuilds, buildDiscarder, timestamps }`,
-  `lock` for the single-editor resource, `post { always, failure, cleanup }`,
-  `junit`, `archiveArtifacts`, `stash`/`unstash`, `parallel`, `input` gates,
-  `triggers { cron, pollSCM }`, multibranch `env.BRANCH_NAME`, shared
-  libraries in `vars/`, and `cleanWs`. Not for: the Unity command line a
-  stage runs (`unity-batchmode-cli`); signing and packaging
-  (`fastlane-mobile-delivery`); the upload step (`firebase-app-distribution`);
-  diagnosing a red run (`ci-pipeline-failure-triage`).
+  pipeline code — `pipeline`, an `agent` scoped by label, `stages`,
+  `when`, the `environment` block's credentials, `withCredentials`,
+  `parameters`, the `options` block for timeout, disableConcurrentBuilds,
+  buildDiscarder, and timestamps, `lock` for the single-editor resource,
+  the `post` block's always/failure/cleanup conditions, `junit`,
+  `archiveArtifacts`, `stash`/`unstash`, `parallel`, `input` gates,
+  `triggers` such as cron and pollSCM, multibranch `env.BRANCH_NAME`,
+  shared libraries in `vars/`, and `cleanWs`. Not for: the Unity command
+  line a stage runs, owned by `unity-batchmode-cli`; signing and
+  packaging, owned by `fastlane-mobile-delivery`; the upload step, owned
+  by `firebase-app-distribution`; and diagnosing a red run, owned by
+  `ci-pipeline-failure-triage`.
 ---
 
 # Jenkins Pipeline Authoring — declarative pipelines for a Unity project

@@ -6,12 +6,13 @@ description: >
   README, source, release notes and LICENSE file, T3 an established forum
   answer with visible consensus, T4 rejected — content farms, undated
   tutorials, AI-generated listicles, marketing pages. Adds staleness checks
-  against the project's engine version, `[Obsolete]` API detection, and a
-  conflict rule that settles docs versus forum by claim type, not upvotes.
-  Use before any claim enters a report. Not for: finding the sources
-  (`technology-scouting-sweep`), testing a candidate against project
-  constraints (`practical-fit-screening`), ranking candidates
-  (`solution-comparison-report`), measuring one (`rd-engineer`).
+  against the project's engine version, Obsolete-attribute API detection,
+  and a conflict rule that settles docs versus forum by claim type, not
+  upvotes. Use before any claim enters a report. Not for: finding the
+  sources, owned by `technology-scouting-sweep`; testing a candidate
+  against project constraints, owned by `practical-fit-screening`; ranking
+  candidates, owned by `solution-comparison-report`; measuring one, owned
+  by `rd-engineer`.
 ---
 
 # Source Credibility Grading — deciding which external claims may be acted on

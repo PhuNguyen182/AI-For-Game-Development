@@ -1,25 +1,26 @@
 ---
 name: litmotion-tweening
 description: >
-  LitMotion — zero-allocation, DOTS-optimized Unity tweening: `LMotion.Create()`,
-  `MotionBuilder<TValue,TOptions,TAdapter>`, `MotionHandle`
-  (`Complete`/`Cancel`/`TryComplete`/`AddTo`/`Preserve`/`PlaybackSpeed`/`Time`),
-  `With-` chain methods (`WithEase`, `WithLoops`, `WithDelay`, `WithScheduler`,
-  `WithOnComplete`), `Bind`/`BindTo*` extensions (Transform, RectTransform,
-  uGUI, TextMeshPro, SpriteRenderer, Material, Camera, Rigidbody), `LSequence`
-  composition, `LMotion.Punch`/`LMotion.Shake`, custom
-  `IMotionAdapter`/`IMotionOptions`, and the Inspector-driven
-  `LitMotion.Animation` package.
-  Use for any code- or Inspector-authored interpolation of a value over time
-  via LitMotion specifically. This project also maintains a `dotween-tweening`
-  skill for the same job with a different engine; which one governs new work is
-  a standing per-module/project decision, never assumed by this skill alone.
-  Not for: DOTween's own API surface (`dotween-tweening`), general reactive
-  streams (`r3-reactive-extensions`), plain async orchestration
-  (`unitask-async-programming`), shader/particle VFX
-  (`vfx-particle-authoring`), physics-driven movement (`unity-3d-physics`),
-  uGUI component construction, layout and event wiring around the component
-  being animated (`ugui`).
+  LitMotion is zero-allocation, DOTS-optimized Unity tweening:
+  `LMotion.Create`, `MotionBuilder<TValue,TOptions,TAdapter>`,
+  `MotionHandle` with
+  `Complete`/`Cancel`/`TryComplete`/`AddTo`/`Preserve`/`PlaybackSpeed`/`Time`,
+  the `With-` chain such as
+  `WithEase`/`WithLoops`/`WithDelay`/`WithScheduler`/`WithOnComplete`,
+  `Bind`/`BindTo*` extensions across Transform, RectTransform, uGUI,
+  TextMeshPro, and other component types, `LSequence` composition,
+  `LMotion.Punch`/`LMotion.Shake`, and the Inspector-driven
+  `LitMotion.Animation` package. Use for code- or Inspector-authored
+  interpolation via LitMotion specifically. This project also maintains
+  `dotween-tweening` for the same job with a different engine; which one
+  governs new work is a standing per-module or per-project decision,
+  never assumed here alone. Not for: DOTween's own API surface, owned by
+  `dotween-tweening`; general reactive streams, owned by
+  `r3-reactive-extensions`; plain async orchestration, owned by
+  `unitask-async-programming`; shader/particle VFX, owned by
+  `vfx-particle-authoring`; physics-driven movement, owned by
+  `unity-3d-physics`; and uGUI construction and event wiring around the
+  animated component, owned by `ugui`.
 ---
 
 # LitMotion — Zero-Allocation Tweening for Unity

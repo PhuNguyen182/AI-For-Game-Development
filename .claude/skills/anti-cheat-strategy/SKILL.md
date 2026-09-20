@@ -3,13 +3,17 @@ name: anti-cheat-strategy
 description: >
   Strategic framework for choosing a competitive game's anti-cheat posture
   across four tiers — server authority against the Shared Core, server-side
-  statistical/heuristic detection, user-mode client anti-tamper, and
-  kernel-level drivers (Easy Anti-Cheat, BattlEye, Vanguard) — weighing
-  cheating stakes against Steam Deck/Proton compatibility, console
-  certification, and player-trust cost. Use when asked how much anti-cheat the
-  game needs, or when a repeated exploit escalation turns out to be a posture
-  gap rather than one bug.
-  Not for: writing a specific server-side validation check (`server-authoritative-engineer`), sync model choice (`netcode-architecture-decision`), the scoring rubric (`tco-reversibility-scoring`), platform-expansion cost (`cross-platform-expansion-assessment`).
+  statistical or heuristic detection, user-mode client anti-tamper, and
+  kernel-level drivers such as Easy Anti-Cheat, BattlEye, or Vanguard —
+  weighing cheating stakes against Steam Deck and Proton compatibility,
+  console certification, and player-trust cost. Use when asked how much
+  anti-cheat the game needs, or when a repeated exploit escalation turns
+  out to be a posture gap rather than one bug. Not for: writing a
+  specific server-side validation check, owned by
+  `server-authoritative-engineer`; sync model choice, owned by
+  `netcode-architecture-decision`; the scoring rubric in
+  `tco-reversibility-scoring`; platform-expansion cost, owned by
+  `cross-platform-expansion-assessment`.
 ---
 
 # Anti-Cheat Strategy — posture tier for a competitive game

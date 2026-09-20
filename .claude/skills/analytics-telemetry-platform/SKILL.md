@@ -1,19 +1,20 @@
 ---
 name: analytics-telemetry-platform
 description: >
-  Build-vs-buy framework for the analytics/telemetry pipeline — a managed
-  platform (Firebase Analytics), a managed platform with raw export (Firebase
-  plus BigQuery), or a custom event pipeline into a warehouse the team owns —
-  decided on data portability, COPPA/GDPR exposure, and whether crash/ANR
-  telemetry is inside or outside the same vendor commitment. Use when
-  choosing the analytics stack, a domain with no other owner on the team.
-  Not for: event instrumentation once a platform is chosen
-  (`tech-lead-sdk-platform`), reading results or choosing metrics
-  (`producer`, `advisor`), production crash triage
-  (`crash-anr-investigator`), the scoring rubric
-  (`tco-reversibility-scoring`), player-data persistence
-  (`backend-build-vs-buy`), remote-config cadence
-  (`live-ops-content-pipeline`).
+  Build-vs-buy framework for the analytics and telemetry pipeline — a
+  managed platform such as Firebase Analytics, a managed platform with
+  raw export such as Firebase plus BigQuery, or a custom event pipeline
+  into a warehouse the team owns — decided on data portability, COPPA
+  and GDPR exposure, and whether crash and ANR telemetry sits inside or
+  outside the same vendor commitment. Use when choosing the analytics
+  stack, a domain with no other owner on the team. Not for: event
+  instrumentation once a platform is chosen, owned by
+  `tech-lead-sdk-platform`; reading results or choosing metrics, owned
+  by `producer` and `advisor`; production crash triage, owned by
+  `crash-anr-investigator`; the scoring rubric in
+  `tco-reversibility-scoring`; player-data persistence, owned by
+  `backend-build-vs-buy`; remote-config cadence, owned by
+  `live-ops-content-pipeline`.
 ---
 
 # Analytics / Telemetry Platform — pipeline build-vs-buy decision

@@ -1,30 +1,20 @@
 ---
 name: ugui
 description: >
-  Unity UI (uGUI) technique — the GameObject-based `Canvas`/`RectTransform`
-  runtime UI system (`UnityEngine.UI`, `UnityEngine.EventSystems`, and
-  TextMeshPro's `TMPro`): Canvas render
-  modes and sorting, `CanvasScaler` scale modes, `CanvasGroup`,
-  `RectTransform` anchors/pivot, Auto Layout (`LayoutGroup`,
-  `ContentSizeFitter`, `LayoutElement`, `AspectRatioFitter`), visual
-  components (`Image`, `RawImage`, legacy `Text`, `Mask`/`RectMask2D`,
-  Shadow/Outline), interaction components (`Selectable`, `Button`,
-  `Toggle`, `Slider`, `Scrollbar`, `Dropdown`, `InputField`, `ScrollRect`)
-  and their Color
-  Tint/Sprite Swap/Animation transitions, the `EventSystem`/Raycaster/
-  Input Module pipeline, TextMeshPro UI text (`TMP_Text`, `TMP_InputField`,
-  `TMP_Dropdown`, rich text tags, Font Asset Creator), the UI
-  (Canvas) Profiler module and batching rules, and extending the system
-  (`Graphic`, custom raycasters/input modules). Use for building or debugging any
-  runtime Canvas-based HUD, menu, or diegetic/world-space UI. Not for:
-  UI Toolkit/`UIDocument` screens (`ui-toolkit`), Animator clips or state
-  machines behind a UI transition beyond wiring the Selectable Animation
-  mode itself (`unity-animation`), input device polling and
-  `.inputactions` authoring (`unity-input-system` — this skill only
-  consumes the events its `EventSystem` delivers), and any gameplay rule
-  or state decision behind a bound value (`csharp-engineer`), Flexalon
-  box-model layout (`flexalon-layouts`), and recycling very long lists
-  (`osa-optimized-scrollview-adapter`).
+  uGUI technique for the GameObject-based `Canvas`/`RectTransform` runtime
+  system — `UnityEngine.UI`, `UnityEngine.EventSystems`, and TextMeshPro's
+  `TMPro`. Covers Canvas setup and scaling, RectTransform anchoring, Auto
+  Layout, visual and interaction components and their transitions, the
+  EventSystem/Raycaster/Input Module pipeline, TextMeshPro UI text, UI
+  Profiler batching, and extending the system with custom `Graphic`,
+  raycasters, or input modules. Use for any runtime Canvas-based HUD, menu,
+  or world-space UI. Not for: UI Toolkit's `UIDocument` screens, owned by
+  `ui-toolkit`; Animator clips or state machines beyond the Selectable
+  Animation transition, owned by `unity-animation`; input device polling
+  and `.inputactions` authoring, owned by `unity-input-system`; any
+  gameplay rule behind a bound value, owned by `csharp-engineer`; Flexalon
+  box-model layout, owned by `flexalon-layouts`; and long-list recycling,
+  owned by `osa-optimized-scrollview-adapter`.
 ---
 
 # Unity UI (uGUI) — Canvas, RectTransform, Interaction, TextMeshPro

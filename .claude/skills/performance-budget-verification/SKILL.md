@@ -1,16 +1,16 @@
 ---
 name: performance-budget-verification
 description: >
-  Turn profiler numbers into a defensible pass or fail — frame-time budgets in
-  milliseconds per target device tier, GC allocation per frame, memory
+  Turn profiler numbers into a defensible pass or fail — frame-time budgets
+  in milliseconds per target device tier, GC allocation per frame, memory
   ceilings, draw-call and SetPass counts. Covers warm-up frame discard,
   repeated runs and spread reporting, separating a real regression from
   run-to-run noise, thermal throttling on sustained mobile runs, and why an
   Editor measurement never satisfies a device claim. Use when a measurement
-  needs a verdict rather than a number. Not for: taking the measurement
-  (`unity-profiler-diagnostics`); choosing or writing the fix
-  (`unity-engineer`, `tech-lead-performance`); allocation asserted as a test
-  gate (`unity-test-framework`).
+  needs a verdict rather than a number. Not for: taking the measurement,
+  owned by `unity-profiler-diagnostics`; choosing or writing the fix, owned
+  by `unity-engineer` and `tech-lead-performance`; allocation asserted as a
+  test gate, owned by `unity-test-framework`.
 ---
 
 # Performance Budget Verification — from a number to a verdict

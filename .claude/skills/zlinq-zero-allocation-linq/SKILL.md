@@ -1,15 +1,18 @@
 ---
 name: zlinq-zero-allocation-linq
 description: >
-  ZLinq — allocation-free LINQ: `.AsValueEnumerable()` opening a chain of
-  struct-based `ValueEnumerable<T>` operators (`Where`, `Select`, `OrderBy`,
-  `Sum`, `Any`, `FirstOrDefault`, `Aggregate`) over a concrete `List<T>`,
-  array, `Span<T>`, or `Dictionary<TKey,TValue>`, plus `.ToArray()`/`.ToList()`
-  materialization. No `UnityEngine` dependency, so it works in `Game.Core.*`
-  and `Game.Client.*`. Use to satisfy the "never LINQ in a hot path" rule when
-  a query chain's readability is still wanted inside `Update()`,
-  `FixedUpdate()`, or per-tick Core evaluation.
-  Not for: outside a hot path, where `System.Linq` is already permitted (`coding-principles.md`), data-structure choice (`unity-collections`), Burst job bodies (`unity-job-system-and-burst`), string building (`zstring-zero-allocation-strings`).
+  ZLinq — allocation-free LINQ: `.AsValueEnumerable` opening a chain of
+  struct-based `ValueEnumerable<T>` operators such as `Where`, `Select`,
+  `OrderBy`, `Sum`, `Any`, `FirstOrDefault`, `Aggregate`, over a concrete
+  `List<T>`, array, `Span<T>`, or `Dictionary<TKey,TValue>`, plus
+  `.ToArray`/`.ToList` materialization. No `UnityEngine` dependency, so it
+  works in `Game.Core.*` and `Game.Client.*`. Use to satisfy the "never LINQ
+  in a hot path" rule when a query chain's readability is still wanted
+  inside `Update`, `FixedUpdate`, or per-tick Core evaluation.
+  Not for: outside a hot path, where `System.Linq` is already permitted —
+  `coding-principles.md`; data-structure choice — `unity-collections`;
+  Burst job bodies — `unity-job-system-and-burst`; string building —
+  `zstring-zero-allocation-strings`.
 ---
 
 # ZLinq — Zero-Allocation LINQ

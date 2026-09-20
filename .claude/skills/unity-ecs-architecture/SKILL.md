@@ -5,17 +5,18 @@ description: >
   entities and `IComponentData`, `ISharedComponentData`, `IBufferElementData`,
   `IEnableableComponent`; archetype and 16 KiB chunk layout; authoring
   `MonoBehaviour` plus `Baker<T>` baking; `ISystem` versus `SystemBase` and
-  `SystemGroup` update order; `SystemAPI.Query`, `IJobEntity`, `IJobChunk`
-  iteration; `EntityCommandBuffer` structural batching; `BlobAssetReference<T>`.
-  Use when a feature already approved for ECS needs its entity, system, or query
-  layout designed or diagnosed.
-  Not for: job scheduling, `JobHandle` chains, allocator lifetime
-  (`unity-job-system-and-burst`); HPC# subset, `FloatMode`, intrinsics, AOT
-  (`unity-burst-compiler`); container choice (`unity-collections`);
-  `float3`/`quaternion` maths (`unity-mathematics`); `PhysicsCollider`, colliders,
-  joints (`unity-physics`); `RenderMeshArray`, DOTS Instancing
-  (`unity-entities-graphics`); GPU-driven effects (`compute-shader-vfx`); whether
-  ECS is warranted at all (`tech-lead-performance`).
+  `SystemGroup` update order; `SystemAPI.Query`, `IJobEntity`, and `IJobChunk`
+  iteration; `EntityCommandBuffer` structural batching;
+  `BlobAssetReference<T>`. Use when a feature already approved for ECS needs
+  its entity, system, or query layout designed or diagnosed. Not for: job
+  scheduling, `JobHandle` chains, and allocator lifetime —
+  `unity-job-system-and-burst`; HPC# subset, `FloatMode`, intrinsics, and AOT
+  — `unity-burst-compiler`; container choice — `unity-collections`;
+  `float3` and `quaternion` maths — `unity-mathematics`; `PhysicsCollider`,
+  colliders, and joints — `unity-physics`; `RenderMeshArray` and DOTS
+  Instancing — `unity-entities-graphics`; GPU-driven effects —
+  `compute-shader-vfx`; whether ECS is warranted at all —
+  `tech-lead-performance`.
 ---
 
 # Unity ECS Architecture — Entities, Components, Systems & Queries

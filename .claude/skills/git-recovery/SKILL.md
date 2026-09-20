@@ -2,15 +2,16 @@
 name: git-recovery
 description: >
   Get a repository out of a state its owner did not intend: lost commits, a
-  `rebase`/`merge`/`cherry-pick` stopped midway (`REBASE_HEAD`, `MERGE_HEAD`,
-  `ORIG_HEAD`, `--continue`/`--abort`/`--skip`), a force-push that overwrote
-  work, detached `HEAD` carrying commits, a deleted branch, a corrupt index
-  or object store, `clean -xdf` aftermath, broken submodules, an LFS object
-  missing or corrupt in the store. Uses `git reflog --all`, `git fsck --lost-found`,
-  `git cat-file`. Also covers deliberate rewriting with `rebase -i`,
-  `filter-repo` and `worktree`. Not for: anchoring before a command runs
-  (`git-safety-anchor`), tracing which commit caused a defect
-  (`git-forensics`), Unity scene and `.meta` handling (`git-unity-repo`).
+  `rebase`/`merge`/`cherry-pick` stopped midway and spanning `REBASE_HEAD`,
+  `MERGE_HEAD`, `ORIG_HEAD`, and `--continue`/`--abort`/`--skip`, a
+  force-push that overwrote work, detached `HEAD` carrying commits, a
+  deleted branch, a corrupt index or object store, `clean -xdf` aftermath,
+  broken submodules, an LFS object missing or corrupt in the store. Uses
+  `git reflog --all`, `git fsck --lost-found`, `git cat-file`. Also covers
+  deliberate rewriting with `rebase -i`, `filter-repo`, and `worktree`.
+  Not for: anchoring before a command runs, owned by `git-safety-anchor`;
+  tracing which commit caused a defect, owned by `git-forensics`; and
+  Unity scene and `.meta` handling, owned by `git-unity-repo`.
 ---
 
 # Git Recovery — Unintended States, Lost Work, and Deliberate History Rewriting

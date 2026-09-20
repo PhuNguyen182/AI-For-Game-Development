@@ -4,17 +4,18 @@ description: >
   Technique for authoring shader content — Shader Graph node graphs and
   hand-written HLSL/ShaderLab: stylized and toon shading, custom lighting
   models, screen distortion, dissolve, outline, rim, hologram, decal and
-  material-driven VFX shaders, reusable subgraphs, `UnityPerMaterial` CBUFFER
-  layout for SRP Batcher compatibility, `shader_feature` versus
-  `multi_compile` variant control, and `half` precision on mobile. Use when a
-  shader must be written, fixed, or made to compile.
-  Not for: pipeline choice (`render-pipeline-urp-hdrp`); pass injection
-  (`unity-urp-rendering`, `unity-hdrp-rendering`); Volume plumbing around a
-  full-screen effect (`unity-post-processing`); compute kernels
-  (`compute-shader-vfx`); particle graphs (`vfx-particle-authoring`); the
-  light rig it reads (`unity-lighting`); DOTS Instancing requirements
-  (`unity-entities-graphics`); tuning an unchanged shader
-  (`tech-lead-performance`).
+  material-driven VFX shaders, reusable subgraphs, `UnityPerMaterial`
+  CBUFFER layout for SRP Batcher compatibility, `shader_feature` versus
+  `multi_compile` variant control, and `half` precision on mobile. Use
+  when a shader must be written, fixed, or made to compile. Not for:
+  pipeline choice, owned by `render-pipeline-urp-hdrp`; pass injection,
+  owned by `unity-urp-rendering` and `unity-hdrp-rendering`; Volume
+  plumbing around a full-screen effect, owned by `unity-post-processing`;
+  compute kernels, owned by `compute-shader-vfx`; particle graphs, owned
+  by `vfx-particle-authoring`; the light rig it reads, owned by
+  `unity-lighting`; DOTS Instancing requirements, owned by
+  `unity-entities-graphics`; tuning an unchanged shader, owned by
+  `tech-lead-performance`.
 ---
 
 # Shader Authoring — Shader Graph & HLSL Content

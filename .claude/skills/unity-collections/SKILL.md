@@ -1,22 +1,21 @@
 ---
 name: unity-collections
 description: >
-  Unity Collections package (`Unity.Collections`): picking and using unmanaged
-  containers — `NativeArray`/`NativeSlice`, `NativeList`,
-  `NativeHashMap`/`NativeParallelHashMap`, `NativeHashSet`, `NativeQueue`,
-  `NativeStream`, `NativeReference` — plus
-  `FixedString*Bytes`/`FixedList*Bytes`, `Unsafe-`
-  variants, aliasing, `AsParallelWriter()`, and allocator strategy beyond
-  Temp/TempJob/Persistent (rewindable and custom allocators,
-  `AllocatorHelper`, `CollectionHelper`). Use when choosing a container for a
-  data shape, replacing a managed `List`/`Dictionary`/`string` that must cross
-  into a job, Burst method, or ECS component, or auditing disposal and
-  aliasing. Not for: job scheduling and `JobHandle` chains
-  (`unity-job-system-and-burst`), Burst compilation tuning
-  (`unity-burst-compiler`), ECS component/buffer/query design
-  (`unity-ecs-architecture`), `float3`/`quaternion`/`Random`/`noise`
-  (`unity-mathematics`), physics data types (`unity-physics`),
-  `RenderMeshArray` (`unity-entities-graphics`).
+  Unity Collections package, `Unity.Collections`: picking and using unmanaged
+  containers — `NativeArray`, `NativeSlice`, `NativeList`, `NativeHashMap`,
+  `NativeParallelHashMap`, `NativeHashSet`, `NativeQueue`, `NativeStream`,
+  `NativeReference` — plus `FixedString*Bytes`, `FixedList*Bytes`, `Unsafe-`
+  variants, aliasing, `AsParallelWriter`, and allocator strategy beyond Temp,
+  TempJob, and Persistent, including rewindable and custom allocators,
+  `AllocatorHelper`, and `CollectionHelper`. Use when choosing a container for
+  a data shape, replacing a managed `List`, `Dictionary`, or `string` that must
+  cross into a job, Burst method, or ECS component, or auditing disposal and
+  aliasing. Not for: job scheduling and `JobHandle` chains —
+  `unity-job-system-and-burst`; Burst compilation tuning —
+  `unity-burst-compiler`; ECS component, buffer, and query design —
+  `unity-ecs-architecture`; `float3`, `quaternion`, `Random`, and `noise` —
+  `unity-mathematics`; physics data types — `unity-physics`;
+  `RenderMeshArray` — `unity-entities-graphics`.
 ---
 
 # Unity Collections — Native Containers, FixedString/FixedList & Allocators

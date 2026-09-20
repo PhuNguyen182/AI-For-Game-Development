@@ -2,23 +2,22 @@
 name: spine-animation
 description: >
   spine-unity runtime integration: `SkeletonRenderer`, `SkeletonAnimation`,
-  `SkeletonGraphic`, `SkeletonMecanim`, the
-  `Skeleton`/`AnimationState`/`TrackEntry` API (`SetAnimation`,
-  `AddAnimation`, `SetEmptyAnimation`, `SetSkin`, `SetupPoseSlots`,
-  `FindBone`), `[SpineBone]`/`[SpineSlot]`/`[SpineAnimation]` attributes,
-  followers (`BoneFollower`, `PointFollower`,
-  `BoundingBoxFollower`), `SkeletonUtility`, `SkeletonRootMotion`,
-  `SkeletonRenderSeparator`, `SkeletonRenderTexture`, `SkeletonGhost`,
-  `AtlasUtilities` repacking, the `Spine/*` shader catalog, PMA vs. straight
-  alpha, Spine Timeline tracks, and the on-demand-loading/Addressables
-  extension. Not for: non-Spine Mecanim authoring (`unity-animation`), the
-  native Sprite pipeline (`unity-2d-sprite`), 2D physics simulation
-  (`unity-2d-physics`), the Canvas, `RectTransform` and Layout Group
-  hierarchy a `SkeletonGraphic` sits in (`ugui`), writing new shaders
-  (`shader-authoring`), pipeline
-  configuration (`unity-urp-rendering`), particle VFX
-  (`vfx-particle-authoring`), the general Addressables contract
-  (`unity-addressables`).
+  `SkeletonGraphic`, `SkeletonMecanim`, the `Skeleton`/`AnimationState`/
+  `TrackEntry` API such as `SetAnimation`, `AddAnimation`,
+  `SetEmptyAnimation`, `SetSkin`, `SetupPoseSlots`, `FindBone`, the
+  SpineBone, SpineSlot and SpineAnimation attributes, followers such as
+  `BoneFollower`, `PointFollower`, `BoundingBoxFollower`, `SkeletonUtility`,
+  `SkeletonRootMotion`, `SkeletonRenderSeparator`, `SkeletonRenderTexture`,
+  `SkeletonGhost`, `AtlasUtilities` repacking, the `Spine/*` shader
+  catalog, PMA versus straight alpha, Spine Timeline tracks, and the
+  on-demand-loading/Addressables extension. Not for: non-Spine Mecanim
+  authoring, owned by `unity-animation`; the native Sprite pipeline, owned
+  by `unity-2d-sprite`; 2D physics simulation, owned by `unity-2d-physics`;
+  the Canvas, `RectTransform` and Layout Group hierarchy a
+  `SkeletonGraphic` sits in, owned by `ugui`; writing new shaders, owned by
+  `shader-authoring`; pipeline configuration, owned by
+  `unity-urp-rendering`; particle VFX, owned by `vfx-particle-authoring`;
+  the general Addressables contract, owned by `unity-addressables`.
 ---
 
 # Spine Animation — Unity Runtime Integration

@@ -7,12 +7,13 @@ description: >
   per-quality-level override that can replace it, Shader Graph master-stack
   targets, platform scope, and pipeline migration cost. Use before any
   pipeline-dependent shader, VFX, render pass, or lighting work, and to
-  resolve which pipeline is active.
-  Not for: URP Renderer Features, rendering paths, camera stacking
-  (`unity-urp-rendering`); HDRP Frame Settings, Volumes, Custom Passes
-  (`unity-hdrp-rendering`); shader node or HLSL content (`shader-authoring`);
-  particle graph structure (`vfx-particle-authoring`); compute kernels
-  (`compute-shader-vfx`); entity rendering (`unity-entities-graphics`).
+  resolve which pipeline is active. Not for: URP Renderer Features,
+  rendering paths, and camera stacking, owned by `unity-urp-rendering`;
+  HDRP Frame Settings, Volumes, and Custom Passes, owned by
+  `unity-hdrp-rendering`; shader node or HLSL content, owned by
+  `shader-authoring`; particle graph structure, owned by
+  `vfx-particle-authoring`; compute kernels, owned by `compute-shader-vfx`;
+  entity rendering, owned by `unity-entities-graphics`.
 ---
 
 # Render Pipeline Targeting — URP, HDRP & the Built-in Pipeline

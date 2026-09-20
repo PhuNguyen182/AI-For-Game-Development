@@ -1,17 +1,18 @@
 ---
 name: crash-anr-symbolication
 description: >
-  Gate that confirms a crash or ANR trace is fully symbolicated — every frame
-  resolved to a function, file and line rather than a raw address — and that
-  the uploaded symbols' build ID matches the build that actually crashed.
-  Covers Android native debug symbols and the R8 mapping file, iOS dSYM
-  bundles, and IL2CPP frames on a Unity title. Use immediately after the
-  reporting gate passes, or whenever a trace shows unresolved offsets. Not
-  for: confirming the report source (`crash-anr-reporting-gate`); attributing
-  the fault (`crash-anr-fault-domain-triage`); producing the build or wiring
-  the upload (`build-run-engineer`, `tech-lead-sdk-platform`); Editor stack
-  traces (`qa-automation-engineer`) or faults in a pre-release player build
-  (`build-fault-triage`).
+  Gate that confirms a crash or ANR trace is fully symbolicated — every
+  frame resolved to a function, file and line rather than a raw address —
+  and that the uploaded symbols' build ID matches the build that actually
+  crashed. Covers Android native debug symbols and the R8 mapping file,
+  iOS dSYM bundles, and IL2CPP frames on a Unity title. Use immediately
+  after the reporting gate passes, or whenever a trace shows unresolved
+  offsets. Not for: confirming the report source, owned by
+  `crash-anr-reporting-gate`; attributing the fault, owned by
+  `crash-anr-fault-domain-triage`; producing the build or wiring the
+  upload, owned by `build-run-engineer` and `tech-lead-sdk-platform`;
+  Editor stack traces, owned by `qa-automation-engineer`; or faults in a
+  pre-release player build, owned by `build-fault-triage`.
 ---
 
 # Crash and ANR Symbolication — is this trace readable at all

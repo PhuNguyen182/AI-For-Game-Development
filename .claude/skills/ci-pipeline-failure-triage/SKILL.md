@@ -7,10 +7,11 @@ description: >
   genuine test failures against a test run that never happened, IL2CPP and
   Gradle or Xcode build errors, code-signing and provisioning faults, and
   distribution authentication faults — then routing each to its owner with
-  the log excerpt that proves it. Not for: runtime faults in an artifact that
-  built fine (`build-fault-triage`); authoring the pipeline
-  (`jenkins-pipeline-authoring`); the Unity command line
-  (`unity-batchmode-cli`); released-build crashes (`crash-anr-investigator`).
+  the log excerpt that proves it. Not for: runtime faults in an artifact
+  that built fine, owned by `build-fault-triage`; authoring the pipeline,
+  owned by `jenkins-pipeline-authoring`; the Unity command line, owned by
+  `unity-batchmode-cli`; released-build crashes, owned by
+  `crash-anr-investigator`.
 ---
 
 # CI Pipeline Failure Triage — what a red run actually means

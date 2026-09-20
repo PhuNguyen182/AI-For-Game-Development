@@ -1,32 +1,54 @@
 ---
 name: device-test-walkthrough
 description: >
-  Walk a supplied test-case list (risk-based-test-planning's format) against
-  an already-installed build running on a real Android or iOS device —
-  install and launch the artifact, drive it via the bundled device_playtest.py
-  primitives (tap, swipe, text, keyevent), capture a screenshot and log
-  evidence at each checkpoint, and classify every finding as Defect / Design
-  flaw / As designed. Covers real-device input injection (adb on Android,
-  idb on iOS) and pulling crash/ANR-relevant logs mid-walkthrough. Not for:
-  Editor Play Mode scenarios (`playtest-scenario-execution`); build-only fault
-  diagnosis (`build-fault-triage`); authoring or running the automated NUnit
-  suite (`unity-test-framework`); deciding which test cases are owed
-  (`risk-based-test-planning`); root-causing a crash once one occurs
-  (`crash-anr-investigator`'s `/investigate-device-crash` convention).
+  Walk a supplied test-case list, in `risk-based-test-planning`'s format,
+  against an already-installed build on a real Android or iOS device —
+  install and launch the artifact, drive it via bundled
+  device_playtest.py primitives — tap, swipe, text, keyevent — capture a
+  screenshot and log evidence at each checkpoint, and classify every
+  finding as Defect, Design flaw, or As designed. Covers real-device
+  input injection, adb on Android and idb on iOS, and pulling crash and
+  ANR-relevant logs mid-walkthrough. Not for: Editor Play Mode
+  scenarios, owned by `playtest-scenario-execution`; build-only fault
+  diagnosis, owned by `build-fault-triage`; authoring or running the
+  automated NUnit suite, owned by `unity-test-framework`; deciding which
+  test cases are owed, owned by `risk-based-test-planning`;
+  root-causing a crash once one occurs, per `crash-anr-investigator`'s
+  `/investigate-device-crash` convention.
 ---
 
 # Device Test Walkthrough — running supplied test cases on a real device build
+
+## Bundled resources
+
+### References
+Read-only context, loaded on demand so SKILL.md itself stays short.
+
+| File | Contents | Read when |
+|---|---|---|
+| [cli-reference.md](references/cli-reference.md) | Every subcommand, its per-platform command mapping, and exit-code conventions | Running any `device_playtest.py` command |
+| [ios-idb-setup.md](references/ios-idb-setup.md) | idb/idb_companion/WebDriverAgent host setup, pairing, and signing-expiry maintenance | Setting up or troubleshooting the iOS device toolchain |
+
+### Scripts
+
+| File | Purpose | Run when | Input → Output |
+|---|---|---|---|
+| [scripts/device_playtest.py](scripts/device_playtest.py) | CLI wrapping adb/idb device control — devices, doctor, install, launch, tap/swipe/text/keyevent, screenshot, pull-logs | Every step of a device walkthrough | Command + args → device action, screenshot, or log file |
+
+### Prerequisites
+Android needs only `adb` on `PATH` with USB debugging authorized. iOS is
+macOS-host-only and needs `idb`/`idb_companion`/WebDriverAgent set up first —
+see [ios-idb-setup.md](references/ios-idb-setup.md) before attempting it.
 
 ## 1. Objective
 Close the one gap none of the Editor-based QA skills can reach: whether a
 build actually behaves correctly on a real device, judged case by case
 against a test plan someone already wrote, rather than by ad-hoc exploration.
-A test case whose steps are prose ("tap the attack button twice") cannot be
-executed by a script — only an agent looking at a screenshot can resolve that
-into an actual tap. This skill fixes the two failures that make a device
-walkthrough untrustworthy: skipping evidence because "it obviously worked",
-and letting the walkthrough's own tooling silently decide a result is
-correct when only a human-equivalent judgment can.
+A prose test step ("tap the attack button twice") cannot be executed by a
+script — only an agent reading a screenshot can resolve that into an actual
+tap. This skill fixes the two failures that make a walkthrough untrustworthy:
+skipping evidence because "it obviously worked", and letting the tooling
+silently decide a result that only human-equivalent judgment can.
 
 ## 2. Role
 Act as the hands-on device tester for the QA track, on behalf of
@@ -173,8 +195,8 @@ it, and you never author a test case — you execute the ones you were given.
   that case's path, pull logs, and hand off per `/investigate-device-crash`.
 - Never fake iOS coverage from Android tooling, or vice versa, when the
   required binary or device is missing — report `Status: Blocked` and name
-  exactly what's missing (see `references/ios-idb-setup.md` for the iOS
-  prerequisites).
+  exactly what's missing (see [ios-idb-setup.md](references/ios-idb-setup.md)
+  for the iOS prerequisites).
 - Never downgrade a Design flaw into a Defect to keep it in the routine
   cycle — it routes to `gd` immediately, per `defect-reporting.md`.
 - Never report an intermittent finding as reliable, and never drop it
@@ -183,22 +205,3 @@ it, and you never author a test case — you execute the ones you were given.
   skill only drives an artifact that already exists.
 - The caller (`build-verification-tester`) owns which cases are "current"
   and any retry counts; this skill cannot hold state across invocations.
-
-## Prerequisites
-- Android: `adb` on `PATH`, USB debugging enabled, device authorized. No
-  further setup.
-- iOS: `idevice_id`/`idevicecrashreport`/`idevicesyslog` (`libimobiledevice`)
-  plus `idb` and `idb_companion` (Facebook's iOS Debug Bridge) — **macOS
-  host only**, `idb_companion` cannot run on Linux. Real-device `idb ui *`
-  input additionally requires WebDriverAgent built, signed, installed, and
-  running on the device, and the device paired/trusted with the host. See
-  `references/ios-idb-setup.md` for the one-time setup and its recurring
-  signing-expiry cost.
-
-## Bundled resources
-- `scripts/device_playtest.py` — the CLI this skill drives. Run
-  `python3 scripts/device_playtest.py <command> --help` for exact flags.
-- `references/cli-reference.md` — every subcommand, its per-platform command
-  mapping, and exit-code conventions.
-- `references/ios-idb-setup.md` — idb/idb_companion/WebDriverAgent host
-  setup, pairing, and signing-expiry maintenance.

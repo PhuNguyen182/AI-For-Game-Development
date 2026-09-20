@@ -3,19 +3,20 @@ name: backend-build-vs-buy
 description: >
   Per-component build-vs-buy framework for backend infrastructure —
   matchmaking, player data persistence and save sync, dedicated server
-  hosting/orchestration, leaderboards and party/social — shortlisting managed
-  (PlayFab, GameLift, Nakama Cloud), self-hosted open-source (Nakama), and
-  fully custom per component instead of one monolithic vendor call, decided
-  on the scaling-cost crossover point, real ops capacity, and server-region
-  coverage. Use when choosing a managed backend versus self-hosted or custom
-  infrastructure. Not for: the sync protocol itself — message format, tick
-  rate, prediction/reconciliation (`netcode-architecture-decision`,
-  `netcode-engineer`), server-side gameplay validation
-  (`server-authoritative-engineer`), the scoring rubric
-  (`tco-reversibility-scoring`), remote-config content cadence
-  (`live-ops-content-pipeline`), event pipelines
-  (`analytics-telemetry-platform`), the virtual-currency ledger
-  (`ad-mediation-monetization-platform`).
+  hosting and orchestration, leaderboards, and party or social —
+  shortlisting managed options such as PlayFab, GameLift, or Nakama
+  Cloud, self-hosted open-source Nakama, and fully custom per component
+  instead of one monolithic vendor call, decided on the scaling-cost
+  crossover point, real ops capacity, and server-region coverage. Use
+  when choosing a managed backend versus self-hosted or custom
+  infrastructure. Not for: the sync protocol itself — message format,
+  tick rate, prediction and reconciliation, owned by
+  `netcode-architecture-decision` and `netcode-engineer`; server-side
+  gameplay validation, owned by `server-authoritative-engineer`; the
+  scoring rubric in `tco-reversibility-scoring`; remote-config content
+  cadence, owned by `live-ops-content-pipeline`; event pipelines, owned
+  by `analytics-telemetry-platform`; the virtual-currency ledger, owned
+  by `ad-mediation-monetization-platform`.
 ---
 
 # Backend Build-vs-Buy — per-component infrastructure decision

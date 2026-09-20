@@ -1,21 +1,21 @@
 ---
 name: ui-toolkit
 description: >
-  Unity UI Toolkit (`UnityEngine.UIElements`) technique — UXML structure, UI
-  Builder, `VisualElement`/`UxmlElement` custom controls, USS styling
-  (Flexbox layout, selectors, pseudo-classes, BEM naming), typed events
-  (`RegisterCallback<T>`, trickle-down/bubble-up, Manipulators), runtime
-  hosting (`UIDocument`, Panel Renderer, `PanelSettings` scale modes, world
-  space, dynamic atlas), data binding (`INotifyBindablePropertyChanged`,
-  `SerializedObject.Bind()`), Editor tooling (`CreateGUI`,
-  `CreateInspectorGUI`, `CreatePropertyGUI`), text/font assets, and the UI
-  Test Framework package. Use for building or debugging a runtime HUD/menu
-  or an Editor window/inspector in UI Toolkit. Not for: uGUI/Canvas UI
-  (`ugui`), Odin attribute-driven inspectors, `OdinEditorWindow` and Odin
-  drawers (`odin-inspector`), Animator-driven UI (`unity-animation`), input device polling and
-  action binding (`unity-input-system`), the NUnit harness and test assembly a
-  UI test sits in (`unity-test-framework`), and any gameplay rule behind the UI
-  (`csharp-engineer`).
+  Unity UI Toolkit technique for `UnityEngine.UIElements` — UXML and UI
+  Builder, `VisualElement`/`UxmlElement` custom controls, USS styling and
+  Flexbox layout, typed events such as `RegisterCallback<T>`/Manipulators,
+  runtime hosting via `UIDocument`/Panel Renderer and
+  `PanelSettings`, data binding via `INotifyBindablePropertyChanged` and
+  `SerializedObject.Bind`, Editor tooling via `CreateGUI`,
+  `CreateInspectorGUI`, `CreatePropertyGUI`, text/font assets, and the
+  UI Test Framework package. Use for building or debugging a runtime
+  HUD/menu or an Editor window/inspector in UI Toolkit. Not for:
+  uGUI/Canvas UI, owned by `ugui`; Odin attribute-driven inspectors and
+  drawers, owned by `odin-inspector`; Animator-driven UI, owned by
+  `unity-animation`; input device polling and action binding, owned by
+  `unity-input-system`; the NUnit harness a UI test sits in, owned by
+  `unity-test-framework`; and any gameplay rule behind the UI, owned by
+  `csharp-engineer`.
 ---
 
 # Unity UI Toolkit — UXML, USS, Events, Runtime Hosting, Editor Tooling

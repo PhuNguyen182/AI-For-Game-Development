@@ -1,26 +1,25 @@
 ---
 name: vcontainer-dependency-injection
 description: >
-  VContainer dependency injection for the client track: `LifetimeScope`,
-  `IContainerBuilder.Register<T>` with `Lifetime.Singleton`/`Scoped`/`Transient`,
-  `RegisterComponentInHierarchy<T>`, `RegisterComponentInNewPrefab<T>`,
-  `RegisterFactory`, keyed registration (`.Keyed()`/`[Key]`),
-  `RegisterEntryPoint<T>`, `[Inject]` constructor/method/property injection,
-  `EnqueueParent`, the full `IInitializable`/`IPostInitializable`/`IStartable`/
-  `IAsyncStartable`/`IPostStartable`/`ITickable`/`IFixedTickable`/`ILateTickable`
-  (and their `IPost*` counterparts) entry-point interfaces, and the Roslyn
-  Source Generator that replaces reflection-based injection at runtime. Use it
-  when a class needs a dependency it should not construct itself, when
-  replacing a singleton or `FindObjectOfType` lookup, when scoping per-scene or
-  per-session state, when startup order currently rests on `Awake`/`Start`
-  timing, or when IL2CPP/AOT reflection cost or stripping needs the source
-  generator turned on. Not for: the async body an `IAsyncStartable` calls
-  (`unitask-async-programming`), pub/sub logic behind a registered publisher
-  (`messagepipe-event-messaging`), the pipeline a scoped subscription observes
-  (`r3-reactive-extensions`), `Game.Core.*` code, which takes plain interfaces
-  and never a container (`coding-principles.md`), an asset-based decoupling
-  layer designers wire in the Inspector — Runtime Sets, Event Channels,
-  Variable assets (`unity-scriptableobject-architecture`).
+  VContainer dependency injection for the client track: `LifetimeScope`;
+  `IContainerBuilder.Register<T>` with
+  `Lifetime.Singleton`/`Scoped`/`Transient`;
+  `RegisterComponentInHierarchy<T>`/`RegisterComponentInNewPrefab<T>`;
+  `RegisterFactory`; keyed registration; `RegisterEntryPoint<T>`;
+  Inject-attribute constructor/method/property injection; `EnqueueParent`;
+  the `IInitializable`/`IPostInitializable`/`IStartable`/`IAsyncStartable`/
+  `IPostStartable`/`ITickable`/`IFixedTickable`/`ILateTickable` entry-point
+  interfaces; and the Roslyn Source Generator replacing runtime reflection.
+  Use when a class should not construct its own dependency, when replacing
+  a singleton or `FindObjectOfType` lookup, when scoping per-scene/
+  per-session state, or when startup order or IL2CPP/AOT stripping needs
+  the generator on. Not for: the async body an `IAsyncStartable` calls —
+  `unitask-async-programming`; pub/sub logic behind a registered publisher —
+  `messagepipe-event-messaging`; the pipeline a scoped subscription
+  observes — `r3-reactive-extensions`; `Game.Core.*` code, using plain
+  interfaces, never a container — `coding-principles.md`; and an
+  asset-based decoupling layer designers wire in the Inspector, such as
+  Runtime Sets or Event Channels — `unity-scriptableobject-architecture`.
 ---
 
 # VContainer — Composition Root for the Client Track

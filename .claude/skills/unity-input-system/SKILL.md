@@ -1,7 +1,7 @@
 ---
 name: unity-input-system
 description: >
-  Technique for Unity's Input System package (`UnityEngine.InputSystem`) —
+  Technique for Unity's Input System package, `UnityEngine.InputSystem` —
   `InputAction`, `InputActionAsset`, `InputActionMap`, action types, bindings
   and composite bindings, Interactions and Processors, Control Schemes,
   `PlayerInput` notification behaviours, `PlayerInputManager` split-screen,
@@ -9,12 +9,11 @@ description: >
   `OnScreenButton` and `OnScreenStick`, interactive rebinding and binding
   overrides, and the Active Input Handling setting. Use when player input must
   be read, bound, rebound, or routed into UI. Not for: what a press means as a
-  game rule (`csharp-engineer`); UI layout (`ui-ux-programmer`); Animator
-  parameters (`unity-animation`); camera axis controllers
-  (`unity-cinemachine-authoring`); gathering an action's value into a per-tick
-  command struct for a predicted netcode simulation (`netcode-for-entities`);
-  XR Interaction Toolkit and XR rendering
-  (no owning skill — flag the gap).
+  game rule — `csharp-engineer`; UI layout — `ui-ux-programmer`; Animator
+  parameters — `unity-animation`; camera axis controllers —
+  `unity-cinemachine-authoring`; gathering an action's value into a per-tick
+  command struct for a predicted netcode simulation — `netcode-for-entities`;
+  XR Interaction Toolkit and XR rendering, no owning skill, flag the gap.
 ---
 
 # Unity Input System — Actions, Bindings, PlayerInput, Rebinding, UI Input

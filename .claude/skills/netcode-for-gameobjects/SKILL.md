@@ -1,22 +1,24 @@
 ---
 name: netcode-for-gameobjects
 description: >
-  Technique for Unity's Netcode for GameObjects package (`Unity.Netcode`) —
+  Technique for Unity's Netcode for GameObjects package, `Unity.Netcode` —
   `NetworkObject`, `NetworkBehaviour`, `NetworkManager`, `NetworkVariable<T>`,
-  `NetworkList<T>`, `ServerRpc`/`ClientRpc`/`Rpc` attributes, `NetworkTransform`,
-  `NetworkAnimator`, `NetworkRigidbody`, `NetworkSceneManager`, `UnityTransport`,
-  Unity Relay, `INetworkSerializable`, Client-Server and Distributed Authority
-  network topologies, ownership, and connection approval. Use when wiring
-  multiplayer state sync, spawning/ownership, scene or session management, or
-  transport setup for a Unity multiplayer feature, or diagnosing a desync or
-  wrong-direction RPC. Not for: choosing NGO itself over Mirror/Photon/custom
-  (`netcode-architecture-decision`), the DOTS/ECS ghost and prediction
-  stack (`netcode-for-entities`), the gameplay rule a synced value
-  represents (`csharp-engineer`), server-side anti-cheat validation
-  (`server-authoritative-engineer`), the reconciliation/tick-rate protocol
-  design (`netcode-engineer`), the raw UTP driver, pipelines, TLS and
-  `RelayServerData` beneath the `UnityTransport` component (`unity-transport`),
-  non-network Unity performance work (`tech-lead-performance`).
+  `NetworkList<T>`, the ServerRpc, ClientRpc and Rpc attributes,
+  `NetworkTransform`, `NetworkAnimator`, `NetworkRigidbody`,
+  `NetworkSceneManager`, `UnityTransport`, Unity Relay,
+  `INetworkSerializable`, Client-Server and Distributed Authority
+  topologies, ownership, and connection approval. Use when wiring
+  multiplayer state sync, spawning, scene or session management, or
+  transport setup for a multiplayer feature, or diagnosing a desync or
+  wrong-direction RPC. Not for: choosing NGO itself
+  over Mirror, Photon or custom — `netcode-architecture-decision`; the
+  DOTS/ECS ghost and prediction stack — `netcode-for-entities`; the
+  gameplay rule a synced value represents — `csharp-engineer`; server-side
+  anti-cheat validation — `server-authoritative-engineer`; the
+  reconciliation and tick-rate protocol design — `netcode-engineer`; the
+  raw UTP driver, pipelines, TLS and `RelayServerData` beneath the
+  `UnityTransport` component — `unity-transport`; non-network Unity
+  performance work — `tech-lead-performance`.
 ---
 
 # Netcode for GameObjects — Multiplayer State Sync, Spawning, Scenes

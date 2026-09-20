@@ -2,16 +2,16 @@
 name: git-unity-repo
 description: >
   Git for a Unity project — the failures git cannot see. Covers `.unity`,
-  `.prefab` and `.asset` YAML conflicts with Force Text serialization and
-  UnityYAMLMerge (`merge.unityyamlmerge`, `.gitattributes`), `.meta` files
-  and the GUID break a regenerated one causes, the ignore surface
-  (`Library/`, `Temp/`, `Logs/`, `UserSettings/` versus tracked
-  `ProjectSettings/` and `Packages/packages-lock.json`), recurring
+  `.prefab`, and `.asset` YAML conflicts with Force Text serialization and
+  UnityYAMLMerge via `merge.unityyamlmerge` and `.gitattributes`, `.meta`
+  files and the GUID break a regenerated one causes, the ignore surface
+  spanning `Library/`, `Temp/`, `Logs/`, and `UserSettings/` versus
+  tracked `ProjectSettings/` and `Packages/packages-lock.json`, recurring
   `ProjectVersion.txt` conflicts, which assets belong in Git LFS and how a
   pointer file presents, and why the Editor must be closed before a
-  working-tree rewrite. Not for: generic
-  history repair (`git-recovery`), anchoring a command
-  (`git-safety-anchor`), tracing a commit (`git-forensics`).
+  working-tree rewrite. Not for: generic history repair, owned by
+  `git-recovery`; anchoring a command, owned by `git-safety-anchor`; and
+  tracing a commit, owned by `git-forensics`.
 ---
 
 # Unity Repository Git — Scene Merges, `.meta` GUIDs, the Ignore Surface, and LFS

@@ -3,20 +3,21 @@ name: unity-entities-graphics
 description: >
   Technique for `com.unity.entities.graphics`, the package that renders ECS
   entities by feeding `Unity.Entities` data to URP or HDRP through
-  `BatchRendererGroup`: the rendering component set (`RenderMeshArray`,
-  `MaterialMeshInfo`, `RenderMeshDescription`, `RenderBounds`,
-  `RenderMeshUnmanaged`), `RenderMeshUtility.AddComponents` runtime creation,
-  DOTS Instancing shader compatibility, `[MaterialProperty]` and Material
-  Override Asset overrides, Hybrid Per Instance properties, Companion
-  Components, compute mesh deformation, and instances-per-draw-command
-  batching. Use when entities must render, or render wrongly.
-  Not for: the URP versus HDRP decision (`render-pipeline-urp-hdrp`); pipeline
-  configuration (`unity-urp-rendering`, `unity-hdrp-rendering`); shader node or
-  HLSL content (`shader-authoring`); general entity and system design
-  (`unity-ecs-architecture`); scheduling (`unity-job-system-and-burst`); Burst
-  tuning (`unity-burst-compiler`); maths types (`unity-mathematics`); bespoke
-  GPU compute passes (`compute-shader-vfx`); light setup, lightmap UVs, the bake
-  itself and probe authoring (`unity-lighting`).
+  `BatchRendererGroup`: the rendering component set including
+  `RenderMeshArray`, `MaterialMeshInfo`, `RenderMeshDescription`,
+  `RenderBounds`, and `RenderMeshUnmanaged`; `RenderMeshUtility.AddComponents`
+  runtime creation; DOTS Instancing shader compatibility; the MaterialProperty
+  attribute and Material Override Asset overrides; Hybrid Per Instance
+  properties; Companion Components; compute mesh deformation; and
+  instances-per-draw-command batching. Use when entities must render, or render
+  wrongly. Not for: the URP versus HDRP decision —
+  `render-pipeline-urp-hdrp`; pipeline configuration — `unity-urp-rendering`
+  or `unity-hdrp-rendering`; shader node or HLSL content —
+  `shader-authoring`; general entity and system design —
+  `unity-ecs-architecture`; scheduling — `unity-job-system-and-burst`; Burst
+  tuning — `unity-burst-compiler`; maths types — `unity-mathematics`;
+  bespoke GPU compute passes — `compute-shader-vfx`; light setup, lightmap
+  UVs, the bake itself, and probe authoring — `unity-lighting`.
 ---
 
 # Unity Entities Graphics — Rendering ECS Entities Through URP & HDRP

@@ -1,18 +1,20 @@
 ---
 name: unity-2d-spriteshape
 description: >
-  Unity 2D Sprite Shape (`com.unity.2d.spriteshape`) — spline-based world
-  building that tiles and deforms Sprites along an editable outline.
-  Covers `SpriteShapeController` (Detail, Open Ended, Adaptive UV, Enable
-  Tangents, Corner Threshold, World Space UV), `Spline` and
-  `SplineControlPoint` with `ShapeTangentMode` Linear, Continuous, Broken,
-  the `SpriteShape` Profile asset with `AngleRange` and `CornerSprite`,
-  auto-generated `EdgeCollider2D`/`PolygonCollider2D` geometry,
-  `SpriteShapeObjectPlacement`, and `SpriteShapeGeometryModifier`. Use for
-  platforms, terrain, ropes, ponds, and props pinned to a spline. Not for:
-  sprite import and atlasing (`unity-2d-sprite`), body and joint setup
-  (`unity-2d-physics`), grid-cell levels (`unity-tilemap`), `Light2D`
-  (`unity-urp-rendering`), procedural shape rules (`csharp-engineer`).
+  Unity 2D Sprite Shape, `com.unity.2d.spriteshape`, is spline-based
+  world building that tiles and deforms Sprites along an editable
+  outline. Covers `SpriteShapeController` settings such as Detail, Open
+  Ended, Adaptive UV, Enable Tangents, Corner Threshold, and World Space
+  UV; `Spline` and `SplineControlPoint` with `ShapeTangentMode` Linear,
+  Continuous, Broken; the `SpriteShape` Profile asset with `AngleRange`
+  and `CornerSprite`; auto-generated `EdgeCollider2D`/`PolygonCollider2D`
+  geometry; `SpriteShapeObjectPlacement`; and
+  `SpriteShapeGeometryModifier`. Use for platforms, terrain, ropes,
+  ponds, and props pinned to a spline. Not for: sprite import and
+  atlasing, owned by `unity-2d-sprite`; body and joint setup, owned by
+  `unity-2d-physics`; grid-cell levels, owned by `unity-tilemap`;
+  `Light2D`, owned by `unity-urp-rendering`; and procedural shape rules,
+  owned by `csharp-engineer`.
 ---
 
 # Unity 2D Sprite Shape — Spline-Based World Building

@@ -3,14 +3,15 @@ name: crash-anr-fault-domain-triage
 description: >
   Decision tree that attributes a fully symbolicated crash or ANR to exactly
   one fault domain — game code, Unity engine, third-party SDK, or system
-  library — walked in that fixed order, then routes the fix to a single owner
-  as a Root Cause Report. Covers ANR timeout classes, `ApplicationExitInfo`,
-  `StrictMode`, the Google Play SDK Index, and device or OS segmentation. Use
-  once the trace is confirmed readable. Not for: confirming the report source
-  (`crash-anr-reporting-gate`); resolving addresses
-  (`crash-anr-symbolication`); writing the fix (`csharp-engineer`,
-  `unity-engineer`, `tech-lead-sdk-platform`); pre-release defects
-  (`qa-automation-engineer`, `build-fault-triage`).
+  library — walked in that fixed order, then routes the fix to a single
+  owner as a Root Cause Report. Covers ANR timeout classes,
+  `ApplicationExitInfo`, `StrictMode`, the Google Play SDK Index, and
+  device or OS segmentation. Use once the trace is confirmed readable.
+  Not for: confirming the report source, owned by
+  `crash-anr-reporting-gate`; resolving addresses, owned by
+  `crash-anr-symbolication`; writing the fix, owned by `csharp-engineer`,
+  `unity-engineer`, and `tech-lead-sdk-platform`; pre-release defects,
+  owned by `qa-automation-engineer` and `build-fault-triage`.
 ---
 
 # Crash and ANR Fault-Domain Triage — which layer is actually responsible

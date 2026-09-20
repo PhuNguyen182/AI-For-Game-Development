@@ -10,12 +10,12 @@ description: >
   `UniversalAdditionalCameraData` — which also carries the per-camera
   post-process anti-aliasing mode. Use when URP must be configured or a
   pass does not run.
-  Not for: which pipeline to use (`render-pipeline-urp-hdrp`); HDRP
-  (`unity-hdrp-rendering`); shader content (`shader-authoring`); Volumes and
-  post-processing (`unity-post-processing`); lights, probes and baking
-  (`unity-lighting`); `Camera` scripting (`unity-camera-fundamentals`); entity
-  rendering (`unity-entities-graphics`); sprite data 2D lighting reads
-  (`unity-2d-sprite`).
+  Not for: which pipeline to use — `render-pipeline-urp-hdrp`; HDRP —
+  `unity-hdrp-rendering`; shader content — `shader-authoring`; Volumes and
+  post-processing — `unity-post-processing`; lights, probes and baking —
+  `unity-lighting`; `Camera` scripting — `unity-camera-fundamentals`; entity
+  rendering — `unity-entities-graphics`; sprite data 2D lighting reads —
+  `unity-2d-sprite`.
 ---
 
 # Unity URP Rendering — Universal Render Pipeline Configuration

@@ -4,17 +4,17 @@ description: >
   Shared CTO scoring rubric — total cost of ownership split across upfront,
   ongoing, scaling-curve, and exit-cost buckets, plus a Low/Medium/High
   reversibility rating that outweighs upfront cost on gameplay-critical
-  systems (netcode, anti-cheat, save-data format). Use when comparing two or
-  more foundational options before writing a Technical Decision's Reasoning
-  fields; every domain CTO skill calls this instead of inventing its own
-  scoring. Not for: gathering the domain trade-off data being scored
-  (`backend-build-vs-buy`, `netcode-architecture-decision`,
-  `anti-cheat-strategy`, `ad-mediation-monetization-platform`,
-  `analytics-telemetry-platform`, `live-ops-content-pipeline`,
-  `cross-platform-expansion-assessment`,
-  `tech-vendor-dependency-risk-assessment`), recording the resulting standard
-  (`engineering-standard-adr-authoring`), routine estimates a Tech Lead
-  already produces (`technical-architect`).
+  systems such as netcode, anti-cheat, or save-data format. Use when
+  comparing two or more foundational options before writing a Technical
+  Decision's Reasoning fields; every domain CTO skill calls this instead of
+  inventing its own scoring. Not for: gathering the domain trade-off data
+  being scored, owned by `backend-build-vs-buy`,
+  `netcode-architecture-decision`, `anti-cheat-strategy`,
+  `ad-mediation-monetization-platform`, `analytics-telemetry-platform`,
+  `live-ops-content-pipeline`, `cross-platform-expansion-assessment`, or
+  `tech-vendor-dependency-risk-assessment`; recording the resulting
+  standard, owned by `engineering-standard-adr-authoring`; routine
+  estimates a Tech Lead already produces, owned by `technical-architect`.
 ---
 
 # TCO / Reversibility Scoring — comparing foundational technology options

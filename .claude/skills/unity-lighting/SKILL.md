@@ -8,11 +8,11 @@ description: >
   and box projection, Adaptive Probe Volume authoring, lighting-side Rendering
   Layers, and the URP lighting HLSL a custom lit shader consults. Use when a
   scene must be lit, baked, or its shadows and reflections tuned. Not for:
-  pipeline choice (`render-pipeline-urp-hdrp`); HDRP pipeline settings
-  (`unity-hdrp-rendering`); rendering path, Renderer Features and `Light2D`
-  (`unity-urp-rendering`); post-process Volumes (`unity-post-processing`);
-  shader content (`shader-authoring`); how an entity subscene renders and the
-  lighting limits that package documents (`unity-entities-graphics`).
+  pipeline choice — `render-pipeline-urp-hdrp`; HDRP pipeline settings —
+  `unity-hdrp-rendering`; rendering path, Renderer Features and `Light2D` —
+  `unity-urp-rendering`; post-process Volumes — `unity-post-processing`;
+  shader content — `shader-authoring`; how an entity subscene renders and
+  the lighting limits that package documents — `unity-entities-graphics`.
 ---
 
 # Unity Lighting — Sources, Global Illumination, Shadows, Reflections, Probe Volumes

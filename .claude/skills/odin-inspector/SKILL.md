@@ -1,24 +1,25 @@
 ---
 name: odin-inspector
 description: >
-  Sirenix Odin Inspector: attributes like ShowIf, HideIf, EnableIf,
-  DisableIf, BoxGroup, TabGroup, FoldoutGroup, HorizontalGroup, Button,
-  ButtonGroup, ValueDropdown, AssetSelector, InlineEditor, PreviewField,
-  ListDrawerSettings, TableList, TableMatrix, DictionaryDrawerSettings,
-  ValidateInput, Required, and OnValueChanged; Odin serialization
-  (SerializedMonoBehaviour, SerializedScriptableObject, [OdinSerialize]);
-  and editor extensibility (OdinEditor, OdinEditorWindow,
-  OdinMenuEditorWindow, OdinValueDrawer<T>, OdinAttributeDrawer<TAttribute>,
-  OdinAttributeProcessor, PropertyTree, InspectorProperty). Use when
-  decorating a MonoBehaviour, ScriptableObject, or [Serializable] field for
-  the Inspector, serializing a type Unity can't (interfaces, dictionaries,
-  polymorphic references), or writing a custom Odin drawer or menu-based
-  editor window. Not for: runtime gameplay rules (`csharp-engineer`'s
-  Shared Core), Unity's native UGUI or UI Toolkit runtime UI
-  (`ui-ux-programmer`), an Editor window, inspector or property drawer
-  authored in UXML and USS (`ui-toolkit`), the ScriptableObject's own
-  architecture pattern (`unity-scriptableobject-architecture`),
-  MonoBehaviour lifecycle and profiling (`unity-engineer`).
+  Sirenix Odin Inspector: attributes such as ShowIf/HideIf/EnableIf/DisableIf
+  conditionals, BoxGroup/TabGroup/FoldoutGroup/HorizontalGroup layout,
+  Button/ButtonGroup actions, ValueDropdown/AssetSelector/InlineEditor/
+  PreviewField selection and preview, ListDrawerSettings/TableList/
+  TableMatrix/DictionaryDrawerSettings collection display, and
+  ValidateInput/Required/OnValueChanged validation; Odin serialization via
+  SerializedMonoBehaviour/SerializedScriptableObject and the OdinSerialize
+  attribute; and editor extensibility via
+  OdinEditor/OdinEditorWindow/OdinMenuEditorWindow, OdinValueDrawer<T>,
+  OdinAttributeDrawer<TAttribute>, PropertyTree, and InspectorProperty. Use
+  when decorating a MonoBehaviour, ScriptableObject, or Serializable field
+  for the Inspector, serializing a type Unity can't handle — interfaces,
+  dictionaries, polymorphic references — or writing a custom Odin drawer or
+  menu-based editor window. Not for: gameplay rules in
+  `csharp-engineer`'s Shared Core; Unity's native UGUI/UI Toolkit UI, owned
+  by `ui-ux-programmer`; an Editor window, inspector, or property drawer in
+  UXML/USS, owned by `ui-toolkit`; the ScriptableObject's own architecture
+  pattern, owned by `unity-scriptableobject-architecture`; MonoBehaviour
+  lifecycle and profiling, owned by `unity-engineer`.
 ---
 
 # Sirenix Odin Inspector — Attributes, Serialization & Editor Extensibility

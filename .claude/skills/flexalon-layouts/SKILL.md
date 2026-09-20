@@ -1,22 +1,24 @@
 ---
 name: flexalon-layouts
 description: >
-  Flexalon (Virtual Maker) — the box-model layout asset that arranges Unity
-  GameObjects and uGUI in 3D: the `Flexalon` singleton, `FlexalonObject`
-  (`SizeType` Component/Fixed/Fill/Layout, `MinMaxSizeType`, margins,
-  padding, offset, `SkipLayout`), `FlexalonFlexibleLayout`,
-  `FlexalonGridLayout` with `FlexalonGridCell`, `FlexalonCircleLayout`,
-  `FlexalonCurveLayout`, `FlexalonShapeLayout`, `FlexalonAlignLayout`,
-  `FlexalonRandomLayout`, `FlexalonConstraint`, `FlexalonRandomModifier`,
-  `FlexalonCloner` with `DataSource`/`DataBinding`, `FlexalonInteractable`
-  and `FlexalonDragTarget`, Curve/Lerp/RigidBody animators, `Adapter`,
-  `TransformUpdater`, `FlexalonNode`, and the Measure→Arrange→Constrain
-  pipeline. Use when arranging objects or UI through Flexalon components.
-  Not for: uGUI Layout Group and RectTransform authoring (`ugui`), UI
-  Toolkit USS flex layout (`ui-toolkit`), tweening engines
-  (`dotween-tweening`, `litmotion-tweening`), virtualized scroll lists
-  (`osa-optimized-scrollview-adapter`), inspector attributes
-  (`odin-inspector`).
+  Flexalon, from Virtual Maker, is the box-model layout asset that
+  arranges Unity GameObjects and uGUI in 3D: the `Flexalon` singleton,
+  `FlexalonObject` with `SizeType` Component/Fixed/Fill/Layout,
+  `MinMaxSizeType`, margins, padding, offset, and `SkipLayout`;
+  `FlexalonFlexibleLayout`; `FlexalonGridLayout` with
+  `FlexalonGridCell`; `FlexalonCircleLayout`, `FlexalonCurveLayout`,
+  `FlexalonShapeLayout`, `FlexalonAlignLayout`, `FlexalonRandomLayout`;
+  `FlexalonConstraint` and `FlexalonRandomModifier`; `FlexalonCloner`
+  with `DataSource`/`DataBinding`; `FlexalonInteractable` and
+  `FlexalonDragTarget`; Curve/Lerp/RigidBody animators; `Adapter`,
+  `TransformUpdater`, `FlexalonNode`; and the Measure→Arrange→Constrain
+  pipeline. Use when arranging objects or UI through Flexalon
+  components. Not for: uGUI Layout Group and RectTransform authoring,
+  owned by `ugui`; UI Toolkit USS flex layout, owned by `ui-toolkit`;
+  tweening engines, owned by `dotween-tweening` and
+  `litmotion-tweening`; virtualized scroll lists, owned by
+  `osa-optimized-scrollview-adapter`; and inspector attributes, owned
+  by `odin-inspector`.
 ---
 
 # Flexalon — 3D and UI Layout for Unity

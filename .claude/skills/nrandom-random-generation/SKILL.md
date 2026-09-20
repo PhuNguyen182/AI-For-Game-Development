@@ -6,19 +6,19 @@ description: >
   `Xorshift128Random`, `Pcg32Random`, `Sfc32Random`/`Sfc64Random`,
   `MersenneTwisterRandom`, `ChaChaRandom`,
   `NextInt`/`NextFloat`/`NextDoubleGaussian`/`Shuffle`,
-  `WeightedList<T>`/`IWeightedCollection<T>`
-  loot tables, `NRandom.Linq`'s `RandomElement`/`RandomEnumerable`, and
-  `NRandom.Numerics`/`NRandom.Unity`'s Vector/Quaternion/Color extensions.
-  Use when a gameplay roll, loot table, or shuffle needs to be deterministic
-  and replayable across client prediction and server authority, replacing
+  `WeightedList<T>`/`IWeightedCollection<T>` loot tables, `NRandom.Linq`'s
+  `RandomElement`/`RandomEnumerable`, and `NRandom.Numerics`/`NRandom.Unity`'s
+  Vector, Quaternion and Color extensions. Use when a gameplay roll, loot
+  table, or shuffle needs to be deterministic and replayable across client
+  prediction and server authority, replacing
   `UnityEngine.Random`/`System.Random`. Not for: cryptographically secure
-  randomness (`System.Security.Cryptography.RandomNumberGenerator` directly —
-  no skill in this project owns it), the struct `Unity.Mathematics.Random` a
-  Burst-compiled or job/ECS site needs where an interface call cannot go
-  (`unity-mathematics`, `unity-job-system-and-burst`), general Task/async
-  composition
-  (`dotnet-concurrency-and-async`), Span/buffer/collection selection unrelated
-  to weighted RNG (`dotnet-memory-and-collections`).
+  randomness via `System.Security.Cryptography.RandomNumberGenerator`
+  directly, owned by no skill in this project; the struct
+  `Unity.Mathematics.Random` a Burst-compiled or job/ECS site needs where an
+  interface call cannot go, owned by `unity-mathematics` and
+  `unity-job-system-and-burst`; general Task/async composition, owned by
+  `dotnet-concurrency-and-async`; Span/buffer/collection selection unrelated
+  to weighted RNG, owned by `dotnet-memory-and-collections`.
 ---
 
 # NRandom Random Generation — Seeded IRandom, Weighted Tables, Vector/Color Extensions

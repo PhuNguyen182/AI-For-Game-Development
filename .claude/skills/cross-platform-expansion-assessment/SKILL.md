@@ -1,14 +1,19 @@
 ---
 name: cross-platform-expansion-assessment
 description: >
-  Cost, timeline, and risk framework for adding a platform — a console SKU, an
-  additional mobile OS, Steam Deck, or cross-play — before the GD commits it to
-  the GDD. Splits the estimate into certification/review lead time
-  (TRC/TCR/Lotcheck, App Review), input and UI reflow (controller mapping, safe
-  area, aspect ratio), netcode and anti-cheat impact, and platform SDK
-  integration (Steamworks, Google Play Games Services, GameCenter, StoreKit,
-  platform IAP). Use before a platform is locked in.
-  Not for: integration work on an already-committed platform (`tech-lead-sdk-platform`), per-device quality tiers (`unity-engineer`), sync model choice (`netcode-architecture-decision`), cheat posture (`anti-cheat-strategy`), the scoring rubric (`tco-reversibility-scoring`).
+  Cost, timeline, and risk framework for adding a platform — a console
+  SKU, an additional mobile OS, Steam Deck, or cross-play — before the GD
+  commits it to the GDD. Splits the estimate into certification and
+  review lead time, such as TRC, TCR, Lotcheck, or App Review; input and
+  UI reflow — controller mapping, safe area, aspect ratio; netcode and
+  anti-cheat impact; and platform SDK integration, such as Steamworks,
+  Google Play Games Services, GameCenter, StoreKit, and platform IAP.
+  Use before a platform is locked in. Not for: integration work on an
+  already-committed platform, owned by `tech-lead-sdk-platform`;
+  per-device quality tiers, owned by `unity-engineer`; sync model
+  choice, owned by `netcode-architecture-decision`; cheat posture, owned
+  by `anti-cheat-strategy`; the scoring rubric in
+  `tco-reversibility-scoring`.
 ---
 
 # Cross-Platform Expansion Assessment — cost and risk of adding a platform

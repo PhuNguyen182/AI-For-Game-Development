@@ -9,12 +9,12 @@ description: >
   `Profiler.BeginSample`, and Development Build profiling over adb or WiFi
   against a real device. Use when a frame hitch, GC spike, draw-call jump or
   memory growth needs a number. Not for: turning that number into a pass or
-  fail against a budget (`performance-budget-verification`); choosing the fix
-  (`unity-engineer`); deep native, GPU or leak root-causing
-  (`tech-lead-performance`); rendering configuration itself
-  (`unity-urp-rendering`, `unity-hdrp-rendering`); job scheduling
-  (`unity-job-system-and-burst`); Burst output (`unity-burst-compiler`); the
-  Audio module's voice, DSP and streaming metrics (`unity-audio-mixer`).
+  fail against a budget — `performance-budget-verification`; choosing the
+  fix — `unity-engineer`; deep native, GPU or leak root-causing —
+  `tech-lead-performance`; rendering configuration itself —
+  `unity-urp-rendering`, `unity-hdrp-rendering`; job scheduling —
+  `unity-job-system-and-burst`; Burst output — `unity-burst-compiler`; the
+  Audio module's voice, DSP and streaming metrics — `unity-audio-mixer`.
 ---
 
 # Unity Profiler Diagnostics — Modules, Frame Debugger, Memory Snapshots, Custom Markers

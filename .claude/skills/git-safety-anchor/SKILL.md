@@ -8,9 +8,9 @@ description: >
   reflog cannot recover — untracked files, a fresh clone, anything dropped by
   `gc --prune` or `reflog expire`. Use before `reset`, `rebase`, `merge`,
   `checkout`, `push --force`, `filter-repo`, `clean -xdf`, or `branch -D`.
-  Not for: recovering state already lost (`git-recovery`), tracing a change
-  to its commit (`git-forensics`), Unity asset and LFS specifics
-  (`git-unity-repo`).
+  Not for: recovering state already lost, owned by `git-recovery`; tracing
+  a change to its commit, owned by `git-forensics`; and Unity asset and LFS
+  specifics, owned by `git-unity-repo`.
 ---
 
 # Git Safety Anchor — Blast Radius, Backup Refs, and the Undo Command

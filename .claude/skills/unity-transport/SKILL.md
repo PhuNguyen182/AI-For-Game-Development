@@ -1,21 +1,22 @@
 ---
 name: unity-transport
 description: >
-  Technique for Unity Transport (`Unity.Networking.Transport`) —
+  Technique for Unity Transport, `Unity.Networking.Transport` —
   `NetworkDriver`, `NetworkConnection`, `NetworkEndpoint`, `NetworkPipeline`
-  and its stages (`ReliableSequencedPipelineStage`, `SimulatorPipelineStage`,
-  `FragmentationPipelineStage`), `NetworkSettings`, `NetworkDriver.Concurrent`,
-  `MultiNetworkDriver`, TLS (`SecureNetworkProtocolParameter`), Unity Relay
-  (`RelayServerData`), `WebSocketNetworkInterface`, and the
-  `Unity.Netcode.NetworkTransport` interop contract. Use when building or
-  debugging a raw driver/pipeline, enabling encryption or Relay, jobifying
-  the driver update loop, or wiring a custom transport into NGO. Not for:
-  `UnityTransport` component Inspector fields or NGO-level state sync
-  (`netcode-for-gameobjects`), which Worlds get a driver and when a connection
-  enters gameplay on the DOTS stack (`netcode-for-entities`), choosing a netcode
-  foundation (`netcode-architecture-decision`), the reconciliation/tick protocol above
-  the wire (`netcode-engineer`), server anti-cheat validation
-  (`server-authoritative-engineer`).
+  and its stages such as `ReliableSequencedPipelineStage`,
+  `SimulatorPipelineStage`, `FragmentationPipelineStage`, `NetworkSettings`,
+  `NetworkDriver.Concurrent`, `MultiNetworkDriver`, TLS via
+  `SecureNetworkProtocolParameter`, Unity Relay via `RelayServerData`,
+  `WebSocketNetworkInterface`, and the `Unity.Netcode.NetworkTransport`
+  interop contract. Use when building or debugging a raw driver/pipeline,
+  enabling encryption or Relay, jobifying the driver update loop, or wiring
+  a custom transport into NGO. Not for: `UnityTransport` component Inspector
+  fields or NGO-level state sync — `netcode-for-gameobjects`; which Worlds
+  get a driver and when a connection enters gameplay on the DOTS stack —
+  `netcode-for-entities`; choosing a netcode foundation —
+  `netcode-architecture-decision`; the reconciliation/tick protocol above
+  the wire — `netcode-engineer`; server anti-cheat validation —
+  `server-authoritative-engineer`.
 ---
 
 # Unity Transport — Low-Level Networking Driver, Pipelines, Relay, Security

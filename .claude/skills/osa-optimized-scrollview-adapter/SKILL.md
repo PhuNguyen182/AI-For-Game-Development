@@ -1,23 +1,23 @@
 ---
 name: osa-optimized-scrollview-adapter
 description: >
-  Optimized ScrollView Adapter (OSA) by Forbidden Byte — the recycling
+  The Optimized ScrollView Adapter, OSA, by Forbidden Byte — the recycling
   ListView/GridView/TableView that replaces uGUI's `ScrollRect`:
   `OSA<TParams, TItemViewsHolder>`, `BaseParams`, `BaseItemViewsHolder`,
   `CreateViewsHolder`, `UpdateViewsHolder`, `CollectItemsSizes`,
-  `ResetItems`, `InsertItems`, `RemoveItems`, `SimpleDataHelper`,
-  `LazyDataHelper`, `GridAdapter`, `CellGroupViewsHolder`, `ScrollTo`,
-  `SmoothScrollTo`, `ScheduleComputeVisibilityTwinPass`, `Snapper8`,
-  `ScrollbarFixer8`, `OSAContentDecorator`, `Params.optimization`
-  pooling, under the current `Com.ForbiddenByte.OSA` namespace root
-  (`Com.TheFallenGames.OSA` before the v7.0 rename). Use when a scrolling
-  list is too long to instantiate one GameObject per row. Not for:
-  Canvas/RectTransform/Layout/`ScrollRect` setup around the adapter
-  (`ugui`), UI Toolkit `ListView` virtualization (`ui-toolkit`),
-  item-content asset loading (`unity-addressables`), animating items
-  (`dotween-tweening`), measuring the result
-  (`unity-profiler-diagnostics`), the data model itself
-  (`csharp-engineer`).
+  `ResetItems`/`InsertItems`/`RemoveItems`, `SimpleDataHelper`,
+  `LazyDataHelper`, `GridAdapter`, `CellGroupViewsHolder`,
+  `ScrollTo`/`SmoothScrollTo`, `ScheduleComputeVisibilityTwinPass`,
+  `Snapper8`, `ScrollbarFixer8`, `OSAContentDecorator`, and
+  `Params.optimization` pooling, under the current `Com.ForbiddenByte.OSA`
+  namespace root — `Com.TheFallenGames.OSA` before the v7.0 rename. Use
+  when a scrolling list is too long to instantiate one GameObject per row.
+  Not for: Canvas/RectTransform/Layout/`ScrollRect` setup around the
+  adapter, owned by `ugui`; UI Toolkit `ListView` virtualization, owned by
+  `ui-toolkit`; item-content asset loading, owned by `unity-addressables`;
+  animating items, owned by `dotween-tweening`; measuring the result,
+  owned by `unity-profiler-diagnostics`; the data model itself, owned by
+  `csharp-engineer`.
 ---
 
 # OSA — Recycling ScrollView Adapter for uGUI

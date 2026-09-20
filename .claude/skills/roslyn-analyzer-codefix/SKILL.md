@@ -1,20 +1,21 @@
 ---
 name: roslyn-analyzer-codefix
 description: >
-  Custom Roslyn `DiagnosticAnalyzer`s, with an optional `CodeFixProvider`, that
-  enforce this project's own rules as compile-time diagnostics: the
-  `Game.Core`/`UnityEngine` namespace boundary, Shared Core determinism
-  (`UnityEngine.Random`, wall-clock time), the mandatory `this.` qualifier,
-  `&&`/`||` over `&`/`|`, naming casing. Covers diagnostic IDs and severity,
+  Custom Roslyn `DiagnosticAnalyzer`s, with an optional `CodeFixProvider`,
+  that enforce this project's own rules as compile-time diagnostics: the
+  `Game.Core`/`UnityEngine` namespace boundary, Shared Core determinism via
+  `UnityEngine.Random` and wall-clock time, the mandatory `this.` qualifier,
+  `&&`/`||` over `&`/`|`, and naming casing. Covers diagnostic IDs and
+  severity,
   `RegisterSymbolAction`/`RegisterSyntaxNodeAction`/`RegisterCompilationStartAction`,
-  `EnableConcurrentExecution`, `ConfigureGeneratedCodeAnalysis`, `.editorconfig`
-  severity overrides, `netstandard2.0` packaging and Unity's `RoslynAnalyzer`
-  label. Use it when a mechanically checkable rule keeps recurring across
-  submissions. Not for: generating code (`source-generator-authoring`), rules
-  that need human judgement (`code-reviewer`), auditing one submission's diff
-  for these same boundary and determinism violations
-  (`shared-core-boundary-audit`), a violation seen once
-  (`coding-principles.md`).
+  `EnableConcurrentExecution`, `ConfigureGeneratedCodeAnalysis`,
+  `.editorconfig` severity overrides, `netstandard2.0` packaging, and
+  Unity's `RoslynAnalyzer` label. Use it when a mechanically checkable rule
+  keeps recurring across submissions. Not for: generating code, owned by
+  `source-generator-authoring`; rules that need human judgement, owned by
+  `code-reviewer`; auditing one submission's diff for these same boundary
+  and determinism violations, owned by `shared-core-boundary-audit`; a
+  violation seen once, owned by `coding-principles.md`.
 ---
 
 # Roslyn Analyzer and Code Fix Authoring

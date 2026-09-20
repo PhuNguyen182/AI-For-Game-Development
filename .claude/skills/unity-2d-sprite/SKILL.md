@@ -3,17 +3,18 @@ name: unity-2d-sprite
 description: >
   Unity built-in 2D Sprite authoring — `Sprite`, `SpriteRenderer`,
   `SpriteMask`, `SortingGroup`, `SpriteAtlas`, `SpriteAtlasManager`.
-  Covers import settings (Sprite Mode, Pixels Per Unit, Mesh Type Full
-  Rect vs Tight, Generate Physics Shape), the Sprite Editor's slicing,
-  Custom Outline, Custom Physics Shape and Secondary Textures modules,
-  Sorting Layer, Order in Layer, Transparency Sort Mode, Draw Mode
-  Sliced/Tiled 9-slicing, Mask Interaction, and atlas packing. Use when a
-  sprite renders wrong, sorts wrong, or costs too many draw calls.
-  Not for: `Rigidbody2D`/`Collider2D` dynamics (`unity-2d-physics`),
-  `Light2D` setup (`unity-urp-rendering`), grid-cell painting
-  (`unity-tilemap`), spline level geometry (`unity-2d-spriteshape`),
-  sprite shaders (`shader-authoring`), animation clips
-  (`unity-animation`), which sprite to show (`csharp-engineer`).
+  Covers import settings such as Sprite Mode, Pixels Per Unit, Mesh Type
+  Full Rect versus Tight, and Generate Physics Shape; the Sprite Editor's
+  slicing, Custom Outline, Custom Physics Shape, and Secondary Textures
+  modules; Sorting Layer, Order in Layer, Transparency Sort Mode, Draw
+  Mode Sliced/Tiled 9-slicing, Mask Interaction; and atlas packing. Use
+  when a sprite renders wrong, sorts wrong, or costs too many draw calls.
+  Not for: `Rigidbody2D`/`Collider2D` dynamics, owned by
+  `unity-2d-physics`; `Light2D` setup, owned by `unity-urp-rendering`;
+  grid-cell painting, owned by `unity-tilemap`; spline level geometry,
+  owned by `unity-2d-spriteshape`; sprite shaders, owned by
+  `shader-authoring`; animation clips, owned by `unity-animation`; and
+  which sprite to show, owned by `csharp-engineer`.
 ---
 
 # Unity 2D Sprite — Import, Sprite Editor, Sorting, Masking & Atlas Packing

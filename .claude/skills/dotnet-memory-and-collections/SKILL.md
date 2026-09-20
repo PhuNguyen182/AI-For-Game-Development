@@ -1,19 +1,22 @@
 ---
 name: dotnet-memory-and-collections
 description: >
-  Allocation-conscious memory and collection selection in pure .NET — Span<T>,
-  ReadOnlySpan<T>, Memory<T>, ReadOnlyMemory<T>, System.Buffers.ArrayPool<T>,
-  IMemoryOwner<T>, stackalloc, System.Collections.Immutable (ImmutableList<T>,
-  ImmutableArray<T>, ImmutableDictionary<TKey,TValue>), System.Collections.
-  Concurrent (ConcurrentQueue<T>, ConcurrentDictionary<TKey,TValue>,
-  ConcurrentBag<T>). Use when slicing/parsing buffers, pooling transient
-  arrays, or picking a shared-collection thread-safety story in Game.Core.*
-  or Game.Client.* code with no Unity.Collections/Burst dependency. Not for:
-  Unity.Collections NativeArray/NativeList and Burst jobs
-  (`unity-collections`, `unity-job-system-and-burst`), zero-allocation LINQ
-  (`zlinq-zero-allocation-linq`), zero-allocation string building
-  (`zstring-zero-allocation-strings`), synchronization primitives and async
-  coordination (`dotnet-concurrency-and-async`).
+  Allocation-conscious memory and collection selection in pure .NET —
+  Span<T>, ReadOnlySpan<T>, Memory<T>, ReadOnlyMemory<T>,
+  System.Buffers.ArrayPool<T>, IMemoryOwner<T>, stackalloc, and
+  System.Collections.Immutable types such as ImmutableList<T>,
+  ImmutableArray<T>, and ImmutableDictionary<TKey,TValue>, plus
+  System.Collections.Concurrent types such as ConcurrentQueue<T>,
+  ConcurrentDictionary<TKey,TValue>, and ConcurrentBag<T>. Use when
+  slicing or parsing buffers, pooling transient arrays, or picking a
+  shared-collection thread-safety story in Game.Core.* or Game.Client.*
+  code with no Unity.Collections or Burst dependency. Not for:
+  Unity.Collections NativeArray or NativeList and Burst jobs, owned by
+  `unity-collections` and `unity-job-system-and-burst`; zero-allocation
+  LINQ, owned by `zlinq-zero-allocation-linq`; zero-allocation string
+  building, owned by `zstring-zero-allocation-strings`; synchronization
+  primitives and async coordination, owned by
+  `dotnet-concurrency-and-async`.
 ---
 
 # .NET Memory and Collections — Span, Memory, ArrayPool, and Collection Selection

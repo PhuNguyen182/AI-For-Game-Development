@@ -5,16 +5,16 @@ description: >
   Controller state machines, transitions, Any State, parameters and
   `StateMachineBehaviour`, Blend Trees, layers and Avatar Masks,
   `AnimationClip` import and Animation Events, Humanoid Avatar setup and
-  retargeting, `OnAnimatorMove` root motion, `OnAnimatorIK` inverse
-  kinematics, `AnimatorOverrideController` clip swapping, Culling Mode and
-  Update Mode, and the `PlayableGraph` API underneath. Use for any Animator
-  asset, clip, humanoid rig, or playback script. Not for: Timeline sequencing
-  and the Animation Rigging package (no owning skill — flag the gap); cameras
-  reacting to Animator state (`unity-cinemachine-authoring`); sprite art
-  (`unity-2d-sprite`); Spine runtimes (`spine-animation`); the logical gameplay
-  state graph a parameter reflects (`stateless-state-machines`); UI transition
-  wiring on a Canvas Selectable or a UI Toolkit screen (`ugui`, `ui-toolkit`);
-  the rule behind a state change (`csharp-engineer`).
+  retargeting, `OnAnimatorMove` root motion, `OnAnimatorIK` inverse kinematics,
+  `AnimatorOverrideController` clip swapping, Culling and Update Mode, and the
+  `PlayableGraph` API. Use for any Animator asset, clip, humanoid
+  rig, or playback script. Not for: Timeline sequencing and the Animation
+  Rigging package, no owning skill, flag the gap; cameras reacting to Animator
+  state — `unity-cinemachine-authoring`; sprite art — `unity-2d-sprite`;
+  Spine runtimes — `spine-animation`; the logical gameplay state graph a
+  parameter reflects — `stateless-state-machines`; UI transition wiring on a
+  Canvas Selectable or UI Toolkit screen — `ugui`/`ui-toolkit`; the rule
+  behind a state change — `csharp-engineer`.
 ---
 
 # Unity Animation — Mecanim, Avatars, Controllers, Blend Trees, Playables

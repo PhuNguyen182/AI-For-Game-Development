@@ -1,21 +1,20 @@
 ---
 name: tech-vendor-dependency-risk-assessment
 description: >
-  Due-diligence rubric for judging whether a third-party plugin, SDK, or
-  engine-level dependency is safe to keep building on — maintenance signal
-  (release cadence, single-maintainer versus company-backed), license
+  Due-diligence rubric judging whether a third-party plugin, SDK, or
+  engine-level dependency is safe to keep building on — maintenance signal,
+  release cadence, single-maintainer versus company-backed, license
   compatibility with commercial shipping, integration lock-in depth, exit
   cost, and platform reach against every committed platform — ending in a
-  keep / keep-with-mitigation / replace-now / replace-on-timeline verdict.
+  keep, keep-with-mitigation, replace-now, or replace-on-timeline verdict.
   Use before committing to a foundational dependency, or when a repeated
-  failure traces back to one.
-  Not for: whether this project could adopt a candidate not yet in it —
-  IL2CPP, engine version, `Game.Core.*` determinism
-  (`practical-fit-screening`), reviewing this project's own code
-  (`code-reviewer`), trivial
-  swappable utilities, SDK integration work (`tech-lead-sdk-platform`),
-  the scoring rubric (`tco-reversibility-scoring`), recording the outcome as
-  a standard (`engineering-standard-adr-authoring`).
+  failure traces back to one. Not for: whether this project could adopt a
+  new candidate — IL2CPP, engine version, `Game.Core.*` determinism, owned
+  by `practical-fit-screening`; reviewing this project's own code, owned by
+  `code-reviewer`; trivial swappable utilities; SDK integration work, owned
+  by `tech-lead-sdk-platform`; the scoring rubric, owned by
+  `tco-reversibility-scoring`; recording it as a standard, owned by
+  `engineering-standard-adr-authoring`.
 ---
 
 # Tech Vendor / Dependency Risk Assessment — keep, mitigate, or replace

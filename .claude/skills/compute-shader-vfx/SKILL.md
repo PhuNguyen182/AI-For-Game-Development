@@ -2,19 +2,20 @@
 name: compute-shader-vfx
 description: >
   Technique for compute shaders whose deliverable is a visual effect — GPU
-  particle simulation, procedural mesh and vertex deformation, curl-noise and
-  flow fields, and any GPU buffer feeding a shader or VFX Graph. Covers the
-  C#-to-HLSL struct stride contract, `RWStructuredBuffer`,
-  `AppendStructuredBuffer`, `[numthreads]` and dispatch sizing, ping-pong
-  buffering, `DrawProceduralIndirect` with indirect args,
-  `AsyncGPUReadback` versus a blocking `GetData`, `ComputeBuffer.Release`, and
-  platform compute support. Use when a visual effect is GPU-driven.
-  Not for: non-visual compute throughput (`tech-lead-performance`); CPU
-  parallel work (`unity-job-system-and-burst`); the shader consuming the
-  buffer (`shader-authoring`); particle graph structure
-  (`vfx-particle-authoring`); ECS mesh deformation
-  (`unity-entities-graphics`); the CPU-side `Mesh` deformed geometry must
-  exist in (`unity-3d-mesh`).
+  particle simulation, procedural mesh and vertex deformation, curl-noise
+  and flow fields, and any GPU buffer feeding a shader or VFX Graph.
+  Covers the C#-to-HLSL struct stride contract, `RWStructuredBuffer`,
+  `AppendStructuredBuffer`, the numthreads attribute and dispatch sizing,
+  ping-pong buffering, `DrawProceduralIndirect` with indirect args,
+  `AsyncGPUReadback` versus a blocking `GetData`, `ComputeBuffer.Release`,
+  and platform compute support. Use when a visual effect is GPU-driven.
+  Not for: non-visual compute throughput, owned by
+  `tech-lead-performance`; CPU parallel work, owned by
+  `unity-job-system-and-burst`; the shader consuming the buffer, owned by
+  `shader-authoring`; particle graph structure, owned by
+  `vfx-particle-authoring`; ECS mesh deformation, owned by
+  `unity-entities-graphics`; the CPU-side `Mesh` the deformed geometry
+  must exist in, owned by `unity-3d-mesh`.
 ---
 
 # Compute Shaders for Visual Effects

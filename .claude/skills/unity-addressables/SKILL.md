@@ -10,12 +10,12 @@ description: >
   the Content Directory versus AssetBundle content build systems. Use when an
   asset or scene should be addressed by key, label or reference instead of
   hard-referenced, or when content ships or updates remotely. Not for: generic
-  await and cancellation mechanics (`unitask-async-programming`); pool design
-  (`unity-engineer`); import and compression settings (`unity-2d-sprite`,
-  `unity-audio-mixer`, otherwise `unity-engineer`);
-  remote-config cadence (`live-ops-content-pipeline`); CDN vendor choice
-  (`tech-lead-sdk-platform`); the headless invocation that runs the content
-  build in CI (`unity-batchmode-cli`).
+  await and cancellation mechanics — `unitask-async-programming`; pool design
+  — `unity-engineer`; import and compression settings — `unity-2d-sprite`
+  or `unity-audio-mixer`, otherwise `unity-engineer`; remote-config cadence —
+  `live-ops-content-pipeline`; CDN vendor choice — `tech-lead-sdk-platform`;
+  the headless invocation that runs the content build in CI —
+  `unity-batchmode-cli`.
 ---
 
 # Unity Addressables — Addressing, Loading, Reference Counting, Remote Content

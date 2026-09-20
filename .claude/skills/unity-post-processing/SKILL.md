@@ -9,10 +9,10 @@ description: >
   `FullScreenPassRendererFeature` or a scripted `ScriptableRendererFeature`
   plus `VolumeComponent`, and legacy Post Processing Stack v2 on the Built-in
   pipeline. Use when a full-screen effect must be added, tuned, or authored.
-  Not for: pipeline choice (`render-pipeline-urp-hdrp`); HDRP Volumes
-  (`unity-hdrp-rendering`); Renderer Features generally
-  (`unity-urp-rendering`); Adaptive Probe Volumes (`unity-lighting`); shader
-  content (`shader-authoring`).
+  Not for: pipeline choice — `render-pipeline-urp-hdrp`; HDRP Volumes —
+  `unity-hdrp-rendering`; Renderer Features generally —
+  `unity-urp-rendering`; Adaptive Probe Volumes — `unity-lighting`; shader
+  content — `shader-authoring`.
 ---
 
 # Unity Post-Processing — Volumes, Effect Catalog, Custom Effects, Legacy PPv2

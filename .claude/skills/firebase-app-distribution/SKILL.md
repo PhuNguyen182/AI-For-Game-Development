@@ -7,10 +7,11 @@ description: >
   `--release-notes-file`, the `firebase_app_distribution` fastlane plugin,
   service-account authentication through `GOOGLE_APPLICATION_CREDENTIALS`,
   `firebase-tools` version pinning, APK/AAB/IPA acceptance, and the ad-hoc
-  UDID constraint on iOS. Not for: producing or signing the artifact
-  (`fastlane-mobile-delivery`, `unity-batchmode-cli`); the job and its
-  approval gate (`jenkins-pipeline-authoring`); Crashlytics, Analytics and
-  Remote Config inside the game (`tech-lead-sdk-platform`).
+  UDID constraint on iOS. Not for: producing or signing the artifact,
+  owned by `fastlane-mobile-delivery` or `unity-batchmode-cli`; the job
+  and its approval gate, owned by `jenkins-pipeline-authoring`; and
+  Crashlytics, Analytics, and Remote Config inside the game, owned by
+  `tech-lead-sdk-platform`.
 ---
 
 # Firebase App Distribution — getting a build to testers

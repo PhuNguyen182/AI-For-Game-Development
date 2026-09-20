@@ -1,19 +1,21 @@
 ---
 name: unity-2d-physics
 description: >
-  Unity built-in 2D physics (Box2D) on GameObjects — `Rigidbody2D` body
+  Unity built-in 2D physics, Box2D, on GameObjects — `Rigidbody2D` body
   types, mass, linear and angular damping, gravity scale, interpolation,
-  `CollisionDetectionMode2D`, sleep, `Slide`; `Collider2D` shapes
-  (Box/Circle/Capsule/Polygon/Edge/Composite), `PhysicsMaterial2D` friction
-  and bounciness combine modes, `Effector2D` (Area, Point, Platform,
-  Surface, Buoyancy), the nine `Joint2D` types, `ConstantForce2D`,
-  `OnCollisionEnter2D`, `OnTriggerEnter2D`, and the `Physics2D` layer
-  matrix. Use when a 2D body tunnels, jitters, sticks, or ignores a
-  collision. Not for: 3D physics (`unity-3d-physics`), DOTS physics
-  (`unity-physics`), sprite shape authoring (`unity-2d-sprite`), tile
-  collision generation (`unity-tilemap`), spline colliders
-  (`unity-2d-spriteshape`), damage and state rules (`csharp-engineer`),
-  escalated profiling (`tech-lead-performance`).
+  `CollisionDetectionMode2D`, sleep, `Slide`; `Collider2D` shapes such as
+  Box, Circle, Capsule, Polygon, Edge, and Composite; `PhysicsMaterial2D`
+  friction and bounciness combine modes; `Effector2D` types — Area,
+  Point, Platform, Surface, Buoyancy; the nine `Joint2D` types,
+  `ConstantForce2D`, `OnCollisionEnter2D`, `OnTriggerEnter2D`, and the
+  `Physics2D` layer matrix. Use when a 2D body tunnels, jitters, sticks,
+  or ignores a collision. Not for: 3D physics, owned by
+  `unity-3d-physics`; DOTS physics, owned by `unity-physics`; sprite
+  shape authoring, owned by `unity-2d-sprite`; tile collision generation,
+  owned by `unity-tilemap`; spline colliders, owned by
+  `unity-2d-spriteshape`; damage and state rules, owned by
+  `csharp-engineer`; and escalated profiling, owned by
+  `tech-lead-performance`.
 ---
 
 # Unity 2D Physics — Box2D Bodies, Colliders, Effectors & Joints

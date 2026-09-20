@@ -1,25 +1,24 @@
 ---
 name: netcode-for-entities
 description: >
-  Technique for Unity's Netcode for Entities (NfE, package
-  `com.unity.netcode`), the DOTS/ECS server-authoritative-with-client-prediction
-  networking layer: `GhostAuthoringComponent`, `[GhostField]`,
-  `[GhostComponent]`, `IRpcCommand`, `ICommandData`/`IInputComponentData`,
-  `ClientServerBootstrap`, `PredictedSimulationSystemGroup`, `Simulate` tag,
-  `NetworkTime`, `ClientServerTickRate`, ghost groups, host migration,
+  Technique for Unity's Netcode for Entities, package `com.unity.netcode` —
+  the DOTS/ECS server-authoritative networking layer with client prediction:
+  `GhostAuthoringComponent`, GhostField and GhostComponent attributes,
+  `IRpcCommand`, `ICommandData`/`IInputComponentData`,
+  `ClientServerBootstrap`, `PredictedSimulationSystemGroup`, the Simulate
+  tag, `NetworkTime`, `ClientServerTickRate`, ghost groups, host migration,
   connection approval, lag compensation. Use once NfE is the chosen
-  foundation — replicating entity state, writing RPCs/commands, tuning
-  prediction/interpolation/bandwidth, or debugging via the PlayMode
-  Tool/Network Profiler. Not for: choosing NfE or the sync model
-  (`netcode-architecture-decision`); the GameObject/MonoBehaviour netcode
-  stack (`netcode-for-gameobjects`); general ECS entity/component/system
-  modeling (`unity-ecs-architecture`); job scheduling and Burst compilation
-  (`unity-job-system-and-burst`, `unity-burst-compiler`); non-predicted
-  physics authoring (`unity-physics`); ghost rendering
-  (`unity-entities-graphics`); reading the device behind an input command —
-  actions, bindings, rebinding (`unity-input-system`); the UTP driver,
-  pipelines, TLS and Relay data under the connection (`unity-transport`); UGS
-  dashboard/account setup (`tech-lead-sdk-platform`).
+  foundation — replicating entity state, writing RPCs or commands, tuning
+  prediction/interpolation/bandwidth, or debugging via the PlayMode Tool or
+  Network Profiler. Not for: choosing NfE or the sync model —
+  `netcode-architecture-decision`; the GameObject/MonoBehaviour stack —
+  `netcode-for-gameobjects`; general ECS modeling —
+  `unity-ecs-architecture`; job scheduling and Burst —
+  `unity-job-system-and-burst`, `unity-burst-compiler`; non-predicted
+  physics — `unity-physics`; ghost rendering — `unity-entities-graphics`;
+  input device actions and bindings behind a command —
+  `unity-input-system`; the UTP driver and Relay data under the connection —
+  `unity-transport`; UGS dashboard/account setup — `tech-lead-sdk-platform`.
 ---
 
 # Netcode for Entities — Server-Authoritative Multiplayer with Client Prediction

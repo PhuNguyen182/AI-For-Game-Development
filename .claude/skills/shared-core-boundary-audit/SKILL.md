@@ -2,19 +2,19 @@
 name: shared-core-boundary-audit
 description: >
   Audit of the `Game.Core.*` against `Game.Client.*` boundary that
-  `coding-principles.md` makes non-negotiable. Detects `using UnityEngine` and
-  asmdef leaks into Shared Core, determinism violations
-  (`UnityEngine.Random`, `Random.Range`, `Time.time`, `Time.deltaTime`,
-  `DateTime.Now`, `Stopwatch`, `Guid.NewGuid`), game-rule arithmetic
+  `coding-principles.md` makes non-negotiable. Detects `using UnityEngine`
+  and asmdef leaks into Shared Core, determinism violations such as
+  `UnityEngine.Random`, `Random.Range`, `Time.time`, `Time.deltaTime`,
+  `DateTime.Now`, `Stopwatch`, or `Guid.NewGuid`, game-rule arithmetic
   reimplemented inside a MonoBehaviour, reversed dependency direction, and
   reach-through chains. Use when reviewing any submission that touches
-  gameplay rules, damage, cooldowns, economy maths, or crosses the Core and
-  Client line. Not for: authoring the rules (`csharp-engineer`); asserting
-  them in tests (`unity-test-framework`); building the standing compile-time
-  diagnostic for a violation that keeps recurring
-  (`roslyn-analyzer-codefix`); secrets and dangerous files
-  (`secret-and-supply-chain-scan`); performance findings
-  (`unity-profiler-diagnostics`).
+  gameplay rules, damage, cooldowns, economy maths, or crosses the Core
+  and Client line. Not for: authoring the rules, owned by
+  `csharp-engineer`; asserting them in tests, owned by
+  `unity-test-framework`; building the standing compile-time diagnostic
+  for a recurring violation, owned by `roslyn-analyzer-codefix`; secrets
+  and dangerous files, owned by `secret-and-supply-chain-scan`;
+  performance findings, owned by `unity-profiler-diagnostics`.
 ---
 
 # Shared Core Boundary Audit — determinism, layering, and rule duplication

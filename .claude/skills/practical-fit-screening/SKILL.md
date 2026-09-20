@@ -4,16 +4,17 @@ description: >
   Hard-gate screen deciding whether this project can actually adopt a
   candidate package, SDK or technique. Gates: duplication against
   `Packages/manifest.json` and existing assemblies, engine and C# language
-  version, scripting backend (IL2CPP AOT stripping, `System.Reflection.Emit`,
-  generic virtual calls), platform and binary-size cost, licence via SPDX
-  identifier and LICENSE file, `Game.Core.*` determinism boundary,
-  maintenance bus factor, integration and exit cost. Use before ranking any
-  candidate. Not for: the long-run vendor-health keep/replace verdict on a
-  dependency (`tech-vendor-dependency-risk-assessment`), finding candidates
-  (`technology-scouting-sweep`),
-  grading a source's trust (`source-credibility-grading`), ranking the
-  survivors (`solution-comparison-report`), measuring on device
-  (`rd-engineer`), integrating the winner (`tech-lead-sdk-platform`).
+  version, scripting backend risk — IL2CPP AOT stripping,
+  `System.Reflection.Emit`, generic virtual calls — platform and
+  binary-size cost, licence via SPDX identifier and LICENSE file,
+  `Game.Core.*` determinism boundary, maintenance bus factor, and
+  integration and exit cost. Use before ranking any candidate. Not for:
+  the long-run vendor-health keep/replace verdict on a dependency, owned by
+  `tech-vendor-dependency-risk-assessment`; finding candidates, owned by
+  `technology-scouting-sweep`; grading a source's trust, owned by
+  `source-credibility-grading`; ranking the survivors, owned by
+  `solution-comparison-report`; measuring on device, owned by
+  `rd-engineer`; integrating the winner, owned by `tech-lead-sdk-platform`.
 ---
 
 # Practical Fit Screening — can this project actually adopt the candidate

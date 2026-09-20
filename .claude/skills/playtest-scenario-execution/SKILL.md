@@ -2,16 +2,18 @@
 name: playtest-scenario-execution
 description: >
   Run a GDD scenario in a single Unity Editor Play Mode session and capture
-  proof — screenshots through the Scene view and camera capture tools, console
-  excerpts, and step-by-step expected against actual. Covers turning a
-  narrative GDD passage into observable checkpoints, capturing evidence at the
-  moment a claim is made rather than afterwards, reading the console for silent
-  failures that never surface on screen, and the technical defect against
-  design flaw against as-designed classification call. Not for: automated Edit
-  and Play Mode tests (`unity-test-framework`); test cases on a real device
-  (`device-test-walkthrough`); build-only fault diagnosis
-  (`build-fault-triage`); frame cost and memory (`performance-budget-verification`);
-  choosing which scenarios to run (`risk-based-test-planning`).
+  proof — screenshots through the Scene view and camera capture tools,
+  console excerpts, and step-by-step expected against actual. Covers
+  turning a narrative GDD passage into observable checkpoints, capturing
+  evidence at the moment a claim is made rather than afterwards, reading
+  the console for silent failures that never surface on screen, and the
+  technical defect versus design flaw versus as-designed classification
+  call. Not for: automated Edit and Play Mode tests, owned by
+  `unity-test-framework`; test cases on a real device, owned by
+  `device-test-walkthrough`; build-only fault diagnosis, owned by
+  `build-fault-triage`; frame cost and memory, owned by
+  `performance-budget-verification`; choosing which scenarios to run,
+  owned by `risk-based-test-planning`.
 ---
 
 # Playtest Scenario Execution — turning a GDD passage into evidence

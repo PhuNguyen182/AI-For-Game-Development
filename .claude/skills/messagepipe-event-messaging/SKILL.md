@@ -3,14 +3,19 @@ name: messagepipe-event-messaging
 description: >
   MessagePipe — decoupled in-process message dispatch: keyless and keyed
   `IPublisher<T>` and `ISubscriber<T>`, `IRequestHandler<TRequest,TResponse>`
-  and `IRequestAllHandler`, `IAsyncPublisher` and `IAsyncSubscriber`
-  (UniTask-backed, parallel or sequential), `IBufferedPublisher` and
+  and `IRequestAllHandler`, `IAsyncPublisher` and `IAsyncSubscriber` backed
+  by UniTask for parallel or sequential dispatch, `IBufferedPublisher` and
   `IBufferedSubscriber` for latest-value replay, filter middleware for
   cross-cutting behaviour, and `DisposableBag` disposal — registered through
-  `RegisterMessagePipe()`. Use for one discrete addressed event reaching
+  `RegisterMessagePipe`. Use for one discrete addressed event reaching
   systems that must not reference each other, such as an item pickup seen by
-  inventory, UI, and analytics at once.
-  Not for: continuous streams a subscriber composes over time (`r3-reactive-extensions`), the async body of a handler (`unitask-async-programming`), DI registration and lifetime (`vcontainer-dependency-injection`), an event a designer wires between assets in the Inspector (`unity-scriptableobject-architecture`), cross-process wire contracts (`magiconion-rpc-networking`).
+  inventory, UI, and analytics at once. Not for: continuous streams a
+  subscriber composes over time, owned by `r3-reactive-extensions`; the
+  async body of a handler, owned by `unitask-async-programming`; DI
+  registration and lifetime, owned by `vcontainer-dependency-injection`; an
+  event a designer wires between assets in the Inspector, owned by
+  `unity-scriptableobject-architecture`; and cross-process wire contracts,
+  owned by `magiconion-rpc-networking`.
 ---
 
 # MessagePipe — Decoupled In-Process Event Messaging

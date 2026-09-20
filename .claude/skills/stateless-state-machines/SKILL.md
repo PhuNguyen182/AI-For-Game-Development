@@ -1,21 +1,22 @@
 ---
 name: stateless-state-machines
 description: >
-  Explicit state machines with Stateless-For-Unity:
-  `StateMachine<TState,TTrigger>`, `Configure(state)` with
-  `Permit`/`PermitIf`/`PermitReentry`/`Ignore`, `OnEntry`/`OnExit`, `SubstateOf`
-  hierarchies, `CanFire`/`GetPermittedTriggers`, `OnUnhandledTrigger`, the
-  external state-accessor constructor, and the fork's UniTask-backed
-  `OnEntryAsync`/`FireAsync`. Use it when a growing `switch` on an enum, or a
-  spread of interacting bool flags, has become the real state machine — an
-  ability's cooldown graph, a UI screen flow, an enemy's behaviour states. Not for: a continuous value stream a subscriber composes
-  over time (`r3-reactive-extensions`), the async body inside an `OnEntryAsync`
-  (`unitask-async-programming`), generating a snapshot codec for that state
-  (`source-generator-authoring`), an Animator Controller's own state machine
-  driving clips (`unity-animation`), an enum whose cases are kinds of thing
-  rather than states of one thing (`unity-scriptableobject-architecture`), a
-  two-state case with no real transition rules, which is a bool
-  (`coding-principles.md`).
+  Explicit state machines with Stateless-For-Unity: `StateMachine<TState,
+  TTrigger>`, `Configure` with `Permit`/`PermitIf`/`PermitReentry`/`Ignore`,
+  `OnEntry`/`OnExit`, `SubstateOf` hierarchies,
+  `CanFire`/`GetPermittedTriggers`, `OnUnhandledTrigger`, external
+  state-accessor construction, and UniTask-backed
+  `OnEntryAsync`/`FireAsync`. Use when a growing `switch` on an enum, or
+  interacting bool flags, has become the real state machine — an ability's
+  cooldown graph, a UI screen flow, an enemy's behaviour states. Not for: a
+  continuous value stream composed over time, owned by
+  `r3-reactive-extensions`; the async body inside `OnEntryAsync`, owned by
+  `unitask-async-programming`; generating a snapshot codec for the state,
+  owned by `source-generator-authoring`; an Animator Controller's state
+  machine driving clips, owned by `unity-animation`; an enum of kinds
+  rather than states of one thing, owned by
+  `unity-scriptableobject-architecture`; a two-state case with no
+  transition rules, which is a bool per `coding-principles.md`.
 ---
 
 # Stateless-For-Unity — Explicit State Machines

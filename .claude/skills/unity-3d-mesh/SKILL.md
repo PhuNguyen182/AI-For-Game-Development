@@ -1,24 +1,24 @@
 ---
 name: unity-3d-mesh
 description: >
-  Unity built-in 3D mesh authoring — the `Mesh` class (`vertices`,
+  Unity built-in 3D mesh authoring — the `Mesh` class, including `vertices`,
   `triangles`, `normals`, `tangents`, `colors`, `uv` through `uv8`,
-  `subMeshCount`, `bounds`, `indexFormat`), `SetVertices`, `SetTriangles`,
+  `subMeshCount`, `bounds`, and `indexFormat`; `SetVertices`, `SetTriangles`,
   `SetIndices`, `SetVertexBufferParams`, `SetIndexBufferParams`, and
-  `SetSubMesh`, the Job System `MeshDataArray` and `MeshData` via
-  `AcquireReadOnlyMeshData` and `AllocateWritableMeshData`,
+  `SetSubMesh`; the Job System `MeshDataArray` and `MeshData` via
+  `AcquireReadOnlyMeshData` and `AllocateWritableMeshData`;
   `RecalculateNormals`, `RecalculateBounds`, `RecalculateTangents`,
-  `MarkDynamic`, `Optimize`, `CombineMeshes`, `MeshFilter`, `MeshRenderer`,
-  `GameObject.CreatePrimitive` with `PrimitiveType`, mesh and vertex
-  compression, and Read/Write Enabled. Use when building or debugging a
+  `MarkDynamic`, `Optimize`, `CombineMeshes`, `MeshFilter`, `MeshRenderer`;
+  `GameObject.CreatePrimitive` with `PrimitiveType`; mesh/vertex
+  compression; and Read/Write Enabled. Use when building or debugging a
   procedural mesh, a mesh asset, or its Filter/Renderer wiring. Not for:
-  skinning, blend shapes, bones (`unity-animation`), `MeshCollider`
-  cooking (`unity-3d-physics`), materials/shaders (`shader-authoring`),
-  LOD/batching escalation (`unity-engineer`, `tech-lead-performance`),
-  model import settings (`unity-engineer`), sprite meshes
-  (`unity-2d-sprite`), GPU-side deformation that never returns to the CPU
-  (`compute-shader-vfx`), scheduling the jobs the Advanced Mesh API runs in
-  (`unity-job-system-and-burst`).
+  skinning, blend shapes, or bones — `unity-animation`; `MeshCollider`
+  cooking — `unity-3d-physics`; materials and shaders — `shader-authoring`;
+  LOD/batching escalation — `unity-engineer` or `tech-lead-performance`;
+  model import settings — `unity-engineer`; sprite meshes —
+  `unity-2d-sprite`; GPU-side deformation that never returns to the CPU —
+  `compute-shader-vfx`; scheduling the jobs the Advanced Mesh API runs in —
+  `unity-job-system-and-burst`.
 ---
 
 # Unity 3D Mesh — Anatomy, Scripting API & Procedural Generation

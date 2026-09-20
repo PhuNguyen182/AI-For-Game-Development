@@ -1,23 +1,21 @@
 ---
 name: unity-test-framework
 description: >
-  Technique for Unity's Test Framework package (`UnityEngine.TestTools`,
-  `UnityEditor.TestTools.TestRunner.Api`) — a customised NUnit integration for
-  Edit Mode and Play Mode tests: test assemblies, `UnityTest` coroutine tests,
-  async task tests, `UnitySetUp` and `UnityTearDown`, `RequiresPlayMode`,
-  `ConditionalIgnore`, `PrebuildSetup`, `LogAssert`, the `Utils` equality
-  comparers, allocation `Constraints`, `MonoBehaviourTest<T>`, the Test Runner
-  window, the `-runTests` command line, and `TestRunnerApi`. Use when tests
-  must be written, run, or a run scoped with filters. Not for: deriving which
-  cases the suite should contain at all (`risk-based-test-planning`); the CI
-  job that runs them and
-  publishes the NUnit XML (`jenkins-pipeline-authoring`); the Unity command
-  line around `-runTests` (`unity-batchmode-cli`); driving a `VisualElement`
-  tree through the UI Test Framework package (`ui-toolkit`); the game rules
-  under test (`csharp-engineer`); manual walkthroughs against the GDD
-  (`playtest-tester`); real platform builds (`build-run-engineer`); Profiler
-  measurement (`unity-profiler-diagnostics`); plain NUnit fundamentals
-  (NUnit's own documentation).
+  Technique for Unity's Test Framework package — a customised NUnit
+  integration for Edit Mode and Play Mode tests: test assemblies, `UnityTest`
+  coroutine/async task tests, `UnitySetUp`/`UnityTearDown`,
+  `RequiresPlayMode`, `ConditionalIgnore`, `PrebuildSetup`, `LogAssert`,
+  `Utils` equality comparers, allocation `Constraints`,
+  `MonoBehaviourTest<T>`, the Test Runner window, the `-runTests` CLI, and
+  `TestRunnerApi`. Use when tests must be written, run, or a run scoped with
+  filters. Not for: which cases a suite should contain —
+  `risk-based-test-planning`; the CI job running and publishing results —
+  `jenkins-pipeline-authoring`; the `-runTests` command line itself —
+  `unity-batchmode-cli`; driving a `VisualElement` tree — `ui-toolkit`; the
+  game rules under test — `csharp-engineer`; manual walkthroughs against the
+  GDD — `playtest-tester`; real platform builds — `build-run-engineer`;
+  Profiler measurement — `unity-profiler-diagnostics`; plain NUnit
+  fundamentals — NUnit's own docs.
 ---
 
 # Unity Test Framework — Edit Mode, Play Mode, Assertions, CI

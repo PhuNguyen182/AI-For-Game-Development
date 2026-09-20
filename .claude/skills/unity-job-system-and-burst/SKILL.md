@@ -3,20 +3,20 @@ name: unity-job-system-and-burst
 description: >
   Technique for moving measured, CPU-bound bulk work onto worker threads with
   Unity's C# Job System: `IJob`, `IJobFor`, `IJobParallelFor`,
-  `IJobParallelForTransform`, `Schedule`/`ScheduleParallel`, `JobHandle`
+  `IJobParallelForTransform`, `Schedule` and `ScheduleParallel`, `JobHandle`
   chaining, `CombineDependencies`, batch sizing, `NativeArray` and
-  `NativeContainer` safety, `[ReadOnly]`, `Allocator.Temp`/`TempJob`/`Persistent`
-  lifetime and disposal, plus applying and verifying `[BurstCompile]`.
+  `NativeContainer` safety, ReadOnly, `Allocator.Temp`, `TempJob`, and
+  `Persistent` lifetime and disposal, plus applying BurstCompile.
   Use when a Profiler capture already shows a parallelizable main-thread
-  bottleneck, or when a job races, leaks, or stalls.
-  Not for: whether to parallelize at all (`tech-lead-performance`); the capture
-  that proves it (`unity-profiler-diagnostics`); HPC# subset, `FloatMode`,
-  intrinsics, AOT (`unity-burst-compiler`); container type choice
-  (`unity-collections`); entity, system, and query design
-  (`unity-ecs-architecture`); which physics job interface fits (`unity-physics`);
-  `float3` maths (`unity-mathematics`); GPU-driven effects (`compute-shader-vfx`);
-  off-main-thread work that is not blittable per-element data — `Task`, `async`,
-  `lock`, a producer/consumer queue (`dotnet-concurrency-and-async`).
+  bottleneck, or when a job races, leaks, or stalls. Not for: whether to
+  parallelize — `tech-lead-performance`; the capture proving it —
+  `unity-profiler-diagnostics`; HPC# subset, `FloatMode`, intrinsics, and AOT
+  — `unity-burst-compiler`; container type choice — `unity-collections`;
+  entity, system, and query design — `unity-ecs-architecture`; which physics
+  job interface fits — `unity-physics`; `float3` maths —
+  `unity-mathematics`; GPU-driven effects — `compute-shader-vfx`;
+  off-main-thread work not blittable per-element data such as `Task`, `async`,
+  `lock`, or a producer-consumer queue — `dotnet-concurrency-and-async`.
 ---
 
 # Unity Job System & Burst — Multithreaded CPU-Bound Work

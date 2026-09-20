@@ -1,20 +1,20 @@
 ---
 name: unity-scriptableobject-architecture
 description: >
-  ScriptableObject-driven architecture: `[CreateAssetMenu]` Data Container
-  and Variable/Reference SOs, abstract Delegate Object strategies,
-  `GameEvent`/`GameEventListener` Observer-pattern events, typed
-  `EventChannelSO<T>` channels, Extendable Enums (an asset per case instead
-  of a C# enum), the Command pattern's `CommandSO.Execute()`/`Undo()`, the
-  Runtime Set pattern for tracking active instances, and Dual Serialization
+  ScriptableObject-driven architecture: the CreateAssetMenu attribute for
+  Data Container and Variable/Reference SOs; abstract Delegate Object
+  strategies; `GameEvent`/`GameEventListener` Observer-pattern events; typed
+  `EventChannelSO<T>` channels; Extendable Enums, an asset per case instead
+  of a C# enum; the Command pattern's `CommandSO.Execute`/`Undo`; the
+  Runtime Set pattern for tracking active instances; and Dual Serialization
   via `ISerializationCallbackReceiver.OnAfterDeserialize` to reset runtime
   state on domain reload. Use when designing an asset-based,
   Inspector-wireable decoupling layer instead of singletons,
   `FindObjectOfType`, or hardwired references. Not for: the game-rule logic
-  an SO delegates to (`csharp-engineer`'s Shared Core), Inspector-attribute
-  styling of an existing SO field (`odin-inspector`), MessagePipe/R3
-  messaging (`messagepipe-event-messaging`, `r3-reactive-extensions`), DI
-  composition/lifetime (`vcontainer-dependency-injection`).
+  an SO delegates to — `csharp-engineer`'s Shared Core; Inspector-attribute
+  styling of an existing SO field — `odin-inspector`; MessagePipe/R3
+  messaging — `messagepipe-event-messaging`, `r3-reactive-extensions`; DI
+  composition/lifetime — `vcontainer-dependency-injection`.
 ---
 
 # Unity ScriptableObject Architecture — Data, Delegation & Decoupling Patterns

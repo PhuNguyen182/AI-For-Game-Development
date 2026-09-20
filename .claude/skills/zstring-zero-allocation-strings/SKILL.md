@@ -2,14 +2,18 @@
 name: zstring-zero-allocation-strings
 description: >
   ZString — allocation-free string building: `ZString.Format` and
-  `ZString.Concat` with no boxing and no intermediate `.ToString()`, the
-  struct-based `ZString.CreateStringBuilder()` (`Utf16ValueStringBuilder`,
-  `Utf8ValueStringBuilder`) renting pooled buffers, and `TextMeshProExtensions`
-  (`SetText`, `SetTextFormat`) writing straight into TMP's own char buffer with
-  no string materialized at all. The core API has no `UnityEngine` dependency,
-  so it works in `Game.Core.*` as well as `Game.Client.*`. Use on a
-  profiler-confirmed per-frame or hot-path string construction site.
-  Not for: one-off formatting outside a hot path (plain interpolation, per `coding-principles.md`), whether the UI should update at all (`r3-reactive-extensions`), binary serialization (`memorypack-serialization`), query chains (`zlinq-zero-allocation-linq`).
+  `ZString.Concat` with no boxing and no intermediate `.ToString`, the
+  struct-based `ZString.CreateStringBuilder`, returning
+  `Utf16ValueStringBuilder` or `Utf8ValueStringBuilder`, renting pooled
+  buffers, and `TextMeshProExtensions` such as `SetText` and `SetTextFormat`
+  writing straight into TMP's own char buffer with no string materialized
+  at all. The core API has no `UnityEngine` dependency, so it works in
+  `Game.Core.*` as well as `Game.Client.*`. Use on a profiler-confirmed
+  per-frame or hot-path string construction site.
+  Not for: one-off formatting outside a hot path, such as plain
+  interpolation, per `coding-principles.md`; whether the UI should update
+  at all — `r3-reactive-extensions`; binary serialization —
+  `memorypack-serialization`; query chains — `zlinq-zero-allocation-linq`.
 ---
 
 # ZString — Zero-Allocation String Building

@@ -7,8 +7,13 @@ description: >
   config file — so events and balance ship without an app store release.
   Weighs cadence need, segmentation and A/B targeting, staged rollout and
   rollback safety, and schema versioning against config-consuming code. Use
-  when choosing the infrastructure behind live content cadence.
-  Not for: designing the events or economy themselves (GD), shipping new assets rather than tuning values already in the build (`unity-addressables`), event analytics (`analytics-telemetry-platform`), backend platform choice (`backend-build-vs-buy`), post-release crash triage (`crash-anr-fault-domain-triage`), the scoring rubric (`tco-reversibility-scoring`).
+  when choosing the infrastructure behind live content cadence. Not for:
+  designing the events or economy, owned by the GD; shipping new assets
+  rather than tuning values in the build, owned by `unity-addressables`;
+  event analytics, owned by `analytics-telemetry-platform`; backend
+  platform choice, owned by `backend-build-vs-buy`; post-release crash
+  triage, owned by `crash-anr-fault-domain-triage`; and the scoring
+  rubric, owned by `tco-reversibility-scoring`.
 ---
 
 # Live-Ops Content Pipeline — remote config for content and economy cadence

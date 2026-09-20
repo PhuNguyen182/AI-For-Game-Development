@@ -1,20 +1,21 @@
 ---
 name: csvhelper-csv-data
 description: >
-  CsvHelper — reading and writing delimited text: `CsvReader`/`CsvWriter` over
-  a `StreamReader`/`StreamWriter`, `GetRecords<T>()`/`WriteRecords()`, manual
-  `ReadHeader()`/`Read()`/`GetField<T>()`, `ClassMap<T>`/`AutoMap()` with
-  `.Name()`/`.Index()`/`.Ignore()`/`.Optional()`/`.Constant()`/`.Validate()`/`.TypeConverter<T>()`,
-  the attribute equivalents (`[Name]`, `[Index]`,
-  `[Optional]`, `[Constant]`, `[TypeConverter]`, `[CultureInfo]`,
-  `[Delimiter]`), `CsvConfiguration` (`HasHeaderRecord`, `IgnoreBlankLines`,
-  delimiter), custom `ITypeConverter`/`DefaultTypeConverter`,
-  `TypeConverterOptions`, and `CsvDataReader`. Use for designer-authored
-  tabular data — balance tables, drop tables, localization, item sheets —
-  normally Editor tooling or a build-time step. Not for: binary save/wire
-  formats (`memorypack-serialization`), JSON config (`System.Text.Json`),
-  locating the CSV asset (`unity-addressables`), authoring the resulting `SO_`
-  asset (`unity-engineer`).
+  CsvHelper for reading and writing delimited text: `CsvReader` and
+  `CsvWriter` over a `StreamReader` or `StreamWriter`, `GetRecords<T>`
+  and `WriteRecords`, manual `ReadHeader`, `Read`, and `GetField<T>`,
+  `ClassMap<T>` and `AutoMap` with Name, Index, Ignore, Optional,
+  Constant, Validate, and TypeConverter configuration, the equivalent
+  attributes such as Name, Index, Optional, Constant, TypeConverter,
+  CultureInfo, and Delimiter, `CsvConfiguration` options like
+  HasHeaderRecord and IgnoreBlankLines, custom `ITypeConverter` and
+  `DefaultTypeConverter`, `TypeConverterOptions`, and `CsvDataReader`.
+  Use for designer-authored tabular data — balance tables, drop tables,
+  localization, item sheets — normally Editor tooling or a build-time
+  step. Not for: binary save or wire formats, owned by
+  `memorypack-serialization`; JSON config via `System.Text.Json`;
+  locating the CSV asset, owned by `unity-addressables`; authoring the
+  resulting `SO_` asset, owned by `unity-engineer`.
 ---
 
 # CsvHelper — CSV Import/Export

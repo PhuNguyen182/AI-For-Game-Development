@@ -1,19 +1,20 @@
 ---
 name: dotnet-concurrency-and-async
 description: >
-  Concurrency and asynchronous programming in pure .NET — Task, Task<TResult>,
-  async/await, ValueTask, ValueTask<TResult>, CancellationToken,
-  CancellationTokenSource, TaskCompletionSource<TResult>, IAsyncEnumerable<T>,
-  System.Threading.Channels' Channel<T>, System.Threading.Tasks.Parallel.For,
-  Parallel.ForEach, lock, Monitor, SemaphoreSlim, Interlocked. Use when writing
-  async I/O, cooperative cancellation, producer/consumer pipelines, CPU-bound
-  parallel loops, or thread-safe shared state in Game.Core.*, Game.Server.*,
-  or an SDK/platform wrapper with no UnityEngine dependency — including
-  bridging that code into Unity's PlayerLoop. Not for: Unity PlayerLoop-native
-  async (`unitask-async-programming`), reactive push streams
-  (`r3-reactive-extensions`), Burst/Job System bulk parallelism
-  (`unity-job-system-and-burst`), collection and buffer selection
-  (`dotnet-memory-and-collections`).
+  Concurrency and asynchronous programming in pure .NET — Task,
+  Task<TResult>, async and await, ValueTask, ValueTask<TResult>,
+  CancellationToken, CancellationTokenSource, TaskCompletionSource<TResult>,
+  IAsyncEnumerable<T>, System.Threading.Channels' Channel<T>,
+  System.Threading.Tasks.Parallel.For, Parallel.ForEach, lock, Monitor,
+  SemaphoreSlim, and Interlocked. Use when writing async I/O, cooperative
+  cancellation, producer or consumer pipelines, CPU-bound parallel loops,
+  or thread-safe shared state in Game.Core.*, Game.Server.*, or an SDK or
+  platform wrapper with no UnityEngine dependency — including bridging
+  that code into Unity's PlayerLoop. Not for: Unity PlayerLoop-native
+  async, owned by `unitask-async-programming`; reactive push streams,
+  owned by `r3-reactive-extensions`; Burst or Job System bulk
+  parallelism, owned by `unity-job-system-and-burst`; collection and
+  buffer selection, owned by `dotnet-memory-and-collections`.
 ---
 
 # .NET Concurrency and Async — Task, Cancellation, Channels, Parallel, and Threading Primitives

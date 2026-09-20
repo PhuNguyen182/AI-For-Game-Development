@@ -1,18 +1,19 @@
 ---
 name: secret-and-supply-chain-scan
 description: >
-  Scan for credentials and hostile code in a Unity repository — private keys,
-  `.keystore`, `.jks`, `.p12`, `.mobileprovision`, `.env`, `google-services.json`,
-  `GoogleService-Info.plist`, AWS and Google API key shapes, JWT and bearer
-  tokens — plus Unity supply-chain risk that auto-executes on import:
-  `[InitializeOnLoad]`, `[InitializeOnLoadMethod]`, `[DidReloadScripts]`,
-  Editor folder scripts inside an imported package, and DLLs with no source.
-  Distinguishes these from public identifiers that only look secret: AdMob App
-  and Ad Unit IDs, IAP SKUs, bundle IDs, Steam App IDs. Not for: correctness
-  and spec drift (`shared-core-boundary-audit`); fixing an integration
-  (`tech-lead-sdk-platform`); whether a credential ever entered git history
-  and is still reachable (`git-forensics`); key rotation and history rewrite
-  decisions (`cto`).
+  Scan for credentials and hostile code in a Unity repository — private
+  keys, `.keystore`, `.jks`, `.p12`, `.mobileprovision`, `.env`,
+  `google-services.json`, `GoogleService-Info.plist`, AWS and Google API
+  key shapes, and JWT and bearer tokens — plus Unity supply-chain risk that
+  auto-executes on import: the InitializeOnLoad, InitializeOnLoadMethod,
+  and DidReloadScripts attributes, Editor folder scripts inside an
+  imported package, and DLLs with no source. Distinguishes these from
+  public identifiers that only look secret: AdMob App and Ad Unit IDs, IAP
+  SKUs, bundle IDs, and Steam App IDs. Not for: correctness and spec
+  drift, owned by `shared-core-boundary-audit`; fixing an integration,
+  owned by `tech-lead-sdk-platform`; whether a credential ever entered git
+  history and is still reachable, owned by `git-forensics`; key rotation
+  and history rewrite decisions, owned by `cto`.
 ---
 
 # Secret and Supply-Chain Scan — credentials, hostile imports, and false positives

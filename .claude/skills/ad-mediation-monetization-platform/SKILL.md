@@ -1,18 +1,19 @@
 ---
 name: ad-mediation-monetization-platform
 description: >
-  Vendor/infra framework for two commonly-bundled but independent decisions —
-  which ad mediation platform to commit to (AppLovin MAX, ironSource, Google
-  AdMob) and whether the virtual-currency ledger should be a managed service
-  or custom-built — weighing fill rate and eCPM against take rate, switching
-  cost, and store disclosure policy for gacha/loot-box and IAP receipt
+  Vendor and infrastructure framework for two commonly bundled but
+  independent decisions — which ad mediation platform to commit to, such
+  as AppLovin MAX, ironSource, or Google AdMob, and whether the
+  virtual-currency ledger should be a managed service or custom-built —
+  weighing fill rate and eCPM against take rate, switching cost, and
+  store disclosure policy for gacha, loot-box, and IAP receipt
   validation. Use when choosing a mediation vendor or economy backend.
-  Not for: integrating the chosen SDK or wiring IAP
-  (`tech-lead-sdk-platform`), designing the economy, gacha rates, or currency
-  sinks (a GD decision with `advisor`/`critic`), the scoring rubric
-  (`tco-reversibility-scoring`), general dependency vetting
-  (`tech-vendor-dependency-risk-assessment`), player-data persistence
-  (`backend-build-vs-buy`).
+  Not for: integrating the chosen SDK or wiring IAP, owned by
+  `tech-lead-sdk-platform`; designing the economy, gacha rates, or
+  currency sinks, a GD decision with `advisor` and `critic`; the scoring
+  rubric in `tco-reversibility-scoring`; general dependency vetting via
+  `tech-vendor-dependency-risk-assessment`; player-data persistence,
+  owned by `backend-build-vs-buy`.
 ---
 
 # Ad Mediation & Monetization Platform — vendor and ledger decision

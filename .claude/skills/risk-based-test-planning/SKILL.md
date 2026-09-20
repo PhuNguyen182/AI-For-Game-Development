@@ -1,17 +1,18 @@
 ---
 name: risk-based-test-planning
 description: >
-  Derive test coverage from a Tech Spec instead of guessing at it — equivalence
-  partitioning, boundary value analysis, decision tables, state-transition
-  coverage, and risk ranking by impact against likelihood. Produces a coverage
-  assignment naming which QA agent owns each case, plus the exit criteria a
-  feature must satisfy before sign-off. Use when scoping QA for a feature, or
-  when choosing which cases a test suite should actually contain. Not for:
-  writing the tests (`unity-test-framework`); playing scenarios by hand
-  (`playtest-scenario-execution`); measuring performance
-  (`performance-budget-verification`); walking the cases on a device
-  (`device-test-walkthrough`); the spec's own acceptance criteria
-  (`technical-architect`).
+  Derive test coverage from a Tech Spec instead of guessing at it —
+  equivalence partitioning, boundary value analysis, decision tables,
+  state-transition coverage, and risk ranking by impact against likelihood.
+  Produces a coverage assignment naming which QA agent owns each case, plus
+  the exit criteria a feature must satisfy before sign-off. Use when
+  scoping QA for a feature, or when choosing which cases a test suite
+  should actually contain. Not for: writing the tests, owned by
+  `unity-test-framework`; playing scenarios by hand, owned by
+  `playtest-scenario-execution`; measuring performance, owned by
+  `performance-budget-verification`; walking the cases on a device, owned
+  by `device-test-walkthrough`; the spec's own acceptance criteria, owned
+  by `technical-architect`.
 ---
 
 # Risk-Based Test Planning — coverage derived from the spec, not from intuition

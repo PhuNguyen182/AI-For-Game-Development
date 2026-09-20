@@ -3,19 +3,20 @@ name: unity-mathematics
 description: >
   `Unity.Mathematics` — the shader-like, SIMD-friendly C# math library:
   `float2`/`float3`/`float4` and their `int`/`bool`/`double` variants,
-  `float3x3`/`float4x4`, `quaternion`, swizzling (`v.xz`, `v.rgb`), the static
-  `math` class (`math.normalize`, `math.saturate`, `math.distancesq`), `noise`
-  (`cnoise`/`snoise`/`cellular`), and the explicit-state `Random` struct. Every
-  type is a blittable unmanaged struct with no `UnityEngine` dependency, so it
-  is the math library for `Game.Core.*`, Burst jobs, and ECS components alike,
-  and `Unity.Mathematics.Random` is the seeded struct RNG Burst, job and ECS
+  `float3x3`/`float4x4`, `quaternion`, swizzling like `v.xz`/`v.rgb`, the
+  static `math` class such as `math.normalize`, `math.saturate`,
+  `math.distancesq`, `noise` such as `cnoise`/`snoise`/`cellular`, and the
+  explicit-state `Random` struct. Every type is a blittable unmanaged struct
+  with no `UnityEngine` dependency, so it is the math library for
+  `Game.Core.*`, Burst jobs, and ECS components alike, and
+  `Unity.Mathematics.Random` is the seeded struct RNG Burst, job and ECS
   code needs instead of `UnityEngine.Random`. Not for: an injected `IRandom`
-  gameplay roll, weighted loot table or shuffle outside Burst
-  (`nrandom-random-generation`), job scheduling
-  (`unity-job-system-and-burst`), container choice (`unity-collections`), Burst
-  tuning and `FloatMode` (`unity-burst-compiler`), ECS component design
-  (`unity-ecs-architecture`), physics components (`unity-physics`), material
-  overrides (`unity-entities-graphics`).
+  roll, weighted loot table or shuffle outside Burst —
+  `nrandom-random-generation`; job scheduling —
+  `unity-job-system-and-burst`; container choice — `unity-collections`;
+  Burst tuning and `FloatMode` — `unity-burst-compiler`; ECS component
+  design — `unity-ecs-architecture`; physics components — `unity-physics`;
+  material overrides — `unity-entities-graphics`.
 ---
 
 # Unity Mathematics — Vector/Matrix Types, math, Random & noise
