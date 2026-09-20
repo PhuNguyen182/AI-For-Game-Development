@@ -61,7 +61,7 @@ which is why this repository has a workflow layer and a ledger at all.
 | **Agents** | `.claude/agents/` | 28 agents, flat | Each a system prompt: one role, its scope, its refusals, its output envelope |
 | **Skills** | `.claude/skills/` | 90 skills, flat | On-demand technique packages, one per `.claude/skills/<name>/SKILL.md` |
 | **Workflows** | `.claude/workflows/` | orchestrator + 6 pipelines + a checklist, 29 reference files, 3 state templates, 1 verification script | Sequence, parallelism, retry loops, checkpoints, cross-run state |
-| **Commands** | `.claude/commands/` | 5 slash commands | Self-contained investigations — one of which edits code |
+| **Commands** | `.claude/commands/` | 6 slash commands | Self-contained investigations — one of which edits code |
 | **Docs** | `.claude/docs/` | 3 authoring templates, 3 frame sources, 8 review records, a prompt-template suite | How to extend the framework, how to brief it, and the record of how it got here |
 | **Settings** | `.claude/settings.json` | 35 allow-rules | Pre-approved read-only git/lfs commands so routine inspection does not prompt |
 
@@ -326,6 +326,7 @@ plain C# and `Game.Core.*` types use `!= null`. **Every QA output states what it
 | [`/investigate-device-crash`](.claude/commands/investigate-device-crash.md) | `[android\|ios] [package-id]` | Investigates a crash/ANR on the **currently connected device** |
 | [`/resolve-merge-conflicts`](.claude/commands/resolve-merge-conflicts.md) | — | Resolves an in-progress merge across code, prefabs, scenes, SOs, Addressables — **this one edits files** |
 | [`/verify-workflow-layer`](.claude/commands/verify-workflow-layer.md) | — | Runs `tools/verify-workflow-layer.ps1` and reports drift in the workflow layer's own claims |
+| [`/save-workmemory`](.claude/commands/save-workmemory.md) | `[feature-root-path]` | Summarizes the session into `WORKMEMORY.md` at the feature root — creates or updates in place |
 
 `/plan-test-coverage` also runs inside `qa-pipeline.md`'s device lane, filtered to whatever `qa-lead` assigned.
 
@@ -373,7 +374,7 @@ that dies leaves it *suspect*, never silently free — `state/README.md` carries
 .
 ├── .claude/
 │   ├── agents/                     # 28 roles, flat: <agent-name>.md
-│   ├── commands/                   # 5 slash commands
+│   ├── commands/                   # 6 slash commands
 │   ├── docs/
 │   │   ├── agent-template.md · skill-template.md · skill-reference-template.md
 │   │   ├── frame/                  # 3 source documents this project's rules adapt from
