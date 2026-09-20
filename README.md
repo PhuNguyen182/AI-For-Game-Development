@@ -58,12 +58,12 @@ which is why this repository has a workflow layer and a ledger at all.
 |---|---|---|---|
 | **Rules** | `.claude/rules/` | 12 files, flat | Auto-loaded into every session — standards every agent obeys before it can even read its task |
 | **Standards** | `.claude/standards/` | 7 files — `client/` (5), `qa/` (2) | Loaded **on demand**, only by the agents whose track owns them |
-| **Agents** | `.claude/agents/` | 28 agents, 7 groups | Each a system prompt: one role, its scope, its refusals, its output envelope |
+| **Agents** | `.claude/agents/` | 28 agents, flat | Each a system prompt: one role, its scope, its refusals, its output envelope |
 | **Skills** | `.claude/skills/` | 90 skills, flat | On-demand technique packages, one per `.claude/skills/<name>/SKILL.md` |
 | **Workflows** | `.claude/workflows/` | orchestrator + 6 pipelines + a checklist, 29 reference files, 3 state templates, 1 verification script | Sequence, parallelism, retry loops, checkpoints, cross-run state |
 | **Commands** | `.claude/commands/` | 5 slash commands | Self-contained investigations — one of which edits code |
-| **Docs** | `.claude/docs/` | 3 authoring templates, 3 frame sources, 9 review records, a prompt-template suite | How to extend the framework, how to brief it, and the record of how it got here |
-| **Settings** | `.claude/settings.json` | 31 allow-rules | Pre-approved read-only git/lfs commands so routine inspection does not prompt |
+| **Docs** | `.claude/docs/` | 3 authoring templates, 3 frame sources, 8 review records, a prompt-template suite | How to extend the framework, how to brief it, and the record of how it got here |
+| **Settings** | `.claude/settings.json` | 35 allow-rules | Pre-approved read-only git/lfs commands so routine inspection does not prompt |
 
 **The division of labour is strict**: `rules/`+`standards/` are standards, `agents/` is who owns what,
 `skills/` is how a technique works, `workflows/` is what runs when. An agent file that describes sequence is
@@ -78,28 +78,15 @@ exist so direction, spec approval, build acceptance and feature closure are answ
 
 ### Tiers — `task-classification.md`
 
-Every task is classified on **five independent axes** into an **A1–A5** assurance tier — the retired
-Simple/Medium/Complex triage tier appears nowhere in this framework anymore.
-
-| Axis | Low end | High end |
-|---|---|---|
-| **D** difficulty | D1: a rename, a tuned value | D5: a system-level migration (netcode, DOTS) |
-| **C** criticality | C0: a scratch file | C4: a credential, real-money billing, a store submission |
-| **U** uncertainty | U0: everything settled | U3: a consequential unknown — an undecided GD call |
-| **R** reversibility | R0: no state change | R3: rewritten published history, a leaked credential |
-| **X** exposure | X0: analysis only | X3: a store submission, production config, real money |
-
-Tier = the **highest** of D/C/R/X; **U2** raises it one level unless resolved, **U3** forces **A5** until
-bounded. **D sets shape**; **C/R/X set depth** (verification, evidence) and never buy a checkpoint or extra
-agent alone; **U** is the direction gate, spent down once resolved.
-
-| Tier | Verification floor | Attempt budget | Scored by `assurance-evaluator` |
-|---|---:|---:|---|
-| A1 | V1 | 2 | no |
-| A2 | V1 (V2 once it changes state) | 2 | no |
-| A3 | V2 | 3 | yes |
-| A4 | V3 | 4 | yes |
-| A5 | V4 | 5 | yes |
+Every task is classified on **five independent axes** (D difficulty, C criticality, U uncertainty,
+R reversibility, X exposure) into an **A1–A5** assurance tier — the retired Simple/Medium/Complex triage tier
+appears nowhere in this framework anymore. Tier = the **highest** of D/C/R/X; **U2** raises it one level
+unless resolved, **U3** forces **A5** until bounded. **D sets shape** (roles, checkpoints, docset); **C/R/X
+set depth** (verification, evidence) and never buy a checkpoint or extra agent alone; **U** is the direction
+gate, spent down once resolved. The tier also sets the verification floor (V1→V4) and attempt budget
+(2→5) an execution must meet — full axis definitions and the per-tier table are in
+[`task-classification.md`](.claude/rules/task-classification.md) and
+[`effort-allocation.md`](.claude/rules/effort-allocation.md), not restated here.
 
 ### Tracks
 
@@ -171,7 +158,7 @@ with your connected server fails silently at call time. Verify the names line up
 each agent's `tools:` line — nothing else needs changing:
 
 ```bash
-grep -h '^tools:' .claude/agents/*/*.md | tr ',' '\n' | grep mcp__ | sort -u
+grep -h '^tools:' .claude/agents/*.md | tr ',' '\n' | grep mcp__ | sort -u
 ```
 
 ### Without a Unity Editor connection
@@ -218,13 +205,11 @@ general** — a catch-all takes only what nothing above it claimed.
 
 ### The five escalation criteria
 
-| Criterion | Axis |
-|---|---|
-| Touches `Game.Core.*` — a game rule, economy, state machine, cooldown | **C2+** |
-| Touches a **consequence path** — a credential/signing config, real-money IAP/billing, a store submission, player PII, save-data migration, published git history, a released build, a shipped perf budget | **C3+** |
-| Needs more than one role | **D3+** |
-| Multiplayer-relevant | **C2+** |
-| Rests on something the GD has not decided yet | **U3** |
+Any one of these trips `feature-intake.md` **E1**: touches `Game.Core.*` (C2+), touches a consequence path —
+credential/signing, real-money IAP/billing, a store submission, player PII, save-data migration, published
+git history, a released build, a shipped perf budget (C3+), needs more than one role (D3+), is
+multiplayer-relevant (C2+), or rests on something the GD has not decided yet (U3). Full criteria and axis
+definitions live in [`task-classification.md`](.claude/rules/task-classification.md).
 
 **Route by the cost of being wrong, never by whether behaviour changed** — consequence buys the *gates*, never
 the pipeline. Tripped for **consequence alone**, with one role and no moving contract, it's the
@@ -275,21 +260,24 @@ regardless**: closing a feature is the GD's decision, never a gate's verdict.
 
 ## The agent roster
 
-28 agents, 7 groups. Model matches the hardest **Self-assessment** level the role actually reaches.
+28 agents, **flat** — every one lives at `.claude/agents/<agent-name>.md`, no group subfolder (they were
+flattened out for the same reason skills were: the harness resolves an agent one level deep, not two). Model
+matches the hardest **Self-assessment** level the role actually reaches. Grouped informally, by concern:
 
-| Group | Agents (model, owns) |
-|---|---|
-| **Architecture (4)** | `technical-architect` (opus, Tech Spec/triage/CP3), `cto` (opus, strategic tech calls), `researcher` (sonnet, sourced research), `rd-engineer` (sonnet, spikes — GD-summoned only) |
-| **Client (7)** | `csharp-engineer` (sonnet, Shared Core), `unity-engineer` (sonnet, scenes/prefabs/perf), `ui-ux-programmer` (sonnet, UI bound to state), `technical-artist` (sonnet, shaders/VFX), `tech-lead-csharp-unity`/`tech-lead-performance` (opus, escalation), `tech-lead-sdk-platform` (opus, every 3rd-party SDK) |
-| **Backend (2)**, multiplayer track only | `netcode-engineer` (sonnet, sync protocol), `server-authoritative-engineer` (sonnet, server validation) |
-| **QA (8)** | `qa-lead` (opus, scope/sign-off), `code-reviewer`/`security-reviewer` (opus, the two gates), `assurance-evaluator` (opus, independent scoring — A3+ only), `qa-automation-engineer`/`playtest-tester`/`performance-qa-engineer`/`build-verification-tester` (sonnet, execution) |
-| **DevOps (3)** | `git-expert` (opus, git ops/forensics), `ci-cd-engineer` (sonnet, authors CI/CD), `build-run-engineer` (haiku, builds — explicit GD request only) |
-| **Leadership (3)** | `advisor` (sonnet, widens options), `critic` (opus, attacks a leaning direction), `producer` (sonnet, aggregates, never judges) |
-| **Live-Ops (1)** | `crash-anr-investigator` (opus, released production telemetry only — a device under test is `/investigate-device-crash` instead) |
+| Group (informal) | Count | Covers |
+|---|---:|---|
+| **Architecture** | 4 | Tech Spec/triage (`technical-architect`), strategic tech calls (`cto`), research, spikes |
+| **Client** | 7 | Shared Core, scene/prefab/perf, UI, shaders/VFX, and 3 tech-lead escalation roles |
+| **Backend** | 2 | Sync protocol and server-side validation — multiplayer track only |
+| **QA** | 8 | Scope/sign-off, both review gates, independent scoring (A3+ only), 4 execution roles |
+| **DevOps** | 3 | Git ops/forensics, CI/CD authoring, builds (GD-summoned only) |
+| **Leadership** | 3 | Widening options, attacking a leaning direction, aggregating status |
+| **Live-Ops** | 1 | Released production crash/ANR telemetry only |
 
-**The `tools:` list is the hard sandbox.** 13 agents hold no `Write`/`Edit` — reports leave no source, so
-direct dispatch accrues no review debt. 10 hold Editor tools and 2 hold device tools, neither ever two at
-once, project-wide. `code-reviewer` and `security-reviewer` cannot edit, ever.
+Every agent's own frontmatter `description` in `.claude/agents/` is the authoritative one-line summary —
+not repeated here. **The `tools:` list is the hard sandbox.** 14 agents hold no `Write`/`Edit` — reports
+leave no source, so direct dispatch accrues no review debt. 10 hold Editor tools and 2 hold device tools,
+neither ever two at once, project-wide. `code-reviewer` and `security-reviewer` cannot edit, ever.
 
 ## The skill library
 
@@ -313,35 +301,21 @@ rather than a judgement that depends on how carefully one person read a diff.
 
 ## Rules and standards
 
-`.claude/rules/` is **auto-loaded into every session** — 12 flat files, no subfolders:
+`.claude/rules/` is **auto-loaded into every session** — 12 flat files, no subfolders, covering orchestration
+and dispatch invariants, task classification, effort/verification budgets, the execution-attempt loop,
+feature-context reading order, security (zero tolerance, no tier exemption), the implementation-note handoff,
+commit-message convention, working language, shell and Unity-tooling preference. Each file is short and
+single-purpose; read the file itself rather than a summary here.
 
-| File | Governs |
-|---|---|
-| `orchestration.md` | Read the router and the ledger before dispatching; the invariants (Editor/device locks, etc.) |
-| `task-classification.md` | The five axes and the A1–A5 tier |
-| `effort-allocation.md` | What tier-earned rigor is spent on, and its artifact budget per tier |
-| `execution-loop.md` | Attempt cycles, retry budget, Continuation Debt Records |
-| `feature-context-reading.md` | Which feature-root docs a task must open, and in what order |
-| `security.md` | Zero tolerance, every scope, no tier exemption |
-| `implementation-note.md` | The mandatory handoff every code submission carries into a review gate |
-| `commit-message.md` | English imperative subject, blank line, a body explaining why — no Conventional Commits |
-| `language-and-comments.md` | Internal work in English always; final reply to the GD in Vietnamese always |
-| `shell-preference.md` | Newest PowerShell first, Bash as fallback, `cmd.exe` last |
-| `unity-tooling-preference.md` | Unity CLI first, any configured MCP server second, classic batchmode last |
-| `standards-index.md` | Why the track standards below live outside the auto-loaded tree, and who reads which |
+`.claude/standards/` is loaded **on demand**, only by the agents whose track it governs — `client/` (coding
+principles, style, naming, performance, feature documentation) and `qa/` (verification standards, defect
+reporting). [`standards-index.md`](.claude/rules/standards-index.md) is the authoritative "who reads what,
+when" table and the reason these live outside the auto-loaded tree at all.
 
-`.claude/standards/` is loaded **on demand**, only by the agents whose track it governs:
-
-| Standard | Read by |
-|---|---|
-| `client/coding-principles.md`, `code-style-and-layout.md`, `naming-convention.md`, `performance-and-algorithms.md` | Every client/backend implementing agent, every tech lead, `code-reviewer` |
-| `client/feature-documentation.md` | The agent that owns a feature root at completion, `code-reviewer` |
-| `qa/verification-standards.md`, `defect-reporting.md` | Every QA-track agent, `assurance-evaluator` |
-
-Three worth knowing: **`this.` qualification is mandatory** (`this.health -= damage;`). **Unity null checks
-use the implicit `bool`** (`if (this.rb)`) on `UnityEngine.Object`-derived types only; plain C# and
-`Game.Core.*` types use `!= null`. **Every QA output states what it did not cover**, never `none` unless
-coverage was genuinely exhaustive.
+Three worth knowing without opening a file: **`this.` qualification is mandatory** (`this.health -= damage;`).
+**Unity null checks use the implicit `bool`** (`if (this.rb)`) on `UnityEngine.Object`-derived types only;
+plain C# and `Game.Core.*` types use `!= null`. **Every QA output states what it did not cover**, never
+`none` unless coverage was genuinely exhaustive.
 
 ## Slash commands
 
@@ -398,14 +372,12 @@ that dies leaves it *suspect*, never silently free — `state/README.md` carries
 ```
 .
 ├── .claude/
-│   ├── agents/                     # 28 roles, 7 groups
-│   │   ├── architecture/ (4)  backend/ (2)  client/ (7)  devops/ (3)
-│   │   └── leadership/ (3)  live-ops/ (1)  qa/ (8)
+│   ├── agents/                     # 28 roles, flat: <agent-name>.md
 │   ├── commands/                   # 5 slash commands
 │   ├── docs/
 │   │   ├── agent-template.md · skill-template.md · skill-reference-template.md
 │   │   ├── frame/                  # 3 source documents this project's rules adapt from
-│   │   ├── reviews/                # 9 files — history of self-review rounds, non-normative
+│   │   ├── reviews/                # 8 review records + an index, non-normative
 │   │   └── prompt-templates/       # 7 templates, 7 .txt skeletons, 20 worked examples
 │   ├── rules/                      # 12 auto-loaded files, flat
 │   ├── standards/                  # 7 files, loaded on demand — client/ (5), qa/ (2)
@@ -418,7 +390,7 @@ that dies leaves it *suspect*, never silently free — `state/README.md` carries
 │   │   ├── references/             # 29 files promoted out of the files above
 │   │   ├── state/                  # rules + templates for the state layer — never state itself
 │   │   └── tools/                  # verify-workflow-layer.ps1
-│   └── settings.json               # 31 pre-approved read-only git/lfs commands
+│   └── settings.json               # 35 pre-approved read-only git/lfs commands
 ├── .gitignore                      # the standard Unity ignore set
 ├── CLAUDE.md                       # per-project template — fill in every TODO before first use
 └── README.md                       # this file
@@ -429,9 +401,9 @@ This repository contains no Unity project and no C# source — it is the configu
 ## Extending the framework
 
 **Adding an agent** — copy [`agent-template.md`](.claude/docs/agent-template.md) to
-`.claude/agents/<group>/<agent-name>.md`. All 7 sections stay, even at one line; check for an overlapping
-owner first. `description` is the only text the dispatcher reads. Model matches the hardest
-**Self-assessment** level the role reaches, not how important it sounds.
+`.claude/agents/<agent-name>.md` — **flat**, no group folder. All 7 sections stay, even at one line; check
+for an overlapping owner first. `description` is the only text the dispatcher reads. Model matches the
+hardest **Self-assessment** level the role reaches, not how important it sounds.
 
 **Adding a skill** — copy [`skill-template.md`](.claude/docs/skill-template.md) to
 `.claude/skills/<skill-name>/SKILL.md` — **flat**, no group folder; `name:` must equal that folder name.
@@ -459,9 +431,9 @@ the routing table, update the mermaid diagram, and log it in `workflow-checklist
 
 **Commits**: English, imperative subject, blank line, a body explaining *why* — no `feat:`/`fix:` prefixes.
 One commit, one change. **Document length**: every file under `.claude/` holds a 200-line cap, with
-`workflow-checklist.md` exempt as append-only by design. **This README targets 500 lines** by standing GD
-instruction — a separate, tighter cap than the framework's own 200-line rule, since it is the one document
-meant to be read whole rather than opened on demand.
+`workflow-checklist.md` exempt as append-only by design. This README is the one document meant to be read
+whole rather than opened on demand, so it is not bound by that cap — but it stays a summary, pointing at the
+rule/standard file for detail rather than restating it.
 
 ## Maintenance and verification
 
@@ -478,8 +450,11 @@ references and cross-reference anchoring; an unchecked claim about this layer is
   parallel, and no build means no device lane at all.
 - **`assurance-evaluator` only runs at A3+** — below that, no gate independently checks a claimed
   verification.
-- **`docs/skill-template.md`'s own authoring comment is stale** — it still names the pre-flattening path
-  (`<group>/<skill-name>/SKILL.md`); every real skill is flat at `.claude/skills/<skill-name>/SKILL.md`.
+- **`docs/skill-template.md` and `docs/agent-template.md`'s own authoring comments are stale** — both still
+  name a pre-flattening path (`<group>/<skill-name>/SKILL.md`, `<group>/<agent-name>.md`); every real skill
+  and agent is flat, at `.claude/skills/<skill-name>/SKILL.md` and `.claude/agents/<agent-name>.md`.
+- **`docs/reviews/README.md`'s own index has a dangling row** — round 8 (`skills-layer.md`) is listed but the
+  file does not exist; `verify-workflow-layer.ps1` flags this on every run.
 - **MCP tool names are project-specific** — a mismatch with your connected server fails silently at call time.
 - **`.claude/workflows/*` is not auto-loaded** — only `.claude/rules/**` is; `orchestration.md` is the
   ignition.
