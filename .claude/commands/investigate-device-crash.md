@@ -1,7 +1,7 @@
 ---
 description: Investigate a crash or ANR on the currently connected Android/iOS device and report the bug, root cause, and fix direction
 argument-hint: "[android|ios] [package-or-bundle-id]"
-allowed-tools: Bash, Read, Grep, Glob, Skill
+allowed-tools: Powershell, Bash, Read, Grep, Glob, Skill
 ---
 
 # Investigate a crash/ANR on the connected device

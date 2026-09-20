@@ -1,7 +1,7 @@
 ---
 description: Derive a full test case list (normal + edge cases), a manual test flow, and a cross-feature impact analysis from docs/spec, the request itself, or the code — reports only, never writes or runs tests
 argument-hint: "[file-or-directory-path...] [--spec path-to-doc]"
-allowed-tools: Read, Grep, Glob, Bash, Skill
+allowed-tools: Powershell, Read, Grep, Glob, Bash, Skill
 ---
 
 # Plan test coverage for a feature or change
