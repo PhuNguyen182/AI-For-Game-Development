@@ -19,7 +19,7 @@ lists, "nothing is committed". They were true when written and most are not now.
 §13–§16 is the current record** — it is inside the layer, and the verifier checks its counts against reality.
 These notes hold the evidence behind each finding, which the checklist only summarises.
 
-## The eight rounds, in order
+## The nine rounds, in order
 
 | # | Record | What was reviewed | Method | Final score |
 |---|---|---|---|---:|
@@ -32,6 +32,7 @@ These notes hold the evidence behind each finding, which the checklist only summ
 | 6 | [`change-request.md`](change-request.md) | `workflows/change-request.md` — **CR1–CR2, H1–H4, M1–M7, L1–L4** | Run, **gate before scoring** | **8.8** |
 | 7 | [`orchestrator.md`](orchestrator.md) | `workflows/orchestrator.md` — the router | **Three rounds**, gate before scoring | self **8.6** · independent **8.9**, six-axis **9.0** |
 | 8 | [`skills-layer.md`](skills-layer.md) | `.claude/skills/` — all 90, for independence and overlap — **F1–F45** | Read, in batches of 10 | complete, 90/90; nothing run, no score owed |
+| 9 | [`agent-roster.md`](agent-roster.md) | `.claude/agents/` — all 28, for redundancy and packaging | Read | proposed, nothing executed; no score owed |
 
 **The method mattered more than the score, and it changed as the series went.** Rounds 0–1 were read into a
 score; running them dropped it. From round 2 the pipelines were **run** — real agents dispatched, the files
