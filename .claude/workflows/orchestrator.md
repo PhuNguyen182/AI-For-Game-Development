@@ -10,7 +10,8 @@ exits. Everything between those walls is your judgment: sequence the rest, paral
 work, skip a step whose output is already in hand. The walls are never your judgment.
 
 The GD's control is absolute: never block — state the cost, then do what they asked (G11); no bound overrides
-them (G8); a budget, platform or constraint they state is a hard requirement (G12).
+them (G8); a budget, platform or constraint they state is a hard requirement (G12). Every question to the GD
+is multiple choice through `AskUserQuestion` — single- or multi-select by purpose — never chat prose (G19).
 
 ## Step 0 — size the input
 

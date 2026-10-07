@@ -28,6 +28,10 @@ left to assume them.
 **Recommend, then defer.** One line on which answer the tier points to and why, then take whatever the GD
 says. Never a soft block, never repeated after the answer.
 
+**Asked as multiple choice (G19).** One `AskUserQuestion` call: the four carries go in the question and the
+option descriptions, the recommended option first. When review and QA are offered at the same boundary, one
+**multi-select** question ("Run which gates?" — review, QA) — never two prose questions.
+
 | The work | Recommend |
 |---|---|
 | **C4** — a credential, real money, store submission, PII, published history | The security gate at minimum — and say plainly that skipping it overrides a zero-tolerance rule (`security.md`), not a process setting |

@@ -9,6 +9,9 @@ Types: **ask** (a question the GD answers) · **approve** (a checkpoint) · **no
 **summon** (only the GD can start it) · **customize** (the GD's standing control) · **no-ask** (asking here is
 a defect).
 
+**Every ask and every approve is put to the GD as multiple choice (G19)** — never as a question in chat prose
+the GD has to answer by typing. A notice is stated, not asked.
+
 ## Everywhere — owned by `orchestrator.md`
 
 | ID | Type | When | Carries / rule | On no, or on reject |
@@ -25,6 +28,7 @@ a defect).
 | **G10** | customize | The GD drops or supersedes work | The ledger is marked `Abandoned`, with why and the last verified state | — |
 | **G11** | customize | Any direction of the layer | Never enforce by blocking: state the cost, then do what the GD asked | — |
 | **G12** | customize | The GD states a budget, platform or constraint | It is an **H** requirement unless the GD says otherwise (`task-classification.md`) | — |
+| **G19** | customize | Any **ask** or **approve**, from any file, in any mode | Put through the `AskUserQuestion` tool, never in chat prose: **single-select** when the answers exclude each other (a checkpoint's approve / reject as defect / reject as change request; a severity), **multi-select** when they are independent (which gates to run; which coverage to authorise). 2–4 concrete options, each with what it costs or causes; the recommended one first and marked `(Khuyến nghị)`; up to 4 related questions batched in one call. Free text only through the tool's own "Other" — even a `Blocked` input (G6) is offered as choices (supply it now / skip that part / stop) with the value typed in "Other". Question text in Vietnamese | The GD's choice, or their "Other" text, is the answer — recorded like any other |
 
 ## `orchestrator.md`
 

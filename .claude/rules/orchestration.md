@@ -33,6 +33,9 @@ written into it becomes another project's history.
 ## Rules
 
 - State the lane you picked (G1). Never enforce by blocking — state the cost, then do what the GD asked (G11).
+- Ask the GD only through the `AskUserQuestion` tool, as multiple choice — single-select when the answers
+  exclude each other, multi-select when they are independent, the recommended option first — never as a
+  question in chat they must answer by typing (G19).
 - A dispatched agent is isolated and stateless: it cannot be recalled, cannot see another agent's return, and
   its `Routed to:` is a recommendation you act on, never an action it took.
 - An agent that exhausted its attempt budget returns a Continuation Debt Record; record it whole and count the
