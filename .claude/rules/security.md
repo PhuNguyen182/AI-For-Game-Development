@@ -70,7 +70,7 @@ over time.
 A value belongs here only when its own vendor documents it as public/client-safe — this project's own
 judgment that it "looks harmless" doesn't qualify it. When unsure, treat it as a violation and route to
 `security-reviewer` — never guess it clear. Mirrors `security-reviewer`'s own `Needs Confirmation` standard
-(`.claude/agents/qa/security-reviewer.md`) and the identical allowlist in `secret-and-supply-chain-scan` —
+(`.claude/agents/security-reviewer.md`) and the identical allowlist in `secret-and-supply-chain-scan` —
 this file states the same boundary as a rule every writer follows, not only what the reviewer checks after.
 
 ## Rules
