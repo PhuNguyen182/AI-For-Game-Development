@@ -35,13 +35,13 @@ Decisions a future reader would otherwise silently undo. Superseded in place, ne
 - Research: <what research-decision.md settled, each report's `Picture taken:` date, any provisional decision's re-open threshold> | <skipped — covered by <named package, API or system>>
 - QA plan: <qa-lead's coverage assignment and exit criteria, verbatim — carried back into sign-off>
 - Baseline: <performance figure, how it was taken, by which report>
-- Root-cause resets: 0/1
+- Root-cause resets: <per submission: <id> 0/1, and the cause once spent>
 - Measure-and-confirm: 0/1
 - Rejections: CP2 0/3 · CP3 0/2 · CP4-as-defect 0/2 · sign-off re-dispatch 0/2 · assurance FAIL 0/1
 
-| Submission | Author | Strikes / bound | QA fails /2 | Attempts used | Verdicts landed |
-|---|---|---|---|---|---|
-| | | | | | |
+| Submission | Author | Strikes / bound | Attempts used | Verdicts landed |
+|---|---|---|---|---|
+| | | | | |
 
 ### Accepted gaps
 

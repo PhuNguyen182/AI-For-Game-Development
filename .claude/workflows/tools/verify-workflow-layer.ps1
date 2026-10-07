@@ -67,7 +67,7 @@ $resolvable = @(Get-ChildItem -Path $Root -Recurse -File |
 
 # Names that are project runtime files or placeholders, never framework files.
 $runtimeNames = @('LEDGER.md', 'DEBT.md', 'NOTES.md', 'README.md', 'ARCHITECTURE.md', 'INTEGRATION.md',
-                  'CONTRACTS.md', 'WORKMEMORY.md', 'CLAUDE.md', 'SKILL.md', 'CHANGELOG.md')
+                  'CONTRACTS.md', 'WORKMEMORY.md', 'CLAUDE.md', 'SKILL.md', 'CHANGELOG.md', 'BUGS.md')
 
 function Test-Resolves
 {
@@ -224,13 +224,13 @@ $stateProblems = @(Get-ChildItem -Path $stateDir -Recurse -File |
                    -not ($_.DirectoryName -eq (Join-Path $stateDir 'templates') -and $_.Extension -eq '.md') } |
     ForEach-Object { "unexpected file: $(Get-RelPath $_.FullName)" })
 
-$stateProblems += @(Get-ChildItem -Path $claude -Recurse -File -Include 'LEDGER.md', 'project-state.md' |
+$stateProblems += @(Get-ChildItem -Path $claude -Recurse -File -Include 'LEDGER.md', 'project-state.md', 'bug-log.md', 'BUGS.md', 'calibration.md' |
     Where-Object { $_.DirectoryName -ne (Join-Path $stateDir 'templates') } |
     ForEach-Object { "runtime record inside the framework: $(Get-RelPath $_.FullName)" })
 
 if (Test-Path (Join-Path $claude '.workflow')) { $stateProblems += 'a .workflow/ state root exists under .claude/' }
 
-Assert-Check 'workflows/state/ holds only README.md and templates; no ledger or state root under .claude/' $stateProblems
+Assert-Check 'workflows/state/ holds only README.md and templates; no ledger, bug log or state root under .claude/' $stateProblems
 
 # ------------------------------------------------------------------ 6. GD touchpoints
 

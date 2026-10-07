@@ -140,13 +140,18 @@ default: act on it unless it crosses an invariant or a GD touchpoint. The non-ob
 `state/templates/feature-ledger.md`. Check the in-flight index in `<state-root>/project-state.md` first — a
 second slug for a feature already in flight splits its counters silently. Read the index when a session starts.
 
-**Write the ledger whenever a counter, the Position:, or a gate answer (Gates:) changes, before the next dispatch** (I4). A tier that moves is appended to Tier history:, never overwritten.
-Work with no feature root — gated-direct, mode 3, standalone runs — keeps its counters and gate debt in
-`project-state.md`. The first run that has something to record creates `<state-root>` from the templates.
+**Write the ledger whenever a counter, the `Position:`, or a gate answer (`Gates:`) changes, before the next
+dispatch** (I4). A tier that moves is appended to `Tier history:`, never overwritten. Work with no feature
+root — gated-direct, mode 3, standalone runs — keeps its counters and gate debt in `project-state.md`. The
+first run that has something to record creates `<state-root>` from the templates.
 
-**Closing**, in this order: accepted gaps — a declined gate is one — into the feature root's `DEBT.md` (I6,
+**Bugs** live in `<state-root>/bug-log.md` (the index, and the only place an ID is allocated) and in each
+feature's `BUGS.md` (test cases and full bug records). You are their only writer: agents propose, you record,
+in both files in one write — per `state/README.md` → *Bugs*. No other agent edits either file. An **unattached** bug (no feature) is fixed through whichever lane fits its size, and is verified — and so closed — only by a QA run at `qa-pipeline.md` **E4**.
+
+**Closing** requires every bug in the feature's `BUGS.md` to be `Closed`, `As designed`, a `Duplicate`, or ruled by the GD — `Won't fix` or `Accepted unverified` (G9) — a bug left `Fixed` was never verified and is put to the GD at CP4, never closed by default. Then, in this order: accepted gaps — a declined gate or a GD-ruled bug is one — appended by you into the feature root's `DEBT.md` (I6,
 G9); mark the run state `Closed`, or `Abandoned` with why and the last verified state (G10); copy the run's
-numbers into `<state-root>/calibration.md` — one row, from the ledger, nothing estimated; clear the in-flight row. **Reopening**: a defect or a QA opt-in on a closed feature reopens its ledger and re-adds the
+numbers into `<state-root>/calibration.md` — one row, from the ledger and `BUGS.md`, nothing estimated; clear the in-flight row. **Reopening**: a defect or a QA opt-in on a closed feature reopens its ledger and re-adds the
 row — never a second slug.
 
 ## The locks

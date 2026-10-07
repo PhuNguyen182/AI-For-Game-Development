@@ -27,11 +27,11 @@ superseded in `open-items.md`, never quietly overwritten.
 ```markdown
 # Calibration
 
-One row per closed or abandoned feature, copied from its ledger. Nothing estimated or reconstructed — a blank
+One row per closed or abandoned feature, copied from its ledger and its `BUGS.md` — the most reopens on one bug is read from its history rows, since the counter resets after a root cause. Nothing estimated or reconstructed — a blank
 cell is a fact, an invented number is not. "Checkpoints that changed the outcome" is the one judgement call:
 name each checkpoint where the GD's answer actually altered what was built.
 
-| Feature | Tier · axes | Attempts used / budget | Max strikes on one submission | QA rounds | Advisor⇄Critic rounds | Root-cause resets | CP4 defect rejections | Gates run | Checkpoints that changed the outcome | Closed |
+| Feature | Tier · axes | Attempts used / budget | Max strikes on one submission | Bugs opened · max reopens on one bug | Advisor⇄Critic rounds | Root-cause resets | CP4 defect rejections | Gates run | Checkpoints that changed the outcome | Closed |
 |---|---|---|---|---|---|---|---|---|---|---|
 | _none yet_ | | | | | | | | | | |
 ```

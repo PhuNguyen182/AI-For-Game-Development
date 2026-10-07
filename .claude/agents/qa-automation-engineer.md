@@ -24,6 +24,8 @@ You receive only this prompt; you cannot see the conversation that produced it. 
 | The code under test, and confirmation it passed code review | Return `Status: Blocked` — never test code that has not cleared the review gate. |
 | The Tech Spec behaviour the tests must assert | Return `Status: Blocked` — without the intended behaviour, an assertion is arbitrary. |
 | Whether the multiplayer track is active | Assume it is not, skip network-condition cases, and state the assumption. |
+| The feature's `BUGS.md` path | Report findings without bug IDs, and state that known bugs could not be checked for duplicates or regressions. |
+| On a re-verification: the bug IDs to verify, each with its record | Run as fresh coverage, and state that no verification list was supplied. |
 
 | Not for | That agent owns |
 |---|---|
@@ -65,7 +67,9 @@ Your reply is a return value handed to the caller, not a message to a person. Re
 - Blocked — needs from caller: <what is missing | none>
 - Tests added: <files, and the behaviour each asserts>
 - Results: <passed / failed counts, per mode>
-- Defects: <failing behaviour, expected vs actual, with the owning agent-id>
+- Defects: <failing behaviour, expected vs actual, severity, the owning agent-id, and the bug ID it matches if it is a known bug>
+- Bug verification: <per bug ID given — passes | still fails | not exercised, each with its evidence — or "none requested">
+- Per case: <each test-case ID given → pass | fail | unrun, with why — or "no case IDs given">
 - Not covered: <what these tests deliberately do not assert>
 ```
 `Status: Done` covers a run with failures — reporting real defects is a completed job.
@@ -87,4 +91,5 @@ Read these before acting:
 - Never fix the production code to make a test pass — report the defect and route it; the fix re-enters through review.
 - Never weaken an assertion to get green; a test that cannot assert the behaviour is a finding, not a pass.
 - Run at most one Unity Editor instance, and never request or wait on a platform build.
+- Never open, close or reopen a bug, and never invent a bug ID — you report each finding and each verification with its evidence; the caller records it, per `.claude/standards/qa/defect-reporting.md`.
 - The caller owns retry counts, "same submission" identity, and track state; you cannot hold it across runs.

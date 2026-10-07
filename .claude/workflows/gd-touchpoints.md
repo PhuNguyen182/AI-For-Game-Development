@@ -79,7 +79,7 @@ the GD has to answer by typing. A notice is stated, not asked.
 | **G44** | ask | Backend track on and the netcode foundation genuinely unset | Ask once, before anything routes to `cto` | Unanswered → `research-decision.md` with a candidate set |
 | **G45** | notice | Third-party content — `.unitypackage`, Asset Store import, vendored DLL — is about to land | The supply-chain pre-gate runs **before** it lands, whatever the GD answered about review; say so in the gate ask. Not declinable (`security.md`) | — |
 | **G46** | no-ask | Implementing agent ⇄ tech lead escalation | Silent to the GD; it surfaces only as a `Blocked`, at CP3, or as G7 | — |
-| **G47** | customize | The GD reports a defect | Enters **E3** at zero strikes. If the spec was right and the GD now wants something else, it is a change request (G70) | — |
+| **G47** | customize | The GD reports a defect | Opens a bug in the bug log (`Opened by: gd`) and enters **E3** at zero strikes. If the spec was right and the GD now wants something else, it is a change request (G70) | — |
 
 ## `review-pipeline.md`
 
@@ -95,7 +95,7 @@ the GD has to answer by typing. A notice is stated, not asked.
 
 | ID | Type | When | Carries / rule | On no, or on reject |
 |---|---|---|---|---|
-| **G60** | approve | **CP4** — every shape, always, whether or not any gate ran | What was built, the gates that ran or were declined, the assurance verdict or its stated absence, every gap. Three answers: approve, reject as defect, reject as change request | Defect → **E3** within B13; change request → `change-request.md` **E2**, no counter moves |
+| **G60** | approve | **CP4** — every shape, always, whether or not any gate ran | What was built, the gates that ran or were declined, the assurance verdict or its stated absence, every gap, and the bug summary — every bug not `Closed`. Batched in the same ask (G19): which unsettled bugs to accept as `Won't fix`, and which `Fixed` but unverified bugs as `Accepted unverified` (G9); a feature never closes with a bug `Open`, `Fixed`, `Reopened` or `Escalated` the GD has not ruled on. Three answers: approve, reject as defect, reject as change request | Defect → **E3** within B13; change request → `change-request.md` **E2**, no counter moves |
 | **G61** | ask | Device coverage needs a build that does not exist, or a fix needs a rebuilt one | Asked up front, before dispatching device agents (G16) | That coverage is a gap from the outset |
 | **G62** | ask | A `qa-automation-engineer` suite has been written | Review of the test code per G50, offered **before** its results are used as sign-off evidence; the ask says whether the suite has run | Review debt; results still reported, marked as unreviewed test code |
 | **G63** | notice | A verification claim is contradicted, or `Acceptance: FAIL` lands on the Implementation Note's own claim | To the GD now — beyond any waiver | — |

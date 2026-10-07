@@ -38,6 +38,35 @@ A finding is one of three things, and the distinction decides where it goes:
 - **Design flaw** — the code does exactly what it was told to do, and what it was told is wrong. Routes to `gd`, immediately. **Never downgrade a design flaw into a defect to keep it inside the routine cycle** — that is the one finding the GD must see without waiting for the next report.
 - **As designed** — the behaviour is correct and the expectation was wrong. Report it as such; do not quietly drop it, because the same expectation will be raised again by someone else.
 
+## Bug identity and lifecycle
+
+Every defect a QA agent or the GD reports becomes a tracked bug. Its full record lives in the feature's
+`BUGS.md` (or, with no feature, in `<state-root>/bug-log.md`), and its ID — `BUG-0001`, project-wide — is
+allocated only in `bug-log.md`. **The orchestrator is the only writer of both files**; an agent never edits
+them and never invents an ID. An agent proposes in its own return; the orchestrator records.
+
+| Status | Set when | Who may cause it |
+|---|---|---|
+| **Open** | A new defect is reported | A QA agent's finding, or the GD |
+| **Fixed** | The owner states the fix is in, naming the bug ID — recorded once review clears the fix, or at once where the GD declined review | The implementing agent — never a QA agent, never the orchestrator on its own |
+| **Closed** | A QA verification run shows the defect gone, with evidence | **Only a QA verification return** — never the author of the fix |
+| **Reopened** | A QA verification run shows it still there, or it comes back later | A QA verification return, or a new finding matching a closed bug |
+| **Won't fix** | The GD accepts it as a known limitation | **Only the GD**; mirrored into `DEBT.md` before closure |
+| **Accepted unverified** | The GD accepts a `Fixed` bug at CP4 that no QA run verified | **Only the GD**; recorded as an accepted gap, never reported as verified |
+| **Escalated** | It is a design flaw, not a defect | Any agent — it goes to the GD immediately. The GD's answer moves it to `Open`, `Won't fix`, or `As designed` once it becomes a change request |
+| **Duplicate of BUG-####** | It turns out to be a bug already recorded | The orchestrator, moving its evidence to the original |
+| **As designed** | The behaviour is correct and the expectation was wrong | The reporting QA agent, stated as such; or the GD's ruling on an `Escalated` bug |
+
+What this means for a QA agent:
+
+- **Before reporting, check the feature's `BUGS.md`.** A finding that matches an open bug is evidence on that
+  bug, named by its ID — not a new one. A finding that matches a **closed** bug is a regression: report it with
+  that ID, so it reopens rather than being filed fresh.
+- **Every finding carries its severity**, from the table above, so it can be opened without a follow-up.
+- **A GD-reported bug** is opened from the GD's own words. The orchestrator sets its owner from the agents' scopes and its severity from the table above, so the fix can be dispatched; the GD may correct either. Any element they did not give is marked not yet established, and the QA agent that first verifies it completes the record.
+- **When dispatched to verify bugs by ID**, return a verdict per ID — passes (close) or still fails (reopen) —
+  with the evidence for each. A bug you could not exercise is stated as unverified, never as passing.
+
 ## Reproduction
 
 - State the steps that produce the finding, from a known starting state, in the order you performed them.
@@ -57,3 +86,5 @@ A finding is one of three things, and the distinction decides where it goes:
 - A design flaw goes to `gd` immediately and is never reclassified downward to stay in the routine cycle.
 - An intermittent finding is reported with its reproduction rate, never as reliable and never dropped.
 - No finding is reported without the evidence that proves it.
+- A finding matching a known bug cites its ID; only a QA verification closes or reopens a bug, and only the GD
+  marks one Won't fix.

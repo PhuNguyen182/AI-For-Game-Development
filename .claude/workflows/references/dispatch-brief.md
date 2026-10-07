@@ -15,7 +15,7 @@ its path.
 | **Track** — client, or client + multiplayer, stated on or off | The ledger; never re-derived | The caller's knowledge of the project; never "probably client-only" |
 
 On an ordinary re-entry only **U** is re-read (research or CP1 spent it down). A change request re-reads all
-five. Counters — strikes, QA fails, rounds, attempts spent — carry across every door; only a GD-reported defect
+five. Counters — strikes, bug reopens, rounds, attempts spent — carry across every door; only a GD-reported defect
 (zero strikes), a change request, the one root-cause reset (B10) and, for the Advisor⇄Critic rounds only, a
 Major change request reset them (`references/bounds.md`).
 
@@ -28,7 +28,8 @@ Major change request reset them (`references/bounds.md`).
 | The netcode foundation (backend track only) | Otherwise `netcode-engineer` routes to `cto` for a value the ledger holds; if genuinely unset, ask the GD once (G44) |
 | The per-platform performance budget | Otherwise a guessed budget |
 | The track standards to read, by path — `.claude/standards/client/*` per `rules/standards-index.md` | Naming them is what loads them |
-| On **E3**: strikes, prior findings, attempts already spent | No agent can count its own rounds |
+| On **E3**: strikes, prior findings, attempts already spent — and each defect **by bug ID** with its `BUGS.md` record | No agent can count its own rounds; the ID is how its fix is tracked |
+| That `BUGS.md` and `bug-log.md` are read-only to it | Only the orchestrator records bugs; an implementing agent names what it fixed, it never edits a status |
 
 **Forward what earlier agents produced** — agents cannot see each other's returns:
 
@@ -42,7 +43,7 @@ Major change request reset them (`references/bounds.md`).
 | `netcode-engineer` → `Message contract:` | `server-authoritative-engineer` |
 
 **Ask the agent to state back** what no envelope carries: attempts used out of the budget and, past the first,
-what improved; what verification actually ran and what was impossible, and why; and, from
+what improved; what verification actually ran and what was impossible, and why; on **E3**, each bug ID it fixed (it never closes one); and, from
 `tech-lead-sdk-platform`, its assumptions and known limitations.
 
 ## Assembling the Implementation Note
@@ -78,3 +79,9 @@ review, stated in those words** (otherwise `qa-automation-engineer` rejects unte
 `qa-lead` may read silence as "clear"); the target platforms; for device work, the test-case list in
 `plan-test-coverage`'s format and whether a device is expected. **At sign-off, the coverage assignment and exit
 criteria from the plan, verbatim** — `qa-lead` otherwise re-derives the bar silently.
+
+**Bugs, both ways.** Every QA executor gets the path to the feature's `BUGS.md`, so a finding matching a known
+bug cites its ID. On **E3**, the bug IDs marked `Fixed` that it must verify, each with its record; it returns a
+per-ID verdict in `Bug verification:`. `qa-lead` at sign-off gets the feature's bug list with every status.
+
+**Root cause for a bug reopened twice (B6).** `technical-architect` gets, in place of a rejection history, the bug's full record — every history row, each QA verification's evidence, and every fix the owner returned. **`qa-lead` re-entering plan mode** on a feature that already has a `BUGS.md` gets it, so existing cases and bugs are planned around, not re-derived. **At E4**, executors get `bug-log.md` → *Unattached bugs* in place of a feature's `BUGS.md`.

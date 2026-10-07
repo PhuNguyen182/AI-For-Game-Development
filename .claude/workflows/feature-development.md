@@ -11,7 +11,7 @@ budgets it does not set: the attempt budget from **D** (B1) and the verification
 |---|---|---|
 | **E1** | `feature-intake.md` CP2 approved — D3–D5 | The Tech Spec, its per-`agent-id` task breakdown, the tier and its axes |
 | **E2** | `feature-intake.md` step 2 at D1–D2; `orchestrator.md` step 0 row 12; or the GD naming the work (G18) | Direct notes addressed to one `agent-id`, and the tier |
-| **E3** | Rework: a defect from `review-pipeline.md`, `qa-pipeline.md` or the GD; a gated-direct rejection (within B4); a root-cause reset (B10); `change-request.md`'s rework list | The findings or rework list, the original brief, the strike count, attempts already spent |
+| **E3** | Rework: a defect from `review-pipeline.md`, `qa-pipeline.md` or the GD; a gated-direct rejection (within B4); a root-cause reset (B10); `change-request.md`'s rework list | The findings or rework list — a QA or GD defect **by bug ID**, with its `BUGS.md` record — the original brief, the strike count, attempts already spent |
 
 Every door also carries the four values in `references/dispatch-brief.md`, read from the ledger. A GD-reported
 defect enters **E3** at zero strikes; if the spec was right and the GD now wants something else, it is a change
@@ -48,7 +48,7 @@ request instead (G47).
 5. **Third-party content clears the supply-chain pre-gate before it lands** (G45), before the integration is
    written.
 6. **Feature-root documents follow every implementation task in their root** — except `LEDGER.md` decisions and
-   `DEBT.md`, appended in the submission that produced them, never reconstructed at the end.
+   `DEBT.md`, appended in the submission that produced them, never reconstructed at the end — except the accepted gaps and GD-ruled bugs the orchestrator appends at closure. `BUGS.md` is not a feature document: only the orchestrator writes it.
 
 ## Steps
 
@@ -115,7 +115,7 @@ criterion toward a tech lead, strike 3 is B3. Self-verification is evidence for 
 - **G44** — backend on, netcode foundation unset; asked once.
 - **G45** — third-party content about to land; the pre-gate runs whatever the review answer.
 - **G46** — the escalation lane stays silent to the GD.
-- **G47** — a GD-reported defect enters **E3** at zero strikes.
+- **G47** — a GD-reported defect opens a bug (`Opened by: gd`) and enters **E3** at zero strikes.
 - Also fires G4 (design flaw), G5 (config/risk fields), G6 (`Blocked`), G7 (a bound reached), G16 (a second
   Editor instance).
 
@@ -130,8 +130,8 @@ B16 (escalation round trips) · B17 (identical `Blocked`) · B18 (gate re-offers
 |---|---|---|
 | A submission, review authorised | `review-pipeline.md` **E1** | Submission row in the ledger |
 | A submission, review declined | `qa-pipeline.md` **E1** on a QA yes; else CP4 (G60) on the Implementation Notes | `declined` row in `project-state.md` (I2) |
-| A defect fix, review authorised | `review-pipeline.md` **E1**, then `qa-pipeline.md` **E3** | Strikes, attempts |
-| A defect fix, review declined | `qa-pipeline.md` **E3** directly | Strikes, attempts |
+| A defect fix, review authorised | `review-pipeline.md` **E1**, then `qa-pipeline.md` **E3** | Strikes, attempts; each bug the agent names as fixed goes `Fixed` only once review clears it |
+| A defect fix, review declined | `qa-pipeline.md` **E3** where QA is authorised; otherwise the verification put to the GD per G50, a no leaving the bugs `Fixed` for CP4 | Strikes, attempts; each bug the agent names as fixed → `Fixed` in `bug-log.md` and `BUGS.md` |
 | No Core task, no named API; or a lead → `Routed to: technical-architect` | `feature-intake.md` **E3** — step 6 at D3–D5, the direct-notes hand-off at D1–D2 | The gap named |
 | A lead or `netcode-engineer` → `Routed to: cto` | `research-decision.md` **E2** with a candidate set; it resumes the step it left | — |
 | A bound reached | The GD (G7) | Continuation debt in the ledger |

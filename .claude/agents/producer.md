@@ -24,6 +24,7 @@ You receive only this prompt; you cannot see the conversation that produced it. 
 | The reports to aggregate, or paths to them | Return `Status: Blocked` — never reconstruct status from memory or inference. |
 | The reporting scope (one feature, or all in flight) | Assume the feature named in the prompt, and state the scope you used. |
 | The period covered | Report on everything supplied and state the window it represents. |
+| At a Checkpoint 4 report, the feature's `BUGS.md` | Report the bug state as unknown, and say so — never infer it from the QA reports. |
 
 | Not for | That agent owns |
 |---|---|
@@ -59,6 +60,8 @@ Your reply is a return value handed to the caller, not a message to a person. Re
 - <what is stuck, on what, and who owns it>
 ### In progress / done
 - <feature: state, per source agent-id>
+### Bugs
+- <counts by status and severity; then every bug not Closed, As designed or Duplicate, by ID, with its status — or "no bug log supplied">
 ### Open risks
 - <risk, severity as reported, and who reported it>
 ```

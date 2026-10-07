@@ -30,6 +30,10 @@ fires, per the authoring rule.
 | `DEBT.md` | What is already known to be wrong | Only when the code looks wrong |
 | `NOTES.md` | What is not yet worth a contract | Only when the rest came up short |
 
+**`BUGS.md` sits beside the docset, not in it** — the feature's test cases with their latest results and its
+bugs, written only by the orchestrator. Read it when testing or debugging, before filing anything; never edit
+it, and never flag it as a missing document.
+
 **`LEDGER.md` is one file, two halves, only one is yours.** Its `## Decisions` half is the feature's decision
 history — what was decided, why, what was rejected — the half this file sends you to. Its `## Run state`
 half is the orchestrator's cross-run state (tier/axes, strike counts, attempts used, accepted gaps,
@@ -53,9 +57,9 @@ below is a deviation with its own trigger.
 | **Use a feature** (call/bind, no change inside) | `README → INTEGRATION → CONTRACTS → implement` | `ARCHITECTURE`, `LEDGER`, `DEBT`, `NOTES` |
 | **Change a feature** (logic inside one root) | `README → CONTRACTS → ARCHITECTURE → INTEGRATION → source` | `LEDGER`, `DEBT`, `NOTES` |
 | **Connect features** (a seam between two+) | per feature: `README → INTEGRATION → CONTRACTS`; trace `A → integration point → contract → integration point → B` | `ARCHITECTURE` of any feature not changed inside |
-| **Debug** | `README → CONTRACTS → reproduce/trace source → ARCHITECTURE → DEBT → LEDGER` | `NOTES`, until the rest comes up short |
+| **Debug** | `README → CONTRACTS → BUGS → reproduce/trace source → ARCHITECTURE → DEBT → LEDGER` | `NOTES`, until the rest comes up short |
 | **Review code** (`code-reviewer`, `security-reviewer`) | Tech Spec/brief → `CONTRACTS` → the diff | `ARCHITECTURE`, until the diff moves logic across a boundary |
-| **Test** (`qa-lead`, `qa-automation-engineer`, `playtest-tester`) | `README → CONTRACTS` (invariants are the assertions) → `DEBT` (so known debt isn't filed as new) | `ARCHITECTURE`, `LEDGER`, `NOTES` |
+| **Test** (`qa-lead`, `qa-automation-engineer`, `playtest-tester`) | `README → CONTRACTS` (invariants are the assertions) → `BUGS` and `DEBT` (so a known bug or known debt isn't filed as new) | `ARCHITECTURE`, `LEDGER`, `NOTES` |
 | **New feature root**, no docset yet | Tech Spec → `INTEGRATION`/`CONTRACTS` of every feature it touches | its own docset — written at completion, not read at the start |
 
 An **A1/A2** change against a root with no docset reads only the source it touches — opening or inventing a

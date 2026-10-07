@@ -26,6 +26,8 @@ You receive only this prompt; you cannot see the conversation that produced it. 
 | The scenarios or critical paths to verify | Verify startup plus the existing test suite, and list everything else under `Not covered`. |
 | Whether a target device is attached, for a mobile artifact | Check for one; if none is reachable, report that and verify only what the artifact allows without it. |
 | A supplied test-case list (`plan-test-coverage`'s format) | Verify only startup plus the existing test suite, as today, and state that no case list was supplied. |
+| The feature's `BUGS.md` path | Report findings without bug IDs, and state that known bugs could not be checked for duplicates or regressions. |
+| On a re-verification: the bug IDs to verify, each with its record | Run as fresh coverage, and state that no verification list was supplied. |
 
 | Not for | That agent owns |
 |---|---|
@@ -66,7 +68,9 @@ Your reply is a return value handed to the caller, not a message to a person. Re
 - Checks run: <each path exercised, expected against actual>
 - Suite: <pass/fail counts from the standalone Player run — or "not run", and why>
 - Build-only faults: <failures absent in the Editor, with the log excerpt that evidences each>
-- Defects: <finding, severity, and the owning agent-id>
+- Defects: <finding, severity, the owning agent-id, and the bug ID it matches if it is a known bug>
+- Bug verification: <per bug ID given — passes | still fails | not exercised, each with its evidence — or "none requested">
+- Per case: <each test-case ID given → pass | fail | unrun, with why — or "no case IDs given">
 - Not covered: <what this verification deliberately does not assert>
 ```
 `Status: Done` covers a verification that found defects — reporting real faults is a completed job.
@@ -87,4 +91,5 @@ Read these before acting:
 - Never publish, upload, submit to a store, or deploy anything.
 - Never report a fault without the log excerpt or command output that evidences it.
 - Never fake iOS coverage from Android tooling when `idb`/WebDriverAgent isn't set up on the host — report `Status: Blocked` and point at `device-test-walkthrough`'s `references/ios-idb-setup.md`.
+- Never open, close or reopen a bug, and never invent a bug ID — you report each finding and each verification with its evidence; the caller records it, per `.claude/standards/qa/defect-reporting.md`.
 - The caller owns retry counts, "same submission" identity, and which artifact is current; you cannot hold it across runs.

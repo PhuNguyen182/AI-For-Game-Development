@@ -60,7 +60,7 @@ which is why this repository has a workflow layer and a ledger at all.
 | **Standards** | `.claude/standards/` | 8 files — `client/` (5), `qa/` (3) | Loaded **on demand**, only by the agents whose track owns them |
 | **Agents** | `.claude/agents/` | 28 agents, flat | Each a system prompt: one role, its scope, its refusals, its output envelope |
 | **Skills** | `.claude/skills/` | 90 skills, flat | On-demand technique packages, one per `.claude/skills/<name>/SKILL.md` |
-| **Workflows** | `.claude/workflows/` | orchestrator + 6 pipelines, a GD touchpoint registry, 3 shared references, 3 state templates, 1 verification script | Entries, hard ordering, GD touchpoints, bounds and exits — the model plans everything between them |
+| **Workflows** | `.claude/workflows/` | orchestrator + 6 pipelines, a GD touchpoint registry, 3 shared references, 5 state templates, 1 verification script | Entries, hard ordering, GD touchpoints, bounds and exits — the model plans everything between them |
 | **Commands** | `.claude/commands/` | 6 slash commands | Self-contained investigations — one of which edits code |
 | **Docs** | `docs/` under `.claude/` | Reference material only | Authoring templates, prompt templates and review history. **Nothing outside it depends on it** |
 | **Settings** | `.claude/settings.json` | 35 allow-rules | Pre-approved read-only git/lfs commands so routine inspection does not prompt |
@@ -343,10 +343,14 @@ every project copies unchanged.
 |---|---|
 | One feature's run state and its decision history | `<feature-root>/LEDGER.md` — one file, two halves: `## Decisions` (read before undoing a design) and `## Run state` (the orchestrator's) |
 | The in-flight index, gate debt, gated-direct counters, standalone decisions, project-wide patterns, both locks | `<state-root>/project-state.md` — `.workflow/` at the project root unless `CLAUDE.md` says otherwise |
+| One feature's test cases, each with its latest result, and its bugs in full | `<feature-root>/BUGS.md` |
+| The project-wide bug index — the only place a bug ID is allocated — and bugs with no feature | `<state-root>/bug-log.md` |
 | One row per closed feature, measuring what the layer's chosen constants actually cost | `<state-root>/calibration.md` |
 
 **Review debt**: any `Write`/`Edit`-capable agent dispatched outside a gate accrues it — recorded, never
 enforced, settling in batch. A **declined** gate is the same kind of debt, per `references/optional-gates.md`.
+
+**Bugs**: every defect QA or the GD reports gets a project-wide ID (`BUG-0001`) and moves `Open → Fixed → Closed`, or back through `Reopened`. The implementing agent may only mark a bug `Fixed`; only a QA verification closes or reopens it; only the GD accepts one as `Won't fix`. A bug reopened twice goes to root cause. The orchestrator is the only writer of both bug files — agents propose in their returns.
 
 **The Editor lock**: one Unity Editor, project-wide. **The device lock**: one physical device, independent of
 the Editor lock. Two holders of the same lock never run at once; a holder that dies leaves it *suspect*, never

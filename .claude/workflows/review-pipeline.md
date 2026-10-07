@@ -10,7 +10,7 @@ answered. Inputs for every door are in `references/dispatch-brief.md` → *Revie
 
 | Door | Comes from | Carries |
 |---|---|---|
-| **E1** | `feature-development.md` after the GD authorised review (G40, G42) — one submission per entry: the Core, each client or backend agent, the README; a tech lead's `Fix:` (I10); a declined gate opted into later, author and brief still identifiable, strikes from zero; **third-party content at the supply-chain pre-gate** (G45) | The review-gate list in `dispatch-brief.md`; its pre-gate row for third-party content |
+| **E1** | `feature-development.md` after the GD authorised review (G40, G42) — one submission per entry, a defect fix from its **E3** included: the Core, each client or backend agent, the README; a tech lead's `Fix:` (I10); a declined gate opted into later, author and brief still identifiable, strikes from zero; **third-party content at the supply-chain pre-gate** (G45) | The review-gate list in `dispatch-brief.md`; its pre-gate row for third-party content |
 | **E2** | The GD asks for an audit of code already in the repo (`orchestrator.md` row 6), or opts into review later on code no submission identifies | The code and what it is audited against — or `security-reviewer` alone. No author, strike, CP3, note or ledger; the audit is classified on its own (`task-classification.md`) |
 | **E3** | A gated-direct submission, only once the GD authorised it at G14 (`orchestrator.md`); or a `qa-automation-engineer` suite the GD authorised at G62 (`qa-pipeline.md`) | As E1, with the behaviour it was written against instead of a spec section, and **which origin** it is |
 
@@ -109,6 +109,7 @@ B17 · B18 (re-offering a declined review at a later boundary).
 | Outcome | Control goes to | Written |
 |---|---|---|
 | A submission clear, others outstanding | Wait for the rest | Ledger: verdicts landed |
+| A defect fix clear (from `feature-development.md` **E3**, carrying bug IDs) | Those bugs → `Fixed`; `qa-pipeline.md` **E3** to verify them where QA is authorised for this feature — otherwise the verification is put to the GD per G50, and a no leaves them `Fixed` for CP4 | Bug status in `bug-log.md` and `BUGS.md` |
 | Every submission clear | G52; then CP3 (D3–D5), or `qa-pipeline.md` **E2** on a yes (D1–D2) | Ledger; a QA debt row in `project-state.md` on a no |
 | Rejection at E1 | `feature-development.md` **E3** | Ledger: strike +1, verdicts landed |
 | Rejection at E3, under its bound | The author | Ledger (test code) or *Gated-direct counters* |

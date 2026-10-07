@@ -14,6 +14,8 @@ on it.
 |---|---|
 | One feature's decisions and run state | `<feature-root>/LEDGER.md` — `## Decisions` and `## Run state` |
 | In-flight index, gate debt, gated-direct counters, standalone decisions, project-wide patterns, both locks | `<state-root>/project-state.md` |
+| One feature's test cases and bugs, in full | `<feature-root>/BUGS.md` — from `templates/feature-bugs.md` |
+| The project-wide bug index, the only place bug IDs are allocated, and bugs with no feature | `<state-root>/bug-log.md` |
 | One row per closed or abandoned feature — what the layer's constants actually cost | `<state-root>/calibration.md` |
 
 **`<state-root>` is `.workflow/` at the project root** unless the project's `CLAUDE.md` names another path.
@@ -24,6 +26,21 @@ CP1 moves the root, the ledger moves with it and the move is recorded in `## Dec
 root has no ledger — its counters live in `project-state.md` until it escalates.
 
 The slug is the feature root's name in kebab-case. Never invent a second slug for a feature that has a ledger.
+
+## Bugs — one writer, two files
+
+The orchestrator is the only writer of `bug-log.md` and every `BUGS.md`, and updates a feature bug in both in the
+same write. Agents propose; they never edit either file and never invent an ID:
+
+- A QA agent's finding → the orchestrator allocates the next ID in `bug-log.md`, adds the index row, and writes
+  the full record in the feature's `BUGS.md` (or under *Unattached bugs* when there is no feature). A finding
+  citing an existing ID is evidence on that bug; one citing a closed bug reopens it.
+- A GD-reported defect (G47) opens a bug the same way, `Opened by: gd`.
+- An implementing agent naming a bug ID as fixed → `Fixed`, once review clears the fix (at once where the GD declined review). Only a QA verification return closes or reopens;
+  only the GD marks `Won't fix` (G9). Each move is a row in the bug's history, with its evidence.
+- Every QA run that covers a test case replaces that case's `Latest result`.
+
+Statuses and who may cause each: `.claude/standards/qa/defect-reporting.md`. The reopen bound: B6.
 
 ## Reclaiming a stale lock — I9
 
