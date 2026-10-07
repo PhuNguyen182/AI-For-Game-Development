@@ -15,9 +15,12 @@ already retracted. `feature-intake.md` is the clearest case: **9.0** on a readin
 **8.9** after the findings closed. The last score in the file is the one that stands.
 
 **Every number about the layer's own state is as of that round**: verifier claim counts, "still unreviewed"
-lists, "nothing is committed". They were true when written and most are not now. **`.claude/workflows/workflow-checklist.md`
-§13–§16 is the current record** — it is inside the layer, and the verifier checks its counts against reality.
-These notes hold the evidence behind each finding, which the checklist only summarises.
+lists, "nothing is committed". They were true when written and most are not now.
+
+**[`workflow-checklist.md`](workflow-checklist.md) is the build log of the layer up to the slimming round** —
+moved here verbatim, uncompressed, when the workflow layer was rewritten as contracts. It describes structures
+that no longer exist (the 200-line cap, the 29 promoted references, `loop-termination.md`, `calibration.md`)
+and its counts are frozen at that point. What is still open lives in `.claude/workflows/open-items.md`.
 
 ## The nine rounds, in order
 
@@ -49,16 +52,15 @@ it had missed, including in its own fixes.
 ## What they are not good for
 
 - **Deciding how to work.** That is `.claude/workflows/` and `.claude/rules/`.
-- **Current counts or status.** Use `workflow-checklist.md`.
+- **Current counts or status.** Use `.claude/workflows/open-items.md`, and run the verifier.
 - **A score.** Every one was marked by the author of the fixes — **E0** on `effort-allocation.md`'s own scale
   — except rounds 5, 6 and 7, which carry an independent verdict and say so.
 
 ## Rules
 
-- A round produces exactly one file here, named after the workflow file it reviewed.
-- Nothing in `.claude/workflows/` or `.claude/rules/` may depend on a file here. `workflow-checklist.md` cites
-  them as evidence; that is a pointer to history, never a dependency.
+- A round produces exactly one file here, named after what it reviewed.
+- **Nothing outside `.claude/docs/` may reference a file in it** — the whole folder is reference material.
+  `workflows/tools/verify-workflow-layer.ps1` fails on any such reference, and does not read this folder.
 - Superseded content stays, marked superseded. A note is a record — editing out what was wrong at the time
   destroys the only thing it is for.
-- This index is machine-checked: `workflows/tools/verify-workflow-layer.ps1` fails when a record has no row
-  here, or a row names a file that does not exist.
+- This index is maintained by hand: when adding a record, add its row.

@@ -27,9 +27,8 @@ description: >
 ## Bundled resources
 
 ### References
-Read-only context, loaded on demand so SKILL.md itself stays short. Each file
-follows `skill-reference-template.md`. "Read when" is a real condition, not a
-restatement of the topic.
+Read-only context, loaded on demand so SKILL.md itself stays short. "Read when"
+is a real condition, not a restatement of the topic.
 
 | File | Contents | Read when |
 |---|---|---|

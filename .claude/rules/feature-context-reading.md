@@ -1,11 +1,7 @@
 # Shared — Feature Context Reading
 
 Applies to: every agent and every new session, in every mode — a full pipeline run, a single agent dispatched
-directly, or the orchestrator working an input itself. Like `language-and-comments.md`, this file sits above
-the `.claude/rules/<group>/` folders rather than inside one.
-
-Source: `.claude/docs/frame/AI Context Reading Flow.md`, adapted to this project's tiers, roles and review
-gates; self-contained, doesn't require that document to be present.
+directly, or the orchestrator working an input itself.
 
 Every agent here is isolated and stateless: it sees one dispatch brief and whatever it reads from disk, never
 the conversation that produced the code in front of it. Two failure modes follow: **reading nothing** (infers
@@ -36,11 +32,9 @@ fires, per the authoring rule.
 
 **`LEDGER.md` is one file, two halves, only one is yours.** Its `## Decisions` half is the feature's decision
 history — what was decided, why, what was rejected — the half this file sends you to. Its `## Run state`
-half is the orchestrator's cross-run state (tier/axes, checkpoint position, strike counts, attempts used,
-accepted gaps, continuation debt), written at every transition per `.claude/workflows/state/README.md`.
-Reading past the heading answering your question means reading someone else's bookkeeping; editing it in a
-submission overwrites a counter nothing else holds. There is no longer a second run-state file under
-`.claude/` — nothing there is written at runtime, since that directory is the framework every project copies.
+half is the orchestrator's cross-run state (tier/axes, strike counts, attempts used, accepted gaps,
+continuation debt), per `.claude/workflows/state/README.md`. Reading past the heading answering your question
+means reading someone else's bookkeeping; editing it in a submission overwrites a counter nothing else holds.
 
 **Absent is not empty.** A missing file means its trigger never fired, not that the answer is "nothing" —
 fall back to the source rather than concluding no contract/debt/history exists. A file clearly owed on a

@@ -1,151 +1,112 @@
-# Change Request Pipeline
+# Change Request
 
-> **Scope: a change to a Tech Spec the GD already approved, arriving while the feature is in flight or after
-> it closed.** A change that arrives *before* CP2 is just a spec revision — `feature-intake.md` owns that.
-> **This file owns the blast-radius classification** and the rollback target it implies.
+Turns a GD change to an **already-approved** Tech Spec — mid-flight or after closure — into a severity, the
+checkpoint it reopens, and a rework list. Starts when the change arrives, stops once the reopened checkpoint or
+the rework has been handed on. A change before CP2 is not a change request: no approved spec exists to measure
+it against, so it is an ordinary revision inside `feature-intake.md`.
 
-Sequence, loops and checkpoints live here and never in an agent file — see `feature-intake.md` for the full
-statement. Every `Routed to:` below is a recommendation this pipeline acts on, not an action the agent took.
+This pipeline classifies what a change costs, never whether it is a good idea — the design judgment is the
+GD's, the technology judgment `cto`'s.
 
-## The agents this pipeline dispatches
+## Entries
 
-| Agent | Tier | Produces | Owns |
+| Door | Comes from | Resumes at | Carries |
 |---|---|---|---|
-| `technical-architect` | gate (opus) | **Change severity** + **the rework list** | The classification, and which checkpoint it reopens |
-| `producer` | report (sonnet) | **Status Report** | Carrying a Minor change to the GD without a gate |
+| **E1** | `orchestrator.md` step 0 — the GD changes a rule, GDD passage or requirement on a feature with a ledger (G70) | step 1 | The change **in the GD's own words**, the approved Tech Spec, the track state, the feature's current tier and axes |
+| **E2** | `qa-pipeline.md` CP4 — the feature does what the spec said and the GD now wants something else (G60) | step 1 | The same, plus the QA reports that surfaced it |
+| **E3** | `research-decision.md` settled the technology half of a bundled change | step 2 | The Technical Decision, any `Standard set:`, the Research Report's `Picture taken:` date, and whatever severity the rest of the request already received |
 
-Everything downstream belongs to another file: `feature-intake.md` owns CP1 and CP2, `feature-development.md`
-owns the rework, and `review-pipeline.md` and `qa-pipeline.md` own re-verifying whatever changed.
+## May dispatch
 
-## Entry points
-
-| Entry | Enters when | Carried in |
-|---|---|---|
-| **E1** | The GD changes a rule, a GDD passage or a requirement mid-flight — `orchestrator.md` step 0 sizes it here | The change **in the GD's own words**, the approved Tech Spec, the track state, and the feature's current tier and axes |
-| **E2** | `qa-pipeline.md` CP4 — the feature does what the spec said, and the GD now wants something else | The same, plus the QA reports that surfaced it |
-| **E3** | `research-decision.md` settled the technology half of a bundled change | Resumes at **step 2** — the Technical Decision, any `Standard set:`, the Research Report's `Picture taken:` date, and whichever severity the rest of the request already classified |
-
-`technical-architect` returns `Blocked` on a summary of a summary, and silently assumes client-only when track
-state is missing. Both travel, or the classification is made against a project that does not exist.
-
-**Blast radius and the A-tier are different classifications, and neither derives the other.** Minor/Moderate/
-Major says *which checkpoint reopens*; the A-tier says *how hard the reworked code is verified*. A Minor
-change to a credential path is still A5 and still owes V4 evidence at review — the change was cheap to
-classify, not cheap to get wrong.
-
-**A change re-reads every axis, not just U.** It is the one re-entry that can genuinely move D, C, R and X:
-new scope raises D, a newly touched economy path raises C. Reclassify at step 2, write the new tier into the
-feature's ledger, and carry it into the rework brief — a rework dispatched at the old tier verifies to a
-standard the change has already invalidated.
-
-## Pipeline at a glance
-
-```mermaid
-flowchart TD
-    E1([GD changes a rule mid-flight]) --> Halt
-    E2([qa-pipeline.md CP4 —<br/>the spec itself should change]) --> Halt
-
-    Halt[Stop dispatching new work<br/>against the spec under question] --> Cls
-    Cls[technical-architect<br/>Change severity: + the rework list] --> Sev{Severity —<br/>per part, if bundled}
-    Cls -.->|"a part forces a<br/>technology choice"| Cto[[research-decision.md E2]]
-    Cto -.->|"E3 — technology settled"| Cls
-
-    Sev -->|Minor| Spec[Architect updates the<br/>Tech Spec in place]
-    Sev -->|Moderate| CP2{{CHECKPOINT 2 — feature-intake.md E4<br/>the GD re-approves the spec}}
-    Sev -->|Major| CP1{{CHECKPOINT 1 — feature-intake.md E5<br/>the Advisor⇄Critic loop re-runs}}
-
-    Spec --> Rep[producer → Status Report,<br/>next cycle — not a gate]
-
-    Rep --> Code
-    CP2 --> Code
-    CP1 --> Code
-
-    Code{Code exists against<br/>the superseded spec?} -->|no| Resume([resume the pipeline<br/>the change interrupted])
-    Code -->|yes| Rework[[feature-development.md E3<br/>only the flagged code]]
-```
-
-Shapes match the other pipelines: `([ ])` entry and stop · `[ ]` an agent or a pipeline action · `{ }` a
-decision · `{{ }}` a GD checkpoint · `[[ ]]` another workflow file. Both checkpoints belong to
-`feature-intake.md`; this pipeline reopens them through **E4** and **E5**, it does not own them.
-
-### Step 1 — halt before classifying
-
-Stop dispatching **new** work against the spec under question the moment the change arrives, before the
-architect has said anything. Classification takes one round trip; a fan-out started during it is work built
-against a spec that may no longer exist.
-
-**Agents already running cannot be recalled.** Every agent here is isolated and stateless — it will finish and
-return work written against the old spec, and no message reaches it mid-run. Anything that lands after the
-change arrived is a candidate for the rework list, not a completed task.
-
-### Step 2 — classify, and do not ask first
-
-`technical-architect` is explicitly barred from asking the GD to confirm a classification before making it —
-the same rule that governs the feature's own tier. The severity is stated, not negotiated. The GD still lands back in the loop
-for Moderate and Major because those reopen checkpoints they own; that is the check, not a pre-approval.
-
-Its envelope keeps the usual shape with `Change severity:` added, plus **the code now needing rework**. The
-severity says which checkpoint reopens; the rework list is the half that costs money.
-
-### Step 3 — the three severities
-
-| Severity | Criterion | Reopens |
-|---|---|---|
-| **Minor** | Module boundaries and interfaces in the Tech Spec are unchanged | Nothing. The architect updates the spec in place and `producer` carries it in the next Status Report |
-| **Moderate** | The Tech Spec's structure changes, but the original direction and the assumptions under it still hold | **CP2** — the architect revises the spec, the GD re-approves it |
-| **Major** | It invalidates an assumption `critic` stress-tested or a risk the GD accepted at CP1, **or** the reclassified axes now force CP1 for the first time (D4–D5, or U3) on a feature whose original D1–D3/U0–U1 shape never ran that loop | **CP1** — the Advisor⇄Critic loop re-runs, inside its 3-round cap. A feature reopening CP1 for the first time carries no prior round and no accepted risk to invalidate — a legitimate empty history, never an error to paper over |
-
-**Minor is the one to get wrong.** It is the only severity that never reaches a checkpoint, so a
-misclassification here changes a spec the GD approved without them seeing it. If a boundary or an interface
-moves at all, it is Moderate — the size of the diff is not the criterion, and neither is how obvious it looks.
-
-**A bundled request can outrun one `Change severity:` value.** When part of a change is `cto`'s call — a
-netcode foundation, a vendor swap — that part gets no Minor/Moderate/Major label at all, and the ratable part
-is classified independently of it. See `references/change-severity-and-custody.md` for the split, the
-sequencing, and what each severity's envelope defers versus fills in now.
-
-### Step 4 — the code already written
-
-The rework list re-enters `feature-development.md` at **E3**, the same door a review rejection uses, and takes
-its place in that pipeline's serial order rather than jumping the queue. From there it is an ordinary
-submission again — which now means it gets its **own** gate offer, per `references/optional-gates.md`. A
-gate the GD ran before the change is not a gate that ran on the change: ask again, because this is a new
-boundary and a new artifact, not the nagging `loop-termination.md` forbids.
-
-A change that lands after the feature closed at CP4 reopens nothing retroactively — the rework re-enters at E3
-and runs the pipeline forward from there, with its own CP3 and CP4.
-
-## Routing rules the pipeline owns
-
-| Return | Action |
+| Agent | Returns / owns here |
 |---|---|
-| `Change severity: Minor` | Record it, no checkpoint. `producer` carries it next cycle; the rework list still goes to E3 when code exists |
-| `Change severity: Moderate` | Re-enter `feature-intake.md` at **E4** — CP2 — with the revised spec and the rework list |
-| `Change severity: Major` | Re-enter `feature-intake.md` at **E5** — CP1 — carrying the options earlier rounds already ruled out **and which risks the GD accepted at the feature's own CP1**, read from the ledger's `## Decisions` half (`none` if this is the feature's first CP1, per Step 3) — `advisor` and `critic` cannot remember either |
-| `technical-architect` → `Needs-decision`, `Routed to: cto` — alone, or beside a `Change severity:` for the rest of the request | The technology part is not a severity. Hand it to `research-decision.md` at **E2** — never straight to its `cto` step, which is barred from running without a candidate set — carrying the tier and its axes, attempt budget, verification floor and track per `references/entry-index.md`. This pipeline is now one of `research-decision.md`'s declared origins, returning to **E3** here, never straight into `feature-intake.md`. Finish classifying whatever severity remains in light of the answer, per `references/change-severity-and-custody.md` |
-| `technical-architect` → `Blocked` | It was handed a summary, or track state was missing. Supply the GD's own words, unedited |
-| `producer` → `Needs-decision`, `Routed to: technical-architect` | It will not adjudicate a conflict between reports. Re-dispatch the architect with both |
-| `producer` → `Blocked` | It was asked to report a change without the reports behind it. Never reconstruct status from inference |
-| The reclassification moves the tier | Record it in the feature's ledger before dispatching the rework, and re-derive the attempt budget and verification floor from it. Neither survives a run on its own |
+| `technical-architect` | One `Change severity:` per independently-severable part, the code now needing rework, the reclassified tier and five axes, and — at Moderate/Major — the revised spec |
+| `producer` | The **Status Report** that carries a Minor change to the GD (G72) |
 
-- **A change request resets the strike count on every submission it invalidates**, and resets their attempt
-  budgets, their CP2/CP3/CP4 rejection counts and their root-cause reset with it — every counter in
-  `loop-termination.md` that was charged against a spec the GD has now moved. Those submissions are now measured against a different spec, and a carried-over strike or a
-  half-spent budget would charge the author for the GD's change. Both counters are the caller's — no agent
-  holds either.
-- **A Major also resets the Advisor⇄Critic round count to zero**, and it is the only severity that does. Where
-  a prior CP1 exists, its rounds were spent settling a *different* question, and carrying them forward hands
-  the new direction whatever is left of the cap — a feature that used two rounds before would re-enter **E5**
-  with one, and report non-convergence on a direction nobody had properly deliberated. Where this is the
-  feature's **first** CP1 (Step 3's second Major case), there is no prior round to reset — resetting 0 to 0 is
-  correct, not vacuous, and the full 3-round cap applies. What does **not** reset either way is the
-  **ruled-out options list**: those were rejected on their own merits, and `advisor` still cannot remember them.
-- **A decision the change overturns is superseded in the feature root's `LEDGER.md`, not deleted** — from
-  **A3** upward, per `feature-documentation.md`. The superseded reasoning is what stops the next session
-  re-litigating a direction the GD has already moved off.
-- **A change arriving before CP2 is not a change request.** No approved spec exists yet, so there is nothing to
-  classify a blast radius against; it belongs to `feature-intake.md` as an ordinary revision.
-- **A Major does not restart the feature from zero.** It reopens CP1 for the *direction*; work already done
-  that the new direction still needs stays, and only the flagged code is reworked.
-- **This pipeline never decides whether the change is a good idea.** It classifies what the change costs. The
-  design judgment is the GD's, and the technology judgment is `cto`'s.
+Everything downstream belongs to its own file: CP1 and CP2 to `feature-intake.md`, the rework to
+`feature-development.md`, re-verification to `review-pipeline.md` and `qa-pipeline.md`.
+
+## Hard ordering
+
+1. New dispatches against the questioned spec halt **before** classification starts (G70).
+2. A part needing a strategic technology choice is settled before the rest of the request finishes
+   classifying, and before any CP1 reopens — what `critic` re-tests can depend on which foundation is in play.
+3. The reclassified tier is in the ledger before any rework is dispatched.
+4. Rework against a Moderate or Major change dispatches only after the reopened checkpoint approves.
+
+## Steps
+
+1. **Halt.** Stop dispatching new work against the spec in question. Agents already running cannot be
+   recalled; whatever they return after the change arrived goes onto the rework list as a candidate, never
+   counted as a completed task.
+2. **Classify.** `technical-architect` receives the change in the GD's own words (it blocks on a summary) and
+   the track state (it silently assumes client-only without it). The severity is stated, never put to the GD
+   (G71). It re-reads **all five axes**, not just U — new scope can move D, a newly touched economy path can
+   move C. Severity and the A-tier are independent: severity picks the checkpoint, the tier sets how hard the
+   rework is verified, so a Minor change on a credential path is still A5 and still owes V4. Write the new
+   tier into the ledger's `Tier:` row (the move appended to `Tier history:`), re-derive the attempt budget and floor from it, and state any move per
+   G43.
+3. **Split a bundled request.** One `Change severity:` per independently-severable part. A part that forces a
+   strategic technology choice — a netcode foundation, a vendor swap — gets **no** severity: it goes to
+   `research-decision.md` **E2** with the four values (`references/dispatch-brief.md`), never straight to
+   `cto`, which does not run without a candidate set. It returns here at **E3**, never into `feature-intake.md`,
+   which cannot know a severity is still pending.
+4. **Route by severity.**
+
+   | Severity | Criterion | Direction-dependent spec fields | Goes to |
+   |---|---|---|---|
+   | **Minor** | Module boundaries and interfaces unchanged | Filled | The architect updates the spec in place; `producer` carries it in the next Status Report (G72) |
+   | **Moderate** | The spec's structure changes; the original direction and its assumptions still hold | Revised in place | `feature-intake.md` **E4** — CP2 reopens (G73) |
+   | **Major** | It invalidates an assumption `critic` tested or a risk the GD accepted at CP1 — **or** the reclassified axes now require CP1 (D4–D5, or U3) on a feature that never held one | `Pending CP1` — never invented ahead of the loop | `feature-intake.md` **E5** — CP1 reopens (G73) |
+
+   **Minor is the only severity the GD never sees**, so any boundary or interface move at all is at least
+   Moderate — neither the size of the diff nor how obvious it looks is the criterion. **E5** carries the
+   revised spec, the change in the GD's own words (standing in for acceptance criteria while those read
+   `Pending CP1`), the rework list, the options already ruled out, and the risks the GD accepted, read from
+   the ledger's `## Decisions` half. A first CP1 has a legitimate empty history: state `none` for prior rounds,
+   ruled-out options and accepted risks — never fabricate one.
+5. **Rework.** No code exists against the superseded spec → resume the pipeline the change interrupted.
+   Otherwise the rework list enters `feature-development.md` **E3**, taking its place in that pipeline's serial
+   order, and is an ordinary submission from there — with its own gate offer (G74). A Major does not restart the
+   feature: work the new direction still needs stays, and only the flagged code is reworked. A change after
+   CP4 reopens the same ledger and in-flight row (never a second slug) and runs forward with its own CP3 and CP4;
+   nothing earlier reopens retroactively.
+6. **Ledger.** A decision the change overturns is superseded in place in the `## Decisions` half, never deleted
+   (from A3 upward). Reset the counters of every submission the change invalidates, per the last paragraph of
+   `references/bounds.md`. A Major also resets the `Advisor⇄Critic:` round count to 0 and notes the reset with
+   its date; the ruled-out options are kept.
+
+## GD touchpoints
+
+- **G70** — entry: the change arrives in the GD's own words; new work against the spec halts first.
+- **G71** — step 2: the severity is never put to the GD for confirmation; the reopened checkpoint is the check.
+- **G72** — step 4, Minor: reaches the GD in the next Status Report, the only severity they never approve.
+- **G73** — step 4, Moderate or Major: CP2 (G24) or CP1 (G21) reopens, Major carrying the risks already accepted.
+- **G74** — step 5: the rework is a new boundary and gets its own gate offer per G50, whatever the GD answered
+  before the change.
+- **G6** — any `Blocked` input only the GD holds.
+- **G43** — step 2: the tier moved.
+
+## Bounds
+
+- **B1** — `technical-architect`'s attempt budget inside the classification dispatch.
+- **B17** — identical `Blocked` returns on one missing input.
+- **B2** — reset to zero by a Major only; the ruled-out options survive the reset.
+- **B1, B3, B10, B11, B12, B13** — reset on every submission the change invalidates (`references/bounds.md`,
+  last paragraph): the author is never charged for the GD's change. A change request itself never counts as a
+  CP2, CP3 or CP4 rejection.
+- **B18** — the rework's gate offer is a new boundary, not a repeat ask.
+
+## Exits
+
+| Outcome | Control goes to | Ledger |
+|---|---|---|
+| Minor | Spec updated in place; `producer` at the next cycle; rework (if code exists) to `feature-development.md` **E3** | `Tier:`; superseded decisions; counter resets |
+| Moderate | `feature-intake.md` **E4**, with the revised spec and the rework list | `Tier:`; superseded decisions; counter resets |
+| Major | `feature-intake.md` **E5** | `Tier:`; `Advisor⇄Critic:` round reset, ruled-out list kept; counter resets |
+| A part needs a strategic technology choice | `research-decision.md` **E2**; back at **E3** | — until the remaining severity is classified |
+| No code against the superseded spec | The interrupted pipeline, at the step the ledger's `Position:` names | — |
+| `technical-architect` → `Blocked` | Supply the GD's own words unedited, or the track state (G6) | — |
+| `producer` → `Needs-decision`, `Routed to: technical-architect` | Re-dispatch the architect with both conflicting reports | — |
+| `producer` → `Blocked` | Supply the reports behind the change — never reconstruct status by inference | — |
+| A bound reached | The GD (G7) | `### Continuation debt` |

@@ -22,7 +22,6 @@ install — copy `.claude/` into a Unity project and the behaviour changes.
 - [The skill library](#the-skill-library)
 - [Rules and standards](#rules-and-standards)
 - [Slash commands](#slash-commands)
-- [Prompt templates](#prompt-templates)
 - [State: the ledger and the two locks](#state-the-ledger-and-the-two-locks)
 - [Repository layout](#repository-layout)
 - [Extending the framework](#extending-the-framework)
@@ -45,7 +44,8 @@ separation of authorship from review, no owner for a decision, no gate where a h
 | An expensive process on a trivial ask | Step 0 sizing: over a dozen rows, first match wins, zero agent calls to decide |
 | Consequence buying an 8-call pipeline | The **gated-direct lane** — a criterion tripped for consequence alone still costs three calls, not eight |
 | A big decision made silently | Four checkpoints where the human, not an agent, approves |
-| A loop that never converges | Every cap in the layer is counted and composes into a stop — `references/loop-termination.md` |
+| A loop that never converges | Every cap in the layer is counted and composes into a stop — `references/bounds.md` |
+| A question the GD should have been asked, skipped | Every ask, approval and notice is registered by ID in `gd-touchpoints.md` and machine-checked against the file that owns it |
 | Secrets in code, history, or logs | `security.md` — zero-tolerance, no tier exemption, ever |
 
 The premise throughout: **agents are isolated, stateless, silent and alone** — each sees only its own dispatch
@@ -57,12 +57,12 @@ which is why this repository has a workflow layer and a ledger at all.
 | Layer | Path | Count | What it does |
 |---|---|---|---|
 | **Rules** | `.claude/rules/` | 12 files, flat | Auto-loaded into every session — standards every agent obeys before it can even read its task |
-| **Standards** | `.claude/standards/` | 7 files — `client/` (5), `qa/` (2) | Loaded **on demand**, only by the agents whose track owns them |
+| **Standards** | `.claude/standards/` | 8 files — `client/` (5), `qa/` (3) | Loaded **on demand**, only by the agents whose track owns them |
 | **Agents** | `.claude/agents/` | 28 agents, flat | Each a system prompt: one role, its scope, its refusals, its output envelope |
 | **Skills** | `.claude/skills/` | 90 skills, flat | On-demand technique packages, one per `.claude/skills/<name>/SKILL.md` |
-| **Workflows** | `.claude/workflows/` | orchestrator + 6 pipelines + a checklist, 29 reference files, 3 state templates, 1 verification script | Sequence, parallelism, retry loops, checkpoints, cross-run state |
+| **Workflows** | `.claude/workflows/` | orchestrator + 6 pipelines, a GD touchpoint registry, 3 shared references, 3 state templates, 1 verification script | Entries, hard ordering, GD touchpoints, bounds and exits — the model plans everything between them |
 | **Commands** | `.claude/commands/` | 6 slash commands | Self-contained investigations — one of which edits code |
-| **Docs** | `.claude/docs/` | 3 authoring templates, 3 frame sources, 8 review records, a prompt-template suite | How to extend the framework, how to brief it, and the record of how it got here |
+| **Docs** | `docs/` under `.claude/` | Reference material only | Authoring templates, prompt templates and review history. **Nothing outside it depends on it** |
 | **Settings** | `.claude/settings.json` | 35 allow-rules | Pre-approved read-only git/lfs commands so routine inspection does not prompt |
 
 **The division of labour is strict**: `rules/`+`standards/` are standards, `agents/` is who owns what,
@@ -173,9 +173,8 @@ those as **uncovered** rather than silently passing.
   Answered directly, or by one read-only agent.
 - **Make a small, visible change — one agent.** *"The camera zoom feels slow — snap it up, judge it by
   playing."* Judgeable by looking → direct, no fan-out, no checkpoint.
-- **Build a feature — the full pipeline.** Copy the skeleton in
-  [`prompt-templates/single-feature.md`](.claude/docs/prompt-templates/single-feature.md); its
-  `<escalation_check>` block checks the same five criteria Step 0 uses, below.
+- **Build a feature — the full pipeline.** Describe it with its objective, scope, constraints and what "done"
+  means; step 0 checks it against the five escalation criteria below.
 - **Investigate something specific** — `/review-code-risks Assets/Scripts/Combat`,
   `/plan-test-coverage --spec docs/specs/fireball.md`, `/investigate-device-crash android com.studio.game`.
 - **Call one role directly — your cost override.** *"Have `unity-engineer` wire the Fireball prefab in."*
@@ -198,7 +197,7 @@ general** — a catch-all takes only what nothing above it claimed.
 | Coverage/evidence on work already built — run, never only read | `qa-pipeline.md` **E4** | 2–5 |
 | "What exists today" for a missing capability | `research-decision.md` **E5** | 1–4 |
 | "Measure it on our own hardware first" | `research-decision.md` **E6** — asking *is* the summon | 2–4 |
-| **Consequence only** — one role, no contract moves, behaviour already stated | **Gated-direct** — the agent, then both gates | 3 |
+| **Consequence only** — one role, no contract moves, behaviour already stated | **Gated-direct** — the agent, then both gates if the GD authorises them | 1–3 |
 | Any of the five escalation criteria below | `feature-intake.md` **E1** — classification sets the tier | 8+ |
 | Judgeable by looking — UI, layout, a tuned value, one local behaviour | Directly, or one agent — no fan-out, no checkpoint | 0–1 |
 | A chore, or a question | Directly, or one read-only agent | 0–1 |
@@ -213,7 +212,8 @@ definitions live in [`task-classification.md`](.claude/rules/task-classification
 
 **Route by the cost of being wrong, never by whether behaviour changed** — consequence buys the *gates*, never
 the pipeline. Tripped for **consequence alone**, with one role and no moving contract, it's the
-**gated-direct lane** above: the agent, then both gates, capped at two strikes before escalating anyway.
+**gated-direct lane** above: the agent, then — once the GD says yes, with a recommendation to — both gates,
+capped at two strikes before escalating anyway.
 **D3+ or U3 is different in kind** — that input needs coordination or a direction, which is shape.
 
 ### The three modes
@@ -229,10 +229,13 @@ Naming an `agent-id` is the GD's **cost override** — debt is recorded, nothing
 
 ## The pipelines
 
-`orchestrator.md` is not itself a pipeline — it owns Step 0 above, the three modes, and every counter that
-survives past one run. The six pipelines own sequence, parallelism, retries and checkpoints; a shared
-`references/` folder (29 files) holds detail promoted out of all seven once a file neared the 200-line cap,
-read only when its own trigger fires.
+`orchestrator.md` is not itself a pipeline — it owns Step 0 above, the three modes, the ledgers and the locks.
+Each pipeline is written as a **contract, not a procedure**: its entries, the agents it may dispatch, the few
+orderings whose violation breaks something, its GD touchpoints and bounds by ID, and its exits. Everything
+between those walls is the model's judgment. Three shared references hold what every pipeline cites:
+`bounds.md` (every loop cap), `optional-gates.md` (the shape of every gate ask) and `dispatch-brief.md` (what
+every dispatch carries). [`gd-touchpoints.md`](.claude/workflows/gd-touchpoints.md) is the registry of every
+point where the GD is asked, approves or is told — and where asking is forbidden.
 
 | Pipeline | Scope | Dispatches | The mechanic worth knowing |
 |---|---|---|---|
@@ -309,7 +312,7 @@ single-purpose; read the file itself rather than a summary here.
 
 `.claude/standards/` is loaded **on demand**, only by the agents whose track it governs — `client/` (coding
 principles, style, naming, performance, feature documentation) and `qa/` (verification standards, defect
-reporting). [`standards-index.md`](.claude/rules/standards-index.md) is the authoritative "who reads what,
+reporting, assurance scoring). [`standards-index.md`](.claude/rules/standards-index.md) is the authoritative "who reads what,
 when" table and the reason these live outside the auto-loaded tree at all.
 
 Three worth knowing without opening a file: **`this.` qualification is mandatory** (`this.health -= damage;`).
@@ -325,48 +328,29 @@ plain C# and `Game.Core.*` types use `!= null`. **Every QA output states what it
 | [`/plan-test-coverage`](.claude/commands/plan-test-coverage.md) | `[paths...] [--spec doc]` | Derives normal + edge test cases and a manual flow — never decides which are owed |
 | [`/investigate-device-crash`](.claude/commands/investigate-device-crash.md) | `[android\|ios] [package-id]` | Investigates a crash/ANR on the **currently connected device** |
 | [`/resolve-merge-conflicts`](.claude/commands/resolve-merge-conflicts.md) | — | Resolves an in-progress merge across code, prefabs, scenes, SOs, Addressables — **this one edits files** |
-| [`/verify-workflow-layer`](.claude/commands/verify-workflow-layer.md) | — | Runs `tools/verify-workflow-layer.ps1` and reports drift in the workflow layer's own claims |
+| [`/verify-workflow-layer`](.claude/commands/verify-workflow-layer.md) | — | Runs `tools/verify-workflow-layer.ps1` and reports any break in the workflow layer's integrity |
 | [`/save-workmemory`](.claude/commands/save-workmemory.md) | `[feature-root-path]` | Summarizes the session into `WORKMEMORY.md` at the feature root — creates or updates in place |
 
 `/plan-test-coverage` also runs inside `qa-pipeline.md`'s device lane, filtered to whatever `qa-lead` assigned.
 
-## Prompt templates
-
-Seven templates in `.claude/docs/prompt-templates/`, split by **purpose**, each a variant of one six-part
-frame — Objective, Context, Scope, Constraints, Deliverable, Done when. `Scope` and `Done when` are the two
-most often skipped, and the two most expensive to skip.
-
-| You want to | Template | Lane |
-|---|---|---|
-| Understand code, rename, tune a value | `basic-request.md` | direct |
-| Add **one** feature | `single-feature.md` | direct **or** `feature-intake.md` E1 — its `<escalation_check>` decides |
-| Add a **batch** of features | `multi-feature.md` | plan first, then loop `single-feature` |
-| Prototype or measure feasibility | `prototype.md` | direct |
-| Implement from a GDD/spec/vendor doc | `from-documents.md` | map first, then `feature-intake.md` E1 |
-| Fix a reproducible bug | `bugfix-debug.md` | direct, or `feature-development.md` E3 |
-| Investigate a rare, non-reproducible fault | `rare-case.md` | investigate first, don't fix yet |
-
-Markdown carries instructions, XML wraps anything pasted verbatim, JSON is reserved for tabular data.
-`examples/` holds 20 filled-in examples across all 7 templates. `prompt-templates/` is written in Vietnamese,
-matching the GD-facing protocol — everything else here is English.
-
 ## State: the ledger and the two locks
 
-Cross-run state is what no agent can hold, written **at each transition**, never at a run's end. **None of it
-lives under `.claude/`** — that directory is the framework every project copies unchanged.
+Cross-run state is what no agent can hold, written **whenever a counter, a checkpoint or a gate answer
+changes**, before the next dispatch. **None of it lives under `.claude/`** — that directory is the framework
+every project copies unchanged.
 
 | State | Where |
 |---|---|
-| One feature's run state and its decision history | `<feature-root>/LEDGER.md` — one file, two halves: `## Decisions` (read before undoing a design) and `## Run state` (the orchestrator's, written at every transition) |
-| The in-flight index, both global locks, gate debt belonging to no feature | `<state-root>/project-state.md` — `.workflow/` at the project root unless `CLAUDE.md` says otherwise |
-| One row per closed feature, measuring this layer's own untested constants | `<state-root>/calibration.md` |
+| One feature's run state and its decision history | `<feature-root>/LEDGER.md` — one file, two halves: `## Decisions` (read before undoing a design) and `## Run state` (the orchestrator's) |
+| The in-flight index, gate debt, gated-direct counters, standalone decisions, project-wide patterns, both locks | `<state-root>/project-state.md` — `.workflow/` at the project root unless `CLAUDE.md` says otherwise |
+| One row per closed feature, measuring what the layer's chosen constants actually cost | `<state-root>/calibration.md` |
 
 **Review debt**: any `Write`/`Edit`-capable agent dispatched outside a gate accrues it — recorded, never
 enforced, settling in batch. A **declined** gate is the same kind of debt, per `references/optional-gates.md`.
 
-**The Editor lock**: one Unity Editor, project-wide, 10 agents hold tools against it. **The device lock**: one
-physical device, independent of the Editor lock. Two holders of the same lock never run at once; a holder
-that dies leaves it *suspect*, never silently free — `state/README.md` carries the three-step reclaim.
+**The Editor lock**: one Unity Editor, project-wide. **The device lock**: one physical device, independent of
+the Editor lock. Two holders of the same lock never run at once; a holder that dies leaves it *suspect*, never
+silently free — `state/README.md` carries the three-step reclaim.
 
 ## Repository layout
 
@@ -375,23 +359,20 @@ that dies leaves it *suspect*, never silently free — `state/README.md` carries
 ├── .claude/
 │   ├── agents/                     # 28 roles, flat: <agent-name>.md
 │   ├── commands/                   # 6 slash commands
-│   ├── docs/
-│   │   ├── agent-template.md · skill-template.md · skill-reference-template.md
-│   │   ├── frame/                  # 3 source documents this project's rules adapt from
-│   │   ├── reviews/                # 8 review records + an index, non-normative
-│   │   └── prompt-templates/       # 7 templates, 7 .txt skeletons, 20 worked examples
+│   ├── docs/                       # reference material only — nothing outside it depends on it
 │   ├── rules/                      # 12 auto-loaded files, flat
-│   ├── standards/                  # 7 files, loaded on demand — client/ (5), qa/ (2)
+│   ├── standards/                  # 8 files, loaded on demand — client/ (5), qa/ (3)
 │   ├── skills/                     # 90 skills, flat: <name>/SKILL.md
 │   ├── workflows/
-│   │   ├── orchestrator.md         # the router and cross-run state
+│   │   ├── orchestrator.md         # the router, modes, ledgers, locks
+│   │   ├── gd-touchpoints.md       # every GD ask, approval, notice — and every no-ask — by ID
 │   │   ├── feature-intake.md · research-decision.md · feature-development.md
 │   │   ├── review-pipeline.md · qa-pipeline.md · change-request.md
-│   │   ├── workflow-checklist.md   # append-only, exempt from the line cap
-│   │   ├── references/             # 29 files promoted out of the files above
+│   │   ├── open-items.md           # what is still open about the layer itself
+│   │   ├── references/             # bounds.md · optional-gates.md · dispatch-brief.md
 │   │   ├── state/                  # rules + templates for the state layer — never state itself
 │   │   └── tools/                  # verify-workflow-layer.ps1
-│   └── settings.json               # 35 pre-approved read-only git/lfs commands
+│   └── settings.json               # pre-approved read-only git/lfs commands
 ├── .gitignore                      # the standard Unity ignore set
 ├── CLAUDE.md                       # per-project template — fill in every TODO before first use
 └── README.md                       # this file
@@ -401,23 +382,28 @@ This repository contains no Unity project and no C# source — it is the configu
 
 ## Extending the framework
 
-**Adding an agent** — copy [`agent-template.md`](.claude/docs/agent-template.md) to
-`.claude/agents/<agent-name>.md` — **flat**, no group folder. All 7 sections stay, even at one line; check
-for an overlapping owner first. `description` is the only text the dispatcher reads. Model matches the
-hardest **Self-assessment** level the role reaches, not how important it sounds.
+**Adding an agent** — create `.claude/agents/<agent-name>.md`, **flat**, no group folder. Frontmatter:
+`name` (equal to the filename), `description` (the only text the dispatcher reads — triggers, plus "Not for"
+naming the neighbouring owners), `model`, `tools` (the hard sandbox) and `color`. Body, seven sections even at
+one line each: Role, Objective, When called (required inputs and what happens if each is absent), Self-assessment
+(Direct / Considered / Escalate), Skills you use, Output (the envelope), Guardrails (the rule and standard files
+it reads). Check for an overlapping owner first. Model matches the hardest Self-assessment level the role
+reaches, not how important it sounds.
 
-**Adding a skill** — copy [`skill-template.md`](.claude/docs/skill-template.md) to
-`.claude/skills/<skill-name>/SKILL.md` — **flat**, no group folder; `name:` must equal that folder name.
-`description` is a retrieval index (SURFACE / WHEN / NOT FOR), 50–100 words. Budget: body under 200 lines,
-depth pushed into `references/*.md`.
+**Adding a skill** — create `.claude/skills/<skill-name>/SKILL.md`, **flat**; `name:` must equal the folder
+name. `description` is a retrieval index (surface, when, not for), 50–100 words. Keep the body under 200 lines
+and push depth into `references/*.md` beside it.
 
-**Adding a workflow step** — sequence, retries and checkpoints live only in `.claude/workflows/*`. Give a
-re-enterable step its own entry point, name every required input and its `Blocked` fallback, add the row to
-the routing table, update the mermaid diagram, and log it in `workflow-checklist.md`.
+**Adding a workflow step** — state what must be true, not how to get there. Add a re-enterable step's door to
+its pipeline's **Entries** table and to `orchestrator.md`'s mode-2 doors; name its required inputs in
+`references/dispatch-brief.md`; register any new GD ask, approval or notice in `gd-touchpoints.md` and cite its
+ID where it fires; put any new loop cap in `references/bounds.md`; then run the verifier.
 
 | Concern | Home |
 |---|---|
-| Sequence, parallelism, retry loops, checkpoints | `.claude/workflows/*` |
+| Entries, hard ordering, exits | the pipeline in `.claude/workflows/` |
+| Every point the GD is asked, approves or is told | `.claude/workflows/gd-touchpoints.md` |
+| Every loop cap | `.claude/workflows/references/bounds.md` |
 | Cross-run state; acting on a `Routed to:` | `orchestrator.md` + `<feature-root>/LEDGER.md` + `<state-root>/project-state.md` |
 | How a technique works | the skill |
 | Coding standards, naming, working language | `.claude/rules/*` and `.claude/standards/*` |
@@ -431,17 +417,18 @@ the routing table, update the mermaid diagram, and log it in `workflow-checklist
 | The final reply to you | **Vietnamese, always** — every role, without exception |
 
 **Commits**: English, imperative subject, blank line, a body explaining *why* — no `feat:`/`fix:` prefixes.
-One commit, one change. **Document length**: every file under `.claude/` holds a 200-line cap, with
-`workflow-checklist.md` exempt as append-only by design. This README is the one document meant to be read
-whole rather than opened on demand, so it is not bound by that cap — but it stays a summary, pointing at the
-rule/standard file for detail rather than restating it.
+One commit, one change. **Document length**: files under `.claude/` stay short. For the workflow layer —
+`workflows/` and the orchestrator — under 200 lines is **recommended, not required**; the verifier only warns.
+Skill bodies keep their own 200-line budget. This README is meant to be read whole, so it is not bound by
+either — but it stays a summary, pointing at the rule or standard for detail.
 
 ## Maintenance and verification
 
 Run `.claude/workflows/tools/verify-workflow-layer.ps1` (or `/verify-workflow-layer`) after any change under
-`.claude/` — it checks agent-class counts, lock holders, the 200-line cap, entry-point coverage, orphaned
-references and cross-reference anchoring; an unchecked claim about this layer is weak evidence.
-`.claude/docs/reviews/` is history, never a source of truth — `workflow-checklist.md` is current build state.
+`.claude/`. It checks integrity, not counts: every reference resolves; every agent, skill, invariant and bound
+cited exists; every GD touchpoint is cited by the file that owns it; every standard reaches its readers; no
+runtime state sits under `.claude/`; and nothing outside the docs folder depends on it. What is still open
+about the layer itself is in `.claude/workflows/open-items.md`.
 
 ## Known limitations
 
@@ -451,16 +438,11 @@ references and cross-reference anchoring; an unchecked claim about this layer is
   parallel, and no build means no device lane at all.
 - **`assurance-evaluator` only runs at A3+** — below that, no gate independently checks a claimed
   verification.
-- **`docs/skill-template.md` and `docs/agent-template.md`'s own authoring comments are stale** — both still
-  name a pre-flattening path (`<group>/<skill-name>/SKILL.md`, `<group>/<agent-name>.md`); every real skill
-  and agent is flat, at `.claude/skills/<skill-name>/SKILL.md` and `.claude/agents/<agent-name>.md`.
-- **`docs/reviews/README.md`'s own index has a dangling row** — round 8 (`skills-layer.md`) is listed but the
-  file does not exist; `verify-workflow-layer.ps1` flags this on every run.
+- **The layer has never run against a real Unity project** — every bound is chosen, not measured until `calibration.md` gathers rows; see
+  `open-items.md`.
 - **MCP tool names are project-specific** — a mismatch with your connected server fails silently at call time.
 - **`.claude/workflows/*` is not auto-loaded** — only `.claude/rules/**` is; `orchestration.md` is the
   ignition.
-- **Vietnamese-facing docs are `prompt-templates/` only** — everything else here is English.
-
 ## License
 
 No license file is present in this repository. Add one before distributing.

@@ -79,7 +79,8 @@ Read these before acting:
 | Rule file | Applies |
 |---|---|
 | `.claude/rules/language-and-comments.md` | Always — it governs every agent. |
-| `.claude/rules/task-classification.md`, `effort-allocation.md`, `execution-loop.md` | Always — they are the standard you score against, including the gates, the weights and the anchors. |
+| `.claude/rules/task-classification.md`, `effort-allocation.md`, `execution-loop.md` | Always — they are the standard you score against: the tiers, the floors and the non-compensatory gates. |
+| `.claude/standards/qa/assurance-scoring.md` | Always — the dimension weights, the tier targets and the calibration anchors. |
 | `.claude/standards/qa/defect-reporting.md`, `verification-standards.md` | Always — they set what a finding must carry and what a claim of verification requires. |
 | `.claude/rules/implementation-note.md` | Always — it defines the note whose claims you check against the evidence. |
 | `.claude/rules/security.md` | Always — a violation fails the work outright, at any tier. |

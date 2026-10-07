@@ -1,71 +1,41 @@
 # Shared — Orchestration
 
-Applies to: every agent dispatch in this project, in every mode — a full pipeline run, a single pipeline
-entered at one of its entry points, or one agent called directly. Like `language-and-comments.md`, this file
-sits above the `.claude/rules/<group>/` folders rather than inside one.
-
-It is a rule rather than a workflow file because `.claude/workflows/*` is never loaded into a session — it
-takes effect only when something reads it. Those six files hold every checkpoint, retry cap and
-required-input table this project has, and none of it happens on its own. This file is their ignition.
+Applies to: every agent dispatch, in every mode — a full pipeline run, one pipeline entered at one of its
+doors, or one agent called directly. `.claude/workflows/*` is never auto-loaded; this rule is what makes it run.
 
 ## The one instruction
 
-**Before dispatching any agent, read `.claude/workflows/orchestrator.md`, and the ledger of whichever feature
-the work belongs to.** The router picks the input's lane; the ledger carries the state no agent can hold
-across runs. Neither costs an agent call.
+**Before dispatching any agent, read `.claude/workflows/orchestrator.md`, and the `LEDGER.md` of whichever
+feature the work belongs to.** The router picks the lane; the ledger carries what no agent can hold across
+runs. `.claude/workflows/gd-touchpoints.md` lists every point where the GD is asked, approves or is told — and
+the points where asking is forbidden. Neither read costs an agent call.
 
-Ledgers are **one per feature**, and a feature's ledger is `LEDGER.md` **at its own feature root** — the same
-file `feature-context-reading.md` sends a reader to, carrying its decision history and its run state as two
-halves of one document. The in-flight index, open gate debt and both global locks are in
-`<state-root>/project-state.md`. The layout and the templates are in `workflows/state/README.md`.
-
-**`<state-root>` is `.workflow/` at the project root**, unless this project's own `CLAUDE.md` names another
-path. **Nothing under `.claude/` is ever written at runtime**: this directory is the framework, copied
-unchanged into every project that adopts it, and a counter written into it becomes one project's history
-inside the template every other project starts from. State belongs beside the project's own work — at the
-feature root, or under `<state-root>`, never here.
-
-## Size the input before choosing a process
-
-Most inputs are not feature requests, and the full pipeline costs eight agent calls. **The lane table and the
-five escalation criteria live in `orchestrator.md` step 0 — one fact, one home.** This file does not restate
-them; it states why reading them is not optional:
-
-- **The default is direct.** No criterion tripped means no classification round, no Tech Spec, no checkpoint.
-- **Consequence buys the gates, not the pipeline.** A criterion tripped for **C** alone takes the
-  gated-direct lane — the one agent, then both review gates. `task-classification.md` Step 4 is the authority
-  and `workflows/references/gated-direct-lane.md` is the detail.
-- **The lane is not the tier.** Directly-handled work is still classified, and a direct-lane task at
-  **C3/C4, R2/R3 or X2/X3** runs at that tier's verification floor and safe-retry discipline regardless. What
-  a high tier never buys is process.
-- **Escape upward the moment a criterion turns out to apply.** Little was built, so little is lost.
+State lives beside the project's work, never under `.claude/`: a feature's ledger is `LEDGER.md` at its feature
+root, and what belongs to no feature is in `<state-root>/project-state.md`. **`<state-root>` is `.workflow/`**
+unless this project's `CLAUDE.md` names another path. `.claude/` is the framework every project copies; state
+written into it becomes another project's history.
 
 ## Invariants — these hold in every mode
 
 | # | Invariant |
 |---|---|
-| **I1** | Required inputs travel with the dispatch. The dangerous omissions are silent: with no track state `technical-architect` assumes client-only, with no tier and verification floor `qa-lead` plans at a depth it chose itself, and neither says so. The four that travel with **every** dispatch — tier and its five axes, attempt budget, verification floor, track — are in `workflows/references/entry-index.md` |
-| **I2** | Gate debt attaches to the artifact, not to the run. Code written outside a pipeline owes **the gate offer** — the gates themselves are the GD's to authorise or decline, per `workflows/references/optional-gates.md`. `<state-root>/project-state.md` records the answer either way, **unoffered** or **declined**, and settles in batch. Recording never blocks a dispatch |
-| **I3** | One Unity Editor, project-wide. 10 agents hold `mcp__<server>__*` Editor tools against a single process; never run two at once, whatever mode each was started in |
-| **I4** | Every retry counter is the orchestrator's — three strikes, the two-round QA bound, the 3-round Advisor⇄Critic cap, the one measure-and-confirm cycle. A round nobody counted is a cap that never fires. `execution-loop.md`'s attempt budget is the one counter an agent holds itself, **inside a single dispatch**; the moment it returns, its attempts-used becomes ledger state like everything else |
-| **I5** | A design flaw reaches the GD immediately, in every mode — never folded into a later report, never re-filed as an ordinary bug |
+| **I1** | Required inputs travel with the dispatch. Tier and its five axes, attempt budget, verification floor and track travel with **every** dispatch; the rest per `workflows/references/dispatch-brief.md`. The dangerous omissions are silent — an agent missing one assumes a default and does not say so |
+| **I2** | Gate debt attaches to the artifact, not to the run. Source written outside a pipeline, and every gated-direct submission, owes **the gate offer** — the gates themselves are the GD's to authorise or decline (G50). `project-state.md` records the answer either way, `unoffered` or `declined`. Recording never blocks a dispatch |
+| **I3** | One Unity Editor, project-wide. Never run two holders of Editor tools at once, whatever mode started each |
+| **I4** | Every cross-run counter is the orchestrator's, written to the ledger when it changes. The attempt budget is the one counter an agent holds itself, inside one dispatch; on return, attempts-used becomes ledger state |
+| **I5** | A design flaw reaches the GD immediately, in every mode — never folded into a later report, never re-filed as an ordinary bug (G4) |
 | **I6** | A gap the GD accepts is written into the feature's known limitations before closure, or "nobody checked" becomes indistinguishable from "QA passed" |
-| **I7** | One physical device, project-wide. `build-verification-tester` walking cases over adb and `performance-qa-engineer` profiling a Development Build over adb are the same wire; never run both at once |
-| **I8** | Every cap composes into a stop, never into another round. A submission gets **one** root-cause reset across every loop it enters; past that the work goes to the GD as a Continuation Debt Record. `workflows/references/loop-termination.md` holds the ladder |
-| **I9** | A lock is released by whoever claimed it. A lock whose holder cannot be confirmed running is **reclaimed by the procedure in `workflows/state/README.md`, never silently** — an invariant with no recovery path stops being one the first time a run dies holding it |
-| **I10** | Source that reaches no gate is a hole, not debt. Every agent that writes `.cs` has a route to `review-pipeline.md` — including `qa-automation-engineer`, whose tests enter at **E3** after QA closes |
+| **I7** | One physical device, project-wide. Device test walks and device profiling are the same wire; never both at once |
+| **I8** | Every cap composes into a stop, never into another round. One root-cause reset per submission across every loop; past it, a Continuation Debt Record to the GD. `workflows/references/bounds.md` |
+| **I9** | A lock is released by whoever claimed it. A lock whose holder cannot be confirmed running is reclaimed by the procedure in `workflows/state/README.md`, never silently |
+| **I10** | Source that reaches no gate is a hole, not debt. Every agent that writes `.cs` has a route to `review-pipeline.md` — including `qa-automation-engineer`, whose suite enters at **E3** as soon as it is written, before its results serve as evidence (G62) |
 
 ## Rules
 
-- Read the router before dispatching, and state the lane you picked.
-- Never enforce by blocking. These are directions the GD overrides at will — state the cost, then do what
-  they asked.
-- Never let a counter live only in context. Anything that matters across runs belongs in that feature's
-  `LEDGER.md`, or in `<state-root>/project-state.md` when it belongs to no feature — never under `.claude/`.
-- An agent that exhausted its attempt budget returns a Continuation Debt Record, not a silent partial result.
-  Record it whole — the known non-solutions and the safe resume point are what the next session cannot
-  reconstruct — and treat the return as one strike, never as a free retry.
-- A directly dispatched agent is still isolated and stateless: it cannot be recalled mid-run, cannot see
-  another agent's return, and its `Routed to:` is a recommendation for you to act on — never an action it took.
-- After any change under `.claude/`, run `workflows/tools/verify-workflow-layer.ps1`. Every count this layer
-  states about itself is a claim, and an unchecked claim is E0 evidence on `effort-allocation.md`'s own scale.
+- State the lane you picked (G1). Never enforce by blocking — state the cost, then do what the GD asked (G11).
+- A dispatched agent is isolated and stateless: it cannot be recalled, cannot see another agent's return, and
+  its `Routed to:` is a recommendation you act on, never an action it took.
+- An agent that exhausted its attempt budget returns a Continuation Debt Record; record it whole and count the
+  return as one strike, never as a free retry.
+- After any change under `.claude/`, run `workflows/tools/verify-workflow-layer.ps1` before reporting the
+  layer consistent.

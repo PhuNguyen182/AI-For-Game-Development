@@ -33,6 +33,7 @@ naming its own files; that table is now the loading mechanism rather than a cita
 | `.claude/standards/client/feature-documentation.md` | the implementing agent that owns a feature root, `code-reviewer` | A feature reaches completion at **A3** or above |
 | `.claude/standards/qa/verification-standards.md` | every QA-track agent, `assurance-evaluator` | Before claiming anything is verified |
 | `.claude/standards/qa/defect-reporting.md` | every QA-track agent | Before stating a finding |
+| `.claude/standards/qa/assurance-scoring.md` | `assurance-evaluator` | Before computing any score |
 
 ## The rules that did not move, and why
 
@@ -48,7 +49,7 @@ is loaded; a standard you consult when you reach its domain is read.**
 ## Rules
 
 - A dispatch brief for a track agent names the standards that agent must read, per
-  `workflows/references/development-brief.md`. Naming them is what replaces auto-loading.
+  `workflows/references/dispatch-brief.md`. Naming them is what replaces auto-loading.
 - Never copy a standard's content into a brief, a rule or a workflow file — one fact, one home. Cite the path.
 - A new project-wide rule goes in `.claude/rules/` and is added to the list above; a new track standard goes
   in `.claude/standards/<track>/` and gets a row in the table above. A file in neither list is unreachable.
