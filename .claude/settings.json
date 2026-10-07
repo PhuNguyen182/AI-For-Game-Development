@@ -35,7 +35,8 @@
       "Bash(git lfs fsck:*)",
       "Bash(git clean -xdn:*)",
       "Bash(git clean -nd:*)",
-      "Bash(git clean --dry-run:*)"
+      "Bash(git clean --dry-run:*)",
+      "Bash(git checkout *)"
     ]
   }
 }
