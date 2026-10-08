@@ -10,6 +10,19 @@ every GD touchpoint is in `gd-touchpoints.md` (this file owns G1–G19); bounds 
 and exits. Everything between those walls is your judgment: sequence the rest, parallelize independent read-only
 work, skip a step whose output is already in hand. The walls are never your judgment.
 
+**What to open.** Every lane: this file, `gd-touchpoints.md` (what each G-ID carries and its decline path) and
+`references/bounds.md` (each B-ID). Then only what the lane needs — `references/dispatch-brief.md` for any dispatch:
+
+| Lane | Also open |
+|---|---|
+| Rows 12–14, mode 3 | Nothing more — `review-pipeline.md` **E3** or `qa-pipeline.md` **E4** only on a G13 yes |
+| Row 10, gated-direct | `review-pipeline.md` (**E3**), `references/optional-gates.md` |
+| Row 11, a feature | `feature-intake.md`, then `feature-development.md`; `review-pipeline.md`, `qa-pipeline.md` as their gates are authorised; `state/README.md` and the ledger template |
+| Row 5, a bug on a ledger | The ledger, `feature-development.md` **E3**, `qa-pipeline.md` **E3**, `state/README.md` → *Bugs* |
+| Row 4, a change | `change-request.md`, then the door it names |
+| Rows 6–9 | The one pipeline the row names, from its door |
+| A resumed session | `project-state.md`, the ledger, then the file its `Position:` names |
+
 The GD's control is absolute: never block — state the cost, then do what they asked (G11); no bound overrides them
 (G8) — and neither reaches `security.md` or the supply-chain pre-gate (G45): there the GD hears the cost and may
 drop the work, never order the violation; a budget, platform or constraint they state is a hard requirement (G12).
@@ -29,7 +42,7 @@ never the words it uses — a question *about* a damage formula touches no rule;
 |---|---|---|---|
 | 1 | A git or version-control task | `git-expert` | 1 |
 | 2 | A CI/CD task — author a pipeline, or diagnose a failed run from its log | `ci-cd-engineer` | 1 |
-| 3 | A crash or ANR from **released production telemetry** | `crash-anr-investigator`. A crash on a device *under test* is `/investigate-device-crash` instead | 1 |
+| 3 | A crash or ANR from **released production telemetry** | `crash-anr-investigator`. A crash on a device *under test* is `/investigate-device-crash` instead. The fix its report hands off is new input, sized by this table | 1 |
 | 4 | A change to a feature whose baseline is approved — it passed CP2, or its D1–D2 direct notes were handed off | `change-request.md` **E1** — halt new work against it first | 1–3 |
 | 5 | A bug in something a pipeline built, its spec still standing | `feature-development.md` **E3** | 1–3 |
 | 6 | An audit of code already in the repo — read, never run | `review-pipeline.md` **E2** | 1–2 |
@@ -45,8 +58,9 @@ never the words it uses — a question *about* a damage formula touches no rule;
 A change to a feature still in intake, before its baseline is approved, is not row 4: it is new input to the run in
 progress, at the step its `Position:` names — reclassified at step 2 if it moves an axis. Rows 1–3 yield to the
 criteria only when the work would **change** a consequence path; reading or investigating one never escalates. Rows
-4–5 are for work the spec governs: a cosmetic fix judgeable by looking — a label, a tuned value — to a built
-feature is row 12 or 13, and leaves its ledger alone. A history rewrite around a leaked credential is C4: `cto`
+4–5 are for work the spec governs: a cosmetic fix judgeable by looking — a label, a tuned value — that the GD asks
+for on a built feature is row 12 or 13, and leaves its ledger alone. A bug already recorded in a feature's `BUGS.md`
+is always row 5, however cosmetic: only its own loop settles it. A history rewrite around a leaked credential is C4: `cto`
 decides it, and `git-expert` carries it out on that decision with the GD's explicit authorisation (radius 3) —
 never the gated-direct lane.
 
@@ -63,14 +77,20 @@ never the gated-direct lane.
 **Consequence buys the gates, never the pipeline** (`task-classification.md` Step 4): tripped for C alone → row 10.
 Tripped for D3+ or U3 → row 11; that input needs coordination or a direction. **The lane is not the tier**:
 directly-handled work is still classified, and at C3/C4, R2/R3 or X2/X3 it runs at that tier's floor with
-safe-retry discipline. **Escape upward** to `feature-intake.md` **E1** the moment a criterion turns out to apply,
-or the moment you reach for a Tech Spec.
+safe-retry discipline. **Escape upward** the moment a criterion turns out to apply mid-work — to row 10 when it is
+consequence alone and all four of that lane's conditions hold, otherwise to `feature-intake.md` **E1** — and to
+**E1** the moment you reach for a Tech Spec.
+
+**A fix someone hands you is new input.** A Root Cause Report, a bug QA found, a defect the GD reports: size the
+fix by this table, by the work it asks for — never by the lane that found it. A bug on a feature with a ledger is
+row 5.
 
 ## The gated-direct lane — row 10
 
 All four, or it is not this lane (ambiguous → row 11): exactly one role owns the change; no public contract,
-interface or module boundary moves; the intended behaviour is already stated; the criterion tripped is consequence
-only. The lane is A3+ by construction.
+interface or module boundary moves; the intended behaviour is already stated — a fix whose mechanism is stated but
+which needs one value nobody decided (what a fallback economy table pays) asks it first (G27) and stays here; the
+criterion tripped is consequence only. The lane is A3+ by construction.
 
 `the one owning agent → ask the GD (G14) → code-reviewer + security-reviewer in parallel → assurance-evaluator → the GD`
 
@@ -82,7 +102,9 @@ report.
 - **Strikes** cap at B4, in `project-state.md`. At the bound — or the moment a condition above fails, including
   `code-reviewer` returning `Needs-decision` because nothing states what "correct" means — the work escalates to
   `feature-intake.md` **E1**, carrying both rejection sets, the code, the strike count and any Continuation Debt
-  Record into the new ledger.
+  Record into the new ledger. There the strikes are history, not a running count: the work built from the new
+  notes or spec is a new submission at 0 against B3. The gates the GD authorised at G14 — assurance included — go
+  into the ledger's `Gates:` as the whole feature's answer, so G40 and G42 ask only what that answer left open.
 - **Assurance**, once both gates clear, goes to the GD with the note; the GD decides what returns to the author
   (G63 at once for a `FAIL`). It spends no strike.
 - **QA** follows only if the GD asks; a fix to an unattached bug carries its verification offer in G14.
@@ -122,10 +144,21 @@ four values (`references/dispatch-brief.md`). A `Blocked` here is the router's o
 
 **Ledger-less work closes at the reply, never at CP4** — rows 12–13, mode 3, and `feature-development.md` **E2**
 entered from row 12. The reply carries what changed and `Verification done:` against the floor (G82). Source it
-wrote owes G13 — not G42, which belongs to a ledger; a QA yes enters `qa-pipeline.md` **E4**. Editing no source — a
-prefab, a text asset, a document — owes no offer and creates no state.
+wrote owes G13 — not G42, which belongs to a ledger. Editing no source — a prefab, a text asset, a document — owes
+no offer and creates no state.
 
-A bug in direct-lane work is more direct work, not an **E3** defect — there is no spec to charge it against. A
+**Where a G13 yes goes.** Review → `review-pipeline.md` **E3**, origin `direct`, exactly as a gated-direct
+submission: strikes in `project-state.md` → *Gated-direct counters*, capped at B4, escalating as that lane does. A
+suite `qa-automation-engineer` wrote with no ledger takes the same counters at B5, and at B5 goes to the GD as
+unreviewed coverage (G7). QA → `qa-pipeline.md` **E4**.
+
+**A mode-3 chain** — several agents named in order — asks G13 as each source-writing agent returns, before the
+next one is dispatched: a later agent may need the answer (`qa-automation-engineer` blocks without a review status).
+A1–A2 answers are stated, never recorded.
+
+A bug in direct-lane work is more direct work, not an **E3** defect — there is no spec to charge it against. The GD
+asking to redo what a direct reply just delivered opens no bug record; a defect in code no ledger holds — shipped
+code, a production crash — is an **unattached bug** (G47), settled by the offer that ends its fix (G13, G14). A
 direct change that owes a **measured** claim at V3/V4 asks for the measurement as its own run (G15).
 
 ## Acting on a return — the defaults, everywhere
@@ -146,7 +179,7 @@ the whole envelope, never on `Status:` alone, and read `Verdict:` wherever there
 | `Needs-decision`, `Routed to: cto` | `research-decision.md` first — `cto` never runs without a candidate set |
 | `Needs-decision`, `Routed to: rd-engineer` | Ask the GD (G31) — a spike needs an explicit summon |
 | `Needs-decision`, `Routed to: technical-architect` with no spec | The input was mis-sized → `feature-intake.md` **E1** |
-| A report naming the engineer who can fix it | A handoff: dispatch that agent with the report; gate offer owed if it writes source |
+| A report naming the engineer who can fix it | The fix is new input — size it at step 0, then dispatch that agent with the report in the lane it lands in |
 
 ## The ledgers
 
@@ -155,17 +188,23 @@ the whole envelope, never on `Status:` alone, and read `Verdict:` wherever there
 in-flight index in `<state-root>/project-state.md` first — a second slug for a feature already in flight splits its
 counters silently. Read the index when a session starts.
 
+**Gate debt at a boundary no pipeline owns** — a release, the GD asking — is yours: re-offer each `declined` row in
+`project-state.md` it touches, once, per G50 (B18).
+
 **Write state whenever a counter, the `Position:`, or a gate answer changes, before the next dispatch** (I4) —
 where each counter lives is in `references/bounds.md`. A tier that moves is appended to `Tier history:`, never
 overwritten. Work with no feature keeps its counters, gate debt and records in `project-state.md`. Each
 Implementation Note is written beside the ledger, or to `<state-root>/direct/S<n>.md`, as it is assembled — CP3,
-CP4 and a resumed session read it there. Nothing is written under `Assets/`, so no state write ever needs the
+CP4 and a resumed session read it there. So is every report a checkpoint is compiled from — review verdicts, the
+CP3 Implementation Summary, QA and Research Reports — under `reports/` beside the ledger (`<state-root>/direct/reports/` with none), as each lands. Nothing is written under `Assets/`, so no state write ever needs the
 Editor lock (`state/README.md`).
 
 **Bugs** live in `<state-root>/bug-log.md` (the index, and the only place an ID is allocated) and in each feature's
 `BUGS.md` (test cases and full bug records). You are their only writer: agents propose, you record, per
 `state/README.md` → *Bugs*. An **unattached** bug (no feature) is fixed through whichever lane fits its size; the
-gate offer ending that lane also offers its verification at `qa-pipeline.md` **E4**, the only run that closes it,
+gate offer ending that lane — G13 even when the fix wrote no source — also offers its verification at
+`qa-pipeline.md` **E4**, the only run that closes it while it stays unattached — a fix that opens a ledger moves it
+into that feature (`state/README.md` → *Bugs*),
 and an **E4** run that leaves one open asks G66.
 
 **Closing** requires no bug in the feature's `BUGS.md` to be unsettled (`defect-reporting.md`); CP4 rules on every
@@ -182,7 +221,8 @@ and re-adds the row — never a second slug.
 The Editor lock (I3) and the device lock (I7) live in `project-state.md`. Claim before dispatching a holder — for
 the Editor, any agent with Editor tools or one that writes into the Unity project (I3) — and before writing there
 yourself, wherever something else could contend (`state/README.md` → *Locks*); release on return. An agent can hold
-both. A lock past its expiry is suspect, not free — reclaim only by the I9 procedure in `state/README.md` (G17).
+both. A lock past its expiry — or with none written, and no dispatch in this session holding it — is suspect, not
+free — reclaim only by the I9 procedure in `state/README.md` (G17).
 Whatever a stale holder produced is unverified until inspected.
 
 ## Where a lane ends

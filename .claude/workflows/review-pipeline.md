@@ -11,7 +11,7 @@ for every door are in `references/dispatch-brief.md` → *Review gates*; caps ar
 |---|---|---|
 | **E1** | `feature-development.md` after the GD authorised review (G40, G42) — one submission per entry, a defect fix from its **E3** included: the Core, each client or backend agent, the README; a tech lead's `Fix:` (I10); a declined gate opted into later, author and brief still identifiable, strikes from zero; **third-party content at the supply-chain pre-gate** (G45) | The review-gate list in `dispatch-brief.md`; its pre-gate row for third-party content |
 | **E2** | The GD asks for an audit of code already in the repo (`orchestrator.md` row 6), or opts into review later on code no submission identifies | The code and what it is audited against — or `security-reviewer` alone. No author, strike, CP3, note or ledger; the audit is classified on its own (`task-classification.md`) |
-| **E3** | A gated-direct submission, only once the GD authorised it at G14 (`orchestrator.md`); or a `qa-automation-engineer` suite the GD authorised at G62 (`qa-pipeline.md`) | As E1, with the behaviour it was written against instead of a spec section, and **which origin** it is |
+| **E3** | A gated-direct submission, only once the GD authorised it at G14 (`orchestrator.md`); direct or mode-3 source the GD sent to review at G13 (origin `direct`, handled as gated-direct); or a `qa-automation-engineer` suite the GD authorised at G62 (`qa-pipeline.md`) | As E1, with the behaviour it was written against instead of a spec section, and **which origin** it is |
 
 ## May dispatch
 
@@ -71,8 +71,9 @@ for every door are in `references/dispatch-brief.md` → *Review gates*; caps ar
    non-solutions go into the return brief, `Next best action:` to the owning agent, the cause on the ledger's
    `Root-cause resets` row, since a later stop must quote it; the fix re-enters `feature-development.md` **E3**
    with its strikes restarted (B10). A stalled Core stalls the feature, correctly. B3's *After reset* value stops
-   it (rule 3, G7). **E3:** gated-direct at B4 → `feature-intake.md` **E1** with both rejection sets and the code;
-   test code at B5 → `qa-pipeline.md` step 4, as unrun coverage for `qa-lead` to weigh, never intake.
+   it (rule 3, G7). **E3:** gated-direct or `direct` at B4 → `feature-intake.md` **E1** with both rejection sets and the
+   code; test code at B5 → `qa-pipeline.md` step 4, as unrun coverage for `qa-lead` to weigh, never intake — with
+   no ledger, to the GD as unreviewed coverage (G7).
 5. **Checkpoint 3 (G51)** — D3–D5 only, once per feature, only when review ran; at D1–D2 it merges into CP4, and
    the A-tier never adds one. `technical-architect` compiles from every cleared submission's Implementation Note
    and both verdicts: `Built:` in the spec's terms; `Matches spec intent:` with **every drift named**;

@@ -25,7 +25,7 @@ Counters carry across every door; the only resets are listed in `references/boun
 | The netcode foundation (backend track only) | Otherwise `netcode-engineer` routes to `cto` for a value the ledger holds; if genuinely unset, ask the GD once (G44) |
 | The per-platform performance budget | Otherwise a guessed budget |
 | The track standards to read, by path — `.claude/standards/client/*` per `rules/standards-index.md` | Naming them is what loads them |
-| On **E3**: strikes, prior findings, attempts already spent — and each defect **by bug ID** with its `BUGS.md` record | No agent can count its own rounds; the ID is how its fix is tracked |
+| On **E3**: strikes, prior findings, attempts already spent. On any door whose work fixes a recorded bug — **E3**, or an **E2** or escalated lane opened for one — each defect **by bug ID** with its record | No agent can count its own rounds; the ID is how its fix is tracked |
 | That `BUGS.md` and `bug-log.md` are read-only to it | Only the orchestrator records bugs; an implementing agent names what it fixed, it never edits a status |
 
 **Forward what earlier agents produced** — agents cannot see each other's returns:
@@ -40,7 +40,8 @@ Counters carry across every door; the only resets are listed in `references/boun
 | `netcode-engineer` → `Message contract:` | `server-authoritative-engineer` |
 
 **Ask the agent to state back** what no envelope carries: attempts used out of the budget and, past the first, what
-improved; what verification actually ran and what was impossible, and why; on **E3**, each bug ID it fixed (it
+improved; what verification actually ran and what was impossible, and why; wherever the brief named a bug, each
+bug ID it fixed (it
 never closes one) and any test that now guards it; and, from `tech-lead-sdk-platform`, its assumptions and known
 limitations.
 
@@ -67,7 +68,7 @@ supplied — a finding against the brief, not the author.
 | Entry | Differs |
 |---|---|
 | **E2** audit | No author, strike, CP3, note or ledger. Name what the audit checks against — or dispatch `security-reviewer` alone |
-| **E3** gated-direct or test code | The behaviour it was written against instead of a spec section; **say which origin** — they escape differently (B4, B5) |
+| **E3** gated-direct, `direct` or test code | The behaviour it was written against instead of a spec section; **say which origin** — they escape differently (B4, B5) |
 | Supply-chain pre-gate (G45) | `security-reviewer` alone; a go/no-go on the import, not a strike |
 
 ## QA — `qa-pipeline.md`

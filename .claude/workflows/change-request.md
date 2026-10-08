@@ -37,16 +37,18 @@ Everything downstream belongs to its own file: CP1 and CP2 to `feature-intake.md
 ## Steps
 
 1. **Halt.** Stop dispatching new work against the spec in question. Agents already running cannot be recalled;
-   whatever they return after the change arrived goes onto the rework list as a candidate, never counted as a
-   completed task.
+   whatever they return after the change arrived is held — not a submission, no gate — and the architect's rework
+   list decides it at step 2: still fits the changed spec → a submission from there; otherwise rework.
 2. **Classify.** `technical-architect` receives the change in the GD's own words (it blocks on a summary) and the
    track state (it silently assumes client-only without it). The severity is stated, never put to the GD (G71). It
    re-reads **all five axes**, not just U — new scope can move D, a newly touched economy path can move C. Severity
    and the A-tier are independent: severity picks the checkpoint, the tier sets how hard the rework is verified, so
    a Minor change on a credential path is still A5 and still owes V4. Write the new tier into the ledger's `Tier:`
    row (the move appended to `Tier history:`), re-derive the attempt budget and floor from it, and state any move
-   per G43.
-3. **Split a bundled request.** One `Change severity:` per independently-severable part. A part that forces a
+   per G43. A `design` line the classification returns goes to the GD (G27) before severity routes — unless it
+   reopens what CP1 locked, which is Major.
+3. **Split a bundled request.** One `Change severity:` per independently-severable part — parts that rework the
+   same code are not severable: they take the higher severity and rework together. A part that forces a
    strategic technology choice — a netcode foundation, a vendor swap — gets **no** severity: it goes to
    `research-decision.md` **E2** with the four values (`references/dispatch-brief.md`), never straight to `cto`,
    which does not run without a candidate set. It returns here at **E3**, never into `feature-intake.md`, which
@@ -67,7 +69,8 @@ Everything downstream belongs to its own file: CP1 and CP2 to `feature-intake.md
    never fabricate one.
 5. **Rework.** No code exists against the superseded spec → resume the pipeline the change interrupted. Otherwise
    the rework list enters `feature-development.md` **E3**, taking its place in that pipeline's serial order, and is
-   an ordinary submission from there — with its own gate offer (G74). A Major does not restart the feature: work
+   an ordinary submission from there (a new `S<n>`, strikes from zero) — gates the feature already authorised run on
+it unasked, and G74 offers only what `Gates:` leaves open. A Major does not restart the feature: work
    the new direction still needs stays, and only the flagged code is reworked. A change after CP4 reopens the same
    ledger and in-flight row (never a second slug) and runs forward with its own CP3 and CP4; nothing earlier
    reopens retroactively.
@@ -80,7 +83,7 @@ Everything downstream belongs to its own file: CP1 and CP2 to `feature-intake.md
 
 Where each fires; what it carries and what happens on no are `gd-touchpoints.md`'s alone.
 
-**G70** at entry · **G71**, **G43** step 2 · **G72**, **G73** step 4 · **G74** step 5 · anywhere: **G6**.
+**G70** at entry · **G71**, **G43**, **G27** step 2 · **G72**, **G73** step 4 · **G74** step 5 · anywhere: **G6**.
 
 ## Bounds
 

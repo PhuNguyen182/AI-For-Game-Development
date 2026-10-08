@@ -17,6 +17,7 @@ it. State also stays out of `Assets/`: writing there reimports, which would make
 | One feature's test cases and bugs, in full | `<state-root>/features/<slug>/BUGS.md` — from `templates/feature-bugs.md` |
 | One feature's Tech Spec, or its D1–D2 direct notes | `<state-root>/features/<slug>/SPEC.md` |
 | Each submission's Implementation Note, written as it is assembled | `<state-root>/features/<slug>/notes/S<n>.md` — `<state-root>/direct/S<n>.md` with no feature |
+| Every report a checkpoint compiles from — review verdicts, the CP3 Implementation Summary, QA and Research Reports — written as it lands | `<state-root>/features/<slug>/reports/` — `<state-root>/direct/reports/` for work with no feature: a standalone run's Feasibility or Research Report, a gated-direct verdict |
 | The project's track, in-flight index, gate debt, gated-direct counters, work with no feature, standalone runs, project-wide patterns, both locks | `<state-root>/project-state.md` |
 | The project-wide bug index, the only place bug IDs are allocated, and bugs with no feature | `<state-root>/bug-log.md` |
 | One row per closed or abandoned feature — what the layer's constants actually cost | `<state-root>/calibration.md` |
@@ -52,6 +53,10 @@ stopped between writes — correct the index from it.
 - **A feature that is `Abandoned`** (G10) marks its unsettled bugs `Won't fix — abandoned with the feature`.
 - **An unattached bug** has no CP4: the gate offer ending its fix's lane (G13, G14) also offers its verification at
   `qa-pipeline.md` **E4** and `Accepted unverified` beside it; an **E4** run that leaves one unsettled asks G66.
+- **An unattached bug whose fix opens a ledger** — sized at row 11, or escalated at B4 or B6 — moves into that
+  feature's `BUGS.md` when the ledger opens: the record whole, a history row naming the move, the index's `Feature`
+  and `Record` cells updated. From then the feature's rules apply: its fix names it under `Fixes:`, QA **E3**
+  verifies it, and CP4 rules on it.
 
 Statuses, settled and unsettled: `.claude/standards/qa/defect-reporting.md`. The reopen bound: B6.
 
@@ -62,13 +67,17 @@ else could contend: if `project-state.md` does not exist, nothing has ever claim
 proceeds without creating it.
 
 `Claim expires` is written at claim time — the expected duration, generously rounded. Past it the lock is suspect,
-not free. Reclaim (I9) in this order, stopping at the first step that answers:
+not free; so is a lock with none written that no dispatch in this session holds. Reclaim (I9) in this order, stopping
+at the first step that answers:
 
-1. **Is the holder still running?** A dispatch in flight in this session holds its lock whatever the clock says.
-2. **Does the resource answer?** The Editor via `unity status` (`unity-tooling-preference.md`); a device via
-   `adb devices`. Idle and answering means nobody is driving it — unless the holder is another session, which only
-   the GD can release.
-3. **Ask the GD** (G17), naming the holder, the claim time and what is waiting.
+1. **Is the holder still running here?** A dispatch in flight in this session holds its lock whatever the clock
+   says — wait for it.
+2. **Did this session claim it?** A dispatch of yours that returned without releasing: check the resource — the
+   Editor via `unity status` (`unity-tooling-preference.md`), a device via `adb devices` — and, idle, release it
+   yourself.
+3. **Otherwise it is another session's** — any session but this one, a dead one included; you cannot tell them
+   apart from state. Check the resource as in step 2 and ask the GD (G17) with what it showed, the holder, the
+   claim time and what is waiting. Only the GD releases it.
 
 Record the reclaim beside the lock: who held it, when, and which step answered. Whatever the stale holder produced
 is unverified — inspect real state before the next claim (`execution-loop.md`, safe retry).

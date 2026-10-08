@@ -19,8 +19,8 @@ names, and `project-state.md`.
 - Tier history: <A<n> from <axis> → A<n>, when and why> — appended, never overwritten
 - Position: <`<pipeline>.md` step <n> | CP<n>> — waiting on <what> · in flight: <agent-id, dispatched <when>> |
   none
-- Gates: review <whole feature | declined | not yet asked> · QA <authorised | declined | not yet asked> — so no ask
-  repeats (B18), and G42 knows what is left to ask
+- Gates: review <whole feature | declined | not yet asked> · QA <authorised | declined | not yet asked> · assurance
+  <with QA | authorised at G14> — so no ask repeats (B18), and G42 knows what is left to ask
 - Track: client | client + multiplayer
 - Advisor⇄Critic: round <n> of 3 · ruled out: <options> · <reset by a Major change on <date> | never reset>
 - Research: <what research-decision.md settled, each report's `Picture taken:` date, any provisional decision's
@@ -49,7 +49,7 @@ rejection stays on that row; any other fix is a new row naming what it fixes.
 
 | ID | Author | Fixes | Strikes / bound | Attempts used | Verdicts landed | Implementation Note |
 |---|---|---|---|---|---|---|
-| S1 | | — \| S<n> drift \| BUG-#### \| CP4 defect | 0 /3 | | | `notes/S<n>.md` |
+| S1 | | — \| S<n> drift \| BUG-#### \| CP4 defect \| CR <date> rework \| escalated `direct/S<n>` | 0 /3 | | | `notes/S<n>.md` |
 
 ## Open gaps
 

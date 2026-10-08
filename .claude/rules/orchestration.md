@@ -20,11 +20,12 @@ framework every project copies; state written into it becomes another project's 
 | Term | Means |
 |---|---|
 | **Source** | What builds or runs: `.cs`, shaders, build and CI scripts, and config that executes or carries a credential. Scenes, prefabs, text assets and documents are not source — editing them owes no gate offer |
-| **Submission** | One agent return sent toward a gate, numbered `<slug>/S<n>` in the ledger (`direct/S<n>` with no ledger). Rework answering that submission's own review rejection keeps its number and its strikes; any other fix — a bug, a CP3 drift, a CP4 defect — is a new submission naming what it fixes |
+| **Submission** | One agent return sent toward a gate, numbered `<slug>/S<n>` in the ledger (`direct/S<n>` with no ledger). Rework answering that submission's own review rejection keeps its number and its strikes; any other fix — a bug, a CP3 drift, a CP4 defect, a change request's rework, work escalated out of the gated-direct lane — is a new submission naming what it fixes, strikes from zero |
 | **Strike** | One rejection of a submission by a review gate, or a Continuation Debt Record returned for it — counted per submission (`workflows/references/bounds.md`). Work with no submission — research, a QA executor's coverage — has no strikes |
 | **Gated-direct** | The lane for work that trips a consequence criterion and nothing else — one owning agent, then the review gates the GD authorises (`workflows/orchestrator.md`, row 10) |
 | **Door** | A pipeline's entry, `<pipeline>.md` **E<n>** — always read with its file; each pipeline numbers its own |
-| **Boundary** | A point where a declined gate may be offered again — B18 in `workflows/references/bounds.md` lists them |
+| **Boundary** | A point where a declined gate may be offered again — B18 in `workflows/references/bounds.md` lists them. A GD answer holds until the next boundary; nothing is re-asked at the one it was given |
+| **Track** | Client-only, or client + multiplayer — one value, whatever a file calls it: `CLAUDE.md`'s "client+server" and a pipeline's "backend track on" both mean client + multiplayer |
 | **CP1–CP4** | The GD's four checkpoints — direction, Tech Spec, implementation summary, closure (`workflows/gd-touchpoints.md` G21, G24, G51, G60) |
 
 ## Invariants — these hold in every mode
@@ -38,7 +39,7 @@ framework every project copies; state written into it becomes another project's 
 | **I5** | A design flaw reaches the GD immediately, in every mode — never folded into a later report, never re-filed as an ordinary bug (G4) |
 | **I6** | A gap the GD accepts is written into the feature's known limitations before closure, or "nobody checked" becomes indistinguishable from "QA passed" |
 | **I7** | One physical device, project-wide. Device test walks and device profiling are the same wire; never both at once |
-| **I8** | Every cap composes into a stop, never into another round. Every loop gets one root-cause reset of its own; past it, a Continuation Debt Record to the GD. `workflows/references/bounds.md` |
+| **I8** | Every cap composes into a stop, never into another round. Every engineering loop — strikes, bug reopens, CP3 and CP4 rejections — gets one root-cause reset of its own; past it, a Continuation Debt Record to the GD. `workflows/references/bounds.md` |
 | **I9** | A lock is released by whoever claimed it. A lock whose holder cannot be confirmed running is reclaimed by the procedure in `workflows/state/README.md`, never silently |
 | **I10** | Source never offered a gate is a hole; source whose gate the GD declined is recorded debt (I2). Every agent that writes `.cs` has a route to `review-pipeline.md` — including `qa-automation-engineer`, whose suite enters at **E3** as soon as it is written, before its results serve as evidence (G62) |
 

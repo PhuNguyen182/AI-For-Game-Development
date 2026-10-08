@@ -17,7 +17,8 @@ what each closed feature actually spent; changing one is the GD's decision, prop
    Record (`execution-loop.md` fields, G7): every verdict and report from both runs, the architect's cause — a
    cause that did not hold is itself the finding — the known non-solutions, a safe resume point, and the next best
    action. The GD decides re-spec, cut or drop. A bound without an *After reset* value ends as its own row says.
-4. **A GD answer is not re-asked in the same run.** A declined gate is re-offered only at a new boundary (B18). One
+4. **A GD answer is not re-asked at the boundary it was given.** It holds until the next boundary (B18) — a declined
+   gate is re-offered there once, and a gate already authorised is never asked again. One
    follow-up on what an answer left unsettled — a bug no option ruled on — is a new question, not a re-ask.
 5. **No bound overrides the GD (G8).** The GD may direct another round; the cost is stated first and the direction
    recorded in the ledger.
@@ -47,7 +48,7 @@ stays on the bug, and B12, B13 and B15 on the feature.
 | **B15** | QA rounds that open new bugs — a round is one execution pass (step 2 at **E2**) or one verification (**E3**), however many executors it dispatched; it counts once if any of them opens a bug, and the first execution round never counts | 3 | — | One feature, or one standalone QA run | The GD (G7), with every bug those rounds opened — new defects on every pass say the spec or the design is not holding, which no single fix answers |
 | **B16** | Escalation-lane round trips | 1 | — | One implementing agent and one tech lead | A second refusal → `technical-architect`, as a routing question, with both escalations and both refusals attached |
 | **B17** | Identical `Blocked` | 2 | — | One dispatch, one missing input | Reported to the GD as unresolved (G6). A different missing input starts its own count |
-| **B18** | Gate re-offers | 1 per boundary | — | One artifact | A new boundary is a new fact — the next feature on that root, a release, a defect traced to the ungated code, rework after a change request (G74), a defect fix awaiting verification where QA was declined, or the GD asking. Debt at A1–A2 is stated in the reply, never recorded or re-offered |
+| **B18** | Gate re-offers | 1 per boundary | — | One artifact | A new boundary is a new fact — the end of implementation after a G40 decline (G42), the next feature on that root, a release, a defect traced to the ungated code, rework after a change request (G74), a defect fix awaiting verification where QA was declined, or the GD asking. Debt at A1–A2 is stated in the reply, never recorded or re-offered |
 
 The assurance gate has no loop: every verdict short of `PASS` goes to the GD (G63 at once for a `FAIL`, CP4 for the
 rest), who decides what returns to work.
@@ -55,7 +56,7 @@ rest), who decides what returns to work.
 **Where each counter is written** — before the next dispatch (I4). In the feature's ledger: B2, B11–B15 in
 `Rejections:` and `Advisor⇄Critic:`; B3 and B5 per submission in *Submissions*; B6 on the bug's record; B10 in
 `Root-cause resets:`; B7 in `Measure-and-confirm:`; B9, B16 and B17 in `Open asks:`, removed once answered. With no
-ledger, in `project-state.md`: B4 under *Gated-direct counters*; B9, B16, B17 under *Open asks with no ledger*; B14
+ledger, in `project-state.md`: B4, and B5 for a suite with no ledger, under *Gated-direct counters*; B9, B16, B17 under *Open asks with no ledger*; B14
 and B15 under *Standalone QA runs*; B7 and B8 under *Standalone decisions*.
 
 ## Resets — the complete list

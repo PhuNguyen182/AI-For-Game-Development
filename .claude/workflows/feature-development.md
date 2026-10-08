@@ -68,7 +68,8 @@ request instead (G47).
 3. **Core** (E1). On return: the G40 ask — review the whole feature, or none now — carrying the Core's
    `Assumptions and known limitations:` as the cost of skipping; at D4–D5 also the G41 notice. The answer goes to
    the ledger's `Gates:`. None → review debt recorded, fan-out proceeds immediately.
-4. **Client fan-out**, per ordering 3. Each return is a submission the moment it lands.
+4. **Client fan-out**, per ordering 3. Each return is a submission the moment it lands — unless a change request
+   halted the spec meanwhile; then it is held (`change-request.md` step 1).
 5. **Backend track**, only when the brief states it **on** — never "probably off". The netcode foundation comes
    from the ledger; genuinely unset → G44, once.
 6. **Feature-root documents**, keyed to **A** — the floors and triggers are
@@ -88,7 +89,8 @@ request instead (G47).
    implementation is complete, the G42 ask — what it covers is G42's, read off `Gates:`. Every answer is written to
    `Gates:` (and a decline to `project-state.md`). A change-request rework list ends at `change-request.md`'s ask
    (G74) instead. On **E3**, a fix goes through every gate the GD authorised for the feature, then back to whoever
-   found it; an unasked-for gate is re-offered only at a new boundary (B18).
+   found it. A fix to code whose review the GD declined is a new boundary (B18): review is offered once more, per
+   G50, before the fix moves on — the ask G42 owns; any other unasked-for gate waits for its own boundary.
 
 **Every return** — `orchestrator.md`'s defaults apply; these are the cases they do not cover:
 
@@ -127,7 +129,7 @@ B16 (escalation round trips) · B17 (identical `Blocked`) · B18 (gate re-offers
 | A submission, review authorised | `review-pipeline.md` **E1** | Submission row in the ledger |
 | A submission, review declined | `qa-pipeline.md` **E1** on a QA yes; else CP4 (G60) on the Implementation Notes | `declined` row in `project-state.md` (I2) |
 | A defect fix, review authorised | `review-pipeline.md` **E1**, then `qa-pipeline.md` **E3** | Strikes, attempts; each bug the agent names as fixed goes `Fixed` only once review clears it |
-| A defect fix, review declined | `qa-pipeline.md` **E3** where QA is authorised; otherwise the verification put to the GD per G50, a no leaving the bugs `Fixed` for CP4 | Strikes, attempts; each bug the agent names as fixed → `Fixed` in `bug-log.md` and `BUGS.md` |
+| A defect fix, review declined — and declined again at its re-offer (G42) | `qa-pipeline.md` **E3** where QA is authorised; otherwise the verification put to the GD per G50, a no leaving the bugs `Fixed` for CP4 | Strikes, attempts; each bug the agent names as fixed → `Fixed` in `bug-log.md` and `BUGS.md` |
 | No Core task, no named API; or a lead → `Routed to: technical-architect` | `feature-intake.md` **E3** (**E1** with no ledger) — step 6 at D3–D5, the direct-notes hand-off at D1–D2 | The gap named |
 | A lead or `netcode-engineer` → `Routed to: cto` | `research-decision.md` **E2** with a candidate set; it resumes the step it left | — |
 | A bound reached | The GD (G7) | Continuation debt in the ledger |

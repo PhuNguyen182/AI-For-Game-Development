@@ -19,7 +19,7 @@ Next ID: BUG-0001
 
 | ID | Title | Feature | Severity | Status | Owner | Opened by | Reopens /2 | Record |
 |---|---|---|---|---|---|---|---|---|
-| _none_ | | <slug> \| — | Critical \| High \| Medium \| Low | Open \| Fixed \| Reopened \| Closed \| Won't fix \| Accepted unverified \| Escalated \| As designed \| Duplicate of BUG-#### \| Void — allocation interrupted | <agent-id> | <agent-id> \| gd | 0/2, then 0/1 after its reset (B6) | `<feature-root>/BUGS.md` \| below |
+| _none_ | | <slug> \| — | Critical \| High \| Medium \| Low | Open \| Fixed \| Reopened \| Closed \| Won't fix \| Accepted unverified \| Escalated \| As designed \| Duplicate of BUG-#### \| Void — allocation interrupted | <agent-id> | <agent-id> \| gd | 0/2, then 0/1 after its reset (B6) | `features/<slug>/BUGS.md` \| below |
 
 ## Unattached bugs
 

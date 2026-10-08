@@ -7,10 +7,10 @@ its ask fires.
 
 | Where an ask fires | Owner |
 |---|---|
-| The Core contract, before the fan-out (G40); end of implementation (G42); rework after a change request (G74) | `feature-development.md`, `change-request.md` |
+| The Core contract, before the fan-out (G40); end of implementation, and a defect fix to code whose review was declined (G42); rework after a change request (G74) | `feature-development.md`, `change-request.md` |
 | QA, once both review gates clear (G52) | `review-pipeline.md` |
 | Test code, once the suite is written (G62); a build for device coverage (G61) | `qa-pipeline.md` |
-| A direct or mode-3 dispatch that wrote source (G13); a gated-direct submission (G14); a debt row at a later boundary | `orchestrator.md` |
+| A direct or mode-3 dispatch that wrote source (G13); a gated-direct submission (G14); a `project-state.md` debt row whose boundary arrives with no pipeline running — a release, the GD asking | `orchestrator.md` |
 
 **When review is declined, the QA question moves, it does not vanish**: it fires at the end-of-work ask, alongside
 the review offer. Review and QA are independent — either may run without the other, or later. Where QA runs without
@@ -40,7 +40,9 @@ descriptions, the recommended option first. When review and QA are offered at th
 
 **At A3 and above — where `assurance-evaluator` runs — declining QA also declines it** (the gated-direct lane
 offers it with review instead, G14), the only check on whether a claimed verification actually happened. The ask
-says so **in those words**.
+says so **in those words** — unless `Gates:` already records assurance authorised, carried from G14 when a
+gated-direct submission escalated: then it runs before CP4 whatever QA's answer, scoring the notes and verdicts as
+in the gated-direct lane (`dispatch-brief.md` → *QA*), and the QA ask does not mention it.
 
 ## What is never optional
 
@@ -66,7 +68,7 @@ A feature closed with a declined gate is **never reported as having passed it**.
 
 ## Opting in later
 
-Re-offered once per new boundary (B18) — never twice in a run. Clearing a debt row requires the gate to have
+Re-offered once per new boundary (B18) — never twice at the same one. Clearing a debt row requires the gate to have
 actually returned; marking it settled because the code looks fine is fabricated verification.
 
 | Opting in later | Enters at |

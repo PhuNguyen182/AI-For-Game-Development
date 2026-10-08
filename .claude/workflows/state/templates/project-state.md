@@ -29,7 +29,9 @@ never enforced. Clear a row only when the gate has actually returned on it.
 
 ## Gated-direct counters
 
-No feature, so no ledger. Strikes cap at 2 (B4). Each Implementation Note is at `<state-root>/direct/S<n>.md`.
+No feature, so no ledger — gated-direct submissions, and direct source the GD sent to review at G13 (origin
+`direct`; a test suite at B5). Strikes cap at 2 (B4, B5). Each Implementation Note is at
+`<state-root>/direct/S<n>.md`.
 
 | Submission (`direct/S<n>`) | Author | Tier and axes | Strikes /2 | Verdicts landed |
 |---|---|---|---|---|

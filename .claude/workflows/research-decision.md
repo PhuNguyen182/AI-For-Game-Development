@@ -15,7 +15,7 @@ pipeline exists to spend **U** down. You research, you never integrate.
 | **E5** | The GD asks for research, no feature (G30) | The capability as behaviour, the paid/closed-source preference (G34) |
 | **E6** | The GD summons a spike, no feature (G30) — asking *is* the summon | The question and the decision waiting on it, threshold, hardware, baseline, any build authorisation (G16) |
 
-E1–E5 start at step 1; E6 starts at step 4. E2 and E3 never jump straight to `cto`. E5 and E6 classify the run
+E1–E5 start at step 1; E6 starts at step 4, after asking only what the request left out (G31). E2 and E3 never jump straight to `cto`. E5 and E6 classify the run
 themselves — they inherit no tier. **U2/U3 on a technology question is the E4 trigger at any D**; a D5 system built
 from what the project has is U0.
 
@@ -37,7 +37,8 @@ from what the project has is U0.
 2. **The spike gate (G31) precedes every `rd-engineer` dispatch** except E6. No recommendation from `researcher`,
    `advisor` or `cto` is ever converted into a dispatch.
 3. **On a device**: the device lock (I7) is claimed before the harness or the build reaches it and released on
-   return; `rd-engineer` writes the harness, `build-run-engineer` builds it.
+   return; `rd-engineer` writes the harness, `build-run-engineer` builds it, and `rd-engineer` installs that build
+   on the locked device and measures it.
 4. **Records are written at the transition** (I4), never at closure.
 
 ## Steps
@@ -58,14 +59,17 @@ from what the project has is U0.
    `cto` deciding provisionally on the number it names.
 4. **Spike** — `rd-engineer`, attaching the question and the decision waiting on it, the pass/fail threshold, the
    target hardware, and today's baseline. Only a spike writes to the project: the harness is R1; a measurement on
-   the device is R2/X2 and splits per ordering 3.
+   the device is R2/X2 and splits per ordering 3. The harness is disposable: once the Feasibility Report is in,
+   you revert every path its `Built:` names — packages and settings included — under the Editor lock before step
+   5, and the hand-back says so. The GD may ask to keep it, never as production code.
 5. **`cto`** — carrying the candidate set whole, the decision and what depends on it, the cost/timeline/scale
    constraints, and the spike's evidence **or the fact the gate was declined**.
    - It may decide provisionally and name the one measurement that would falsify it: that runs step 3 — unless the
      GD already declined it this run, in which case the decision stays provisional. One cycle (B7); still open
      after it → G32. A product consequence → G32.
    - A provisional decision keeps its re-open threshold, and it travels into the Tech Spec.
-   - A non-empty `Standard set:` is owed an ADR: dispatch `cto` with `engineering-standard-adr-authoring`, and
+   - A non-empty `Standard set:` is owed an ADR — on a standalone run, only once G33 accepts the standard: dispatch
+     `cto` with `engineering-standard-adr-authoring` (it names the log location), and
      record the standard and its ADR in the ledger's *GD decisions* — a standard nobody recorded is a dropped
      project rule.
    - `Rejected`, `Routed to: technical-architect` is a correct result — the question was contained.

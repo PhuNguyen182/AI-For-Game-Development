@@ -30,7 +30,8 @@ E2–E5 resume from the ledger and never reclassify from scratch; which axes are
 ## Hard ordering
 
 1. The GD's words, unedited, and the track state reach step 2 together — `technical-architect` blocks on a summary
-   and silently assumes client-only without the track (I1). An unknown track is asked first (G26).
+   and silently assumes client-only without the track (I1). An unknown track is settled first — asked only when the work
+could be multiplayer-relevant and the request does not say (G26), otherwise stated as client-only.
 2. Check the in-flight index in `<state-root>/project-state.md` before opening a ledger — a second slug for a
    feature already in flight splits its counters. The ledger exists before step 3 dispatches anything.
 3. Classification precedes every other dispatch and never waits on a GD confirmation (G20).
@@ -50,12 +51,14 @@ E2–E5 resume from the ledger and never reclassify from scratch; which axes are
    ledger moves), and add its row to the in-flight index. State the tier per G1. The shape follows **D**, per
    `task-classification.md` Step 4:
    - **D1–D2** — steps 1 and 2, whose return carries the direct notes, stored where step 6 stores a spec; step 5 if
-     a technology line exists, the architect revising its notes on the result; then the hand-off. No Tech Spec, no
+     a technology line exists — or a `design` line, put to the GD directly (G27) — the architect revising its notes
+     on the result; then the hand-off. No Tech Spec, no
      CP1, no CP2; a high tier from C, R or X buys verification downstream, never a step here.
    - **D3** — steps 1, 2, 5, 6. No loop, so a `design` line is put to the GD directly (G27).
    - **D4–D5, or U3 at any D** — every step, CP1 then CP2.
 
-   A `technology` line classified U2/U3 goes to `research-decision.md` **E4** now, before the loop.
+   A `technology` line classified U2/U3 goes to `research-decision.md` **E4** now, before the loop — on the netcode
+   foundation, G44 first, once per project.
 3. **Advisor⇄Critic loop** (D4–D5 or U3). One round: `advisor` → the GD picks an option **by name** → `critic` on
    that option → the GD decides (G21). Each dispatch carries:
    - `advisor`: every `design` and `architecture` line, verbatim — never a `technology` line, never one line
@@ -73,7 +76,7 @@ E2–E5 resume from the ledger and never reclassify from scratch; which axes are
    questions CP1 closed — an open `technology` line holds U until step 5 settles it — then update the ledger's
    `Tier:` row and append the move to `Tier history:`.
 5. **Research branch.** Route each `Open design question:` line by its tag: `design` → the GD, through the loop, or
-   directly at D3 (G27); `architecture` → the loop, or `technical-architect` (G23); `technology` →
+   directly at D1–D3 (G27); `architecture` → the loop, or `technical-architect` (G23); `technology` →
    `research-decision.md` **E1**. Skip only when you can **name** the package, API or existing system that already
    covers it — if you cannot name it you are guessing, so branch. A skip goes into the ledger's `Research:` row
    with what was named, and is shown at CP2 (G25).
@@ -83,7 +86,8 @@ E2–E5 resume from the ledger and never reclassify from scratch; which axes are
    provisional decision's re-open threshold. The spec states, at minimum: acceptance criteria (one per H/M
    requirement), the verification floor as a V-number, every assumption with what breaks if it is wrong, inherited
    `cto` decisions, module boundaries, the client-server contract, a per-`agent-id` task breakdown, and the
-   documents owed. It is written to `SPEC.md` beside the ledger — direct notes too, at D1–D2 — and the ledger's
+   documents owed. A `design` line the spec raises at D3 is put to the GD (G27) before CP2, the spec revised on
+   the answer. It is written to `SPEC.md` beside the ledger — direct notes too, at D1–D2 — and the ledger's
    `Spec:` row records its approval; nothing downstream works from a spec it cannot find after a restart.
 7. **CP2** (G24). The GD sees the spec with its `Assumptions:`, inherited decisions and `critic`'s open findings,
    plus any research skip (G25). On the **first** rejection, ask which kind it is: the spec misread the request →
@@ -91,7 +95,9 @@ E2–E5 resume from the ledger and never reclassify from scratch; which axes are
    count to the ledger's `Rejections:` row.
 8. **Hand off** to `feature-development.md`: D1–D2 at **E2** — the architect's direct notes from step 2, addressed
    to one `agent-id`; D3–D5 at **E1** — the approved spec and its task breakdown. Either way with the four values
-   from the ledger and the spec's `Documents owed:`.
+   from the ledger and the spec's `Documents owed:`. A checkpoint reopened by a change request (**E4**, **E5**)
+   hands off its rework list at **E3** instead — or, with no code against the superseded spec, to the step the
+   ledger's `Position:` names (`change-request.md` step 5); the feature never restarts.
 
 **Checkpoints key to D, never to the A-tier.** CP1 and CP2 are this file's; CP3 (G51) fires only when review ran
 and merges into CP4 at D1–D2; CP4 (G60) fires at every shape — with both gates declined the feature still closes
@@ -101,8 +107,8 @@ there, on the GD's own acceptance, both debts stated.
 
 Where each fires; what it carries and what happens on no are `gd-touchpoints.md`'s alone.
 
-**G26** step 1 · **G20** step 2 · **G21** steps 3–4 · **G22** step 3, when `advisor` was asked to choose · **G23**
-before CP1 locks · **G25**, **G27** step 5 · **G24** step 7 · anywhere: **G4**, **G6**, **G7**, **G9**.
+**G26** step 1 · **G20** step 2 · **G44** step 2, a netcode-foundation `technology` line · **G21** steps 3–4 · **G22** step 3, when `advisor` was asked to choose · **G23**
+before CP1 locks · **G25**, **G27** step 5 · **G27** step 6 · **G24** step 7 · anywhere: **G4**, **G6**, **G7**, **G9**.
 
 ## Bounds
 
@@ -119,6 +125,7 @@ A request that fails classification is a `Blocked`, never a review strike.
 | Outcome | Control goes to | Ledger |
 |---|---|---|
 | D1–D2 classified, research settled or skipped | `feature-development.md` **E2** | `Tier:`, `Track:`, `Research:` |
+| CP2 approved — reopened by a change request (**E4**/**E5**) | `feature-development.md` **E3** with the rework list, or the interrupted step (step 8) | `Rejections:` CP2 count; superseded decisions in *GD decisions* |
 | CP2 approved | `feature-development.md` **E1** | `Rejections:` CP2 count; direction, accepted risks and spec decisions in *GD decisions* |
 | A `technology` line needs research | `research-decision.md` **E4** (step 2, U2/U3) or **E1** (step 5); back at **E2** if the loop waits on it, else **E3** | `Research:` on return; `Tier:` recomputed |
 | `advisor` → `Needs-decision`, `Routed to: rd-engineer` or `cto` | `research-decision.md` **E3**; back at **E2** | `Advisor⇄Critic:` round and ruled-out list kept |

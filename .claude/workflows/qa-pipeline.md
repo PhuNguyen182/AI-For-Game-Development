@@ -12,7 +12,7 @@ Inputs for every door are in `references/dispatch-brief.md` → *QA*; caps are c
 | **E1** | QA authorised at `review-pipeline.md` step 6 (G52); at `feature-development.md`'s end-of-work ask where review was declined (G42); or opted into later on a feature with a ledger, even a closed one (reopened). **Plan only — execution locked** | The QA list in `dispatch-brief.md`, with both review verdicts — or that **the GD declined review**, in those words |
 | **E2** | The plan is in, and: CP3 approved (D3–D5); or, with no CP3 owed — D1–D2, or review declined for every submission — each submission clear or its review declined | The ledger's `QA plan` |
 | **E3** | A fix came back — through review where it ran, from the author where it did not | The plan — where QA is authorised only now, for this verification, `qa-lead` plans the bugs' cases first (step 1) — and **the bug IDs the fix marked `Fixed`** with their records — a GD-opened bug has no original report, its record stands in. Those bugs are verified by ID, plus the coverage the fix touched; device coverage needs a **rebuilt** artifact (G61). Reached only when QA was authorised for this feature — otherwise the verification is first put to the GD per G50 |
-| **E4** | The GD asks for QA on work **no ledger holds** — shipped code, work no pipeline built, a direct-lane measurement (G15), or the verification of an unattached bug's fix; `orchestrator.md` row 7 | The behaviour and its source, the platform, the budget if performance is judged, and any unattached bug IDs to verify; review verdicts marked absent. The run is classified on its own |
+| **E4** | The GD asks for QA on work **no ledger holds** — shipped code, work no pipeline built, a direct-lane measurement (G15), or the verification of an unattached bug's fix; `orchestrator.md` row 7 | The behaviour and its source, the platform, the budget if performance is judged, and any unattached bug IDs to verify; review verdicts as given where a gate ran (a gated-direct or G13 fix), else marked absent. The run is classified on its own |
 
 E1 against E4 is decided by whether a ledger holds the work, never by who asked: E4 on a feature with a ledger
 discards its tier, floor and counters.
@@ -133,8 +133,8 @@ takes released-production telemetry only.
 5. **Checkpoint 4 (G60)** — every feature with a ledger, every shape, whether or not any gate ran. `producer`
    compiles the Status Report from every QA report, `qa-lead`'s verdict as stated, the Assurance Verdict **or why
    there is none** (A1/A2, the gate refused, QA declined), and at D1–D2 both review verdicts — or "review was not
-   run", in words. QA declined → compiled from the Implementation Notes; a single note goes to the GD directly, no
-   `producer`. An acceptance state is not a sign-off: quote both, never merge them. `producer` is given the
+   run", in words. QA declined → compiled from the Implementation Notes, after step 4b where `Gates:` records assurance
+   authorised at G14 (`optional-gates.md`); a single note goes to the GD directly, no `producer`. An acceptance state is not a sign-off: quote both, never merge them. `producer` is given the
    feature's `BUGS.md`; the report carries its bug summary — counts by status and severity, and every bug not yet
    settled. The CP4 ask rules on every unsettled bug before the closing question, per G60; a bug sent round its
    loop (**E3**, or step 2 at **E3**) brings CP4 back. An `Escalated` bug left unruled gets G60's one follow-up;
