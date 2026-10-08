@@ -32,7 +32,7 @@ naming its own files; that table is now the loading mechanism rather than a cita
 | `.claude/standards/client/performance-and-algorithms.md` | the same, plus `performance-qa-engineer` | Any hot path, data-structure choice or engine-level optimization |
 | `.claude/standards/client/feature-documentation.md` | the implementing agent that owns a feature root, `code-reviewer` | A feature reaches completion at **A3** or above |
 | `.claude/standards/qa/verification-standards.md` | every QA-track agent, `assurance-evaluator` | Before claiming anything is verified |
-| `.claude/standards/qa/defect-reporting.md` | every QA-track agent | Before stating a finding |
+| `.claude/standards/qa/defect-reporting.md` | every QA-track agent; the orchestrator, as the only writer of bugs | Before stating a finding; before changing a bug's status |
 | `.claude/standards/qa/assurance-scoring.md` | `assurance-evaluator` | Before computing any score |
 
 ## The rules that did not move, and why

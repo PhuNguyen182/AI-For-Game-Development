@@ -1,7 +1,7 @@
 # Research & Decision
 
-From a technology, package or technique the project does not yet have, to a settled decision. Usually a branch
-of `feature-intake.md`; standalone when the GD asks for research or summons a spike with no feature (G30). This
+From a technology, package or technique the project does not yet have, to a settled decision. Usually a branch of
+`feature-intake.md`; standalone when the GD asks for research or summons a spike with no feature (G30). This
 pipeline exists to spend **U** down. You research, you never integrate.
 
 ## Entries
@@ -15,8 +15,9 @@ pipeline exists to spend **U** down. You research, you never integrate.
 | **E5** | The GD asks for research, no feature (G30) | The capability as behaviour, the paid/closed-source preference (G34) |
 | **E6** | The GD summons a spike, no feature (G30) — asking *is* the summon | The question and the decision waiting on it, threshold, hardware, baseline, any build authorisation (G16) |
 
-E1–E5 start at step 1; E6 starts at step 4. E2 and E3 never jump straight to `cto`. E5 and E6 classify the run themselves — they inherit no tier. **U2/U3 on
-a technology question is the E4 trigger at any D**; a D5 system built from what the project has is U0.
+E1–E5 start at step 1; E6 starts at step 4. E2 and E3 never jump straight to `cto`. E5 and E6 classify the run
+themselves — they inherit no tier. **U2/U3 on a technology question is the E4 trigger at any D**; a D5 system built
+from what the project has is U0.
 
 ## May dispatch
 
@@ -31,8 +32,8 @@ a technology question is the E4 trigger at any D**; a D5 system built from what 
 
 ## Hard ordering
 
-1. **`researcher` runs before `cto` on every path but E6**, which reaches `cto` through a Feasibility Report.
-   `cto` is never entered without a candidate set — it is barred from returning open options.
+1. **`researcher` runs before `cto` on every path but E6**, which reaches `cto` through a Feasibility Report. `cto`
+   is never entered without a candidate set — it is barred from returning open options.
 2. **The spike gate (G31) precedes every `rd-engineer` dispatch** except E6. No recommendation from `researcher`,
    `advisor` or `cto` is ever converted into a dispatch.
 3. **On a device**: the device lock (I7) is claimed before the harness or the build reaches it and released on
@@ -56,27 +57,30 @@ a technology question is the E4 trigger at any D**; a D5 system built from what 
 3. **Spike gate** — only when a number is the blocker: G31, carrying everything step 4 attaches. Declined → step 5,
    `cto` deciding provisionally on the number it names.
 4. **Spike** — `rd-engineer`, attaching the question and the decision waiting on it, the pass/fail threshold, the
-   target hardware, and today's baseline. Only a spike writes to the project: the harness is R1; a measurement
-   on the device is R2/X2 and splits per ordering 3.
+   target hardware, and today's baseline. Only a spike writes to the project: the harness is R1; a measurement on
+   the device is R2/X2 and splits per ordering 3.
 5. **`cto`** — carrying the candidate set whole, the decision and what depends on it, the cost/timeline/scale
    constraints, and the spike's evidence **or the fact the gate was declined**.
-   - It may decide provisionally and name the one measurement that would falsify it: that runs step 3 — unless
-     the GD already declined it this run, in which case the decision stays provisional. One cycle (B7); still
-     open after it → G32. A product consequence → G32.
+   - It may decide provisionally and name the one measurement that would falsify it: that runs step 3 — unless the
+     GD already declined it this run, in which case the decision stays provisional. One cycle (B7); still open
+     after it → G32. A product consequence → G32.
    - A provisional decision keeps its re-open threshold, and it travels into the Tech Spec.
-   - A non-empty `Standard set:` is owed an ADR: dispatch `cto` with `engineering-standard-adr-authoring`, and record the standard and its ADR in the feature ledger's `## Decisions` half — a standard nobody recorded is a dropped project rule.
+   - A non-empty `Standard set:` is owed an ADR: dispatch `cto` with `engineering-standard-adr-authoring`, and
+     record the standard and its ADR in the ledger's *GD decisions* — a standard nobody recorded is a dropped
+     project rule.
    - `Rejected`, `Routed to: technical-architect` is a correct result — the question was contained.
    - A working dependency `researcher` refused to justify replacing comes here for keep/mitigate/replace.
 6. **Exit** — the Research Report and Technical Decision travel whole to the receiving step; `Picture taken:` and
    what makes it stale go into the Tech Spec beside any re-open threshold, and into the ledger's `Research:` row —
-   the only home on a path that writes no new spec. Recompute **U**; an unknown still standing is reported as **unresolved**, never as settled because
-   the round ended. A result that moves another axis names it and why in the hand-back; `technical-architect`
-   re-reads it at the receiving step, updates the ledger's `Tier:` and appends to `Tier history:`. Large enough that the approved direction
-   no longer holds → it surfaces at CP2 (G24) and goes to `feature-intake.md` **E5**. Never silently carry
-   forward a tier the research invalidated. Standalone (E5/E6) → the result to the GD, and G33 only if it set a
-   standard, made a provisional decision, or commits money; a Direct lane produces none and is not gated.
+   the only home on a path that writes no new spec. Recompute **U**; an unknown still standing is reported as
+   **unresolved**, never as settled because the round ended. A result that moves another axis names it and why in
+   the hand-back; `technical-architect` re-reads it at the receiving step, updates the ledger's `Tier:` and appends
+   to `Tier history:`. Large enough that the approved direction no longer holds → it surfaces at CP2 (G24) and goes
+   to `feature-intake.md` **E5**. Never silently carry forward a tier the research invalidated. Standalone (E5/E6)
+   → the result to the GD, and G33 only if it set a standard, made a provisional decision, or commits money; a
+   Direct lane produces none and is not gated.
 
-**Every return**:
+**Every return** — beyond `orchestrator.md`'s defaults:
 
 | Return | Do |
 |---|---|
@@ -85,22 +89,16 @@ a technology question is the E4 trigger at any D**; a D5 system built from what 
 | `researcher` or `advisor` → `Routed to: cto` | Step 5, candidate set attached |
 | `rd-engineer` → `Done` | Step 5 if the choice is strategic or hard to reverse; else step 6 |
 | `rd-engineer` → `Needs-decision`, `Routed to: cto` or `gd` | Follow it — not answerable at spike scale |
-| `cto` → `Needs-decision`, `Routed to: gd` | G32, then step 6 |
+| `cto` → `Needs-decision`, `Routed to: gd` | G32, then step 6 — a deferred call exits as **unresolved** |
 | `researcher`/`rd-engineer` → `Rejected`, `Routed to:` an implementer | Production work: `feature-development.md` **E2** with notes; the GD on a standalone run; `change-request.md` on its origin. Never argue it back |
-| `Blocked` | The input named, from the GD (G6); B17 |
-| More than one destination | Record all; act in the order stated |
-| A Continuation Debt Record | Record it; its known non-solutions travel into whatever runs next |
+| A Continuation Debt Record | Record it; its known non-solutions travel into whatever runs next — no review loop counts strikes here; never re-dispatch the same brief |
 
 ## GD touchpoints
 
-- **G30** — E5/E6: the GD's ask is the summon.
-- **G31** — the spike gate, step 3; never re-asked once answered.
-- **G32** — a product call, or a question still open after B7.
-- **G33** — standalone acceptance gate, step 6. Standard rejected → no ADR, terminal (the decision stands for
-  this run), and the refusal recorded in `project-state.md` **Standalone decisions** so no later run re-derives
-  it. Decision rejected → back to step 5 once (B8), carrying the objection; then the GD decides.
-- **G34** — the paid/closed-source preference, attached at step 2.
-- Also fires G6 (`Blocked`), G7 (a bound reached), G16 (a build or second Editor for a spike).
+Where each fires; what it carries and what happens on no are `gd-touchpoints.md`'s alone.
+
+**G30** at **E5**/**E6** · **G34** step 2 · **G31** step 3 · **G32** step 5, or after B7 · **G33** step 6 on a
+standalone run · anywhere: **G6**, **G7**, **G16**.
 
 ## Bounds
 
@@ -113,7 +111,8 @@ Set by the door entered, never by the tier.
 
 | Left from | Control goes to | Written |
 |---|---|---|
-| **E3**, **E4** | `feature-intake.md` **E2** — step 3, the loop, then CP1 | Ledger `Research:`; `Tier:` if moved |
+| **E3**; **E4** where the loop waits on it (D4–D5 or U3) | `feature-intake.md` **E2** — step 3, the loop, then CP1 | Ledger `Research:`; `Tier:` if moved |
+| **E4** where no loop runs (a U2 line at D1–D3) | `feature-intake.md` **E3** — step 6 at D3, the direct-notes hand-off at D1–D2 | Same |
 | **E2** from the architect's step 2 | `feature-intake.md` **E2** at D4–D5 or U3; its **E3** where that shape fires no loop | Same |
 | **E1**; **E2** from the architect's step 6 | `feature-intake.md` **E3** — step 6 at D3–D5, the direct-notes hand-off at D1–D2 | Same; staleness and any re-open threshold into the Tech Spec |
 | **E2** from `feature-development.md` | That pipeline, resuming the step it left | Ledger `Research:`, `Measure-and-confirm:` |

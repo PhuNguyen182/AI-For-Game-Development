@@ -32,6 +32,6 @@ A4 ≥ 9.0, A5 ≥ 9.2**.
 - Completion cannot pass while an M requirement is unresolved.
 - Execution effectiveness caps at 6 for repeated redundant work.
 - Performance caps at 6 when a required measurable claim was never measured.
-- Above 9.5 requires E3+ evidence; self-confidence never justifies a near-perfect score.
+- Above 9.5 requires EV3+ evidence; self-confidence never justifies a near-perfect score.
 - Marking a dimension inapplicable to raise the number is prohibited.
 - No performance ledger exists: scores do not accumulate across tasks, so never imply a trend.

@@ -1,9 +1,9 @@
 # The Optional Gates — review and QA are offered, never assumed
 
-`review-pipeline.md` and `qa-pipeline.md` are separate, optional processes. Neither runs on its own initiative,
-in any lane or mode: whoever reaches the boundary asks the GD, states the cost of skipping, and dispatches only
-what was authorised. This file is the single home of **the shape of every ask (G50)**; each pipeline only says
-**where** its ask fires.
+`review-pipeline.md` and `qa-pipeline.md` are separate, optional processes. Neither runs on its own initiative, in
+any lane or mode: whoever reaches the boundary asks the GD, states the cost of skipping, and dispatches only what
+was authorised. This file is the single home of **the shape of every ask (G50)**; each pipeline only says **where**
+its ask fires.
 
 | Where an ask fires | Owner |
 |---|---|
@@ -12,10 +12,9 @@ what was authorised. This file is the single home of **the shape of every ask (G
 | Test code, once the suite is written (G62); a build for device coverage (G61) | `qa-pipeline.md` |
 | A direct or mode-3 dispatch that wrote source (G13); a gated-direct submission (G14); a debt row at a later boundary | `orchestrator.md` |
 
-**When review is declined, the QA question moves, it does not vanish**: it fires at the end-of-work ask,
-alongside the review offer. Review and QA are independent — either may run without the other, or later. Where
-QA runs without review, `qa-lead` and `assurance-evaluator` are told the review verdicts are **absent**, never
-left to assume them.
+**When review is declined, the QA question moves, it does not vanish**: it fires at the end-of-work ask, alongside
+the review offer. Review and QA are independent — either may run without the other, or later. Where QA runs without
+review, `qa-lead` and `assurance-evaluator` are told the review verdicts are **absent**, never left to assume them.
 
 ## What every ask carries — one message, one turn
 
@@ -25,11 +24,11 @@ left to assume them.
 4. **The cost of skipping it, named concretely** — not "quality may suffer" but *"nothing has checked that this
    damage formula stays deterministic, which is what lets server and client agree"*.
 
-**Recommend, then defer.** One line on which answer the tier points to and why, then take whatever the GD
-says. Never a soft block, never repeated after the answer.
+**Recommend, then defer.** One line on which answer the tier points to and why, then take whatever the GD says.
+Never a soft block, never repeated after the answer.
 
-**Asked as multiple choice (G19).** One `AskUserQuestion` call: the four carries go in the question and the
-option descriptions, the recommended option first. When review and QA are offered at the same boundary, one
+**Asked as multiple choice (G19).** One `AskUserQuestion` call: the four carries go in the question and the option
+descriptions, the recommended option first. When review and QA are offered at the same boundary, one
 **multi-select** question ("Run which gates?" — review, QA) — never two prose questions.
 
 | The work | Recommend |
@@ -39,17 +38,18 @@ option descriptions, the recommended option first. When review and QA are offere
 | `Game.Core.*`, or multiplayer-relevant | Review at least — a determinism or authority error is invisible until it diverges |
 | A1/A2, judgeable by looking | Offer, expect no, do not argue |
 
-**At A4 and above, declining QA also declines `assurance-evaluator`** — the only check on whether a claimed
-verification actually happened. The ask says so **in those words**.
+**At A3 and above — where `assurance-evaluator` runs — declining QA also declines it** (the gated-direct lane
+offers it with review instead, G14), the only check on whether a claimed verification actually happened. The ask
+says so **in those words**.
 
 ## What is never optional
 
-- **The ask itself.** Skipping a gate silently, or deciding it was not worth offering, is the failure this
-  file exists to prevent.
-- **Recording the answer.** A declined gate writes a row in `<state-root>/project-state.md` — path, author,
-  when, which gate, `declined` by the GD (I2). It blocks nothing and settles whenever the GD opts in.
-- **The verification floor and the Implementation Note.** A declined gate means nobody independently checked
-  the claim — never that the claim was not owed.
+- **The ask itself.** Skipping a gate silently, or deciding it was not worth offering, is the failure this file
+  exists to prevent.
+- **Recording the answer.** From A3, a declined gate writes a row in `<state-root>/project-state.md` — path,
+  author, when, which gate, `declined` by the GD (I2). It blocks nothing and settles whenever the GD opts in.
+- **The verification floor and the Implementation Note.** A declined gate means nobody independently checked the
+  claim — never that the claim was not owed.
 - **The rule baseline** — `security.md`, the track standards. Declining detection relaxes no prevention.
 - **The supply-chain pre-gate (G45)** — third-party content is scanned before it lands, whatever the answer.
 - **I5** — a design flaw reaches the GD immediately, gate or no gate.

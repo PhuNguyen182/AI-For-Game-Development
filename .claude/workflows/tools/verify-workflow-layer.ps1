@@ -1,10 +1,13 @@
 #!/usr/bin/env pwsh
 # Verifies the integrity of the workflow layer.
 #
-# Integrity only: every reference resolves, every ID cited exists where it is
+# Integrity: every reference resolves, every ID cited exists where it is
 # defined, every GD touchpoint is cited by the file that owns it, and nothing
-# outside .claude/docs/ depends on it. No counts, no exact phrases, no line caps
-# -- a file over 200 lines is a warning, never a failure.
+# outside .claude/docs/ depends on it. Meaning (section 10): every cited door
+# exists, a pipeline routes only to agents it may dispatch, every ask has a
+# decline path, every cited state field exists in its template, the bug
+# statuses agree, and every pre-filled counter matches its bound. No exact
+# phrases, no line caps -- a file over 200 lines is a warning, never a failure.
 #
 # Run after any change under .claude/. Exit 0 = every check holds, 1 = a failure.
 
@@ -67,7 +70,7 @@ $resolvable = @(Get-ChildItem -Path $Root -Recurse -File |
 
 # Names that are project runtime files or placeholders, never framework files.
 $runtimeNames = @('LEDGER.md', 'DEBT.md', 'NOTES.md', 'README.md', 'ARCHITECTURE.md', 'INTEGRATION.md',
-                  'CONTRACTS.md', 'WORKMEMORY.md', 'CLAUDE.md', 'SKILL.md', 'CHANGELOG.md', 'BUGS.md')
+                  'CONTRACTS.md', 'DECISIONS.md', 'SPEC.md', 'WORKMEMORY.md', 'CLAUDE.md', 'SKILL.md', 'CHANGELOG.md', 'BUGS.md')
 
 function Test-Resolves
 {
@@ -360,10 +363,172 @@ foreach ($file in $agentFiles)
 
 Assert-Check 'every agent has name = filename, a description and tools' $fmProblems
 
-# ------------------------------------------------------------------ 10. size (warning only)
+# ------------------------------------------------------------------ 10. meaning
 
 Write-Host ''
-Write-Host '10. Size -- under 200 lines is recommended, never required'
+Write-Host '10. Cross-file meaning'
+
+$pipelines = @('feature-intake', 'research-decision', 'feature-development', 'review-pipeline', 'qa-pipeline', 'change-request')
+$doors     = @{}
+$dispatch  = @{}
+
+foreach ($p in $pipelines)
+{
+    $text         = Get-Content -Path (Join-Path $workflows "$p.md") -Raw
+    $doors[$p]    = @([regex]::Matches($text, '(?m)^\|\s*\*\*(E\d)\*\*\s*\|') | ForEach-Object { $_.Groups[1].Value })
+    $section      = [regex]::Match($text, '(?s)## May dispatch(.*?)\n## ').Groups[1].Value
+    $dispatch[$p] = @([regex]::Matches($section, '(?m)^\|[^|\n]*\|') | ForEach-Object {
+                        [regex]::Matches($_.Value, '`([a-z-]+)`') | ForEach-Object { $_.Groups[1].Value } })
+}
+
+# 10a. Every "`<pipeline>.md` ... **En**" names a door that pipeline's Entries table defines.
+$doorProblems = [System.Collections.Generic.List[string]]::new()
+foreach ($file in $layerFiles + $agentFiles)
+{
+    $text = Get-Content -Path $file.FullName -Raw
+    foreach ($m in [regex]::Matches($text, '`((?:' + ($pipelines -join '|') + '))\.md`(?:''s)?\s+\*\*(E\d)\*\*'))
+    {
+        if ($doors[$m.Groups[1].Value] -notcontains $m.Groups[2].Value)
+        {
+            $doorProblems.Add("$(Get-RelPath $file.FullName) -> $($m.Groups[1].Value).md $($m.Groups[2].Value)")
+        }
+    }
+}
+Assert-Check 'every cited pipeline door exists in that pipeline''s Entries' ($doorProblems | Sort-Object -Unique)
+
+# 10b. A pipeline routes work only to agents its May-dispatch table names ("→ `agent`", "dispatch `agent`").
+$routeProblems = [System.Collections.Generic.List[string]]::new()
+foreach ($p in $pipelines)
+{
+    $text = Get-Content -Path (Join-Path $workflows "$p.md") -Raw
+    foreach ($m in [regex]::Matches($text, '(?:→|[Dd]ispatch(?:es)?)\s+`([a-z]+(?:-[a-z]+)+)`'))
+    {
+        $id = $m.Groups[1].Value
+        if ($agentIds -contains $id -and $dispatch[$p] -notcontains $id) { $routeProblems.Add("$p.md routes to $id, absent from its May dispatch") }
+    }
+}
+Assert-Check 'every agent a pipeline routes to is in its May dispatch table' ($routeProblems | Sort-Object -Unique)
+
+# 10c. Every ask or approve touchpoint defines what happens on no.
+$declineProblems = @($registry | Where-Object { $_ -match '^\|\s*\*\*(G\d+)\*\*\s*\|\s*(ask|approve)\s*\|' } | ForEach-Object {
+    $id    = $Matches[1]
+    $cells = $_.Trim().Trim('|').Split('|')
+    if ($cells[-1].Trim() -in @('', '—', '-')) { "$id is an $($cells[1].Trim()) with no decline path" }
+})
+Assert-Check 'every ask and approve touchpoint has a decline path' $declineProblems
+
+# 10d. State a pipeline cites exists in its template.
+$templates  = Join-Path $stateDir 'templates'
+$ledgerText = Get-Content -Path (Join-Path $templates 'feature-ledger.md') -Raw
+$psText     = Get-Content -Path (Join-Path $templates 'project-state.md') -Raw
+$ledgerKeys = @([regex]::Matches($ledgerText, '(?m)^-\s+([^:<\n]+):') | ForEach-Object { $_.Groups[1].Value.Trim() }) +
+              @([regex]::Matches($ledgerText, '(?m)^##+\s+(.+)$') | ForEach-Object { $_.Groups[1].Value.Trim() })
+$psKeys     = @([regex]::Matches($psText, '(?m)^##\s+(.+)$') | ForEach-Object { $_.Groups[1].Value.Trim() }) +
+              @([regex]::Matches($psText, '(?m)^([A-Z][\w ]+):') | ForEach-Object { $_.Groups[1].Value.Trim() })
+$stateProblems2 = [System.Collections.Generic.List[string]]::new()
+foreach ($file in $layerFiles + $agentFiles)
+{
+    $text = Get-Content -Path $file.FullName -Raw
+    $rel  = Get-RelPath $file.FullName
+    foreach ($m in [regex]::Matches($text, 'ledger''s\s+(?:`([^`]+?):?`|\*([^*]+)\*)'))
+    {
+        $key = ($m.Groups[1].Value + $m.Groups[2].Value).Trim().TrimEnd(':') -replace '\s+', ' '
+        
+        if (-not ($ledgerKeys | Where-Object { $_ -ieq $key })) { $stateProblems2.Add("$rel -> ledger field '$key'") }
+    }
+    foreach ($m in [regex]::Matches($text, '`project-state\.md`\s*→\s*(?:\*([^*]+)\*|\*\*([^*]+)\*\*|`([^`]+?):?`)'))
+    {
+        $key = ($m.Groups[1].Value + $m.Groups[2].Value + $m.Groups[3].Value).Trim().TrimEnd(':') -replace '\s+', ' '
+        if (-not ($psKeys | Where-Object { $_ -ieq $key })) { $stateProblems2.Add("$rel -> project-state section '$key'") }
+    }
+}
+Assert-Check 'every ledger field and project-state section cited exists in its template' ($stateProblems2 | Sort-Object -Unique)
+
+# 10e. The bug statuses agree across the standard and both templates.
+$drText   = Get-Content -Path (Join-Path $claude 'standards/qa/defect-reporting.md') -Raw
+$lifecycle = [regex]::Match($drText, '(?s)## Bug identity and lifecycle(.*?)\n## ').Groups[1].Value
+$statusStd = @([regex]::Matches($lifecycle, '(?m)^\|\s*\*\*([^*]+)\*\*\s*\|') | ForEach-Object { $_.Groups[1].Value.Trim() } | Sort-Object)
+$fbText    = Get-Content -Path (Join-Path $templates 'feature-bugs.md') -Raw
+$statusRaw = [regex]::Match($fbText, '(?ms)^- Status:\s*(.+?)(?=^- |^\S)').Groups[1].Value -replace '\s+', ' '
+$statusFb  = @(($statusRaw -split '\|') | ForEach-Object { $_.Trim() } | Where-Object { $_ } | Sort-Object)
+$blText    = Get-Content -Path (Join-Path $templates 'bug-log.md') -Raw
+$blCell    = ([regex]::Match($blText, '(?m)^\|\s*_none_\s*\|.*$').Value -split '(?<!\\)\|')[5]
+$statusBl  = @(($blCell -split '\\\|') | ForEach-Object { $_.Trim() } | Where-Object { $_ -and $_ -notlike 'Void*' } | Sort-Object)
+$statusProblems = @()
+if (($statusStd -join ',') -ne ($statusFb -join ',')) { $statusProblems += "defect-reporting.md [$($statusStd -join ', ')] vs feature-bugs.md [$($statusFb -join ', ')]" }
+if (($statusStd -join ',') -ne ($statusBl -join ',')) { $statusProblems += "defect-reporting.md [$($statusStd -join ', ')] vs bug-log.md [$($statusBl -join ', ')]" }
+Assert-Check 'the bug statuses agree across defect-reporting.md and both bug templates' $statusProblems
+
+# 10f. Every counter a template pre-fills matches its bound in bounds.md.
+$boundsText = Get-Content -Path (Join-Path $workflows 'references/bounds.md') -Raw
+$boundOf    = @{}
+$afterOf    = @{}
+foreach ($m in [regex]::Matches($boundsText, '(?m)^\|\s*\*\*(B\d+)\*\*\s*\|[^|]*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|'))
+{
+    $boundOf[$m.Groups[1].Value] = $m.Groups[2].Value
+    $afterOf[$m.Groups[1].Value] = $m.Groups[3].Value
+}
+$counterChecks = @(
+    @('feature-ledger.md', 'CP2 0/(\d+)', 'B11', 'bound'),
+    @('feature-ledger.md', 'CP3 0/(\d+)', 'B12', 'bound'),
+    @('feature-ledger.md', 'CP4-as-defect 0/(\d+)', 'B13', 'bound'),
+    @('feature-ledger.md', 'sign-off re-dispatch 0/(\d+)', 'B14', 'bound'),
+    @('feature-ledger.md', 'QA rounds opening new bugs 0/(\d+)', 'B15', 'bound'),
+    @('feature-ledger.md', 'Measure-and-confirm: 0/(\d+)', 'B7', 'bound'),
+    @('feature-ledger.md', 'round <n> of (\d+)', 'B2', 'bound'),
+    @('feature-ledger.md', '\| 0 /(\d+) \|', 'B3', 'bound'),
+    @('feature-ledger.md', 'n/(\d+) \(B9\)', 'B9', 'bound'),
+    @('feature-ledger.md', 'n/(\d+) \(B16\)', 'B16', 'bound'),
+    @('feature-ledger.md', 'n/(\d+) \(B17\)', 'B17', 'bound'),
+    @('project-state.md', 'Strikes /(\d+)', 'B4', 'bound'),
+    @('project-state.md', 'QA rounds opening new bugs /(\d+)', 'B15', 'bound'),
+    @('feature-bugs.md', 'Reopens: 0/(\d+)', 'B6', 'bound'),
+    @('feature-bugs.md', 'restarted at 0/(\d+)', 'B6', 'after'),
+    @('bug-log.md', 'Reopens /(\d+)', 'B6', 'bound')
+)
+$counterProblems = [System.Collections.Generic.List[string]]::new()
+foreach ($c in $counterChecks)
+{
+    $text = (Get-Content -Path (Join-Path $templates $c[0]) -Raw) -replace '\s+', ' '
+    $m    = [regex]::Match($text, $c[1])
+    $want = if ($c[3] -eq 'after') { $afterOf[$c[2]] } else { $boundOf[$c[2]] }
+    if (-not $m.Success) { $counterProblems.Add("$($c[0]) no longer holds the $($c[2]) counter ('$($c[1])')"); continue }
+    if ($m.Groups[1].Value -ne $want) { $counterProblems.Add("$($c[0]) pre-fills $($c[2]) as $($m.Groups[1].Value), bounds.md says $want") }
+}
+Assert-Check 'every counter a template pre-fills matches bounds.md' $counterProblems
+
+# 10g. Every table row has as many cells as its header -- an inserted row that lost or gained a cell
+# silently drops the column a reader routes on.
+function Get-CellCount([string] $line)
+{
+    $bare = $line.Trim() -replace '\\\|', ''
+    return ([regex]::Matches($bare, '\|')).Count - 1
+}
+$tableProblems = [System.Collections.Generic.List[string]]::new()
+foreach ($file in $layerFiles + $agentFiles + @(Get-Files (Join-Path $claude 'standards')) + @(Get-Files (Join-Path $claude 'commands')))
+{
+    $lines   = Get-Content -Path $file.FullName
+    $width   = 0
+    $inFence = $false
+    for ($k = 0; $k -lt $lines.Count; $k++)
+    {
+        $line = $lines[$k]
+        if ($line -match '^\s*```') { $inFence = -not $inFence; $width = 0; continue }
+        if ($line -notmatch '^\s*\|') { $width = 0; continue }
+        if ($k + 1 -lt $lines.Count -and $lines[$k + 1] -match '^\s*\|\s*:?-{3,}') { $width = Get-CellCount $line; continue }
+        if ($width -gt 0 -and $line -notmatch '^\s*\|\s*:?-{3,}')
+        {
+            $n = Get-CellCount $line
+            if ($n -ne $width) { $tableProblems.Add("$(Get-RelPath $file.FullName):$($k + 1) has $n cells, its header $width") }
+        }
+    }
+}
+Assert-Check 'every table row has as many cells as its header' $tableProblems
+
+# ------------------------------------------------------------------ 11. size (warning only)
+
+Write-Host ''
+Write-Host '11. Size -- under 200 lines is recommended, never required'
 
 foreach ($file in @(Get-Files $workflows))
 {

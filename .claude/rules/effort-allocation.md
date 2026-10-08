@@ -1,14 +1,14 @@
 # Shared — Effort & Value Allocation
 
-Applies to: every agent and the orchestrator, on every input. `task-classification.md` says how much rigor a
-task earns; this file says what that rigor is spent on — and what it must never be spent on. Effort that does
-not change the outcome is not diligence; it is waste that looks like diligence.
+Applies to: every agent and the orchestrator, on every input. `task-classification.md` says how much rigor a task
+earns; this file says what that rigor is spent on — and what it must never be spent on. Effort that does not change
+the outcome is not diligence; it is waste that looks like diligence.
 
 ## The marginal value rule
 
-One more action — a read, a search, a tool call, a refactor, a paragraph — is justified only when it would
-change what you produce or what the GD decides. Quality gain, risk reduction, rework avoided or decision
-confidence must outweigh the time, tokens, calls and complexity it costs. If it would change nothing, skip it.
+One more action — a read, a search, a tool call, a refactor, a paragraph — is justified only when it would change
+what you produce or what the GD decides. Quality gain, risk reduction, rework avoided or decision confidence must
+outweigh the time, tokens, calls and complexity it costs. If it would change nothing, skip it.
 
 ## Minimum process by tier
 
@@ -30,14 +30,13 @@ confidence must outweigh the time, tokens, calls and complexity it costs. If it 
 | **A5** | Independent-verification theatre — a second pass with the same method is not independent, and claiming it is is worse than skipping it |
 
 **A high tier from C, R or X buys none of the above** — consequence raises verification and evidence, never
-paperwork. A one-line signing-config edit is A5 and still produces no plan document: a confirmed target, a
-check that actually ran, and a truthful report of what was not covered. A1/A2 inherit none of A4/A5's
-paperwork.
+paperwork. A one-line signing-config edit is A5 and still produces no plan document: a confirmed target, a check
+that actually ran, and a truthful report of what was not covered. A1/A2 inherit none of A4/A5's paperwork.
 
-Also forbidden unless the tier genuinely earns it: a Tech Spec for a one-line fix, an architecture diagram for
-a rename, a feature `README.md` below **A4**, a risk register for a scratch file, three alternatives when one
-credible path exists, and a progress update that does not help the GD decide anything — activity is not
-progress; verified reduction of remaining work, uncertainty or risk is.
+Also forbidden unless the tier genuinely earns it: a Tech Spec for a one-line fix, an architecture diagram for a
+rename, a feature `README.md` below **A4**, a risk register for a scratch file, three alternatives when one
+credible path exists, and a progress update that does not help the GD decide anything — activity is not progress;
+verified reduction of remaining work, uncertainty or risk is.
 
 ## What effort buys, in order
 
@@ -64,31 +63,33 @@ Precision and completion dominate at every tier and never trade down for speed, 
 The floor each tier owes is in `task-classification.md` Step 4. A2 rises to V2 whenever direct verification is
 cheap or the task changes state.
 
-Evidence: **E0** unsupported assertion · **E1** internal consistency or direct inspection · **E2** a direct
-test, measurement, tool output or primary source · **E3** E2 plus a materially distinct corroboration ·
-**E4** reproducible, orthogonal, or independently reviewed.
+Evidence: **EV0** unsupported assertion · **EV1** internal consistency or direct inspection · **EV2** a direct
+test, measurement, tool output or primary source · **EV3** EV2 plus a materially distinct corroboration · **EV4**
+reproducible, orthogonal, or independently reviewed.
 
-Repeating the same reasoning is not verification; self-review is not independent verification; confidence is
-not evidence — reading code is review, running it is verification. Unavailable verification is reported as
-unavailable, never as passed and never omitted. QA-track agents also follow `qa/verification-standards.md`,
-which is stricter in its domain and wins there.
+Repeating the same reasoning is not verification; self-review is not independent verification; confidence is not
+evidence — reading code is review, running it is verification. Unavailable verification is reported as unavailable,
+never as passed and never omitted. QA-track agents also follow `qa/verification-standards.md`, which is stricter in
+its domain and wins there.
 
 ## The gates no amount of good work compensates for
 
-Any one fails the task outright: fabricated evidence, or claiming a test, build, measurement or review ran
-when it did not; an H requirement violated without authorization; an M requirement dropped silently; a
-consequential action against an unverified target when verification was reasonably possible; any violation of
-`security.md`. At **C3** the applicable safety/integrity/reversibility check is not optional; at **C4**,
-independent verification is used wherever reasonably available, and its absence is stated.
+Any one fails the task outright: fabricated evidence, or claiming a test, build, measurement or review ran when it
+did not; an H requirement violated without authorization; an M requirement dropped silently; a consequential action
+against an unverified target when verification was reasonably possible; any violation of `security.md`. At **C3**
+the applicable safety/integrity/reversibility check is not optional; at **C4**, independent verification is used
+wherever reasonably available, and its absence is stated.
 
-The GD can waive a requirement or accept a gap (G9) — only explicitly and informed: cost stated first, then
-reaffirmed. No waiver reaches the integrity half: fabricated evidence and a false verification claim are untrue
-reports, not tradeable requirements.
+The GD can waive a requirement or accept a gap (G9) — only explicitly and informed: the cost is written into the
+option the GD selects. Waiving an **H** requirement is the one case asked twice — the cost, then a confirming
+question, which is the reaffirmation. Declining a gate is not a waiver; it is recorded debt (I2). No waiver reaches
+the integrity half: fabricated evidence and a false verification claim are untrue reports, not tradeable
+requirements.
 
 ## Scoring — only when a verdict is asked for
 
-Scores are never a routine deliverable: they are produced only when the GD asks, or a rule or workflow
-requires one (G80). **The author never scores their own work.** The independent gate is `assurance-evaluator`,
-running last at A3+ — below that only when the GD asks — consuming the verdicts the other gates returned; its weights, tier targets and
-calibration are in `.claude/standards/qa/assurance-scoring.md`. Everyone else self-checks against the gates
+Scores are never a routine deliverable: they are produced only when the GD asks, or a rule or workflow requires one
+(G80). **The author never scores their own work.** The independent gate is `assurance-evaluator`, running last at
+A3+ — below that only when the GD asks — consuming the verdicts the other gates returned; its weights, tier targets
+and calibration are in `.claude/standards/qa/assurance-scoring.md`. Everyone else self-checks against the gates
 above before returning — a checklist, never reported as a score.

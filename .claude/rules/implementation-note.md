@@ -1,9 +1,9 @@
 # Shared — Implementation Note Format
 
-Applies to: every code submission that reaches a review gate — from any implementing agent or tech lead.
-Consumed by `code-reviewer`, `security-reviewer`, `qa-lead`, `assurance-evaluator` and, where no gate ran, the
-GD at CP4 (G82). Review agents are stateless: they see the dispatch, never the reasoning behind the code. The
-note is what makes a single-pass review possible.
+Applies to: every code submission that reaches a review gate — from any implementing agent or tech lead. Consumed
+by `code-reviewer`, `security-reviewer`, `qa-lead`, `assurance-evaluator` and, where no gate ran, the GD at CP4 or
+in the reply that closes ledger-less work (G82). Review agents are stateless: they see the dispatch, never the
+reasoning behind the code. The note is what makes a single-pass review possible.
 
 ## Required fields
 
@@ -18,6 +18,7 @@ Written in English. A handoff, not a document — proportional to the change.
 - Assumptions: <every decision made where the spec was silent — or "none">
 - Known limitations: <what this submission does not do, and what breaks if a caller assumes otherwise>
 - Deliberately out of scope: <what was noticed and left alone, with the agent-id that owns it — or "none">
+- Fixes: <the bug IDs this submission fixes — or "none">
 - Verification done: <what the author actually ran, and what they did not, and why>
 ```
 
@@ -30,16 +31,17 @@ Written in English. A handoff, not a document — proportional to the change.
 | **Assumptions** | Every gap the author filled — an unstated assumption is indistinguishable from a bug at review |
 | **Known limitations** | Carries into the feature root's `DEBT.md` from **A3** upward |
 | **Deliberately out of scope** | Proves a nearby problem was seen and left alone on purpose |
+| **Fixes** | Every bug ID the submission fixes — the only way a bug reaches `Fixed` |
 | **Verification done** | "I ran it" vs "it compiles"; an impossible check is stated as impossible, with why |
 
-The pipeline that dispatched the work assembles the note from the brief it sent and the agent's return;
-where each field comes from is in `workflows/references/dispatch-brief.md`.
+The pipeline that dispatched the work assembles the note from the brief it sent and the agent's return; where each
+field comes from is in `workflows/references/dispatch-brief.md`.
 
 ## Rules
 
-- Every submission to a review gate carries a note; without one it is incomplete, not merely undocumented.
-  One note per agent return, not per feature.
-- **The note is owed whether or not a gate runs.** A declined gate means nobody independently checked the
-  claim — never that the claim was not owed.
+- Every submission to a review gate carries a note; without one it is incomplete, not merely undocumented. One note
+  per agent return, not per feature.
+- **The note is owed whether or not a gate runs.** A declined gate means nobody independently checked the claim —
+  never that the claim was not owed.
 - Never claim verification you did not perform (`qa/verification-standards.md`).
 - Never use the note to argue the design — a disagreement goes to `technical-architect`.

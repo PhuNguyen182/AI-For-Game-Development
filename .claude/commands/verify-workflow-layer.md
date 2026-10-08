@@ -1,5 +1,5 @@
 ---
-description: Check the workflow layer's integrity — references resolve, IDs exist, every GD touchpoint is cited by its owner, standards reach their readers, no runtime state under .claude/, nothing depends on the reference-only docs folder
+description: Check the workflow layer's integrity and cross-file meaning — references resolve, IDs and doors exist, every GD touchpoint is cited by its owner and has a decline path, pipelines dispatch only their own agents, state fields and counters match their templates and bounds, nothing depends on the reference-only docs folder
 allowed-tools: Bash, PowerShell, Read, Grep, Glob
 ---
 
@@ -31,7 +31,14 @@ reference or ID at fault.
 | 7 | Every cited invariant (I-id) exists in `rules/orchestration.md` and every bound (B-id) in `workflows/references/bounds.md` |
 | 8 | No file outside the reference-only docs folder references a file inside it |
 | 9 | Every agent's frontmatter has `name` equal to its filename, a `description` and `tools` |
-| 10 | **Warning only**: a workflow file over 200 lines — under 200 is recommended, never required |
+| 10a | Every `<pipeline>.md` **En** cited anywhere names a door that pipeline's Entries table defines |
+| 10b | A pipeline routes work (`→ agent`, `dispatch agent`) only to agents its May-dispatch table names |
+| 10c | Every **ask** and **approve** touchpoint states what happens on no |
+| 10d | Every ledger field and `project-state.md` section a file cites exists in its template |
+| 10e | The bug statuses in `standards/qa/defect-reporting.md` and both bug templates are the same set |
+| 10f | Every counter a state template pre-fills (`0/3`, `n/2`…) matches its bound in `references/bounds.md` |
+| 10g | Every markdown table row has as many cells as its header |
+| 11 | **Warning only**: a workflow file over 200 lines — under 200 is recommended, never required |
 
 ## Fixing what it reports
 

@@ -3,9 +3,9 @@
 Copy the fenced block to `<state-root>/calibration.md`. This file is the template, never the record. Rules:
 `../README.md`.
 
-Every bound in `references/bounds.md` was chosen by judgement, not measured — E0 on `effort-allocation.md`'s
-own scale. This record is how they become known: one row per feature, copied from its ledger when the ledger
-is marked `Closed` or `Abandoned`.
+Every bound in `references/bounds.md` was chosen by judgement, not measured — EV0 on `effort-allocation.md`'s own
+scale. This record is how they become known: one row per feature, copied from its ledger when the ledger is marked
+`Closed` or `Abandoned`.
 
 ## Reading it — only once there is something to read
 
@@ -27,8 +27,9 @@ superseded in `open-items.md`, never quietly overwritten.
 ```markdown
 # Calibration
 
-One row per closed or abandoned feature, copied from its ledger and its `BUGS.md` — the most reopens on one bug is read from its history rows, since the counter resets after a root cause. Nothing estimated or reconstructed — a blank
-cell is a fact, an invented number is not. "Checkpoints that changed the outcome" is the one judgement call:
+One row per closed or abandoned feature, copied from its ledger and its `BUGS.md` — the most reopens on one bug is
+read from its history rows, since the counter resets after a root cause. Nothing estimated or reconstructed — a
+blank cell is a fact, an invented number is not. "Checkpoints that changed the outcome" is the one judgement call:
 name each checkpoint where the GD's answer actually altered what was built.
 
 | Feature | Tier · axes | Attempts used / budget | Max strikes on one submission | Bugs opened · max reopens on one bug | Advisor⇄Critic rounds | Root-cause resets | CP4 defect rejections | Gates run | Checkpoints that changed the outcome | Closed |

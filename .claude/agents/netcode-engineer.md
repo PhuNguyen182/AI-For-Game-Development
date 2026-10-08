@@ -75,6 +75,7 @@ Read these before acting:
 | Rule file | Applies |
 |---|---|
 | `.claude/rules/language-and-comments.md` | Always — it governs every agent. |
+| `.claude/standards/client/coding-principles.md`, `code-style-and-layout.md`, `naming-convention.md`, `performance-and-algorithms.md` | Always — before writing any code; `Game.Server.*` follows the same standards as the client. |
 
 - Never implement a game rule here; reference the Shared Core, and return the task if the rule is missing there.
 - Never leave a protocol change undocumented — the client and server teams build against your written contract, not your code.

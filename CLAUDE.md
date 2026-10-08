@@ -16,8 +16,9 @@
 | Render pipeline | `<!-- TODO: URP / HDRP / Built-in -->` |
 | Track | `<!-- TODO: client-only, or client+server -->` |
 
-Track matters beyond documentation: with none stated, `orchestration.md` I1 has `technical-architect` assume
-client-only, silently.
+Track matters beyond documentation: with none stated, the orchestrator asks the GD once, the first time work
+could be multiplayer-relevant (G26), and records the answer in `<state-root>/project-state.md`; filling it in
+here saves that question.
 
 ## Tech stack
 
