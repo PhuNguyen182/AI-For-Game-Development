@@ -151,6 +151,7 @@ Write-Host ''
 Write-Host '3. Skills'
 
 $skillProblems = [System.Collections.Generic.List[string]]::new()
+$pluginSkills  = [System.Collections.Generic.SortedSet[string]]::new()
 
 foreach ($file in $agentFiles)
 {
@@ -159,9 +160,13 @@ foreach ($file in $agentFiles)
 
     foreach ($row in [regex]::Matches($section, '(?m)^\|([^|\n]+)\|'))
     {
-        foreach ($m in [regex]::Matches($row.Groups[1].Value, '`([a-z0-9-]+)`'))
+        foreach ($m in [regex]::Matches($row.Groups[1].Value, '`([a-z0-9-]+(?::[a-z0-9-]+)?)`'))
         {
             $skill = $m.Groups[1].Value
+
+            # A plugin:skill name lives in an installed plugin, outside this repo -- listed, never checked.
+            if ($skill.Contains(':')) { [void] $pluginSkills.Add($skill); continue }
+
             if (-not (Test-Path (Join-Path $claude "skills/$skill/SKILL.md")))
             {
                 $skillProblems.Add("$($file.BaseName) -> $skill")
@@ -171,6 +176,10 @@ foreach ($file in $agentFiles)
 }
 
 Assert-Check 'every skill an agent names exists at skills/<name>/SKILL.md' $skillProblems
+if ($pluginSkills.Count -gt 0)
+{
+    Write-Host ("  INFO  {0} plugin skill(s) named, not checked here: {1}" -f $pluginSkills.Count, ($pluginSkills -join ', '))
+}
 
 # ------------------------------------------------------------------ 4. standards
 
