@@ -9,7 +9,7 @@ description: >
   `Persistent` lifetime and disposal, plus applying BurstCompile.
   Use when a Profiler capture already shows a parallelizable main-thread
   bottleneck, or when a job races, leaks, or stalls. Not for: whether to
-  parallelize — `tech-lead-performance`; the capture proving it —
+  parallelize — `technical-architect`; the capture proving it —
   `unity-profiler-diagnostics`; HPC# subset, `FloatMode`, intrinsics, and AOT
   — `unity-burst-compiler`; container type choice — `unity-collections`;
   entity, system, and query design — `unity-ecs-architecture`; which physics
@@ -39,7 +39,7 @@ Read-only context, loaded on demand so SKILL.md itself stays short.
 Turn an already-measured, genuinely parallelizable CPU cost into correctly scheduled jobs — right job type, safe container lifetimes, explicit dependencies, Burst applied where it qualifies — so the work actually overlaps instead of merely relocating. It prevents the failures that compile cleanly and pass in the Editor: results written into a copy of the job struct and silently discarded, races the Editor's safety checks catch but a Player build does not, native allocations the GC can never reclaim, nondeterministic parallel accumulation, and a `.Complete()` placed so early the main thread simply waits instead of working.
 
 ## 2. Role
-Act as the Job System and Burst specialist for the client track — the tool reached for once Tech Lead – Performance has an actual Profiler capture showing a CPU-bound, parallelizable bottleneck and the work has to be scheduled correctly. You author and audit the scheduling; you do not decide that parallelizing is warranted, and you do not take on Burst's deeper compilation tuning.
+Act as the Job System and Burst specialist for the client track — the tool reached for once Technical Architect has an actual Profiler capture showing a CPU-bound, parallelizable bottleneck and the work has to be scheduled correctly. You author and audit the scheduling; you do not decide that parallelizing is warranted, and you do not take on Burst's deeper compilation tuning.
 
 ## 3. When to invoke this skill
 - A Profiler capture has already shown a specific system is CPU-bound on the main thread and its work divides into independent per-element units.
@@ -47,7 +47,7 @@ Act as the Job System and Burst specialist for the client track — the tool rea
 - A reported symptom of scheduling gone wrong: a `WaitForJobGroup` marker dominating the main thread, results that come back unchanged, a native leak warning at play-mode exit, or output that differs between runs on identical input.
 - Wiring dependencies between jobs that read and write the same containers, including `JobHandle.CombineDependencies` for a job with several producers.
 - Applying `[BurstCompile]` to a job struct or its static helpers and confirming compilation actually happened.
-- Negative trigger: no measurement yet, or nobody has decided this work is worth parallelizing — that is `tech-lead-performance`'s call, with the capture from `unity-profiler-diagnostics`; reaching here first is exactly what `performance-and-algorithms.md`'s Multithreading section forbids.
+- Negative trigger: no measurement yet, or nobody has decided this work is worth parallelizing — that is `technical-architect`'s call, with the capture from `unity-profiler-diagnostics`; reaching here first is exactly what `performance-and-algorithms.md`'s Multithreading section forbids.
 - Negative trigger: HPC# subset compliance, `FloatMode`/`FloatPrecision`, SIMD intrinsics, AOT and platform settings, `[NoAlias]`, `FunctionPointer<T>` — that is `unity-burst-compiler`; this skill applies the attribute and verifies it, nothing deeper.
 - Negative trigger: choosing between `NativeList`, `NativeHashMap`, `NativeQueue`, `NativeStream`, `FixedString`, or a rewindable allocator — that is `unity-collections`; this skill covers lifetime and safety once the type is chosen.
 - Negative trigger: modeling entities, systems, baking, or choosing `SystemAPI.Query`/`IJobEntity`/`IJobChunk` — that is `unity-ecs-architecture`; this skill takes over once an ECS job is being scheduled.
@@ -58,7 +58,7 @@ Act as the Job System and Burst specialist for the client track — the tool rea
 - Negative trigger: an ordinary hot-path fix — a per-frame allocation, a missing pool, a wrong collection — needs no threading at all; apply `performance-and-algorithms.md`'s baseline directly.
 
 ## 4. How to use this skill
-1. **Name the Profiler capture that justified parallelizing this work** — which system, which marker, how many milliseconds of main-thread time; per `performance-and-algorithms.md`'s Multithreading section this is escalation territory, so with no capture, stop and route to `tech-lead-performance`. [root-links.md](references/root-links.md) pins the documentation set these APIs come from.
+1. **Name the Profiler capture that justified parallelizing this work** — which system, which marker, how many milliseconds of main-thread time; per `performance-and-algorithms.md`'s Multithreading section this is escalation territory, so with no capture, stop and route to `technical-architect`. [root-links.md](references/root-links.md) pins the documentation set these APIs come from.
 2. **Pick the job type from how the work divides, not from how much of it there is**, per [jobs-overview-and-types.md](references/jobs-overview-and-types.md) — `IJob` for one self-contained unit, `IJobFor` with `ScheduleParallel` for independent per-element work (Unity's current recommendation over the older `IJobParallelFor`), `IJobParallelForTransform` only for bulk `Transform` access.
 3. **Prove every parallel iteration is independent before scheduling one** — worker threads run in an unspecified order, so any iteration that accumulates into shared state produces a run-dependent result. Write per-index outputs and reduce them serially afterwards; per `coding-principles.md`'s Shared Core integrity section, a nondeterministic result cannot back client prediction or server authority.
 4. **Pick the allocator by how long the data must live**, per [native-containers-and-safety.md](references/native-containers-and-safety.md) — `Allocator.TempJob` for data handed to a scheduled job, `Allocator.Persistent` for data spanning many frames, `Allocator.Temp` only for main-thread scratch that never enters a job at all.
@@ -78,7 +78,7 @@ Act as the Job System and Burst specialist for the client track — the tool rea
 - Dependency wiring via `JobHandle` and `CombineDependencies`, replacing implicit ordering assumptions.
 - Applying `[BurstCompile]` and confirming compilation in the Burst Inspector.
 - Diagnosing races, leaks, discarded results, `WaitForJobGroup` stalls, and run-to-run nondeterminism.
-- Out of scope: whether the bottleneck warrants threading (`tech-lead-performance`); the Profiler capture that proves it (`unity-profiler-diagnostics`); Burst compilation tuning (`unity-burst-compiler`); container type selection (`unity-collections`); ECS modeling (`unity-ecs-architecture`); physics job interface choice (`unity-physics`); maths types (`unity-mathematics`); GPU-driven effects (`compute-shader-vfx`); managed or `Task`-based concurrency outside the Job System (`dotnet-concurrency-and-async`).
+- Out of scope: whether the bottleneck warrants threading (`technical-architect`); the Profiler capture that proves it (`unity-profiler-diagnostics`); Burst compilation tuning (`unity-burst-compiler`); container type selection (`unity-collections`); ECS modeling (`unity-ecs-architecture`); physics job interface choice (`unity-physics`); maths types (`unity-mathematics`); GPU-driven effects (`compute-shader-vfx`); managed or `Task`-based concurrency outside the Job System (`dotnet-concurrency-and-async`).
 
 ## 6. Output format
 ```
@@ -106,7 +106,7 @@ Act as the Job System and Burst specialist for the client track — the tool rea
 
 ## 7. Examples
 **Example 1**
-- Input: a Profiler capture attributes 8 ms of main-thread time to per-agent neighbour avoidance in a boid simulation, and Tech Lead – Performance approved parallelizing it.
+- Input: a Profiler capture attributes 8 ms of main-thread time to per-agent neighbour avoidance in a boid simulation, and Technical Architect approved parallelizing it.
 - Output: converted to `IJobFor` over `NativeArray<AgentData>` (`Allocator.TempJob`), neighbour data marked `[ReadOnly]` so the read-only pass runs concurrently; each agent writes only its own index, so no reduction and no ordering dependence; batch size 64 against the measured per-agent cost; `[BurstCompile]` applied to the struct and confirmed in the Burst Inspector; scheduled at frame start with `ScheduleBatchedJobs` and completed just before the render read; re-measured at 1.2 ms main-thread with the rest overlapped; arrays disposed in `OnDestroy` with the early-return path covered.
 
 **Example 2**

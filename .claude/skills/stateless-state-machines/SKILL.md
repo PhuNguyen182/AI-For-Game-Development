@@ -89,7 +89,7 @@ Act as the state-machine design specialist for the client track: the one who dec
 ## 7. Examples
 **Example 1**
 - Input: an ability is driven by `isCharging`/`isOnCooldown`/`isActive` with growing cross-checks, and the server must validate the same rules.
-- Output: `StateMachine<AbilityState, AbilityTrigger>` in `Game.Core.*` over `Idle → Charging → Active → Cooldown → Idle`, with `PermitIf(AbilityTrigger.Release, AbilityState.Active, () => this.charge >= MinCharge)`. Built with the external accessor form so reconciliation can restore the state directly, and `Ignore(AbilityTrigger.Press)` on `Cooldown` so mashing input during cooldown is a no-op instead of an exception. `server-authoritative-engineer` validates against this graph rather than reimplementing it.
+- Output: `StateMachine<AbilityState, AbilityTrigger>` in `Game.Core.*` over `Idle → Charging → Active → Cooldown → Idle`, with `PermitIf(AbilityTrigger.Release, AbilityState.Active, () => this.charge >= MinCharge)`. Built with the external accessor form so reconciliation can restore the state directly, and `Ignore(AbilityTrigger.Press)` on `Cooldown` so mashing input during cooldown is a no-op instead of an exception. `netcode-engineer` validates against this graph rather than reimplementing it.
 
 **Example 2**
 - Input: "put every enemy's AI on a Stateless machine — there are about 400 of them and they re-evaluate every tick."

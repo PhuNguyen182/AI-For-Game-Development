@@ -1,6 +1,6 @@
 # Client Track — Coding Principles
 
-Applies to: C# Software Engineer, Unity Engineer, UI/UX Programmer, Tech Lead – C# Unity, Tech Lead – SDK/Platform, Tech Lead – Performance, Technical Artist.
+Applies to: C# Software Engineer, Unity Engineer, Technical Artist, Netcode Engineer, SDK/Platform Engineer.
 
 Sources: [Microsoft Learn — Identifier names](https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/identifier-names) and [Microsoft Learn — .NET Coding Conventions](https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/coding-conventions), adapted for Unity/game-client context where noted.
 

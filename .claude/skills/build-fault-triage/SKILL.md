@@ -43,7 +43,7 @@ Act as the build-fault specialist for the QA track, on behalf of `build-verifica
 5. **Confirm a stripping diagnosis against what is actually preserved** — check whether the type or assembly is named in a `link.xml`, and whether the call reaches it through reflection or serialization, which the stripper cannot see. The fix is a preservation entry rather than a code change, so a stripping fault reported as a logic bug sends the wrong agent looking in the wrong file.
 6. **Run the existing suite against the standalone Player when the fault is not obvious from launch** — use the platform and build-path flags and consume the NUnit XML the run produces, per `unity-test-framework`'s command-line surface. Never author a new case here; a suite that passes in the Editor and fails against the Player has localized the fault to the build layer, which is the finding.
 7. **Separate a build-only fault from a genuine defect the build merely exposed** — a race that the Editor's timing always won and the device's timing loses is a real defect, not a build fault, even though it only ever appears in the artifact. State which of the two you are reporting, because they route to different owners.
-8. **Route by the evidenced cause, not by the symptom** — stripping and IL2CPP configuration to `unity-engineer`, native libraries, signing, permissions, and store configuration to `tech-lead-sdk-platform`, and a genuine logic defect to the agent that owns the code. Attach the log excerpt with its surrounding lines, per `defect-reporting.md`'s five required elements.
+8. **Route by the evidenced cause, not by the symptom** — stripping and IL2CPP configuration to `unity-engineer`, native libraries, signing, permissions, and store configuration to `sdk-platform-engineer`, and a genuine logic defect to the agent that owns the code. Attach the log excerpt with its surrounding lines, per `defect-reporting.md`'s five required elements.
 
 ## 5. Specific goals / tasks this skill performs
 - Identifying an artifact by platform, configuration, scripting backend, stripping level, and version.
@@ -67,7 +67,7 @@ Act as the build-fault specialist for the QA track, on behalf of `build-verifica
 - Evidence for the class: <link.xml state, reflection path, ABI list, or the log line that settles it>
 - Suite against Player: <pass and fail counts, and how they differ from the Editor run — or not run, and why>
 - Decision: <build-only fault / ordinary defect / inconclusive>
-- Routed to: <unity-engineer / tech-lead-sdk-platform / owning code agent / build-run-engineer>
+- Routed to: <unity-engineer / sdk-platform-engineer / owning code agent / build-run-engineer>
 - Not covered: <paths, configurations, and devices this triage did not reach>
 ```
 
@@ -85,7 +85,7 @@ Act as the build-fault specialist for the QA track, on behalf of `build-verifica
 
 **Example 2**
 - Input: "The build crashes on that screen — file it against the inventory feature so the gameplay engineer fixes it."
-- Output: declined as filed. The crash is a `DllNotFoundException` on a native audio plugin, so the inventory code never ran at all and its author has nothing to fix; the artifact was built for an ABI the plugin does not ship. Reported as a native library fault and routed to `tech-lead-sdk-platform`, with the note that filing it against the feature would have consumed a full cycle before anyone opened the log.
+- Output: declined as filed. The crash is a `DllNotFoundException` on a native audio plugin, so the inventory code never ran at all and its author has nothing to fix; the artifact was built for an ABI the plugin does not ship. Reported as a native library fault and routed to `sdk-platform-engineer`, with the note that filing it against the feature would have consumed a full cycle before anyone opened the log.
 
 **Example 3**
 - Input: a standalone Windows player where one test in the existing suite fails, while the same test passes in Editor Play Mode.

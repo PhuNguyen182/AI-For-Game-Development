@@ -1,6 +1,6 @@
 # Shared — Implementation Note Format
 
-Applies to: every code submission that reaches a review gate — from any implementing agent or tech lead. Consumed
+Applies to: every code submission that reaches a review gate — from any implementing agent. Consumed
 by `code-reviewer`, `security-reviewer`, `qa-lead`, `assurance-evaluator` and, where no gate ran, the GD at CP4 or
 in the reply that closes ledger-less work (G82). Review agents are stateless: they see the dispatch, never the
 reasoning behind the code. The note is what makes a single-pass review possible.

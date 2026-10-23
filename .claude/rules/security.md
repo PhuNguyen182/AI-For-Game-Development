@@ -31,7 +31,7 @@ this list as permission.
    `.pem`/`.mobileprovision` contents, passwords, auth/session/refresh tokens, `.env` values, service-account
    JSON (an unrestricted `google-services.json` key, `GoogleService-Info.plist` secrets), DB connection
    strings, signing credentials. Reference a credential id, config lookup, or secret-manager entry instead —
-   already how `ci-cd-engineer`/`tech-lead-sdk-platform` are scoped; this makes it the baseline for everyone.
+   already how `ci-cd-engineer`/`sdk-platform-engineer` are scoped; this makes it the baseline for everyone.
 2. **Player/user PII** — real name, email, phone, precise location, payment/card data, government ID,
    biometric data, or a raw cross-app tracking device identifier. Never hardcoded, logged, or transmitted
    without the platform's stated consent/compliance path (store policy, GDPR/COPPA) already in place.
@@ -44,7 +44,7 @@ this list as permission.
    untrusted input, path traversal from a user-controlled path, `eval`-equivalent dynamic execution of
    untrusted content. Standard OWASP Top 10 discipline, made a hard rule rather than a guideline.
 6. **Client-side trust for authoritative outcomes** — gameplay-critical validation (currency, ownership,
-   match result, anti-cheat) never depends on a client-alterable value — what `server-authoritative-engineer`
+   match result, anti-cheat) never depends on a client-alterable value — what `netcode-engineer`
    already encodes architecturally, restated here as a security rule too.
 7. **Unreviewed auto-executing or source-less third-party content** — a `.unitypackage`, Asset Store import,
    or vendored DLL with an `[InitializeOnLoad]`/`Editor/`-folder payload, or shipping with no source, is

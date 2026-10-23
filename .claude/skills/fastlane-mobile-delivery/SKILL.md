@@ -11,7 +11,7 @@ description: >
   by `unity-batchmode-cli`; the job that calls the lane, owned by
   `jenkins-pipeline-authoring`; the tester upload, owned by
   `firebase-app-distribution`; and store submission and policy, owned by
-  `tech-lead-sdk-platform`.
+  `sdk-platform-engineer`.
 ---
 
 # Fastlane Mobile Delivery — packaging and signing Android and iOS
@@ -43,7 +43,7 @@ Act as the mobile packaging and signing specialist for the devops track, on beha
 - Negative trigger: the Unity invocation that produced the input — that is `unity-batchmode-cli`.
 - Negative trigger: the job, agent label, credential binding or lock around the lane — that is `jenkins-pipeline-authoring`.
 - Negative trigger: uploading the finished artifact to testers — that is `firebase-app-distribution`.
-- Negative trigger: submitting to a store, store policy, review rules, and obtaining the signing identity in the first place — that is `tech-lead-sdk-platform`.
+- Negative trigger: submitting to a store, store policy, review rules, and obtaining the signing identity in the first place — that is `sdk-platform-engineer`.
 - Negative trigger: a runtime fault in the signed artifact once installed — that is `build-verification-tester`.
 
 ## 4. How to use this skill
@@ -55,7 +55,7 @@ Act as the mobile packaging and signing specialist for the devops track, on beha
 6. **Take signing material from the job's credential store and stage it in a throwaway keychain** — call `setup_ci` so the lane creates and unlocks a temporary keychain rather than assuming a logged-in user's, and let the keychain die with the workspace, per [ci-keychain-and-credentials.md](references/ci-keychain-and-credentials.md).
 7. **Run `match` in read-only mode on CI** — `readonly: true` means a misconfigured agent fails instead of minting and revoking certificates that break every other machine, per [ios-lanes-signing-and-match.md](references/ios-lanes-signing-and-match.md).
 8. **Set the build number from the CI run, and set it once** — take it from the job's build number in the Unity build per `unity-batchmode-cli`, and do not also increment it in the lane; two sources produce artifacts that disagree about their own version.
-9. **Keep store submission out of the delivery lane** — `upload_to_testflight` and `upload_to_play_store` exist, and they belong in a separate, explicitly requested lane that a human triggers, never at the end of a build lane. Store submission itself is `tech-lead-sdk-platform`'s decision to make.
+9. **Keep store submission out of the delivery lane** — `upload_to_testflight` and `upload_to_play_store` exist, and they belong in a separate, explicitly requested lane that a human triggers, never at the end of a build lane. Store submission itself is `sdk-platform-engineer`'s decision to make.
 10. **State every credential id, account and identifier the lane needs rather than assuming one** — a bundle id, a team id, a keystore alias or a Play service account guessed here fails at the signing step after the whole build has already run.
 
 ## 5. Specific goals / tasks this skill performs
@@ -65,7 +65,7 @@ Act as the mobile packaging and signing specialist for the devops track, on beha
 - Wiring `match` and App Store Connect API key authentication for a headless agent.
 - Setting up and tearing down a CI keychain so signing works with no logged-in user.
 - Naming the credential ids and identifiers a lane requires before it can run.
-- Out of scope: the Unity build (`unity-batchmode-cli`); job orchestration (`jenkins-pipeline-authoring`); tester distribution (`firebase-app-distribution`); store submission, policy and identity provisioning (`tech-lead-sdk-platform`).
+- Out of scope: the Unity build (`unity-batchmode-cli`); job orchestration (`jenkins-pipeline-authoring`); tester distribution (`firebase-app-distribution`); store submission, policy and identity provisioning (`sdk-platform-engineer`).
 
 ## 6. Output format
 ```

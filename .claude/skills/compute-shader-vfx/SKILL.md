@@ -10,7 +10,7 @@ description: >
   `AsyncGPUReadback` versus a blocking `GetData`, `ComputeBuffer.Release`,
   and platform compute support. Use when a visual effect is GPU-driven.
   Not for: non-visual compute throughput, owned by
-  `tech-lead-performance`; CPU parallel work, owned by
+  `unity-engineer`; CPU parallel work, owned by
   `unity-job-system-and-burst`; the shader consuming the buffer, owned by
   `shader-authoring`; particle graph structure, owned by
   `vfx-particle-authoring`; ECS mesh deformation, owned by
@@ -32,7 +32,7 @@ Act as the GPU compute specialist for visual effects on the client track — the
 - Sizing `[numthreads]` and the dispatch, or fixing a kernel that processes the wrong element count.
 - Wiring compute output into rendering through `DrawProceduralIndirect`, `DrawMeshInstancedIndirect`, or a VFX Graph custom block.
 - A reported symptom: the effect renders garbage, renders nothing on one device class, drops frames at a specific point in the frame, or leaks memory across scene loads.
-- Negative trigger: the primary purpose is throughput on a non-visual system — pathfinding, inventory search, bulk simulation for its own sake — that is `tech-lead-performance`.
+- Negative trigger: the primary purpose is throughput on a non-visual system — pathfinding, inventory search, bulk simulation for its own sake — that is `unity-engineer`.
 - Negative trigger: the work is CPU-side parallelism over native containers — that is `unity-job-system-and-burst`; both are "many elements at once", but the deciding question is whether the result must reach the GPU as a buffer or the CPU as data.
 - Negative trigger: the shader that reads the buffer and shades the result — that is `shader-authoring`.
 - Negative trigger: the particle graph's emission and simulation structure — that is `vfx-particle-authoring`; this skill writes a custom kernel it consumes.
@@ -52,7 +52,7 @@ Act as the GPU compute specialist for visual effects on the client track — the
 10. **Release every `ComputeBuffer` on every path**, in `OnDisable` or `OnDestroy` and on early returns, per `performance-and-algorithms.md`'s Memory discipline section — an unreleased buffer is native memory the managed GC never reclaims and never reports.
 11. **Validate at small scale before scaling up** — confirm correctness at a hundred elements with the Frame Debugger or a graphics inspector; a stride or bounds bug that is invisible at that size is obvious at ten thousand, and far cheaper to find first.
 12. **State the per-frame dispatch cost when it is non-trivial** — element count times kernel complexity, per `performance-and-algorithms.md`'s Algorithmic complexity discipline section, and back any performance claim with a capture rather than the expectation that the GPU is free.
-13. **Split the work when a request serves both a visual outcome and raw throughput** — say which half is which and coordinate with `tech-lead-performance` rather than silently owning both under one deliverable.
+13. **Split the work when a request serves both a visual outcome and raw throughput** — say which half is which and coordinate with `unity-engineer` rather than silently owning both under one deliverable.
 
 ## 5. Specific goals / tasks this skill performs
 - GPU particle simulation buffers feeding a shader or VFX Graph.
@@ -62,7 +62,7 @@ Act as the GPU compute specialist for visual effects on the client track — the
 - Dispatch sizing, `[numthreads]` selection, and kernel bounds correctness.
 - Indirect draw wiring and buffer lifecycle management.
 - Platform compute-support checks and fallback design.
-- Out of scope: non-visual compute throughput (`tech-lead-performance`); CPU-side parallel work (`unity-job-system-and-burst`); the CPU-readable `Mesh` (`unity-3d-mesh`); the consuming shader (`shader-authoring`); particle graph structure (`vfx-particle-authoring`); ECS mesh deformation (`unity-entities-graphics`).
+- Out of scope: non-visual compute throughput (`unity-engineer`); CPU-side parallel work (`unity-job-system-and-burst`); the CPU-readable `Mesh` (`unity-3d-mesh`); the consuming shader (`shader-authoring`); particle graph structure (`vfx-particle-authoring`); ECS mesh deformation (`unity-entities-graphics`).
 
 ## 6. Output format
 ```
@@ -111,4 +111,4 @@ Act as the GPU compute specialist for visual effects on the client track — the
 - Never leave a `ComputeBuffer` unreleased on any path — it is native memory the GC cannot see, and it survives the scene that created it.
 - Never ship a compute-only effect without checking platform support — an unsupported device shows nothing, which reads as a missing feature rather than a lower-fidelity one.
 - Never hardcode a dispatch group count — derive it from the live element count every frame.
-- If a request mixes a visual outcome with a raw throughput goal, split it with `tech-lead-performance` rather than owning both.
+- If a request mixes a visual outcome with a raw throughput goal, split it with `unity-engineer` rather than owning both.

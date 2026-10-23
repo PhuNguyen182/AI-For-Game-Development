@@ -9,7 +9,7 @@ for every door are in `references/dispatch-brief.md` → *Review gates*; caps ar
 
 | Door | Comes from | Carries |
 |---|---|---|
-| **E1** | `feature-development.md` after the GD authorised review (G40, G42) — one submission per entry, a defect fix from its **E3** included: the Core, each client or backend agent, the README; a tech lead's `Fix:` (I10); a declined gate opted into later, author and brief still identifiable, strikes from zero; **third-party content at the supply-chain pre-gate** (G45) | The review-gate list in `dispatch-brief.md`; its pre-gate row for third-party content |
+| **E1** | `feature-development.md` after the GD authorised review (G40, G42) — one submission per entry, a defect fix from its **E3** included: the Core, each client or backend agent, the README; an escalation's fix, written by its owner (I10); a declined gate opted into later, author and brief still identifiable, strikes from zero; **third-party content at the supply-chain pre-gate** (G45) | The review-gate list in `dispatch-brief.md`; its pre-gate row for third-party content |
 | **E2** | The GD asks for an audit of code already in the repo (`orchestrator.md` row 6), or opts into review later on code no submission identifies | The code and what it is audited against — or `security-reviewer` alone. No author, strike, CP3, note or ledger; the audit is classified on its own (`task-classification.md`) |
 | **E3** | A gated-direct submission, only once the GD authorised it at G14 (`orchestrator.md`); direct or mode-3 source the GD sent to review at G13 (origin `direct`, handled as gated-direct); or a `qa-automation-engineer` suite the GD authorised at G62 (`qa-pipeline.md`) | As E1, with the behaviour it was written against instead of a spec section, and **which origin** it is |
 
@@ -21,7 +21,7 @@ for every door are in `references/dispatch-brief.md` → *Review gates*; caps ar
 | `security-reviewer` | Security Verdict — secrets, dangerous files, fraudulent logic | Every door; alone at the pre-gate and wherever E2 names nothing to check against |
 | `technical-architect` | Root Cause (`Root cause:`, `Evidence across rejections:`, `Known non-solutions:`, `Next best action:`); Implementation Summary (CP3) | At B3 or a second CP3 rejection; at CP3 |
 | `cto` | A remediation decision | A secret in git history, or a rotation the finding calls for — alongside the return, never instead |
-| `tech-lead-sdk-platform` | Where a value is sourced from | The G54 ladder, on an SDK or platform integration |
+| `sdk-platform-engineer` | Where a value is sourced from | The G54 ladder, on an SDK or platform integration |
 | `assurance-evaluator` | Assurance Verdict | **E3** gated-direct at A3+, once both gates clear, if the GD authorised it at G14 |
 
 ## Hard ordering
@@ -51,13 +51,12 @@ for every door are in `references/dispatch-brief.md` → *Review gates*; caps ar
    |---|---|
    | `Approve` **and** `Clear` | The submission is clear — the only clear |
    | `Request changes`, or `Verdict: Blocked` | One combined return, step 3. Any `Needs Confirmation` beside it travels with the findings — a rejection outranks the ladder |
-   | `Needs Confirmation`, no rejection beside it | The ladder (G54, B9): `tech-lead-sdk-platform` for an SDK or platform integration, else the author, then the GD; re-run the gate on the answer. Never guessed either way — nobody can name a source → a secret, `Request changes`, one strike |
+   | `Needs Confirmation`, no rejection beside it | The ladder (G54, B9): `sdk-platform-engineer` for an SDK or platform integration, else the author, then the GD; re-run the gate on the answer. Never guessed either way — nobody can name a source → a secret, `Request changes`, one strike |
    | `Verification done:` below the floor | `Request changes` and a strike — the author's to close, never QA's to absorb |
    | `code-reviewer` → `Needs-decision`, `Routed to: technical-architect` | The spec is ambiguous about "correct" — a spec problem, not a strike. On a gated-direct **E3** there is no spec: the lane escapes to `feature-intake.md` **E1** (`orchestrator.md`) |
    | `security-reviewer` → `Needs-decision`, `Routed to: cto` (git history) | Straight to `cto` — not a `research-decision.md` entry. Published history is never self-remediated by a code-writing agent |
    | A `cto` remediation outside history — rotation, a burned credential, often inside `Recommendation:` | To `cto` **alongside** the return to the author |
    | `Rejected` | Mis-dispatch: re-dispatch to the right gate — no strike |
-   | `Assessed: Escalate` | Its `Needs-decision` row above; not a verdict |
    | A gate says its mandatory skill did not resolve | It ran at reduced depth — record that with the verdict |
    | A note field the gate found unsupported | Stays with the submission, for `qa-lead` and `assurance-evaluator` |
 

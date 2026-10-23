@@ -1,6 +1,6 @@
 # Client Track — Naming Convention
 
-Applies to: C# Software Engineer, Unity Engineer, UI/UX Programmer, Tech Lead – C# Unity, Tech Lead – SDK/Platform, Tech Lead – Performance, Technical Artist.
+Applies to: C# Software Engineer, Unity Engineer, Technical Artist, Netcode Engineer, SDK/Platform Engineer.
 
 Source: [Microsoft Learn — Identifier names: rules and conventions (C#)](https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/identifier-names), combined with the standard Unity convention for Inspector-serialized fields (see override below).
 
@@ -86,8 +86,8 @@ This is the only exception to the PascalCase-for-public rule. A `public` field o
 ## Namespace boundary (enforces the Shared Core rule)
 
 - `Game.Core.*` — Shared Core only. No `UnityEngine` dependency. Owned by C# Software Engineer.
-- `Game.Client.*` — Unity-side integration (MonoBehaviours, scenes, prefabs). Owned by Unity Engineer / UI/UX Programmer.
-- `Game.Server.*` — server-authoritative wrapper (only exists when the backend track is active). Owned by Server-Authoritative Logic Engineer.
+- `Game.Client.*` — Unity-side integration (MonoBehaviours, scenes, prefabs). Owned by Unity Engineer.
+- `Game.Server.*` — server-authoritative wrapper (only exists when the backend track is active). Owned by Netcode Engineer.
 
 If a class needs to live in `Game.Core.*`, it must not reference `UnityEngine` types. If it does, it belongs in `Game.Client.*` instead.
 

@@ -13,7 +13,7 @@ description: >
   await and cancellation mechanics — `unitask-async-programming`; pool design
   — `unity-engineer`; import and compression settings — `unity-2d-sprite`
   or `unity-audio-mixer`, otherwise `unity-engineer`; remote-config cadence —
-  `live-ops-content-pipeline`; CDN vendor choice — `tech-lead-sdk-platform`;
+  `live-ops-content-pipeline`; CDN vendor choice — `sdk-platform-engineer`;
   the headless invocation that runs the content build in CI —
   `unity-batchmode-cli`.
 ---
@@ -53,7 +53,7 @@ Act as the asset-streaming specialist for the client track — the tool reached 
 - Negative trigger: designing the pool that reuses instantiated objects — that is `unity-engineer` under `performance-and-algorithms.md`; this skill owns acquiring and releasing the handle behind a pooled object, not the pool.
 - Negative trigger: texture, audio, or mesh import and compression settings — sprite textures are `unity-2d-sprite`'s, audio clips are `unity-audio-mixer`'s, and the rest is `unity-engineer`'s asset pipeline; this skill assumes the import settings are already right and covers only how the asset is addressed and loaded.
 - Negative trigger: remote-config, economy tuning, or event cadence infrastructure — that is `live-ops-content-pipeline`, tunable data rather than binary asset delivery.
-- Negative trigger: choosing a CDN or hosting vendor for remote content — that is `tech-lead-sdk-platform`; this skill wires the catalog and download API once a host exists.
+- Negative trigger: choosing a CDN or hosting vendor for remote content — that is `sdk-platform-engineer`; this skill wires the catalog and download API once a host exists.
 - Negative trigger: the headless invocation and `-executeMethod` entry point a CI run drives the content build from — that is `unity-batchmode-cli`, and the job around it is `jenkins-pipeline-authoring`; this skill owns what that build must produce and in what order, not the command line that starts it.
 - Negative trigger: any Addressables call inside `Game.Core.*` — the package depends on `UnityEngine`, so Shared Core receives already-resolved data from `Game.Client.*`, per `coding-principles.md`'s Shared Core integrity rule.
 
@@ -80,7 +80,7 @@ Act as the asset-streaming specialist for the client track — the tool reached 
 - Auditing for leaks, churn, and non-Addressable dependency duplication.
 - Setting up Profiles per environment and selecting the right build-script tier for the moment.
 - Diagnosing loads that fail for keys that exist, and assets that will not unload.
-- Out of scope: async and cancellation mechanics (`unitask-async-programming`); pool design (`unity-engineer`); import and compression settings (`unity-2d-sprite`, `unity-audio-mixer`, `unity-engineer`); remote-config and economy cadence (`live-ops-content-pipeline`); CDN vendor choice (`tech-lead-sdk-platform`); the headless invocation that runs the content build in CI (`unity-batchmode-cli`); any `Game.Core.*` usage (`csharp-engineer`).
+- Out of scope: async and cancellation mechanics (`unitask-async-programming`); pool design (`unity-engineer`); import and compression settings (`unity-2d-sprite`, `unity-audio-mixer`, `unity-engineer`); remote-config and economy cadence (`live-ops-content-pipeline`); CDN vendor choice (`sdk-platform-engineer`); the headless invocation that runs the content build in CI (`unity-batchmode-cli`); any `Game.Core.*` usage (`csharp-engineer`).
 
 ## 6. Output format
 ```

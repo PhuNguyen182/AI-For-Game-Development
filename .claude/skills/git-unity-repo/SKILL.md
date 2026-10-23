@@ -92,7 +92,7 @@ Act as the Unity repository specialist for the devops track — the skill reache
 ## 7. Examples
 **Example 1**
 - Input: "Two people edited the main menu scene and the merge is a mess."
-- Output: confirmed Force Text, then took the incoming side wholesale with `git checkout --theirs` rather than resolving the YAML, and reported the four GameObjects the other side had added so `ui-ux-programmer` can reapply them in the Editor. Also wired UnityYAMLMerge in `.gitattributes` and git config so the next conflict gets a Unity-aware driver.
+- Output: confirmed Force Text, then took the incoming side wholesale with `git checkout --theirs` rather than resolving the YAML, and reported the four GameObjects the other side had added so `unity-engineer` can reapply them in the Editor. Also wired UnityYAMLMerge in `.gitattributes` and git config so the next conflict gets a Unity-aware driver.
 
 **Example 2**
 - Input: "The YAML conflict is only a few lines, just fix those and commit — it opens fine in Unity."

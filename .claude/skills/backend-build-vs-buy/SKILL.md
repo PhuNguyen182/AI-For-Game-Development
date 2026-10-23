@@ -12,7 +12,7 @@ description: >
   infrastructure. Not for: the sync protocol itself — message format,
   tick rate, prediction and reconciliation, owned by
   `netcode-architecture-decision` and `netcode-engineer`; server-side
-  gameplay validation, owned by `server-authoritative-engineer`; the
+  gameplay validation, owned by `netcode-engineer`; the
   scoring rubric in `tco-reversibility-scoring`; remote-config content
   cadence, owned by `live-ops-content-pipeline`; event pipelines, owned
   by `analytics-telemetry-platform`; the virtual-currency ledger, owned
@@ -31,7 +31,7 @@ Act as a backend-infrastructure CTO who has run both self-hosted and managed mul
 - Choosing between a managed backend platform and self-hosted or custom infrastructure for any backend component.
 - A vendor's bundled offering is being treated as one decision, and the components inside it have not been separated yet.
 - Negative trigger: the question is the client-server sync protocol — message format, tick rate, prediction/reconciliation — which belongs to `netcode-architecture-decision` for the foundation choice and `netcode-engineer` for the protocol itself.
-- Negative trigger: the backend is already chosen and the work is implementing server-side gameplay validation — that is `server-authoritative-engineer`.
+- Negative trigger: the backend is already chosen and the work is implementing server-side gameplay validation — that is `netcode-engineer`.
 - Negative trigger: the question is content cadence (remote config, live events) or the analytics event pipeline — separate infra decisions with their own skills.
 - Negative trigger: the virtual-currency ledger. It is player data, but it is scored with the monetization stack it lives under, in `ad-mediation-monetization-platform` — this skill owns profile data and save sync, never the currency balance.
 
@@ -51,7 +51,7 @@ Act as a backend-infrastructure CTO who has run both self-hosted and managed mul
 - Surface each component's scaling-cost crossover point explicitly, not just launch-day cost.
 - Test every option against the team's real ops capacity and the target regions.
 - Route load-bearing feasibility unknowns to `rd-engineer` instead of absorbing them into the decision.
-- Out of scope: the sync protocol (`netcode-architecture-decision`, `netcode-engineer`), server-side validation implementation (`server-authoritative-engineer`), live-ops content infra (`live-ops-content-pipeline`), the virtual-currency ledger (`ad-mediation-monetization-platform`).
+- Out of scope: the sync protocol (`netcode-architecture-decision`, `netcode-engineer`), server-side validation implementation (`netcode-engineer`), live-ops content infra (`live-ops-content-pipeline`), the virtual-currency ledger (`ad-mediation-monetization-platform`).
 
 ## 6. Output format
 ```
@@ -67,7 +67,7 @@ Act as a backend-infrastructure CTO who has run both self-hosted and managed mul
 - Save-data lock-in: <none / vendor schema shapes the save format>
 - Rule compliance: decision written in English, per Working language
 - Feasibility unknowns: <none / listed>
-- Routed to: `rd-engineer` for the unknowns above; `server-authoritative-engineer` for validation once chosen
+- Routed to: `rd-engineer` for the unknowns above; `netcode-engineer` for validation once chosen
 ```
 
 **Extended report — emit ONLY when the requester asks for it.** It replaces the one-line unknowns field with all three:

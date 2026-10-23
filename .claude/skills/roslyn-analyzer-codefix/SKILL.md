@@ -28,7 +28,7 @@ Act as the Roslyn analyzer specialist. You are encoding this project's own rule 
 
 ## 3. When to invoke this skill
 - A rule from `coding-principles.md`, `naming-convention.md`, or `performance-and-algorithms.md` is decidable from syntax or symbols and has been violated more than once across submissions — `UnityEngine` leaking into `Game.Core.*`, `UnityEngine.Random` or `DateTime.Now` inside Shared Core, a missing `this.` qualifier, `&` where `&&` was meant.
-- Explicitly requested — typically by Tech Lead – C# Unity — to make the Shared Core boundary a standing compile-time guardrail rather than a review responsibility.
+- Explicitly requested — typically by Technical Architect — to make the Shared Core boundary a standing compile-time guardrail rather than a review responsibility.
 - An existing analyzer misfires: a diagnostic firing on valid code, or firing on generated code the author cannot change.
 - Negative trigger: emitting repetitive code — that's `source-generator-authoring`, a different Roslyn surface (`IIncrementalGenerator`, not `DiagnosticAnalyzer`).
 - Negative trigger: a rule whose application needs human judgement — "this logic belongs in Shared Core", "this abstraction is premature" — which stays with `code-reviewer`; a compiler pass cannot decide it and an analyzer that pretends otherwise trains people to suppress it.

@@ -16,7 +16,7 @@ description: >
   dictionaries, polymorphic references — or writing a custom Odin drawer or
   menu-based editor window. Not for: gameplay rules in
   `csharp-engineer`'s Shared Core; Unity's native UGUI/UI Toolkit UI, owned
-  by `ui-ux-programmer`; an Editor window, inspector, or property drawer in
+  by `unity-engineer`; an Editor window, inspector, or property drawer in
   UXML/USS, owned by `ui-toolkit`; the ScriptableObject's own architecture
   pattern, owned by `unity-scriptableobject-architecture`; MonoBehaviour
   lifecycle and profiling, owned by `unity-engineer`.
@@ -53,7 +53,7 @@ Act as the Odin Inspector specialist for the client track — the tool reached f
 - Writing a custom `OdinEditor`, `OdinEditorWindow`, `OdinMenuEditorWindow`, or a custom `OdinDrawer`/`OdinAttributeProcessor` because attributes alone can't express the requirement.
 - Debugging why an Odin attribute's conditional string (`ShowIf`, `ValidateInput`, `OnValueChanged`) isn't firing, or why a type isn't drawing as expected.
 - Negative trigger: the actual damage/cooldown/economy decision an `[OnValueChanged]` callback would trigger — that decision belongs in `Game.Core.*` per `coding-principles.md`'s Shared Core integrity section, not `csharp-engineer`'s domain via this skill.
-- Negative trigger: building runtime (in-game, player-facing) UI with UGUI or UI Toolkit — that is `ui-ux-programmer`'s domain, not the Inspector.
+- Negative trigger: building runtime (in-game, player-facing) UI with UGUI or UI Toolkit — that is `unity-engineer`'s domain, not the Inspector.
 - Negative trigger: an Editor window, inspector, or property drawer authored in UXML/USS against `UnityEngine.UIElements` — that is `ui-toolkit`; this skill owns the Odin path (`OdinEditorWindow`, `OdinValueDrawer<T>`, `PropertyTree`), and one window is built on one of the two, never both.
 - Negative trigger: which ScriptableObject pattern the data should use at all — Event Channel, Runtime Set, Variable asset — that is `unity-scriptableobject-architecture`; this skill only decides how an existing SO's fields render and serialize.
 - Negative trigger: general MonoBehaviour performance work (pooling, `Update()` allocations, profiler passes) unrelated to Inspector/editor tooling — that is `unity-engineer`'s domain.
@@ -73,7 +73,7 @@ Act as the Odin Inspector specialist for the client track — the tool reached f
 - Decide whether Odin serialization (`SerializedMonoBehaviour`/`SerializedScriptableObject`/`[OdinSerialize]`) is actually needed for a given field's type, versus Unity's own serializer already handling it.
 - Scaffold a custom `OdinEditor`, `OdinEditorWindow`, `OdinMenuEditorWindow`, `OdinDrawer`, or `OdinAttributeProcessor` when attributes alone are insufficient.
 - Diagnose a non-firing conditional string, a missing drawer, or an unexpected serialization gap.
-- Out of scope: the runtime behavior an Inspector button or callback triggers (`csharp-engineer`'s Shared Core), Odin Validator project-wide validation rule authoring beyond `SelfValidator<T>`/`ISelfValidator` basics (`tech-lead-csharp-unity` for deep custom validator systems), player-facing runtime UI (`ui-ux-programmer`), UXML/USS-authored Editor UI (`ui-toolkit`), the SO's own architecture pattern (`unity-scriptableobject-architecture`).
+- Out of scope: the runtime behavior an Inspector button or callback triggers (`csharp-engineer`'s Shared Core), Odin Validator project-wide validation rule authoring beyond `SelfValidator<T>`/`ISelfValidator` basics (`technical-architect` for deep custom validator systems), player-facing runtime UI (`unity-engineer`), UXML/USS-authored Editor UI (`ui-toolkit`), the SO's own architecture pattern (`unity-scriptableobject-architecture`).
 
 ## 6. Output format
 ```
@@ -111,4 +111,4 @@ Act as the Odin Inspector specialist for the client track — the tool reached f
 - Never add Odin attributes to a `Game.Core.*` type by default — even attribute-only usage pulls in the `Sirenix.OdinInspector.Attributes` assembly and blurs the Core/Client boundary `naming-convention.md`'s namespace-boundary section protects; get explicit sign-off from `technical-architect` before doing so.
 - Never write a custom `OdinDrawer` as the first attempt — that is the escalation path §4's "Default to composing built-in attributes" step defines, not the default; a growing pile of custom drawers where attributes would do is the speculative-complexity YAGNI already forbids.
 - If the target Unity/C# language version is unconfirmed, do not assume a modern Odin usage pattern (e.g. relying on `nameof` in an older C# target) compiles — check per `coding-principles.md`'s Modern C# syntax caveat before writing the resolved-string argument.
-- If a requirement seems to need Odin Validator's project-wide validation scans (custom `Validator<T>`/`RegisterValidatorAttribute` systems) rather than a simple `ISelfValidator` on one type, flag it to `tech-lead-csharp-unity` rather than guessing at an undocumented API surface — do not fabricate a constructor or method signature not confirmed in [editor-extensibility.md](references/editor-extensibility.md) or the live docs.
+- If a requirement seems to need Odin Validator's project-wide validation scans (custom `Validator<T>`/`RegisterValidatorAttribute` systems) rather than a simple `ISelfValidator` on one type, flag it to `technical-architect` rather than guessing at an undocumented API surface — do not fabricate a constructor or method signature not confirmed in [editor-extensibility.md](references/editor-extensibility.md) or the live docs.

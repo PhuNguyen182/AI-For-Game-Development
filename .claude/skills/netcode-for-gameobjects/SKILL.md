@@ -14,11 +14,11 @@ description: >
   over Mirror, Photon or custom — `netcode-architecture-decision`; the
   DOTS/ECS ghost and prediction stack — `netcode-for-entities`; the
   gameplay rule a synced value represents — `csharp-engineer`; server-side
-  anti-cheat validation — `server-authoritative-engineer`; the
+  anti-cheat validation — `netcode-engineer`; the
   reconciliation and tick-rate protocol design — `netcode-engineer`; the
   raw UTP driver, pipelines, TLS and `RelayServerData` beneath the
   `UnityTransport` component — `unity-transport`; non-network Unity
-  performance work — `tech-lead-performance`.
+  performance work — `unity-engineer`.
 ---
 
 # Netcode for GameObjects — Multiplayer State Sync, Spawning, Scenes
@@ -44,7 +44,7 @@ Read-only context, loaded on demand so SKILL.md itself stays short.
 Wire Unity multiplayer features on Netcode for GameObjects (NGO) so that the client and server agree on game state, without the failure modes that stay silent until a real multi-client run exposes them: an RPC sent to the wrong target, a `NetworkVariable` written from a client that has no write permission for the current topology, a `NetworkObject` instantiated with `GameObject.Instantiate` instead of spawned (so it exists on one peer only), or a custom struct that serializes correctly in the Editor but corrupts across a build's endianness/layout assumptions.
 
 ## 2. Role
-Act as the Netcode for GameObjects implementation specialist for the client track — the tool `netcode-engineer`, `unity-engineer`, and `server-authoritative-engineer` reach for whenever a feature needs its state, events, or objects to exist consistently across a multiplayer session. This skill supplies the NGO API surface; it does not decide the sync protocol or the game rule riding on top of it.
+Act as the Netcode for GameObjects implementation specialist for the client track — the tool `netcode-engineer` and `unity-engineer` reach for whenever a feature needs its state, events, or objects to exist consistently across a multiplayer session. This skill supplies the NGO API surface; it does not decide the sync protocol or the game rule riding on top of it.
 
 ## 3. When to invoke this skill
 - Wiring or reviewing `NetworkObject`/`NetworkBehaviour`, `NetworkManager`, or `NetworkConfig` for a multiplayer feature.
@@ -57,9 +57,9 @@ Act as the Netcode for GameObjects implementation specialist for the client trac
 - Negative trigger: whether NGO is even the right netcode foundation for this project, versus Mirror/Photon/custom — that is `netcode-architecture-decision`; this skill assumes NGO is already chosen.
 - Negative trigger: the same work on a DOTS/ECS project — ghosts, `[GhostField]`, the command stream, the predicted simulation group — that is `netcode-for-entities`, Unity's other netcode stack; a project runs one of the two, never both on the same object.
 - Negative trigger: the gameplay rule/formula the synced value represents (damage math, cooldowns, economy) — that is `Game.Core.*` per `coding-principles.md`'s Shared Core integrity section, owned by `csharp-engineer`; this skill only carries the resolved value across the wire.
-- Negative trigger: server-side validation/anti-cheat of a synced value — `server-authoritative-engineer`.
+- Negative trigger: server-side validation/anti-cheat of a synced value — `netcode-engineer`.
 - Negative trigger: designing the reconciliation/prediction protocol itself (tick rate, rollback strategy, snapshot cadence) — `netcode-engineer` owns that decision; this skill supplies the NGO API used to implement it.
-- Negative trigger: general Unity performance work unrelated to netcode (GC, batching, LOD) — the baseline in `coding-principles.md`/`performance-and-algorithms.md`, or `tech-lead-performance` for deep escalation.
+- Negative trigger: general Unity performance work unrelated to netcode (GC, batching, LOD) — the baseline in `coding-principles.md`/`performance-and-algorithms.md`, or `unity-engineer` for deep escalation.
 
 ## 4. How to use this skill
 1. **Confirm the network topology before writing any NetworkObject code** — Client-Server (host/dedicated-server authority) and Distributed Authority (a client owns and simulates its objects, arbitrated by the CMB service) put ownership, `NetworkVariable` write permission, and spawn authority in different hands, per [core-architecture.md](references/core-architecture.md) and [distributed-authority.md](references/distributed-authority.md). Ask Technical Architect if the Tech Spec doesn't state it.
@@ -80,7 +80,7 @@ Act as the Netcode for GameObjects implementation specialist for the client trac
 - Configure `NetworkTransform` (or `NetworkRigidbody`/`NetworkAnimator`) for a synced object's movement or animation.
 - Set up `NetworkSceneManager`-driven scene loading/additive scenes, or session management/reconnection, for a multiplayer session.
 - Configure connection approval, max players, and `UnityTransport`/Unity Relay for a new session.
-- Out of scope: the gameplay rule/formula a `NetworkVariable` carries (`csharp-engineer`, `Game.Core.*`), server-side validation/anti-cheat of the synced value (`server-authoritative-engineer`), reconciliation/prediction protocol design (`netcode-engineer`), the build-vs-license netcode foundation decision (`netcode-architecture-decision`), the DOTS/ECS ghost stack (`netcode-for-entities`), the raw UTP driver, pipelines, TLS and Relay data beneath the transport component (`unity-transport`).
+- Out of scope: the gameplay rule/formula a `NetworkVariable` carries (`csharp-engineer`, `Game.Core.*`), server-side validation/anti-cheat of the synced value (`netcode-engineer`), reconciliation/prediction protocol design (`netcode-engineer`), the build-vs-license netcode foundation decision (`netcode-architecture-decision`), the DOTS/ECS ghost stack (`netcode-for-entities`), the raw UTP driver, pipelines, TLS and Relay data beneath the transport component (`unity-transport`).
 
 ## 6. Output format
 ```

@@ -96,7 +96,7 @@ Act as the NRandom specialist for the client track — the tool reached for when
 
 **Example 3**
 - Input: "we need encryption-grade randomness for a matchmaking anti-collusion token — use NRandom's `ChaChaRandom` since it's the crypto-sounding one."
-- Output: declined — NRandom's own README explicitly states the library, including `ChaChaRandom`, is "not for security purposes"; use `System.Security.Cryptography.RandomNumberGenerator` directly and route the token-handling design to `tech-lead-sdk-platform`/`security-reviewer`, per [rng-algorithms-and-determinism.md](references/rng-algorithms-and-determinism.md).
+- Output: declined — NRandom's own README explicitly states the library, including `ChaChaRandom`, is "not for security purposes"; use `System.Security.Cryptography.RandomNumberGenerator` directly and route the token-handling design to `sdk-platform-engineer`/`security-reviewer`, per [rng-algorithms-and-determinism.md](references/rng-algorithms-and-determinism.md).
 
 ## 8. Edge cases & guardrails
 - Never call `RandomEx.Create()`/`RandomEx.Shared` inside `Game.Core.*` gameplay-rule code — both resolve to a `RandomNumberGenerator`-seeded `Xoshiro256StarStarRandom`, silently breaking client-server determinism with no compile-time signal.

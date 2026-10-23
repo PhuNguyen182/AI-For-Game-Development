@@ -9,7 +9,7 @@ description: >
   Editor measurement never satisfies a device claim. Use when a measurement
   needs a verdict rather than a number. Not for: taking the measurement,
   owned by `unity-profiler-diagnostics`; choosing or writing the fix, owned
-  by `unity-engineer` and `tech-lead-performance`; allocation asserted as a
+  by `unity-engineer`; allocation asserted as a
   test gate, owned by `unity-test-framework`.
 ---
 
@@ -28,7 +28,7 @@ Act as the measurement-verdict specialist for the QA track, on behalf of `perfor
 - A regression is suspected but the delta is small enough that noise is a plausible explanation.
 - A budget needs establishing for a feature that has none, before any verdict is possible.
 - Negative trigger: taking the measurement itself — the Profiler modules, Frame Debugger, memory snapshots, and device profiling over adb are `unity-profiler-diagnostics`; this skill consumes what that produces.
-- Negative trigger: choosing, writing, or applying the fix — that is `unity-engineer` for the routine pass and `tech-lead-performance` for deep memory, GPU, and native work.
+- Negative trigger: choosing, writing, or applying the fix — that is `unity-engineer`, routine or deep.
 - Negative trigger: a no-allocation claim expressed as a pass or fail assertion inside a test — that is `unity-test-framework`'s allocation constraint, a regression gate rather than a measurement.
 - Negative trigger: functional verification of a build artifact — that is `build-fault-triage`.
 
@@ -40,7 +40,7 @@ Act as the measurement-verdict specialist for the QA track, on behalf of `perfor
 5. **Judge a regression against a baseline taken the same way** — same device, same build configuration, same scenario, same warm-up handling. A baseline from a different configuration is not a comparison. When no baseline exists, say the run *is* the baseline rather than implying a comparison happened.
 6. **Watch for thermal throttling on any sustained mobile run** — a device that starts within budget and drifts out of it after several minutes has a genuine finding, but one measured at minute ten is not comparable to a baseline measured at minute one. Report the elapsed time each figure was taken at whenever the run is long enough to matter.
 7. **Attribute the cost before reporting the regression** — name the system, the call, or the batch break the profiler points at. Per `performance-and-algorithms.md`'s Verification section a claim without attribution is not actionable; "frame time went up" tells the owning agent nothing they can act on.
-8. **Route the fix and stop** — routine batching, pooling, and allocation work goes to `unity-engineer`; deep memory, GPU-level, native, and Job System work goes to `tech-lead-performance`. Never adjust code, settings, or the budget to make a number pass.
+8. **Route the fix and stop** — every fix — routine batching and pooling through deep memory, GPU, native and Job System work — goes to `unity-engineer`. Never adjust code, settings, or the budget to make a number pass.
 9. **State what was not measured** — the scenarios not exercised, the device tiers not covered, the metrics not captured. Per `verification-standards.md` this field is mandatory, because a report listing only what passed is read as a feature that was checked.
 
 ## 5. Specific goals / tasks this skill performs
@@ -51,7 +51,7 @@ Act as the measurement-verdict specialist for the QA track, on behalf of `perfor
 - Comparing against a baseline taken under identical conditions, or declaring the run a baseline.
 - Accounting for thermal drift on sustained mobile runs.
 - Attributing a regression to a named system, call, or batch break, and routing it.
-- Out of scope: taking the measurement (`unity-profiler-diagnostics`); writing the fix (`unity-engineer`, `tech-lead-performance`); allocation assertions inside tests (`unity-test-framework`); artifact functional verification (`build-fault-triage`).
+- Out of scope: taking the measurement (`unity-profiler-diagnostics`); writing the fix (`unity-engineer`); allocation assertions inside tests (`unity-test-framework`); artifact functional verification (`build-fault-triage`).
 
 ## 6. Output format
 ```
@@ -65,7 +65,7 @@ Act as the measurement-verdict specialist for the QA track, on behalf of `perfor
 - Thermal: <elapsed time per figure on a sustained run — or not applicable>
 - Attribution: <the system, call, or batch break the cost resolves to — per regression>
 - Decision: <within budget / over budget / inconclusive / no verdict without a budget>
-- Routed to: <unity-engineer / tech-lead-performance / none>
+- Routed to: <unity-engineer / none>
 - Not measured: <scenarios, tiers, and metrics this run does not cover>
 ```
 

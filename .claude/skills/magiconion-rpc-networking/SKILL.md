@@ -13,7 +13,7 @@ description: >
   on the wire, owned by `memorypack-serialization`; async body mechanics,
   owned by `unitask-async-programming`; fanning a received call out
   in-process, owned by `messagepipe-event-messaging`; and the server
-  implementation, owned by `server-authoritative-engineer`.
+  implementation, owned by `netcode-engineer`.
 ---
 
 # MagicOnion — RPC Client Consumption on the Unity Side
@@ -22,7 +22,7 @@ description: >
 Consume an already-designed MagicOnion service or hub contract from Unity — unary calls, a connected `StreamingHub`, its receiver, and the connection's lifecycle — without redefining the contract client-side, without an un-awaited call swallowing a failure, without leaking a channel, and without a dead connection continuing to look alive.
 
 ## 2. Role
-Act as the Unity-side RPC client specialist, working against a contract `netcode-engineer` and Technical Architect defined and `server-authoritative-engineer` implemented. You wire the client to it and handle everything that can go wrong on the wire; you do not design the protocol.
+Act as the Unity-side RPC client specialist, working against a contract `netcode-engineer` defined with Technical Architect and implemented server-side. You wire the client to it and handle everything that can go wrong on the wire; you do not design the protocol.
 
 ## 3. When to invoke this skill
 - The backend track is active, MagicOnion is the chosen transport, and a shared service or hub interface exists to consume from Unity.
@@ -34,7 +34,7 @@ Act as the Unity-side RPC client specialist, working against a contract `netcode
 - Negative trigger: designing or versioning the DTOs a method passes — that's `memorypack-serialization`, which owns the wire format this transport carries.
 - Negative trigger: the `async`/await body around a call, its cancellation, or its retry loop — that's `unitask-async-programming`.
 - Negative trigger: distributing a received call to in-process subscribers — that's `messagepipe-event-messaging`; the receiver only hands it over.
-- Negative trigger: implementing `ServiceBase<T>`/`StreamingHubBase<THub,TReceiver>` server-side — that's `server-authoritative-engineer`, in `Game.Server.*`.
+- Negative trigger: implementing `ServiceBase<T>`/`StreamingHubBase<THub,TReceiver>` server-side — that's `netcode-engineer`, in `Game.Server.*`.
 
 ## 4. How to use this skill
 1. **Confirm the transport decision already exists before writing client code** — implementing against MagicOnion presumes it was chosen; if that call has not been made, it belongs to `netcode-architecture-decision`, and reversing it later rewrites every call site rather than one adapter.
@@ -48,7 +48,7 @@ Act as the Unity-side RPC client specialist, working against a contract `netcode
 9. **Keep `TReceiver` a thin adapter with no gameplay decisions in it** — forward a discrete notification into `messagepipe-event-messaging` and a continuously-observed value into `r3-reactive-extensions`. The receiver's job is "a call arrived", not "here is what the game does about it".
 10. **Enable heartbeats and define what a disconnect does** — a TCP connection that dies without a FIN stays "connected" until something writes to it, so without a heartbeat the client sits in a hub that will never deliver another message. State the backoff and the player-visible state; silent infinite retry is not a strategy.
 11. **Validate every server response where it is consumed** — a network message is exactly the boundary `coding-principles.md`'s Correctness boundaries section requires validation at, and trusting it by construction assumes the server is never lagged, rolled back, or wrong.
-12. **Escalate a missing contract method instead of inventing one** — if the call the client needs does not exist on the interface, that is a contract change for `netcode-engineer` and `server-authoritative-engineer`, not a client-side addition.
+12. **Escalate a missing contract method instead of inventing one** — if the call the client needs does not exist on the interface, that is a contract change for `netcode-engineer`, not a client-side addition.
 
 ## 5. Specific goals / tasks this skill performs
 - Implementing unary calls through `MagicOnionClient.Create<T>()` and awaiting `UnaryResult<T>`.
@@ -56,7 +56,7 @@ Act as the Unity-side RPC client specialist, working against a contract `netcode
 - Standing up the channel stack (`GrpcChannelx`, `YetAnotherHttpHandler`), heartbeats, reconnection, and disposal.
 - Placing validation on incoming server data at its consumption point.
 - Keeping the shared contract assembly free of `UnityEngine` types so both sides compile it.
-- Out of scope: transport choice and sync-model design (`netcode-architecture-decision`, `netcode-engineer`), DTO design and versioning (`memorypack-serialization`), async mechanics (`unitask-async-programming`), in-process fan-out (`messagepipe-event-messaging`), server-side implementation (`server-authoritative-engineer`).
+- Out of scope: transport choice and sync-model design (`netcode-architecture-decision`, `netcode-engineer`), DTO design and versioning (`memorypack-serialization`), async mechanics (`unitask-async-programming`), in-process fan-out (`messagepipe-event-messaging`), server-side implementation (`netcode-engineer`).
 
 ## 6. Output format
 ```

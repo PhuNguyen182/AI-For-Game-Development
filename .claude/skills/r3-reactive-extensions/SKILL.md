@@ -24,7 +24,7 @@ description: >
 Model continuously observed state and event streams as composable `Observable<T>` pipelines — without leaking a subscription past its owner's lifetime, multiplying subscriptions through a nested `Subscribe`, or reaching for a stream where a one-shot await or a single routed message was the actual shape of the problem.
 
 ## 2. Role
-Act as the reactive-programming specialist for the client track — the tool Unity Engineer and UI/UX Programmer reach for when UI or gameplay feedback must react to a changing value rather than poll it every frame, and the one responsible for that pipeline's disposal.
+Act as the reactive-programming specialist for the client track — the tool Unity Engineer reach for when UI or gameplay feedback must react to a changing value rather than poll it every frame, and the one responsible for that pipeline's disposal.
 
 ## 3. When to invoke this skill
 - Binding UI to a changing gameplay value so it updates only when the value actually changes, satisfying `performance-and-algorithms.md`'s rule against unconditional per-frame UI rebuilds.

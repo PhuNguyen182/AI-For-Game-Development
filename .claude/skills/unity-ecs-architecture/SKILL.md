@@ -16,7 +16,7 @@ description: >
   colliders, and joints — `unity-physics`; `RenderMeshArray` and DOTS
   Instancing — `unity-entities-graphics`; GPU-driven effects —
   `compute-shader-vfx`; whether ECS is warranted at all —
-  `tech-lead-performance`.
+  `technical-architect`.
 ---
 
 # Unity ECS Architecture — Entities, Components, Systems & Queries
@@ -43,7 +43,7 @@ Read-only context, loaded on demand so SKILL.md itself stays short.
 Model a feature's data and logic in ECS so the result is what was actually intended — archetypes that stay dense in their chunks, systems that update in a defensible order, queries that read only what they need, and structural changes batched into one playback instead of scattered sync points that stall every running job. It prevents the failures that survive compilation: silently fragmented chunks, stale entity data from broken incremental baking, dangling component handles after a structural change, nondeterministic parallel command-buffer playback, and game rules quietly reimplemented inside `OnUpdate` instead of called from Shared Core.
 
 ## 2. Role
-Act as the ECS data- and system-architecture specialist for the client track — the tool reached for once Tech Lead – Performance or Technical Architect has already approved modeling a feature in ECS, and its entities, components, systems, and queries have to be designed or diagnosed. You design an approved adoption; you never grant one, and you hand scheduling and compilation concerns to the sibling pillars rather than re-deriving them.
+Act as the ECS data- and system-architecture specialist for the client track — the tool reached for once Technical Architect or Technical Architect has already approved modeling a feature in ECS, and its entities, components, systems, and queries have to be designed or diagnosed. You design an approved adoption; you never grant one, and you hand scheduling and compilation concerns to the sibling pillars rather than re-deriving them.
 
 ## 3. When to invoke this skill
 - Deciding how a feature's runtime values are stored on entities — `IComponentData`, `ISharedComponentData`, `IBufferElementData`, or `IEnableableComponent`.
@@ -60,10 +60,10 @@ Act as the ECS data- and system-architecture specialist for the client track —
 - Negative trigger: `RenderMeshArray`/`MaterialMeshInfo`, DOTS Instancing shader compatibility, material overrides, or Companion Components — that is `unity-entities-graphics`.
 - Negative trigger: a GPU-driven visual effect — that is `compute-shader-vfx`.
 - Negative trigger: replicating an entity's state across a network — ghosts, `[GhostField]`, `IRpcCommand`, the predicted simulation group — that is `netcode-for-entities`, layered on top of this skill's modeling rather than a part of it.
-- Negative trigger: no prior decision justifying ECS for this feature — that call belongs to `tech-lead-performance`; converting a small MonoBehaviour feature "because ECS is faster" is the escalation `performance-and-algorithms.md` forbids skipping.
+- Negative trigger: no prior decision justifying ECS for this feature — that call belongs to `technical-architect`; converting a small MonoBehaviour feature "because ECS is faster" is the escalation `performance-and-algorithms.md` forbids skipping.
 
 ## 4. How to use this skill
-1. **Name the architecture-level decision that approved ECS for this feature** — per `performance-and-algorithms.md`'s Multithreading section this is escalation territory, so if no such decision exists, stop and route to `tech-lead-performance` instead of designing. [dots-pillars.md](references/dots-pillars.md) settles which sibling package owns each adjacent concern, and [root-links.md](references/root-links.md) pins the package version every API below describes.
+1. **Name the architecture-level decision that approved ECS for this feature** — per `performance-and-algorithms.md`'s Multithreading section this is escalation territory, so if no such decision exists, stop and route to `technical-architect` instead of designing. [dots-pillars.md](references/dots-pillars.md) settles which sibling package owns each adjacent concern, and [root-links.md](references/root-links.md) pins the package version every API below describes.
 2. **Keep the game rule in `Game.Core.*` and only the iteration in the system** — per `coding-principles.md`'s Shared Core integrity section. `Unity.Entities` is a Unity dependency, so a formula rewritten inside `OnUpdate` is a second implementation of a Core rule, not a port of it; the system reads components, calls the pure Core function, and writes the result back.
 3. **Model entities and archetypes before naming a single system**, per [core-concepts.md](references/core-concepts.md) — an entity is an ID, the archetype is the component set, and the archetype is what queries actually match; deciding systems first produces component sets shaped by code structure rather than by access pattern.
 4. **Choose each component kind from how its value changes, not from what it holds**, per [component-types.md](references/component-types.md) — unmanaged `IComponentData` by default; `ISharedComponentData` only when many entities genuinely share one value, since unique values fragment chunks; `IBufferElementData` for variable-length per-entity data; `IEnableableComponent` for state that toggles often, which avoids a structural change per toggle.
@@ -86,7 +86,7 @@ Act as the ECS data- and system-architecture specialist for the client track —
 - `EntityCommandBuffer` batching, including deterministic sort keys for parallel writes.
 - `BlobAssetReference<T>` introduction for immutable shared bulk data.
 - Diagnosis of chunk fragmentation, stale baked data, and post-structural-change handle invalidation.
-- Out of scope: whether a feature warrants ECS at all (`tech-lead-performance`); job scheduling and allocator lifetime (`unity-job-system-and-burst`); Burst compilation tuning (`unity-burst-compiler`); container selection (`unity-collections`); maths types (`unity-mathematics`); physics components (`unity-physics`); rendering components (`unity-entities-graphics`); the Profiler capture that justifies the work (`unity-profiler-diagnostics`); GPU-driven effects (`compute-shader-vfx`); networked ghost replication and prediction (`netcode-for-entities`).
+- Out of scope: whether a feature warrants ECS at all (`technical-architect`); job scheduling and allocator lifetime (`unity-job-system-and-burst`); Burst compilation tuning (`unity-burst-compiler`); container selection (`unity-collections`); maths types (`unity-mathematics`); physics components (`unity-physics`); rendering components (`unity-entities-graphics`); the Profiler capture that justifies the work (`unity-profiler-diagnostics`); GPU-driven effects (`compute-shader-vfx`); networked ghost replication and prediction (`netcode-for-entities`).
 
 ## 6. Output format
 ```
@@ -114,7 +114,7 @@ Act as the ECS data- and system-architecture specialist for the client track —
 
 ## 7. Examples
 **Example 1**
-- Input: Tech Lead – Performance approved moving the projectile system to ECS after a Profiler capture showed several thousand per-frame bullet updates dominating main-thread time.
+- Input: Technical Architect approved moving the projectile system to ECS after a Profiler capture showed several thousand per-frame bullet updates dominating main-thread time.
 - Output: `BulletData` as unmanaged `IComponentData` (position, velocity, lifetime) with the damage-on-hit formula left in `Game.Core.Combat` and called from the system, per Shared Core integrity; damage falloff moved into a `BlobAssetReference<DamageCurve>` shared by every bullet instead of copied per entity; an authoring `MonoBehaviour` + `Baker<BulletAuthoring>` reading its prefab reference through `GetEntity` so incremental baking tracks it; an `IJobEntity` advancing motion, handed to `unity-job-system-and-burst` for scheduling and `unity-burst-compiler` for `[BurstCompile]` verification; expiry routed through an `EntityCommandBuffer.ParallelWriter` keyed on the entity-in-query index so playback order is reproducible; archetype confirmed in the Entities Hierarchy window and the frame-time drop re-measured in `unity-profiler-diagnostics`.
 
 **Example 2**

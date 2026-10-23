@@ -11,7 +11,7 @@ description: >
   Audio Plugin SDK, and the Audio Profiler. Use when wiring, routing, or
   diagnosing sound in a Unity scene. Not for: non-audio Profiler modules —
   `unity-profiler-diagnostics`; third-party audio middleware or platform SDKs
-  — `tech-lead-sdk-platform`; netcode audio timing — `netcode-engineer`;
+  — `sdk-platform-engineer`; netcode audio timing — `netcode-engineer`;
   the gameplay rule triggering a sound — `csharp-engineer`; audio-reactive
   VFX — `technical-artist`.
 ---
@@ -62,7 +62,7 @@ third-party audio middleware.
 - Wiring 360°/XR ambisonic audio, or authoring a custom native DSP/decoder plugin.
 - A sound is silent, stutters, or a scripted mixer change has no effect, and the cause needs the Audio Profiler.
 - Negative trigger: general CPU/GPU/Memory/Rendering Profiler work — that's `unity-profiler-diagnostics`; this skill owns only the Audio module.
-- Negative trigger: integrating Wwise/FMOD or a platform-native audio SDK — that's `tech-lead-sdk-platform`.
+- Negative trigger: integrating Wwise/FMOD or a platform-native audio SDK — that's `sdk-platform-engineer`.
 - Negative trigger: the client-server timing of when a networked sound event fires — that's `netcode-engineer`.
 - Negative trigger: the gameplay rule deciding a sound should play (a health threshold, a combat event) — that lives in `Game.Core.*` per `coding-principles.md`; this skill only wires the resulting playback call.
 - Negative trigger: an audio-reactive shader or particle system driven by spectrum data — that's `technical-artist`.
@@ -91,7 +91,7 @@ third-party audio middleware.
 - Audio Random Container setup for varied repeated SFX.
 - Ambisonic audio wiring and native audio plugin escalation for custom DSP/decoders.
 - Diagnosing silent, stuttering, or unresponsive audio via the Audio Profiler and Project Settings > Audio.
-- Out of scope: general Profiler modules (`unity-profiler-diagnostics`); third-party audio middleware/platform SDKs (`tech-lead-sdk-platform`); netcode audio timing (`netcode-engineer`); the gameplay rule a sound visualises (`csharp-engineer`); audio-reactive VFX (`technical-artist`).
+- Out of scope: general Profiler modules (`unity-profiler-diagnostics`); third-party audio middleware/platform SDKs (`sdk-platform-engineer`); netcode audio timing (`netcode-engineer`); the gameplay rule a sound visualises (`csharp-engineer`); audio-reactive VFX (`technical-artist`).
 
 ## 6. Output format
 ```

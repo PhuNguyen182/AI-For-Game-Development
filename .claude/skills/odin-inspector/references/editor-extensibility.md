@@ -168,7 +168,7 @@ picks it up automatically. This is Inspector-only, same caveat as
 `ValidateInput` in [attributes-conditional-validation.md](attributes-conditional-validation.md).
 For a validator that must run across many types/assets as a project-wide
 scan (`Validator<T>`, `RegisterValidatorAttribute`, `GlobalValidator`), that
-is deeper Odin Validator territory — flag it to `tech-lead-csharp-unity`
+is deeper Odin Validator territory — flag it to `technical-architect`
 rather than guessing at the API, per SKILL.md §8.
 [Source: SelfValidator\<T\>](https://odininspector.com/documentation/sirenix.odininspector.editor.validation.selfvalidator-1),
 [ValidationResult](https://odininspector.com/documentation/sirenix.odininspector.editor.validation.validationresult),

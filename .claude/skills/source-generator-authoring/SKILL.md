@@ -27,7 +27,7 @@ Act as the C# meta-programming specialist. You own the generator project itself 
 ## 3. When to invoke this skill
 - A structural pattern repeats across three or more Shared Core types and hand-writing it has drifted or will: snapshot/restore state for rollback-friendly prediction, deterministic equality and hashing for state comparison, a compile-time registry replacing an `Assembly.GetTypes()` scan.
 - Reflection-based type discovery is unreliable on the project's IL2CPP or AOT target, where types can be stripped, and it needs to become compile-time.
-- Escalated from Tech Lead – C# Unity when a pattern decision resolves to generated code — "Shared Core should expose rollback-friendly state" settled as a generated snapshot contract.
+- Escalated from Technical Architect when a pattern decision resolves to generated code — "Shared Core should expose rollback-friendly state" settled as a generated snapshot contract.
 - Negative trigger: flagging a rule violation at compile time — that's `roslyn-analyzer-codefix`, a different Roslyn surface (`DiagnosticAnalyzer`, not `IIncrementalGenerator`).
 - Negative trigger: the serialization formatter for a DTO — MemoryPack already generates that from `[MemoryPackable]`, and it belongs to `memorypack-serialization`.
 - Negative trigger: one type's boilerplate with no repetition elsewhere — write it by hand; a generator for a single caller is the speculative infrastructure YAGNI forbids in `coding-principles.md`.

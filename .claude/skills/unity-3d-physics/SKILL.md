@@ -13,7 +13,7 @@ description: >
   movement — `unity-navmesh-navigation`; animation blending —
   `unity-animation`; shader-only cloth looks — `technical-artist`; damage and
   state rules — `csharp-engineer`; escalated optimisation —
-  `tech-lead-performance`.
+  `unity-engineer`.
 ---
 
 # Unity 3D Physics — PhysX Bodies, Characters, Joints, Ragdolls & Cloth
@@ -53,7 +53,7 @@ Act as the built-in 3D physics specialist for the client track — the skill rea
 - Negative trigger: blending a ragdoll back into animation, or the Animator that drives the rig — that's `unity-animation`.
 - Negative trigger: a cloth-*looking* effect with no mesh simulation — that's `technical-artist`.
 - Negative trigger: deciding damage, knockback magnitude, or a state transition from a contact — that's `csharp-engineer`'s Shared Core, per `coding-principles.md`'s Shared Core integrity section.
-- Negative trigger: a cost that survives shape simplification, matrix pruning, sleep, and timestep tuning — escalate to `tech-lead-performance`.
+- Negative trigger: a cost that survives shape simplification, matrix pruning, sleep, and timestep tuning — escalate to `unity-engineer`.
 - Companion, if the official Unity plugin (`unity@claude-plugins-official`) is installed: `unity:physics-3d-collision` is a symptom-driven diagnostic for collisions, triggers and raycasts that do not fire, and ships a collision debugger script; this skill still owns body, joint, ragdoll, cloth and `CharacterController` setup and the project rules above.
 
 ## 4. How to use this skill
@@ -78,7 +78,7 @@ Act as the built-in 3D physics specialist for the client track — the skill rea
 - Ragdoll construction and stability tuning.
 - `Cloth` setup, constraint painting, and collider pairing.
 - Physics diagnosis via Profiler, Memory Profiler, and Physics Debug window.
-- Out of scope: 2D physics (`unity-2d-physics`), DOTS physics (`unity-physics`), agent pathing (`unity-navmesh-navigation`), animation blending (`unity-animation`), visual-only cloth (`technical-artist`), gameplay rules (`csharp-engineer`), escalated optimisation (`tech-lead-performance`).
+- Out of scope: 2D physics (`unity-2d-physics`), DOTS physics (`unity-physics`), agent pathing (`unity-navmesh-navigation`), animation blending (`unity-animation`), visual-only cloth (`technical-artist`), gameplay rules (`csharp-engineer`), escalated optimisation (`unity-engineer`).
 
 ## 6. Output format
 ```
@@ -115,7 +115,7 @@ Act as the built-in 3D physics specialist for the client track — the skill rea
 
 **Example 3**
 - Input: "Frame stutters badly in the physics-heavy arena, but the Profiler says each physics step is cheap."
-- Output: each step *is* cheap — the Calls column showed `Physics.Simulate` running close to ten times in the stuttering frame. That is fixed-timestep catch-up: a preceding expensive frame left simulation debt that PhysX repays all at once, compounding an already slow frame. Raised `Time.fixedDeltaTime` as immediate relief, then traced and fixed the originating heavy frame, which was an asset load, not physics at all. Hand-off: if it had survived that, the cost profile would go to `tech-lead-performance`.
+- Output: each step *is* cheap — the Calls column showed `Physics.Simulate` running close to ten times in the stuttering frame. That is fixed-timestep catch-up: a preceding expensive frame left simulation debt that PhysX repays all at once, compounding an already slow frame. Raised `Time.fixedDeltaTime` as immediate relief, then traced and fixed the originating heavy frame, which was an asset load, not physics at all. Hand-off: if it had survived that, the cost profile would go to `unity-engineer`.
 
 ## 8. Edge cases & guardrails
 - Never move a simulated or joint-connected body by writing its Transform — it teleports past contact generation and desynchronises the joint solver.

@@ -73,7 +73,7 @@ provisional decision's re-open threshold, and the measure-and-confirm count (B7)
 
 ## Project-wide patterns
 
-Pattern decisions a tech lead set with `Scope of pattern: project-wide`, so the next feature's brief carries them.
+Pattern decisions `technical-architect` set with `Scope of pattern: project-wide`, so the next feature's brief carries them.
 
 | Pattern | Set by | When | Applies to |
 |---|---|---|---|

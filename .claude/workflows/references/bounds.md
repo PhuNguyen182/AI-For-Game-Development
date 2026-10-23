@@ -32,7 +32,7 @@ stays on the bug, and B12, B13 and B15 on the feature.
 | ID | Counter | Bound | After reset | Scope | On reaching the bound |
 |---|---|---:|---:|---|---|
 | **B1** | Attempt budget | 2–5 from **D** | — | One agent, inside one dispatch | Continuation Debt Record; one strike on its submission, where it has one. Home: `task-classification.md` Step 4 |
-| **B2** | Advisor⇄Critic rounds | 3 | — | One feature's direction loop | Non-convergence to the GD (G7) |
+| **B2** | Options⇄Critic rounds | 3 | — | One feature's direction loop | Non-convergence to the GD (G7) |
 | **B3** | Review strikes | 3 | 3 | One submission | Rule 2 |
 | **B4** | Gated-direct strikes | 2 | — | One gated-direct submission | Escalate to `feature-intake.md` **E1** with both rejection sets and the code |
 | **B5** | Test-code strikes | 2 | — | One `qa-automation-engineer` suite at review **E3** | Back to `qa-lead` as unrun coverage — never a feature request |
@@ -46,7 +46,7 @@ stays on the bug, and B12, B13 and B15 on the feature.
 | **B13** | CP4 defect rejections | 2 | 1 | One feature | Rule 2 |
 | **B14** | Sign-off re-dispatch | 2 | — | One feature's coverage loop | The unmet criterion goes to CP4 as a gap only the GD can accept (G64) |
 | **B15** | QA rounds that open new bugs — a round is one execution pass (step 2 at **E2**) or one verification (**E3**), however many executors it dispatched; it counts once if any of them opens a bug, and the first execution round never counts | 3 | — | One feature, or one standalone QA run | The GD (G7), with every bug those rounds opened — new defects on every pass say the spec or the design is not holding, which no single fix answers |
-| **B16** | Escalation-lane round trips | 1 | — | One implementing agent and one tech lead | A second refusal → `technical-architect`, as a routing question, with both escalations and both refusals attached |
+| **B16** | Escalation-lane round trips | 1 | — | One implementing agent and `technical-architect`, on one problem | A second escalation of the same problem → the GD (G7), with both escalations and both answers attached |
 | **B17** | Identical `Blocked` | 2 | — | One dispatch, one missing input | Reported to the GD as unresolved (G6). A different missing input starts its own count |
 | **B18** | Gate re-offers | 1 per boundary | — | One artifact | A new boundary is a new fact — the end of implementation after a G40 decline (G42), the next feature on that root, a release, a defect traced to the ungated code, rework after a change request (G74), a defect fix awaiting verification where QA was declined, or the GD asking. Debt at A1–A2 is stated in the reply, never recorded or re-offered |
 
@@ -54,7 +54,7 @@ The assurance gate has no loop: every verdict short of `PASS` goes to the GD (G6
 rest), who decides what returns to work.
 
 **Where each counter is written** — before the next dispatch (I4). In the feature's ledger: B2, B11–B15 in
-`Rejections:` and `Advisor⇄Critic:`; B3 and B5 per submission in *Submissions*; B6 on the bug's record; B10 in
+`Rejections:` and `Options⇄Critic:`; B3 and B5 per submission in *Submissions*; B6 on the bug's record; B10 in
 `Root-cause resets:`; B7 in `Measure-and-confirm:`; B9, B16 and B17 in `Open asks:`, removed once answered. With no
 ledger, in `project-state.md`: B4, and B5 for a suite with no ledger, under *Gated-direct counters*; B9, B16, B17 under *Open asks with no ledger*; B14
 and B15 under *Standalone QA runs*; B7 and B8 under *Standalone decisions*.

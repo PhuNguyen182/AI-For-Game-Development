@@ -48,7 +48,7 @@ Read-only context, loaded on demand so this file stays short.
 Animate values — Transform, UI, material, text, camera, physics, or a custom type — through LitMotion's struct-based `MotionBuilder`/`MotionHandle` API with genuinely zero per-frame and per-motion-creation allocation, correct disposal/cancellation discipline, and the configuration (easing, looping, scheduler timing) the Tech Spec actually calls for — without silently reintroducing a closure allocation, leaking an un-disposed handle, or reaching for a heavier mechanism (Sequence, a custom adapter, Rx) than the task needs.
 
 ## 2. Role
-Act as the tweening/animation specialist for the client track — the tool Unity Engineer, UI/UX Programmer, and Technical Artist reach for whenever a feature needs a code-driven or Inspector-driven interpolation of a value over time: a UI transition, a transform move, a camera shake, a material fade, a text reveal, or a punch/shake feedback effect.
+Act as the tweening/animation specialist for the client track — the tool Unity Engineer, and Technical Artist reach for whenever a feature needs a code-driven or Inspector-driven interpolation of a value over time: a UI transition, a transform move, a camera shake, a material fade, a text reveal, or a punch/shake feedback effect.
 
 ## 3. When to invoke this skill
 - Animating a built-in or custom value (Transform position/rotation/scale, UI color/alpha/size, material property, camera field, Rigidbody move, TMP character) via `LMotion.Create()`.

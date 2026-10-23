@@ -28,7 +28,7 @@ In order:
    Spec, an architecture decision, an existing pattern followed
    consistently across features)? Follow it.
 3. **If genuinely neither applies — a new module, no prior art, no stated
-   convention — ask the GD/Tech Lead which engine governs this work
+   convention — ask the GD or `technical-architect` which engine governs this work
    before writing tween code**, rather than defaulting to whichever skill
    happened to be invoked first. This mirrors the general "ask rather than
    guess" pattern both tweening skills already use for their own

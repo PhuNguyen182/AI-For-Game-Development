@@ -10,8 +10,8 @@ description: >
   against a real device. Use when a frame hitch, GC spike, draw-call jump or
   memory growth needs a number. Not for: turning that number into a pass or
   fail against a budget — `performance-budget-verification`; choosing the
-  fix — `unity-engineer`; deep native, GPU or leak root-causing —
-  `tech-lead-performance`; rendering configuration itself —
+  fix, deep native, GPU and leak work included — `unity-engineer`;
+  rendering configuration itself —
   `unity-urp-rendering`, `unity-hdrp-rendering`; job scheduling —
   `unity-job-system-and-burst`; Burst output — `unity-burst-compiler`; the
   Audio module's voice, DSP and streaming metrics — `unity-audio-mixer`.
@@ -47,7 +47,7 @@ Act as the measurement specialist for the client track — the tool reached for 
 - A runtime debug overlay needs to read a profiler counter back in the running game.
 - Negative trigger: deciding whether the number passes — a budget in milliseconds against a named device tier, warm-up frames discarded, repeated runs and the spread that separates a regression from noise — that is `performance-budget-verification`; this skill produces the measurement that verdict is made from.
 - Negative trigger: applying the fix once the bottleneck is localized — allocation removal, pooling, data-structure choice, LOD and batching setup — that is `unity-engineer`'s work, guided by `performance-and-algorithms.md`.
-- Negative trigger: a bottleneck that stays unexplained after a competent capture — a native plugin, a GPU-level intervention, a leak the snapshot diff cannot localize — escalates to `tech-lead-performance`; this skill supplies the measurement that justifies the escalation.
+- Negative trigger: a bottleneck that stays unexplained after a competent capture — a native plugin, a GPU-level intervention, a leak the snapshot diff cannot localize — escalates to `unity-engineer`; this skill supplies the measurement that justifies the escalation.
 - Negative trigger: choosing a rendering path, Renderer Feature, or quality tier — that is `unity-urp-rendering` and `unity-hdrp-rendering`; this skill supplies the frame-time evidence those choices are argued from.
 - Negative trigger: job dependency chains, batch sizing, and scheduling overhead are `unity-job-system-and-burst`, and reading the Burst Inspector's generated assembly is `unity-burst-compiler` — this skill only establishes that worker threads are or are not the cost.
 - Negative trigger: the Profiler's Audio module — voice counts against Max Real Voices, the Virtual column, DSP versus streaming CPU — that is `unity-audio-mixer`; a silent or stuttering sound is answered by those columns, which the modules listed above never show.
@@ -62,7 +62,7 @@ Act as the measurement specialist for the client track — the tool reached for 
 7. **Back any before-and-after claim with the Profile Analyzer** — a single frame is noise, and median frame time across a comparable window is the only honest form of "this change helped", per [frame-debugger-and-profile-analyzer.md](references/frame-debugger-and-profile-analyzer.md). Capture both sides on the same device, in the same scene, over a similar frame count.
 8. **Diff two Memory Profiler snapshots rather than reading a single total** — a lone total says nothing about direction, and Reserved memory is what Unity holds from the operating system rather than what the game is using, so a rising Reserved chart is not by itself a leak, per [memory-profiler.md](references/memory-profiler.md).
 9. **Instrument an opaque system with a `static readonly ProfilerMarker`** — it is cheaper than `Profiler.BeginSample`, is Burst- and job-compatible, and strips itself from non-development builds, per [custom-instrumentation.md](references/custom-instrumentation.md). Reach for `ProfilerRecorder` instead when the value must be read back inside the running game rather than viewed in the window.
-10. **Report the attribution and route the fix** — state the module, the environment, the frame range, and whether Deep Profiling was on, then hand the finding to `unity-engineer` for an ordinary fix or `tech-lead-performance` for a deep one. A measurement converted into someone else's design decision stops being evidence.
+10. **Report the attribution and route the fix** — state the module, the environment, the frame range, and whether Deep Profiling was on, then hand the finding to `unity-engineer`. A measurement converted into someone else's design decision stops being evidence.
 
 ## 5. Specific goals / tasks this skill performs
 - Choosing the module or tool that answers a specific performance question.
@@ -73,7 +73,7 @@ Act as the measurement specialist for the client track — the tool reached for 
 - Proving or disproving a before-and-after performance claim with a Profile Analyzer comparison.
 - Investigating memory growth through a Memory Profiler snapshot diff.
 - Adding `ProfilerMarker`/`ProfilerRecorder` instrumentation and runtime counter readback.
-- Out of scope: the pass/fail verdict against a budget (`performance-budget-verification`); the Audio module (`unity-audio-mixer`); applying the optimization (`unity-engineer`); deep native, GPU, or leak root-causing (`tech-lead-performance`); rendering configuration (`unity-urp-rendering`, `unity-hdrp-rendering`); job scheduling analysis (`unity-job-system-and-burst`); Burst compilation output (`unity-burst-compiler`).
+- Out of scope: the pass/fail verdict against a budget (`performance-budget-verification`); the Audio module (`unity-audio-mixer`); applying the optimization, deep native, GPU and leak work included (`unity-engineer`); rendering configuration (`unity-urp-rendering`, `unity-hdrp-rendering`); job scheduling analysis (`unity-job-system-and-burst`); Burst compilation output (`unity-burst-compiler`).
 
 ## 6. Output format
 ```
@@ -86,7 +86,7 @@ Act as the measurement specialist for the client track — the tool reached for 
 - Finding: <metric, value, unit>
 - Attribution: <the system, call, object, or material the cost belongs to>
 - Before and after: <both figures and how they were made comparable — or "not applicable">
-- Routed to: <unity-engineer / tech-lead-performance / unity-urp-rendering / not applicable>
+- Routed to: <unity-engineer / unity-urp-rendering / not applicable>
 - Layer: <Game.Client.* instrumentation, Editor-only capture, or both>
 - Known limitations: <...>
 ```

@@ -39,6 +39,6 @@ built-in physics gives that same mesh (that's `unity-3d-physics`).
 |---|---|---|
 | `SkinnedMeshRenderer`, bind poses, blend shapes, bone weights | `unity-animation` | [Mesh data for deformable meshes](https://docs.unity3d.com/Manual/mesh-data-deformable-meshes.html) |
 | `MeshCollider` cooking and collision behaviour | `unity-3d-physics` | [Mesh Collider](https://docs.unity3d.com/Manual/class-MeshCollider.html) |
-| LOD Group, Mesh LOD generator, GPU Resident Drawer | `unity-engineer` / `tech-lead-performance` | [Mesh LOD](https://docs.unity3d.com/Manual/lod/mesh-lod-introduction.html) |
+| LOD Group, Mesh LOD generator, GPU Resident Drawer | `unity-engineer` | [Mesh LOD](https://docs.unity3d.com/Manual/lod/mesh-lod-introduction.html) |
 | FBX/3D model import settings | `unity-engineer` | [Importing Models](https://docs.unity3d.com/Manual/ImportingModelFiles.html) |
 | Text geometry (legacy `TextMesh`) | `unity-engineer` | [Text Mesh](https://docs.unity3d.com/Manual/class-TextMesh.html) |

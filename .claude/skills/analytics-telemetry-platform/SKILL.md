@@ -9,8 +9,7 @@ description: >
   outside the same vendor commitment. Use when choosing the analytics
   stack, a domain with no other owner on the team. Not for: event
   instrumentation once a platform is chosen, owned by
-  `tech-lead-sdk-platform`; reading results or choosing metrics, owned
-  by `producer` and `advisor`; production crash triage, owned by
+  `sdk-platform-engineer`; reading results or choosing metrics, owned by the GD with `researcher`; production crash triage, owned by
   `crash-anr-investigator`; the scoring rubric in
   `tco-reversibility-scoring`; player-data persistence, owned by
   `backend-build-vs-buy`; remote-config cadence, owned by
@@ -28,8 +27,8 @@ Act as a data-infrastructure-aware CTO, not a data analyst: this skill decides t
 ## 3. When to invoke this skill
 - Choosing the analytics/telemetry stack: a managed platform, a managed platform with raw export enabled, or a custom event pipeline.
 - A vendor analytics SDK is about to be integrated without the portability and privacy questions having been asked.
-- Negative trigger: the platform is chosen and the work is instrumenting events — that is `tech-lead-sdk-platform`'s integration work.
-- Negative trigger: the question is what the numbers mean or which metrics matter for a design call — a GD/`producer`/`advisor` concern once the pipeline exists.
+- Negative trigger: the platform is chosen and the work is instrumenting events — that is `sdk-platform-engineer`'s integration work.
+- Negative trigger: the question is what the numbers mean or which metrics matter for a design call — a GD concern, with `researcher` once the pipeline exists.
 - Negative trigger: the question is production crash/ANR triage from live telemetry — that is `crash-anr-investigator`, a different concern from choosing the pipeline.
 
 ## 4. How to use this skill
@@ -40,7 +39,7 @@ Act as a data-infrastructure-aware CTO, not a data analyst: this skill decides t
 5. **Score the survivors with `tco-reversibility-scoring`, weighting portability heavily** — analytics history compounds in value, and losing access to it on a vendor switch is the cost teams most reliably underweight at signing time.
 6. **State explicitly whether crash/ANR telemetry is inside this decision or handled separately** — Firebase Crashlytics is commonly assumed to come with Firebase Analytics. Say which it is; leaving it implied is how a game ships with no crash reporting at all.
 7. **Factor migration and backfill cost when a prior platform already holds history** — the go-forward TCO is not the whole bill if two years of events have to be moved or abandoned.
-8. **Write the decision in English**, per `language-and-comments.md`'s Working language section — it is a durable artifact `tech-lead-sdk-platform` implements against; the Vietnamese reply to the GD is the final message, not the document.
+8. **Write the decision in English**, per `language-and-comments.md`'s Working language section — it is a durable artifact `sdk-platform-engineer` implements against; the Vietnamese reply to the GD is the final message, not the document.
 9. **Ask when the target audience's jurisdictions or the depth of analysis needed are unknown** — those two inputs decide compliance and portability respectively, which between them decide the whole call. Do not assume the permissive answer.
 
 ## 5. Specific goals / tasks this skill performs
@@ -48,7 +47,7 @@ Act as a data-infrastructure-aware CTO, not a data analyst: this skill decides t
 - Make data portability a weighted, pass/fail-capable factor rather than an afterthought.
 - Disqualify options that fail the project's privacy/compliance obligations before cost is weighed.
 - State crash/ANR telemetry coverage explicitly in every verdict.
-- Out of scope: instrumentation implementation (`tech-lead-sdk-platform`), data interpretation (`producer`, `advisor`), crash triage (`crash-anr-investigator`).
+- Out of scope: instrumentation implementation (`sdk-platform-engineer`), data interpretation (the GD, `researcher`), crash triage (`crash-anr-investigator`).
 
 ## 6. Output format
 ```
@@ -62,7 +61,7 @@ Act as a data-infrastructure-aware CTO, not a data analyst: this skill decides t
 - Rule compliance: decision written in English, per Working language
 - Decision: <option> — <one line tying portability and compliance to the choice>
 - Crash/ANR telemetry: covered by this decision / handled separately by <what>
-- Routed to: `tech-lead-sdk-platform` for instrumentation
+- Routed to: `sdk-platform-engineer` for instrumentation
 ```
 
 **Extended report — emit ONLY when the requester asks for it.** It replaces the one-line decision rationale with all three fields:
@@ -83,7 +82,7 @@ Act as a data-infrastructure-aware CTO, not a data analyst: this skill decides t
 
 **Example 3**
 - Input: a small hardcore PC title, retention metrics only, EU audience.
-- Output: managed dashboards alone, no export — the deep-analysis requirement that would justify a warehouse does not exist (YAGNI). GDPR consent handling flagged as a hard requirement on the instrumentation, routed to `tech-lead-sdk-platform`.
+- Output: managed dashboards alone, no export — the deep-analysis requirement that would justify a warehouse does not exist (YAGNI). GDPR consent handling flagged as a hard requirement on the instrumentation, routed to `sdk-platform-engineer`.
 
 ## 8. Edge cases & guardrails
 - Never default to a platform because it is already in the project — check portability and privacy for this specific game first, per §4.

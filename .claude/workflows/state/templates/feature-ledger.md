@@ -22,7 +22,7 @@ names, and `project-state.md`.
 - Gates: review <whole feature | declined | not yet asked> · QA <authorised | declined | not yet asked> · assurance
   <with QA | authorised at G14> — so no ask repeats (B18), and G42 knows what is left to ask
 - Track: client | client + multiplayer
-- Advisor⇄Critic: round <n> of 3 · ruled out: <options> · <reset by a Major change on <date> | never reset>
+- Options⇄Critic: round <n> of 3 · ruled out: <options> · <reset by a Major change on <date> | never reset>
 - Research: <what research-decision.md settled, each report's `Picture taken:` date, any provisional decision's
   re-open threshold, any product call deferred (G32)> | <skipped — covered by <named package, API or system>>
 - QA plan: <qa-lead's coverage assignment and exit criteria, verbatim — carried back into sign-off>

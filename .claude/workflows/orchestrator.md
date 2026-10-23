@@ -139,7 +139,7 @@ offer (G13), recorded from A3 as `unoffered` until asked, then `declined` or set
 gated at CP2) and `rd-engineer` (disposable spikes) are the exceptions. Source you write yourself owes the same
 offer.
 
-For a mode-3 dispatch, **the agent's own required-input table is the contract**: supply what it names, plus the
+For a mode-3 dispatch, **the agent's own `## Inputs` list is the contract**: supply what it names, plus the
 four values (`references/dispatch-brief.md`). A `Blocked` here is the router's omission, bounded by B17.
 
 **Ledger-less work closes at the reply, never at CP4** — rows 12–13, mode 3, and `feature-development.md` **E2**

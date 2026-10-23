@@ -21,11 +21,11 @@ E2–E5 resume from the ledger and never reclassify from scratch; which axes are
 
 | Agent | Returns / owns here |
 |---|---|
-| `technical-architect` | Step 2: the tier, the five axes, `Open design question:` lines each tagged `design` / `architecture` / `technology`, the feature root — and at D1–D2, where its Self-assessment level is **Direct**, the direct notes themselves. Step 6: the Tech Spec (D3–D5). On the GD's request before CP1 (G23): an engineering recommendation between options |
-| `advisor` | **Options** — one `### <Option name>` block each (Precedent, Trade-off, Assumes). Never ranks or recommends |
+| `technical-architect` | Step 2: the tier, the five axes, `Open design question:` lines each tagged `design` / `architecture` / `technology`, the feature root — and at D1–D2 the direct notes themselves. Step 6: the Tech Spec (D3–D5). On the GD's request before CP1 (G23): an engineering recommendation between options |
+| `researcher` | **Options** mode — one `### <Option name>` block each (Precedent, Trade-off, Assumes). Never ranks or recommends |
 | `critic` | **Risk Findings** against the option the GD leans toward, ranked by severity. A leaf: routes to nobody. `Done` with no findings is a pass, not a missing result |
 
-`researcher`, `rd-engineer` and `cto` are reached only through `research-decision.md`.
+`researcher` in Research mode, `rd-engineer` and `cto` are reached only through `research-decision.md`.
 
 ## Hard ordering
 
@@ -35,7 +35,7 @@ could be multiplayer-relevant and the request does not say (G26), otherwise stat
 2. Check the in-flight index in `<state-root>/project-state.md` before opening a ledger — a second slug for a
    feature already in flight splits its counters. The ledger exists before step 3 dispatches anything.
 3. Classification precedes every other dispatch and never waits on a GD confirmation (G20).
-4. `advisor` and `critic` never run in the same round: `critic` needs a direction the GD has picked.
+4. `researcher` and `critic` never run in the same round: `critic` needs a direction the GD has picked.
 5. Every `technology` line is settled, or its skip named, before step 6 — a spec on a guessed technology is rework.
 6. At D4–D5 or U3, CP1 locks before step 6. At D3–D5, CP2 approves before the hand-off.
 
@@ -59,17 +59,17 @@ could be multiplayer-relevant and the request does not say (G26), otherwise stat
 
    A `technology` line classified U2/U3 goes to `research-decision.md` **E4** now, before the loop — on the netcode
    foundation, G44 first, once per project.
-3. **Advisor⇄Critic loop** (D4–D5 or U3). One round: `advisor` → the GD picks an option **by name** → `critic` on
+3. **Options⇄Critic loop** (D4–D5 or U3). One round: `researcher` (Options) → the GD picks an option **by name** → `critic` on
    that option → the GD decides (G21). Each dispatch carries:
-   - `advisor`: every `design` and `architecture` line, verbatim — never a `technology` line, never one line
+   - `researcher` (Options): every `design` and `architecture` line, verbatim — never a `technology` line, never one line
      standing in for several; the constraints that rule options out (platform, track, genre, monetization, the
      social graph — strangers, or only players who already know each other — and whatever the GD fixed); from round
      2, the options ruled out and why.
-   - `critic`: the **whole** option block `advisor` returned for the GD's pick — the pipeline expands the name,
-     since `critic` cannot read `advisor`'s return; what the feature must achieve (acceptance criteria or the GDD
+   - `critic`: the **whole** option block `researcher` returned for the GD's pick — the pipeline expands the name,
+     since `critic` cannot read `researcher`'s return; what the feature must achieve (acceptance criteria or the GDD
      passage); the constraints already accepted.
 
-   Only the GD ends the loop. The round count and the ruled-out list go to the ledger's `Advisor⇄Critic:` row every
+   Only the GD ends the loop. The round count and the ruled-out list go to the ledger's `Options⇄Critic:` row every
    round. The loop offers no engineering ranking on `architecture` lines — the GD can ask for one (G23).
 4. **CP1** (G21). The GD locks the direction and the risks they accept; both go to the ledger's *GD decisions*.
    `critic`'s findings CP1 did not settle travel to step 6. Spend U down only for the `design` and `architecture`
@@ -107,13 +107,13 @@ there, on the GD's own acceptance, both debts stated.
 
 Where each fires; what it carries and what happens on no are `gd-touchpoints.md`'s alone.
 
-**G26** step 1 · **G20** step 2 · **G44** step 2, a netcode-foundation `technology` line · **G21** steps 3–4 · **G22** step 3, when `advisor` was asked to choose · **G23**
+**G26** step 1 · **G20** step 2 · **G44** step 2, a netcode-foundation `technology` line · **G21** steps 3–4 · **G22** step 3, when `researcher` was asked to choose · **G23**
 before CP1 locks · **G25**, **G27** step 5 · **G27** step 6 · **G24** step 7 · anywhere: **G4**, **G6**, **G7**, **G9**.
 
 ## Bounds
 
 - **B1** — `technical-architect`'s attempt budget, inside each dispatch.
-- **B2** — Advisor⇄Critic rounds. Reaching it without a lock stops the loop and reports non-convergence; another
+- **B2** — Options⇄Critic rounds. Reaching it without a lock stops the loop and reports non-convergence; another
   round only if the GD directs one (G8).
 - **B11** — CP2 rejections; the third goes to CP1 if the loop is available at this D, else to the GD.
 - **B17** — identical `Blocked` returns on one missing input.
@@ -128,7 +128,7 @@ A request that fails classification is a `Blocked`, never a review strike.
 | CP2 approved — reopened by a change request (**E4**/**E5**) | `feature-development.md` **E3** with the rework list, or the interrupted step (step 8) | `Rejections:` CP2 count; superseded decisions in *GD decisions* |
 | CP2 approved | `feature-development.md` **E1** | `Rejections:` CP2 count; direction, accepted risks and spec decisions in *GD decisions* |
 | A `technology` line needs research | `research-decision.md` **E4** (step 2, U2/U3) or **E1** (step 5); back at **E2** if the loop waits on it, else **E3** | `Research:` on return; `Tier:` recomputed |
-| `advisor` → `Needs-decision`, `Routed to: rd-engineer` or `cto` | `research-decision.md` **E3**; back at **E2** | `Advisor⇄Critic:` round and ruled-out list kept |
+| `researcher` (Options) → `Needs-decision`, `Routed to: rd-engineer` or `cto` | `research-decision.md` **E3**; back at **E2** | `Options⇄Critic:` round and ruled-out list kept |
 | `critic` → `Rejected`, `Routed to: gd` — asked to design the fix | The GD; re-enter at step 2 once the direction is settled | — |
 | `technical-architect` → `Needs-decision`, `Routed to: cto` from step 2 | `research-decision.md` **E2**; back at **E2** at D4–D5/U3, else **E3** — never step 6 before CP1 | `Research:` on return |
 | The same, from step 6 | `research-decision.md` **E2**; back at **E3** | `Research:` on return |

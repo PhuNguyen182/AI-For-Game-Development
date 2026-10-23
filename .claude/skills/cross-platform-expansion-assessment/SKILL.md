@@ -9,7 +9,7 @@ description: >
   anti-cheat impact; and platform SDK integration, such as Steamworks,
   Google Play Games Services, GameCenter, StoreKit, and platform IAP.
   Use before a platform is locked in. Not for: integration work on an
-  already-committed platform, owned by `tech-lead-sdk-platform`;
+  already-committed platform, owned by `sdk-platform-engineer`;
   per-device quality tiers, owned by `unity-engineer`; sync model
   choice, owned by `netcode-architecture-decision`; cheat posture, owned
   by `anti-cheat-strategy`; the scoring rubric in
@@ -28,7 +28,7 @@ Act as a cross-platform-shipping CTO who has taken titles through console certif
 - The GD wants the engineering cost, timeline, and risk of adding a platform before committing to it in the GDD.
 - A publisher, platform holder, or storefront opportunity puts a new SKU on the table and someone needs a number before answering.
 - Cross-play is proposed for a game currently shipping on a single platform family.
-- Negative trigger: the platform is already committed and the SDK, store, and certification work is underway — that is `tech-lead-sdk-platform`'s execution work.
+- Negative trigger: the platform is already committed and the SDK, store, and certification work is underway — that is `sdk-platform-engineer`'s execution work.
 - Negative trigger: supporting another device tier inside a platform already shipped, such as a new Android performance bracket — that is `unity-engineer`'s per-platform quality settings work, not an expansion.
 - Negative trigger: choosing the netcode foundation or synchronization model — that is `netcode-architecture-decision`, which this assessment consults rather than redoes.
 - Negative trigger: choosing the anti-cheat tier — that is `anti-cheat-strategy`, same relationship.
@@ -53,7 +53,7 @@ Act as a cross-platform-shipping CTO who has taken titles through console certif
 - Detect when the expansion forces reopening a prior foundational decision and say so as a distinct kind of risk.
 - Distinguish cross-play from an additional SKU, and cost the population-merge consequences of the former.
 - Surface the recurring per-release multiplier alongside the one-time integration cost.
-- Out of scope: performing the SDK, store, and certification work (`tech-lead-sdk-platform`), per-device quality tuning (`unity-engineer`), the netcode and anti-cheat decisions themselves (`netcode-architecture-decision`, `anti-cheat-strategy`), the scoring rubric (`tco-reversibility-scoring`).
+- Out of scope: performing the SDK, store, and certification work (`sdk-platform-engineer`), per-device quality tuning (`unity-engineer`), the netcode and anti-cheat decisions themselves (`netcode-architecture-decision`, `anti-cheat-strategy`), the scoring rubric (`tco-reversibility-scoring`).
 
 ## 6. Output format
 ```

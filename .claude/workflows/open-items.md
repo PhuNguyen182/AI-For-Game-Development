@@ -50,8 +50,8 @@ States: `Awaiting GD` — written, not yet reviewed · `Open` — owed · `Defer
 | Item | State | What closing it takes |
 |---|---|---|
 | **The layer has never run against a real Unity project.** No ledger has been instantiated; every constant in `references/bounds.md` was chosen, not measured | Open | Real feature runs, recorded in `<state-root>/calibration.md` at each ledger close. A constant changes only on the GD's decision, proposed with evidence from those runs |
-| **No agent may rank an architecture direction.** A `design` question is the GD's; an `architecture` question reaches the same Advisor⇄Critic loop, where nothing ranks options | Open — a philosophy decision | A `Recommended direction:` field on `technical-architect` for `architecture` questions, or accepting the mode-3 escape (G23) as sufficient |
-| **Agent-roster proposals** — optional packs, retiring `producer`, renaming `tech-lead-sdk-platform`, the Bash-without-PowerShell side defect | Open — proposed, not executed | The GD's decision. The other side defect — `netcode-engineer` and `server-authoritative-engineer` not citing the client standards — was fixed in the scoring rounds |
+| **No agent may rank an architecture direction.** A `design` question is the GD's; an `architecture` question reaches the same Options⇄Critic loop, where nothing ranks options | Open — a philosophy decision | A `Recommended direction:` field on `technical-architect` for `architecture` questions, or accepting the mode-3 escape (G23) as sufficient |
+| **Optional agent packs** — Multiplayer, Live-ops, CI/CD per stack | Open — proposed, not executed. The rest of the roster proposal is done: 28 agents slimmed to 22 (producer retired; advisor folded into `researcher`; the three tech leads into `technical-architect`, `unity-engineer` and the renamed `sdk-platform-engineer`; the UI programmer into `unity-engineer`; the server-authority engineer into `netcode-engineer`; every shell-holding agent given PowerShell) | The GD's decision |
 
 ## Scenario-simulation rounds — 87.2/100
 
@@ -80,7 +80,7 @@ Means 70.5 → 78.0 → 87.2. The kit and the per-round scores are kept with the
 - Locks: one with no expiry is suspect; one this session did not claim is another session's, released only by the
   GD (G17). Reports a checkpoint compiles from are written under `reports/`. A spike harness is reverted before
   `cto` decides; `rd-engineer` installs and measures the spike build. Signing configuration is
-  `tech-lead-sdk-platform`'s. "Track" has one meaning (`rules/orchestration.md` → *Terms*).
+  `sdk-platform-engineer`'s. "Track" has one meaning (`rules/orchestration.md` → *Terms*).
 
 **Round 3's Low findings — recorded, not fixed**
 

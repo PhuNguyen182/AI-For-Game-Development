@@ -68,8 +68,8 @@ The classes step 3 chooses between, and the owner each one implies. Where the ev
 | Test | A test ran and failed | The agent owning the code under test; `qa-automation-engineer` if the test itself is wrong |
 | Test-run | The stage crashed, produced no results, or published an empty set | `ci-cd-engineer` |
 | Build | IL2CPP, Gradle, Xcode, or `BuildResult.Failed` after a clean compile | `unity-engineer`; `ci-cd-engineer` where the build script is at fault |
-| Signing | Keychain, certificate, profile, keystore, fingerprint mismatch | `tech-lead-sdk-platform` for the identity; `ci-cd-engineer` for the wiring |
-| Distribution | Upload auth, app id, artifact rejected | `ci-cd-engineer`; `tech-lead-sdk-platform` for the Firebase project's own configuration |
+| Signing | Keychain, certificate, profile, keystore, fingerprint mismatch | `sdk-platform-engineer` for the identity; `ci-cd-engineer` for the wiring |
+| Distribution | Upload auth, app id, artifact rejected | `ci-cd-engineer`; `sdk-platform-engineer` for the Firebase project's own configuration |
 
 ## 5. Specific goals / tasks this skill performs
 - Reconstructing what a run did before it failed, from its own log and stage history.

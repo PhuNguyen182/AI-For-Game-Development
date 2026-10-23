@@ -45,7 +45,7 @@ Act as the native camera specialist — the `Camera` component, its adjacent per
 - Negative trigger: camera stacking, the renderer a camera uses, or anything on the per-pipeline sibling component — that is `unity-urp-rendering` under URP and `unity-hdrp-rendering` under HDRP; this skill owns the `Camera`'s own fields, not the pipeline behind them.
 - Negative trigger: the Camera's Post Processing toggle and anything a Volume drives — that is `unity-post-processing`.
 - Negative trigger: reading a pointer, stick, or touch position to feed a conversion — that is `unity-input-system`; this skill consumes the screen position it produces.
-- Negative trigger: UI safe area and notch handling — that is the UI/UX Programmer's scope.
+- Negative trigger: UI safe area and notch handling — that is the Unity Engineer's scope.
 - Negative trigger: a gameplay decision made from a camera-driven raycast — the camera supplies the world point, `Game.Core.*` decides what it means, per `coding-principles.md`.
 
 ## 4. How to use this skill
@@ -71,7 +71,7 @@ Act as the native camera specialist — the `Camera` component, its adjacent per
 - Split screen through viewport rects, and minimap or picture-in-picture through a `RenderTexture`.
 - World, screen, and viewport conversions, and camera-driven picking.
 - Hand-written follow, bounds clamping, and shake for cameras not driven by Cinemachine.
-- Out of scope: Cinemachine (`unity-cinemachine-authoring`); camera stacking and per-camera pipeline data (`unity-urp-rendering`, `unity-hdrp-rendering`); post-processing (`unity-post-processing`); reading input devices (`unity-input-system`); UI safe area (`ui-ux-programmer`); gameplay decisions from a picked point (`csharp-engineer`).
+- Out of scope: Cinemachine (`unity-cinemachine-authoring`); camera stacking and per-camera pipeline data (`unity-urp-rendering`, `unity-hdrp-rendering`); post-processing (`unity-post-processing`); reading input devices (`unity-input-system`); UI safe area (`unity-engineer`); gameplay decisions from a picked point (`csharp-engineer`).
 
 ## 6. Output format
 ```

@@ -77,7 +77,7 @@ Act as the hands-on scenario tester for the QA track, on behalf of `playtest-tes
 ## 7. Examples
 **Example 1**
 - Input: "Playtest the new dash against the GDD's expected feel — it should keep pressure on, with no dead time between dashes."
-- Output: intent converted to three checkpoints (dash covers the stated distance, the cooldown indicator matches actual availability, a second dash is possible before the enemy re-engages). Dash distance and re-engagement both pass with captures. The indicator finishes filling one frame before the dash is actually available, captured on the frame it is claimed rather than afterwards, reproduced 5 of 5 — classified as a technical defect and routed to `ui-ux-programmer`.
+- Output: intent converted to three checkpoints (dash covers the stated distance, the cooldown indicator matches actual availability, a second dash is possible before the enemy re-engages). Dash distance and re-engagement both pass with captures. The indicator finishes filling one frame before the dash is actually available, captured on the frame it is claimed rather than afterwards, reproduced 5 of 5 — classified as a technical defect and routed to `unity-engineer`.
 
 **Example 2**
 - Input: "The dash feels bad. Log it as a bug against the dash implementation so it goes back to the engineers this cycle."

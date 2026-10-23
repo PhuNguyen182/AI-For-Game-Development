@@ -58,7 +58,7 @@ which is why this repository has a workflow layer and a ledger at all.
 |---|---|---|---|
 | **Rules** | `.claude/rules/` | 12 files, flat | Auto-loaded into every session — standards every agent obeys before it can even read its task |
 | **Standards** | `.claude/standards/` | 8 files — `client/` (5), `qa/` (3) | Loaded **on demand**, only by the agents whose track owns them |
-| **Agents** | `.claude/agents/` | 28 agents, flat | Each a system prompt: one role, its scope, its refusals, its output envelope |
+| **Agents** | `.claude/agents/` | 22 agents, flat | Each a system prompt: one role, its scope, its refusals, its output envelope |
 | **Skills** | `.claude/skills/` | 90 skills, flat | On-demand technique packages, one per `.claude/skills/<name>/SKILL.md` |
 | **Workflows** | `.claude/workflows/` | orchestrator + 6 pipelines, a GD touchpoint registry, 3 shared references, 5 state templates, 1 verification script | Entries, hard ordering, GD touchpoints, bounds and exits — the model plans everything between them |
 | **Commands** | `.claude/commands/` | 6 slash commands | Self-contained investigations — one of which edits code |
@@ -90,9 +90,9 @@ per-tier table are in [`task-classification.md`](.claude/rules/task-classificati
 
 ### Tracks
 
-The **backend track** (multiplayer / server-authoritative) is *caller state* — `netcode-engineer` and
-`server-authoritative-engineer` return `Blocked` rather than assume it's on; `technical-architect` silently
-assumes client-only when nobody says otherwise.
+The **backend track** (multiplayer / server-authoritative) is *caller state* — `netcode-engineer` returns
+`Blocked` rather than assume it's on; `technical-architect` assumes client-only, and says so, when nobody says
+otherwise.
 
 ### The Shared Core boundary
 
@@ -110,27 +110,15 @@ operation that can diverge across platforms — which is what lets prediction an
 Every agent returns a structured value, not a chat message:
 
 ```
-## [Report name] — <subject>
-- Status: Done | Blocked | Rejected | Needs-decision
-- Assessed: Direct | Considered | Escalate
-- Routed to: <agent-id> | gd | none
-- Blocked — needs from caller: <what is missing | none>
+Status: Done | Blocked | Rejected | Needs-decision
+Routed to: <agent-id> | gd | none
+Needs: <missing input | none>
 [role-specific fields]
 ```
 
-`Blocked` is a **correct result**, not a failure — supply exactly what is named, never guess. `Routed to:` is
-a **recommendation**, never an action taken, since agents cannot dispatch each other. For any review, read
+`Blocked` is a **correct result**, not a failure — supply exactly what `Needs:` names, never guess. `Routed to:`
+is a **recommendation**, never an action taken, since agents cannot dispatch each other. For any review, read
 `Verdict:`, never `Status:` — a review requesting changes still returns `Status: Done`.
-
-### Self-assessment
-
-| Level | Criterion | Depth |
-|---|---|---|
-| **Direct** | Unambiguous, established pattern, contained change | Do it, report briefly |
-| **Considered** | Several viable approaches, or it touches a contract others depend on | State the approach, then verify the result |
-| **Escalate** | Needs authority this role does not own, or the task already failed twice | Return `Needs-decision` with `Routed to:` |
-
-When uncertain, an agent goes one level **up**, never down.
 
 ## Installation
 
@@ -243,12 +231,12 @@ point where the GD is asked, approves or is told — and where asking is forbidd
 
 | Pipeline | Scope | Dispatches | The mechanic worth knowing |
 |---|---|---|---|
-| **1. `feature-intake.md`** | Request → approved Tech Spec | `technical-architect`, `advisor`, `critic` | Classification runs first, unconditionally. Advisor⇄Critic fires only at **D4–D5 or U3**, capped 3 rounds → CP1. **D1–D2 skips the Tech Spec** — direct notes to one agent |
+| **1. `feature-intake.md`** | Request → approved Tech Spec | `technical-architect`, `researcher` (Options), `critic` | Classification runs first, unconditionally. Options⇄Critic fires only at **D4–D5 or U3**, capped 3 rounds → CP1. **D1–D2 skips the Tech Spec** — direct notes to one agent |
 | **2. `research-decision.md`** | Missing capability → settled decision | `researcher`, `rd-engineer`, `cto` | Three depth lanes (Direct/Considered/Escalate) that only ever raise. `cto` never runs without a candidate set; `rd-engineer` only on an explicit GD summon; one measure-and-confirm cycle, hard capped |
-| **3. `feature-development.md`** | Approved spec → code at the gate offer | The 9 implementing/lead roles | Shared Core first — 4 agents return `Blocked` without its contract. The client fan-out is serial (one Editor). **Review and QA are asked for, never auto-dispatched** |
+| **3. `feature-development.md`** | Approved spec → code at the gate offer | The 5 implementing roles, `technical-architect` for escalations | Shared Core first — downstream agents return `Blocked` without its contract. The client fan-out is serial (one Editor). **Review and QA are asked for, never auto-dispatched** |
 | **4. `review-pipeline.md`** | One submission, both gates → CP3 | `code-reviewer`, `security-reviewer`, `technical-architect` | Optional. Both gates run in parallel, wait for both, neither edits. Clear only on `Approve` **and** `Clear`; else +1 strike, capped 3 (2 on gated-direct) before root cause |
-| **5. `qa-pipeline.md`** | Cleared (or declined) review → CP4 | `qa-lead`, 4 executors, **`assurance-evaluator`** (new, A3+), `producer` | Optional, doesn't require review. `qa-lead` plans early; `assurance-evaluator` checks a claimed verification is actually evidenced — `FAIL` is an integrity finding, beyond any waiver. **CP4 always fires** |
-| **6. `change-request.md`** | A change to an approved spec | `technical-architect`, `producer` | Halts new dispatch against the questioned spec first. **Minor** updates in place, no gate; **Moderate** reopens CP2; **Major** reopens CP1. Resets every rejection counter it invalidates |
+| **5. `qa-pipeline.md`** | Cleared (or declined) review → CP4 | `qa-lead`, 4 executors, **`assurance-evaluator`** (A3+); the orchestrator writes the CP4 report | Optional, doesn't require review. `qa-lead` plans early; `assurance-evaluator` checks a claimed verification is actually evidenced — `FAIL` is an integrity finding, beyond any waiver. **CP4 always fires** |
+| **6. `change-request.md`** | A change to an approved spec | `technical-architect` | Halts new dispatch against the questioned spec first. **Minor** updates in place, no gate; **Moderate** reopens CP2; **Major** reopens CP1. Resets every rejection counter it invalidates |
 
 ## Checkpoints
 
@@ -267,23 +255,24 @@ regardless**: closing a feature is the GD's decision, never a gate's verdict.
 
 ## The agent roster
 
-28 agents, **flat** — every one lives at `.claude/agents/<agent-name>.md`, no group subfolder (they were
-flattened out for the same reason skills were: the harness resolves an agent one level deep, not two). Model
-matches the hardest **Self-assessment** level the role actually reaches. Grouped informally, by concern:
+22 agents, **flat** — every one lives at `.claude/agents/<agent-name>.md`, no group subfolder (the harness
+resolves an agent one level deep, not two). An agent type exists only where it earns one: a distinct tool
+sandbox, independence from the author (every gate), a distinct model tier, or a distinct activation condition —
+domain knowledge alone lives in skills. Grouped informally, by concern:
 
 | Group (informal) | Count | Covers |
 |---|---:|---|
-| **Architecture** | 4 | Tech Spec/triage (`technical-architect`), strategic tech calls (`cto`), research, spikes |
-| **Client** | 7 | Shared Core, scene/prefab/perf, UI, shaders/VFX, and 3 tech-lead escalation roles |
-| **Backend** | 2 | Sync protocol and server-side validation — multiplayer track only |
+| **Architecture** | 4 | Tech Spec, triage and escalations (`technical-architect`), strategic tech calls (`cto`), research and options, spikes |
+| **Client** | 4 | Shared Core; Unity integration, UI and all optimisation; shaders/VFX; SDK/platform |
+| **Backend** | 1 | Sync protocol and server authority — multiplayer track only |
 | **QA** | 8 | Scope/sign-off, both review gates, independent scoring (A3+ only), 4 execution roles |
 | **DevOps** | 3 | Git ops/forensics, CI/CD authoring, builds (GD-summoned only) |
-| **Leadership** | 3 | Widening options, attacking a leaning direction, aggregating status |
+| **Direction** | 1 | Attacking a direction the GD leans toward |
 | **Live-Ops** | 1 | Released production crash/ANR telemetry only |
 
 Every agent's own frontmatter `description` in `.claude/agents/` is the authoritative one-line summary — not
-repeated here. **The `tools:` list is the hard sandbox.** 14 agents hold no `Write`/`Edit` — reports leave no
-source, so direct dispatch accrues no review debt. 10 hold Editor tools and 2 hold device tools, neither ever
+repeated here. **The `tools:` list is the hard sandbox.** 12 agents hold no `Write`/`Edit` — reports leave no
+source, so direct dispatch accrues no review debt. 7 hold Editor tools and 2 hold device tools, neither ever
 two at once, project-wide. `code-reviewer` and `security-reviewer` cannot edit, ever.
 
 ## The skill library
@@ -399,12 +388,12 @@ This repository contains no Unity project and no C# source — it is the configu
 ## Extending the framework
 
 **Adding an agent** — create `.claude/agents/<agent-name>.md`, **flat**, no group folder. Frontmatter: `name`
-(equal to the filename), `description` (the only text the dispatcher reads — triggers, plus "Not for" naming
-the neighbouring owners), `model`, `tools` (the hard sandbox) and `color`. Body, seven sections even at one
-line each: Role, Objective, When called (required inputs and what happens if each is absent), Self-assessment
-(Direct / Considered / Escalate), Skills you use, Output (the envelope), Guardrails (the rule and standard
-files it reads). Check for an overlapping owner first. Model matches the hardest Self-assessment level the
-role reaches, not how important it sounds.
+(equal to the filename), `description` (the only text the dispatcher reads — scope, plus "Not for" naming
+the neighbouring owners), `model`, `tools` (the hard sandbox) and `color`. Body, as short as the role allows: a
+purpose paragraph, then `## Inputs` (each with its `absent:` fallback), `## Skills`, `## Read` (the track
+standards it loads), `## Return` (the envelope plus role fields) and `## Never`. Rules under `.claude/rules/`
+load on their own — never restate them. Check for an overlapping owner first; a new domain usually wants a skill,
+not an agent. Model matches the hardest judgment the role makes, not how important it sounds.
 
 **Adding a skill** — create `.claude/skills/<skill-name>/SKILL.md`, **flat**; `name:` must equal the folder
 name. `description` is a retrieval index (surface, when, not for), 50–100 words. Keep the body under 200 lines

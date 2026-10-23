@@ -10,7 +10,7 @@ description: >
   anti-cheat the game needs, or when a repeated exploit escalation turns
   out to be a posture gap rather than one bug. Not for: writing a
   specific server-side validation check, owned by
-  `server-authoritative-engineer`; sync model choice, owned by
+  `netcode-engineer`; sync model choice, owned by
   `netcode-architecture-decision`; the scoring rubric in
   `tco-reversibility-scoring`; platform-expansion cost, owned by
   `cross-platform-expansion-assessment`.
@@ -28,7 +28,7 @@ Act as a security-minded CTO who has shipped competitive multiplayer titles and 
 - Asked how much anti-cheat protection the game needs, or which vendor/tier to commit to.
 - A repeated cheating or exploit escalation arrives from Technical Architect and turns out to be a whole unvalidated category of action rather than one fixable bug.
 - A platform commitment (Steam Deck, console, Linux) needs checking against an anti-cheat tier before either is locked in.
-- Negative trigger: writing one server-side validation rule, such as checking an ability's cooldown against the Shared Core — that is `server-authoritative-engineer`'s routine work.
+- Negative trigger: writing one server-side validation rule, such as checking an ability's cooldown against the Shared Core — that is `netcode-engineer`'s routine work.
 - Negative trigger: which synchronization model or netcode foundation the game runs on — that is `netcode-architecture-decision`, decided below this one.
 - Negative trigger: the cost/reversibility arithmetic itself — that rubric is `tco-reversibility-scoring`, which this skill calls.
 - Negative trigger: the full engineering cost of adding a platform — that is `cross-platform-expansion-assessment`, which consults this decision rather than replacing it.
@@ -44,7 +44,7 @@ Act as a security-minded CTO who has shipped competitive multiplayer titles and 
 8. **Confirm someone owns bans and appeals before committing to any detection tier** — heuristic detection produces false positives, and a false ban with no appeal path is worse for retention than the cheating it prevents. An unowned appeals process makes the tier unshippable, not merely risky.
 9. **Score the surviving tiers with `tco-reversibility-scoring`** — kernel-level anti-cheat rates Low reversibility, because removing it after a visible cheating wave reads publicly as surrender regardless of the engineering reason.
 10. **Frame the outcome for the GD in product terms whenever it touches a platform commitment, ongoing vendor cost, or player trust** — those are the GD's calls to make, not the CTO's to settle alone.
-11. **Record the chosen posture as a durable standard** via `engineering-standard-adr-authoring` — the floor that `server-authoritative-engineer` and `netcode-engineer` build against must outlive the conversation that set it.
+11. **Record the chosen posture as a durable standard** via `engineering-standard-adr-authoring` — the floor that `netcode-engineer` build against must outlive the conversation that set it.
 12. **Write the decision and its reasoning in English**, per `language-and-comments.md`'s Working language section — only the closing reply to the GD is Vietnamese.
 13. **Ask before deciding when the GDD leaves platform commitments, competitive stakes, or economy design open** — mark the tier provisional on the missing input rather than choosing around an assumed one.
 
@@ -54,7 +54,7 @@ Act as a security-minded CTO who has shipped competitive multiplayer titles and 
 - Surface platform incompatibility as a hard disqualifier before cost enters the comparison.
 - Confirm the server-authority floor is genuinely in place rather than assumed.
 - Establish ban/appeal ownership as a shipping precondition for any detection tier.
-- Out of scope: implementing validation or detection logic (`server-authoritative-engineer`, `netcode-engineer`), relevancy-culling implementation (`netcode-engineer`), foundation and sync model (`netcode-architecture-decision`), the scoring rubric (`tco-reversibility-scoring`).
+- Out of scope: implementing validation or detection logic (`netcode-engineer`), relevancy-culling implementation (`netcode-engineer`), foundation and sync model (`netcode-architecture-decision`), the scoring rubric (`tco-reversibility-scoring`).
 
 ## 6. Output format
 ```

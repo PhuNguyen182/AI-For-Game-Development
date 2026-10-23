@@ -66,7 +66,7 @@ The `Sirenix.Serialization` namespace itself (formatters, `AnySerializer`,
 `BinaryDataReader`/`Writer`, per-type formatters like `DictionaryFormatter`,
 `ArrayFormatter<T>`) is internal machinery — reach for it directly only when
 building a custom serialization format or a completely custom persistence
-layer, which is `tech-lead-csharp-unity`/`tech-lead-sdk-platform` escalation
+layer, which is `technical-architect`/`sdk-platform-engineer` escalation
 territory, not routine Inspector work.
 
 **Critical caveat**: switching an existing type to `SerializedMonoBehaviour`/

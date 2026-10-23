@@ -49,7 +49,7 @@ only once this tier is confirmed insufficient by measurement.
 | `SetIndexBufferParams`/`SetIndexBufferData` | Methods | Define and fill the index buffer directly | [Mesh.SetIndexBufferParams](https://docs.unity3d.com/ScriptReference/Mesh.SetIndexBufferParams.html) |
 | `MarkDynamic`, `Optimize`, `CombineMeshes` | Methods | See [mesh-optimization.md](mesh-optimization.md) | [Mesh](https://docs.unity3d.com/ScriptReference/Mesh.html) |
 | `bindposes`, `boneWeights`, blend-shape members | Property / methods | Deformable-mesh data — owned by `unity-animation`, per [mesh-anatomy.md](mesh-anatomy.md) | [Mesh](https://docs.unity3d.com/ScriptReference/Mesh.html) |
-| `lodCount`, `GetLod`/`SetLod`, `lodSelectionCurve` | Property / methods | Mesh LOD data baked into one mesh's index buffer — workflow owned by `unity-engineer`/`tech-lead-performance`, per [root-links.md](root-links.md) | [Mesh](https://docs.unity3d.com/ScriptReference/Mesh.html) |
+| `lodCount`, `GetLod`/`SetLod`, `lodSelectionCurve` | Property / methods | Mesh LOD data baked into one mesh's index buffer — workflow owned by `unity-engineer`, per [root-links.md](root-links.md) | [Mesh](https://docs.unity3d.com/ScriptReference/Mesh.html) |
 
 ## Worked example — quad mesh via script
 

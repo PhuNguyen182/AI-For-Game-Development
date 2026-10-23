@@ -1,6 +1,6 @@
 # Client Track — Feature Documentation
 
-Applies to: C# Software Engineer, Unity Engineer, UI/UX Programmer, Tech Lead – C# Unity, Tech Lead – SDK/Platform, Tech Lead – Performance, Technical Artist. Also to Netcode Engineer and Server-Authoritative Logic Engineer for a `Game.Server.*` feature root, when the backend track is active.
+Applies to: C# Software Engineer, Unity Engineer, Technical Artist, SDK/Platform Engineer; Netcode Engineer for a `Game.Server.*` feature root, when the backend track is active.
 
 ## Relationship to other rules
 
@@ -38,7 +38,7 @@ The floor is the **assurance tier** from `.claude/rules/task-classification.md`,
 | `CONTRACTS.md` | **A4** | Code outside the feature root calls into it, the Tech Spec names a cross-layer or client-server contract, or the feature is multiplayer-relevant — anywhere client and server must agree on the same rule |
 | `INTEGRATION.md` | **A4** | A second feature actually integrates with this one, or the feature ships a deliberate extension point somebody else is expected to use |
 | `ARCHITECTURE.md` | **A4** | The feature spans more than one physical root or layer (`Game.Core.*` plus `Game.Client.*`), or its internal data flow cannot be stated in a paragraph inside `README.md` |
-| `DECISIONS.md` | **A3** | A decision was made that a future reader would otherwise undo — a rejected alternative, a non-obvious constraint, or a tech-lead escalation resolved |
+| `DECISIONS.md` | **A3** | A decision was made that a future reader would otherwise undo — a rejected alternative, a non-obvious constraint, or an escalation resolved |
 | `DEBT.md` | **A3** | A limitation or workaround is carried past review — including a gap the GD accepted at CP4, per invariant I6 in `orchestration.md` — or an obsolete-API call site was flagged and left in place per `coding-principles.md` |
 | `NOTES.md` | **A3** | Optional, always. Written when an observation would otherwise be lost, never because the docset "should" have one |
 

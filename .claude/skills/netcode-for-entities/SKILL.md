@@ -18,7 +18,7 @@ description: >
   physics — `unity-physics`; ghost rendering — `unity-entities-graphics`;
   input device actions and bindings behind a command —
   `unity-input-system`; the UTP driver and Relay data under the connection —
-  `unity-transport`; UGS dashboard/account setup — `tech-lead-sdk-platform`.
+  `unity-transport`; UGS dashboard/account setup — `sdk-platform-engineer`.
 ---
 
 # Netcode for Entities — Server-Authoritative Multiplayer with Client Prediction
@@ -109,7 +109,7 @@ or diagnosed.
   `unity-entities-graphics`.
 - Negative trigger: creating the Unity Gaming Services project, Dashboard,
   or Lobby/Relay/Authentication account setup itself — that's
-  `tech-lead-sdk-platform`; this skill covers only the NfE-side API once
+  `sdk-platform-engineer`; this skill covers only the NfE-side API once
   those services exist.
 
 ## 4. How to use this skill
@@ -156,7 +156,7 @@ or diagnosed.
   (`unity-entities-graphics`); action assets, bindings and rebinding behind an
   input command (`unity-input-system`); the UTP driver, pipelines, TLS and Relay
   data under the connection (`unity-transport`); UGS account/dashboard setup
-  (`tech-lead-sdk-platform`).
+  (`sdk-platform-engineer`).
 
 ## 6. Output format
 ```

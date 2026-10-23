@@ -32,7 +32,7 @@ read from its history rows, since the counter resets after a root cause. Nothing
 blank cell is a fact, an invented number is not. "Checkpoints that changed the outcome" is the one judgement call:
 name each checkpoint where the GD's answer actually altered what was built.
 
-| Feature | Tier · axes | Attempts used / budget | Max strikes on one submission | Bugs opened · max reopens on one bug | Advisor⇄Critic rounds | Root-cause resets | CP4 defect rejections | Gates run | Checkpoints that changed the outcome | Closed |
+| Feature | Tier · axes | Attempts used / budget | Max strikes on one submission | Bugs opened · max reopens on one bug | Options⇄Critic rounds | Root-cause resets | CP4 defect rejections | Gates run | Checkpoints that changed the outcome | Closed |
 |---|---|---|---|---|---|---|---|---|---|---|
 | _none yet_ | | | | | | | | | | |
 ```

@@ -11,7 +11,7 @@ description: >
   owned by `fastlane-mobile-delivery` or `unity-batchmode-cli`; the job
   and its approval gate, owned by `jenkins-pipeline-authoring`; and
   Crashlytics, Analytics, and Remote Config inside the game, owned by
-  `tech-lead-sdk-platform`.
+  `sdk-platform-engineer`.
 ---
 
 # Firebase App Distribution — getting a build to testers
@@ -41,8 +41,8 @@ Act as the tester-distribution specialist for the devops track, on behalf of `ci
 - An iOS build reached App Distribution but installs for nobody.
 - Negative trigger: producing or signing the artifact — that is `unity-batchmode-cli` and `fastlane-mobile-delivery`. When the upload is written as a plugin action, the lane and `Pluginfile` hosting it stay `fastlane-mobile-delivery`'s; this skill owns the action's parameters, its authentication and its verification.
 - Negative trigger: the job, the credential binding, and the human approval before the upload — that is `jenkins-pipeline-authoring`.
-- Negative trigger: Crashlytics, Analytics, Remote Config, or any Firebase SDK compiled into the game — that is `tech-lead-sdk-platform`, a different Firebase entirely.
-- Negative trigger: submitting to Google Play or App Store review, and TestFlight — that is `tech-lead-sdk-platform`; App Distribution is not a store channel.
+- Negative trigger: Crashlytics, Analytics, Remote Config, or any Firebase SDK compiled into the game — that is `sdk-platform-engineer`, a different Firebase entirely.
+- Negative trigger: submitting to Google Play or App Store review, and TestFlight — that is `sdk-platform-engineer`; App Distribution is not a store channel.
 - Negative trigger: a runtime fault in the distributed build — that is `build-verification-tester`.
 
 ## 4. How to use this skill
@@ -63,7 +63,7 @@ Act as the tester-distribution specialist for the devops track, on behalf of `ci
 - Deciding tester groups and keeping membership out of the pipeline file.
 - Composing release notes from the run's own metadata.
 - Reporting the resulting release, with the link that proves it exists.
-- Out of scope: building and signing (`unity-batchmode-cli`, `fastlane-mobile-delivery`); job orchestration and approval (`jenkins-pipeline-authoring`); the Firebase SDK inside the game and store submission (`tech-lead-sdk-platform`); verifying the build once installed (`build-verification-tester`).
+- Out of scope: building and signing (`unity-batchmode-cli`, `fastlane-mobile-delivery`); job orchestration and approval (`jenkins-pipeline-authoring`); the Firebase SDK inside the game and store submission (`sdk-platform-engineer`); verifying the build once installed (`build-verification-tester`).
 
 ## 6. Output format
 ```
@@ -105,5 +105,5 @@ Act as the tester-distribution specialist for the devops track, on behalf of `ci
 - Never embed a tester's email list in the pipeline file — membership belongs in the group, and a stale list is a privacy problem as well as a delivery one.
 - Never report a distribution as done without the release link; an exit code is not evidence a release exists.
 - Never assume an AAB, or a new tester, will work — both depend on configuration outside the pipeline (the Play link, the ad-hoc profile) that the upload cannot see.
-- Never use App Distribution as a release channel to the public; it is an internal testing surface, and store distribution is `tech-lead-sdk-platform`'s.
+- Never use App Distribution as a release channel to the public; it is an internal testing surface, and store distribution is `sdk-platform-engineer`'s.
 - If the app id, group alias, or credential id is missing from the request, state the assumption in the output rather than guessing — the wrong app id delivers a build to the wrong audience, which is worse than not delivering it.

@@ -1,6 +1,11 @@
 # Agent Roster Review — redundancy and packaging
 
-> **Status: Proposed — nothing here has been executed.** A read of all 28 files in `.claude/agents/`, asking
+> **Status: Partly executed (2026-10-23).** Section 2 and both side defects are done, and went further: the
+> roster is 22 agents — `producer` retired, `advisor` folded into `researcher`, `tech-lead-csharp-unity` into
+> `technical-architect`, `tech-lead-performance` and `ui-ux-programmer` into `unity-engineer`,
+> `server-authoritative-engineer` into `netcode-engineer`, `tech-lead-sdk-platform` renamed
+> `sdk-platform-engineer`. The optional packs (section 1) remain proposed. Original text below, unedited.
+> A read of all 28 files in `.claude/agents/`, asking
 > two questions: is any role redundant, and should any set of roles ship as a separate, optional pack rather
 > than inside the template every project copies. Method: read, no agents dispatched, no score owed.
 

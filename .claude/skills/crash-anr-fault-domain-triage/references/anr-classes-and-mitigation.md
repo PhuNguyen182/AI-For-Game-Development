@@ -5,8 +5,7 @@ Covers: SKILL.md §4 — **"In game code, separate a fixable defect from a condi
 
 What an ANR actually is, the classes it comes in, the causes a Unity title
 produces most often, and what to recommend when no code change removes the
-fault. Implementing any of this belongs to `unity-engineer` or
-`tech-lead-performance`.
+fault. Implementing any of this belongs to `unity-engineer`.
 
 ## What an ANR is
 
@@ -30,7 +29,7 @@ common mistake in ANR triage.
 | Disk or network work on the main thread | The same block, with a duration that depends on the device rather than the code — which is why it reproduces only on lower tiers | `unity-engineer` | [StrictMode](https://developer.android.com/reference/android/os/StrictMode) |
 | A lock held across a long operation | The main thread waits on a worker that is itself waiting, so both stacks look idle | `csharp-engineer` or `unity-engineer` by layer | [ANRs](https://developer.android.com/topic/performance/vitals/anr) |
 | Sustained frame cost rather than one long call | No single frame exceeds anything, and the app still fails to respond in time — a profiling question before it is a triage one, owned by `unity-profiler-diagnostics` | `unity-engineer` | [ANRs](https://developer.android.com/topic/performance/vitals/anr) |
-| Memory pressure during a load | The platform reclaims resources while the app is mid-operation, which the app cannot prevent — mitigation rather than fix | `tech-lead-performance` | [ApplicationExitInfo](https://developer.android.com/reference/android/app/ApplicationExitInfo) |
+| Memory pressure during a load | The platform reclaims resources while the app is mid-operation, which the app cannot prevent — mitigation rather than fix | `unity-engineer` | [ApplicationExitInfo](https://developer.android.com/reference/android/app/ApplicationExitInfo) |
 
 ## Mitigations when no fix exists
 

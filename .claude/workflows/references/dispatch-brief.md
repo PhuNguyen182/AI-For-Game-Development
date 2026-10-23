@@ -1,6 +1,6 @@
 # The Dispatch Brief — what every dispatch carries (I1)
 
-An agent sees only its brief. Every row here is keyed to an agent's own `If absent` behaviour: omit it and you get
+An agent sees only its brief. Every row here is keyed to the `absent:` fallback in an agent's `## Inputs`: omit it and you get
 `Blocked`, or worse, a silent default the agent never states. Supply from the feature's `LEDGER.md` where one
 exists, never from memory of an earlier run. Name each value; never paste a standard's content — cite its path.
 
@@ -32,17 +32,15 @@ Counters carry across every door; the only resets are listed in `references/boun
 
 | From → field | To |
 |---|---|
-| `csharp-engineer` → `Public contract:` | `unity-engineer`, `ui-ux-programmer`, `netcode-engineer`, `server-authoritative-engineer` |
-| `csharp-engineer` → `Determinism:` | `netcode-engineer`, `server-authoritative-engineer` |
+| `csharp-engineer` → `Public contract:` | `unity-engineer`, `netcode-engineer` |
+| `csharp-engineer` → `Determinism:` | `netcode-engineer` |
 | `csharp-engineer` → `Assumptions and known limitations:` | every downstream agent, **and** the G40 review ask as the concrete cost of skipping |
 | `technical-artist` → `Authored:`, `Pipeline:` | `unity-engineer` |
-| `unity-engineer` → `Core calls used:`, `Changed:` | `ui-ux-programmer` |
-| `netcode-engineer` → `Message contract:` | `server-authoritative-engineer` |
 
 **Ask the agent to state back** what no envelope carries: attempts used out of the budget and, past the first, what
 improved; what verification actually ran and what was impossible, and why; wherever the brief named a bug, each
 bug ID it fixed (it
-never closes one) and any test that now guards it; and, from `tech-lead-sdk-platform`, its assumptions and known
+never closes one) and any test that now guards it; and, from `sdk-platform-engineer`, its assumptions and known
 limitations.
 
 ## Assembling the Implementation Note

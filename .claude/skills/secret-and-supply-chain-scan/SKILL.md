@@ -11,7 +11,7 @@ description: >
   public identifiers that only look secret: AdMob App and Ad Unit IDs, IAP
   SKUs, bundle IDs, and Steam App IDs. Not for: correctness and spec
   drift, owned by `shared-core-boundary-audit`; fixing an integration,
-  owned by `tech-lead-sdk-platform`; whether a credential ever entered git
+  owned by `sdk-platform-engineer`; whether a credential ever entered git
   history and is still reachable, owned by `git-forensics`; key rotation
   and history rewrite decisions, owned by `cto`.
 ---
@@ -31,7 +31,7 @@ Act as the security scanner for the QA track, on behalf of `security-reviewer`. 
 - An older area of the repository is being audited standalone, outside any particular submission.
 - A value looks sensitive and nobody can say where it came from.
 - Negative trigger: correctness, Tech Spec drift, and Shared Core duplication — that is `shared-core-boundary-audit`, whose verdict is separate from this one.
-- Negative trigger: performing or repairing the SDK integration itself — that is `tech-lead-sdk-platform`; this skill reports and stops.
+- Negative trigger: performing or repairing the SDK integration itself — that is `sdk-platform-engineer`; this skill reports and stops.
 - Negative trigger: whether a credential ever entered git history and is still reachable there — that is `git-forensics`, which sweeps every reachable object; this skill reads the working tree only, so a clean scan here never means a clean history.
 - Negative trigger: deciding to rotate a key or rewrite git history — that is `cto`, because both are hard to reverse and affect more than this submission.
 - Negative trigger: a crash or fault in a released build — that is `crash-anr-investigator`, not a security finding.
@@ -54,7 +54,7 @@ Act as the security scanner for the QA track, on behalf of `security-reviewer`. 
 - Detecting unreviewable binaries and source-less plugins.
 - Detecting logic whose behaviour contradicts its stated purpose.
 - Producing a security verdict of Clear, Blocked, or Needs Confirmation, with routed findings.
-- Out of scope: correctness and spec compliance (`shared-core-boundary-audit`); repairing an integration (`tech-lead-sdk-platform`); sweeping git history for a credential (`git-forensics`); rotating keys or rewriting history (`cto`); released-build faults (`crash-anr-investigator`).
+- Out of scope: correctness and spec compliance (`shared-core-boundary-audit`); repairing an integration (`sdk-platform-engineer`); sweeping git history for a credential (`git-forensics`); rotating keys or rewriting history (`cto`); released-build faults (`crash-anr-investigator`).
 
 ## 6. Output format
 ```
@@ -68,7 +68,7 @@ Act as the security scanner for the QA track, on behalf of `security-reviewer`. 
 - Behaviour contradicting stated purpose: <path:line and the mismatch — or none>
 - Findings: <category, severity, path:line, per finding>
 - Decision: <clear / block / confirm before deciding>
-- Routed to: <tech-lead-sdk-platform / cto / none>
+- Routed to: <sdk-platform-engineer / cto / none>
 ```
 
 **Extended report — emit ONLY when the requester asks for it.** It adds all three fields below the decision:

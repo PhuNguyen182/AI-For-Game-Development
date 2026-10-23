@@ -14,7 +14,7 @@ description: >
   `live-ops-content-pipeline`, `cross-platform-expansion-assessment`, or
   `tech-vendor-dependency-risk-assessment`; recording the resulting
   standard, owned by `engineering-standard-adr-authoring`; routine
-  estimates a Tech Lead already produces, owned by `technical-architect`.
+  estimates the owning engineer already produces, owned by `technical-architect`.
 ---
 
 # TCO / Reversibility Scoring — comparing foundational technology options
@@ -31,7 +31,7 @@ Act as the CTO's decision-scoring discipline: a structured cost/risk calculator 
 - A domain CTO skill needs a score and calls in here rather than inventing scoring logic locally.
 - Negative trigger: the domain trade-off data itself is missing — gather it in the owning domain skill first; this skill scores what it is handed.
 - Negative trigger: the decision's outcome needs to become a durable cross-project standard — that recording step is `engineering-standard-adr-authoring`.
-- Negative trigger: a routine engineering estimate Technical Architect or a Tech Lead already produces without CTO involvement.
+- Negative trigger: a routine engineering estimate Technical Architect or the owning engineer already produces without CTO involvement.
 
 ## 4. How to use this skill
 1. **Enumerate only options genuinely on the table** — usually two to four. A strawman nobody would seriously choose inflates the winner's margin and hides the trade-off that actually decides the call.

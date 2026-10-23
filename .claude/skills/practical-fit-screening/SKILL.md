@@ -14,7 +14,7 @@ description: >
   `technology-scouting-sweep`; grading a source's trust, owned by
   `source-credibility-grading`; ranking the survivors, owned by
   `solution-comparison-report`; measuring on device, owned by
-  `rd-engineer`; integrating the winner, owned by `tech-lead-sdk-platform`.
+  `rd-engineer`; integrating the winner, owned by `sdk-platform-engineer`.
 ---
 
 # Practical Fit Screening — can this project actually adopt the candidate
@@ -34,7 +34,7 @@ Act as the adoption gate for the research track — the screen every external ca
 - Negative trigger: the question is whether a source can be trusted at all — that's `source-credibility-grading`.
 - Negative trigger: candidates already passed and must be ranked into a recommendation — that's `solution-comparison-report`.
 - Negative trigger: the gate needs numbers from a real build or device — that's a spike, owned by `rd-engineer`.
-- Negative trigger: the winner is chosen and needs wiring into the project — that's `tech-lead-sdk-platform` or the owning implementation role.
+- Negative trigger: the winner is chosen and needs wiring into the project — that's `sdk-platform-engineer` or the owning implementation role.
 - Negative trigger: the dependency is already in the project and the question is whether it is still safe to build on — maintenance decay, a licence change, a maintainer stepping away — that's `tech-vendor-dependency-risk-assessment`, which ends in keep/mitigate/replace; this screen only answers whether a candidate is adoptable here at all.
 
 ## 4. How to use this skill
@@ -56,7 +56,7 @@ Act as the adoption gate for the research track — the screen every external ca
 - The duplication check against what the project already contains, run first.
 - Soft criteria scored only for survivors: maintenance, integration cost, exit cost, mobile cost.
 - Gates needing measurement marked `UNKNOWN` with the spike that would settle them.
-- Out of scope: finding candidates (`technology-scouting-sweep`), source trust (`source-credibility-grading`), ranking (`solution-comparison-report`), device measurement (`rd-engineer`), integration (`tech-lead-sdk-platform`), the vendor-health keep/replace verdict (`tech-vendor-dependency-risk-assessment`).
+- Out of scope: finding candidates (`technology-scouting-sweep`), source trust (`source-credibility-grading`), ranking (`solution-comparison-report`), device measurement (`rd-engineer`), integration (`sdk-platform-engineer`), the vendor-health keep/replace verdict (`tech-vendor-dependency-risk-assessment`).
 
 ## 6. Output format
 ```

@@ -15,7 +15,7 @@ description: >
   owned by `unity-tilemap`; spline colliders, owned by
   `unity-2d-spriteshape`; damage and state rules, owned by
   `csharp-engineer`; and escalated profiling, owned by
-  `tech-lead-performance`.
+  `unity-engineer`.
 ---
 
 # Unity 2D Physics — Box2D Bodies, Colliders, Effectors & Joints
@@ -53,7 +53,7 @@ Act as the built-in 2D physics specialist for the client track — the skill rea
 - Negative trigger: generating collision from painted tiles — `TilemapCollider2D` setup is `unity-tilemap`'s, and this skill takes over at the body and material on the result.
 - Negative trigger: the collider a Sprite Shape spline auto-generates — that's `unity-2d-spriteshape`; this skill configures what is attached to it.
 - Negative trigger: deciding damage, knockback magnitude, or a state transition from a contact — that's `csharp-engineer`'s Shared Core, per `coding-principles.md`'s Shared Core integrity section.
-- Negative trigger: a physics cost that survives shape simplification, matrix pruning, and sleep tuning — escalate to `tech-lead-performance`.
+- Negative trigger: a physics cost that survives shape simplification, matrix pruning, and sleep tuning — escalate to `unity-engineer`.
 
 ## 4. How to use this skill
 1. **Confirm which physics engine the project is actually on before touching a component**, per [root-links.md](references/root-links.md) — `Rigidbody2D` and `Rigidbody` share almost every concept name and no behaviour, and DOTS `unity-physics` shares the vocabulary again; a mis-scoped answer here is wasted whole, not partially useful.
@@ -78,7 +78,7 @@ Act as the built-in 2D physics specialist for the client track — the skill rea
 - Joint selection, motor and limit tuning, and break handling.
 - `ConstantForce2D` for continuous acceleration.
 - Collision and trigger callback wiring that hands data to Shared Core.
-- Out of scope: 3D physics (`unity-3d-physics`), DOTS physics (`unity-physics`), sprite physics-shape authoring (`unity-2d-sprite`), tile collision generation (`unity-tilemap`), Sprite Shape colliders (`unity-2d-spriteshape`), gameplay rules (`csharp-engineer`), escalated optimisation (`tech-lead-performance`).
+- Out of scope: 3D physics (`unity-3d-physics`), DOTS physics (`unity-physics`), sprite physics-shape authoring (`unity-2d-sprite`), tile collision generation (`unity-tilemap`), Sprite Shape colliders (`unity-2d-spriteshape`), gameplay rules (`csharp-engineer`), escalated optimisation (`unity-engineer`).
 
 ## 6. Output format
 ```

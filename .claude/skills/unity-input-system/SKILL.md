@@ -9,7 +9,7 @@ description: >
   `OnScreenButton` and `OnScreenStick`, interactive rebinding and binding
   overrides, and the Active Input Handling setting. Use when player input must
   be read, bound, rebound, or routed into UI. Not for: what a press means as a
-  game rule — `csharp-engineer`; UI layout — `ui-ux-programmer`; Animator
+  game rule — `csharp-engineer`; UI layout — `unity-engineer`; Animator
   parameters — `unity-animation`; camera axis controllers —
   `unity-cinemachine-authoring`; gathering an action's value into a per-tick
   command struct for a predicted netcode simulation — `netcode-for-entities`;
@@ -50,7 +50,7 @@ Act as the input specialist for the client track — the tool reached for whenev
 - Migrating from the legacy `UnityEngine.Input` API, or deciding the Active Input Handling setting.
 - An action does not fire, fires twice, or the wrong device drives it.
 - Negative trigger: whether the action the player just requested is currently allowed — cooldown, resource cost, stun — that is `csharp-engineer`'s Shared Core, per `coding-principles.md`'s Shared Core integrity rule; this skill reports only that the input happened.
-- Negative trigger: the Canvas hierarchy, widget design, or screen layout the UI module ends up driving — that is `ui-ux-programmer`; this skill stops at the input module and its action map.
+- Negative trigger: the Canvas hierarchy, widget design, or screen layout the UI module ends up driving — that is `unity-engineer`; this skill stops at the input module and its action map.
 - Negative trigger: the Animator parameters or blend trees a movement value feeds — that is `unity-animation`; this skill delivers the value.
 - Negative trigger: a Cinemachine camera that does not respond to a stick — the axis controller component belongs to `unity-cinemachine-authoring`, which this skill feeds; the binding behind it is this skill's.
 - Negative trigger: destination and pathfinding decisions behind a click-to-move gesture — that is `unity-navmesh-navigation`; this skill supplies the screen position.
@@ -82,7 +82,7 @@ Act as the input specialist for the client track — the tool reached for whenev
 - On-screen touch controls, and `InputSystemUIInputModule` setup on a scene's `EventSystem`.
 - Deciding Active Input Handling and migrating legacy `UnityEngine.Input` call sites to actions.
 - Diagnosing non-firing, double-firing, or wrongly paired input through the Input Debugger and Device Simulator.
-- Out of scope: the game rule behind a press (`csharp-engineer`); UI layout and widget design (`ui-ux-programmer`); Animator parameters and blend trees (`unity-animation`); camera axis controllers and camera behaviour (`unity-cinemachine-authoring`); destination and pathfinding decisions (`unity-navmesh-navigation`); per-tick input commands inside a predicted netcode simulation (`netcode-for-entities`); XR Interaction Toolkit and XR rendering (no owning skill — flag the gap).
+- Out of scope: the game rule behind a press (`csharp-engineer`); UI layout and widget design (`unity-engineer`); Animator parameters and blend trees (`unity-animation`); camera axis controllers and camera behaviour (`unity-cinemachine-authoring`); destination and pathfinding decisions (`unity-navmesh-navigation`); per-tick input commands inside a predicted netcode simulation (`netcode-for-entities`); XR Interaction Toolkit and XR rendering (no owning skill — flag the gap).
 
 ## 6. Output format
 ```

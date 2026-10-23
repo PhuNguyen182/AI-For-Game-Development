@@ -8,7 +8,7 @@ Anchors every link in this folder. Unity's Manual pages for the Profiler are
 published unversioned and resolve to the current LTS documentation; the two
 companion packages are versioned and pinned here. Anything this skill cites
 resolves under one of these roots; the fix a measurement leads to does not
-live here at all, and belongs to `unity-engineer` or `tech-lead-performance`.
+live here at all, and belongs to `unity-engineer`.
 
 ## Roots
 

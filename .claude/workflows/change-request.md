@@ -21,7 +21,6 @@ the technology judgment `cto`'s.
 | Agent | Returns / owns here |
 |---|---|
 | `technical-architect` | One `Change severity:` per independently-severable part, the code now needing rework, the reclassified tier and five axes, and — at Moderate/Major — the revised spec |
-| `producer` | The **Status Report** that carries a Minor change to the GD (G72) |
 
 Everything downstream belongs to its own file: CP1 and CP2 to `feature-intake.md`, the rework to
 `feature-development.md`, re-verification to `review-pipeline.md` and `qa-pipeline.md`.
@@ -57,7 +56,7 @@ Everything downstream belongs to its own file: CP1 and CP2 to `feature-intake.md
 
    | Severity | Criterion | Direction-dependent spec fields | Goes to |
    |---|---|---|---|
-   | **Minor** | Module boundaries and interfaces unchanged | Filled | The architect updates the spec in place; `producer` carries it in the next Status Report, or a one-line notice when none is due (G72) |
+   | **Minor** | Module boundaries and interfaces unchanged | Filled | The architect updates the spec in place; it reaches the GD in the next Status Report, or a one-line notice when none is due (G72) |
    | **Moderate** | The spec's structure changes; the original direction and its assumptions still hold | Revised in place | `feature-intake.md` **E4** — CP2 reopens (G73). A D1–D2 baseline has no CP2: **E3** — grown to D3+, the spec is written and CP2 runs for the first time; still D1–D2, the revised notes go to the GD for approval (G73) before the hand-off |
    | **Major** | It invalidates an assumption `critic` tested or a risk the GD accepted at CP1 — **or** the reclassified axes now require CP1 (D4–D5, or U3) on a feature that never held one | `Pending CP1` — never invented ahead of the loop | `feature-intake.md` **E5** — CP1 reopens (G73) |
 
@@ -97,12 +96,10 @@ Where each fires; what it carries and what happens on no are `gd-touchpoints.md`
 
 | Outcome | Control goes to | Ledger |
 |---|---|---|
-| Minor | Spec updated in place; `producer` at the next cycle; rework (if code exists) to `feature-development.md` **E3** | `Tier:`; superseded decisions; counter resets |
+| Minor | Spec updated in place; reported in the next Status Report; rework (if code exists) to `feature-development.md` **E3** | `Tier:`; superseded decisions; counter resets |
 | Moderate | `feature-intake.md` **E4**, with the revised spec and the rework list — **E3** on a D1–D2 baseline | `Tier:`; superseded decisions; counter resets |
-| Major | `feature-intake.md` **E5** | `Tier:`; `Advisor⇄Critic:` round reset, ruled-out list kept; counter resets |
+| Major | `feature-intake.md` **E5** | `Tier:`; `Options⇄Critic:` round reset, ruled-out list kept; counter resets |
 | A part needs a strategic technology choice | `research-decision.md` **E2**; back at **E3** | — until the remaining severity is classified |
 | No code against the superseded spec | The interrupted pipeline, at the step the ledger's `Position:` names | — |
 | `technical-architect` → `Blocked` | Supply the GD's own words unedited, or the track state (G6) | — |
-| `producer` → `Needs-decision`, `Routed to: technical-architect` | Re-dispatch the architect with both conflicting reports | — |
-| `producer` → `Blocked` | Supply the reports behind the change — never reconstruct status by inference | — |
 | A bound reached | The GD (G7) | *Continuation debt* |

@@ -1,10 +1,10 @@
 # Client Track — Performance & Algorithm Engineering
 
-Applies to: C# Software Engineer, Unity Engineer, UI/UX Programmer, Tech Lead – C# Unity, Tech Lead – SDK/Platform, Tech Lead – Performance, Technical Artist.
+Applies to: C# Software Engineer, Unity Engineer, Technical Artist, Netcode Engineer, SDK/Platform Engineer.
 
 ## Relationship to other rules
 
-This file governs **algorithm and data-structure selection, memory-lifetime discipline, and Unity engine-specific optimization technique**, for all client-track code (`Game.Core.*` and `Game.Client.*`). It complements, not replaces, the baseline hot-path hygiene already required by `coding-principles.md`'s "Performance discipline" section (no per-frame allocations in `Update()`, caching `GetComponent<T>()`, pooling `UnityEngine.Object` instances, platform abstraction) — that section is the non-negotiable floor; this file goes further into engine-specific technique and CS-fundamentals discipline. Tech Lead – Performance still owns deep, escalated, measured optimization work beyond the baseline expected here — this file is the baseline every submission is expected to meet before it ever needs to reach that escalation.
+This file governs **algorithm and data-structure selection, memory-lifetime discipline, and Unity engine-specific optimization technique**, for all client-track code (`Game.Core.*` and `Game.Client.*`). It complements, not replaces, the baseline hot-path hygiene already required by `coding-principles.md`'s "Performance discipline" section (no per-frame allocations in `Update()`, caching `GetComponent<T>()`, pooling `UnityEngine.Object` instances, platform abstraction) — that section is the non-negotiable floor; this file goes further into engine-specific technique and CS-fundamentals discipline. Unity Engineer still owns deep, escalated, measured optimization work beyond the baseline expected here — this file is the baseline every submission is expected to meet before it ever needs to reach that escalation.
 
 ## Core principle — measured, practical performance over theoretical purity
 
@@ -83,7 +83,7 @@ Baseline engine-level technique expected from routine client-track work, on top 
 - Never call `GC.Collect()` in gameplay hot paths. Forcing a full collection defeats the incremental scheduler and causes exactly the stall it exists to avoid — the fix for allocation pressure is to stop allocating (pooling, struct reuse, avoiding boxing), not to force more frequent collection.
 
 ### Multithreading — escalation territory, not a routine default
-- The Job System + Burst Compiler is the right tool for genuinely parallelizable, CPU-bound bulk work (large-scale simulation, batched pathfinding, etc.) — but most Unity APIs are main-thread-only, and introducing Job System/Burst/DOTS is an architecture-level decision with real added complexity, not a routine optimization. This is `tech-lead-performance`'s territory once profiling shows a genuinely CPU-bound, parallelizable bottleneck — don't reach for it as a first-pass default (see KISS/YAGNI in `coding-principles.md`).
+- The Job System + Burst Compiler is the right tool for genuinely parallelizable, CPU-bound bulk work (large-scale simulation, batched pathfinding, etc.) — but most Unity APIs are main-thread-only, and introducing Job System/Burst/DOTS is an architecture-level decision with real added complexity, not a routine optimization. This is `technical-architect`'s call once profiling shows a genuinely CPU-bound, parallelizable bottleneck — don't reach for it as a first-pass default (see KISS/YAGNI in `coding-principles.md`).
 
 ## Verification
 
@@ -95,4 +95,4 @@ Baseline engine-level technique expected from routine client-track work, on top 
 - No per-frame heap allocations, no unnecessary boxing, no LINQ in hot paths — already required by `coding-principles.md`; this file adds the reasoning (allocation and GC pressure) and extends it to algorithm/data-structure choice generally, not just `Update()`-loop code.
 - Prefer the runtime's built-in, well-tested collection/algorithm implementations over hand-rolled ones unless a specific, measured case proves otherwise.
 - Every complexity/practicality trade-off claim ships with a measurement, not just an assertion.
-- Stay scoped to what the Tech Spec actually needs — don't add a low-level optimization nobody asked for at the cost of readability, unless a measured problem justifies it (see `tech-lead-performance`'s own agent file for when a problem is deep enough to warrant that trade-off).
+- Stay scoped to what the Tech Spec actually needs — don't add a low-level optimization nobody asked for at the cost of readability, unless a measured problem justifies it (see `unity-engineer`'s own agent file for when a problem is deep enough to warrant that trade-off).

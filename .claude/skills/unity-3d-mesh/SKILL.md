@@ -14,7 +14,7 @@ description: >
   procedural mesh, a mesh asset, or its Filter/Renderer wiring. Not for:
   skinning, blend shapes, or bones — `unity-animation`; `MeshCollider`
   cooking — `unity-3d-physics`; materials and shaders — `shader-authoring`;
-  LOD/batching escalation — `unity-engineer` or `tech-lead-performance`;
+  LOD/batching escalation — `unity-engineer`;
   model import settings — `unity-engineer`; sprite meshes —
   `unity-2d-sprite`; GPU-side deformation that never returns to the CPU —
   `compute-shader-vfx`; scheduling the jobs the Advanced Mesh API runs in —
@@ -52,7 +52,7 @@ Act as the 3D mesh authoring specialist for the client track — the skill reach
 - Negative trigger: bind poses, blend shapes, bone weights, or a `SkinnedMeshRenderer` — that's `unity-animation`; this skill covers only the static-mesh data that precedes it.
 - Negative trigger: `MeshCollider` cooking, convexity, or collision behaviour — that's `unity-3d-physics`, even though the same `Mesh` asset is the input.
 - Negative trigger: writing or modifying a shader or material's appearance — that's `shader-authoring`.
-- Negative trigger: LOD Group, the Mesh LOD generator, or a batching/GPU-instancing cost that survives this skill's advice — escalate to `unity-engineer` first, `tech-lead-performance` if it persists.
+- Negative trigger: LOD Group, the Mesh LOD generator, or a batching/GPU-instancing cost that survives this skill's advice — escalate to `unity-engineer`.
 - Negative trigger: FBX or other 3D-model import settings — that's `unity-engineer`'s asset pipeline.
 - Negative trigger: `Sprite`/`SpriteRenderer` 2D mesh geometry — that's `unity-2d-sprite`.
 - Negative trigger: geometry deformed on the GPU and never read back — a compute kernel writing vertices into a buffer an indirect draw consumes — that's `compute-shader-vfx`; this skill owns the `Mesh` the CPU can still read, collide against, and save, and the deciding question is whether anything but the renderer needs the result.
@@ -81,7 +81,7 @@ Act as the 3D mesh authoring specialist for the client track — the skill reach
 - Read/Write Enabled, mesh compression, and vertex compression configuration.
 - `CombineMeshes` versus static batching selection for static geometry groups.
 - Primitive GameObject creation via `GameObject.CreatePrimitive`.
-- Out of scope: skinning/blend shapes (`unity-animation`), `MeshCollider` physics (`unity-3d-physics`), GPU-only deformation (`compute-shader-vfx`), job scheduling and allocator lifetime behind the Advanced Mesh API (`unity-job-system-and-burst`), shaders/materials (`shader-authoring`), LOD/batching escalation (`unity-engineer`, `tech-lead-performance`), model import settings (`unity-engineer`), sprite meshes (`unity-2d-sprite`), gameplay rules (`csharp-engineer`).
+- Out of scope: skinning/blend shapes (`unity-animation`), `MeshCollider` physics (`unity-3d-physics`), GPU-only deformation (`compute-shader-vfx`), job scheduling and allocator lifetime behind the Advanced Mesh API (`unity-job-system-and-burst`), shaders/materials (`shader-authoring`), LOD/batching escalation (`unity-engineer`), model import settings (`unity-engineer`), sprite meshes (`unity-2d-sprite`), gameplay rules (`csharp-engineer`).
 
 ## 6. Output format
 ```

@@ -8,8 +8,8 @@ groups rather than inside one.
 Everything under `.claude/rules/` enters **every** session and **every** agent dispatch before a word is
 typed. That is correct for a rule the whole project obeys — `security.md`, `orchestration.md`,
 `language-and-comments.md`. It was wrong for the two **track** folders: 756 lines of C# style, Unity
-performance technique and QA evidence standards were being paid for by the router, by `producer`, by
-`researcher` and by `advisor`, none of which will ever write a line of C# or judge a test.
+performance technique and QA evidence standards were being paid for by the router, by `researcher`, by
+`critic` and by `cto`, none of which will ever write a line of C# or judge a test.
 
 Their `Applies to:` headers were documentation, not a loading mechanism. So they moved:
 
@@ -19,14 +19,14 @@ Their `Applies to:` headers were documentation, not a loading mechanism. So they
 ```
 
 **Nothing was weakened.** A standard binds the code whoever writes it, exactly as before — what changed is
-who pays to have it in context. Every agent the standards govern already carries a required-reading table
-naming its own files; that table is now the loading mechanism rather than a citation.
+who pays to have it in context. Every agent the standards govern already carries a `## Read` section
+naming its own files; that section is now the loading mechanism rather than a citation.
 
 ## Who reads what, and when
 
 | Standard | Read by | When |
 |---|---|---|
-| `.claude/standards/client/coding-principles.md` | `csharp-engineer`, `unity-engineer`, `ui-ux-programmer`, `technical-artist`, `netcode-engineer`, `server-authoritative-engineer`, every `tech-lead-*`, `code-reviewer` | Before writing or reviewing any client-track code |
+| `.claude/standards/client/coding-principles.md` | `csharp-engineer`, `unity-engineer`, `technical-artist`, `netcode-engineer`, `sdk-platform-engineer`, `code-reviewer` | Before writing or reviewing any client-track code |
 | `.claude/standards/client/code-style-and-layout.md` | the same | With `coding-principles.md` — the two are explicitly not substitutes |
 | `.claude/standards/client/naming-convention.md` | the same | Naming any identifier, file or namespace |
 | `.claude/standards/client/performance-and-algorithms.md` | the same, plus `performance-qa-engineer` | Any hot path, data-structure choice or engine-level optimization |

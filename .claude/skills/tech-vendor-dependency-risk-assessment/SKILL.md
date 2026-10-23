@@ -12,7 +12,7 @@ description: >
   new candidate — IL2CPP, engine version, `Game.Core.*` determinism, owned
   by `practical-fit-screening`; reviewing this project's own code, owned by
   `code-reviewer`; trivial swappable utilities; SDK integration work, owned
-  by `tech-lead-sdk-platform`; the scoring rubric, owned by
+  by `sdk-platform-engineer`; the scoring rubric, owned by
   `tco-reversibility-scoring`; recording it as a standard, owned by
   `engineering-standard-adr-authoring`.
 ---
@@ -31,7 +31,7 @@ Act as a vendor-risk technical due-diligence reviewer: the person who asks what 
 - When a dependency's maintenance signal visibly changes — a maintainer steps away, a release cadence stalls, a license changes.
 - Negative trigger: the code under question is this project's own — that is `code-reviewer`'s job, and this rubric measures nothing useful about it.
 - Negative trigger: a trivial, easily-swappable utility with no gameplay-critical surface — formalising that risk costs more than the risk.
-- Negative trigger: the dependency is already chosen and the work is integrating it — that is `tech-lead-sdk-platform`.
+- Negative trigger: the dependency is already chosen and the work is integrating it — that is `sdk-platform-engineer`.
 - Negative trigger: the candidate is not in the project yet and the question is whether this project could adopt it at all — scripting backend, engine and language version, `Game.Core.*` determinism, duplication against `Packages/manifest.json` — that is `practical-fit-screening`; this rubric judges vendor survival, not adoptability.
 
 ## 4. How to use this skill
@@ -51,7 +51,7 @@ Act as a vendor-risk technical due-diligence reviewer: the person who asks what 
 - Catch vendor risk before it becomes a repeated production failure rather than after.
 - Name a concrete mitigation whenever the verdict is "keep with mitigation", not a general intention to reduce coupling.
 - Escalate precedent-setting verdicts into a recorded standard.
-- Out of scope: this project's own code quality (`code-reviewer`), day-to-day SDK integration (`tech-lead-sdk-platform`), trivial swappable utilities, the adoption gates on a candidate not yet in the project (`practical-fit-screening`).
+- Out of scope: this project's own code quality (`code-reviewer`), day-to-day SDK integration (`sdk-platform-engineer`), trivial swappable utilities, the adoption gates on a candidate not yet in the project (`practical-fit-screening`).
 
 ## 6. Output format
 ```
@@ -64,7 +64,7 @@ Act as a vendor-risk technical due-diligence reviewer: the person who asks what 
 - Gameplay criticality: low / medium / high
 - Rule compliance: assessment written in English, per Working language
 - Verdict: keep / keep with mitigation: <the mitigation> / replace now / replace by <date or trigger>
-- Routed to: `tech-lead-sdk-platform` to act; `engineering-standard-adr-authoring` if this sets precedent
+- Routed to: `sdk-platform-engineer` to act; `engineering-standard-adr-authoring` if this sets precedent
 ```
 
 **Extended report — emit ONLY when the requester asks for it.** It replaces the one-line verdict rationale with all three fields:

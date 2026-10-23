@@ -15,7 +15,7 @@ description: >
   by `vfx-particle-authoring`; the light rig it reads, owned by
   `unity-lighting`; DOTS Instancing requirements, owned by
   `unity-entities-graphics`; tuning an unchanged shader, owned by
-  `tech-lead-performance`.
+  `unity-engineer`.
 ---
 
 # Shader Authoring — Shader Graph & HLSL Content
@@ -40,7 +40,7 @@ Act as the shader programmer for the client track — the tool reached for whene
 - Negative trigger: particle emission and simulation graph structure — that is `vfx-particle-authoring`; this skill writes the shader its output stage renders with.
 - Negative trigger: the lights, probes and limits a lit shader reads — including a shader that receives fewer lights than expected, which is the rendering path's per-object limit rather than the shader — that is `unity-lighting`, which supplies the HLSL entry points this skill calls.
 - Negative trigger: deciding that a shader must be DOTS Instancing compatible, or which properties are Hybrid Per Instance — that is `unity-entities-graphics`; authoring the shader itself stays here.
-- Negative trigger: making an already-correct shader faster with no visual change requested — that is `tech-lead-performance`.
+- Negative trigger: making an already-correct shader faster with no visual change requested — that is `unity-engineer`.
 - Companion, if the official Unity plugin (`unity@claude-plugins-official`) is installed: `unity:shader-graph-create-custom-node` turns existing HLSL into a reflected Shader Graph custom node; this skill still owns everything else about the shader.
 
 ## 4. How to use this skill
@@ -64,7 +64,7 @@ Act as the shader programmer for the client track — the tool reached for whene
 - SRP Batcher compatibility work and diagnosis of a shader that is not batching.
 - Variant-count control through deliberate `shader_feature`/`multi_compile` choice.
 - Precision and platform-compatibility work across the project's shipping targets.
-- Out of scope: pipeline targeting (`render-pipeline-urp-hdrp`); pass injection (`unity-urp-rendering`, `unity-hdrp-rendering`); Volume plumbing for post effects (`unity-post-processing`); compute kernels (`compute-shader-vfx`); particle graphs (`vfx-particle-authoring`); the light rig a lit shader reads (`unity-lighting`); DOTS Instancing requirements (`unity-entities-graphics`); pure performance tuning (`tech-lead-performance`).
+- Out of scope: pipeline targeting (`render-pipeline-urp-hdrp`); pass injection (`unity-urp-rendering`, `unity-hdrp-rendering`); Volume plumbing for post effects (`unity-post-processing`); compute kernels (`compute-shader-vfx`); particle graphs (`vfx-particle-authoring`); the light rig a lit shader reads (`unity-lighting`); DOTS Instancing requirements (`unity-entities-graphics`); pure performance tuning (`unity-engineer`).
 
 ## 6. Output format
 ```

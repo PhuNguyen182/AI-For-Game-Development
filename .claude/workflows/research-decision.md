@@ -9,9 +9,9 @@ pipeline exists to spend **U** down. You research, you never integrate.
 | Door | Comes from | Carries |
 |---|---|---|
 | **E1** | `feature-intake.md` step 5 — a capability the project lacks, direction already settled | The capability as behaviour, the tier, the feature's constraints |
-| **E2** | Any `Routed to: cto` — `technical-architect` at its step 2 or step 6, `feature-development.md` (`netcode-engineer`, a tech lead), `change-request.md` classifying a change | The question, **which caller and which step** (it sets the return door), what is already known |
-| **E3** | `advisor` → `Needs-decision`, `Routed to: cto` or `rd-engineer` | The option in question, the options ruled out, the round spent |
-| **E4** | `feature-intake.md` step 2 returns U2/U3 on a **technology** unknown — before its loop | The architect's `Open design question:` lines tagged `technology`; `design`/`architecture` lines go to `advisor` in `feature-intake.md`, routed per line |
+| **E2** | Any `Routed to: cto` — `technical-architect` at its step 2 or step 6, `feature-development.md` (`netcode-engineer`, an escalation answer), `change-request.md` classifying a change | The question, **which caller and which step** (it sets the return door), what is already known |
+| **E3** | `researcher` in Options mode (`feature-intake.md`) → `Needs-decision`, `Routed to: cto` or `rd-engineer` | The option in question, the options ruled out, the round spent |
+| **E4** | `feature-intake.md` step 2 returns U2/U3 on a **technology** unknown — before its loop | The architect's `Open design question:` lines tagged `technology`; `design`/`architecture` lines go to `researcher`'s Options mode in `feature-intake.md`, routed per line |
 | **E5** | The GD asks for research, no feature (G30) | The capability as behaviour, the paid/closed-source preference (G34) |
 | **E6** | The GD summons a spike, no feature (G30) — asking *is* the summon | The question and the decision waiting on it, threshold, hardware, baseline, any build authorisation (G16) |
 
@@ -23,19 +23,19 @@ from what the project has is U0.
 
 | Agent | Returns / owns here |
 |---|---|
-| `researcher` | **Research Report** — what exists today, sourced and dated (`Picture taken:`), `Assessed:` lane; recommends, never decides |
+| `researcher` | **Research Report** — what exists today, sourced and dated (`Picture taken:`), `Lane:`; recommends, never decides |
 | `rd-engineer` | **Feasibility Report** — a disposable harness and measured numbers; evidence, never a verdict. Holds Editor tools (I3); never builds |
 | `build-run-engineer` | The Development Build an on-device spike measures — only on an explicit GD request (G16) |
 | `cto` | **Technical Decision** and any `Standard set:`; again with `engineering-standard-adr-authoring` to write the ADR a standard is owed |
 
-`advisor` is not dispatched here: how comparable games solved a **design** problem is `feature-intake.md`'s.
+`researcher`'s Options mode is not run here: how comparable games solved a **design** problem is `feature-intake.md`'s.
 
 ## Hard ordering
 
 1. **`researcher` runs before `cto` on every path but E6**, which reaches `cto` through a Feasibility Report. `cto`
    is never entered without a candidate set — it is barred from returning open options.
-2. **The spike gate (G31) precedes every `rd-engineer` dispatch** except E6. No recommendation from `researcher`,
-   `advisor` or `cto` is ever converted into a dispatch.
+2. **The spike gate (G31) precedes every `rd-engineer` dispatch** except E6. No recommendation from `researcher` or `cto`
+   is ever converted into a dispatch.
 3. **On a device**: the device lock (I7) is claimed before the harness or the build reaches it and released on
    return; `rd-engineer` writes the harness, `build-run-engineer` builds it, and `rd-engineer` installs that build
    on the locked device and measures it.
@@ -52,7 +52,7 @@ from what the project has is U0.
    | **Considered** | Several plausible approaches, or the first-party answer is missing or deprecated; reversible at known cost | 2 → 5 → 6 | Return a ranked shortlist |
    | **Escalate** | Hard to reverse (R2–R3), costly if wrong (C3–C4), a paid commitment, or a number nobody can settle by reading | 2 → 3 → 4 → 5 → 6 | Sweep all three source tiers and name the deciding criterion |
 
-   Ambiguous starts one lane higher. `researcher`'s `Assessed:` raises the lane, never lowers it.
+   Ambiguous starts one lane higher. `researcher`'s `Lane:` raises the lane, never lowers it.
 2. **`researcher`** — never skipped. Attach the capability as behaviour ("research physics" is `Blocked`) and the
    paid/closed-source preference (G34).
 3. **Spike gate** — only when a number is the blocker: G31, carrying everything step 4 attaches. Declined → step 5,
@@ -89,8 +89,8 @@ from what the project has is U0.
 | Return | Do |
 |---|---|
 | `researcher` → `Done`, nothing strategic open | Step 6 |
-| `researcher` or `advisor` → `Routed to: rd-engineer` | Step 3 — never a direct dispatch |
-| `researcher` or `advisor` → `Routed to: cto` | Step 5, candidate set attached |
+| `researcher` (either mode) → `Routed to: rd-engineer` | Step 3 — never a direct dispatch |
+| `researcher` (either mode) → `Routed to: cto` | Step 5, candidate set attached |
 | `rd-engineer` → `Done` | Step 5 if the choice is strategic or hard to reverse; else step 6 |
 | `rd-engineer` → `Needs-decision`, `Routed to: cto` or `gd` | Follow it — not answerable at spike scale |
 | `cto` → `Needs-decision`, `Routed to: gd` | G32, then step 6 — a deferred call exits as **unresolved** |

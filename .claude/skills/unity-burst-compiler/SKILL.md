@@ -11,7 +11,7 @@ description: >
   that should be Burst-compiled is not, or when compiled output must be tuned
   or verified. Not for: scheduling, `JobHandle` chains, and allocator lifetime
   — `unity-job-system-and-burst`; whether Burst is warranted —
-  `tech-lead-performance`; the capture proving it —
+  `technical-architect`; the capture proving it —
   `unity-profiler-diagnostics`; entity and system design —
   `unity-ecs-architecture`; container type choice — `unity-collections`;
   `float3` maths — `unity-mathematics`; GPU-driven effects —
@@ -51,14 +51,14 @@ Act as the Burst compilation specialist for the client track — the tool reache
 - Configuring Burst AOT Settings and CPU architecture targets, or diagnosing something that works in Play Mode and fails in a Player build.
 - Bridging managed and Burst code with `FunctionPointer<T>`, or sharing mutable static state with `SharedStatic<T>`.
 - Negative trigger: scheduling a job, chaining `JobHandle` dependencies, choosing an allocator, or disposing a container — that is `unity-job-system-and-burst`; a job can be perfectly scheduled and still not Burst-compile, and the two are diagnosed separately.
-- Negative trigger: no decision or measurement justifying Burst at all — that is `tech-lead-performance`'s call, on a capture from `unity-profiler-diagnostics`.
+- Negative trigger: no decision or measurement justifying Burst at all — that is `technical-architect`'s call, on a capture from `unity-profiler-diagnostics`.
 - Negative trigger: modeling entities, systems, or queries — that is `unity-ecs-architecture`; this skill's rules apply unchanged whether the Burst target is a plain job or an `ISystem`.
 - Negative trigger: choosing a container type or allocator strategy — that is `unity-collections`.
 - Negative trigger: choosing `Unity.Mathematics` types or functions — that is `unity-mathematics`, even though those types are exactly what the vectorization guidance here is written around.
 - Negative trigger: a GPU-driven visual effect — that is `compute-shader-vfx`.
 
 ## 4. How to use this skill
-1. **Name the approved Job System or ECS work this compilation sits on top of** — per `performance-and-algorithms.md`'s Multithreading section, Burst is not adopted on its own; with no such decision, route to `tech-lead-performance` rather than tuning. [root-links.md](references/root-links.md) pins the Burst version every option below belongs to.
+1. **Name the approved Job System or ECS work this compilation sits on top of** — per `performance-and-algorithms.md`'s Multithreading section, Burst is not adopted on its own; with no such decision, route to `technical-architect` rather than tuning. [root-links.md](references/root-links.md) pins the Burst version every option below belongs to.
 2. **Bring the whole call graph inside the HPC# subset, not just the entry point**, per [csharp-language-support.md](references/csharp-language-support.md) — Burst compiles from an entry point outward, so one managed type, boxed value, or mutable static in any method it reaches disqualifies the entry point itself. Static fields must be `readonly` and compile-time evaluable; strings survive only as `FixedString` or a `Debug.Log` argument.
 3. **Apply `[BurstCompile]` at the level the target actually needs**, per [getting-started-and-compilation-model.md](references/getting-started-and-compilation-model.md) — on the job struct, or on both a static method and its containing class, or `[assembly: BurstCompile(...)]` for a project default. Precedence runs Editor menu over per-target attribute over assembly default, so a menu toggle can mask a wrong attribute.
 4. **Pick `FloatMode` from whether the result must be reproducible**, per [aliasing-and-attributes.md](references/aliasing-and-attributes.md) — anything feeding a game rule the server also evaluates stays `Deterministic` or `Strict`, because `coding-principles.md`'s Shared Core integrity section forbids float behaviour that can diverge across platforms. `FloatMode.Fast` reorders arithmetic and takes reduced-precision SIMD paths, so it is for presentation-only maths with a stated tolerance.
@@ -80,7 +80,7 @@ Act as the Burst compilation specialist for the client track — the tool reache
 - Applying `Unity.Burst.Intrinsics` after a measured auto-vectorization shortfall, with a scalar fallback.
 - Configuring Burst AOT Settings and CPU architecture targets for Player builds.
 - Bridging managed and Burst code with `FunctionPointer<T>` and `SharedStatic<T>`, initialization order included.
-- Out of scope: whether Burst is warranted (`tech-lead-performance`); the Profiler capture behind it (`unity-profiler-diagnostics`); scheduling and container lifetime (`unity-job-system-and-burst`); entity and system design (`unity-ecs-architecture`); container selection (`unity-collections`); maths types (`unity-mathematics`); GPU-driven effects (`compute-shader-vfx`).
+- Out of scope: whether Burst is warranted (`technical-architect`); the Profiler capture behind it (`unity-profiler-diagnostics`); scheduling and container lifetime (`unity-job-system-and-burst`); entity and system design (`unity-ecs-architecture`); container selection (`unity-collections`); maths types (`unity-mathematics`); GPU-driven effects (`compute-shader-vfx`).
 
 ## 6. Output format
 ```

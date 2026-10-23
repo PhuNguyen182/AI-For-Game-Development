@@ -126,7 +126,7 @@ Assert-Check 'every backticked path and relative link resolves' $pathProblems
 Write-Host ''
 Write-Host '2. Agent ids'
 
-$rolePattern  = '`((?:tech-lead-[a-z-]+)|(?:[a-z]+(?:-[a-z]+)*-(?:engineer|tester|reviewer|lead|architect|investigator|evaluator|expert|artist|programmer)))`'
+$rolePattern  = '`([a-z]+(?:-[a-z]+)*-(?:engineer|tester|reviewer|lead|architect|investigator|evaluator|expert|artist|programmer))`'
 $unknown      = [System.Collections.Generic.List[string]]::new()
 
 foreach ($file in $layerFiles)
@@ -156,9 +156,10 @@ $pluginSkills  = [System.Collections.Generic.SortedSet[string]]::new()
 foreach ($file in $agentFiles)
 {
     $text    = Get-Content -Path $file.FullName -Raw
-    $section = [regex]::Match($text, '(?s)##\s+5\.\s+Skills you use(.*?)(\n##\s|\z)').Groups[1].Value
+    $section = [regex]::Match($text, '(?s)\n##\s+(?:Skills|Stages)\b(.*?)(\n##\s|\z)').Groups[1].Value
 
-    foreach ($row in [regex]::Matches($section, '(?m)^\|([^|\n]+)\|'))
+    # A list item names its skills before its first " — "; what follows is the trigger, which may name agents.
+    foreach ($row in [regex]::Matches($section, '(?m)^(?:-|\d+\.)\s+(.*?)(?: — |$)'))
     {
         foreach ($m in [regex]::Matches($row.Groups[1].Value, '`([a-z0-9-]+(?::[a-z0-9-]+)?)`'))
         {
@@ -199,7 +200,6 @@ foreach ($row in [regex]::Matches($indexText, '(?m)^\|\s*`(\.claude/standards/[^
     $readers = @([regex]::Matches($cell, '`([a-z-]+)`') | ForEach-Object { $_.Groups[1].Value } |
                  Where-Object { $agentIds -contains $_ })
 
-    if ($cell -match 'tech-lead-\*') { $readers += @($agentIds | Where-Object { $_ -like 'tech-lead-*' }) }
     if ($cell -match '\bthe same\b') { $readers += $prevReaders }
 
     $readers          = @($readers | Sort-Object -Unique)

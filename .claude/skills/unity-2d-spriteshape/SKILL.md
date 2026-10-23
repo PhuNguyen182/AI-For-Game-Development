@@ -51,7 +51,7 @@ Act as the Sprite Shape authoring specialist for the client track — the skill 
 - Negative trigger: building a level from cells on a grid — that's `unity-tilemap`, a different authoring model entirely.
 - Negative trigger: `Light2D` or 2D Renderer Data setup that consumes the tangents Enable Tangents produces — that's `unity-urp-rendering`.
 - Negative trigger: deciding what shape to generate — procedural terrain rules, destructible-ground logic — that's `csharp-engineer`'s Shared Core, per `coding-principles.md`'s Shared Core integrity section.
-- Negative trigger: non-trivial job logic inside a custom geometry creator — escalate to `unity-job-system-and-burst` or `tech-lead-performance`.
+- Negative trigger: non-trivial job logic inside a custom geometry creator — escalate to `unity-job-system-and-burst` or `unity-engineer`.
 
 ## 4. How to use this skill
 1. **Choose Open or Closed Shape before anything else**, per [spriteshape-profile.md](references/spriteshape-profile.md) — Closed loops the outline and fills the interior from `fillTexture`, Open has distinct ends and no fill at all. This is not a toggle to revisit: Fill settings, corner behaviour, and which collider makes sense all follow from it.

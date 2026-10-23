@@ -6,7 +6,7 @@ Covers: SKILL.md §4 — **"Set `PlayerInput` to Invoke C# Events, never Send or
 What `PlayerInput` adds over plain actions, which of its four dispatch modes
 this project permits, and how several local players are wired. The camera
 half of a split-screen feature is `unity-cinemachine-authoring`'s or
-`unity-camera-fundamentals`', and its UI layout is `ui-ux-programmer`'s.
+`unity-camera-fundamentals`', and its UI layout is `unity-engineer`'s.
 
 ## What the component owns
 

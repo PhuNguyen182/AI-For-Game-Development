@@ -82,7 +82,7 @@ Act as the navigation specialist for the client track — the tool reached for w
 - Building and streaming meshes at runtime.
 - Querying the mesh for positions, paths, and edges.
 - Migrating a legacy in-scene bake and its deprecated links to the current package.
-- Out of scope: destination and target selection (`csharp-engineer`); the input behind a move order (`unity-input-system`); locomotion blending (`unity-animation`); physics unrelated to navigation (`unity-3d-physics`, `unity-physics`); escalated navigation performance work (`tech-lead-performance`).
+- Out of scope: destination and target selection (`csharp-engineer`); the input behind a move order (`unity-input-system`); locomotion blending (`unity-animation`); physics unrelated to navigation (`unity-3d-physics`, `unity-physics`); escalated navigation performance work (`unity-engineer`).
 
 ## 6. Output format
 ```

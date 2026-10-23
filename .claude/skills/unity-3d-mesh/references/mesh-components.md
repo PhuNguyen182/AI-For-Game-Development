@@ -35,7 +35,7 @@ listed only for the boundary it marks — its actual configuration is
 | `Light Probes` | Off / Blend Probes / Use Proxy Volume / Custom Provided — how this renderer samples baked indirect lighting | [Mesh Renderer component reference](https://docs.unity3d.com/Manual/class-MeshRenderer.html) |
 | `Reflection Probes` | Off / Blend Probes / Blend Probes and Skybox / Simple — how this renderer samples reflection data | [Mesh Renderer component reference](https://docs.unity3d.com/Manual/class-MeshRenderer.html) |
 | `Motion Vectors` | Camera Motion Only / Per Object Motion / Force No Motion — per-pixel motion tracking for motion blur and similar effects | [Mesh Renderer component reference](https://docs.unity3d.com/Manual/class-MeshRenderer.html) |
-| Mesh LOD section (`LOD Override`, `Override Level`, `LOD Selection Bias`) | Forces or biases which Mesh LOD level renders — the authoring workflow behind it belongs to `unity-engineer`/`tech-lead-performance`, per [root-links.md](root-links.md) | [Mesh LOD](https://docs.unity3d.com/Manual/lod/mesh-lod-introduction.html) |
+| Mesh LOD section (`LOD Override`, `Override Level`, `LOD Selection Bias`) | Forces or biases which Mesh LOD level renders — the authoring workflow behind it belongs to `unity-engineer`, per [root-links.md](root-links.md) | [Mesh LOD](https://docs.unity3d.com/Manual/lod/mesh-lod-introduction.html) |
 
 ## SkinnedMeshRenderer boundary
 

@@ -6,7 +6,7 @@ Covers: SKILL.md §4 — **"Pick the content build system once, per project"**, 
 What has to be settled before the first load call exists: which build system
 the project uses, how content is grouped, and how a shared plain asset becomes
 five copies without anything reporting it. Where the content is hosted is not
-decided here — that is `tech-lead-sdk-platform`.
+decided here — that is `sdk-platform-engineer`.
 
 ## Content build system
 

@@ -28,9 +28,7 @@ discards its tier, floor and counters.
 | `build-verification-tester` | Build Verification — startup, critical paths, the suite on the Player, the case list on a device | No Editor tooling; device lock |
 | `build-run-engineer` | An artifact | Only on an explicit GD request (G16) |
 | `assurance-evaluator` | Assurance Verdict | Step 4b |
-| `producer` | Status Report | CP4 |
 | `technical-architect` | Root Cause (B6, B10); an answer where the spec leaves "correct" open | Step 3, step 4b, the B6/B13 exits |
-| `tech-lead-performance` | Diagnosis of a native, GPU or leak finding | Step 3; a fix it writes is a bug owner's submission at `feature-development.md` **E3** |
 
 Every other fix goes to its owner as a bug at `feature-development.md` **E3**, never dispatched from here.
 
@@ -46,7 +44,7 @@ takes released-production telemetry only.
 3. Device coverage: the build asked for (G61) before any device agent is dispatched; the device confirmed before
    the artifact is touched; a crash stops that case's path.
 4. The test-code offer (G62) before a suite's results are used as sign-off evidence.
-5. Sign-off, then the assurance gate — after every other verdict — then `producer`. At A3+ a gap that cannot be
+5. Sign-off, then the assurance gate — after every other verdict — then the CP4 report. At A3+ a gap that cannot be
    closed passes step 4b before CP4.
 6. Every gap written to the ledger's *Open gaps* as it arises — at **E4**, to its *Standalone QA runs* row —
    accepted ones mirrored before closure is reported (I6).
@@ -97,9 +95,9 @@ takes released-production telemetry only.
    | `Metrics:` | The ledger's `Baseline:` where none existed, written at the return. `Measured on:` travels with every quotation; an Editor figure is indicative and never satisfies a device claim |
    | `qa-lead` → `Routed to: gd`, either mode | Act on it at the step it arrived (G65) |
    | `qa-lead` → `Needs-decision` — no testable behaviour, or reports contradict | `technical-architect` |
-   | `performance-qa-engineer` → `Needs-decision` | Native, GPU or leak → `tech-lead-performance`; budget unachievable for the design → `technical-architect` |
+   | `performance-qa-engineer` → `Needs-decision` | Native, GPU or leak → a bug owned by `unity-engineer` at `feature-development.md` **E3**; budget unachievable for the design → `technical-architect` |
    | `build-verification-tester` → `Blocked`, `Routed to: build-run-engineer` | No artifact: G61, never a build off pipeline state |
-   | A build-only fault | By evidenced cause: the artifact → `build-run-engineer`, on the GD's request (G61); client code after IL2CPP or stripping, or an SDK or store integration → a bug owned by `unity-engineer` or `tech-lead-sdk-platform`, fixed at `feature-development.md` **E3** |
+   | A build-only fault | By evidenced cause: the artifact → `build-run-engineer`, on the GD's request (G61); client code after IL2CPP or stripping, or an SDK or store integration → a bug owned by `unity-engineer` or `sdk-platform-engineer`, fixed at `feature-development.md` **E3** |
    | `build-run-engineer` → `Rejected`, `Routed to: gd` | A correct refusal — get the GD's request or drop the branch |
    | A finding outside the assignment | To its owner, and named to `qa-lead` so the criterion it touches is re-planned |
 
@@ -125,17 +123,19 @@ takes released-production telemetry only.
    | `FAIL`, on any claim, or a contradicted verification claim | The GD now, as a ruling (G63) — back to its owner at **E3**, or the work dropped; never an accepted gap |
    | `REVISE` | Into *Open gaps*, with what it asks revised; the GD rules on it at CP4 (G64) |
    | `CONDITIONAL PASS` | CP4 — only the GD accepts it (G64) |
-   | `PASS` and above | `producer` |
+   | `PASS` and above | CP4 (step 5) |
    | `Needs-decision` | A verdict contradicts its own evidence → `technical-architect`; correct work told to do the wrong thing → the GD (G4) |
-   | `Rejected` on A1/A2 work | Skip to `producer` — unless the GD asked for the score: then re-dispatch saying so; never at a raised tier |
+   | `Rejected` on A1/A2 work | Skip to CP4 — unless the GD asked for the score: then re-dispatch saying so; never at a raised tier |
 
    `Iteration:` goes to the submission's attempts used; `Not scored:` goes into *Open gaps*.
-5. **Checkpoint 4 (G60)** — every feature with a ledger, every shape, whether or not any gate ran. `producer`
-   compiles the Status Report from every QA report, `qa-lead`'s verdict as stated, the Assurance Verdict **or why
+5. **Checkpoint 4 (G60)** — every feature with a ledger, every shape, whether or not any gate ran. You compile
+   the Status Report from every QA report, `qa-lead`'s verdict as stated, the Assurance Verdict **or why
    there is none** (A1/A2, the gate refused, QA declined), and at D1–D2 both review verdicts — or "review was not
    run", in words. QA declined → compiled from the Implementation Notes, after step 4b where `Gates:` records assurance
-   authorised at G14 (`optional-gates.md`); a single note goes to the GD directly, no `producer`. An acceptance state is not a sign-off: quote both, never merge them. `producer` is given the
-   feature's `BUGS.md`; the report carries its bug summary — counts by status and severity, and every bug not yet
+   authorised at G14 (`optional-gates.md`); a single note goes to the GD directly. An acceptance state is not a sign-off: quote both, never merge them. The report
+   leads with what needs a GD decision, then what is blocked, then what is done; attributes every item to the agent
+   that reported it; shows contradictions as contradictions; reports anything unreported as unknown; and carries the
+   bug summary from the feature's `BUGS.md` — counts by status and severity, and every bug not yet
    settled. The CP4 ask rules on every unsettled bug before the closing question, per G60; a bug sent round its
    loop (**E3**, or step 2 at **E3**) brings CP4 back. An `Escalated` bug left unruled gets G60's one follow-up;
    still unruled, the feature waits at CP4. Every declined gate, every gap and every bug the GD accepts (G9) is
