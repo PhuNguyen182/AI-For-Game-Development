@@ -55,6 +55,7 @@ Act as the navigation specialist for the client track — the tool reached for w
 - Negative trigger: the Animator Controller and blend tree that visualise the movement — that is `unity-animation`; this skill supplies the agent's velocity it consumes.
 - Negative trigger: rigid bodies, colliders, joints, or DOTS physics with no navigation involvement — `unity-3d-physics` and `unity-physics`; this skill only touches collider geometry as a bake source.
 - Negative trigger: a Cinemachine dolly track that resembles a waypoint route — unrelated system, `unity-cinemachine-authoring`.
+- Companion, if the official Unity plugin (`unity@claude-plugins-official`) is installed: `unity:initialize-ai-navigation` installs the package and configures `NavMeshSurface`, agents, obstacles and links in a live Editor, with a troubleshooting tree; this skill still owns the low-level `NavMeshBuilder` API, runtime `NavMeshLinkData`, streaming pre-baked data and the project rules above.
 
 ## 4. How to use this skill
 1. **Confirm which documentation layer the task actually needs** — the package owns authoring and baking, the built-in module owns runtime queries and scripted building, and most features touch both, per [root-links.md](references/root-links.md). The classic built-in navigation Manual pages no longer resolve, so a remembered page title is not a source.

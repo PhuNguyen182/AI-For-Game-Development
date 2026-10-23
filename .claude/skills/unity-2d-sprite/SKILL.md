@@ -59,6 +59,7 @@ Act as the built-in 2D Sprite authoring specialist for the client track — the 
 - Negative trigger: writing or modifying the shader on a sprite material — that's `shader-authoring`.
 - Negative trigger: authoring animation clips that key sprite frames, or the Animator driving them — that's `unity-animation`.
 - Negative trigger: deciding *which* sprite, tint, or visibility a game state should produce — that's `csharp-engineer`'s Shared Core, per `coding-principles.md`'s Shared Core integrity section.
+- Companion, if the official Unity plugin (`unity@claude-plugins-official`) is installed: `unity:sprite-editor` scripts slicing, pivots, borders and outlines through `ISpriteEditorDataProvider`, `unity:manage-sprite-atlas` automates Sprite Atlas V2 master/variant configuration, and `unity:2d-pixel-perfect` sets up pixel-art rendering; this skill still owns sorting, masking, draw modes and the project rules above.
 
 ## 4. How to use this skill
 1. **Settle Pixels Per Unit against the existing visual set before anything else**, per [import-settings.md](references/import-settings.md) — PPU fixes both the sprite's rendered world size and the scale of the physics shape derived from it, so a mismatch inside one set is simultaneously an art bug and a hitbox bug, and every later decision is measured against it; [root-links.md](references/root-links.md) pins the doc version each setting below is described at.

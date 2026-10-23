@@ -56,6 +56,7 @@ Act as the built-in Tilemap authoring specialist for the client track — the sk
 - Negative trigger: spline-based level geometry rather than cells — that's `unity-2d-spriteshape`.
 - Negative trigger: `Light2D` or 2D Renderer Data setup — that's `unity-urp-rendering`.
 - Negative trigger: deciding *which* tile belongs where — procedural generation, destructible terrain rules — that's `csharp-engineer`'s Shared Core, per `coding-principles.md`'s Shared Core integrity section.
+- Companion, if the official Unity plugin (`unity@claude-plugins-official`) is installed: `unity:tilemap-palette-create` and `unity:tilemap-ruletile-createempty` create the assets, and `unity:tilemap-ruletile-createfromsegment` generates RuleTile rules from sprite analysis; this skill still owns renderer modes, colliders, brushes, custom tiles and the project rules above.
 
 ## 4. How to use this skill
 1. **Settle the Cell Layout before creating anything**, per [grid-and-tilemap.md](references/grid-and-tilemap.md) — Rectangle, Hexagon, Isometric, or Isometric Z as Y must match between the `Grid` and every palette painted into it, and a mismatch produces tiles that paint to the wrong cells rather than an error; [root-links.md](references/root-links.md) pins which package version each feature below belongs to. One `Grid` with several `Tilemap` children keeps ground, walls, and decoration cell-aligned; separate `Grid` hierarchies with differing cell sizes are the usual cause of misalignment.

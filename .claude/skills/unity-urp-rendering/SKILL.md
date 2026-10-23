@@ -56,6 +56,7 @@ Act as the URP configuration specialist for the client track — the tool reache
 - Negative trigger: plain `Camera` or `Transform` scripting with no URP system involved — that is `unity-camera-fundamentals`.
 - Negative trigger: how ECS entities reach the renderer — that is `unity-entities-graphics`, which requires the Forward+ path this skill configures.
 - Negative trigger: the sprite-side data 2D lighting reads — secondary normal and mask textures, sorting, masking — that is `unity-2d-sprite`; this skill owns the `Light2D` rig and 2D Renderer Data those settings are consumed by.
+- Companion, if the official Unity plugin (`unity@claude-plugins-official`) is installed: `unity:validate-urp-render-graph-renderer-feature` reviews a finished Render Graph `ScriptableRendererFeature` against a correctness checklist — run it after authoring one here; this skill still owns writing the feature, rendering paths, SRP Batcher, camera stacking and the 2D Renderer.
 
 ## 4. How to use this skill
 1. **Confirm the URP Asset that the target quality tier actually uses, not just the one in Graphics Settings** — Quality Settings can assign a different asset per level, and every later step in this skill applies to one specific asset. [root-links.md](references/root-links.md) pins the URP version these APIs belong to.

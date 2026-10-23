@@ -59,6 +59,7 @@ Give the trigger only — the technique itself stays inside the skill.
 | `unity-navmesh-navigation` | Agent pathfinding and NavMesh setup. |
 | `unity-audio-mixer` | Audio sources, mixer routing, clip import and streaming settings. |
 | `unity-2d-sprite`, `unity-2d-spriteshape`, `unity-tilemap`, `unity-3d-mesh` | Authoring or importing the matching 2D/3D content type. |
+| `unity:initialize-ai-navigation`, `unity:physics-3d-collision`, `unity:audio-setup-mixers`, `unity:optimize-audio`, `unity:sprite-editor`, `unity:manage-sprite-atlas`, `unity:2d-pixel-perfect`, `unity:tilemap-ruletile-createfromsegment`, `unity:validate-urp-render-graph-renderer-feature` | Official Unity plugin, if installed — the Editor-side action once the matching repo skill above has set the approach; each repo skill's "Companion" line names its counterpart. The repo skill wins where the two disagree. |
 | `vcontainer-dependency-injection` | Wiring dependencies instead of reaching for a singleton or `Find`. |
 | `unity-scriptableobject-architecture` | Building a Data Container/Variable, Delegate Object, Observer event, Event Channel, Extendable Enum, Command, Runtime Set, or Dual Serialization asset. |
 | `messagepipe-event-messaging`, `r3-reactive-extensions` | Decoupling systems through messages or reactive state instead of direct references. |

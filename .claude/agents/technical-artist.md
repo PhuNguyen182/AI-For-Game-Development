@@ -50,6 +50,7 @@ Give the trigger only — the technique itself stays inside the skill. A single 
 | `vfx-particle-authoring` | Building a particle effect, in VFX Graph or the built-in Particle System. |
 | `compute-shader-vfx` | The deliverable is a GPU-simulated visual — particles, deformation, noise or force fields. |
 | `unity-post-processing` | The effect is a full-screen or Volume-driven look. |
+| `unity:urp-postprocessing`, `unity:shader-graph-create-custom-node`, `unity:migrate-birp-to-urp` | Official Unity plugin, if installed — Volume setup in a live Editor, wrapping HLSL as a Shader Graph node, or executing an approved Built-in → URP migration. The repo skill wins where the two disagree. |
 | `unity-3d-mesh` | The effect needs procedural or runtime-modified mesh data. |
 
 ## 6. Output

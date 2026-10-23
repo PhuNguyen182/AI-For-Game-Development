@@ -54,6 +54,7 @@ Give the trigger only — the technique itself stays inside the skill.
 | Skill | Invoke when |
 |---|---|
 | `unity-batchmode-cli` | Anything invoking the editor headlessly — build scripts, `-executeMethod`, exit codes, licence activation, editor provisioning, or reading a batchmode log. |
+| `unity:unity-cli` | Official Unity plugin, if installed — the Unity CLI's own `unity build`, `unity license` and `unity cache key` surface, which `unity-tooling-preference.md` tries first; `unity-batchmode-cli` still owns the classic `-batchmode` path a CI host runs. |
 | `jenkins-pipeline-authoring` | Writing or changing a `Jenkinsfile`, a shared library, credential binding, agent labels, locks, artifact archiving or test reporting. |
 | `fastlane-mobile-delivery` | Packaging or signing an Android or iOS artifact — lanes, keystore and `match` handling, build numbering, CI keychain setup. |
 | `firebase-app-distribution` | Authoring the lane or command that uploads a build to testers, and the auth and tester-group surface behind it. |

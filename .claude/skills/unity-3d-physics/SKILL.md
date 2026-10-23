@@ -54,6 +54,7 @@ Act as the built-in 3D physics specialist for the client track — the skill rea
 - Negative trigger: a cloth-*looking* effect with no mesh simulation — that's `technical-artist`.
 - Negative trigger: deciding damage, knockback magnitude, or a state transition from a contact — that's `csharp-engineer`'s Shared Core, per `coding-principles.md`'s Shared Core integrity section.
 - Negative trigger: a cost that survives shape simplification, matrix pruning, sleep, and timestep tuning — escalate to `tech-lead-performance`.
+- Companion, if the official Unity plugin (`unity@claude-plugins-official`) is installed: `unity:physics-3d-collision` is a symptom-driven diagnostic for collisions, triggers and raycasts that do not fire, and ships a collision debugger script; this skill still owns body, joint, ragdoll, cloth and `CharacterController` setup and the project rules above.
 
 ## 4. How to use this skill
 1. **Confirm which physics engine the project is actually on before touching a component**, per [root-links.md](references/root-links.md) — built-in PhysX, `Physics2D`, and DOTS `unity-physics` share nearly every type name and no behaviour, so a mis-scoped answer is wasted whole rather than partly useful.

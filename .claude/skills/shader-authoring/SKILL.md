@@ -41,6 +41,7 @@ Act as the shader programmer for the client track — the tool reached for whene
 - Negative trigger: the lights, probes and limits a lit shader reads — including a shader that receives fewer lights than expected, which is the rendering path's per-object limit rather than the shader — that is `unity-lighting`, which supplies the HLSL entry points this skill calls.
 - Negative trigger: deciding that a shader must be DOTS Instancing compatible, or which properties are Hybrid Per Instance — that is `unity-entities-graphics`; authoring the shader itself stays here.
 - Negative trigger: making an already-correct shader faster with no visual change requested — that is `tech-lead-performance`.
+- Companion, if the official Unity plugin (`unity@claude-plugins-official`) is installed: `unity:shader-graph-create-custom-node` turns existing HLSL into a reflected Shader Graph custom node; this skill still owns everything else about the shader.
 
 ## 4. How to use this skill
 1. **Take the pipeline target and master stack as given, and stop if they are missing** — shader structure, includes, and available lighting functions differ per pipeline, so authoring before `render-pipeline-urp-hdrp` has answered means guessing at the one input that invalidates everything.

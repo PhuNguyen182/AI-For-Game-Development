@@ -36,6 +36,7 @@ Act as the render pipeline targeting gate for the client track — the first sto
 - Negative trigger: particle graph and emission structure — that is `vfx-particle-authoring`.
 - Negative trigger: a compute kernel driving a visual effect — that is `compute-shader-vfx`.
 - Negative trigger: how ECS entities reach the pipeline — that is `unity-entities-graphics`, which depends on this skill's answer and narrows it further to URP Forward+ or HDRP only.
+- Companion, if the official Unity plugin (`unity@claude-plugins-official`) is installed: once a Built-in → URP migration is approved, `unity:migrate-birp-to-urp` carries it out (converters, materials, shaders, lighting); this skill still owns the decision itself and the HDRP side.
 
 ## 4. How to use this skill
 1. **Read the pipeline off the project, never off the request** — open Graphics Settings for the assigned Render Pipeline Asset, and state which asset it is. A Tech Spec that names a pipeline is a claim to verify, not evidence.

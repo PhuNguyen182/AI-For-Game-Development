@@ -140,6 +140,10 @@ When uncertain, an agent goes one level **up**, never down.
 - A **Unity project** — this framework assumes Unity/C# throughout; the bundled `.gitignore` is the standard
   Unity one, which tells you where `.claude/` is meant to sit: the project root.
 - A **Unity Editor MCP server**, for the ten agents that declare Editor tools in their `tools:` frontmatter.
+- *Recommended, not required:* the official **Unity plugin**, `unity@claude-plugins-official`. Its `unity:*`
+  skills are narrow Editor-action workflows; the repo skills stay the technique references and carry the
+  project's rules. Twelve repo skills name their plugin counterpart in a "Companion" line, and the repo skill
+  wins where the two disagree. Without the plugin those lines are simply unused.
 
 ### Steps
 
@@ -297,6 +301,9 @@ description rather than off any folder or frontmatter key.
 | **DevOps (9)** | `git-safety-anchor`, `git-recovery`, `git-forensics`, `git-unity-repo`, `jenkins-pipeline-authoring`, `unity-batchmode-cli`, `fastlane-mobile-delivery`, `firebase-app-distribution`, `ci-pipeline-failure-triage` |
 | **Live-Ops (3)** | `crash-anr-fault-domain-triage`, `crash-anr-symbolication`, `crash-anr-reporting-gate` |
 | **Research (4)** | `technology-scouting-sweep`, `source-credibility-grading`, `practical-fit-screening`, `solution-comparison-report` |
+
+None of the 90 duplicates a skill in the official Unity plugin: where the two touch, the plugin skill is
+narrower — one Editor action — and the repo skill names it as a companion rather than repeating it.
 
 `shared-core-boundary-audit` is the one to know: it turns the project's one unabsorbable defect class — a rule
 duplicated in two places, or a Core that cannot produce the same answer twice — into a mechanical grep, rather

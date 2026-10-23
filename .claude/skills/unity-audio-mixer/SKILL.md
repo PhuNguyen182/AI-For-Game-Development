@@ -66,6 +66,7 @@ third-party audio middleware.
 - Negative trigger: the client-server timing of when a networked sound event fires — that's `netcode-engineer`.
 - Negative trigger: the gameplay rule deciding a sound should play (a health threshold, a combat event) — that lives in `Game.Core.*` per `coding-principles.md`; this skill only wires the resulting playback call.
 - Negative trigger: an audio-reactive shader or particle system driven by spectrum data — that's `technical-artist`.
+- Companion, if the official Unity plugin (`unity@claude-plugins-official`) is installed: `unity:audio-setup-mixers` routes existing Audio Sources into existing mixer groups scene-wide, and `unity:optimize-audio` audits clip import settings and mixer CPU cost; neither creates mixers, groups, snapshots or exposed parameters — those, and the project rules above, stay here.
 
 ## 4. How to use this skill
 1. **Decide which layer owns the change before opening a reference** — sound design (import settings, `AudioSource`/`AudioListener` placement, the mixer graph) sits in `Game.Client.*`; the trigger condition for a sound is a gameplay rule that belongs in `Game.Core.*` per `coding-principles.md`'s Shared Core integrity section.
