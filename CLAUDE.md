@@ -22,6 +22,7 @@
 | Build targets | |
 | Test command | |
 | MCP servers configured | |
+| Code search | xerj prefix `<p>` / Grep |
 
 | Override | Default | Value |
 |---|---|---|

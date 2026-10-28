@@ -32,9 +32,11 @@
 ## Tools
 - Shell: newest PowerShell → Bash → cmd. Drop a rung only on real failure.
 - Unity: Unity CLI (`unity:unity-cli`) → any configured MCP server → classic batchmode. Drop a rung only on failure or a missing capability.
+- Search: XERJ when session start says up (skill `code-search`) → Grep. Never `xerj feedback`, `share` or `init`.
 - One Unity Editor and one physical device, project-wide: never two agents on either at once. Writing into `Assets/`, `Packages/` or `ProjectSettings/` holds the Editor.
 - Commits: English imperative subject, blank line, body saying why; no `feat:`-style prefixes; one change per commit. Never push unasked.
 - After any change under `.claude/`, run `/verify-layer`.
 
-## Memory
-- When the GD confirms a mistake: fix it, re-verify, then save an error-prevention memory. Never store secrets or PII.
+## Memory — Zero-Mem, skill `mem`
+- Nothing is preloaded: `mem q` before work in an unfamiliar area; a hit is a lead — read its source. Never use an LLM to organise, summarise or rewrite memory.
+- When the GD confirms a mistake: fix it, re-verify, then `mem add lesson`. A stated preference → `mem add feedback`. Never secrets or PII.

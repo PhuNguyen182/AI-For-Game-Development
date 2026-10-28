@@ -28,6 +28,7 @@ One passing placeholder test per test assembly proves the test command; write th
 
 ## 5. Git — `git-expert` with skill `git-unity-repo`
 Unity `.gitignore`, `.gitattributes` (UnityYAMLMerge, LFS for binaries), `git lfs install`. Never commit `Library/`, `Temp/`, `Logs/`, `UserSettings/`.
+Memory and search (skills `mem`, `code-search`): `.gitignore` += `.memory/.index/`, `.memory/.state/`; `.gitattributes` += `.memory/traces/** text eol=lf linguist-generated` (never `-diff`: the pre-commit secret scan reads diffs); copy `.xerjignore` and `.memory/sources.txt` from the framework root; `.memory/notes/` starts empty.
 
 ## 6. Perf budget — `AskUserQuestion`, recommended first
 | Profile | Recommended default |
@@ -38,7 +39,8 @@ Unity `.gitignore`, `.gitattributes` (UnityYAMLMerge, LFS for binaries), `git lf
 Write the answer into `CLAUDE.md` → Perf budget.
 
 ## 7. State
-Create `.workflow/bugs.md` from `/fix`'s template and `.workflow/features/`. Commit `.workflow/`.
+Create `.workflow/bugs.md` from `/fix`'s template and `.workflow/features/`. Commit `.workflow/` and `.memory/`.
+`CLAUDE.md` → Code search: `xerj prefix <kebab project name>` when `xerj` is installed, else `Grep`.
 Create `docs/tech-stack.md` from `references/tech-stack-template.md`, filled from `Packages/manifest.json`, `ProjectSettings/` and the answers above.
 
 ## 8. CI — only if the GD wants it now
