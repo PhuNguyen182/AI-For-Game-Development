@@ -4,28 +4,43 @@
 $in = Read-HookInput
 if (-not $in) { exit 0 }
 $cmd = [string]$in.tool_input.command
-if ($cmd -notmatch '\bgit\b(?:\s+-C\s+(?:"[^"]*"|''[^'']*''|\S+))?\s+commit\b') { exit 0 }
+# Any run of git global options may precede `commit` (-C dir, -c k=v, --no-pager, --git-dir x, ...).
+$arg = '(?:"[^"]*"|''[^'']*''|\S+)'
+$opt = "(?:-[Cc]\s+$arg|--(?:git-dir|work-tree|namespace|config-env|exec-path)(?:=|\s+)$arg|--[\w-]+(?:=$arg)?|-[A-Za-z]+)"
+# commit(?![\w.-]): not commit-tree, commit-graph or a config key such as commit.gpgsign.
+$git = [regex]::Match($cmd, "\bgit\b((?:\s+$opt)*)\s+commit(?![\w.-])", 'IgnoreCase')
+if (-not $git.Success) { exit 0 }
 
 # Resolve the repository the commit runs in: `cd <dir> &&`, `git -C <dir>`, else the session cwd.
-$dir = [string](First $in.cwd (Get-Location).Path)
+$cwd = [string](First $in.cwd (Get-Location).Path)
+$dir = $cwd
 $cd = [regex]::Match($cmd, '^\s*(?:cd|Set-Location)\s+(?:"([^"]+)"|''([^'']+)''|(\S+))\s*(?:&&|;)')
 if ($cd.Success) { $dir = @($cd.Groups[1].Value, $cd.Groups[2].Value, $cd.Groups[3].Value | Where-Object { $_ })[0] }
-$gc = [regex]::Match($cmd, '\bgit\s+-C\s+(?:"([^"]+)"|(\S+))')
-if ($gc.Success) { $dir = @($gc.Groups[1].Value, $gc.Groups[2].Value | Where-Object { $_ })[0] }
+# -C only among git's own options before `commit`: `commit -C <rev>` reuses a message. Case-sensitive: -c is config.
+$gc = [regex]::Match($git.Groups[1].Value, '(?:^|\s)-C\s+(?:"([^"]+)"|''([^'']+)''|(\S+))')
+if ($gc.Success) { $dir = @($gc.Groups[1].Value, $gc.Groups[2].Value, $gc.Groups[3].Value | Where-Object { $_ })[0] }
 # Git Bash spells C:\ as /c/.
 if ($env:OS -eq 'Windows_NT' -and $dir -match '^/([a-zA-Z])(/|$)') { $dir = "$($Matches[1]):/" + $dir.Substring(3) }
-if (-not (Test-Path $dir)) { exit 0 }
+# A relative cd/-C path is relative to the session cwd, not to this hook process's directory.
+if ($dir -and -not [IO.Path]::IsPathRooted($dir)) { $dir = Join-Path $cwd $dir }
 
-$root = git -C $dir rev-parse --show-toplevel 2>$null
-if (-not $root) { exit 0 }
+# A directory that does not resolve falls back to the session cwd rather than skipping the scan.
+$root = $null
+foreach ($d in @($dir, $cwd)) {
+    if ($d -and (Test-Path $d)) { $root = git -C $d rev-parse --show-toplevel 2>$null; if ($root) { break } }
+}
+if (-not $root) { exit 0 }  # no repository at all: the commit itself cannot run
 $problems = @()
 
 # 1. Secrets in added lines, per file.
 $file = $null
-foreach ($line in (git -C $root diff --cached --unified=0 --no-color 2>$null)) {
+foreach ($line in (git -C $root diff --cached --text --unified=0 --no-color 2>$null)) {
     if ($line -match '^\+\+\+ b/(.+)$') { $file = $Matches[1]; continue }
     if (-not $file -or $line -notmatch '^\+' -or ("/$file" -match $script:SecretScanExempt)) { continue }
-    foreach ($h in (Find-Secrets $line.Substring(1))) { $problems += "secret in ${file}: $h" }
+    $added = $line.Substring(1)
+    # JSON escapes quotes (\"), which hides quoted-value patterns in .jsonl traces.
+    if ($file -like '*.jsonl') { $added = $added.Replace('\"', '"') }
+    foreach ($h in (Find-Secrets $added)) { $problems += "secret in ${file}: $h" }
 }
 
 $staged = @{}
