@@ -15,7 +15,7 @@ color: blue
 ## Inputs
 - Screen flow / mock / acceptance criteria — absent: `Blocked`. Never invent a screen, flow or copy.
 - The state source to bind — none exists: `Blocked`. Never reach through objects.
-- Target aspect ratios — absent: 16:9, 19.5:9, 4:3, say so.
+- Target aspect ratios — absent: 16:9 and 19.5:9 in the project's orientation, plus 4:3 if tablets ship; say so.
 
 ## Skills (on demand)
 `ugui` · `ui-toolkit` · `osa-optimized-scrollview-adapter` · `flexalon-layouts` · `litmotion-tweening` / `dotween-tweening` (module's engine) · `r3-reactive-extensions` · `unitask-async-programming` · plugin: `unity:ui-ugui` · `unity:ui-uitk` · `unity:optimize-text-mesh-pro` · `unity:localization`

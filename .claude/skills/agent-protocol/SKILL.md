@@ -13,7 +13,7 @@ user-invocable: false
 - Stay in scope. Notice something outside it → list it under `Out of scope`, never fix it.
 - Leave no side effects: Play Mode stopped, no unsaved scene changes, Editor settings you changed restored (Game view size, Run In Background), PlayerPrefs keys you wrote removed, background processes you started stopped.
 - A claim about a file's content comes from reading it in this run — never from memory or the brief.
-- Evidence (screenshots, logs, reports) → `.workflow/evidence/<slug>/`, never under `Assets/`. A temporary Editor helper is deleted before you return, or listed under `Changed`.
+- Evidence (screenshots, logs, reports) → `.workflow/evidence/<slug>/attempt-<n>/`, never under `Assets/`. A failed attempt's folder stays as the record; never delete evidence. A temporary Editor helper is deleted before you return, or listed under `Changed`.
 
 ## Return — always this envelope
 ```
