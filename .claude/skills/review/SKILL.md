@@ -21,8 +21,9 @@ argument-hint: "<diff range, feature slug or path>"
 
 ## 4. Return to the author
 - Both finding sets together, in one brief. The fix is a new attempt for the same author.
-- Re-review only what changed, plus anything the fix touches.
-- Same findings twice → stop rule (`routing.md`).
+- Round 2+: the brief carries the previous findings; `code-reviewer` checks those and the changed lines only. `security-reviewer` re-runs only if the fix touched secrets, network, IAP, saves or imports.
+- New findings on unchanged code in round 2+ block only at Critical/High; the rest go to `DEBT.md`.
+- Repeated findings, or round 4 → stop rule (`routing.md`).
 
 ## 5. Report
 - Audit: findings by severity; no author, no rework loop unless the GD asks.

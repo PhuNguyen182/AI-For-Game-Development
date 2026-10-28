@@ -13,6 +13,7 @@ color: green
 ## Inputs
 - Scenario + expected behaviour or feel — absent: `Blocked`.
 - Scene / entry point — absent: locate it, say which.
+- Play Mode stalls while the Editor is unfocused → turn Run In Background on for the run, restore it after. Overlay-Canvas UI needs a camera capture, not `capture screenshot --view game`. Editor pause does not send `OnApplicationPause`.
 
 ## Return extras
 `Played:` scene, steps · per finding: expected vs actual, severity, owner, `Class:` Defect | Design flaw | As designed · `Bugs:` per ID passes | still fails | not exercised · `Evidence:` screenshot paths, console excerpts.

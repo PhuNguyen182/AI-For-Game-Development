@@ -4,7 +4,7 @@
 $in = Read-HookInput
 if (-not $in) { exit 0 }
 $cmd = [string]$in.tool_input.command
-if ($cmd -notmatch '\bgit\b(?:\s+-C\s+\S+)?\s+commit\b') { exit 0 }
+if ($cmd -notmatch '\bgit\b(?:\s+-C\s+(?:"[^"]*"|''[^'']*''|\S+))?\s+commit\b') { exit 0 }
 
 # Resolve the repository the commit runs in: `cd <dir> &&`, `git -C <dir>`, else the session cwd.
 $dir = [string]($in.cwd ?? (Get-Location).Path)

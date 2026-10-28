@@ -7,6 +7,7 @@ argument-hint: "<feature slug, or what to test>"
 # /qa
 
 ## 1. Plan — `qa-lead` (Plan)
+- May run while `/review` is in progress; execution waits for review approval.
 - Brief: acceptance criteria, open bugs, platforms, profile default QA (`routing.md`), multiplayer on/off.
 - Device or perf coverage needs a build that does not exist → ask the GD now (`/release` builds); no → that coverage is a gap from the start.
 
@@ -17,7 +18,7 @@ Order, only the agents the plan names:
 3. `performance-qa-engineer` — budget per device tier (profile's lowest device first).
 4. `build-release-engineer` — device cases on a real build.
 
-- New test code → `/review` on it before its results count as evidence.
+- New test code → `code-reviewer` once before its results count. Only findings that weaken what a test proves block; style findings are fixed without another round.
 - Read every return's body: `Done` with defects is a finished run.
 
 ## 3. File

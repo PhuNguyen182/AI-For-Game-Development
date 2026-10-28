@@ -22,6 +22,7 @@ user-invocable: false
 
 ## Order
 1. Compose subject + body in full.
-2. Commit with both (heredoc / `-F -`), never a placeholder to amend later.
-3. `git log -1` — confirm what was recorded.
-4. Report quoting it. Ask before any push.
+2. Stage only your paths (`git add <paths>`, never `-A` on a shared folder); `git status` first — files another session made stay out.
+3. Commit with both (heredoc / `-F -`), never a placeholder to amend later.
+4. `git log -1 --stat` — confirm what was recorded.
+5. Report quoting it. Ask before any push.

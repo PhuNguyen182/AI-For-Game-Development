@@ -15,7 +15,7 @@ The main session runs this and is the only writer of the feature file. Rules: `r
 
 ## 1. Size — `technical-architect` (Spec mode, size only)
 - State `Size` + `Risk flag` in one line. S → do it directly, delete the file; the reply closes it.
-- A point that changes what gets built is unclear → one `AskUserQuestion` (≤4 questions). Otherwise list it as an assumption.
+- Ask before the spec only when the answer changes its shape (≤4 questions, one call). Everything else → the architect's `Assumptions:`, approved together at CP2.
 
 ## 2. CP1 — L only (and when the profile turns `critic` on)
 1. `researcher` (Options) on the open design/architecture question.
@@ -32,7 +32,8 @@ Order, skipping roles the tasks omit:
 `csharp-engineer` → `netcode-engineer` | `backend-engineer` → `technical-artist` → `gameplay-engineer` → `ui-engineer` → `unity-performance-engineer` (only when a budget is at risk). `sdk-platform-engineer` takes any slot.
 - Third-party package / DLL / `.unitypackage` → `security-reviewer` first.
 - Brief per `routing.md` → Dispatch, plus earlier returns' `Public contract:` / `Message contract:`.
-- **Compile check after every implementer:** `unity command script recompile` → poll `unity command script recompile_status` until `completed` → `unity command console status` (compile-failure flag) / `unity command console get --level error`. No Editor → `unity pipeline list` (Safe Mode?) and grep `Editor.log` for `error CS`. Errors → same agent, next attempt.
+- **Compile check after every implementer:** `unity command script recompile` → poll `unity command script recompile_status` until `completed` → `unity command console status` (compile-failure flag) / `unity command console get --level error`. `up_to_date` does not prove the edits compiled — confirm a changed type exists (`script eval`). No Editor → `unity pipeline list` (Safe Mode?) and grep `Editor.log` for `error CS`. Errors → same agent, next attempt.
+- Commit per `git-commit`: stage only this feature's paths; another session's files stay out.
 - Log each return under `Log`: agent, `Changed`, `Verified`, `Limitations`, `Needs GD` (tell the GD at once).
 
 ## 5. Review — automatic for M/L or the risk flag
@@ -46,7 +47,7 @@ Order, skipping roles the tasks omit:
 
 ## 8. CP4 — `AskUserQuestion`
 Show: each acceptance criterion → evidence | gap · open bugs · limitations · what did not run.
-Options: close / fix gaps first / accept named gaps (cost stated). Close → `Status: Closed`; accepted gaps into the feature's `DEBT.md`.
+Options: close / fix gaps first / accept named gaps (cost stated). Close → `Status: Closed`; each accepted gap into the `DEBT.md` of the root that owns it (Core or Client).
 
 ## Change request (feature past CP2)
 - Halt new dispatches. `technical-architect` rates it: **Minor** → edit spec + criteria, continue · **Major** → CP2 again (CP1 if the direction moves).

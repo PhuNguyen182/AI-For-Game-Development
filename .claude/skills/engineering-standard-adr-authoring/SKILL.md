@@ -1,10 +1,10 @@
 ---
 name: engineering-standard-adr-authoring
-description: "Write a lightweight ADR for an engineering standard the CTO sets: number, status, context, decision, scope, consequences, supersession. Use when a decision becomes a cross-project standard."
+description: "Write a lightweight ADR for an engineering standard the CTO sets: number, status, context, decision, scope, consequences, supersession. Use when a decision becomes a project or cross-project standard."
 user-invocable: false
 ---
 
-# Engineering Standard ADR Authoring — recording a cross-project standard
+# Engineering Standard ADR Authoring — recording a standard
 
 **Not for:** feature-level Tech Specs, owned by `technical-architect`; per-submission Implementation Notes, owned by individual engineers; feature README files, owned by the skill `feature-docs` rule; making the decision itself, owned by the domain CTO skills; and the scoring rubric, owned by `tco-reversibility-scoring`.
 
@@ -12,7 +12,7 @@ user-invocable: false
 Turn a standard the CTO sets into a record that survives the conversation that produced it — numbered, dated, scoped point-forward, and stated so precisely that a reviewer can fail a submission against it — instead of a standard that lives only in one Technical Decision's prose and is quietly contradicted by the first feature that finds it inconvenient.
 
 ## 2. Role
-Act as a CTO who treats standards as versioned artifacts with a history, and who knows that an unrecorded standard and no standard at all produce the same codebase.
+`cto` drafts the ADR in its return; the main session writes it to `docs/adr/`. Treat standards as versioned artifacts with a history, and who knows that an unrecorded standard and no standard at all produce the same codebase.
 
 ## 3. When to invoke this skill
 - A CTO Technical Decision's "Standard set" field is non-empty — the decision creates or changes a rule other roles must follow going forward.
@@ -34,11 +34,11 @@ Act as a CTO who treats standards as versioned artifacts with a history, and who
 7. **Cite the source decision instead of restating it** — reference the Technical Decision or domain skill output that produced the standard, and do not copy its TCO score or trade-off analysis into the record. The ADR carries the rule; the source carries the reasoning.
 8. **Keep the record to roughly one screen** — an ADR long enough to need skimming stops being consulted, and the rationale it is tempted to absorb already lives in the source decision.
 9. **Name the ADR log location, and flag its absence as an open gap when there is none** — this project currently has no `docs/adr/` directory, and its process lives in the pipeline skills (`/feature`, `/decide`) rather than in a single process document, so a record written without proposing a home is a standard that will be lost by the next quarter.
-10. **Write the ADR in English**, per `csharp.md`'s Working language section — the record is a durable technical artifact; only the closing reply to the GD is Vietnamese.
+10. **Write the ADR in English**, per `core.md` → Language — the record is a durable technical artifact; only the closing reply to the GD is Vietnamese.
 11. **Ask before writing when the applies-to scope or the triggering decision is unclear** — a standard with an unclear audience is unenforceable, and guessing the scope is how a client-track rule gets applied to roles it was never meant to bind.
 
 ## 5. Specific goals / tasks this skill performs
-- Record every cross-project standard the CTO sets as a short, numbered, dated, checkable ADR.
+- Record every standard the CTO sets as a short, numbered, dated, checkable ADR.
 - State each standard so Code Reviewer can verify compliance mechanically rather than by interpretation.
 - Fix the point-forward scope so a new standard never retroactively invalidates shipped code by accident.
 - Preserve decision history through supersession chains instead of in-place edits.

@@ -45,7 +45,7 @@ CP1 direction (L) · CP2 spec or acceptance criteria (M, L) · CP3 built vs spec
 
 ## Stop rule
 - Attempts per dispatch: S 2, M 3, L 4; unsized routes 2.
-- Same step fails twice (review rejection, failed test, reopened bug) → `technical-architect` root-causes once → fails again → stop. Report to the GD: what was tried, last verified state, next best action.
+- Same step fails twice for the same cause (repeated findings, same failing test, reopened bug), or a review reaches round 4 → `technical-architect` root-causes once → fails again → stop. Report to the GD: what was tried, last verified state, next best action.
 - The GD may order another round; state the cost first.
 
 ## State (main session is the only writer)
