@@ -31,7 +31,7 @@ Order, skipping roles the tasks omit:
 `csharp-engineer` → `netcode-engineer` | `backend-engineer` → `technical-artist` → `gameplay-engineer` → `ui-engineer` → `unity-performance-engineer` (only when a budget is at risk). `sdk-platform-engineer` takes any slot.
 - Third-party package / DLL / `.unitypackage` → `security-reviewer` first.
 - Brief per `routing.md` → Dispatch, plus earlier returns' `Public contract:` / `Message contract:`.
-- **Compile check after every implementer:** `unity command recompile` → poll `unity command recompile_status` → read console errors (`unity command` lists the exact names). No Editor → `unity pipeline list` (Safe Mode?) and grep `Editor.log` for `error CS`. Errors → same agent, next attempt.
+- **Compile check after every implementer:** `unity command script recompile` → poll `unity command script recompile_status` until `completed` → `unity command console status` (compile-failure flag) / `unity command console get --level error`. No Editor → `unity pipeline list` (Safe Mode?) and grep `Editor.log` for `error CS`. Errors → same agent, next attempt.
 - Log each return under `Log`: agent, `Changed`, `Verified`, `Limitations`, `Needs GD` (tell the GD at once).
 
 ## 5. Review — automatic for M/L or the risk flag

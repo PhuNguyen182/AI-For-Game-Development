@@ -13,6 +13,8 @@ cd <your-unity-project> && claude
 > /new-project          # fills CLAUDE.md, asmdefs, git/LFS, perf budget, .workflow/
 ```
 
+Open Claude Code **interactively once** in the project and accept the trust dialog: until then the project's permissions and hooks are ignored. Headless runs (`claude -p`) in an untrusted folder need `--settings .claude/settings.json`.
+
 Editor agents name MCP tools exactly (`mcp__unity-mcp__…`). Check they match your server:
 `grep -h '^tools:' .claude/agents/*.md | tr ',' '\n' | grep mcp__ | sort -u`. Without an Editor connection everything still runs except Play Mode, profiling and in-Editor tests, which QA reports as not covered.
 
