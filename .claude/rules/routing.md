@@ -40,7 +40,7 @@ CP1 direction (L) · CP2 spec or acceptance criteria (M, L) · CP3 built vs spec
 
 ## Dispatch
 - Brief = goal, acceptance criteria, size + flag, profile, feature file path, files in scope, earlier agents' outputs. Agents see only the brief and the disk.
-- One Editor-holding agent at a time. Read-only agents may run in parallel.
+- One Editor-holding agent at a time. Read-only agents may run in parallel. Never end your turn while a dispatch is still running — a headless session is not woken by it, and the agent dies holding the Editor.
 - An agent's `Next:` is a recommendation; you act on it.
 
 ## Stop rule
