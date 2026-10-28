@@ -73,6 +73,6 @@ territory, not routine Inspector work.
 `SerializedScriptableObject` changes its underlying serialized data format.
 Existing scene/prefab/asset data serialized under Unity's own format is not
 automatically migrated — treat this as a breaking change to existing assets
-of that type, flag it in the Implementation Note per `coding-principles.md`'s
+of that type, flag it in the Implementation Note per `csharp-standards` → `coding-principles.md`'s
 Handoff section, and prefer the narrower `[OdinSerialize]`-on-one-member
 approach when the rest of the type does not need it.

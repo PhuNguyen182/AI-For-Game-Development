@@ -1,23 +1,12 @@
 ---
 name: unity-2d-spriteshape
-description: >
-  Unity 2D Sprite Shape, `com.unity.2d.spriteshape`, is spline-based
-  world building that tiles and deforms Sprites along an editable
-  outline. Covers `SpriteShapeController` settings such as Detail, Open
-  Ended, Adaptive UV, Enable Tangents, Corner Threshold, and World Space
-  UV; `Spline` and `SplineControlPoint` with `ShapeTangentMode` Linear,
-  Continuous, Broken; the `SpriteShape` Profile asset with `AngleRange`
-  and `CornerSprite`; auto-generated `EdgeCollider2D`/`PolygonCollider2D`
-  geometry; `SpriteShapeObjectPlacement`; and
-  `SpriteShapeGeometryModifier`. Use for platforms, terrain, ropes,
-  ponds, and props pinned to a spline. Not for: sprite import and
-  atlasing, owned by `unity-2d-sprite`; body and joint setup, owned by
-  `unity-2d-physics`; grid-cell levels, owned by `unity-tilemap`;
-  `Light2D`, owned by `unity-urp-rendering`; and procedural shape rules,
-  owned by `csharp-engineer`.
+description: "Sprite Shape spline-based 2D terrain: SpriteShapeController, profiles, corners, fill, colliders, runtime spline edits. Use for spline-built 2D levels."
+user-invocable: false
 ---
 
 # Unity 2D Sprite Shape — Spline-Based World Building
+
+**Not for:** sprite import and atlasing, owned by `unity-2d-sprite`; body and joint setup, owned by `unity-2d-physics`; grid-cell levels, owned by `unity-tilemap`; `Light2D`, owned by `unity-urp-rendering`; and procedural shape rules, owned by `csharp-engineer`.
 
 ## Bundled resources
 
@@ -50,8 +39,8 @@ Act as the Sprite Shape authoring specialist for the client track — the skill 
 - Negative trigger: the `Rigidbody2D`, material, effector, or joint attached to the generated collider — that's `unity-2d-physics`; this skill stops at generating the collider mesh.
 - Negative trigger: building a level from cells on a grid — that's `unity-tilemap`, a different authoring model entirely.
 - Negative trigger: `Light2D` or 2D Renderer Data setup that consumes the tangents Enable Tangents produces — that's `unity-urp-rendering`.
-- Negative trigger: deciding what shape to generate — procedural terrain rules, destructible-ground logic — that's `csharp-engineer`'s Shared Core, per `coding-principles.md`'s Shared Core integrity section.
-- Negative trigger: non-trivial job logic inside a custom geometry creator — escalate to `unity-job-system-and-burst` or `unity-engineer`.
+- Negative trigger: deciding what shape to generate — procedural terrain rules, destructible-ground logic — that's `csharp-engineer`'s Shared Core, per `csharp-standards` → `coding-principles.md`'s Shared Core integrity section.
+- Negative trigger: non-trivial job logic inside a custom geometry creator — escalate to `unity-job-system-and-burst` or `gameplay-engineer`.
 
 ## 4. How to use this skill
 1. **Choose Open or Closed Shape before anything else**, per [spriteshape-profile.md](references/spriteshape-profile.md) — Closed loops the outline and fills the interior from `fillTexture`, Open has distinct ends and no fill at all. This is not a toggle to revisit: Fill settings, corner behaviour, and which collider makes sense all follow from it.
@@ -62,9 +51,9 @@ Act as the Sprite Shape authoring specialist for the client track — the skill 
 6. **Attach only `EdgeCollider2D` or `PolygonCollider2D`**, per [spriteshape-collision.md](references/spriteshape-collision.md) — no other `Collider2D` type receives generated geometry, and one added by mistake stays silently empty. Keep `colliderDetail` independent of render Detail: a background cliff can collide far more coarsely than it draws.
 7. **Disable Update Collider before any manual collider edit** — with `autoUpdateCollider` on, the next spline change or bake overwrites the edit without warning. Leave it on for as long as the art is still iterating, which is most of a shape's life.
 8. **Place spline-attached props with `SpriteShapeObjectPlacement`**, per [spriteshape-object-placement.md](references/spriteshape-object-placement.md) — Auto while placement is still being art-directed by hand, Manual once `startPoint`, `endPoint`, and `ratio` should drive it. Those two fields are control-point *indices*, so re-check every placement after inserting or removing points.
-9. **Keep the outline's content out of this layer**, per `coding-principles.md`'s Shared Core integrity section — when a rule decides the shape (procedural terrain, ground destroyed by a hit), `Game.Core.*` resolves the control-point layout and this skill's components only render and collide it.
-10. **Reach for custom geometry only when the Profile model genuinely cannot express the shape**, per [custom-geometry-scripting.md](references/custom-geometry-scripting.md) and YAGNI in `coding-principles.md` — a Modifier post-processes the generated buffers, a Creator replaces generation entirely, and both run as Job System work with the safety rules that implies.
-11. **Keep `BakeMesh` and `BakeCollider` out of per-frame code** — they are authoring and load-time operations returning job handles, per `performance-and-algorithms.md`'s hot-path rules. Drive spline changes from an event, not from `Update`.
+9. **Keep the outline's content out of this layer**, per `csharp-standards` → `coding-principles.md`'s Shared Core integrity section — when a rule decides the shape (procedural terrain, ground destroyed by a hit), `Game.Core.*` resolves the control-point layout and this skill's components only render and collide it.
+10. **Reach for custom geometry only when the Profile model genuinely cannot express the shape**, per [custom-geometry-scripting.md](references/custom-geometry-scripting.md) and YAGNI in `csharp-standards` → `coding-principles.md` — a Modifier post-processes the generated buffers, a Creator replaces generation entirely, and both run as Job System work with the safety rules that implies.
+11. **Keep `BakeMesh` and `BakeCollider` out of per-frame code** — they are authoring and load-time operations returning job handles, per `csharp-standards` → `performance-and-algorithms.md`'s hot-path rules. Drive spline changes from an event, not from `Update`.
 12. **Verify a type against the live API before writing code against it when it appears in this skill's disclosed-gap list** ([root-links.md](references/root-links.md)) — several types referenced by documented signatures have no published page, so their members are unconfirmed rather than known.
 
 ## 5. Specific goals / tasks this skill performs
@@ -105,7 +94,7 @@ Act as the Sprite Shape authoring specialist for the client track — the skill 
 
 **Example 2**
 - Input: "Just write a geometry Creator — it'll be cleaner than fighting with Angle Ranges."
-- Output: declined. A Creator replaces geometry generation wholesale and runs as Job System code, so it inherits the safety rules, the disposal ownership, and the escalation path in `performance-and-algorithms.md` — for a requirement that was actually "the sprite at the top of a slope is wrong", which is an Angle Range that did not cover that angle. Fixed the coverage gap in the Profile, which took one range edit and no code. A Creator stays on the table only for something the Angle Range and Corner Sprite model genuinely cannot express.
+- Output: declined. A Creator replaces geometry generation wholesale and runs as Job System code, so it inherits the safety rules, the disposal ownership, and the escalation path in `csharp-standards` → `performance-and-algorithms.md` — for a requirement that was actually "the sprite at the top of a slope is wrong", which is an Angle Range that did not cover that angle. Fixed the coverage gap in the Profile, which took one range edit and no code. A Creator stays on the table only for something the Angle Range and Corner Sprite model genuinely cannot express.
 
 **Example 3**
 - Input: "The torch props on the cave wall jumped to the wrong places after the level designer reshaped it."
@@ -118,7 +107,7 @@ Act as the Sprite Shape authoring specialist for the client track — the skill 
 - Never attach a collider type other than `EdgeCollider2D` or `PolygonCollider2D` — the component sits there receiving no generated geometry.
 - Never hand-edit a collider mesh with `autoUpdateCollider` still enabled — the next spline change silently discards the edit.
 - Never assume `startPoint`/`endPoint` survive a structural spline edit — they are indices, and inserting a point renumbers everything after it.
-- Never call `BakeMesh` or `BakeCollider` from `Update` — they are load-time and authoring-time operations, per `performance-and-algorithms.md`'s hot-path rules.
+- Never call `BakeMesh` or `BakeCollider` from `Update` — they are load-time and authoring-time operations, per `csharp-standards` → `performance-and-algorithms.md`'s hot-path rules.
 - Never decide gameplay meaning inside a geometry Modifier or Creator — it computes mesh data, and any interpretation of that data belongs in Shared Core.
 - Never write against a type listed in this skill's disclosed-gap table without checking the live API first — those signatures are inferred, not confirmed.
 - If the requester's symptom could be Profile coverage, import mode, or Corner Threshold, say which is being assumed before editing shared assets — a Profile is reused across every shape that references it.

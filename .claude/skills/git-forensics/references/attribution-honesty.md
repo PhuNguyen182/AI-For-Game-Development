@@ -109,7 +109,7 @@ git shortlog -sne --no-merges HEAD
 Report the commit by default and a person only when the requester asked for
 one; when a person is named, name the identity field it came from (`%an` or
 `%cn`), the operations that could have changed it, and the detection level the
-trace ran at. Findings carry the five elements `defect-reporting.md`'s "Every
+trace ran at. Findings carry the five elements skill `qa-standards`'s "Every
 finding carries five things" section requires, and every claim here that rests
 on a git property rather than an upstream statement is marked `synthesized` so
 a reader can weigh it accordingly.

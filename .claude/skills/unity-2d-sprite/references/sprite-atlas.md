@@ -4,7 +4,7 @@ Sources: [Create a sprite atlas](https://docs.unity3d.com/Manual/sprite/atlas/cr
 Covers: SKILL.md §4 — **"Group an atlas by what appears on screen together"**.
 
 An atlas combines source textures so sprites drawn from it batch into one draw
-call, which is the direct application of `performance-and-algorithms.md`'s
+call, which is the direct application of `csharp-standards` → `performance-and-algorithms.md`'s
 Rendering & draw calls section to 2D content. The grouping decision is the
 whole skill: an atlas is resident as a unit, so mixing unrelated content trades
 draw calls for memory that the scene never uses.
@@ -38,7 +38,7 @@ runtime; the common case needs no code.
 
 With Include in Build off, the atlas must be supplied on demand through
 `SpriteAtlasManager.atlasRequested`. Subscribe with a named method and
-unsubscribe it, per `coding-principles.md`'s Event handlers section.
+unsubscribe it, per `csharp-standards` → `coding-principles.md`'s Event handlers section.
 
 ```csharp
 private void OnEnable()

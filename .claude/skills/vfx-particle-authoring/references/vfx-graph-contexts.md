@@ -32,7 +32,7 @@ evaluating something once and evaluating it a million times a frame.
 | Member | What it is for | Source |
 |---|---|---|
 | Exposed properties | Graph properties marked exposed become settable from script — the supported way to drive an effect from gameplay without editing the asset | [VisualEffect](https://docs.unity3d.com/ScriptReference/VFX.VisualEffect.html) |
-| `SetFloat`, `SetVector3`, `SetTexture` | Write those properties. Overloads taking an `int` id are the per-frame form; the string overloads hash the name on every call, exactly as with Animator parameters, per `performance-and-algorithms.md` | [VisualEffect](https://docs.unity3d.com/ScriptReference/VFX.VisualEffect.html) |
+| `SetFloat`, `SetVector3`, `SetTexture` | Write those properties. Overloads taking an `int` id are the per-frame form; the string overloads hash the name on every call, exactly as with Animator parameters, per `csharp-standards` → `performance-and-algorithms.md` | [VisualEffect](https://docs.unity3d.com/ScriptReference/VFX.VisualEffect.html) |
 | `HasFloat`, `HasVector3` | Check a property exists before writing it — a misspelled name is otherwise a silent no-op | [VisualEffect](https://docs.unity3d.com/ScriptReference/VFX.VisualEffect.html) |
 | `SendEvent` | Triggers a named event context, which is how a one-shot burst is fired rather than by toggling the component | [VisualEffect](https://docs.unity3d.com/ScriptReference/VFX.VisualEffect.html) |
 | `Play` / `Stop` / `pause` / `playRate` | Playback control, including slow motion through `playRate` without touching global time | [VisualEffect](https://docs.unity3d.com/ScriptReference/VFX.VisualEffect.html) |

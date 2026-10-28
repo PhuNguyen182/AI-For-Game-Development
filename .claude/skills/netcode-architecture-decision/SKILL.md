@@ -1,21 +1,12 @@
 ---
 name: netcode-architecture-decision
-description: >
-  Build-vs-license framework for the multiplayer netcode foundation — Mirror,
-  FishNet, Photon Fusion, Photon Quantum, Unity Netcode for GameObjects, or
-  custom on Unity Transport or LiteNetLib — and for the synchronization
-  model itself: client-server authoritative prediction and reconciliation,
-  deterministic lockstep, or GGPO-style rollback. Keyed to genre latency and
-  determinism needs, CCU-based pricing, and committed platform reach. Use
-  when asked whether to build custom netcode or license a framework, or to
-  fix the sync model before protocol work starts. Not for: reconciliation
-  protocol, message format and tick rate, owned by `netcode-engineer`;
-  server hosting, owned by `backend-build-vs-buy`; cheat posture, owned by
-  `anti-cheat-strategy`; the scoring rubric, owned by
-  `tco-reversibility-scoring`; feasibility spikes, owned by `rd-engineer`.
+description: "Choose the multiplayer foundation (Mirror, FishNet, Photon Fusion/Quantum, NGO, custom on Transport/LiteNetLib) and sync model (state sync, lockstep, rollback). Use before any netcode is written."
+user-invocable: false
 ---
 
 # Netcode Architecture Decision — foundation and synchronization model
+
+**Not for:** reconciliation protocol, message format and tick rate, owned by `netcode-engineer`; server hosting, owned by `backend-build-vs-buy`; cheat posture, owned by `anti-cheat-strategy`; the scoring rubric, owned by `tco-reversibility-scoring`; feasibility spikes, owned by `rd-engineer`.
 
 ## 1. Objective
 Settle the single most expensive-to-reverse client-track choice — which netcode foundation the game is built on, and which synchronization model it runs — so the call rests on the genre's actual latency/determinism requirement and a scored cost comparison, rather than on framework familiarity, a benchmark screenshot, or a determinism claim nobody checked against the gameplay code.
@@ -37,13 +28,13 @@ Act as a multiplayer architecture specialist who has shipped both licensed and f
 1. **Classify the genre's latency and determinism requirement before naming a single framework** — it eliminates most of the shortlist for free. Fighting/1v1 twitch competitive needs rollback or deterministic lockstep; FPS/MOBA/action PvP needs client-server authoritative with prediction and reconciliation; co-op, turn-based, and async need plain server-authoritative RPC.
 2. **Refuse to buy prediction a genre will not perceive** — reconciliation adds a whole class of desync bugs and a permanent debugging tax. On a turn-based or async game nobody can perceive the difference, so that tax buys nothing (YAGNI).
 3. **Shortlist by the sync model, never by popularity** — Mirror and FishNet are self-hosted client-server authoritative; Photon Fusion is hosted with prediction built in; Photon Quantum is hosted deterministic lockstep with rollback; Unity Netcode for GameObjects is client-server over Unity Transport; custom means owning the stack above a bare transport.
-4. **Test every determinism claim against the gameplay simulation, not the transport** — lockstep and rollback require a bit-deterministic simulation, which floating-point math and Unity's physics engine do not provide across platforms. The client track already owes this under `coding-principles.md`'s Shared Core integrity section; a deterministic framework does not grant it, it presupposes it.
+4. **Test every determinism claim against the gameplay simulation, not the transport** — lockstep and rollback require a bit-deterministic simulation, which floating-point math and Unity's physics engine do not provide across platforms. The client track already owes this under `csharp-standards` → `coding-principles.md`'s Shared Core integrity section; a deterministic framework does not grant it, it presupposes it.
 5. **Treat a committed platform the framework does not cover as a disqualifier, not a cost line** — check console, mobile, and cross-play against the GDD's commitments before comparing price. Cheaper on an unsupported platform is not cheaper.
 6. **Price the ongoing bucket on concurrent users and bandwidth, not on a seat count** — hosted netcode bills per CCU or per message, so cost tracks success. Fetch the vendor's rate card with `WebFetch` and score with `tco-reversibility-scoring`, which weights reversibility above upfront cost here because a netcode foundation is almost always Low reversibility once gameplay is built on it.
 7. **Assess team fit against the timeline honestly** — custom netcode wins only with genuine in-house networking expertise and schedule slack for the reconciliation and debugging work. Without both, licensing is the responsible call even when its sticker price is higher.
 8. **Route a feasibility unknown to a measured spike instead of deciding around it** — if the open question is "will our tick rate hold on real mobile networks", that is `rd-engineer`'s prototype, and the decision stays withheld until it reports.
 9. **Record the chosen foundation as a durable standard** via `engineering-standard-adr-authoring` — an unrecorded netcode decision gets quietly contradicted by the first feature that finds it inconvenient.
-10. **Write the decision and its reasoning in English**, per `language-and-comments.md`'s Working language section — the Technical Decision is a durable artifact; only the closing reply to the GD is Vietnamese.
+10. **Write the decision and its reasoning in English**, per `csharp.md`'s Working language section — the Technical Decision is a durable artifact; only the closing reply to the GD is Vietnamese.
 11. **Ask before deciding when target CCU, cross-play commitment, or session model is unstated** — each one alone can flip the shortlist, so a decision made around a guessed value is precise and wrong.
 
 ## 5. Specific goals / tasks this skill performs

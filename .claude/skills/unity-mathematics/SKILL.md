@@ -1,25 +1,12 @@
 ---
 name: unity-mathematics
-description: >
-  `Unity.Mathematics` — the shader-like, SIMD-friendly C# math library:
-  `float2`/`float3`/`float4` and their `int`/`bool`/`double` variants,
-  `float3x3`/`float4x4`, `quaternion`, swizzling like `v.xz`/`v.rgb`, the
-  static `math` class such as `math.normalize`, `math.saturate`,
-  `math.distancesq`, `noise` such as `cnoise`/`snoise`/`cellular`, and the
-  explicit-state `Random` struct. Every type is a blittable unmanaged struct
-  with no `UnityEngine` dependency, so it is the math library for
-  `Game.Core.*`, Burst jobs, and ECS components alike, and
-  `Unity.Mathematics.Random` is the seeded struct RNG Burst, job and ECS
-  code needs instead of `UnityEngine.Random`. Not for: an injected `IRandom`
-  roll, weighted loot table or shuffle outside Burst —
-  `nrandom-random-generation`; job scheduling —
-  `unity-job-system-and-burst`; container choice — `unity-collections`;
-  Burst tuning and `FloatMode` — `unity-burst-compiler`; ECS component
-  design — `unity-ecs-architecture`; physics components — `unity-physics`;
-  material overrides — `unity-entities-graphics`.
+description: "Unity.Mathematics: float3/float4x4, quaternion, swizzles, math functions, Random, Burst-friendly SIMD patterns. Use in Burst/Jobs/ECS code."
+user-invocable: false
 ---
 
 # Unity Mathematics — Vector/Matrix Types, math, Random & noise
+
+**Not for:** an injected `IRandom` roll, weighted loot table or shuffle outside Burst — `nrandom-random-generation`; job scheduling — `unity-job-system-and-burst`; container choice — `unity-collections`; Burst tuning and `FloatMode` — `unity-burst-compiler`; ECS component design — `unity-ecs-architecture`; physics components — `unity-physics`; material overrides — `unity-entities-graphics`.
 
 ## Bundled resources
 
@@ -56,16 +43,16 @@ Act as the math-library specialist for the client track — the tool reached for
 - Negative trigger: a gameplay roll, weighted loot table, or shuffle built on an injected `IRandom` in ordinary managed code — that's `nrandom-random-generation`; the `Random` here is the struct generator for Burst, job, and ECS sites, where an interface call cannot go.
 
 ## 4. How to use this skill
-1. **Identify the context before choosing any type**, per [shared-core-and-burst-compatibility.md](references/shared-core-and-burst-compatibility.md) (against the version pinned in [root-links.md](references/root-links.md)) — `Game.Core.*`, a Burst-compiled job, and an ECS component each require these types over their `UnityEngine` equivalents. For Shared Core this is not preference: `coding-principles.md`'s Shared Core integrity section forbids the `UnityEngine` dependency outright.
+1. **Identify the context before choosing any type**, per [shared-core-and-burst-compatibility.md](references/shared-core-and-burst-compatibility.md) (against the version pinned in [root-links.md](references/root-links.md)) — `Game.Core.*`, a Burst-compiled job, and an ECS component each require these types over their `UnityEngine` equivalents. For Shared Core this is not preference: `csharp-standards` → `coding-principles.md`'s Shared Core integrity section forbids the `UnityEngine` dependency outright.
 2. **Pick the vector width that matches the actual dimensionality**, per [vector-and-matrix-types.md](references/vector-and-matrix-types.md) — `float2` for 2D, `float3` for 3D, `float4` only for a genuine 4-component value (homogeneous coordinate, RGBA colour). Defaulting to `float4` "to be safe" wastes SIMD lanes and copy width on every pass.
 3. **Use swizzling for readable component rearrangement**, per [math-functions-and-swizzling.md](references/math-functions-and-swizzling.md) — `position.xz` for a ground-plane projection, `colour.rgb` for dropping alpha. Stop at the point a named intermediate variable would read better than another chained swizzle.
 4. **Use the static `math` class for every elementary function** in `Game.Core.*` or a Burst-compiled job, per [math-functions-and-swizzling.md](references/math-functions-and-swizzling.md) — never `Mathf`, which both pulls a `UnityEngine` dependency into Shared Core and is not the surface Burst is optimized around.
 5. **Use `quaternion` for all Shared Core/Burst/ECS rotation data**, built through its factory methods (`quaternion.identity`, `quaternion.AxisAngle`, `quaternion.Euler`, `quaternion.LookRotation`) per [vector-and-matrix-types.md](references/vector-and-matrix-types.md) — never mix `UnityEngine.Quaternion` in on that side of the boundary.
 6. **Use `float3x3`/`float4x4` with the library's own factory methods** for transform composition (`float4x4.TRS`, `float4x4.LookAt`) rather than assembling matrix math by hand, per [vector-and-matrix-types.md](references/vector-and-matrix-types.md).
-7. **For any Shared Core RNG need, use `Unity.Mathematics.Random` with an explicit, injected, nonzero seed**, per [random-numbers.md](references/random-numbers.md) and `coding-principles.md`'s Shared Core integrity section. Thread the value through as an explicit field or `ref` parameter — never a static instance — so results stay reproducible and independent across parallel uses.
+7. **For any Shared Core RNG need, use `Unity.Mathematics.Random` with an explicit, injected, nonzero seed**, per [random-numbers.md](references/random-numbers.md) and `csharp-standards` → `coding-principles.md`'s Shared Core integrity section. Thread the value through as an explicit field or `ref` parameter — never a static instance — so results stay reproducible and independent across parallel uses.
 8. **Choose the `noise` function by dimensionality and statistical character**, per [noise-functions.md](references/noise-functions.md) — `cnoise` and `snoise` give smooth continuous variation, `cellular` gives cell-like organic structure. They are not interchangeable, so pick for the effect rather than by habit.
 9. **Never claim byte-for-byte cross-platform determinism from type choice alone** — these types satisfy the "no `UnityEngine` dependency" half of the Shared Core rule; SIMD codegen, `FloatMode`, and transcendental precision can still diverge, and that residual belongs to `unity-burst-compiler`. State the caveat rather than overclaiming, per [shared-core-and-burst-compatibility.md](references/shared-core-and-burst-compatibility.md).
-10. **Verify precision-sensitive comparisons instead of assuming bit-identical behaviour** against `Mathf`/`System.Math`, per `performance-and-algorithms.md`'s Verification section — the two libraries are not guaranteed to agree bit-for-bit even on the same named function.
+10. **Verify precision-sensitive comparisons instead of assuming bit-identical behaviour** against `Mathf`/`System.Math`, per `csharp-standards` → `performance-and-algorithms.md`'s Verification section — the two libraries are not guaranteed to agree bit-for-bit even on the same named function.
 11. **If the calling context or the RNG seed's origin is unstated, ask before writing** — step 1 needs the layer and step 7 needs the seed source; either guessed produces code that compiles, runs, and is wrong in a way no compiler reports.
 
 ## 5. Specific goals / tasks this skill performs
@@ -102,7 +89,7 @@ Act as the math-library specialist for the client track — the tool reached for
 ## 7. Examples
 **Example 1**
 - Input: a Shared Core damage-falloff calculation in `Game.Core.Combat` uses `UnityEngine.Vector3.Distance` and `Mathf.Clamp01`, violating the Shared Core "no `UnityEngine` dependency" rule.
-- Output: parameters and return retyped to `float3`; distance replaced with `math.distance`, and `math.distancesq` recommended where only a threshold comparison happens, per `performance-and-algorithms.md`'s squared-distance guidance; `Mathf.Clamp01` replaced with `math.saturate`; confirmed by reference search that the file no longer names `UnityEngine`.
+- Output: parameters and return retyped to `float3`; distance replaced with `math.distance`, and `math.distancesq` recommended where only a threshold comparison happens, per `csharp-standards` → `performance-and-algorithms.md`'s squared-distance guidance; `Mathf.Clamp01` replaced with `math.saturate`; confirmed by reference search that the file no longer names `UnityEngine`.
 
 **Example 2**
 - Input: "Add cooldown jitter to the ability system using `UnityEngine.Random.Range` so cooldowns don't all line up." — the cooldown logic lives in `Game.Core.Abilities`.
@@ -115,8 +102,8 @@ Act as the math-library specialist for the client track — the tool reached for
 ## 8. Edge cases & guardrails
 - Never present a type migration as having fixed determinism — these types resolve only the `UnityEngine`-dependency half; SIMD codegen, `FloatMode`, and transcendental precision remain `unity-burst-compiler`'s territory.
 - Never use `UnityEngine.Random` in `Game.Core.*` — a seeded generator with an explicit, injected, nonzero seed instead: `Unity.Mathematics.Random` at a Burst, job, or ECS site, and `nrandom-random-generation`'s `IRandom` for an ordinary managed gameplay roll.
-- Never leave a `Random` seed at zero/default or derive it from wall-clock time in Shared Core — both break the determinism `coding-principles.md` requires, and neither fails loudly.
+- Never leave a `Random` seed at zero/default or derive it from wall-clock time in Shared Core — both break the determinism `csharp-standards` → `coding-principles.md` requires, and neither fails loudly.
 - Never reach for `float4` when `float2`/`float3` fits — the unused lanes cost copy width on every pass for nothing.
-- Never "fix" the library's lowercase type names (`float3`, `quaternion`) to PascalCase — they are Unity's deliberate shader-parity convention, explicitly not a `naming-convention.md` violation.
+- Never "fix" the library's lowercase type names (`float3`, `quaternion`) to PascalCase — they are Unity's deliberate shader-parity convention, explicitly not a `csharp-standards` → `naming-convention.md` violation.
 - Never assume `math` functions are bit-identical to `Mathf`/`System.Math` where a precision-sensitive comparison depends on it — verify per step 10 instead.
 - If the layer or the seed's origin is unstated, ask — both silently determine correctness, and neither is recoverable from the code alone.

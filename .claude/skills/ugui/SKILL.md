@@ -1,23 +1,12 @@
 ---
 name: ugui
-description: >
-  uGUI technique for the GameObject-based `Canvas`/`RectTransform` runtime
-  system — `UnityEngine.UI`, `UnityEngine.EventSystems`, and TextMeshPro's
-  `TMPro`. Covers Canvas setup and scaling, RectTransform anchoring, Auto
-  Layout, visual and interaction components and their transitions, the
-  EventSystem/Raycaster/Input Module pipeline, TextMeshPro UI text, UI
-  Profiler batching, and extending the system with custom `Graphic`,
-  raycasters, or input modules. Use for any runtime Canvas-based HUD, menu,
-  or world-space UI. Not for: UI Toolkit's `UIDocument` screens, owned by
-  `ui-toolkit`; Animator clips or state machines beyond the Selectable
-  Animation transition, owned by `unity-animation`; input device polling
-  and `.inputactions` authoring, owned by `unity-input-system`; any
-  gameplay rule behind a bound value, owned by `csharp-engineer`; Flexalon
-  box-model layout, owned by `flexalon-layouts`; and long-list recycling,
-  owned by `osa-optimized-scrollview-adapter`.
+description: "uGUI and TextMeshPro: Canvas setup and scaling, RectTransform anchoring, layout groups, EventSystem, safe area, canvas splitting and rebuild cost. Use for Canvas-based UI."
+user-invocable: false
 ---
 
 # Unity UI (uGUI) — Canvas, RectTransform, Interaction, TextMeshPro
+
+**Not for:** UI Toolkit's `UIDocument` screens, owned by `ui-toolkit`; Animator clips or state machines beyond the Selectable Animation transition, owned by `unity-animation`; input device polling and `.inputactions` authoring, owned by `unity-input-system`; any gameplay rule behind a bound value, owned by `csharp-engineer`; Flexalon box-model layout, owned by `flexalon-layouts`; and long-list recycling, owned by `osa-optimized-scrollview-adapter`.
 
 ## Bundled resources
 
@@ -72,7 +61,7 @@ what a UI displays as a game-rule outcome.
 - Negative trigger: the screen genuinely belongs on UI Toolkit's `UIDocument` (Editor tooling, or a runtime surface that specifically needs data binding, SVG, or textureless elements) — that's `ui-toolkit`; per its own `choosing-ui-system.md`, uGUI remains Unity's primary recommendation for runtime game UI, so default here unless one of UI Toolkit's specific strengths is actually needed.
 - Negative trigger: the Animator Controller's own clips/state machine content once a Selectable's Animation transition is wired to it — that's `unity-animation`; this skill owns wiring the transition itself (per [animation-and-transitions.md](references/animation-and-transitions.md)), not authoring arbitrary Animator content beyond it.
 - Negative trigger: reading the input device or authoring `.inputactions` — that's `unity-input-system`; this skill only reacts to the events its `EventSystem`/Input Module delivers, and defers to that skill for `InputSystemUIInputModule` specifically.
-- Negative trigger: whether a bound value is currently allowed, what it means for the game, or any cooldown/resource/economy check — that's `csharp-engineer`'s Shared Core, per `coding-principles.md`'s Shared Core integrity section.
+- Negative trigger: whether a bound value is currently allowed, what it means for the game, or any cooldown/resource/economy check — that's `csharp-engineer`'s Shared Core, per `csharp-standards` → `coding-principles.md`'s Shared Core integrity section.
 - Negative trigger: arranging Canvas content through Flexalon's box-model components (`FlexalonObject`, `FlexalonFlexibleLayout`, Flexalon UI) — that's `flexalon-layouts`; coordinate with it so a Flexalon layout and a Layout Group/Content Size Fitter never drive the same `RectTransform`.
 - Negative trigger: a Spine-exported skeleton rendered inside the Canvas through `SkeletonGraphic` — that's `spine-animation`; this skill owns the Canvas, anchoring and Layout hierarchy around it, and must not leave a Layout Group or Content Size Fitter sizing the `RectTransform` the skeleton drives.
 - Negative trigger: a list long enough that one GameObject per row is untenable — that's `osa-optimized-scrollview-adapter`, the recycling adapter that replaces the plain `ScrollRect`; this skill still owns the Canvas, Viewport and `RectMask2D` hierarchy it sits inside.
@@ -82,18 +71,18 @@ what a UI displays as a game-rule outcome.
 ## 4. How to use this skill
 1. **Confirm uGUI is the right system before authoring anything new** — per [root-links.md](references/root-links.md) and `ui-toolkit`'s own `choosing-ui-system.md`, Unity's Manual lists uGUI as the primary recommendation for *runtime* game UI; only route to `ui-toolkit` when the surface specifically needs one of UI Toolkit's own strengths (data binding, SVG, no-GameObject-per-element cost).
 2. **Pick the Canvas render mode from where the UI actually lives, not by default** — Screen Space – Overlay for a standard HUD, Screen Space – Camera only when camera perspective/post-processing must affect the UI, World Space for diegetic/VR UI, per [canvas-and-scaling.md](references/canvas-and-scaling.md).
-3. **Drive multi-resolution scaling through `CanvasScaler`'s Scale With Screen Size mode, and set Match deliberately** — leaving Match at its default 0 (Width) oversizes a wider-than-reference aspect ratio; use 0.5 once both portrait and landscape (or several aspect ratios) must be supported, per [canvas-and-scaling.md](references/canvas-and-scaling.md) and `coding-principles.md`'s responsive-UI expectation.
+3. **Drive multi-resolution scaling through `CanvasScaler`'s Scale With Screen Size mode, and set Match deliberately** — leaving Match at its default 0 (Width) oversizes a wider-than-reference aspect ratio; use 0.5 once both portrait and landscape (or several aspect ratios) must be supported, per [canvas-and-scaling.md](references/canvas-and-scaling.md) and `csharp-standards` → `coding-principles.md`'s responsive-UI expectation.
 4. **Anchor before positioning, and let stretch anchors carry responsive sizing** — a fixed-anchor element only ever gets a constant pixel offset; a stretch anchor is what makes a panel's size track its parent, per [rect-transform-and-layout.md](references/rect-transform-and-layout.md).
-5. **Let a Content Size Fitter or Layout Group own child sizing — never hand-size a RectTransform that a layout controller also controls** — the two fight silently, with whichever runs last winning; compose Layout Element overrides before reaching for a custom layout component, per [rect-transform-and-layout.md](references/rect-transform-and-layout.md) and YAGNI in `coding-principles.md`.
+5. **Let a Content Size Fitter or Layout Group own child sizing — never hand-size a RectTransform that a layout controller also controls** — the two fight silently, with whichever runs last winning; compose Layout Element overrides before reaching for a custom layout component, per [rect-transform-and-layout.md](references/rect-transform-and-layout.md) and YAGNI in `csharp-standards` → `coding-principles.md`.
 6. **Pick the Image Type deliberately** — Sliced for a resizable panel/button background, Tiled for a repeating-scale background, Filled for a progress/cooldown indicator, Simple only for a fixed-size icon, per [visual-components.md](references/visual-components.md).
-7. **Reach for `RectMask2D` before `Mask`** — it has no stencil buffer, no extra draw call, and no material change, versus `Mask`'s stencil-buffer cost; use `Mask` only for a genuinely non-rectangular clip shape, per [visual-components.md](references/visual-components.md) and `performance-and-algorithms.md`'s measured-tradeoff rule.
+7. **Reach for `RectMask2D` before `Mask`** — it has no stencil buffer, no extra draw call, and no material change, versus `Mask`'s stencil-buffer cost; use `Mask` only for a genuinely non-rectangular clip shape, per [visual-components.md](references/visual-components.md) and `csharp-standards` → `performance-and-algorithms.md`'s measured-tradeoff rule.
 8. **Compose interaction from `Selectable`, never hand-roll pointer state tracking** — `Button`/`Toggle`/`Slider`/`Scrollbar`/`Dropdown`/`InputField`/`ScrollRect` already implement the event interfaces correctly; implement `IPointer*Handler` directly on a `MonoBehaviour` only for behavior none of them expresses, per [interaction-components.md](references/interaction-components.md) and [event-system-and-input.md](references/event-system-and-input.md).
 9. **Wire the Animation transition through an `Animator` Controller, never the legacy Animation system** — it is a documented hard incompatibility, not a bug to debug around; reach for Color Tint or Sprite Swap first per KISS, and escalate to Animation mode only once those genuinely can't express the feedback, per [animation-and-transitions.md](references/animation-and-transitions.md).
 10. **Keep exactly one active Input Module per `EventSystem`, and add a `Graphic Raycaster` to every Canvas that must receive pointer events** — per [event-system-and-input.md](references/event-system-and-input.md); route to `unity-input-system` the moment the task is about the Input System's own `InputSystemUIInputModule`, actions, or device bindings rather than the raycaster/module wiring itself.
-11. **Default new text to TextMeshPro's `TMP_Text`, not legacy `Text`** — reach for [legacy-text-and-rich-text.md](references/legacy-text-and-rich-text.md) only when maintaining an existing legacy screen; author new text per [textmeshpro-core-and-rich-text.md](references/textmeshpro-core-and-rich-text.md), and collapse a repeated tag stack into a Style Sheet instead of copy-pasting it, per DRY/KISS in `coding-principles.md`.
+11. **Default new text to TextMeshPro's `TMP_Text`, not legacy `Text`** — reach for [legacy-text-and-rich-text.md](references/legacy-text-and-rich-text.md) only when maintaining an existing legacy screen; author new text per [textmeshpro-core-and-rich-text.md](references/textmeshpro-core-and-rich-text.md), and collapse a repeated tag stack into a Style Sheet instead of copy-pasting it, per DRY/KISS in `csharp-standards` → `coding-principles.md`.
 12. **Generate SDF font assets sized to the effects the design actually needs, and keep one sprite atlas per text object** — bitmap/static font assets can't support outline/underlay/glow at all; padding and atlas resolution trade off effect quality against atlas memory; a second sprite atlas on the same text object costs a second draw call, per [textmeshpro-assets-and-shaders.md](references/textmeshpro-assets-and-shaders.md).
 13. **Extend by subclassing `Graphic`/`LayoutGroup`/`BaseInputModule`, never by hacking a built-in component's serialized state from outside it** — override `OnPopulateMesh(VertexHelper vh)` for custom geometry, implement `ILayoutElement`/`ILayoutGroup` for custom sizing, per [scripting-api-and-extensibility.md](references/scripting-api-and-extensibility.md); confirm no built-in composition already covers it first, per YAGNI.
-14. **Check Self/Cumulative Batch Count in the UI Profiler before diagnosing a draw-call regression as anything else**, and split a frequently-updating element onto its own Canvas away from static chrome — a `CanvasGroup` and a stencil `Mask` are both documented batch-break triggers on top of ordinary material/texture rules, per [profiling-performance-and-howtos.md](references/profiling-performance-and-howtos.md); label any such reading as an Editor-only result per `verification-standards.md` until measured in a real build.
+14. **Check Self/Cumulative Batch Count in the UI Profiler before diagnosing a draw-call regression as anything else**, and split a frequently-updating element onto its own Canvas away from static chrome — a `CanvasGroup` and a stencil `Mask` are both documented batch-break triggers on top of ordinary material/texture rules, per [profiling-performance-and-howtos.md](references/profiling-performance-and-howtos.md); label any such reading as an Editor-only result per skill `qa-standards` until measured in a real build.
 15. **Ask rather than guess when the target aspect ratios/platforms, or the uGUI-vs-UI-Toolkit choice, are not stated** — both gate real decisions (Canvas Scaler settings, whether a screen even belongs in this skill); proceed only on a clearly flagged assumption if the requester is unavailable.
 
 ## 5. Specific goals / tasks this skill performs
@@ -143,7 +132,7 @@ the one-line `Known limitations` above with all three fields:
 
 **Example 3**
 - Input: "The HUD's health bar text updates every frame and the whole menu redraws with it — investigate the frame cost."
-- Output: read the UI Profiler's Self/Cumulative Batch Count for the HUD Canvas (Editor-only measurement, flagged as such) and found the health text shared a Canvas with static menu chrome — any change to the text forced a rebuild of everything on that Canvas. Split the health bar onto its own Canvas, per [profiling-performance-and-howtos.md](references/profiling-performance-and-howtos.md); also confirmed the text update is gated on an actual value change rather than unconditional per-frame `.ToString()`, per `performance-and-algorithms.md`.
+- Output: read the UI Profiler's Self/Cumulative Batch Count for the HUD Canvas (Editor-only measurement, flagged as such) and found the health text shared a Canvas with static menu chrome — any change to the text forced a rebuild of everything on that Canvas. Split the health bar onto its own Canvas, per [profiling-performance-and-howtos.md](references/profiling-performance-and-howtos.md); also confirmed the text update is gated on an actual value change rather than unconditional per-frame `.ToString()`, per `csharp-standards` → `performance-and-algorithms.md`.
 
 ## 8. Edge cases & guardrails
 - Never leave `CanvasScaler`'s Match slider at its default 0 (Width) for a UI that must support more than one aspect ratio family — it's the documented cause of oversized UI on a wider-than-reference screen.
@@ -154,7 +143,7 @@ the one-line `Known limitations` above with all three fields:
 - Never author a new screen's text on legacy `Text` — TMP is the default; legacy `Text` is a maintenance-only surface for existing screens.
 - Never generate a static/bitmap TMP font asset for text that needs outline/underlay/glow or heavy scaling — those effects require an SDF asset.
 - Never reference more than one sprite atlas from the same TMP text object without accounting for the extra draw call each additional atlas costs.
-- Never claim a batching/draw-call fix is verified from the UI Profiler alone without labelling it an Editor-only result, per `verification-standards.md` — it does not run in a development build at all.
-- Never write a custom `Graphic`/`LayoutGroup`/input module before confirming no built-in composition already covers the need, per YAGNI in `coding-principles.md`.
+- Never claim a batching/draw-call fix is verified from the UI Profiler alone without labelling it an Editor-only result, per skill `qa-standards` — it does not run in a development build at all.
+- Never write a custom `Graphic`/`LayoutGroup`/input module before confirming no built-in composition already covers the need, per YAGNI in `csharp-standards` → `coding-principles.md`.
 - If the target aspect ratios/platforms, or the uGUI-vs-UI-Toolkit choice, are not stated, ask rather than silently pick one — both gate real decisions in this skill.
-- Never let this layer decide what a bound value means for gameplay — it displays and reacts to input; `Game.Core.*` decides the outcome, per `coding-principles.md`'s Shared Core integrity section.
+- Never let this layer decide what a bound value means for gameplay — it displays and reacts to input; `Game.Core.*` decides the outcome, per `csharp-standards` → `coding-principles.md`'s Shared Core integrity section.

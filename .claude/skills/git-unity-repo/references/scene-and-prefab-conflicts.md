@@ -7,7 +7,7 @@ Holds the mechanism behind a `.unity`/`.prefab`/`.asset` conflict: the
 serialization mode that decides whether a text merge is even possible, the
 Unity-aware merge driver, and why the honest default is to discard one side
 rather than reconcile YAML. The content decision — which side's objects are
-the correct ones — belongs to `unity-engineer`, not here.
+the correct ones — belongs to `gameplay-engineer`, not here.
 
 - [Precondition — Asset Serialization mode](#precondition--asset-serialization-mode)
 - [UnityYAMLMerge — the Unity-aware driver](#unityyamlmerge--the-unity-aware-driver)

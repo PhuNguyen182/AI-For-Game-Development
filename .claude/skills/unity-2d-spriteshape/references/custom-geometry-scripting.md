@@ -8,7 +8,7 @@ generator: a **Modifier** post-processes the buffers it produced, a **Creator**
 replaces it entirely. Both hand back `JobHandle`s and operate on
 `NativeArray`/`NativeSlice` buffers, so both are Job System code with the
 ownership and safety rules that implies — escalate non-trivial job logic per
-`performance-and-algorithms.md`'s Multithreading section.
+`csharp-standards` → `performance-and-algorithms.md`'s Multithreading section.
 
 ## Modifier — post-process generated geometry
 

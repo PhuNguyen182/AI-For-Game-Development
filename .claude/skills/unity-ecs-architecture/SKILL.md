@@ -1,25 +1,12 @@
 ---
 name: unity-ecs-architecture
-description: >
-  Technique for the Entities/ECS pillar of Unity DOTS: modeling data as
-  entities and `IComponentData`, `ISharedComponentData`, `IBufferElementData`,
-  `IEnableableComponent`; archetype and 16 KiB chunk layout; authoring
-  `MonoBehaviour` plus `Baker<T>` baking; `ISystem` versus `SystemBase` and
-  `SystemGroup` update order; `SystemAPI.Query`, `IJobEntity`, and `IJobChunk`
-  iteration; `EntityCommandBuffer` structural batching;
-  `BlobAssetReference<T>`. Use when a feature already approved for ECS needs
-  its entity, system, or query layout designed or diagnosed. Not for: job
-  scheduling, `JobHandle` chains, and allocator lifetime —
-  `unity-job-system-and-burst`; HPC# subset, `FloatMode`, intrinsics, and AOT
-  — `unity-burst-compiler`; container choice — `unity-collections`;
-  `float3` and `quaternion` maths — `unity-mathematics`; `PhysicsCollider`,
-  colliders, and joints — `unity-physics`; `RenderMeshArray` and DOTS
-  Instancing — `unity-entities-graphics`; GPU-driven effects —
-  `compute-shader-vfx`; whether ECS is warranted at all —
-  `technical-architect`.
+description: "Entities/ECS: components, archetypes and chunks, baking, systems and ISystem, queries, EntityCommandBuffer, aspects, structural changes. Use when designing or writing ECS code."
+user-invocable: false
 ---
 
 # Unity ECS Architecture — Entities, Components, Systems & Queries
+
+**Not for:** job scheduling, `JobHandle` chains, and allocator lifetime — `unity-job-system-and-burst`; HPC# subset, `FloatMode`, intrinsics, and AOT — `unity-burst-compiler`; container choice — `unity-collections`; `float3` and `quaternion` maths — `unity-mathematics`; `PhysicsCollider`, colliders, and joints — `unity-physics`; `RenderMeshArray` and DOTS Instancing — `unity-entities-graphics`; GPU-driven effects — `compute-shader-vfx`; whether ECS is warranted at all — `technical-architect`.
 
 ## Bundled resources
 
@@ -60,11 +47,11 @@ Act as the ECS data- and system-architecture specialist for the client track —
 - Negative trigger: `RenderMeshArray`/`MaterialMeshInfo`, DOTS Instancing shader compatibility, material overrides, or Companion Components — that is `unity-entities-graphics`.
 - Negative trigger: a GPU-driven visual effect — that is `compute-shader-vfx`.
 - Negative trigger: replicating an entity's state across a network — ghosts, `[GhostField]`, `IRpcCommand`, the predicted simulation group — that is `netcode-for-entities`, layered on top of this skill's modeling rather than a part of it.
-- Negative trigger: no prior decision justifying ECS for this feature — that call belongs to `technical-architect`; converting a small MonoBehaviour feature "because ECS is faster" is the escalation `performance-and-algorithms.md` forbids skipping.
+- Negative trigger: no prior decision justifying ECS for this feature — that call belongs to `technical-architect`; converting a small MonoBehaviour feature "because ECS is faster" is the escalation `csharp-standards` → `performance-and-algorithms.md` forbids skipping.
 
 ## 4. How to use this skill
-1. **Name the architecture-level decision that approved ECS for this feature** — per `performance-and-algorithms.md`'s Multithreading section this is escalation territory, so if no such decision exists, stop and route to `technical-architect` instead of designing. [dots-pillars.md](references/dots-pillars.md) settles which sibling package owns each adjacent concern, and [root-links.md](references/root-links.md) pins the package version every API below describes.
-2. **Keep the game rule in `Game.Core.*` and only the iteration in the system** — per `coding-principles.md`'s Shared Core integrity section. `Unity.Entities` is a Unity dependency, so a formula rewritten inside `OnUpdate` is a second implementation of a Core rule, not a port of it; the system reads components, calls the pure Core function, and writes the result back.
+1. **Name the architecture-level decision that approved ECS for this feature** — per `csharp-standards` → `performance-and-algorithms.md`'s Multithreading section this is escalation territory, so if no such decision exists, stop and route to `technical-architect` instead of designing. [dots-pillars.md](references/dots-pillars.md) settles which sibling package owns each adjacent concern, and [root-links.md](references/root-links.md) pins the package version every API below describes.
+2. **Keep the game rule in `Game.Core.*` and only the iteration in the system** — per `csharp-standards` → `coding-principles.md`'s Shared Core integrity section. `Unity.Entities` is a Unity dependency, so a formula rewritten inside `OnUpdate` is a second implementation of a Core rule, not a port of it; the system reads components, calls the pure Core function, and writes the result back.
 3. **Model entities and archetypes before naming a single system**, per [core-concepts.md](references/core-concepts.md) — an entity is an ID, the archetype is the component set, and the archetype is what queries actually match; deciding systems first produces component sets shaped by code structure rather than by access pattern.
 4. **Choose each component kind from how its value changes, not from what it holds**, per [component-types.md](references/component-types.md) — unmanaged `IComponentData` by default; `ISharedComponentData` only when many entities genuinely share one value, since unique values fragment chunks; `IBufferElementData` for variable-length per-entity data; `IEnableableComponent` for state that toggles often, which avoids a structural change per toggle.
 5. **Budget the archetype against the 16 KiB chunk** — entities per chunk is that fixed budget divided by the archetype's per-entity size, so every field added to a hot archetype means fewer entities per chunk and more chunks walked per query. Split rarely-read data into a separate component rather than widening the one the hot query touches.
@@ -72,10 +59,10 @@ Act as the ECS data- and system-architecture specialist for the client track —
 7. **Prefer `ISystem` in an existing `SystemGroup`**, per [systems-and-scheduling.md](references/systems-and-scheduling.md) — `SystemBase` is managed and not Burst-compilable, so reach for it only when a managed API is genuinely required. Add `UpdateBefore`/`UpdateAfter` only for a real data dependency; speculative ordering is invisible coupling.
 8. **Pick the iteration form by what the loop needs per chunk**, per [queries-and-iteration.md](references/queries-and-iteration.md) — `SystemAPI.Query<T>` for main-thread iteration, `IJobEntity` for per-entity work that should be scheduled, `IJobChunk` when the loop needs raw per-chunk `NativeArray` access or an optional-component check once per chunk instead of once per entity.
 9. **Batch every structural change through an `EntityCommandBuffer`**, per [structural-changes-and-ecb.md](references/structural-changes-and-ecb.md) — a direct `EntityManager` structural change is a main-thread sync point that completes every job which could touch the affected data, not just the calling one, so a per-entity call inside a loop serializes the whole frame.
-10. **Give every parallel `EntityCommandBuffer` write an explicit sort key** — `AsParallelWriter()` playback order follows that key, and without a stable one (the entity-in-query index) the same inputs produce different results per run, breaking the determinism `coding-principles.md`'s Shared Core integrity section requires for prediction and server authority to agree.
+10. **Give every parallel `EntityCommandBuffer` write an explicit sort key** — `AsParallelWriter()` playback order follows that key, and without a stable one (the entity-in-query index) the same inputs produce different results per run, breaking the determinism `csharp-standards` → `coding-principles.md`'s Shared Core integrity section requires for prediction and server authority to agree.
 11. **Re-acquire every component handle after a structural change** — a `DynamicBuffer<T>`, `ComponentLookup<T>`, or `RefRW<T>` obtained before an add, remove, or destroy points into chunk memory that has since moved; the stale view compiles and reads plausible garbage.
 12. **Move immutable bulk data behind a `BlobAssetReference<T>`**, per [blob-assets.md](references/blob-assets.md) — built with `BlobBuilder` and containing no managed data, so one copy is shared by reference instead of duplicated into every component instance.
-13. **Confirm the built layout in the Entities Hierarchy and Systems windows before claiming it**, per [debugging-tools.md](references/debugging-tools.md) — archetype and update order are emergent, not declared, and any performance claim additionally needs a before/after capture from `unity-profiler-diagnostics`, per `performance-and-algorithms.md`'s Verification section.
+13. **Confirm the built layout in the Entities Hierarchy and Systems windows before claiming it**, per [debugging-tools.md](references/debugging-tools.md) — archetype and update order are emergent, not declared, and any performance claim additionally needs a before/after capture from `unity-profiler-diagnostics`, per `csharp-standards` → `performance-and-algorithms.md`'s Verification section.
 14. **State the assumption in the handoff when the approved scope doesn't settle a modeling choice** — if it is unclear whether a value is shared across entities or unique per entity, model it as unique (`IComponentData`), say so explicitly, and flag it; never silently pick `ISharedComponentData`, whose cost only appears later as chunk fragmentation.
 
 ## 5. Specific goals / tasks this skill performs
@@ -126,7 +113,7 @@ Act as the ECS data- and system-architecture specialist for the client track —
 - Output: traced to a `Baker<SpawnerAuthoring>` reading a second authoring component through `authoring.GetComponent<T>()` directly instead of the Baker's own `GetComponent`, so incremental baking never registered the dependency and never re-baked on change; corrected to the Baker API per §4's authoring-data step, which restored Editor and build agreement without touching the runtime system.
 
 ## 8. Edge cases & guardrails
-- Never introduce ECS without a prior architecture-level decision — per `performance-and-algorithms.md` this is escalation territory, and an unapproved conversion buys a baking pipeline and system-group topology the feature's scale may never repay.
+- Never introduce ECS without a prior architecture-level decision — per `csharp-standards` → `performance-and-algorithms.md` this is escalation territory, and an unapproved conversion buys a baking pipeline and system-group topology the feature's scale may never repay.
 - Never reimplement a Shared Core rule inside a system — `Unity.Entities` cannot be referenced from `Game.Core.*`, so the duplicate silently diverges from the authority the server validates against.
 - Never call `EntityManager` structural-change APIs inside a job or an iteration loop — the sync point completes every job that could touch that data, converting parallel work back into serial work.
 - Never use a component handle acquired before a structural change — chunk memory moves, and the stale view reads plausible-looking garbage rather than throwing.

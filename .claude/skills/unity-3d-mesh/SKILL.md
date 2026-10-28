@@ -1,27 +1,12 @@
 ---
 name: unity-3d-mesh
-description: >
-  Unity built-in 3D mesh authoring — the `Mesh` class, including `vertices`,
-  `triangles`, `normals`, `tangents`, `colors`, `uv` through `uv8`,
-  `subMeshCount`, `bounds`, and `indexFormat`; `SetVertices`, `SetTriangles`,
-  `SetIndices`, `SetVertexBufferParams`, `SetIndexBufferParams`, and
-  `SetSubMesh`; the Job System `MeshDataArray` and `MeshData` via
-  `AcquireReadOnlyMeshData` and `AllocateWritableMeshData`;
-  `RecalculateNormals`, `RecalculateBounds`, `RecalculateTangents`,
-  `MarkDynamic`, `Optimize`, `CombineMeshes`, `MeshFilter`, `MeshRenderer`;
-  `GameObject.CreatePrimitive` with `PrimitiveType`; mesh/vertex
-  compression; and Read/Write Enabled. Use when building or debugging a
-  procedural mesh, a mesh asset, or its Filter/Renderer wiring. Not for:
-  skinning, blend shapes, or bones — `unity-animation`; `MeshCollider`
-  cooking — `unity-3d-physics`; materials and shaders — `shader-authoring`;
-  LOD/batching escalation — `unity-engineer`;
-  model import settings — `unity-engineer`; sprite meshes —
-  `unity-2d-sprite`; GPU-side deformation that never returns to the CPU —
-  `compute-shader-vfx`; scheduling the jobs the Advanced Mesh API runs in —
-  `unity-job-system-and-burst`.
+description: "Runtime and procedural meshes: Mesh API, SetVertices/SetIndices, MeshData, 32-bit indices, bounds, normals, MeshCollider cost. Use when generating or modifying meshes in code."
+user-invocable: false
 ---
 
 # Unity 3D Mesh — Anatomy, Scripting API & Procedural Generation
+
+**Not for:** skinning, blend shapes, or bones — `unity-animation`; `MeshCollider` cooking — `unity-3d-physics`; materials and shaders — `shader-authoring`; LOD/batching escalation — `gameplay-engineer`; model import settings — `gameplay-engineer`; sprite meshes — `unity-2d-sprite`; GPU-side deformation that never returns to the CPU — `compute-shader-vfx`; scheduling the jobs the Advanced Mesh API runs in — `unity-job-system-and-burst`.
 
 ## Bundled resources
 
@@ -52,25 +37,25 @@ Act as the 3D mesh authoring specialist for the client track — the skill reach
 - Negative trigger: bind poses, blend shapes, bone weights, or a `SkinnedMeshRenderer` — that's `unity-animation`; this skill covers only the static-mesh data that precedes it.
 - Negative trigger: `MeshCollider` cooking, convexity, or collision behaviour — that's `unity-3d-physics`, even though the same `Mesh` asset is the input.
 - Negative trigger: writing or modifying a shader or material's appearance — that's `shader-authoring`.
-- Negative trigger: LOD Group, the Mesh LOD generator, or a batching/GPU-instancing cost that survives this skill's advice — escalate to `unity-engineer`.
-- Negative trigger: FBX or other 3D-model import settings — that's `unity-engineer`'s asset pipeline.
+- Negative trigger: LOD Group, the Mesh LOD generator, or a batching/GPU-instancing cost that survives this skill's advice — escalate to `gameplay-engineer`.
+- Negative trigger: FBX or other 3D-model import settings — that's `gameplay-engineer`'s asset pipeline.
 - Negative trigger: `Sprite`/`SpriteRenderer` 2D mesh geometry — that's `unity-2d-sprite`.
 - Negative trigger: geometry deformed on the GPU and never read back — a compute kernel writing vertices into a buffer an indirect draw consumes — that's `compute-shader-vfx`; this skill owns the `Mesh` the CPU can still read, collide against, and save, and the deciding question is whether anything but the renderer needs the result.
 - Negative trigger: scheduling the jobs the Advanced Mesh API runs in — `JobHandle` chains, allocator lifetime, disposal of the `MeshDataArray` — that's `unity-job-system-and-burst`; this skill owns the vertex-buffer layout and the mesh data those jobs write.
-- Negative trigger: deciding which mesh or material a game state should show — that's `csharp-engineer`'s Shared Core, per `coding-principles.md`'s Shared Core integrity section.
+- Negative trigger: deciding which mesh or material a game state should show — that's `csharp-engineer`'s Shared Core, per `csharp-standards` → `coding-principles.md`'s Shared Core integrity section.
 
 ## 4. How to use this skill
 1. **Decide the authoring tier by update frequency and scale before writing any code** — legacy `vertices`/`triangles`/`normals`/`uv` for a one-off setup, `SetVertices`/`SetTriangles`/`SetIndices` for occasional edits, and the Job-System path only once justified, per [mesh-scripting-api.md](references/mesh-scripting-api.md) and [advanced-mesh-api-jobs.md](references/advanced-mesh-api-jobs.md).
 2. **Assign vertex data through arrays that all share the vertex count** — normals, UVs, colors, and tangents index by vertex position, and a mismatched array length throws immediately rather than degrading gracefully, per [mesh-anatomy.md](references/mesh-anatomy.md).
 3. **Recalculate or set bounds and normals immediately after any vertex change**, per [mesh-scripting-api.md](references/mesh-scripting-api.md) — a stale `bounds` silently breaks culling, and geometry with no normals set reads flat or black under lighting until `RecalculateNormals`/`RecalculateTangents` runs.
 4. **Switch `indexFormat` to `UInt32` before the vertex count can exceed 65535**, per [mesh-anatomy.md](references/mesh-anatomy.md) — the `UInt16` default is Unity's own choice for the common case, not a safe ceiling to leave unexamined on procedural or voxel-style geometry.
-5. **Reach for the Advanced Mesh API only once profiling justifies its manual buffer-layout cost**, per [advanced-mesh-api-jobs.md](references/advanced-mesh-api-jobs.md) — `MeshDataArray`/`MeshData` earns its complexity for per-frame or large-scale procedural generation off the main thread, not for a `Start()`-time mesh, per KISS/YAGNI in `coding-principles.md`.
+5. **Reach for the Advanced Mesh API only once profiling justifies its manual buffer-layout cost**, per [advanced-mesh-api-jobs.md](references/advanced-mesh-api-jobs.md) — `MeshDataArray`/`MeshData` earns its complexity for per-frame or large-scale procedural generation off the main thread, not for a `Start()`-time mesh, per KISS/YAGNI in `csharp-standards` → `coding-principles.md`.
 6. **Call `MarkDynamic` before the first write on a mesh that will be rewritten every frame, and never on one that will not**, per [mesh-optimization.md](references/mesh-optimization.md) — it reserves a different GPU buffer strategy that costs memory a static mesh never recovers.
 7. **Keep `MeshRenderer.materials` in sync with `MeshFilter.mesh`'s `subMeshCount`**, per [mesh-components.md](references/mesh-components.md) — changing the referenced mesh does not resize or reassign the renderer's material list, so a mismatch renders extra submeshes with the last material stacked onto them.
 8. **Decide Read/Write Enabled and mesh/vertex compression by whether runtime code ever reads the data back**, per [mesh-optimization.md](references/mesh-optimization.md) — reading vertex data on a mesh with `isReadable` false throws, and compression trades precision for size, which is wrong for a mesh a gameplay system measures exactly.
-9. **Choose `CombineMeshes` over static batching only when per-object culling can be sacrificed**, per [mesh-optimization.md](references/mesh-optimization.md) and `performance-and-algorithms.md`'s Rendering & draw calls section — a combined mesh draws in full the moment any part of it is visible.
-10. **Keep which mesh or material is active a Shared Core decision, never one made in the rendering layer**, per `coding-principles.md`'s Shared Core integrity section — this skill builds and assigns already-resolved data, it never decides what should be shown.
-11. **Confirm any rendering-cost or mesh-data claim with the Profiler or the Mesh asset's Preview panel before reporting it**, per [mesh-components.md](references/mesh-components.md) and `performance-and-algorithms.md`'s Verification section.
+9. **Choose `CombineMeshes` over static batching only when per-object culling can be sacrificed**, per [mesh-optimization.md](references/mesh-optimization.md) and `csharp-standards` → `performance-and-algorithms.md`'s Rendering & draw calls section — a combined mesh draws in full the moment any part of it is visible.
+10. **Keep which mesh or material is active a Shared Core decision, never one made in the rendering layer**, per `csharp-standards` → `coding-principles.md`'s Shared Core integrity section — this skill builds and assigns already-resolved data, it never decides what should be shown.
+11. **Confirm any rendering-cost or mesh-data claim with the Profiler or the Mesh asset's Preview panel before reporting it**, per [mesh-components.md](references/mesh-components.md) and `csharp-standards` → `performance-and-algorithms.md`'s Verification section.
 12. **When a "renders wrong" report doesn't name its layer, state the assumption before editing data** — geometry, normals, UVs, material, and lighting are four different owners, and guessing wrong edits data another system depends on.
 
 ## 5. Specific goals / tasks this skill performs
@@ -81,7 +66,7 @@ Act as the 3D mesh authoring specialist for the client track — the skill reach
 - Read/Write Enabled, mesh compression, and vertex compression configuration.
 - `CombineMeshes` versus static batching selection for static geometry groups.
 - Primitive GameObject creation via `GameObject.CreatePrimitive`.
-- Out of scope: skinning/blend shapes (`unity-animation`), `MeshCollider` physics (`unity-3d-physics`), GPU-only deformation (`compute-shader-vfx`), job scheduling and allocator lifetime behind the Advanced Mesh API (`unity-job-system-and-burst`), shaders/materials (`shader-authoring`), LOD/batching escalation (`unity-engineer`), model import settings (`unity-engineer`), sprite meshes (`unity-2d-sprite`), gameplay rules (`csharp-engineer`).
+- Out of scope: skinning/blend shapes (`unity-animation`), `MeshCollider` physics (`unity-3d-physics`), GPU-only deformation (`compute-shader-vfx`), job scheduling and allocator lifetime behind the Advanced Mesh API (`unity-job-system-and-burst`), shaders/materials (`shader-authoring`), LOD/batching escalation (`gameplay-engineer`), model import settings (`gameplay-engineer`), sprite meshes (`unity-2d-sprite`), gameplay rules (`csharp-engineer`).
 
 ## 6. Output format
 ```
@@ -112,7 +97,7 @@ Act as the 3D mesh authoring specialist for the client track — the skill reach
 
 **Example 2**
 - Input: "Just use MeshDataArray and the Job System for this one-off mesh too — it's the fastest API Unity has."
-- Output: declined. A `Start()`-time mesh with no per-frame rebuild gets nothing from `MeshDataArray`'s manual vertex-buffer-layout and thread-safety machinery — the legacy `Set*` methods are simpler, per KISS/YAGNI in `coding-principles.md`, and equally fast at this scale and frequency. The Job-System path was reserved for the moment a system actually regenerates meshes every frame or at a scale profiling flags as a bottleneck, per [advanced-mesh-api-jobs.md](references/advanced-mesh-api-jobs.md).
+- Output: declined. A `Start()`-time mesh with no per-frame rebuild gets nothing from `MeshDataArray`'s manual vertex-buffer-layout and thread-safety machinery — the legacy `Set*` methods are simpler, per KISS/YAGNI in `csharp-standards` → `coding-principles.md`, and equally fast at this scale and frequency. The Job-System path was reserved for the moment a system actually regenerates meshes every frame or at a scale profiling flags as a bottleneck, per [advanced-mesh-api-jobs.md](references/advanced-mesh-api-jobs.md).
 
 **Example 3**
 - Input: "A spawned voxel-terrain chunk with over 100,000 vertices renders as garbage geometry."
@@ -125,6 +110,6 @@ Act as the 3D mesh authoring specialist for the client track — the skill reach
 - Never call a `Mesh` getter (`vertices`, `GetVertices`, `GetTriangles`, etc.) on a mesh with `isReadable` false at runtime — it throws `InvalidOperationException`; check `isReadable` or keep Read/Write Enabled on for any mesh runtime code inspects.
 - Never reach for `MeshDataArray`/the Job System for a one-off or low-frequency mesh — reserve it for per-frame or large-scale procedural generation a measurement actually justifies.
 - Never call `Mesh.CombineMeshes` across meshes that must be individually culled — the combined result draws in full the instant any part of it is visible.
-- Never decide which mesh or material a game state uses inside `Game.Client.*` — that decision belongs to `Game.Core.*`, per `coding-principles.md`'s Shared Core integrity section.
-- Never claim a mesh or rendering performance fix without a Profiler or Mesh Preview measurement, per `performance-and-algorithms.md`'s Verification section.
+- Never decide which mesh or material a game state uses inside `Game.Client.*` — that decision belongs to `Game.Core.*`, per `csharp-standards` → `coding-principles.md`'s Shared Core integrity section.
+- Never claim a mesh or rendering performance fix without a Profiler or Mesh Preview measurement, per `csharp-standards` → `performance-and-algorithms.md`'s Verification section.
 - If a "renders wrong" report doesn't identify whether the cause is geometry, normals, UVs, material, or lighting, name the assumption being made before changing any data — the four routes lead to different owners and a wrong guess edits data another system depends on.

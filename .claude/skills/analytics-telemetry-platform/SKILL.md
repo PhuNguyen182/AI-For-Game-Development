@@ -1,22 +1,12 @@
 ---
 name: analytics-telemetry-platform
-description: >
-  Build-vs-buy framework for the analytics and telemetry pipeline — a
-  managed platform such as Firebase Analytics, a managed platform with
-  raw export such as Firebase plus BigQuery, or a custom event pipeline
-  into a warehouse the team owns — decided on data portability, COPPA
-  and GDPR exposure, and whether crash and ANR telemetry sits inside or
-  outside the same vendor commitment. Use when choosing the analytics
-  stack, a domain with no other owner on the team. Not for: event
-  instrumentation once a platform is chosen, owned by
-  `sdk-platform-engineer`; reading results or choosing metrics, owned by the GD with `researcher`; production crash triage, owned by
-  `crash-anr-investigator`; the scoring rubric in
-  `tco-reversibility-scoring`; player-data persistence, owned by
-  `backend-build-vs-buy`; remote-config cadence, owned by
-  `live-ops-content-pipeline`.
+description: "Build-vs-buy for analytics and telemetry: Firebase, Firebase + BigQuery export, or a custom pipeline — data portability, COPPA/GDPR exposure, crash telemetry coupling. Use when choosing the analytics stack."
+user-invocable: false
 ---
 
 # Analytics / Telemetry Platform — pipeline build-vs-buy decision
+
+**Not for:** event instrumentation once a platform is chosen, owned by `sdk-platform-engineer`; reading results or choosing metrics, owned by the GD with `researcher`; production crash triage, owned by `crash-anr-investigator`; the scoring rubric in `tco-reversibility-scoring`; player-data persistence, owned by `backend-build-vs-buy`; remote-config cadence, owned by `live-ops-content-pipeline`.
 
 ## 1. Objective
 Give the CTO explicit ownership of the analytics/telemetry infrastructure decision — a domain no other role on the team owns — so it becomes a deliberate build-vs-buy call instead of whichever SDK was integrated first.
@@ -39,7 +29,7 @@ Act as a data-infrastructure-aware CTO, not a data analyst: this skill decides t
 5. **Score the survivors with `tco-reversibility-scoring`, weighting portability heavily** — analytics history compounds in value, and losing access to it on a vendor switch is the cost teams most reliably underweight at signing time.
 6. **State explicitly whether crash/ANR telemetry is inside this decision or handled separately** — Firebase Crashlytics is commonly assumed to come with Firebase Analytics. Say which it is; leaving it implied is how a game ships with no crash reporting at all.
 7. **Factor migration and backfill cost when a prior platform already holds history** — the go-forward TCO is not the whole bill if two years of events have to be moved or abandoned.
-8. **Write the decision in English**, per `language-and-comments.md`'s Working language section — it is a durable artifact `sdk-platform-engineer` implements against; the Vietnamese reply to the GD is the final message, not the document.
+8. **Write the decision in English**, per `csharp.md`'s Working language section — it is a durable artifact `sdk-platform-engineer` implements against; the Vietnamese reply to the GD is the final message, not the document.
 9. **Ask when the target audience's jurisdictions or the depth of analysis needed are unknown** — those two inputs decide compliance and portability respectively, which between them decide the whole call. Do not assume the permissive answer.
 
 ## 5. Specific goals / tasks this skill performs

@@ -46,7 +46,7 @@ allocation into an occasional silent logic bug, which is worse.
 help size `DOTween.SetTweensCapacity(...)` correctly, but "will slightly
 slow down your performance while inside Unity Editor" — treat it as an
 Editor-only tuning aid to switch on temporarily, not a setting to leave
-enabled, per `verification-standards.md`'s rule on labelling Editor-only
+enabled, per skill `qa-standards`'s rule on labelling Editor-only
 diagnostics as such.
 
 ## Allocation guidance: generic `DOTween.To()` vs Shortcuts vs LitMotion
@@ -68,4 +68,4 @@ tweened instances, a hot path) is a legitimate reason to prefer LitMotion
 specifically for the allocation profile, independent of which library
 otherwise governs a given module. Never assume DOTween's allocation cost
 is negligible for such a case without profiling it, per
-`performance-and-algorithms.md`'s Verification section.
+`csharp-standards` → `performance-and-algorithms.md`'s Verification section.

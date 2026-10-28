@@ -15,7 +15,7 @@ Inspector-configurable per prefab without a programmer.
 | Member | Effect | Use when | Source |
 |---|---|---|---|
 | `abstract class AbilityTargetingSO : ScriptableObject` with `public abstract IReadOnlyList<Vector3> GetTargetPoints(...)` | Declares the contract every strategy implements | A behavior varies by design-time choice, not by a runtime condition a single method could branch on | synthesized |
-| Concrete subclasses (`ConeTargetingSO`, `SingleTargetTargetingSO`) | Each ships one algorithm as its own asset | Adding a new variant should never touch existing callers, per `coding-principles.md`'s Open/Closed section | synthesized |
+| Concrete subclasses (`ConeTargetingSO`, `SingleTargetTargetingSO`) | Each ships one algorithm as its own asset | Adding a new variant should never touch existing callers, per `csharp-standards` → `coding-principles.md`'s Open/Closed section | synthesized |
 | `[SerializeField] private AbilityTargetingSO targeting;` on the consuming prefab | The swap point — reassign the asset reference, nothing else | A designer must be able to change behavior without a programmer | synthesized |
 
 ## Code shape
@@ -52,6 +52,6 @@ public class ConeTargetingSO : AbilityTargetingSO
 presentation/spatial concern using `UnityEngine.Vector3` — but the decision of
 *what those points mean* (damage dealt, a hit resolved, a cooldown consumed)
 stays in `Game.Core.*`; pass the resolved points in as already-computed data,
-per `coding-principles.md`'s Shared Core integrity section. A Delegate Object
+per `csharp-standards` → `coding-principles.md`'s Shared Core integrity section. A Delegate Object
 that also computes damage is reimplementing a rule outside Core, not
 delegating to it.

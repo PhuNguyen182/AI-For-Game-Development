@@ -4,7 +4,7 @@ Sources: [Test and debug your game](https://docs.unity3d.com/Packages/com.unity.
 Covers: SKILL.md §4 — **"Verify every latency, bandwidth, or prediction-cost claim against the Network Profiler or PlayMode Tool"**.
 
 The tools that make a networking claim checkable instead of asserted.
-`performance-and-algorithms.md`'s Verification section already requires a
+`csharp-standards` → `performance-and-algorithms.md`'s Verification section already requires a
 measurement for any performance claim in general; this is where that
 measurement comes from for anything network-shaped.
 

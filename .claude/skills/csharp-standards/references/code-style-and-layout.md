@@ -2,7 +2,7 @@
 
 ## Relationship to other rules
 
-This file governs **mechanical style**: explicit declaration modifiers, brace/indentation layout, statement shape, and the preference for modern language operators over hand-rolled equivalents. It does not replace `coding-principles.md`, which owns architecture-level design principles (SOLID/KISS/YAGNI), Shared Core integrity, correctness/safety boundaries (exception handling, null safety), and submission handoff — read both before writing any code. `naming-convention.md` owns identifier casing and namespace-to-folder mapping; this file owns how a declaration and its body are shaped once named.
+This file governs **mechanical style**: explicit declaration modifiers, brace/indentation layout, statement shape, and the preference for modern language operators over hand-rolled equivalents. It does not replace `csharp-standards` → `coding-principles.md`, which owns architecture-level design principles (SOLID/KISS/YAGNI), Shared Core integrity, correctness/safety boundaries (exception handling, null safety), and submission handoff — read both before writing any code. `csharp-standards` → `naming-convention.md` owns identifier casing and namespace-to-folder mapping; this file owns how a declaration and its body are shaped once named.
 
 ## Explicit access modifiers (mandatory)
 
@@ -55,7 +55,7 @@ class AbilityRunner : MonoBehaviour   // Missing access modifier on the type.
 }
 ```
 
-- Code Reviewer checks this on every submission, same as SOLID/KISS/YAGNI in `coding-principles.md` — a missing access modifier is grounds for "request changes" at any size.
+- Code Reviewer checks this on every submission, same as SOLID/KISS/YAGNI in `csharp-standards` → `coding-principles.md` — a missing access modifier is grounds for "request changes" at any size.
 
 ## Layout
 
@@ -68,7 +68,7 @@ class AbilityRunner : MonoBehaviour   // Missing access modifier on the type.
 
 ## Code aesthetics & elegance (mandatory)
 
-Correctness and stability come from code that is easy to scan and hard to misread. These rules exist to keep a control-flow mistake or a mid-chain exception from hiding inside a dense line — same motivation as Null safety and Exception handling in `coding-principles.md`, applied here to layout and expression shape.
+Correctness and stability come from code that is easy to scan and hard to misread. These rules exist to keep a control-flow mistake or a mid-chain exception from hiding inside a dense line — same motivation as Null safety and Exception handling in `csharp-standards` → `coding-principles.md`, applied here to layout and expression shape.
 
 - **No inline statement bodies.** Never write a statement's body on the same line as its header — `if (x) return;`, `for (...) DoWork();`, a single-line property/method with `=>` hiding a non-trivial call. The body always starts on its own line below the header. This applies to `if`/`else`/`for`/`foreach`/`while`/`switch` arms alike.
 - **Single-statement `if`/`for`/`foreach`/`while` bodies still go on their own line, but may skip `{ }`** — per the Layout exception above:
@@ -105,7 +105,7 @@ Correctness and stability come from code that is easy to scan and hard to misrea
     int equippedDamage = this.player.GetInventory().GetEquippedItem(EquipSlot.Weapon).GetStats().Damage;
     ```
 
-    **Exception** — a fluent builder-style API (a builder pattern, LINQ's own fluent methods outside hot paths, UI Toolkit's `.Query<T>()` chains, or any API explicitly designed to be chained as one expression) is exempt: chaining *is* that API's intended shape, and breaking it into temporaries per intermediate step fights the pattern instead of clarifying it. This exception is about the API's own designed fluent surface — it does not extend to an incidental chain of ordinary calls that merely happen to return objects (like the Law of Demeter example in `coding-principles.md`), which still gets broken into temporaries.
+    **Exception** — a fluent builder-style API (a builder pattern, LINQ's own fluent methods outside hot paths, UI Toolkit's `.Query<T>()` chains, or any API explicitly designed to be chained as one expression) is exempt: chaining *is* that API's intended shape, and breaking it into temporaries per intermediate step fights the pattern instead of clarifying it. This exception is about the API's own designed fluent surface — it does not extend to an incidental chain of ordinary calls that merely happen to return objects (like the Law of Demeter example in `csharp-standards` → `coding-principles.md`), which still gets broken into temporaries.
 - **Wrap long lines, and align the wrap.** When a line grows hard to scan — a method signature with many parameters, a long conditional, a chained call that must wrap — break it across lines and align the continuation to the opening column, so parameters/operands read as a clean vertical column rather than a ragged one:
 
     ```csharp
@@ -121,11 +121,11 @@ Correctness and stability come from code that is easy to scan and hard to misrea
     not a ragged, inconsistently indented wrap.
 - **Prefer modern operators over hand-rolled checks.** Use the language's own null/type/condition idiom instead of writing the equivalent logic by hand:
   - Null checks: `?.` (null-conditional) and `??`/`??=` (null-coalescing) instead of a manual `if (x != null) { ... }` just to guard a single access or assignment.
-  - Null tests as conditions: `is null` / `is not null` instead of `== null`/`!= null` for plain C# reference types (this does not override the `UnityEngine.Object` implicit-`bool` rule in `coding-principles.md`'s Null safety section — that rule still wins for Unity object references).
+  - Null tests as conditions: `is null` / `is not null` instead of `== null`/`!= null` for plain C# reference types (this does not override the `UnityEngine.Object` implicit-`bool` rule in `csharp-standards` → `coding-principles.md`'s Null safety section — that rule still wins for Unity object references).
   - Type checks: pattern matching (`if (value is PlayerController controller)`) instead of `GetType() == typeof(...)` or an `as` cast followed by a separate manual null check.
   - Branch-on-type/value logic: a `switch` expression with property/positional patterns instead of a chain of `if`/`else if` re-testing the same value.
-  - Apply these everywhere they read at least as clearly as the manual form — never force one in where the manual form is genuinely the clearer read (see KISS in `coding-principles.md`).
-- **Elegance over verbosity.** Prefer the shortest form that stays fully readable — expression-bodied members for a true one-liner (`public bool IsReady => this._remainingCooldown <= 0f;`), target-typed `new()`, object/collection initializers. This does not relax any other rule in this file — an expression-bodied member is still subject to the "no inline statement bodies" rule above if its body is a call chain that should be broken into temporaries, and KISS/YAGNI in `coding-principles.md` still governs: elegant means *shortest-while-clear*, never clever or cryptic.
+  - Apply these everywhere they read at least as clearly as the manual form — never force one in where the manual form is genuinely the clearer read (see KISS in `csharp-standards` → `coding-principles.md`).
+- **Elegance over verbosity.** Prefer the shortest form that stays fully readable — expression-bodied members for a true one-liner (`public bool IsReady => this._remainingCooldown <= 0f;`), target-typed `new()`, object/collection initializers. This does not relax any other rule in this file — an expression-bodied member is still subject to the "no inline statement bodies" rule above if its body is a call chain that should be broken into temporaries, and KISS/YAGNI in `csharp-standards` → `coding-principles.md` still governs: elegant means *shortest-while-clear*, never clever or cryptic.
 
 ## Rules
 
@@ -135,4 +135,4 @@ Correctness and stability come from code that is easy to scan and hard to misrea
 - A chain of dependent calls is broken into named temporaries, except a designed fluent/builder API, which stays chained.
 - A wrapped long line aligns its continuation to the opening column rather than an inconsistent ragged indent.
 - Modern null/type/condition operators (`?.`, `??`/`??=`, `is null`/`is not null`, pattern matching, `switch` expressions) are preferred over hand-rolled equivalents wherever they read at least as clearly.
-- Shortest-while-clear wins over verbose ceremony — but never at the cost of another rule in this file or in `coding-principles.md`.
+- Shortest-while-clear wins over verbose ceremony — but never at the cost of another rule in this file or in `csharp-standards` → `coding-principles.md`.

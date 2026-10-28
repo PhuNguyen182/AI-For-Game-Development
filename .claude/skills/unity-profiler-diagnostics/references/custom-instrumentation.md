@@ -6,7 +6,7 @@ Covers: SKILL.md §4 — **"Instrument an opaque system with a `static readonly 
 Making a cost visible that the default hierarchy does not name — work inside a
 third-party plugin, one call among many identical ones, or a block whose cost
 must be readable inside the running game. Where the instrumented code should
-live and how it is written follows `coding-principles.md`.
+live and how it is written follows `csharp-standards` → `coding-principles.md`.
 
 ## API choice
 

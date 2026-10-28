@@ -1,23 +1,12 @@
 ---
 name: unity-animation
-description: >
-  Technique for Unity's Mecanim animation system — `Animator`, Animator
-  Controller state machines, transitions, Any State, parameters and
-  `StateMachineBehaviour`, Blend Trees, layers and Avatar Masks,
-  `AnimationClip` import and Animation Events, Humanoid Avatar setup and
-  retargeting, `OnAnimatorMove` root motion, `OnAnimatorIK` inverse kinematics,
-  `AnimatorOverrideController` clip swapping, Culling and Update Mode, and the
-  `PlayableGraph` API. Use for any Animator asset, clip, humanoid
-  rig, or playback script. Not for: Timeline sequencing and the Animation
-  Rigging package, no owning skill, flag the gap; cameras reacting to Animator
-  state — `unity-cinemachine-authoring`; sprite art — `unity-2d-sprite`;
-  Spine runtimes — `spine-animation`; the logical gameplay state graph a
-  parameter reflects — `stateless-state-machines`; UI transition wiring on a
-  Canvas Selectable or UI Toolkit screen — `ugui`/`ui-toolkit`; the rule
-  behind a state change — `csharp-engineer`.
+description: "Mecanim: Animator Controllers, transitions, blend trees, layers and masks, StateMachineBehaviour, root motion, animation events, hashed parameters. Use for Animator-driven animation."
+user-invocable: false
 ---
 
 # Unity Animation — Mecanim, Avatars, Controllers, Blend Trees, Playables
+
+**Not for:** Timeline sequencing and the Animation Rigging package, no owning skill, flag the gap; cameras reacting to Animator state — `unity-cinemachine-authoring`; sprite art — `unity-2d-sprite`; Spine runtimes — `spine-animation`; the logical gameplay state graph a parameter reflects — `stateless-state-machines`; UI transition wiring on a Canvas Selectable or UI Toolkit screen — `ugui`/`ui-toolkit`; the rule behind a state change — `csharp-engineer`.
 
 ## Bundled resources
 
@@ -58,7 +47,7 @@ Act as the Mecanim specialist for the client track — the tool reached for when
 - Negative trigger: the ragdoll a death animation hands over to, and the bodies and joints behind it — that is `unity-3d-physics`; this skill owns the blend back into animation, not the simulation.
 - Negative trigger: the logical state graph the animation depicts — which states exist, which transitions are legal, what guards them — that is `stateless-state-machines`; a gameplay decision made inside a `StateMachineBehaviour` puts the rule in a layer the server cannot mirror, so the graph drives Animator parameters and the Animator reflects them.
 - Negative trigger: a UI transition — a Canvas `Selectable`'s Animation transition mode, or a UI Toolkit screen's own transitions — that is `ugui` and `ui-toolkit`; this skill authors the Animator Controller and its clips once `ugui` has wired the transition to one, and UI Toolkit has no Animation Clip integration to author against at all.
-- Negative trigger: whether the attack that the animation depicts actually lands, or when a cooldown expires — that is `csharp-engineer`'s Shared Core, per `coding-principles.md`'s Shared Core integrity rule.
+- Negative trigger: whether the attack that the animation depicts actually lands, or when a cooldown expires — that is `csharp-engineer`'s Shared Core, per `csharp-standards` → `coding-principles.md`'s Shared Core integrity rule.
 
 ## 4. How to use this skill
 1. **Set the Animation Type before anything else is imported** — Humanoid buys retargeting across rigs and costs a per-frame retargeting pass, Generic costs neither and offers neither, and Legacy exists only for content that already depends on it, per [mecanim-overview.md](references/mecanim-overview.md) and the roots in [root-links.md](references/root-links.md). Changing it later invalidates every clip and Avatar built against it.
@@ -69,11 +58,11 @@ Act as the Mecanim specialist for the client track — the tool reached for when
 6. **Pick the Blend Tree form from the shape of the parameter driving it** — one parameter is one dimension, two independent axes need the two-dimensional form and the right variant for whether direction or magnitude matters, and the direct form gives each child its own parameter for additive layering, per [animator-controller.md](references/animator-controller.md).
 7. **Express transition timing in normalised time whenever clips can be overridden** — a fixed duration in seconds outlives a shorter override clip and swallows the transition, per [animator-override-controller.md](references/animator-override-controller.md).
 8. **Set Culling Mode and Update Mode deliberately rather than leaving the defaults** — always-animate pays for characters nobody can see, culling completely freezes the state machine so the pose jumps on return, and the physics update mode is what keeps an animated kinematic body in step, per [animator-component.md](references/animator-component.md) and [performance-and-faq.md](references/performance-and-faq.md).
-9. **Drive parameters through cached hashes rather than strings** — the string overloads hash the name on every call, which `performance-and-algorithms.md` names directly; cache the hash once in a static field and use the integer overloads, per [animator-component.md](references/animator-component.md).
+9. **Drive parameters through cached hashes rather than strings** — the string overloads hash the name on every call, which `csharp-standards` → `performance-and-algorithms.md` names directly; cache the hash once in a static field and use the integer overloads, per [animator-component.md](references/animator-component.md).
 10. **Swap clips through an Override Controller instead of duplicating the controller** — one graph and one set of transitions stay the single source of truth, and applying the overrides as a batch avoids re-resolving the controller once per clip, per [animator-override-controller.md](references/animator-override-controller.md).
-11. **Reach for the Playables API only when the state machine cannot express the need** — runtime-composed blending or per-frame animation maths, not ordinary gameplay animation, per YAGNI in `coding-principles.md`. A graph created here is not garbage collected, so pair its creation with an explicit destroy, per [playables-api.md](references/playables-api.md).
-12. **Keep every gameplay decision in `Game.Core.*`** — a per-state behaviour, a movement callback, and an Animation Event handler carry out or report what Core already decided, per `coding-principles.md`'s Shared Core integrity rule. An animation event is not a place to resolve a hit.
-13. **Back any animation performance claim with a Profiler capture** — rig cost, culling changes and bone-count reductions all sound obviously right and are routinely wrong on the actual device, per `performance-and-algorithms.md`'s Verification section and [performance-and-faq.md](references/performance-and-faq.md).
+11. **Reach for the Playables API only when the state machine cannot express the need** — runtime-composed blending or per-frame animation maths, not ordinary gameplay animation, per YAGNI in `csharp-standards` → `coding-principles.md`. A graph created here is not garbage collected, so pair its creation with an explicit destroy, per [playables-api.md](references/playables-api.md).
+12. **Keep every gameplay decision in `Game.Core.*`** — a per-state behaviour, a movement callback, and an Animation Event handler carry out or report what Core already decided, per `csharp-standards` → `coding-principles.md`'s Shared Core integrity rule. An animation event is not a place to resolve a hit.
+13. **Back any animation performance claim with a Profiler capture** — rig cost, culling changes and bone-count reductions all sound obviously right and are routinely wrong on the actual device, per `csharp-standards` → `performance-and-algorithms.md`'s Verification section and [performance-and-faq.md](references/performance-and-faq.md).
 
 ## 5. Specific goals / tasks this skill performs
 - Setting Animation Type and clip import settings, and authoring clips, curves and Animation Events.
@@ -129,7 +118,7 @@ Act as the Mecanim specialist for the client track — the tool reached for when
 
 **Example 4**
 - Input: "Just resolve the hit inside the Animation Event on the attack clip, it is already at the right frame."
-- Output: declined — that puts a game rule in the animation layer, against `coding-principles.md`'s Shared Core integrity rule, and it also depends on an event firing near the end of a clip, which is unreliable. The event now reports that the attack window opened, and Core decides whether anything was hit.
+- Output: declined — that puts a game rule in the animation layer, against `csharp-standards` → `coding-principles.md`'s Shared Core integrity rule, and it also depends on an event firing near the end of a clip, which is unreliable. The event now reports that the attack window opened, and Core decides whether anything was hit.
 
 ## 8. Edge cases & guardrails
 - Never conclude a bone mapping is wrong from a pose warning — the pose is what the warning is about, and remapping will not fix it.
@@ -141,9 +130,9 @@ Act as the Mecanim specialist for the client track — the tool reached for when
 - Never put an Animation Event handler on a child object — the method has to live on a component of the same object as the `Animator`.
 - Never write to the transform while root motion is being applied — one of the two wins, and which one depends on whether the movement callback is implemented.
 - Never leave Culling Mode always animating for a character that leaves the screen, and never cull completely where a visible pose jump on return is unacceptable.
-- Never access Animator parameters by string in a per-frame path — cache the hash, per `performance-and-algorithms.md`.
+- Never access Animator parameters by string in a per-frame path — cache the hash, per `csharp-standards` → `performance-and-algorithms.md`.
 - Never author a transition duration in seconds on a controller that will be overridden — a shorter override clip swallows it.
 - Never create a playable graph without an explicit destroy — it is not garbage collected, and the leak lasts the session.
 - Never resolve a gameplay outcome inside a per-state behaviour, a movement callback, or an event handler — report it and let `Game.Core.*` decide.
-- Never claim an animation optimisation without a Profiler capture behind it, per `performance-and-algorithms.md`'s Verification section.
+- Never claim an animation optimisation without a Profiler capture behind it, per `csharp-standards` → `performance-and-algorithms.md`'s Verification section.
 - Never improvise Timeline or Animation Rigging guidance from Mecanim knowledge — neither has an owning skill here; flag the gap instead.

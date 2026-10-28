@@ -35,7 +35,7 @@ The URL still resolves, which makes the page look current when it is not.
 | Update method | Rebuilds the link after its settings change from script; changing fields alone does not re-register it | [NavMeshLink API](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/api/Unity.AI.Navigation.NavMeshLink.html) |
 
 Older names for several of these members remain on the class as obsolete
-aliases; new code uses the current names, per `coding-principles.md`'s
+aliases; new code uses the current names, per `csharp-standards` → `coding-principles.md`'s
 Obsolete APIs section.
 
 ## Why a link is ignored

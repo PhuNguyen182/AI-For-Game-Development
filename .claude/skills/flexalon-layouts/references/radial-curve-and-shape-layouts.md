@@ -97,7 +97,7 @@ namespace Game.Client.Layout
 dirty every frame, so `Measure`/`Arrange` re-run continuously. That is a
 legitimate design (the docs animate exactly this property with a Unity
 `Animator`) but it is not free — profile it against the frame budget per
-`performance-and-algorithms.md`'s Verification section before shipping it on
+`csharp-standards` → `performance-and-algorithms.md`'s Verification section before shipping it on
 mobile.
 
 ## `FlexalonShapeLayout` — n-sided formation

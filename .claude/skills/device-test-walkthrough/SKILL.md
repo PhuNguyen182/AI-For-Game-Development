@@ -1,23 +1,12 @@
 ---
 name: device-test-walkthrough
-description: >
-  Walk a supplied test-case list, in `risk-based-test-planning`'s format,
-  against an already-installed build on a real Android or iOS device —
-  install and launch the artifact, drive it via bundled
-  device_playtest.py primitives — tap, swipe, text, keyevent — capture a
-  screenshot and log evidence at each checkpoint, and classify every
-  finding as Defect, Design flaw, or As designed. Covers real-device
-  input injection, adb on Android and idb on iOS, and pulling crash and
-  ANR-relevant logs mid-walkthrough. Not for: Editor Play Mode
-  scenarios, owned by `playtest-scenario-execution`; build-only fault
-  diagnosis, owned by `build-fault-triage`; authoring or running the
-  automated NUnit suite, owned by `unity-test-framework`; deciding which
-  test cases are owed, owned by `risk-based-test-planning`;
-  root-causing a crash once one occurs, per `crash-anr-investigator`'s
-  `/investigate-device-crash` convention.
+description: "Walk a test-case list on an installed build on a real Android/iOS device: install, launch, tap/swipe/type via bundled primitives, screenshot, logcat, per-case verdict. Use when cases must run on a physical device."
+user-invocable: false
 ---
 
 # Device Test Walkthrough — running supplied test cases on a real device build
+
+**Not for:** Editor Play Mode scenarios, owned by `playtest-scenario-execution`; build-only fault diagnosis, owned by `build-fault-triage`; authoring or running the automated NUnit suite, owned by `unity-test-framework`; deciding which test cases are owed, owned by `risk-based-test-planning`; root-causing a crash once one occurs, per `crash-anr-investigator`'s `/investigate-device-crash` convention.
 
 ## Bundled resources
 
@@ -52,12 +41,12 @@ silently decide a result that only human-equivalent judgment can.
 
 ## 2. Role
 Act as the hands-on device tester for the QA track, on behalf of
-`build-verification-tester`. You install, launch, drive input, and capture
+`build-release-engineer`. You install, launch, drive input, and capture
 evidence on the real artifact; you never build, rebuild, re-sign, or modify
 it, and you never author a test case — you execute the ones you were given.
 
 ## 3. When to invoke this skill
-- `build-verification-tester` was handed a test-case list (the
+- `build-release-engineer` was handed a test-case list (the
   `plan-test-coverage`/`risk-based-test-planning` per-case format) alongside
   a produced build artifact and a reachable device.
 - A case's `Observe via` field names `build/device` rather than Editor Play
@@ -82,7 +71,7 @@ it, and you never author a test case — you execute the ones you were given.
 1. **Confirm the device before touching the artifact** — run
    `device_playtest.py devices`, then `doctor --platform <platform>`. No
    device, or a missing `idb`/`idb_companion`/WebDriverAgent on the iOS host,
-   is `Status: Blocked`, per `verification-standards.md`'s "Blocked is a
+   is `Status: Blocked`, per skill `qa-standards`'s "Blocked is a
    valid result" — never guess a device is ready.
 2. **Install and launch, then confirm with a screenshot, not an exit code** —
    `install <path>` and `launch <app_id>` can both exit 0 while the app then
@@ -106,13 +95,13 @@ it, and you never author a test case — you execute the ones you were given.
    EXCEPTION / ANR greps on Android; `idevicecrashreport`/`idevicesyslog` on
    iOS). A crash mid-walkthrough stops that case's path immediately; do not
    attempt to relaunch and continue past it silently.
-7. **Classify before routing, using `defect-reporting.md`'s three-way split**
+7. **Classify before routing, using skill `qa-standards`'s three-way split**
    — a Defect when the build does not do what the case says it should, a
    Design flaw when it does exactly that and the case's own expectation is
    wrong, and As designed when the behaviour is correct and the case's
    expectation was mistaken. A Design flaw routes to `gd` immediately, never
    downgraded to stay in the routine cycle.
-8. **Assign severity from `defect-reporting.md`'s impact-if-shipped table,
+8. **Assign severity from skill `qa-standards`'s impact-if-shipped table,
    not from the case's own stated risk** — a case's `Impact if this breaks`
    field is planning-time context, not a substitute for judging the actual
    observed impact.
@@ -122,7 +111,7 @@ it, and you never author a test case — you execute the ones you were given.
 10. **Report every case you did not reach** — a device that stopped
     responding, a case blocked by an earlier one, or time not spent on a
     lower-priority case all belong under `Not played`, per
-    `verification-standards.md`'s coverage-claimed-is-coverage-owed rule.
+    skill `qa-standards`'s coverage-claimed-is-coverage-owed rule.
 
 ## 5. Specific goals / tasks this skill performs
 - Confirming device and tooling readiness before any device action.
@@ -136,7 +125,7 @@ it, and you never author a test case — you execute the ones you were given.
   assigning severity.
 - Reporting reproduction rate for intermittent findings and every case not
   reached.
-- Out of scope: producing the artifact (`build-run-engineer`); diagnosing
+- Out of scope: producing the artifact (`build-release-engineer`); diagnosing
   *why* a build-only fault occurs (`build-fault-triage`); Editor-based
   testing (`playtest-scenario-execution`, `unity-test-framework`); deciding
   which cases are owed (`risk-based-test-planning`); root-causing a crash
@@ -163,14 +152,14 @@ it, and you never author a test case — you execute the ones you were given.
 
 ## 7. Examples
 **Example 1**
-- Input: build-verification-tester hands over a development Android APK, a
+- Input: build-release-engineer hands over a development Android APK, a
   connected device, and case `[3] Normal — inventory opens with the last
   equipped item selected`.
 - Output: installed and launched, screenshot confirmed the main menu; walked
   the case's `Actions` (open inventory), captured a screenshot at the moment
   `Expected` should hold. The last-equipped item was not selected — a
   different item was. Reported `Result: Fail`, `Classification: Defect`,
-  `Severity: Medium`, evidence attached, routed to `unity-engineer`.
+  `Severity: Medium`, evidence attached, routed to `gameplay-engineer`.
 
 **Example 2**
 - Input: case `[7] Edge — rapid double-tap on the attack button does not
@@ -188,7 +177,7 @@ it, and you never author a test case — you execute the ones you were given.
 
 ## 8. Edge cases & guardrails
 - Never report a finding without the screenshot or log excerpt that
-  evidences it — per `defect-reporting.md`, a recollection is not evidence.
+  evidences it — per skill `qa-standards`, a recollection is not evidence.
 - Never guess a tap/swipe coordinate the current screenshot does not
   support; report the case `Ambiguous` instead.
 - Never continue a walkthrough past a crash by relaunching silently — stop
@@ -198,10 +187,10 @@ it, and you never author a test case — you execute the ones you were given.
   exactly what's missing (see [ios-idb-setup.md](references/ios-idb-setup.md)
   for the iOS prerequisites).
 - Never downgrade a Design flaw into a Defect to keep it in the routine
-  cycle — it routes to `gd` immediately, per `defect-reporting.md`.
+  cycle — it routes to `gd` immediately, per skill `qa-standards`.
 - Never report an intermittent finding as reliable, and never drop it
   because a later attempt looked clean; state the rate.
 - Never build, rebuild, re-sign, publish, or deploy the artifact — this
   skill only drives an artifact that already exists.
-- The caller (`build-verification-tester`) owns which cases are "current"
+- The caller (`build-release-engineer`) owns which cases are "current"
   and any retry counts; this skill cannot hold state across invocations.

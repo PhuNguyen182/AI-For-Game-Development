@@ -1,20 +1,12 @@
 ---
 name: firebase-app-distribution
-description: >
-  Technique for delivering a signed Android or iOS build to testers with
-  Firebase App Distribution — `firebase appdistribution:distribute`, the
-  `--app` Firebase App ID, `--groups`, `--testers`, `--release-notes` and
-  `--release-notes-file`, the `firebase_app_distribution` fastlane plugin,
-  service-account authentication through `GOOGLE_APPLICATION_CREDENTIALS`,
-  `firebase-tools` version pinning, APK/AAB/IPA acceptance, and the ad-hoc
-  UDID constraint on iOS. Not for: producing or signing the artifact,
-  owned by `fastlane-mobile-delivery` or `unity-batchmode-cli`; the job
-  and its approval gate, owned by `jenkins-pipeline-authoring`; and
-  Crashlytics, Analytics, and Remote Config inside the game, owned by
-  `sdk-platform-engineer`.
+description: "Deliver signed Android/iOS builds to testers via Firebase App Distribution: CLI and Fastlane plugin, app id, groups, release notes, service-account auth. Use when shipping builds to internal testers."
+user-invocable: false
 ---
 
 # Firebase App Distribution — getting a build to testers
+
+**Not for:** producing or signing the artifact, owned by `fastlane-mobile-delivery` or `unity-batchmode-cli`; the job and its approval gate, owned by `jenkins-pipeline-authoring`; and Crashlytics, Analytics, and Remote Config inside the game, owned by `sdk-platform-engineer`.
 
 ## Bundled resources
 
@@ -43,7 +35,7 @@ Act as the tester-distribution specialist for the devops track, on behalf of `ci
 - Negative trigger: the job, the credential binding, and the human approval before the upload — that is `jenkins-pipeline-authoring`.
 - Negative trigger: Crashlytics, Analytics, Remote Config, or any Firebase SDK compiled into the game — that is `sdk-platform-engineer`, a different Firebase entirely.
 - Negative trigger: submitting to Google Play or App Store review, and TestFlight — that is `sdk-platform-engineer`; App Distribution is not a store channel.
-- Negative trigger: a runtime fault in the distributed build — that is `build-verification-tester`.
+- Negative trigger: a runtime fault in the distributed build — that is `build-release-engineer`.
 
 ## 4. How to use this skill
 1. **Authenticate with a service account, never with a personal login or a long-lived CI token** — a token minted from someone's account stops working when they leave and grants everything they have, per [distribute-command-and-auth.md](references/distribute-command-and-auth.md). The service-account JSON is bound as a secret file by the job and reaches the step as `GOOGLE_APPLICATION_CREDENTIALS`.
@@ -63,7 +55,7 @@ Act as the tester-distribution specialist for the devops track, on behalf of `ci
 - Deciding tester groups and keeping membership out of the pipeline file.
 - Composing release notes from the run's own metadata.
 - Reporting the resulting release, with the link that proves it exists.
-- Out of scope: building and signing (`unity-batchmode-cli`, `fastlane-mobile-delivery`); job orchestration and approval (`jenkins-pipeline-authoring`); the Firebase SDK inside the game and store submission (`sdk-platform-engineer`); verifying the build once installed (`build-verification-tester`).
+- Out of scope: building and signing (`unity-batchmode-cli`, `fastlane-mobile-delivery`); job orchestration and approval (`jenkins-pipeline-authoring`); the Firebase SDK inside the game and store submission (`sdk-platform-engineer`); verifying the build once installed (`build-release-engineer`).
 
 ## 6. Output format
 ```

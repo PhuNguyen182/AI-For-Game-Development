@@ -1,23 +1,12 @@
 ---
 name: tco-reversibility-scoring
-description: >
-  Shared CTO scoring rubric — total cost of ownership split across upfront,
-  ongoing, scaling-curve, and exit-cost buckets, plus a Low/Medium/High
-  reversibility rating that outweighs upfront cost on gameplay-critical
-  systems such as netcode, anti-cheat, or save-data format. Use when
-  comparing two or more foundational options before writing a Technical
-  Decision's Reasoning fields; every domain CTO skill calls this instead of
-  inventing its own scoring. Not for: gathering the domain trade-off data
-  being scored, owned by `backend-build-vs-buy`,
-  `netcode-architecture-decision`, `anti-cheat-strategy`,
-  `ad-mediation-monetization-platform`, `analytics-telemetry-platform`,
-  `live-ops-content-pipeline`, `cross-platform-expansion-assessment`, or
-  `tech-vendor-dependency-risk-assessment`; recording the resulting
-  standard, owned by `engineering-standard-adr-authoring`; routine
-  estimates the owning engineer already produces, owned by `technical-architect`.
+description: "CTO scoring rubric: total cost of ownership (upfront, ongoing, scaling, exit) plus Low/Medium/High reversibility, outweighing upfront cost on gameplay-critical systems. Use as the frame for every strategic tech call."
+user-invocable: false
 ---
 
 # TCO / Reversibility Scoring — comparing foundational technology options
+
+**Not for:** gathering the domain trade-off data being scored, owned by `backend-build-vs-buy`, `netcode-architecture-decision`, `anti-cheat-strategy`, `ad-mediation-monetization-platform`, `analytics-telemetry-platform`, `live-ops-content-pipeline`, `cross-platform-expansion-assessment`, or `tech-vendor-dependency-risk-assessment`; recording the resulting standard, owned by `engineering-standard-adr-authoring`; routine estimates the owning engineer already produces, owned by `technical-architect`.
 
 ## 1. Objective
 Give the CTO one consistent lens for scoring any strategic technology decision, so the same criteria produce comparable, defensible calls across different domains instead of reasoning invented fresh each time.
@@ -41,7 +30,7 @@ Act as the CTO's decision-scoring discipline: a structured cost/risk calculator 
 5. **Name the crossover point whenever a scaling curve is step-function or steeply linear** — "cheaper until roughly X concurrent players, then more expensive" is the decision-relevant fact. Launch-day sticker price on its own decides nothing.
 6. **Fetch real pricing before scoring an ongoing-cost bucket, or mark that bucket provisional** — pull the vendor's own pricing page with `WebFetch`. A silently estimated price is the fastest route from this rubric to a confident wrong answer.
 7. **Carry the score into the Technical Decision output verbatim as a short annotation** — for example "TCO: Medium upfront / Low ongoing; Reversibility: Low". Reasoning that was scored but not shown reads to the GD as an assertion.
-8. **Write the score and its rationale in English**, per `language-and-comments.md`'s Working language section — the Technical Decision is a durable artifact; the Vietnamese reply to the GD is the final message, not the document.
+8. **Write the score and its rationale in English**, per `csharp.md`'s Working language section — the Technical Decision is a durable artifact; the Vietnamese reply to the GD is the final message, not the document.
 9. **Refuse to score options whose scope differs enough that the buckets stop measuring the same thing** — say so instead. A forced score across incomparable options is worse than none, because it looks defensible.
 10. **Ask before scoring when project scale, team capacity, or target regions are unknown and load-bearing** — those three inputs move every bucket at once. Guessing one produces a score that is precise and wrong.
 

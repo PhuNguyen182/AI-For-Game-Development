@@ -1,24 +1,12 @@
 ---
 name: roslyn-analyzer-codefix
-description: >
-  Custom Roslyn `DiagnosticAnalyzer`s, with an optional `CodeFixProvider`,
-  that enforce this project's own rules as compile-time diagnostics: the
-  `Game.Core`/`UnityEngine` namespace boundary, Shared Core determinism via
-  `UnityEngine.Random` and wall-clock time, the mandatory `this.` qualifier,
-  `&&`/`||` over `&`/`|`, and naming casing. Covers diagnostic IDs and
-  severity,
-  `RegisterSymbolAction`/`RegisterSyntaxNodeAction`/`RegisterCompilationStartAction`,
-  `EnableConcurrentExecution`, `ConfigureGeneratedCodeAnalysis`,
-  `.editorconfig` severity overrides, `netstandard2.0` packaging, and
-  Unity's `RoslynAnalyzer` label. Use it when a mechanically checkable rule
-  keeps recurring across submissions. Not for: generating code, owned by
-  `source-generator-authoring`; rules that need human judgement, owned by
-  `code-reviewer`; auditing one submission's diff for these same boundary
-  and determinism violations, owned by `shared-core-boundary-audit`; a
-  violation seen once, owned by `coding-principles.md`.
+description: "Custom Roslyn analyzers and code fixes enforcing project rules at compile time — Core/UnityEngine boundary, determinism, banned APIs — packaged for Unity. Use when a violation recurs and should fail the build."
+user-invocable: false
 ---
 
 # Roslyn Analyzer and Code Fix Authoring
+
+**Not for:** generating code, owned by `source-generator-authoring`; rules that need human judgement, owned by `code-reviewer`; auditing one submission's diff for these same boundary and determinism violations, owned by `shared-core-boundary-audit`; a violation seen once, owned by `csharp-standards` → `coding-principles.md`.
 
 ## 1. Objective
 Turn a recurring, mechanically detectable rule violation into a compile-time diagnostic — and, where the fix is unambiguous, an automatic one — so it is caught before Code Reviewer reads the submission. Not a replacement for review: an earlier gate for the subset of rules a compiler pass can actually decide, built so it never false-positives, never blocks a build it should not, and never flags code nobody can edit.
@@ -27,19 +15,19 @@ Turn a recurring, mechanically detectable rule violation into a compile-time dia
 Act as the Roslyn analyzer specialist. You are encoding this project's own rule files as executable compiler checks, which makes those files the specification — never a starting point for a stricter or looser rule of your own invention.
 
 ## 3. When to invoke this skill
-- A rule from `coding-principles.md`, `naming-convention.md`, or `performance-and-algorithms.md` is decidable from syntax or symbols and has been violated more than once across submissions — `UnityEngine` leaking into `Game.Core.*`, `UnityEngine.Random` or `DateTime.Now` inside Shared Core, a missing `this.` qualifier, `&` where `&&` was meant.
+- A rule from `csharp-standards` → `coding-principles.md`, `csharp-standards` → `naming-convention.md`, or `csharp-standards` → `performance-and-algorithms.md` is decidable from syntax or symbols and has been violated more than once across submissions — `UnityEngine` leaking into `Game.Core.*`, `UnityEngine.Random` or `DateTime.Now` inside Shared Core, a missing `this.` qualifier, `&` where `&&` was meant.
 - Explicitly requested — typically by Technical Architect — to make the Shared Core boundary a standing compile-time guardrail rather than a review responsibility.
 - An existing analyzer misfires: a diagnostic firing on valid code, or firing on generated code the author cannot change.
 - Negative trigger: emitting repetitive code — that's `source-generator-authoring`, a different Roslyn surface (`IIncrementalGenerator`, not `DiagnosticAnalyzer`).
 - Negative trigger: a rule whose application needs human judgement — "this logic belongs in Shared Core", "this abstraction is premature" — which stays with `code-reviewer`; a compiler pass cannot decide it and an analyzer that pretends otherwise trains people to suppress it.
 - Negative trigger: auditing a submission's diff for the boundary and determinism violations themselves — that is `shared-core-boundary-audit`, the per-diff gate that greps for exactly these rules and is usually where the recurrence below is first noticed; this skill turns what that gate keeps reporting into a standing compile-time check.
-- Negative trigger: a single finding from one review — fix the instance; standing tooling for a violation that has not recurred is the tooling-ahead-of-need YAGNI forbids in `coding-principles.md`.
+- Negative trigger: a single finding from one review — fix the instance; standing tooling for a violation that has not recurred is the tooling-ahead-of-need YAGNI forbids in `csharp-standards` → `coding-principles.md`.
 
 ## 4. How to use this skill
 1. **Confirm the rule is both decidable and recurring before writing an analyzer** — decidable means a symbol or syntax check settles it with no judgement left over; recurring means it has actually been violated more than once. A rule failing either test costs more to maintain than the reviews it saves.
 2. **Target `netstandard2.0` for the analyzer assembly** — it loads into the compiler host, and any other target framework fails to load quietly, leaving a build that reports nothing and an analyzer that never runs.
 3. **Assign a stable, project-prefixed diagnostic ID and never reuse or renumber it** — `#pragma warning disable GC0001` and `.editorconfig` entries reference the ID, so renumbering silently re-enables every suppression somebody deliberately wrote.
-4. **Set severity by real consequence, remembering that `Error` blocks the whole team** — in Unity an error-severity diagnostic fails compilation, so nobody enters Play Mode until it is resolved. Reserve `Error` for violations that break correctness, such as a `Game.Core` type touching `UnityEngine` or a non-deterministic API in Shared Core, which `coding-principles.md` states can silently break the client-server sync model. Style rules get `Warning` or `Info`.
+4. **Set severity by real consequence, remembering that `Error` blocks the whole team** — in Unity an error-severity diagnostic fails compilation, so nobody enters Play Mode until it is resolved. Reserve `Error` for violations that break correctness, such as a `Game.Core` type touching `UnityEngine` or a non-deterministic API in Shared Core, which `csharp-standards` → `coding-principles.md` states can silently break the client-server sync model. Style rules get `Warning` or `Info`.
 5. **Call `EnableConcurrentExecution()` and `ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None)` in `Initialize`** — without the second, the analyzer reports on generated files, and this project generates Shared Core code (`source-generator-authoring`), so those diagnostics land on code no engineer can edit or suppress at the source.
 6. **Keep the analyzer instance itself stateless** — Roslyn constructs one instance and reuses it across concurrent compilations, so a mutable field is a cross-compilation data race. Cache per-compilation state in a `RegisterCompilationStartAction` closure instead.
 7. **Register the narrowest action that catches the case** — `RegisterSymbolAction` for a shape question such as "does this type live in `Game.Core.*`", `RegisterSyntaxNodeAction` for a specific expression form, `RegisterCompilationStartAction` when a symbol like `UnityEngine.Random` should be resolved once per compilation rather than per node. Analyzers run on every keystroke in the IDE, so per-node cost is paid by everyone typing.
@@ -50,12 +38,12 @@ Act as the Roslyn analyzer specialist. You are encoding this project's own rule 
 12. **Write a positive and a negative test per diagnostic before calling it done** — use `CSharpAnalyzerVerifier`/`CSharpCodeFixVerifier`. The negative case is the important one: an analyzer that fires on valid code is suppressed project-wide the first time it blocks someone, which permanently defeats it. Then confirm the packaging the project actually uses, an analyzer reference or a `RoslynAnalyzer`-labelled `.dll` for Unity, rather than assuming a default.
 
 ## 5. Specific goals / tasks this skill performs
-- Enforcing the `Game.Core.*`/`UnityEngine` namespace boundary from `naming-convention.md` as a compile error.
-- Enforcing Shared Core determinism from `coding-principles.md` — banning `UnityEngine.Random`, wall-clock time, and other divergence-prone APIs inside `Game.Core.*`.
+- Enforcing the `Game.Core.*`/`UnityEngine` namespace boundary from `csharp-standards` → `naming-convention.md` as a compile error.
+- Enforcing Shared Core determinism from `csharp-standards` → `coding-principles.md` — banning `UnityEngine.Random`, wall-clock time, and other divergence-prone APIs inside `Game.Core.*`.
 - Enforcing the mandatory `this.` qualifier and `&&`/`||` over `&`/`|`, each with a mechanical auto-fix.
-- Flagging casing violations against `naming-convention.md`'s table.
+- Flagging casing violations against `csharp-standards` → `naming-convention.md`'s table.
 - Analyzer project setup: `netstandard2.0`, concurrent execution, generated-code exclusion, `.editorconfig` severity, Unity packaging.
-- Out of scope: emitting code (`source-generator-authoring`), rules requiring judgement (`code-reviewer`), the per-diff boundary and determinism audit itself (`shared-core-boundary-audit`), one-off findings that have not recurred (`coding-principles.md`).
+- Out of scope: emitting code (`source-generator-authoring`), rules requiring judgement (`code-reviewer`), the per-diff boundary and determinism audit itself (`shared-core-boundary-audit`), one-off findings that have not recurred (`csharp-standards` → `coding-principles.md`).
 
 ## 6. Output format
 ```

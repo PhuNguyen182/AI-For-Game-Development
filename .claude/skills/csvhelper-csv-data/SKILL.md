@@ -1,24 +1,12 @@
 ---
 name: csvhelper-csv-data
-description: >
-  CsvHelper for reading and writing delimited text: `CsvReader` and
-  `CsvWriter` over a `StreamReader` or `StreamWriter`, `GetRecords<T>`
-  and `WriteRecords`, manual `ReadHeader`, `Read`, and `GetField<T>`,
-  `ClassMap<T>` and `AutoMap` with Name, Index, Ignore, Optional,
-  Constant, Validate, and TypeConverter configuration, the equivalent
-  attributes such as Name, Index, Optional, Constant, TypeConverter,
-  CultureInfo, and Delimiter, `CsvConfiguration` options like
-  HasHeaderRecord and IgnoreBlankLines, custom `ITypeConverter` and
-  `DefaultTypeConverter`, `TypeConverterOptions`, and `CsvDataReader`.
-  Use for designer-authored tabular data — balance tables, drop tables,
-  localization, item sheets — normally Editor tooling or a build-time
-  step. Not for: binary save or wire formats, owned by
-  `memorypack-serialization`; JSON config via `System.Text.Json`;
-  locating the CSV asset, owned by `unity-addressables`; authoring the
-  resulting `SO_` asset, owned by `unity-engineer`.
+description: "CsvHelper for reading and writing delimited text: CsvReader/CsvWriter, GetRecords/WriteRecords, ClassMap, type converters, culture, IL2CPP/AOT caveats. Use when config or balance data lives in CSV/TSV."
+user-invocable: false
 ---
 
 # CsvHelper — CSV Import/Export
+
+**Not for:** binary save or wire formats, owned by `memorypack-serialization`; JSON config via `System.Text.Json`; locating the CSV asset, owned by `unity-addressables`; authoring the resulting `SO_` asset, owned by `gameplay-engineer`.
 
 ## Bundled resources
 
@@ -51,17 +39,17 @@ Act as the CSV/tabular-data-import specialist for the client track — the tool 
 - Negative trigger: designing a binary wire or save format — that's `memorypack-serialization`.
 - Negative trigger: a general JSON config or save format — use `System.Text.Json` or similar; CsvHelper only applies once the data is genuinely row-and-column shaped, not an arbitrary object graph.
 - Negative trigger: locating or loading the CSV as a Unity asset (`TextAsset`, `Resources`, `StreamingAssets`, Addressables) — that's `unity-addressables` or plain file access; this skill starts once a `TextReader`/`Stream` exists.
-- Negative trigger: authoring the `ScriptableObject` asset the parsed data ends up in — that's a separate Editor-tooling step owned by `unity-engineer`, following `naming-convention.md`'s `SO_` convention.
+- Negative trigger: authoring the `ScriptableObject` asset the parsed data ends up in — that's a separate Editor-tooling step owned by `gameplay-engineer`, following `csharp-standards` → `naming-convention.md`'s `SO_` convention.
 
 ## 4. How to use this skill
-1. **Always pass an explicit `CultureInfo` to `CsvReader`/`CsvWriter`** — `CultureInfo.InvariantCulture` for machine-authored data, or a specific culture only when the file's real number/date format demands it. An overload that falls back to the thread's culture makes parsing depend on the OS locale of whichever machine ran it, which is precisely the hidden platform divergence `coding-principles.md`'s Shared Core integrity section exists to prevent once this data reaches `Game.Core.*`.
+1. **Always pass an explicit `CultureInfo` to `CsvReader`/`CsvWriter`** — `CultureInfo.InvariantCulture` for machine-authored data, or a specific culture only when the file's real number/date format demands it. An overload that falls back to the thread's culture makes parsing depend on the OS locale of whichever machine ran it, which is precisely the hidden platform divergence `csharp-standards` → `coding-principles.md`'s Shared Core integrity section exists to prevent once this data reaches `Game.Core.*`.
 2. **Default to `GetRecords<T>()`/`WriteRecords()` with the by-name convention** when headers already match property names, per [reading.md](references/reading.md) and [writing.md](references/writing.md) (the full upstream page index is [root-links.md](references/root-links.md)). Escalate to a `ClassMap<T>` (per [class-maps.md](references/class-maps.md)) only once names diverge, the header is absent or duplicated, or a property needs ignore/constant/optional/validate/convert behaviour — writing a map the default convention already satisfies is speculative complexity YAGNI forbids.
 3. **Choose `ClassMap<T>` vs. attributes by how many mapping shapes the type needs**, per [attributes.md](references/attributes.md). Attributes suit one simple, stable mapping. A `ClassMap<T>` is required once the same type needs two shapes (two file variants), and is the only option when the model must not take a CsvHelper dependency at all — which is the case for any type living in `Game.Core.*`.
 4. **Enumerate `GetRecords<T>()` with `foreach`, not `.ToList()`, for large files**, per [reading.md](references/reading.md) — it is a deferred, forward-only `IEnumerable<T>` reading one row at a time, and materializing it defeats that. Reserve `.ToList()` for files small enough to hold whole, or when the caller genuinely needs random access or multiple passes.
-5. **Wrap every reader, writer, and stream in `using`**, per [prerequisites.md](references/prerequisites.md) and `coding-principles.md`'s Exception handling section — never a manual `try/finally` with explicit `Dispose()`, and never let a reader outlive the scope owning its stream.
+5. **Wrap every reader, writer, and stream in `using`**, per [prerequisites.md](references/prerequisites.md) and `csharp-standards` → `coding-principles.md`'s Exception handling section — never a manual `try/finally` with explicit `Dispose()`, and never let a reader outlive the scope owning its stream.
 6. **Reach for manual `ReadHeader()`/`Read()`/`GetField<T>()` when no class-per-row model fits**, per [reading.md](references/reading.md) — a heterogeneous file, a one-off inspection, or a case where configuring a map costs more than a short loop (KISS). This path also does no expression-tree codegen, which makes it the AOT-safe fallback in step 8.
-7. **Treat every parsed value as external input at the point it is consumed**, per `coding-principles.md`'s Correctness boundaries section — a designer-edited spreadsheet is exactly the human-editable external data that rule names. Range-check via `.Validate()` on the map or an explicit check after parsing; a successful type conversion is not a successful validation.
-8. **Verify AOT/IL2CPP compatibility on a device build before shipping `GetRecords<T>()` in runtime code**, per `performance-and-algorithms.md`'s Verification section. CsvHelper's member-accessor generation is expression-tree based, a known AOT risk category on iOS and console IL2CPP. Editor-only or build-time use (CSV → asset at import time, never in the player) sidesteps this entirely and is the default recommendation for design data.
+7. **Treat every parsed value as external input at the point it is consumed**, per `csharp-standards` → `coding-principles.md`'s Correctness boundaries section — a designer-edited spreadsheet is exactly the human-editable external data that rule names. Range-check via `.Validate()` on the map or an explicit check after parsing; a successful type conversion is not a successful validation.
+8. **Verify AOT/IL2CPP compatibility on a device build before shipping `GetRecords<T>()` in runtime code**, per `csharp-standards` → `performance-and-algorithms.md`'s Verification section. CsvHelper's member-accessor generation is expression-tree based, a known AOT risk category on iOS and console IL2CPP. Editor-only or build-time use (CSV → asset at import time, never in the player) sidesteps this entirely and is the default recommendation for design data.
 9. **Prefer built-in converters and `TypeConverterOptions` over a custom `ITypeConverter`**, per [type-conversion.md](references/type-conversion.md) — write a converter only for a genuinely unsupported shape, and register it at the narrowest scope that solves the problem (ClassMap or attribute, never global unless every occurrence of that type process-wide needs it).
 10. **If the file's culture, header shape, or target layer is unstated, ask before writing** — culture decides step 1, header shape decides steps 2–3, and layer decides step 8. Each is invisible in the resulting code and wrong in a way that only shows up on another machine.
 
@@ -72,7 +60,7 @@ Act as the CSV/tabular-data-import specialist for the client track — the tool 
 - Writing and registering a custom `ITypeConverter`/`DefaultTypeConverter`, or tuning built-in converters via `TypeConverterOptions`.
 - Handling a file with several logical data sets or interleaved row types via manual reading and a discriminator column.
 - Bridging parsed data into a `DataTable` via `CsvDataReader`, only where an `IDataReader`-based consumer genuinely requires it.
-- Out of scope: binary/wire serialization (`memorypack-serialization`); general JSON config (`System.Text.Json`); locating or loading the CSV asset (`unity-addressables`); authoring the resulting `ScriptableObject` (`unity-engineer`).
+- Out of scope: binary/wire serialization (`memorypack-serialization`); general JSON config (`System.Text.Json`); locating or loading the CSV asset (`unity-addressables`); authoring the resulting `ScriptableObject` (`gameplay-engineer`).
 
 ## 6. Output format
 ```
@@ -104,7 +92,7 @@ Act as the CSV/tabular-data-import specialist for the client track — the tool 
 
 **Example 2**
 - Input: "just call `csv.GetRecords<Foo>()` with no `CultureInfo` argument, it's simpler."
-- Output: declined — that overload falls back to the current thread's culture, so a build machine, a device, and an Editor session can parse the same decimal differently, and nothing reports it. Passed `CultureInfo.InvariantCulture` explicitly, per `coding-principles.md`'s Shared Core integrity requirement for data reaching `Game.Core.*`.
+- Output: declined — that overload falls back to the current thread's culture, so a build machine, a device, and an Editor session can parse the same decimal differently, and nothing reports it. Passed `CultureInfo.InvariantCulture` explicitly, per `csharp-standards` → `coding-principles.md`'s Shared Core integrity requirement for data reaching `Game.Core.*`.
 
 **Example 3**
 - Input: a localization export tool must append newly translated rows to an existing `Localization.csv` without duplicating the header.

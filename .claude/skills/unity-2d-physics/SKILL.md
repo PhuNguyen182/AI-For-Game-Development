@@ -1,24 +1,12 @@
 ---
 name: unity-2d-physics
-description: >
-  Unity built-in 2D physics, Box2D, on GameObjects — `Rigidbody2D` body
-  types, mass, linear and angular damping, gravity scale, interpolation,
-  `CollisionDetectionMode2D`, sleep, `Slide`; `Collider2D` shapes such as
-  Box, Circle, Capsule, Polygon, Edge, and Composite; `PhysicsMaterial2D`
-  friction and bounciness combine modes; `Effector2D` types — Area,
-  Point, Platform, Surface, Buoyancy; the nine `Joint2D` types,
-  `ConstantForce2D`, `OnCollisionEnter2D`, `OnTriggerEnter2D`, and the
-  `Physics2D` layer matrix. Use when a 2D body tunnels, jitters, sticks,
-  or ignores a collision. Not for: 3D physics, owned by
-  `unity-3d-physics`; DOTS physics, owned by `unity-physics`; sprite
-  shape authoring, owned by `unity-2d-sprite`; tile collision generation,
-  owned by `unity-tilemap`; spline colliders, owned by
-  `unity-2d-spriteshape`; damage and state rules, owned by
-  `csharp-engineer`; and escalated profiling, owned by
-  `unity-engineer`.
+description: "Unity 2D physics (Box2D): Rigidbody2D, Collider2D, contacts and triggers, effectors, joints, queries, layer matrix, simulation modes. Use for 2D physics behaviour."
+user-invocable: false
 ---
 
 # Unity 2D Physics — Box2D Bodies, Colliders, Effectors & Joints
+
+**Not for:** 3D physics, owned by `unity-3d-physics`; DOTS physics, owned by `unity-physics`; sprite shape authoring, owned by `unity-2d-sprite`; tile collision generation, owned by `unity-tilemap`; spline colliders, owned by `unity-2d-spriteshape`; damage and state rules, owned by `csharp-engineer`; and escalated profiling, owned by `gameplay-engineer`.
 
 ## Bundled resources
 
@@ -52,21 +40,21 @@ Act as the built-in 2D physics specialist for the client track — the skill rea
 - Negative trigger: authoring the sprite outline a collider derives its shape from — that's `unity-2d-sprite`; this skill consumes that geometry.
 - Negative trigger: generating collision from painted tiles — `TilemapCollider2D` setup is `unity-tilemap`'s, and this skill takes over at the body and material on the result.
 - Negative trigger: the collider a Sprite Shape spline auto-generates — that's `unity-2d-spriteshape`; this skill configures what is attached to it.
-- Negative trigger: deciding damage, knockback magnitude, or a state transition from a contact — that's `csharp-engineer`'s Shared Core, per `coding-principles.md`'s Shared Core integrity section.
-- Negative trigger: a physics cost that survives shape simplification, matrix pruning, and sleep tuning — escalate to `unity-engineer`.
+- Negative trigger: deciding damage, knockback magnitude, or a state transition from a contact — that's `csharp-engineer`'s Shared Core, per `csharp-standards` → `coding-principles.md`'s Shared Core integrity section.
+- Negative trigger: a physics cost that survives shape simplification, matrix pruning, and sleep tuning — escalate to `gameplay-engineer`.
 
 ## 4. How to use this skill
 1. **Confirm which physics engine the project is actually on before touching a component**, per [root-links.md](references/root-links.md) — `Rigidbody2D` and `Rigidbody` share almost every concept name and no behaviour, and DOTS `unity-physics` shares the vocabulary again; a mis-scoped answer here is wasted whole, not partially useful.
 2. **Choose the body type by who moves the body**, per [rigidbody-2d.md](references/rigidbody-2d.md) — Dynamic when the solver moves it, Kinematic when script or animation moves it and other bodies must still sense it, and no `Rigidbody2D` at all for immovable geometry, since a lone collider is already backed by a hidden static body. Add an explicit Static body only when that collider occasionally moves.
 3. **Move every body through the physics API, never through its Transform** — `MovePosition`/`MoveRotation` in `FixedUpdate`, or `Slide` for character-style motion. Assigning `transform.position` teleports the body, skips contact generation entirely, and is the usual reason a moving platform passes through walls or fails to carry anything.
-4. **Pick the simplest collider shape the silhouette allows**, per [collider-2d.md](references/collider-2d.md) and `performance-and-algorithms.md`'s Physics section — Circle, Box, or Capsule before Polygon, Polygon before a traced outline. Merge many adjacent colliders with a `CompositeCollider2D`, choosing Polygons geometry when bodies must be inside the shape and Outlines only when edges alone suffice.
+4. **Pick the simplest collider shape the silhouette allows**, per [collider-2d.md](references/collider-2d.md) and `csharp-standards` → `performance-and-algorithms.md`'s Physics section — Circle, Box, or Capsule before Polygon, Polygon before a traced outline. Merge many adjacent colliders with a `CompositeCollider2D`, choosing Polygons geometry when bodies must be inside the shape and Outlines only when edges alone suffice.
 5. **Prune the layer collision matrix instead of filtering inside callbacks** — a pair excluded in Project Settings costs nothing, while an `if` inside `OnCollisionEnter2D` has already paid for broadphase, narrowphase, and the managed callback. Reach for per-collider `includeLayers`/`excludeLayers` only for a genuine exception to a matrix rule.
 6. **Assign a `PhysicsMaterial2D` asset rather than tuning friction per collider**, per [physics-material-2d.md](references/physics-material-2d.md) — and remember the result of a contact is decided by *both* materials: when their combine modes differ, the higher-priority mode wins along Average, Mean, Multiply, Minimum, Maximum, so a surface cannot be reasoned about from its own asset alone.
 7. **Reach for an effector only when the design asks for behaviour real physics would not produce**, per [effectors-2d.md](references/effectors-2d.md) — one-way platforms, force volumes, conveyors, buoyancy. Every effector requires Used By Effector on the collider it acts through, and Area, Point, and Buoyancy expect a trigger while Platform and Surface expect a solid collider. A plain `AddForce` script is the simpler answer when the requirement is just "push it".
 8. **Choose the joint by the constraint the design states, not by generality**, per [joints-2d.md](references/joints-2d.md) — Hinge for one pivot, Slider for one axis, Distance for a taut link, Spring for an elastic one, Wheel for suspension, Friction to bleed off relative motion, Fixed to weld, Target to chase a moving world point, Relative to hold an offset. Set Break Force deliberately or leave it infinite, and handle `OnJointBreak2D` if it can break.
 9. **Use `ConstantForce2D` only for force that should keep accelerating a body**, per [constant-force-2d.md](references/constant-force-2d.md) — it is not a speed setting, so cap the resulting velocity with linear damping rather than expecting the component to level off.
-10. **Keep the rule out of the physics callback**, per `coding-principles.md`'s Shared Core integrity section — Box2D's solver is not bit-identical across platforms, so a value derived inside a contact callback is exactly the kind of non-determinism that breaks client prediction against server authority. Pass the resolved contact point, normal, and relative velocity into `Game.Core.*` and let it decide the outcome.
-11. **Confirm a physics fix with a measurement before reporting it**, per `performance-and-algorithms.md`'s Verification section — the Profiler's Physics2D markers for solver cost, and the Physics Debug window for colliders that never sleep or pairs that should never have been tested.
+10. **Keep the rule out of the physics callback**, per `csharp-standards` → `coding-principles.md`'s Shared Core integrity section — Box2D's solver is not bit-identical across platforms, so a value derived inside a contact callback is exactly the kind of non-determinism that breaks client prediction against server authority. Pass the resolved contact point, normal, and relative velocity into `Game.Core.*` and let it decide the outcome.
+11. **Confirm a physics fix with a measurement before reporting it**, per `csharp-standards` → `performance-and-algorithms.md`'s Verification section — the Profiler's Physics2D markers for solver cost, and the Physics Debug window for colliders that never sleep or pairs that should never have been tested.
 12. **When the symptom does not identify its layer, state the assumption and confirm** — "the player falls through the floor" is a body type, a detection mode, a layer matrix entry, or a Transform-driven move, and changing the wrong one hides the real cause rather than fixing it.
 
 ## 5. Specific goals / tasks this skill performs
@@ -78,7 +66,7 @@ Act as the built-in 2D physics specialist for the client track — the skill rea
 - Joint selection, motor and limit tuning, and break handling.
 - `ConstantForce2D` for continuous acceleration.
 - Collision and trigger callback wiring that hands data to Shared Core.
-- Out of scope: 3D physics (`unity-3d-physics`), DOTS physics (`unity-physics`), sprite physics-shape authoring (`unity-2d-sprite`), tile collision generation (`unity-tilemap`), Sprite Shape colliders (`unity-2d-spriteshape`), gameplay rules (`csharp-engineer`), escalated optimisation (`unity-engineer`).
+- Out of scope: 3D physics (`unity-3d-physics`), DOTS physics (`unity-physics`), sprite physics-shape authoring (`unity-2d-sprite`), tile collision generation (`unity-tilemap`), Sprite Shape colliders (`unity-2d-spriteshape`), gameplay rules (`csharp-engineer`), escalated optimisation (`gameplay-engineer`).
 
 ## 6. Output format
 ```
@@ -106,7 +94,7 @@ Act as the built-in 2D physics specialist for the client track — the skill rea
 ## 7. Examples
 **Example 1**
 - Input: "Bullets sometimes pass straight through enemies at high speed."
-- Output: tunnelling, and the fix has two halves. Set the bullet `Rigidbody2D`'s Collision Detection to Continuous — Discrete only tests the body's new position, so a body that crosses a thin collider within one step never registers. Then confirmed the bullet is moved by velocity rather than by `transform.position`, since a Transform assignment teleports past the sweep that Continuous exists to perform. Kept the bullet's collider a Circle rather than the sprite-traced polygon it had, per `performance-and-algorithms.md`'s Physics section. Hand-off: the damage the hit resolves to → `csharp-engineer`'s Shared Core.
+- Output: tunnelling, and the fix has two halves. Set the bullet `Rigidbody2D`'s Collision Detection to Continuous — Discrete only tests the body's new position, so a body that crosses a thin collider within one step never registers. Then confirmed the bullet is moved by velocity rather than by `transform.position`, since a Transform assignment teleports past the sweep that Continuous exists to perform. Kept the bullet's collider a Circle rather than the sprite-traced polygon it had, per `csharp-standards` → `performance-and-algorithms.md`'s Physics section. Hand-off: the damage the hit resolves to → `csharp-engineer`'s Shared Core.
 
 **Example 2**
 - Input: "Add an `AreaEffector2D` to the water so things float in it."
@@ -125,6 +113,6 @@ Act as the built-in 2D physics specialist for the client track — the skill rea
 - Never write to `sharedMaterial` at runtime expecting a per-instance change — `Collider2D` has no per-instance `material` property, unlike its 3D counterpart, so the edit is global.
 - Never port a 3D force call unchanged — `ForceMode2D` offers only Force and Impulse, and there is no `relativeTorque`, because 2D rotation is a single scalar.
 - Never switch Body Type every frame — the change recalculates mass and re-evaluates contacts, and is a per-switch cost, not a free toggle.
-- Never let a physics callback decide a game outcome — the solver's results vary across platforms, which is precisely what `coding-principles.md`'s Shared Core integrity section forbids relying on.
-- Never claim a physics optimisation without a Profiler or Physics Debug measurement, per `performance-and-algorithms.md`'s Verification section.
+- Never let a physics callback decide a game outcome — the solver's results vary across platforms, which is precisely what `csharp-standards` → `coding-principles.md`'s Shared Core integrity section forbids relying on.
+- Never claim a physics optimisation without a Profiler or Physics Debug measurement, per `csharp-standards` → `performance-and-algorithms.md`'s Verification section.
 - If a body's misbehaviour could be body type, detection mode, layer matrix, or movement path, name which one is being assumed before changing settings — each of the four produces the same visible symptom.

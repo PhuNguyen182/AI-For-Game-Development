@@ -1,25 +1,12 @@
 ---
 name: dotnet-memory-and-collections
-description: >
-  Allocation-conscious memory and collection selection in pure .NET —
-  Span<T>, ReadOnlySpan<T>, Memory<T>, ReadOnlyMemory<T>,
-  System.Buffers.ArrayPool<T>, IMemoryOwner<T>, stackalloc, and
-  System.Collections.Immutable types such as ImmutableList<T>,
-  ImmutableArray<T>, and ImmutableDictionary<TKey,TValue>, plus
-  System.Collections.Concurrent types such as ConcurrentQueue<T>,
-  ConcurrentDictionary<TKey,TValue>, and ConcurrentBag<T>. Use when
-  slicing or parsing buffers, pooling transient arrays, or picking a
-  shared-collection thread-safety story in Game.Core.* or Game.Client.*
-  code with no Unity.Collections or Burst dependency. Not for:
-  Unity.Collections NativeArray or NativeList and Burst jobs, owned by
-  `unity-collections` and `unity-job-system-and-burst`; zero-allocation
-  LINQ, owned by `zlinq-zero-allocation-linq`; zero-allocation string
-  building, owned by `zstring-zero-allocation-strings`; synchronization
-  primitives and async coordination, owned by
-  `dotnet-concurrency-and-async`.
+description: "Allocation-conscious .NET memory and collections: Span, Memory, ArrayPool, stackalloc, immutable and frozen collections, collection choice by access pattern. Use when per-frame or per-tick code allocates."
+user-invocable: false
 ---
 
 # .NET Memory and Collections — Span, Memory, ArrayPool, and Collection Selection
+
+**Not for:** Unity.Collections NativeArray or NativeList and Burst jobs, owned by `unity-collections` and `unity-job-system-and-burst`; zero-allocation LINQ, owned by `zlinq-zero-allocation-linq`; zero-allocation string building, owned by `zstring-zero-allocation-strings`; synchronization primitives and async coordination, owned by `dotnet-concurrency-and-async`.
 
 ## Bundled resources
 
@@ -52,9 +39,9 @@ Act as the .NET memory and collections specialist for the client track — the t
 2. **Default a synchronous API's buffer parameter to `Span<T>`/`ReadOnlySpan<T>`**, per Rule #1 in [span-memory-and-buffers.md](references/span-memory-and-buffers.md); reserve `Memory<T>`/`ReadOnlyMemory<T>` for a parameter that must survive past the method's return (an async signature, a stored field).
 3. **Rent, don't allocate, for a large or per-call transient buffer in a hot path** — use `ArrayPool<T>.Shared.Rent`/`Return` per [span-memory-and-buffers.md](references/span-memory-and-buffers.md), and pair every `Rent` with a `Return` in a `try`/`finally` so a thrown exception can't leak the array.
 4. **Reserve `stackalloc` for small, bounded-size buffers guarded by an upper-bound check before the allocation**, per [span-memory-and-buffers.md](references/span-memory-and-buffers.md) — an unbounded or loop-nested `stackalloc` risks `StackOverflowException`; fall back to `ArrayPool<T>` above the bound.
-5. **Choose the concurrent collection by the actual sharing pattern, not by default** — `System.Collections.Concurrent` types only once multiple threads genuinely add/remove concurrently; a single-writer/many-reader or single-threaded structure stays on `List<T>`/`Dictionary<TKey,TValue>`, per `performance-and-algorithms.md`'s Data structure selection section and [collections-selection.md](references/collections-selection.md).
-6. **Reach for `System.Collections.Immutable` only when a shared, publish-once snapshot must be handed to multiple readers without defensive copying**, per [collections-selection.md](references/collections-selection.md) — every mutation allocates a new structurally-shared instance; don't adopt it for a collection its own owner mutates frequently (YAGNI in `coding-principles.md`).
-7. **Verify the API is available at the project's Api Compatibility Level before shipping it** — confirm Unity's Player Settings against the `netstandard-2.1` pin in [root-links.md](references/root-links.md), per `coding-principles.md`'s Modern C# syntax section; if the Tech Spec doesn't state a target buffer size or concurrency pattern, ask rather than guessing one.
+5. **Choose the concurrent collection by the actual sharing pattern, not by default** — `System.Collections.Concurrent` types only once multiple threads genuinely add/remove concurrently; a single-writer/many-reader or single-threaded structure stays on `List<T>`/`Dictionary<TKey,TValue>`, per `csharp-standards` → `performance-and-algorithms.md`'s Data structure selection section and [collections-selection.md](references/collections-selection.md).
+6. **Reach for `System.Collections.Immutable` only when a shared, publish-once snapshot must be handed to multiple readers without defensive copying**, per [collections-selection.md](references/collections-selection.md) — every mutation allocates a new structurally-shared instance; don't adopt it for a collection its own owner mutates frequently (YAGNI in `csharp-standards` → `coding-principles.md`).
+7. **Verify the API is available at the project's Api Compatibility Level before shipping it** — confirm Unity's Player Settings against the `netstandard-2.1` pin in [root-links.md](references/root-links.md), per `csharp-standards` → `coding-principles.md`'s Modern C# syntax section; if the Tech Spec doesn't state a target buffer size or concurrency pattern, ask rather than guessing one.
 
 ## 5. Specific goals / tasks this skill performs
 - Slice/parse buffers (save-data, network payload bytes/chars) with `Span<T>`/`ReadOnlySpan<T>` without extra allocations.
@@ -87,7 +74,7 @@ Act as the .NET memory and collections specialist for the client track — the t
 
 **Example 2**
 - Input: "just make the shared score table a `ConcurrentDictionary` in case we add multiplayer later."
-- Output: declined — no second writer thread exists yet, which is exactly the speculative extensibility YAGNI forbids in `coding-principles.md`; use `Dictionary<TKey,TValue>` now, escalate to `ConcurrentDictionary<TKey,TValue>` only once a second writer thread is actually introduced, per [collections-selection.md](references/collections-selection.md).
+- Output: declined — no second writer thread exists yet, which is exactly the speculative extensibility YAGNI forbids in `csharp-standards` → `coding-principles.md`; use `Dictionary<TKey,TValue>` now, escalate to `ConcurrentDictionary<TKey,TValue>` only once a second writer thread is actually introduced, per [collections-selection.md](references/collections-selection.md).
 
 **Example 3**
 - Input: encode a chat message (unbounded length from the player) into a `stackalloc` buffer for a hot network-send path.
@@ -96,5 +83,5 @@ Act as the .NET memory and collections specialist for the client track — the t
 ## 8. Edge cases & guardrails
 - Never store a `Span<T>`/`ReadOnlySpan<T>` in a field, capture it in a lambda, or use it across an `await`/`yield` boundary — the compiler rejects most of these directly, but use `Memory<T>` for anything that must actually survive past the current method call.
 - Never skip `Return`ing a rented `ArrayPool<T>` array on any exit path, including exceptions — a leaked rental defeats the pool's purpose and silently degrades back to per-call allocation.
-- Never reach for `System.Collections.Immutable` or `System.Collections.Concurrent` as a default "safe" choice — both carry real overhead over a plain collection with no measured concurrency/sharing need, per `performance-and-algorithms.md`'s Verification section.
+- Never reach for `System.Collections.Immutable` or `System.Collections.Concurrent` as a default "safe" choice — both carry real overhead over a plain collection with no measured concurrency/sharing need, per `csharp-standards` → `performance-and-algorithms.md`'s Verification section.
 - If it's unclear whether a buffer's producer and consumer run on the same thread/frame, ask rather than assuming `Span<T>` is safe to use across that boundary.

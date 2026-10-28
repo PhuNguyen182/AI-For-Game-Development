@@ -1,22 +1,12 @@
 ---
 name: cross-platform-expansion-assessment
-description: >
-  Cost, timeline, and risk framework for adding a platform — a console
-  SKU, an additional mobile OS, Steam Deck, or cross-play — before the GD
-  commits it to the GDD. Splits the estimate into certification and
-  review lead time, such as TRC, TCR, Lotcheck, or App Review; input and
-  UI reflow — controller mapping, safe area, aspect ratio; netcode and
-  anti-cheat impact; and platform SDK integration, such as Steamworks,
-  Google Play Games Services, GameCenter, StoreKit, and platform IAP.
-  Use before a platform is locked in. Not for: integration work on an
-  already-committed platform, owned by `sdk-platform-engineer`;
-  per-device quality tiers, owned by `unity-engineer`; sync model
-  choice, owned by `netcode-architecture-decision`; cheat posture, owned
-  by `anti-cheat-strategy`; the scoring rubric in
-  `tco-reversibility-scoring`.
+description: "Estimate cost, timeline and risk of adding a platform — console SKU, another mobile OS, Steam Deck, cross-play: certification lead time, porting, per-platform QA, ongoing cost. Use before committing a new platform."
+user-invocable: false
 ---
 
 # Cross-Platform Expansion Assessment — cost and risk of adding a platform
+
+**Not for:** integration work on an already-committed platform, owned by `sdk-platform-engineer`; per-device quality tiers, owned by `gameplay-engineer`; sync model choice, owned by `netcode-architecture-decision`; cheat posture, owned by `anti-cheat-strategy`; the scoring rubric in `tco-reversibility-scoring`.
 
 ## 1. Objective
 Turn "how much would supporting this platform cost us" into a bucketed estimate the GD can actually plan against — separating fixed external certification lead time from compressible engineering effort, and catching the case where an expansion quietly reopens a foundational netcode or anti-cheat decision instead of adding a contained cost.
@@ -29,7 +19,7 @@ Act as a cross-platform-shipping CTO who has taken titles through console certif
 - A publisher, platform holder, or storefront opportunity puts a new SKU on the table and someone needs a number before answering.
 - Cross-play is proposed for a game currently shipping on a single platform family.
 - Negative trigger: the platform is already committed and the SDK, store, and certification work is underway — that is `sdk-platform-engineer`'s execution work.
-- Negative trigger: supporting another device tier inside a platform already shipped, such as a new Android performance bracket — that is `unity-engineer`'s per-platform quality settings work, not an expansion.
+- Negative trigger: supporting another device tier inside a platform already shipped, such as a new Android performance bracket — that is `gameplay-engineer`'s per-platform quality settings work, not an expansion.
 - Negative trigger: choosing the netcode foundation or synchronization model — that is `netcode-architecture-decision`, which this assessment consults rather than redoes.
 - Negative trigger: choosing the anti-cheat tier — that is `anti-cheat-strategy`, same relationship.
 - Negative trigger: the cost/reversibility arithmetic itself — that rubric is `tco-reversibility-scoring`.
@@ -44,7 +34,7 @@ Act as a cross-platform-shipping CTO who has taken titles through console certif
 7. **Include the recurring per-release cost, not only the one-time integration** — every future patch now multiplies across build targets, QA device matrix, store submissions, and on console another certification pass. This bucket is the most commonly omitted and often exceeds the one-time cost within a year of live operation.
 8. **Score the expansion with `tco-reversibility-scoring`** — a platform is usually Medium-to-High reversibility since it can be dropped without unwinding gameplay code, but rate it Low whenever step 3 found a forced foundational change, because that change outlives the platform that caused it.
 9. **Frame the result for the GD as cost, timeline, and risk in product terms, and leave the decision with them** — committing a platform is a GDD-level product commitment, not a call the CTO settles alone.
-10. **Write the assessment in English**, per `language-and-comments.md`'s Working language section — only the closing reply to the GD is Vietnamese.
+10. **Write the assessment in English**, per `csharp.md`'s Working language section — only the closing reply to the GD is Vietnamese.
 11. **Ask before estimating when the target hardware baseline, storefront, or launch window is unstated** — certification scope and reflow cost both hinge on them, so mark the affected bucket provisional rather than guessing it.
 
 ## 5. Specific goals / tasks this skill performs
@@ -53,7 +43,7 @@ Act as a cross-platform-shipping CTO who has taken titles through console certif
 - Detect when the expansion forces reopening a prior foundational decision and say so as a distinct kind of risk.
 - Distinguish cross-play from an additional SKU, and cost the population-merge consequences of the former.
 - Surface the recurring per-release multiplier alongside the one-time integration cost.
-- Out of scope: performing the SDK, store, and certification work (`sdk-platform-engineer`), per-device quality tuning (`unity-engineer`), the netcode and anti-cheat decisions themselves (`netcode-architecture-decision`, `anti-cheat-strategy`), the scoring rubric (`tco-reversibility-scoring`).
+- Out of scope: performing the SDK, store, and certification work (`sdk-platform-engineer`), per-device quality tuning (`gameplay-engineer`), the netcode and anti-cheat decisions themselves (`netcode-architecture-decision`, `anti-cheat-strategy`), the scoring rubric (`tco-reversibility-scoring`).
 
 ## 6. Output format
 ```

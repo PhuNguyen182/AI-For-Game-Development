@@ -1,22 +1,12 @@
 ---
 name: unity-batchmode-cli
-description: >
-  Technique for driving the Unity Editor headlessly from a CI host —
-  `-batchmode -quit -nographics -projectPath -buildTarget -executeMethod
-  -logFile -`, the exit codes a runner reads, `BuildPipeline.BuildPlayer`,
-  `BuildPlayerOptions`, `BuildReport`, `EditorUserBuildSettings`,
-  `EditorApplication.Exit`, `PlayerSettings.bundleVersion`,
-  `Android.bundleVersionCode`, `iOS.buildNumber`, licence activation and
-  `-returnlicense`, Unity Hub CLI editor installs from `ProjectVersion.txt`,
-  and `Library/` cache reuse. Use when a build must run with no human at the
-  keyboard. Not for: the CI job that calls it — `jenkins-pipeline-authoring`;
-  the Addressables content build the entry point must run before the player —
-  `unity-addressables`; signing and packaging — `fastlane-mobile-delivery`;
-  the `-runTests` surface — `unity-test-framework`; diagnosing a red run —
-  `ci-pipeline-failure-triage`.
+description: "Classic headless Editor: -batchmode -quit -executeMethod, exit codes, BuildPipeline.BuildPlayer, -runTests, licensing, log reading. Use when the Unity CLI cannot run the operation."
+user-invocable: false
 ---
 
 # Unity Batchmode CLI — headless builds, exit codes, licensing
+
+**Not for:** the CI job that calls it — `jenkins-pipeline-authoring`; the Addressables content build the entry point must run before the player — `unity-addressables`; signing and packaging — `fastlane-mobile-delivery`; the `-runTests` surface — `unity-test-framework`; diagnosing a red run — `ci-pipeline-failure-triage`.
 
 ## Bundled resources
 
@@ -48,8 +38,8 @@ Act as the headless-Unity specialist for the devops track, on behalf of `ci-cd-e
 - Negative trigger: `-runTests`, `-testPlatform`, `-testResults` and the NUnit XML they produce — that surface belongs to `unity-test-framework`; this skill only positions the test stage in the invocation order.
 - Negative trigger: deciding what a red run means and who owns it — that is `ci-pipeline-failure-triage`.
 - Negative trigger: what an Addressables content build produces, which groups and Profile it uses, and when a catalog ships or updates — that is `unity-addressables`; on a project using the package the entry point runs that build before `BuildPlayer`, and a player built without it ships against whatever content was last built locally.
-- Negative trigger: player settings, quality settings and stripping level as project decisions — those are `unity-engineer`'s, even when a build script reads them.
-- Companion, if the official Unity plugin (`unity@claude-plugins-official`) is installed: for a local or agent-driven build, `unity:unity-cli` (`unity build`, `unity license`, `unity cache key`) is tried first, per `unity-tooling-preference.md`; this skill covers the classic `-batchmode` path a CI host runs and the C# entry point either path calls. The plugin's rule against passing `-batchmode`/`-quit` applies to the Unity CLI only, never to that path.
+- Negative trigger: player settings, quality settings and stripping level as project decisions — those are `gameplay-engineer`'s, even when a build script reads them.
+- Companion, if the official Unity plugin (`unity@claude-plugins-official`) is installed: for a local or agent-driven build, `unity:unity-cli` (`unity build`, `unity license`, `unity cache key`) is tried first, per `core.md`; this skill covers the classic `-batchmode` path a CI host runs and the C# entry point either path calls. The plugin's rule against passing `-batchmode`/`-quit` applies to the Unity CLI only, never to that path.
 
 ## 4. How to use this skill
 1. **Pin the editor version from `ProjectVersion.txt` before writing anything else** — the file names the exact editor the project opens with, and an agent that installs anything else either upgrades the project in place or fails after the slowest step. Provision that version through the Hub CLI, per [licensing-and-editor-provisioning.md](references/licensing-and-editor-provisioning.md), and resolve its documentation against the version note in [root-links.md](references/root-links.md) — flag names move between editor versions.
@@ -111,5 +101,5 @@ Act as the headless-Unity specialist for the devops track, on behalf of `ci-cd-e
 - Never trust the process exit code alone as a build verdict, and never trust an artifact's existence at all.
 - Never use `-nographics` for work that genuinely needs a GPU device — some baking and graphics-dependent import paths fail only under it, and the failure reads as unrelated.
 - Never write a credential, keystore path or password into a build script or a command line — those come from the job's credential binding, per `jenkins-pipeline-authoring`.
-- Never let a build script edit project settings permanently to make a build pass; assign what the run needs and leave the committed settings to `unity-engineer`.
+- Never let a build script edit project settings permanently to make a build pass; assign what the run needs and leave the committed settings to `gameplay-engineer`.
 - If the editor version, build target, or artifact path is missing from the request, state the assumption in the output rather than defaulting it silently — a build that succeeds for the wrong platform costs a full cycle to discover.

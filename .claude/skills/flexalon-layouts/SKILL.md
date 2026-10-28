@@ -1,27 +1,12 @@
 ---
 name: flexalon-layouts
-description: >
-  Flexalon, from Virtual Maker, is the box-model layout asset that
-  arranges Unity GameObjects and uGUI in 3D: the `Flexalon` singleton,
-  `FlexalonObject` with `SizeType` Component/Fixed/Fill/Layout,
-  `MinMaxSizeType`, margins, padding, offset, and `SkipLayout`;
-  `FlexalonFlexibleLayout`; `FlexalonGridLayout` with
-  `FlexalonGridCell`; `FlexalonCircleLayout`, `FlexalonCurveLayout`,
-  `FlexalonShapeLayout`, `FlexalonAlignLayout`, `FlexalonRandomLayout`;
-  `FlexalonConstraint` and `FlexalonRandomModifier`; `FlexalonCloner`
-  with `DataSource`/`DataBinding`; `FlexalonInteractable` and
-  `FlexalonDragTarget`; Curve/Lerp/RigidBody animators; `Adapter`,
-  `TransformUpdater`, `FlexalonNode`; and the Measure→Arrange→Constrain
-  pipeline. Use when arranging objects or UI through Flexalon
-  components. Not for: uGUI Layout Group and RectTransform authoring,
-  owned by `ugui`; UI Toolkit USS flex layout, owned by `ui-toolkit`;
-  tweening engines, owned by `dotween-tweening` and
-  `litmotion-tweening`; virtualized scroll lists, owned by
-  `osa-optimized-scrollview-adapter`; and inspector attributes, owned
-  by `odin-inspector`.
+description: "Flexalon 3D/uGUI layouts: FlexalonObject sizing, Flexible/Grid/Circle/Curve layouts, constraints, interactables, animators, performance. Use when a layout needs Flexalon rather than uGUI Layout Groups."
+user-invocable: false
 ---
 
 # Flexalon — 3D and UI Layout for Unity
+
+**Not for:** uGUI Layout Group and RectTransform authoring, owned by `ugui`; UI Toolkit USS flex layout, owned by `ui-toolkit`; tweening engines, owned by `dotween-tweening` and `litmotion-tweening`; virtualized scroll lists, owned by `osa-optimized-scrollview-adapter`; and inspector attributes, owned by `odin-inspector`.
 
 ## Bundled resources
 
@@ -74,7 +59,7 @@ content and available space, rather than as fixed transform values.
 - Negative trigger: interpolating a value over time as an animation in its own right — that's `dotween-tweening`/`litmotion-tweening`; Flexalon animators only carry an object to its computed layout result.
 - Negative trigger: a virtualized/recycling scroll list over a large dataset — that's `osa-optimized-scrollview-adapter`; `FlexalonCloner` instantiates one object per data item with no recycling.
 - Negative trigger: inspector attributes, custom drawers, or editor-window tooling — that's `odin-inspector`.
-- Negative trigger: any `Game.Core.*` code — Flexalon is `UnityEngine`-dependent, which `coding-principles.md`'s Shared Core integrity section forbids in Core.
+- Negative trigger: any `Game.Core.*` code — Flexalon is `UnityEngine`-dependent, which `csharp-standards` → `coding-principles.md`'s Shared Core integrity section forbids in Core.
 
 ## 4. How to use this skill
 1. **Confirm Flexalon is the right layout system for this surface, and which edition is installed, before adding any component** — the free UI package ships only a subset of layouts, and a Canvas already driven by uGUI Layout Groups must be converted, not layered on, per [root-links.md](references/root-links.md) and [ugui-integration.md](references/ugui-integration.md).
@@ -86,9 +71,9 @@ content and available space, rather than as fixed transform values.
 7. **Choose the animator by how often the layout result changes** — Curve for results that change rarely (it restarts on every change), Lerp for results that change continuously, Rigid Body whenever a `Rigidbody`/`Rigidbody2D` would otherwise fight the pipeline for the transform, per [animators.md](references/animators.md).
 8. **Wire click and drag through Flexalon Interactable plus Flexalon Drag Target, and confirm the input path** — world objects need a `Collider`, UI objects need a raycast-target `Graphic` plus an EventSystem and GraphicRaycaster, and XR routes movement through the SDK's own provider, per [interactions-and-xr.md](references/interactions-and-xr.md).
 9. **Confirm which adapter measures an object before fighting its size** — `SizeType.Component` is resolved by the adapter for `MeshRenderer`, `SpriteRenderer`, `TMP_Text`, `RectTransform`, `Image`, or a collider, and the same adapter decides what happens to `localScale`, per [adapters.md](references/adapters.md).
-10. **Extend Flexalon with a custom layout only when no built-in composition reaches the result** — a custom `Layout` owes correct `Measure`/`Arrange` behaviour under repeated `Measure` calls and Layout Space rules, which is real cost YAGNI does not pay for speculatively, per [custom-layouts.md](references/custom-layouts.md) and KISS in `coding-principles.md`.
-11. **Keep every Flexalon type out of Shared Core** — the package depends on `UnityEngine`, so layout intent lives in `Game.Client.*` and reads Core state, never the reverse, per `coding-principles.md`'s Shared Core integrity section.
-12. **Measure layout cost in the Profiler before shipping a layout that dirties every frame** — Flexalon recomputes dirty nodes in `LateUpdate` and a Lerp animator or a per-frame-changed property keeps the subtree dirty continuously; state the frame-time and allocation numbers, per `performance-and-algorithms.md`'s Verification section and [core-concepts-and-pipeline.md](references/core-concepts-and-pipeline.md).
+10. **Extend Flexalon with a custom layout only when no built-in composition reaches the result** — a custom `Layout` owes correct `Measure`/`Arrange` behaviour under repeated `Measure` calls and Layout Space rules, which is real cost YAGNI does not pay for speculatively, per [custom-layouts.md](references/custom-layouts.md) and KISS in `csharp-standards` → `coding-principles.md`.
+11. **Keep every Flexalon type out of Shared Core** — the package depends on `UnityEngine`, so layout intent lives in `Game.Client.*` and reads Core state, never the reverse, per `csharp-standards` → `coding-principles.md`'s Shared Core integrity section.
+12. **Measure layout cost in the Profiler before shipping a layout that dirties every frame** — Flexalon recomputes dirty nodes in `LateUpdate` and a Lerp animator or a per-frame-changed property keeps the subtree dirty continuously; state the frame-time and allocation numbers, per `csharp-standards` → `performance-and-algorithms.md`'s Verification section and [core-concepts-and-pipeline.md](references/core-concepts-and-pipeline.md).
 13. **Ask when the edition, the platform's input path, or the animator's timing requirement is unstated** — each changes which components are even available, and all three are expensive to unwind after a scene is authored against the wrong assumption.
 
 ## 5. Specific goals / tasks this skill performs
@@ -151,7 +136,7 @@ the one-line `Known limitations` above with all three fields:
 - Never assume the docs' word "Parent" means a distinct size option — older doc prose says "Parent" where the current enum member is `SizeType.Fill`.
 - Never delete the `Flexalon` singleton GameObject in edit mode to "reset" layout — the docs state Unity may need reopening; use `ForceUpdate()` instead.
 - Never change a layout property through a non-Flexalon path at runtime without calling `MarkDirty()` — the node stays clean and the layout silently never recomputes.
-- Never claim a Flexalon layout is performant without Profiler evidence, per `performance-and-algorithms.md`'s Verification section — a continuously dirty subtree re-runs Measure/Arrange in `LateUpdate` every frame.
-- Never place Flexalon types in `Game.Core.*`, per `coding-principles.md`'s Shared Core integrity section.
+- Never claim a Flexalon layout is performant without Profiler evidence, per `csharp-standards` → `performance-and-algorithms.md`'s Verification section — a continuously dirty subtree re-runs Measure/Arrange in `LateUpdate` every frame.
+- Never place Flexalon types in `Game.Core.*`, per `csharp-standards` → `coding-principles.md`'s Shared Core integrity section.
 - If the installed edition, the input system in use, or which layouts the project is licensed for is unstated, ask rather than authoring against an assumption.
 - Upgrading Flexalon requires deleting the project's existing `Flexalon` directory before importing the new package, per [root-links.md](references/root-links.md) — that deletion is destructive and requires explicit user confirmation in the current conversation, never inferred from context.

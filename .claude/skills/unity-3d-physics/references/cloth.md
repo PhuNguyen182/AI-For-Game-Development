@@ -44,5 +44,5 @@ collides only against the collider list assigned to it, not against the scene.
 
 **Critical caveat**: self-collision and inter-collision are the most expensive
 settings on the component. Leave them off until a visible problem requires
-them, per KISS in `coding-principles.md`, and confirm the cost in the Profiler
+them, per KISS in `csharp-standards` → `coding-principles.md`, and confirm the cost in the Profiler
 before shipping them on a mobile target.

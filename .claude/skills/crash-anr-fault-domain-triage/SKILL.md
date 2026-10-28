@@ -1,20 +1,12 @@
 ---
 name: crash-anr-fault-domain-triage
-description: >
-  Decision tree that attributes a fully symbolicated crash or ANR to exactly
-  one fault domain — game code, Unity engine, third-party SDK, or system
-  library — walked in that fixed order, then routes the fix to a single
-  owner as a Root Cause Report. Covers ANR timeout classes,
-  `ApplicationExitInfo`, `StrictMode`, the Google Play SDK Index, and
-  device or OS segmentation. Use once the trace is confirmed readable.
-  Not for: confirming the report source, owned by
-  `crash-anr-reporting-gate`; resolving addresses, owned by
-  `crash-anr-symbolication`; writing the fix, owned by `csharp-engineer`,
-  `unity-engineer`, and `sdk-platform-engineer`; pre-release defects,
-  owned by `qa-automation-engineer` and `build-fault-triage`.
+description: "Attribute a symbolicated crash or ANR to one fault domain — game code, Unity engine, third-party SDK, system library — in fixed order, then route the fix to one owner. Use as stage 3 of a production crash investigation."
+user-invocable: false
 ---
 
 # Crash and ANR Fault-Domain Triage — which layer is actually responsible
+
+**Not for:** confirming the report source, owned by `crash-anr-reporting-gate`; resolving addresses, owned by `crash-anr-symbolication`; writing the fix, owned by `csharp-engineer`, `gameplay-engineer`, and `sdk-platform-engineer`; pre-release defects, owned by `qa-automation-engineer` and `build-fault-triage`.
 
 ## Bundled resources
 
@@ -41,13 +33,13 @@ Act as the investigative reasoning step of the crash pipeline, on behalf of `cra
 - A trace spans several domains and the attribution is contested.
 - Negative trigger: any unresolved frame at the top of the stack — send it back to `crash-anr-symbolication`, because a domain read off offsets is a guess.
 - Negative trigger: whether the report is production telemetry at all — that was `crash-anr-reporting-gate`.
-- Negative trigger: implementing the fix, the mitigation, the engine upgrade, or the SDK update — those belong to `csharp-engineer` or `unity-engineer` (fix, mitigation), `technical-architect` (engine upgrade) and `sdk-platform-engineer` (SDK update); this skill produces the diagnosis and the routing.
+- Negative trigger: implementing the fix, the mitigation, the engine upgrade, or the SDK update — those belong to `csharp-engineer` or `gameplay-engineer` (fix, mitigation), `technical-architect` (engine upgrade) and `sdk-platform-engineer` (SDK update); this skill produces the diagnosis and the routing.
 - Negative trigger: a defect found before release — that is `qa-automation-engineer` and `playtest-tester` in the Editor, and `build-fault-triage` in a player build that never shipped; a different pipeline entirely.
 
 ## 4. How to use this skill
 1. **Walk the domains in the fixed order and stop at the first match** — game code, then Unity engine, then third-party SDK, then system library, per [fault-domain-signals.md](references/fault-domain-signals.md) and the roots in [root-links.md](references/root-links.md). The order exists so a fixable defect in code this project owns is never blamed on a layer nobody here can change.
 2. **Attribute to the frame that faulted, not the frame nearest your own code** — a stack that runs from game code into an SDK that then crashes belongs to the SDK, and the reverse is equally true, per [fault-domain-signals.md](references/fault-domain-signals.md). The call site is context; the faulting frame is the finding.
-3. **In game code, separate a fixable defect from a condition only mitigation reaches** — a null dereference or a main-thread block the game itself causes is a fix, routed to `csharp-engineer` for Shared Core or `unity-engineer` for client code. A defensive failure against an unpreventable platform condition is a mitigation instead, designed with `unity-engineer`, per [anr-classes-and-mitigation.md](references/anr-classes-and-mitigation.md).
+3. **In game code, separate a fixable defect from a condition only mitigation reaches** — a null dereference or a main-thread block the game itself causes is a fix, routed to `csharp-engineer` for Shared Core or `gameplay-engineer` for client code. A defensive failure against an unpreventable platform condition is a mitigation instead, designed with `gameplay-engineer`, per [anr-classes-and-mitigation.md](references/anr-classes-and-mitigation.md).
 4. **In Unity engine code, work down the ladder rather than jumping to a bug report** — search the forums and the issue tracker, then upgrade to the version carrying the fix, and file a report only once neither rung produces one, per [third-party-and-engine-escalation.md](references/third-party-and-engine-escalation.md). Route the version decision to `technical-architect` at every rung, since an engine upgrade is never a local change.
 5. **In a third-party SDK, update and isolate before contacting the vendor** — update to current, disable it to confirm the signal disappears, then check the store's SDK index for a known issue, and only then approach the vendor with all three results, per [third-party-and-engine-escalation.md](references/third-party-and-engine-escalation.md). Route to `sdk-platform-engineer`, who owns every SDK integration.
 6. **In a system library, establish whether it is segmented by device or broad** — a fault confined to one manufacturer or OS version is a segmentation decision plus a vendor report, while a broad one is a vendor report alone, per [anr-classes-and-mitigation.md](references/anr-classes-and-mitigation.md). Route both to `sdk-platform-engineer`, who owns store policy and the device catalogue.
@@ -60,7 +52,7 @@ Act as the investigative reasoning step of the crash pipeline, on behalf of `cra
 - Distinguishing a fixable game-code defect from a condition only mitigation reaches.
 - Producing the domain-specific next action: fix, mitigation, engine upgrade or bug report, SDK update or vendor contact, device segmentation.
 - Routing the finding to exactly one correctly scoped owner, as a Root Cause Report.
-- Out of scope: writing the fix (`csharp-engineer`, `unity-engineer`); designing the mitigation's implementation (`unity-engineer`); the engine version decision (`technical-architect`); SDK and store action (`sdk-platform-engineer`); symbolication (`crash-anr-symbolication`); pre-release defects (`qa-automation-engineer`, `build-fault-triage`).
+- Out of scope: writing the fix (`csharp-engineer`, `gameplay-engineer`); designing the mitigation's implementation (`gameplay-engineer`); the engine version decision (`technical-architect`); SDK and store action (`sdk-platform-engineer`); symbolication (`crash-anr-symbolication`); pre-release defects (`qa-automation-engineer`, `build-fault-triage`).
 
 ## 6. Output format
 ```
@@ -75,7 +67,7 @@ Act as the investigative reasoning step of the crash pipeline, on behalf of `cra
 - Decision: <fix / mitigation / engine upgrade / SDK action / segmentation / non-actionable>
 - Recommended action: <the concrete next step, not a description of the problem>
 - Verification: re-enter at crash-anr-symbolication once a new symboled build ships
-- Routed to: <csharp-engineer / unity-engineer / technical-architect / sdk-platform-engineer / none>
+- Routed to: <csharp-engineer / gameplay-engineer / technical-architect / sdk-platform-engineer / none>
 ```
 
 **Extended report — emit ONLY when the requester asks for it.** It adds all three fields below the decision:
@@ -96,11 +88,11 @@ Act as the investigative reasoning step of the crash pipeline, on behalf of `cra
 
 **Example 3**
 - Input: "The top frame is an engine function, so this is a Unity bug — file it."
-- Output: declined as premature. The engine frame faulted, but the domain order requires checking game code first, and the frame below it passes a collection the game had already disposed. The engine crashed on input it was given, so the defect is in game code and fixing it is a same-week change rather than a version bump. Routed to `unity-engineer`.
+- Output: declined as premature. The engine frame faulted, but the domain order requires checking game code first, and the frame below it passes a collection the game had already disposed. The engine crashed on input it was given, so the defect is in game code and fixing it is a same-week change rather than a version bump. Routed to `gameplay-engineer`.
 
 **Example 4**
 - Input: a resolved ANR the game cannot prevent — the platform reclaiming resources under memory pressure during a long load.
-- Output: game code, not fixable as a defect. Recommended mitigation instead: a main-thread policy check to catch accidental blocking work before it produces an ANR, and reading the recorded exit reason on the next launch to confirm the cause rather than inferring it. Routed to `unity-engineer` for the mitigation design, per [anr-classes-and-mitigation.md](references/anr-classes-and-mitigation.md).
+- Output: game code, not fixable as a defect. Recommended mitigation instead: a main-thread policy check to catch accidental blocking work before it produces an ANR, and reading the recorded exit reason on the next launch to confirm the cause rather than inferring it. Routed to `gameplay-engineer` for the mitigation design, per [anr-classes-and-mitigation.md](references/anr-classes-and-mitigation.md).
 
 ## 8. Edge cases & guardrails
 - Never start from the most suspicious-looking frame — the fixed order exists precisely because that instinct blames the operating system for the game's own defect.

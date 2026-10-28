@@ -6,7 +6,7 @@ Covers: SKILL.md §4 — **"Diff two Memory Profiler snapshots rather than readi
 How to establish that memory is actually leaking, as distinct from Unity
 holding pages it has already taken from the operating system. The fix a
 retention chain implies — unsubscribing an event, releasing an Addressables
-handle, capping a collection — belongs to `unity-engineer`, and the
+handle, capping a collection — belongs to `unity-performance-engineer`, and the
 Addressables handle discipline specifically to `unity-addressables`.
 
 ## Reading the totals

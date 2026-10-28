@@ -65,8 +65,8 @@ stay on transform properties.
 
 | Subject | What it decides | Source |
 |---|---|---|
-| Pool, don't `new()` | Reuse elements instead of instantiating repeatedly, per `performance-and-algorithms.md`'s pooling rule | [Best practices for managing elements](https://docs.unity3d.com/Manual/UIE-best-practices-for-managing-elements.html) |
-| Unregister before pooling | An event callback left registered on a pooled-and-returned element keeps firing — unregister it first, per `coding-principles.md`'s Event handlers rule | [Best practices for managing elements](https://docs.unity3d.com/Manual/UIE-best-practices-for-managing-elements.html) |
+| Pool, don't `new()` | Reuse elements instead of instantiating repeatedly, per `csharp-standards` → `performance-and-algorithms.md`'s pooling rule | [Best practices for managing elements](https://docs.unity3d.com/Manual/UIE-best-practices-for-managing-elements.html) |
+| Unregister before pooling | An event callback left registered on a pooled-and-returned element keeps firing — unregister it first, per `csharp-standards` → `coding-principles.md`'s Event handlers rule | [Best practices for managing elements](https://docs.unity3d.com/Manual/UIE-best-practices-for-managing-elements.html) |
 | `ListView` built-in recycling | Already pools its row elements during scroll — prefer it over manually instantiating one element per data row | [Best practices for managing elements](https://docs.unity3d.com/Manual/UIE-best-practices-for-managing-elements.html) |
 | Hide-vs-remove decision | `visibility: hidden` (drops render commands, keeps layout cost) → `opacity: 0` (still shaded on GPU) → `display: none` (recomputes sibling layout, zero GPU cost, data retained) → move off-screen (minimal CPU, still GPU-shaded) → `RemoveFromHierarchy()` (zero cost, all data freed) — pick by how soon the element reappears | [Best practices for managing elements](https://docs.unity3d.com/Manual/UIE-best-practices-for-managing-elements.html) |
 

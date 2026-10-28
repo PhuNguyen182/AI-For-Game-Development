@@ -1,27 +1,12 @@
 ---
 name: nrandom-random-generation
-description: >
-  Seeded, injectable pseudorandom number generation via NRandom's `IRandom`
-  abstraction and `RandomEx` extensions — `Xoshiro256StarStarRandom`,
-  `Xorshift128Random`, `Pcg32Random`, `Sfc32Random`/`Sfc64Random`,
-  `MersenneTwisterRandom`, `ChaChaRandom`,
-  `NextInt`/`NextFloat`/`NextDoubleGaussian`/`Shuffle`,
-  `WeightedList<T>`/`IWeightedCollection<T>` loot tables, `NRandom.Linq`'s
-  `RandomElement`/`RandomEnumerable`, and `NRandom.Numerics`/`NRandom.Unity`'s
-  Vector, Quaternion and Color extensions. Use when a gameplay roll, loot
-  table, or shuffle needs to be deterministic and replayable across client
-  prediction and server authority, replacing
-  `UnityEngine.Random`/`System.Random`. Not for: cryptographically secure
-  randomness via `System.Security.Cryptography.RandomNumberGenerator`
-  directly, owned by no skill in this project; the struct
-  `Unity.Mathematics.Random` a Burst-compiled or job/ECS site needs where an
-  interface call cannot go, owned by `unity-mathematics` and
-  `unity-job-system-and-burst`; general Task/async composition, owned by
-  `dotnet-concurrency-and-async`; Span/buffer/collection selection unrelated
-  to weighted RNG, owned by `dotnet-memory-and-collections`.
+description: "Seeded, injectable RNG with NRandom: IRandom, Xoshiro/PCG generators, RandomEx, weighted selection, shuffle, distributions. Use for any randomness in Shared Core or tests that must be reproducible."
+user-invocable: false
 ---
 
 # NRandom Random Generation — Seeded IRandom, Weighted Tables, Vector/Color Extensions
+
+**Not for:** cryptographically secure randomness via `System.Security.Cryptography.RandomNumberGenerator` directly, owned by no skill in this project; the struct `Unity.Mathematics.Random` a Burst-compiled or job/ECS site needs where an interface call cannot go, owned by `unity-mathematics` and `unity-job-system-and-burst`; general Task/async composition, owned by `dotnet-concurrency-and-async`; Span/buffer/collection selection unrelated to weighted RNG, owned by `dotnet-memory-and-collections`.
 
 ## Bundled resources
 
@@ -42,7 +27,7 @@ Guarantee that every gameplay-affecting random roll in `Game.Core.*` is determin
 Act as the NRandom specialist for the client track — the tool reached for whenever `Game.Core.*` gameplay rules need a seeded RNG, a weighted loot table, or a randomized shuffle/sequence, and whenever `Game.Client.*` needs Vector/Quaternion/Color randomization or Inspector-editable weighted tables built on the same library.
 
 ## 3. When to invoke this skill
-- Replacing a `UnityEngine.Random`/`System.Random` call in `Game.Core.*` with a seeded, injectable RNG, per `coding-principles.md`'s Shared Core integrity section.
+- Replacing a `UnityEngine.Random`/`System.Random` call in `Game.Core.*` with a seeded, injectable RNG, per `csharp-standards` → `coding-principles.md`'s Shared Core integrity section.
 - Building a loot table, gacha roll, or any weighted-probability drop.
 - Shuffling a deck/sequence, or picking a uniformly random element, in a way that must be reproducible.
 - Randomizing a spawn position, rotation, or VFX color/tint in `Game.Client.*`.
@@ -53,16 +38,16 @@ Act as the NRandom specialist for the client track — the tool reached for when
 ## 4. How to use this skill
 1. **Confirm whether the roll needs to be reproducible across client prediction and server authority before touching `RandomEx.Shared`/`RandomEx.Create()`** — both trace back to a `Xoshiro256StarStarRandom` seeded from `System.Security.Cryptography.RandomNumberGenerator`, so neither is deterministic, per [rng-algorithms-and-determinism.md](references/rng-algorithms-and-determinism.md).
 2. **Pick the algorithm by the actual requirement, not habit** — default to `Xoshiro256StarStarRandom` for general gameplay rolls; use `Pcg32Random`/`Sfc32Random`/`Sfc64Random` when the seed/state must stay small in a netcode payload; never `ChaChaRandom` for a plain roll, since it's markedly slower for no benefit a gameplay roll needs, per [rng-algorithms-and-determinism.md](references/rng-algorithms-and-determinism.md).
-3. **Construct the chosen `IRandom` directly and call `InitState(seed)` with a seed the caller controls, then inject that instance through the constructor** — never hold it as static/ambient state, per `coding-principles.md`'s Dependency Inversion section and [rng-algorithms-and-determinism.md](references/rng-algorithms-and-determinism.md).
+3. **Construct the chosen `IRandom` directly and call `InitState(seed)` with a seed the caller controls, then inject that instance through the constructor** — never hold it as static/ambient state, per `csharp-standards` → `coding-principles.md`'s Dependency Inversion section and [rng-algorithms-and-determinism.md](references/rng-algorithms-and-determinism.md).
 4. **Use the `RandomEx` extension methods for every derived value instead of hand-rolling range math on `NextUInt()`/`NextULong()`** — `NextInt`/`NextFloat`/`NextDouble`/`NextBool`/`NextBytes`/`Shuffle`/`GetItems` already handle bias-free range mapping, per [rng-algorithms-and-determinism.md](references/rng-algorithms-and-determinism.md).
 5. **Reserve `RandomEx.Shared` for client-only, non-gameplay randomness** (VFX variance, idle-animation flavor, UI shuffle) where cross-client/server determinism doesn't matter, per [rng-algorithms-and-determinism.md](references/rng-algorithms-and-determinism.md)'s Critical caveat.
 6. **Build loot tables and weighted drop rolls with `WeightedList<T>`/`IWeightedCollection<T>.GetRandom(IRandom)` instead of a hand-rolled cumulative-weight loop**, always passing the injected `IRandom` explicitly rather than the parameterless overload, per [weighted-collections-and-linq.md](references/weighted-collections-and-linq.md).
 7. **Compose sequence-level randomness through the `NRandom.Linq` extensions with an explicit `IRandom` argument** (`RandomElement`, `Shuffle`, `RandomEnumerable.Repeat`, `ToWeightedList`) rather than plain `System.Linq`, per [weighted-collections-and-linq.md](references/weighted-collections-and-linq.md).
-8. **Use `NRandom.Numerics` in `Game.Core.*` and `NRandom.Unity` only in `Game.Client.*`** — the former has no `UnityEngine` dependency, the latter's Color/`SerializableWeightedList<T>` helpers do, per `naming-convention.md`'s namespace boundary and [numerics-and-unity-integration.md](references/numerics-and-unity-integration.md).
+8. **Use `NRandom.Numerics` in `Game.Core.*` and `NRandom.Unity` only in `Game.Client.*`** — the former has no `UnityEngine` dependency, the latter's Color/`SerializableWeightedList<T>` helpers do, per `csharp-standards` → `naming-convention.md`'s namespace boundary and [numerics-and-unity-integration.md](references/numerics-and-unity-integration.md).
 9. **Capture the seed rather than assuming a mid-stream get/set-state API exists** — most `IRandom` implementations expose no public state accessor, per [rng-algorithms-and-determinism.md](references/rng-algorithms-and-determinism.md)'s Critical caveat; if the Tech Spec doesn't say how a rollback/replay should reconstruct RNG state, ask rather than guessing one.
 
 ## 5. Specific goals / tasks this skill performs
-- Wire a seeded, injectable `IRandom` into `Game.Core.*` gameplay-rule code as the deterministic RNG `coding-principles.md`'s Shared Core integrity section requires.
+- Wire a seeded, injectable `IRandom` into `Game.Core.*` gameplay-rule code as the deterministic RNG `csharp-standards` → `coding-principles.md`'s Shared Core integrity section requires.
 - Build weighted loot/drop tables and randomized sequence operations with `WeightedList<T>` and `NRandom.Linq`.
 - Add Vector/Quaternion/Color randomization via `NRandom.Numerics`/`NRandom.Unity` at the correct layer.
 - Out of scope: cryptographically secure randomness (flag it — no skill in this project owns it, do not substitute NRandom), the struct RNG Burst/job/ECS code needs (`unity-mathematics`, `unity-job-system-and-burst`), general Task/async composition (`dotnet-concurrency-and-async`), Span/buffer/collection selection unrelated to weighted RNG (`dotnet-memory-and-collections`).
@@ -92,7 +77,7 @@ Act as the NRandom specialist for the client track — the tool reached for when
 
 **Example 2**
 - Input: "just call `RandomEx.Shared.NextInt(...)` for the crit-chance roll in `Game.Core`, it's simpler."
-- Output: declined — `RandomEx.Shared` is seeded from `RandomNumberGenerator` per thread, so client and server diverge on the very first roll; inject a seeded `IRandom` instead, per [rng-algorithms-and-determinism.md](references/rng-algorithms-and-determinism.md)'s Critical caveat and `coding-principles.md`'s Shared Core integrity section.
+- Output: declined — `RandomEx.Shared` is seeded from `RandomNumberGenerator` per thread, so client and server diverge on the very first roll; inject a seeded `IRandom` instead, per [rng-algorithms-and-determinism.md](references/rng-algorithms-and-determinism.md)'s Critical caveat and `csharp-standards` → `coding-principles.md`'s Shared Core integrity section.
 
 **Example 3**
 - Input: "we need encryption-grade randomness for a matchmaking anti-collusion token — use NRandom's `ChaChaRandom` since it's the crypto-sounding one."

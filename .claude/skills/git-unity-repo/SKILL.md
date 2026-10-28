@@ -1,20 +1,12 @@
 ---
 name: git-unity-repo
-description: >
-  Git for a Unity project — the failures git cannot see. Covers `.unity`,
-  `.prefab`, and `.asset` YAML conflicts with Force Text serialization and
-  UnityYAMLMerge via `merge.unityyamlmerge` and `.gitattributes`, `.meta`
-  files and the GUID break a regenerated one causes, the ignore surface
-  spanning `Library/`, `Temp/`, `Logs/`, and `UserSettings/` versus
-  tracked `ProjectSettings/` and `Packages/packages-lock.json`, recurring
-  `ProjectVersion.txt` conflicts, which assets belong in Git LFS and how a
-  pointer file presents, and why the Editor must be closed before a
-  working-tree rewrite. Not for: generic history repair, owned by
-  `git-recovery`; anchoring a command, owned by `git-safety-anchor`; and
-  tracing a commit, owned by `git-forensics`.
+description: "Git for Unity: YAML scene/prefab conflicts with UnityYAMLMerge, .meta and GUID integrity, Git LFS, .gitignore/.gitattributes for Unity. Use for Unity-specific git setup or asset conflicts."
+user-invocable: false
 ---
 
 # Unity Repository Git — Scene Merges, `.meta` GUIDs, the Ignore Surface, and LFS
+
+**Not for:** generic history repair, owned by `git-recovery`; anchoring a command, owned by `git-safety-anchor`; and tracing a commit, owned by `git-forensics`.
 
 ## Bundled resources
 
@@ -56,7 +48,7 @@ Act as the Unity repository specialist for the devops track — the skill reache
 9. **Verify an LFS-tracked binary checked out as real content rather than as a pointer** — a pointer file is a valid text file that git reports as clean while the asset is unusable; check size or run `git lfs fsck` before declaring a checkout complete.
 10. **Confirm the Unity Editor is closed before any command that rewrites the working tree** — `checkout`, `reset --hard`, `clean`, and a branch switch all change assets while the Editor's asset database is watching them, which can leave `Library/` inconsistent with what is on disk.
 11. **Preview `git clean` with `-xdn` and get the deletion list confirmed** — losing `Library/` costs a slow reimport, but the same command deletes untracked assets that exist in no commit and no stash.
-12. **Author every ignore rule, attribute line, and commit message in English** — per `language-and-comments.md`'s Working language section, with commit messages following `commit-message.md`.
+12. **Author every ignore rule, attribute line, and commit message in English** — per `csharp.md`'s Working language section, with commit messages following skill `git-commit`.
 13. **Ask which Unity version and which side of a conflict is authoritative when either is unstated** — the Editor setting paths differ across versions, and choosing a side of a scene conflict is a content decision this skill does not own.
 
 ## 5. Specific goals / tasks this skill performs
@@ -66,7 +58,7 @@ Act as the Unity repository specialist for the devops track — the skill reache
 - Author or audit `.gitignore` and `.gitattributes` for this project, with the reason for each entry.
 - Decide a `ProjectVersion.txt` or `packages-lock.json` conflict rather than merging it.
 - Confirm LFS-tracked assets checked out as content, and diagnose pointer-file symptoms.
-- Out of scope: recovering lost commits, or repairing the object store including a missing LFS object (`git-recovery`), producing the anchor for a destructive command (`git-safety-anchor`), tracing a change to its commit (`git-forensics`), and the content decision about which version of a scene is correct (`unity-engineer`).
+- Out of scope: recovering lost commits, or repairing the object store including a missing LFS object (`git-recovery`), producing the anchor for a destructive command (`git-safety-anchor`), tracing a change to its commit (`git-forensics`), and the content decision about which version of a scene is correct (`gameplay-engineer`).
 
 ## 6. Output format
 ```
@@ -92,7 +84,7 @@ Act as the Unity repository specialist for the devops track — the skill reache
 ## 7. Examples
 **Example 1**
 - Input: "Two people edited the main menu scene and the merge is a mess."
-- Output: confirmed Force Text, then took the incoming side wholesale with `git checkout --theirs` rather than resolving the YAML, and reported the four GameObjects the other side had added so `unity-engineer` can reapply them in the Editor. Also wired UnityYAMLMerge in `.gitattributes` and git config so the next conflict gets a Unity-aware driver.
+- Output: confirmed Force Text, then took the incoming side wholesale with `git checkout --theirs` rather than resolving the YAML, and reported the four GameObjects the other side had added so `gameplay-engineer` can reapply them in the Editor. Also wired UnityYAMLMerge in `.gitattributes` and git config so the next conflict gets a Unity-aware driver.
 
 **Example 2**
 - Input: "The YAML conflict is only a few lines, just fix those and commit — it opens fine in Unity."
@@ -110,5 +102,5 @@ Act as the Unity repository specialist for the devops track — the skill reache
 - Never merge `ProjectVersion.txt` or `packages-lock.json` — a blended value is a state no machine ever had; decide one side.
 - Never declare a checkout complete without confirming LFS-tracked assets are content rather than pointer files; git reports a pointer-only tree as clean.
 - Never run `checkout`, `reset --hard`, `clean`, or a branch switch with the Editor open on this repository — reimporting over changing files can leave the asset database inconsistent with disk.
-- If the Unity version or which side of a conflict is authoritative is unstated, ask — setting paths differ across versions, and picking a scene's content is a decision for `unity-engineer`.
+- If the Unity version or which side of a conflict is authoritative is unstated, ask — setting paths differ across versions, and picking a scene's content is a decision for `gameplay-engineer`.
 - `git clean -xdf` requires an explicit confirmation of the `-xdn` preview list in the current conversation; untracked assets it deletes exist in no commit, no stash, and no reflog.

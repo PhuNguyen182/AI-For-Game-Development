@@ -1,20 +1,12 @@
 ---
 name: git-recovery
-description: >
-  Get a repository out of a state its owner did not intend: lost commits, a
-  `rebase`/`merge`/`cherry-pick` stopped midway and spanning `REBASE_HEAD`,
-  `MERGE_HEAD`, `ORIG_HEAD`, and `--continue`/`--abort`/`--skip`, a
-  force-push that overwrote work, detached `HEAD` carrying commits, a
-  deleted branch, a corrupt index or object store, `clean -xdf` aftermath,
-  broken submodules, an LFS object missing or corrupt in the store. Uses
-  `git reflog --all`, `git fsck --lost-found`, `git cat-file`. Also covers
-  deliberate rewriting with `rebase -i`, `filter-repo`, and `worktree`.
-  Not for: anchoring before a command runs, owned by `git-safety-anchor`;
-  tracing which commit caused a defect, owned by `git-forensics`; and
-  Unity scene and `.meta` handling, owned by `git-unity-repo`.
+description: "Recover a repo from an unintended state: lost commits, half-done rebase/merge/cherry-pick, force-push overwrite, broken index or objects, reflog and fsck. Use when work looks lost or git is stuck."
+user-invocable: false
 ---
 
 # Git Recovery — Unintended States, Lost Work, and Deliberate History Rewriting
+
+**Not for:** anchoring before a command runs, owned by `git-safety-anchor`; tracing which commit caused a defect, owned by `git-forensics`; and Unity scene and `.meta` handling, owned by `git-unity-repo`.
 
 ## Bundled resources
 
@@ -58,7 +50,7 @@ Act as the repository repair specialist for the devops track — the skill reach
 9. **Keep deliberate rewriting separate from repair** — `rebase -i`, `filter-repo` and `merge --squash` share instruments with recovery but not intent; they run only on an explicit request, at the blast radius `git-safety-anchor` assigned, per [history-surgery.md](references/history-surgery.md).
 10. **Prefer `git filter-repo` over `git filter-branch`** — upstream documents `filter-branch` as slow and dangerous with subtle failure modes and steers users to `filter-repo`, so reaching for the deprecated tool is a defect rather than a preference.
 11. **Verify the repaired state against what the requester said they wanted** — compare the resulting shas and branch positions to the stated intent and report both; a repair that merely stopped erroring is not a repair that succeeded.
-12. **Report in English** — per `language-and-comments.md`'s Working language section, and write any commit message made during the repair per `commit-message.md`.
+12. **Report in English** — per `csharp.md`'s Working language section, and write any commit message made during the repair per skill `git-commit`.
 13. **Return blocked when the intended state was never stated** — "put it back how it was" has several readings once a rebase is involved, and guessing between them can discard the very commits the requester wanted kept.
 
 ## 5. Specific goals / tasks this skill performs

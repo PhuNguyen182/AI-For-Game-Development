@@ -1,21 +1,12 @@
 ---
 name: source-credibility-grading
-description: >
-  Trust rubric for external sources feeding a research report. Grades each
-  claim T1 first-party docs and specs, T2 a maintained repository's own
-  README, source, release notes and LICENSE file, T3 an established forum
-  answer with visible consensus, T4 rejected — content farms, undated
-  tutorials, AI-generated listicles, marketing pages. Adds staleness checks
-  against the project's engine version, Obsolete-attribute API detection,
-  and a conflict rule that settles docs versus forum by claim type, not
-  upvotes. Use before any claim enters a report. Not for: finding the
-  sources, owned by `technology-scouting-sweep`; testing a candidate
-  against project constraints, owned by `practical-fit-screening`; ranking
-  candidates, owned by `solution-comparison-report`; measuring one, owned
-  by `rd-engineer`.
+description: "Grade external sources T1 official docs, T2 maintained repo, T3 forum consensus, T4 unverified; date every claim; resolve conflicts by tier. Use before any claim enters a research report."
+user-invocable: false
 ---
 
 # Source Credibility Grading — deciding which external claims may be acted on
+
+**Not for:** finding the sources, owned by `technology-scouting-sweep`; testing a candidate against project constraints, owned by `practical-fit-screening`; ranking candidates, owned by `solution-comparison-report`; measuring one, owned by `rd-engineer`.
 
 ## 1. Objective
 Guarantee that every fact in a research report is attributable, dated and strong enough for its job, so a recommendation cannot rest on a content-farm number, an undated tutorial, or a forum answer written against an engine version the project no longer runs. It also settles the case that quietly produces wrong recommendations: an official page and a popular forum thread that disagree.

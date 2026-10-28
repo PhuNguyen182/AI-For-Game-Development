@@ -66,5 +66,5 @@ implementing.
 |---|---|---|
 | Extend `TileTemplate` | Customises how Unity generates `Tile` assets *from* a texture during the Tile Set Importer flow, rather than what a tile does once created | [Tile Template asset](https://docs.unity3d.com/Manual/tilemaps/tile-palettes/tile-template-asset.html) |
 
-Name custom tiles and brushes per `naming-convention.md` — they become project
+Name custom tiles and brushes per `csharp-standards` → `naming-convention.md` — they become project
 assets other people select from a dropdown, so the name is the whole interface.

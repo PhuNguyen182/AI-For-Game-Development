@@ -92,7 +92,7 @@ namespace Game.Client.Layout
 ```
 
 The arrival test compares squared distances rather than calling
-`Vector3.Distance`, per `performance-and-algorithms.md`'s Core principle
+`Vector3.Distance`, per `csharp-standards` → `performance-and-algorithms.md`'s Core principle
 section — this method runs every frame the node is animating.
 
 ## Animating layout properties instead of objects
@@ -109,4 +109,4 @@ sweep objects along a curve (see [radial-curve-and-shape-layouts.md](radial-curv
 | Use when | Objects enter, leave, or swap places | The formation as a whole must travel, rotate, or breathe | [Animators](https://www.flexalon.com/docs/animators) |
 
 Both are legitimate; the second is the one to profile before shipping, per
-`performance-and-algorithms.md`'s Verification section.
+`csharp-standards` → `performance-and-algorithms.md`'s Verification section.

@@ -4,7 +4,7 @@ Sources: [Microsoft Learn — Identifier names](https://learn.microsoft.com/en-u
 
 ## Relationship to other rules
 
-This file owns architecture-level design principles, correctness/safety boundaries, and submission handoff. Mechanical style — explicit access modifiers, brace/indentation layout, statement shape, and modern-operator preference — is governed by the sibling file `code-style-and-layout.md`; read both before writing any code, they are not substitutes for each other.
+This file owns architecture-level design principles, correctness/safety boundaries, and submission handoff. Mechanical style — explicit access modifiers, brace/indentation layout, statement shape, and modern-operator preference — is governed by the sibling file `csharp-standards` → `code-style-and-layout.md`; read both before writing any code, they are not substitutes for each other.
 
 ## Shared Core integrity
 
@@ -63,7 +63,7 @@ Every method body should read at one consistent level of abstraction. Don't mix 
 
 - Always qualify access to an instance field, property, method, or event with `this.` (e.g. `this.health -= damage;`, `this.Attack();`, `this.OnDamaged?.Invoke();`) — never omit it, even when there's no naming collision to disambiguate.
 - This is a deliberate project convention and intentionally diverges from the common C# style-guide default of omitting `this.` unless required for disambiguation. Reason: it makes instance-member access visually distinct from local variables, parameters, and static members at a glance — valuable in Unity's MonoBehaviour-heavy code, where a local variable inside a long `Update()`/coroutine body frequently shares a similar name with a field.
-- Applies uniformly regardless of the `_camelCase` prefix already used for private fields (see `naming-convention.md`) — the two conventions stack, they don't replace each other.
+- Applies uniformly regardless of the `_camelCase` prefix already used for private fields (see `csharp-standards` → `naming-convention.md`) — the two conventions stack, they don't replace each other.
 - Does not apply to static members — `this` cannot qualify a static member; use the type name for those, per standard C# rules.
 
 ## `var` and LINQ
@@ -133,7 +133,7 @@ they don't look like external input:
 
 **Plain C# reference types** (`Game.Core.*` types, interfaces, records, `string`, and any other type that
 does not derive from `UnityEngine.Object`) use the `is null`/`is not null` pattern rather than an explicit
-`==`/`!=` comparison — per the modern-operator preference in `code-style-and-layout.md`:
+`==`/`!=` comparison — per the modern-operator preference in `csharp-standards` → `code-style-and-layout.md`:
 
 ```csharp
 if (this.combatState is not null)

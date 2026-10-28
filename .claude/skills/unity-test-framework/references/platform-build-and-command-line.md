@@ -4,7 +4,7 @@ Sources: [Test Framework command line arguments](https://docs.unity3d.com/Packag
 Covers: SKILL.md §4 — **"Scope a CI run with filters, and pair the run flag with batch mode"**.
 
 How a run is scoped, where it executes, and what it writes out. Producing a
-real platform build is `build-run-engineer`'s work on the GD's explicit
+real platform build is `build-release-engineer`'s work on the GD's explicit
 request — everything here is the configuration that role executes, not an
 instruction to run it from this skill.
 

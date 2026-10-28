@@ -7,7 +7,7 @@ Two tools that answer questions no Profiler module can. The Frame Debugger
 explains a draw-call sequence and never times it; the Profile Analyzer turns
 many frames into one defensible figure. Fixing what either reveals — batching
 setup, material variants, GPU instancing — is `unity-urp-rendering`'s and
-`unity-engineer`'s work.
+`unity-performance-engineer`'s work.
 
 ## Frame Debugger
 

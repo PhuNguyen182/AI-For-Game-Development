@@ -9,7 +9,7 @@ impacts. That asymmetry is the entire reason to choose it — instant
 acceleration and direction change, and a pose that reconciles cleanly against
 `Game.Core.*` input state. Unity documents the component as supported-but-legacy
 from 6.5; it is not `[Obsolete]`, so it remains valid for new work under
-`coding-principles.md`'s Obsolete APIs section, but a Rigidbody character is
+`csharp-standards` → `coding-principles.md`'s Obsolete APIs section, but a Rigidbody character is
 the alternative to weigh when real physical interaction matters.
 
 ## Shape and tuning

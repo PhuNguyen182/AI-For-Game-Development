@@ -29,4 +29,4 @@ is a setup failure rather than a behaviour difference.
 
 A one-off arrangement does not justify a specialised brush — the Default brush
 plus a saved Brush Pick usually expresses it, per KISS in
-`coding-principles.md`.
+`csharp-standards` → `coding-principles.md`.

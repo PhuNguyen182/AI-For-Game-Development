@@ -15,7 +15,7 @@ data.
 | Member | Effect | Use when | Source |
 |---|---|---|---|
 | `abstract class CommandSO : ScriptableObject` with `abstract void Execute()` (+ optional `virtual void Undo()`) | The contract every command implements | An action needs to be queued, logged, or undone rather than called inline | synthesized |
-| `Queue<CommandSO>`/`Stack<CommandSO>` held by an invoker (e.g. `InputCommandInvoker`) | Decouples "what triggers the action" from "what the action does" | Input remapping, replay systems, undo/redo in an editor tool | `coding-principles.md`'s Dependency Inversion section |
+| `Queue<CommandSO>`/`Stack<CommandSO>` held by an invoker (e.g. `InputCommandInvoker`) | Decouples "what triggers the action" from "what the action does" | Input remapping, replay systems, undo/redo in an editor tool | `csharp-standards` → `coding-principles.md`'s Dependency Inversion section |
 | Runtime instance via `ScriptableObject.CreateInstance<TargetedCommandSO>()`, fields set post-creation | A command with per-invocation data (a specific target, a specific amount) rather than fixed config | The same command "kind" needs different data per use, so one designer-authored asset can't hold it | [ScriptableObject.CreateInstance](https://docs.unity3d.com/ScriptReference/ScriptableObject.CreateInstance.html) |
 
 ## Code shape
@@ -69,7 +69,7 @@ and *whether it can be undone*; the actual state change (`MoveBy`, its
 collision resolution, any rule the server must also validate) is called
 through an interface (`ICharacterMotor`) backed by `Game.Core.*` logic — a
 Command SO that computes the movement itself, instead of delegating it,
-reimplements a rule outside Core, per `coding-principles.md`'s Shared Core
+reimplements a rule outside Core, per `csharp-standards` → `coding-principles.md`'s Shared Core
 integrity section. A command created via `CreateInstance` at runtime is a
 plain in-memory object, not a project asset — never `AssetDatabase.CreateAsset`
 it into the project by accident.

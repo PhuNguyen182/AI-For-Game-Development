@@ -1,21 +1,12 @@
 ---
 name: unity-hdrp-rendering
-description: >
-  Technique for configuring HDRP's own systems once HDRP is the confirmed
-  pipeline: the HD Render Pipeline Asset as the feature ceiling with Frame
-  Settings as masks, Volume-driven environment such as Exposure, Fog, Local
-  Volumetric Fog, and Sky, `CustomPassVolume` injection, Diffusion Profiles and
-  the Lit, StackLit, Decal, Fabric, and Hair master stacks, Adaptive Probe
-  Volume enablement, the Water System, and ray and path tracing. Use when HDRP
-  must be configured or a feature silently does nothing. Not for: which
-  pipeline the project is on — `render-pipeline-urp-hdrp`; URP —
-  `unity-urp-rendering`; shader content — `shader-authoring`; post-process
-  authoring — `unity-post-processing`; probe baking — `unity-lighting`;
-  plain `Camera` scripting — `unity-camera-fundamentals`; entity rendering
-  — `unity-entities-graphics`.
+description: "HDRP configuration: pipeline asset and Frame Settings, Volumes (exposure, fog, sky), lighting units, ray tracing toggles, custom passes, cost control. Use once HDRP is the confirmed pipeline."
+user-invocable: false
 ---
 
 # Unity HDRP Rendering — High Definition Render Pipeline Configuration
+
+**Not for:** which pipeline the project is on — `render-pipeline-urp-hdrp`; URP — `unity-urp-rendering`; shader content — `shader-authoring`; post-process authoring — `unity-post-processing`; probe baking — `unity-lighting`; plain `Camera` scripting — `unity-camera-fundamentals`; entity rendering — `unity-entities-graphics`.
 
 ## Bundled resources
 

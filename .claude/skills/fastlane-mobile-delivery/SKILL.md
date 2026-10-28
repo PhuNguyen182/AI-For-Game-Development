@@ -1,20 +1,12 @@
 ---
 name: fastlane-mobile-delivery
-description: >
-  Technique for packaging and signing a Unity mobile build with Fastlane —
-  `Fastfile`, `Appfile`, `Pluginfile`, `platform`/`lane`, the `gradle` action
-  for APK and AAB, `build_app`/`gym` over the Xcode project Unity emits,
-  `cocoapods`, `match`/`sync_code_signing`, `app_store_connect_api_key`,
-  `setup_ci` temporary keychains, `export_method` and `export_options`, and
-  `bundle exec fastlane <platform> <lane>`. Covers keystore and certificate
-  handling on an ephemeral CI agent. Not for: the Unity build itself, owned
-  by `unity-batchmode-cli`; the job that calls the lane, owned by
-  `jenkins-pipeline-authoring`; the tester upload, owned by
-  `firebase-app-distribution`; and store submission and policy, owned by
-  `sdk-platform-engineer`.
+description: "Package and sign Unity mobile builds with Fastlane: Fastfile lanes, gradle for APK/AAB, gym over the Xcode project, match, build numbers, CI keychain. Use when automating mobile packaging or signing."
+user-invocable: false
 ---
 
 # Fastlane Mobile Delivery — packaging and signing Android and iOS
+
+**Not for:** the Unity build itself, owned by `unity-batchmode-cli`; the job that calls the lane, owned by `jenkins-pipeline-authoring`; the tester upload, owned by `firebase-app-distribution`; and store submission and policy, owned by `sdk-platform-engineer`.
 
 ## Bundled resources
 
@@ -44,7 +36,7 @@ Act as the mobile packaging and signing specialist for the devops track, on beha
 - Negative trigger: the job, agent label, credential binding or lock around the lane — that is `jenkins-pipeline-authoring`.
 - Negative trigger: uploading the finished artifact to testers — that is `firebase-app-distribution`.
 - Negative trigger: submitting to a store, store policy, review rules, and obtaining the signing identity in the first place — that is `sdk-platform-engineer`.
-- Negative trigger: a runtime fault in the signed artifact once installed — that is `build-verification-tester`.
+- Negative trigger: a runtime fault in the signed artifact once installed — that is `build-release-engineer`.
 
 ## 4. How to use this skill
 1. **Keep every lane in `fastlane/Fastfile` and make it run identically on a laptop and on CI** — a lane that only works inside the job is untestable before the job runs, and a lane that only works locally is not the thing shipping. Environment differences belong behind `is_ci` and `setup_ci`, per [ci-keychain-and-credentials.md](references/ci-keychain-and-credentials.md), not behind two divergent lanes.

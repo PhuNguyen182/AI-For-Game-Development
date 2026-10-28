@@ -17,7 +17,7 @@ covered in [platform-build-and-command-line.md](platform-build-and-command-line.
 
 **Critical caveat**: the instance members are flagged for future
 obsolescence. Write new tooling against the static equivalents, per
-`coding-principles.md`'s Obsolete APIs section — this is the whole reason to
+`csharp-standards` → `coding-principles.md`'s Obsolete APIs section — this is the whole reason to
 check before copying an older example.
 
 ## Scoping a run

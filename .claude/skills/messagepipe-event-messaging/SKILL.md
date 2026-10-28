@@ -1,24 +1,12 @@
 ---
 name: messagepipe-event-messaging
-description: >
-  MessagePipe — decoupled in-process message dispatch: keyless and keyed
-  `IPublisher<T>` and `ISubscriber<T>`, `IRequestHandler<TRequest,TResponse>`
-  and `IRequestAllHandler`, `IAsyncPublisher` and `IAsyncSubscriber` backed
-  by UniTask for parallel or sequential dispatch, `IBufferedPublisher` and
-  `IBufferedSubscriber` for latest-value replay, filter middleware for
-  cross-cutting behaviour, and `DisposableBag` disposal — registered through
-  `RegisterMessagePipe`. Use for one discrete addressed event reaching
-  systems that must not reference each other, such as an item pickup seen by
-  inventory, UI, and analytics at once. Not for: continuous streams a
-  subscriber composes over time, owned by `r3-reactive-extensions`; the
-  async body of a handler, owned by `unitask-async-programming`; DI
-  registration and lifetime, owned by `vcontainer-dependency-injection`; an
-  event a designer wires between assets in the Inspector, owned by
-  `unity-scriptableobject-architecture`; and cross-process wire contracts,
-  owned by `magiconion-rpc-networking`.
+description: "MessagePipe in-process messaging: keyed/keyless publishers and subscribers, async handlers, request/response, filters, VContainer setup, disposal. Use when features must talk without direct references."
+user-invocable: false
 ---
 
 # MessagePipe — Decoupled In-Process Event Messaging
+
+**Not for:** continuous streams a subscriber composes over time, owned by `r3-reactive-extensions`; the async body of a handler, owned by `unitask-async-programming`; DI registration and lifetime, owned by `vcontainer-dependency-injection`; an event a designer wires between assets in the Inspector, owned by `unity-scriptableobject-architecture`; and cross-process wire contracts, owned by `magiconion-rpc-networking`.
 
 ## 1. Objective
 Replace direct references and `UnityEvent` sprawl between unrelated systems with typed, DI-registered pub/sub and request/response — without leaking a subscription, reaching for a keyed channel that routes nothing, or shipping a bus whose decoupling is undone the first time one subscriber throws.
@@ -38,15 +26,15 @@ Act as the in-process messaging specialist for the client track: the one who des
 - Negative trigger: a message crossing a process or machine boundary — that is `magiconion-rpc-networking`; MessagePipe never leaves the process.
 
 ## 4. How to use this skill
-1. **Model the message as an immutable snapshot of values, never a live reference into the publisher's state** — a `readonly record struct` following `naming-convention.md`'s casing table, per the [MessagePipe documentation](https://github.com/Cysharp/MessagePipe). A payload holding a mutable reference lets any subscriber mutate what the others receive, which reintroduces the coupling the bus exists to remove.
+1. **Model the message as an immutable snapshot of values, never a live reference into the publisher's state** — a `readonly record struct` following `csharp-standards` → `naming-convention.md`'s casing table, per the [MessagePipe documentation](https://github.com/Cysharp/MessagePipe). A payload holding a mutable reference lets any subscriber mutate what the others receive, which reintroduces the coupling the bus exists to remove.
 2. **Choose keyless before keyed, and justify keyed by an actual routing need** — keyless `IPublisher<T>` when the message type alone identifies the channel, keyed only when independent channels of the same shape genuinely need separate routing such as per-player-slot events. A keyed channel with one key is complexity YAGNI already forbids.
 3. **Use request/response only for a genuine query with an answer** — `IRequestHandler<TRequest,TResponse>` is for asking and receiving exactly one typed result. Two systems that are meant to be coupled should take a direct injected interface instead; routing that through the bus hides the dependency without removing it.
 4. **Treat synchronous publish as re-entrant and never publish a message type from inside its own handler** — dispatch runs on the caller's stack, so a handler that republishes re-enters the same dispatch and can recurse without bound. Break the cycle by publishing a different message, or by deferring the second publish.
 5. **Put an exception-boundary filter on any message with multiple independent subscribers** — in synchronous dispatch a throwing handler propagates to the publisher and the remaining subscribers never run, so one failing system silently disables the others. That is the decoupling promise being broken, and a filter is what actually keeps it.
 6. **Reach for `IAsyncPublisher` and `IAsyncSubscriber` only when a handler genuinely awaits, and set the dispatch strategy explicitly** — parallel when handlers are independent, sequential when ordering between them matters. Accepting the default without deciding leaves an ordering assumption nobody wrote down.
 7. **Use `IBufferedPublisher` and `IBufferedSubscriber` for latest-value-on-subscribe semantics** — a settings-changed notification a late-joining panel needs immediately — rather than hand-caching the last value and replaying it, which duplicates the buffer and drifts from it.
-8. **Implement cross-cutting handler behaviour as a filter, not as a copy in each handler** — this is Open/Closed from `coding-principles.md` applied to middleware: a new concern adds a filter instead of editing every subscriber.
-9. **Give every subscription a disposal path, aggregated in a `DisposableBag` when one owner holds several** — an undisposed subscription is the dangling handler `coding-principles.md`'s Event handlers section forbids and `performance-and-algorithms.md`'s Memory discipline section explains the cost of. Enable MessagePipe's optional analyzer so a missing `Dispose()` fails at compile time rather than in a long session.
+8. **Implement cross-cutting handler behaviour as a filter, not as a copy in each handler** — this is Open/Closed from `csharp-standards` → `coding-principles.md` applied to middleware: a new concern adds a filter instead of editing every subscriber.
+9. **Give every subscription a disposal path, aggregated in a `DisposableBag` when one owner holds several** — an undisposed subscription is the dangling handler `csharp-standards` → `coding-principles.md`'s Event handlers section forbids and `csharp-standards` → `performance-and-algorithms.md`'s Memory discipline section explains the cost of. Enable MessagePipe's optional analyzer so a missing `Dispose()` fails at compile time rather than in a long session.
 10. **Ask when it is unclear whether the requirement is one event or an observed value** — the two look alike in a feature description and diverge completely in implementation, so guessing produces either a subject-shaped bus or a per-frame publish storm.
 
 ## 5. Specific goals / tasks this skill performs

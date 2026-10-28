@@ -1,25 +1,12 @@
 ---
 name: unity-transport
-description: >
-  Technique for Unity Transport, `Unity.Networking.Transport` —
-  `NetworkDriver`, `NetworkConnection`, `NetworkEndpoint`, `NetworkPipeline`
-  and its stages such as `ReliableSequencedPipelineStage`,
-  `SimulatorPipelineStage`, `FragmentationPipelineStage`, `NetworkSettings`,
-  `NetworkDriver.Concurrent`, `MultiNetworkDriver`, TLS via
-  `SecureNetworkProtocolParameter`, Unity Relay via `RelayServerData`,
-  `WebSocketNetworkInterface`, and the `Unity.Netcode.NetworkTransport`
-  interop contract. Use when building or debugging a raw driver/pipeline,
-  enabling encryption or Relay, jobifying the driver update loop, or wiring
-  a custom transport into NGO. Not for: `UnityTransport` component Inspector
-  fields or NGO-level state sync — `netcode-for-gameobjects`; which Worlds
-  get a driver and when a connection enters gameplay on the DOTS stack —
-  `netcode-for-entities`; choosing a netcode foundation —
-  `netcode-architecture-decision`; the reconciliation/tick protocol above
-  the wire — `netcode-engineer`; server anti-cheat validation —
-  `netcode-engineer`.
+description: "Unity Transport: NetworkDriver, connections, endpoints, pipelines (reliable, fragmentation, simulator), Relay, WebSockets, jobified update. Use for low-level networking or custom netcode."
+user-invocable: false
 ---
 
 # Unity Transport — Low-Level Networking Driver, Pipelines, Relay, Security
+
+**Not for:** `UnityTransport` component Inspector fields or NGO-level state sync — `netcode-for-gameobjects`; which Worlds get a driver and when a connection enters gameplay on the DOTS stack — `netcode-for-entities`; choosing a netcode foundation — `netcode-architecture-decision`; the reconciliation/tick protocol above the wire — `netcode-engineer`; server anti-cheat validation — `netcode-engineer`.
 
 ## Bundled resources
 
@@ -41,7 +28,7 @@ Read-only context, loaded on demand so SKILL.md itself stays short.
 Wire raw Unity Transport (UTP) networking — driver creation, connections, pipelines, encryption, and Relay — so that the connection lifecycle stays correct across every frame, without the failure modes that stay silent until a real connect/send/disconnect run exposes them: a driver whose `ScheduleUpdate` gets skipped and stalls incoming events, a payload sent on an unreliable pipeline that silently drops under packet loss, a `NetworkDriver.Concurrent` call made outside a job, or unencrypted traffic shipped to a public endpoint.
 
 ## 2. Role
-Act as the Unity Transport implementation specialist for the client track — the tool `netcode-engineer` and `unity-engineer` reach for whenever a feature needs a raw UTP driver, a custom NGO transport, or transport-level concerns (encryption, Relay, packet simulation, WebGL sockets) that sit below NGO's own API. This skill supplies the UTP API surface; it does not decide the sync protocol, the game rule riding on top of it, or NGO's own `NetworkVariable`/Rpc/`NetworkObject` layer.
+Act as the Unity Transport implementation specialist for the client track — the tool `netcode-engineer` and `gameplay-engineer` reach for whenever a feature needs a raw UTP driver, a custom NGO transport, or transport-level concerns (encryption, Relay, packet simulation, WebGL sockets) that sit below NGO's own API. This skill supplies the UTP API surface; it does not decide the sync protocol, the game rule riding on top of it, or NGO's own `NetworkVariable`/Rpc/`NetworkObject` layer.
 
 ## 3. When to invoke this skill
 - Creating or configuring a `NetworkDriver`, binding/listening/connecting, or debugging a stalled or dropped connection.
@@ -62,10 +49,10 @@ Act as the Unity Transport implementation specialist for the client track — th
 3. **Assemble the NetworkPipeline from stages the data actually needs, not by habit** — per [pipelines-reliability-simulation.md](references/pipelines-reliability-simulation.md), pick reliable/fragmented/unreliable stages by payload size and delivery guarantee; never default every send to the reliable pipeline.
 4. **Gate SimulatorPipelineStage behind an Editor or dev-build check** — per [pipelines-reliability-simulation.md](references/pipelines-reliability-simulation.md), it exists to test packet loss/latency/jitter and must never ship in a release build.
 5. **Reach for the Concurrent driver and pipeline API only inside Burst-compiled jobs**, per [jobs-and-concurrent-api.md](references/jobs-and-concurrent-api.md). Escalate to `NetworkDriver.Concurrent`/`MultiNetworkDriver` only once profiling shows the main-thread driver update is the actual bottleneck — don't pre-build the jobified path (YAGNI).
-6. **Enable TLS via SecureNetworkProtocolParameter whenever traffic crosses the public internet**, per [security-and-encryption.md](references/security-and-encryption.md) and `coding-principles.md`'s Shared Core integrity section — never ship gameplay-relevant traffic unencrypted.
+6. **Enable TLS via SecureNetworkProtocolParameter whenever traffic crosses the public internet**, per [security-and-encryption.md](references/security-and-encryption.md) and `csharp-standards` → `coding-principles.md`'s Shared Core integrity section — never ship gameplay-relevant traffic unencrypted.
 7. **Route through Unity Relay's RelayServerData when the topology needs NAT traversal without a public server IP** — per [relay-and-cross-play.md](references/relay-and-cross-play.md), plug the allocation into `NetworkSettings` rather than hand-rolling hole-punching.
 8. **Treat the Unity.Netcode NetworkTransport contract as NGO's integration boundary, never reimplement transport lifecycle in Game.Client code** — a custom transport implements that abstract class's send/poll/disconnect contract and nothing else, per [webgl-and-ngo-integration.md](references/webgl-and-ngo-integration.md).
-9. **Verify with a real multi-client connect, send, and disconnect run before claiming the feature works** — per [diagnostics-and-testing.md](references/diagnostics-and-testing.md) and `performance-and-algorithms.md`'s Verification section, a compile pass is not proof the handshake or pipeline behaves under real conditions.
+9. **Verify with a real multi-client connect, send, and disconnect run before claiming the feature works** — per [diagnostics-and-testing.md](references/diagnostics-and-testing.md) and `csharp-standards` → `performance-and-algorithms.md`'s Verification section, a compile pass is not proof the handshake or pipeline behaves under real conditions.
 10. **Ask netcode-engineer or Technical Architect when reliability guarantees, encryption requirements, or relay-versus-direct topology aren't specified** — these are hard-to-reverse choices that ripple through every pipeline and connection written afterward; flag rather than guess.
 
 ## 5. Specific goals / tasks this skill performs

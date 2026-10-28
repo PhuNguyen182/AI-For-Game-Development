@@ -58,7 +58,7 @@ git config blame.ignoreRevsFile .git-blame-ignore-revs
 ```
 
 The file takes `fsck.skipList` format, and its comment is written in English
-per `language-and-comments.md`'s Working language section:
+per `csharp.md`'s Working language section:
 
 ```
 # Reindent every C# file to Allman braces; no behavioural change.

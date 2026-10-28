@@ -1,22 +1,12 @@
 ---
 name: magiconion-rpc-networking
-description: >
-  Unity-side client of a MagicOnion RPC connection: code-first gRPC where a
-  shared C# interface is the schema — `IService<T>` returning `UnaryResult<T>`
-  for request/response, `StreamingHub<THub,TReceiver>` for bidirectional
-  channels, `MagicOnionClient.Create<T>`, `GrpcChannelx` over
-  `YetAnotherHttpHandler` for HTTP/2 under Unity, receiver callbacks,
-  heartbeats, reconnection. Serialized with MemoryPack, awaited as UniTask. Use
-  it when the backend track is active and MagicOnion is already the chosen
-  transport. Not for: choosing that transport or designing the sync model,
-  owned by `netcode-architecture-decision` and `netcode-engineer`; the DTOs
-  on the wire, owned by `memorypack-serialization`; async body mechanics,
-  owned by `unitask-async-programming`; fanning a received call out
-  in-process, owned by `messagepipe-event-messaging`; and the server
-  implementation, owned by `netcode-engineer`.
+description: "MagicOnion client in Unity: code-first gRPC services, StreamingHub, shared interfaces, YetAnotherHttpHandler/GrpcWebSocket transport, MemoryPack, IL2CPP setup. Use when a project talks to a MagicOnion server."
+user-invocable: false
 ---
 
 # MagicOnion — RPC Client Consumption on the Unity Side
+
+**Not for:** choosing that transport or designing the sync model, owned by `netcode-architecture-decision` and `netcode-engineer`; the DTOs on the wire, owned by `memorypack-serialization`; async body mechanics, owned by `unitask-async-programming`; fanning a received call out in-process, owned by `messagepipe-event-messaging`; and the server implementation, owned by `netcode-engineer`.
 
 ## 1. Objective
 Consume an already-designed MagicOnion service or hub contract from Unity — unary calls, a connected `StreamingHub`, its receiver, and the connection's lifecycle — without redefining the contract client-side, without an un-awaited call swallowing a failure, without leaking a channel, and without a dead connection continuing to look alive.
@@ -38,16 +28,16 @@ Act as the Unity-side RPC client specialist, working against a contract `netcode
 
 ## 4. How to use this skill
 1. **Confirm the transport decision already exists before writing client code** — implementing against MagicOnion presumes it was chosen; if that call has not been made, it belongs to `netcode-architecture-decision`, and reversing it later rewrites every call site rather than one adapter.
-2. **Put the contract in an assembly both the Unity client and the server compile, with no `UnityEngine` reference** — a `Vector3` or any Unity type in a method signature makes the contract uncompilable on the server, which is the same constraint `Game.Core.*` lives under in `naming-convention.md`. Use plain C# types and let each side convert at its own edge.
+2. **Put the contract in an assembly both the Unity client and the server compile, with no `UnityEngine` reference** — a `Vector3` or any Unity type in a method signature makes the contract uncompilable on the server, which is the same constraint `Game.Core.*` lives under in `csharp-standards` → `naming-convention.md`. Use plain C# types and let each side convert at its own edge.
 3. **Never redefine the interface client-side** — `MagicOnionClient.Create<T>()` targets the exact interface the server implements, and a parallel client-only copy drifts without any error until a call silently deserializes into the wrong shape.
-4. **Use `GrpcChannelx` over `YetAnotherHttpHandler` rather than the retired `Grpc.Core` native library**, per the [MagicOnion documentation](https://github.com/Cysharp/MagicOnion) — Unity's stock HTTP stack does not speak HTTP/2, and `Grpc.Core` is end-of-life, which `coding-principles.md`'s Obsolete APIs rule bans new code against. Confirm which packages the project actually has before writing the connection code.
+4. **Use `GrpcChannelx` over `YetAnotherHttpHandler` rather than the retired `Grpc.Core` native library**, per the [MagicOnion documentation](https://github.com/Cysharp/MagicOnion) — Unity's stock HTTP stack does not speak HTTP/2, and `Grpc.Core` is end-of-life, which `csharp-standards` → `coding-principles.md`'s Obsolete APIs rule bans new code against. Confirm which packages the project actually has before writing the connection code.
 5. **Choose by who initiates: `IService<T>` when the client asks, `StreamingHub` when the server pushes** — do not hold a hub open for a one-off request a unary call covers, and do not poll a unary call for updates a receiver callback would deliver the moment they happen.
 6. **Await every `UnaryResult<T>`** — an un-awaited call is fire-and-forget with its exception swallowed, so a failing RPC surfaces later as a gameplay bug with no network evidence attached. Cancellation and retry around the await follow `unitask-async-programming`.
-7. **Own the channel and hub lifecycle at explicit, matched points** — created at login or scene load, disposed at logout, `OnDestroy`, and app quit, including early-return paths, per the `IDisposable` discipline in `coding-principles.md`'s Exception handling section. An undisposed channel holds a live socket.
+7. **Own the channel and hub lifecycle at explicit, matched points** — created at login or scene load, disposed at logout, `OnDestroy`, and app quit, including early-return paths, per the `IDisposable` discipline in `csharp-standards` → `coding-principles.md`'s Exception handling section. An undisposed channel holds a live socket.
 8. **Confirm which synchronization context a receiver callback runs on before touching any `UnityEngine` API inside it** — a Unity API call off the main thread throws, and the exception surfaces inside the network stack rather than at the code that caused it. If the context is not the main thread, marshal first.
 9. **Keep `TReceiver` a thin adapter with no gameplay decisions in it** — forward a discrete notification into `messagepipe-event-messaging` and a continuously-observed value into `r3-reactive-extensions`. The receiver's job is "a call arrived", not "here is what the game does about it".
 10. **Enable heartbeats and define what a disconnect does** — a TCP connection that dies without a FIN stays "connected" until something writes to it, so without a heartbeat the client sits in a hub that will never deliver another message. State the backoff and the player-visible state; silent infinite retry is not a strategy.
-11. **Validate every server response where it is consumed** — a network message is exactly the boundary `coding-principles.md`'s Correctness boundaries section requires validation at, and trusting it by construction assumes the server is never lagged, rolled back, or wrong.
+11. **Validate every server response where it is consumed** — a network message is exactly the boundary `csharp-standards` → `coding-principles.md`'s Correctness boundaries section requires validation at, and trusting it by construction assumes the server is never lagged, rolled back, or wrong.
 12. **Escalate a missing contract method instead of inventing one** — if the call the client needs does not exist on the interface, that is a contract change for `netcode-engineer`, not a client-side addition.
 
 ## 5. Specific goals / tasks this skill performs
@@ -97,7 +87,7 @@ Act as the Unity-side RPC client specialist, working against a contract `netcode
 - Never redefine the service or hub interface client-side — it must be the same contract the server compiles, or calls deserialize into the wrong shape with no error.
 - Never put a `UnityEngine` type in a contract signature — the server cannot compile it, and the break appears on their build, not yours.
 - Never leave a `UnaryResult<T>` un-awaited — the failure is swallowed and resurfaces as an unexplained gameplay bug.
-- Never write new code against `Grpc.Core` — it is end-of-life, and `coding-principles.md`'s Obsolete APIs rule forbids it.
+- Never write new code against `Grpc.Core` — it is end-of-life, and `csharp-standards` → `coding-principles.md`'s Obsolete APIs rule forbids it.
 - Never leave a channel or hub undisposed on any path, including early returns — each one holds a live socket.
 - Never touch a `UnityEngine` API in a receiver callback without confirming the context — off the main thread it throws from inside the network stack.
 - Never treat a server response as trusted by construction — validate it where it is consumed.

@@ -1,21 +1,12 @@
 ---
 name: solution-comparison-report
-description: >
-  Turns screened candidates into one dated, sourced recommendation. Fixes
-  comparison axes before the matrix is filled, names the single deciding
-  axis, picks the practical optimum for today, names the runner-up with the
-  condition that would flip the call, separates documented claims from
-  unmeasured ones, pins the recommendation to a version, and routes by what
-  it commits the project to: `cto` for a hard-to-reverse or paid bet,
-  `rd-engineer` for a spike, `technical-architect` for a Tech Spec. Use once
-  candidates pass screening. Not for: finding candidates, owned by
-  `technology-scouting-sweep`; grading sources, owned by
-  `source-credibility-grading`; the adoption gates, owned by
-  `practical-fit-screening`; scoring a strategic bet, owned by
-  `tco-reversibility-scoring`.
+description: "Turn screened candidates into one dated, sourced recommendation: fixed axes, the deciding axis, runner-up and its winning condition, staleness trigger. Use when 2+ candidates survive screening."
+user-invocable: false
 ---
 
 # Solution Comparison Report — ranking screened candidates into one recommendation
+
+**Not for:** finding candidates, owned by `technology-scouting-sweep`; grading sources, owned by `source-credibility-grading`; the adoption gates, owned by `practical-fit-screening`; scoring a strategic bet, owned by `tco-reversibility-scoring`.
 
 ## 1. Objective
 Produce a recommendation someone can act on: one option, the reason it wins, the runner-up, and the condition that would change the answer — without manufacturing a winner where the candidates genuinely tie, presenting an unmeasured claim as measured, or letting a recommendation read as current a year after the picture was taken.

@@ -1,22 +1,12 @@
 ---
 name: anti-cheat-strategy
-description: >
-  Strategic framework for choosing a competitive game's anti-cheat posture
-  across four tiers — server authority against the Shared Core, server-side
-  statistical or heuristic detection, user-mode client anti-tamper, and
-  kernel-level drivers such as Easy Anti-Cheat, BattlEye, or Vanguard —
-  weighing cheating stakes against Steam Deck and Proton compatibility,
-  console certification, and player-trust cost. Use when asked how much
-  anti-cheat the game needs, or when a repeated exploit escalation turns
-  out to be a posture gap rather than one bug. Not for: writing a
-  specific server-side validation check, owned by
-  `netcode-engineer`; sync model choice, owned by
-  `netcode-architecture-decision`; the scoring rubric in
-  `tco-reversibility-scoring`; platform-expansion cost, owned by
-  `cross-platform-expansion-assessment`.
+description: "Choose a game's anti-cheat posture: server authority, server-side detection, client anti-tamper, kernel drivers (EAC, BattlEye) — stakes vs Steam Deck/console and player trust. Use when sizing anti-cheat or a recurring exploit is a posture gap."
+user-invocable: false
 ---
 
 # Anti-Cheat Strategy — posture tier for a competitive game
+
+**Not for:** writing a specific server-side validation check, owned by `netcode-engineer`; sync model choice, owned by `netcode-architecture-decision`; the scoring rubric in `tco-reversibility-scoring`; platform-expansion cost, owned by `cross-platform-expansion-assessment`.
 
 ## 1. Objective
 Decide how much anti-cheat a game actually needs, so the posture is a scored call against real stakes and real platform constraints — not the reflex of buying the strongest available tier, and not the opposite failure of assuming server authority alone closes cheat classes it structurally cannot touch.
@@ -45,7 +35,7 @@ Act as a security-minded CTO who has shipped competitive multiplayer titles and 
 9. **Score the surviving tiers with `tco-reversibility-scoring`** — kernel-level anti-cheat rates Low reversibility, because removing it after a visible cheating wave reads publicly as surrender regardless of the engineering reason.
 10. **Frame the outcome for the GD in product terms whenever it touches a platform commitment, ongoing vendor cost, or player trust** — those are the GD's calls to make, not the CTO's to settle alone.
 11. **Record the chosen posture as a durable standard** via `engineering-standard-adr-authoring` — the floor that `netcode-engineer` build against must outlive the conversation that set it.
-12. **Write the decision and its reasoning in English**, per `language-and-comments.md`'s Working language section — only the closing reply to the GD is Vietnamese.
+12. **Write the decision and its reasoning in English**, per `csharp.md`'s Working language section — only the closing reply to the GD is Vietnamese.
 13. **Ask before deciding when the GDD leaves platform commitments, competitive stakes, or economy design open** — mark the tier provisional on the missing input rather than choosing around an assumed one.
 
 ## 5. Specific goals / tasks this skill performs

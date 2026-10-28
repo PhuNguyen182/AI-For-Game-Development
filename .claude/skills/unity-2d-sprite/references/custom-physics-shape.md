@@ -36,4 +36,4 @@ the shape belongs to `unity-2d-physics`, not here.
 **Critical caveat**: a traced polygon is not automatically the right answer.
 When the silhouette is roughly convex, a `BoxCollider2D` or `CircleCollider2D`
 configured in `unity-2d-physics` is both simpler and cheaper than any
-sprite-derived polygon, per `performance-and-algorithms.md`'s Physics section.
+sprite-derived polygon, per `csharp-standards` → `performance-and-algorithms.md`'s Physics section.

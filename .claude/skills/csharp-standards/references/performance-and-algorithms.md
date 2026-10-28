@@ -2,7 +2,7 @@
 
 ## Relationship to other rules
 
-This file governs **algorithm and data-structure selection, memory-lifetime discipline, and Unity engine-specific optimization technique**, for all client-track code (`Game.Core.*` and `Game.Client.*`). It complements, not replaces, the baseline hot-path hygiene already required by `coding-principles.md`'s "Performance discipline" section (no per-frame allocations in `Update()`, caching `GetComponent<T>()`, pooling `UnityEngine.Object` instances, platform abstraction) — that section is the non-negotiable floor; this file goes further into engine-specific technique and CS-fundamentals discipline. `unity-performance-engineer` owns deep, escalated, measured optimization work beyond the baseline expected here — this file is the baseline every submission is expected to meet before it ever needs to reach that escalation.
+This file governs **algorithm and data-structure selection, memory-lifetime discipline, and Unity engine-specific optimization technique**, for all client-track code (`Game.Core.*` and `Game.Client.*`). It complements, not replaces, the baseline hot-path hygiene already required by `csharp-standards` → `coding-principles.md`'s "Performance discipline" section (no per-frame allocations in `Update()`, caching `GetComponent<T>()`, pooling `UnityEngine.Object` instances, platform abstraction) — that section is the non-negotiable floor; this file goes further into engine-specific technique and CS-fundamentals discipline. `unity-performance-engineer` owns deep, escalated, measured optimization work beyond the baseline expected here — this file is the baseline every submission is expected to meet before it ever needs to reach that escalation.
 
 ## Core principle — measured, practical performance over theoretical purity
 
@@ -21,31 +21,31 @@ Whichever case it is — listed here or not — never adopt a "faster in theory,
 
 - Default to `List<T>` for sequential/iteration-heavy access. Avoid `LinkedList<T>` in hot paths — its node-based layout defeats cache locality, and its theoretical insertion/removal advantage rarely pays off against an array-backed structure's cache-friendly iteration in practice.
 - Use `Dictionary<TKey, TValue>`/`HashSet<T>` for O(1) average lookups, but be aware of hashing overhead on small, bounded key sets in a hot path — a small `List<T>` linear scan or a switch/array-indexed lookup can outperform a dictionary below a certain N. Verify with a measurement before assuming the dictionary wins.
-- Prefer `struct` (or `readonly record struct`) for small, short-lived, frequently-allocated value types (e.g. a `DamageInfo`) to avoid heap allocation and GC pressure — but be deliberate: a large struct copied repeatedly by value can cost more in copy overhead than the GC pressure it avoids. Pass larger structs by `in`/`ref readonly` where the project's confirmed C# language version supports it (see the Modern C# syntax caveat in `coding-principles.md`).
+- Prefer `struct` (or `readonly record struct`) for small, short-lived, frequently-allocated value types (e.g. a `DamageInfo`) to avoid heap allocation and GC pressure — but be deliberate: a large struct copied repeatedly by value can cost more in copy overhead than the GC pressure it avoids. Pass larger structs by `in`/`ref readonly` where the project's confirmed C# language version supports it (see the Modern C# syntax caveat in `csharp-standards` → `coding-principles.md`).
 - Use `Span<T>`/`ReadOnlySpan<T>` to slice/iterate a buffer without allocating a new array or copy, where the project's confirmed C# language/runtime version supports it.
 
 ## Memory discipline
 
 - No unbounded growth: a collection that grows over the game's lifetime without a defined release point is a leak in progress — pool it, cap it, or explicitly clear it at a defined lifecycle boundary.
-- Every subscribed event, every started coroutine, every rented pooled object must have a matching unsubscribe/stop/return (this is required by `coding-principles.md`'s Correctness boundaries section — this file states the memory-safety reason behind it: an un-unsubscribed handler keeps the whole reference graph behind it alive).
+- Every subscribed event, every started coroutine, every rented pooled object must have a matching unsubscribe/stop/return (this is required by `csharp-standards` → `coding-principles.md`'s Correctness boundaries section — this file states the memory-safety reason behind it: an un-unsubscribed handler keeps the whole reference graph behind it alive).
 - Avoid capturing large closures in long-lived delegates/lambdas — a captured reference to a MonoBehaviour or a large collection inside a delegate stored on a long-lived object keeps that entire graph alive for as long as the delegate exists.
-- Pool anything instantiated/destroyed at high frequency. `coding-principles.md` already mandates this for `UnityEngine.Object` instances (projectiles, VFX, enemies); this file extends the same principle to any C# object with non-trivial construction cost, not just Unity objects.
+- Pool anything instantiated/destroyed at high frequency. `csharp-standards` → `coding-principles.md` already mandates this for `UnityEngine.Object` instances (projectiles, VFX, enemies); this file extends the same principle to any C# object with non-trivial construction cost, not just Unity objects.
 - Don't retain references longer than their scope needs, especially anything reachable from a static field or a singleton service — a static reference is a guaranteed leak for the lifetime of the process, not just a temporary one.
 
 ## Algorithmic complexity discipline
 
 - Know the time and space complexity of any non-trivial function you write. When it isn't obvious from the code, state it in a comment (per the comment-depth policy in rule `csharp.md`) — an O(n²) nested loop over gameplay entities should be a deliberate, documented choice, not an accident nobody noticed.
 - For any system that scales with player count, entity count, or inventory size, actively avoid quadratic-or-worse behavior once N is unbounded by design (entity-vs-entity checks, inventory search, etc.) — use spatial partitioning, indexing, or an explicitly bounded/capped N instead of a naive nested loop once N can plausibly grow past a small constant.
-- Don't over-engineer for an N that structurally cannot grow — a fixed 4-slot ability bar doesn't need a hash-indexed lookup; a linear scan over 4 elements is both simpler (see KISS in `coding-principles.md`) and faster in practice than any "smarter" structure's overhead.
+- Don't over-engineer for an N that structurally cannot grow — a fixed 4-slot ability bar doesn't need a hash-indexed lookup; a linear scan over 4 elements is both simpler (see KISS in `csharp-standards` → `coding-principles.md`) and faster in practice than any "smarter" structure's overhead.
 
 ## Unity-specific optimization techniques
 
-Baseline engine-level technique expected from routine client-track work, on top of the CS-fundamentals discipline above and the hot-path hygiene already required by `coding-principles.md`.
+Baseline engine-level technique expected from routine client-track work, on top of the CS-fundamentals discipline above and the hot-path hygiene already required by `csharp-standards` → `coding-principles.md`.
 
 ### Update loop & callback overhead
-- **Never leave an empty Unity magic method on a MonoBehaviour** — `Update()`, `FixedUpdate()`, `LateUpdate()`, `OnGUI()`, `OnCollisionEnter()`/`OnTriggerEnter()`, etc. Unity's native engine detects which magic methods a script defines and registers a native→managed callback for every instance that has one; an empty body still pays that per-instance, per-frame (or per-event) transition cost. Delete any magic method whose body is empty — don't leave it as a stub "in case it's needed later" (also see YAGNI in `coding-principles.md`).
+- **Never leave an empty Unity magic method on a MonoBehaviour** — `Update()`, `FixedUpdate()`, `LateUpdate()`, `OnGUI()`, `OnCollisionEnter()`/`OnTriggerEnter()`, etc. Unity's native engine detects which magic methods a script defines and registers a native→managed callback for every instance that has one; an empty body still pays that per-instance, per-frame (or per-event) transition cost. Delete any magic method whose body is empty — don't leave it as a stub "in case it's needed later" (also see YAGNI in `csharp-standards` → `coding-principles.md`).
 - At high object counts, prefer a single centralized manager that iterates a plain `List<T>` of registered objects and calls their update logic directly, instead of giving each object its own MonoBehaviour `Update()`. This collapses N native→managed transitions into one, and keeps the actual hot loop entirely in managed code where the JIT/IL2CPP can optimize it. Reserve this pattern for cases where the object count is actually large enough to matter (hundreds+) — for a handful of objects, per-object `Update()` is simpler and the transition cost is negligible (see KISS).
-- `foreach` over a concrete `List<T>`/array does not allocate (struct enumerator). `foreach` over an interface-typed reference (`IEnumerable<T>`, `IList<T>`) or a LINQ-produced sequence boxes the enumerator and allocates on every iteration — prefer the concrete collection type in hot paths, consistent with the existing "no LINQ in hot paths" rule in `coding-principles.md`.
+- `foreach` over a concrete `List<T>`/array does not allocate (struct enumerator). `foreach` over an interface-typed reference (`IEnumerable<T>`, `IList<T>`) or a LINQ-produced sequence boxes the enumerator and allocates on every iteration — prefer the concrete collection type in hot paths, consistent with the existing "no LINQ in hot paths" rule in `csharp-standards` → `coding-principles.md`.
 
 ### Scripting & GC
 - Cache `Camera.main` in `Awake()`/`Start()` instead of re-accessing it in `Update()` or other hot paths — repeated lookups carry overhead that a single cached reference avoids entirely.
@@ -81,16 +81,16 @@ Baseline engine-level technique expected from routine client-track work, on top 
 - Never call `GC.Collect()` in gameplay hot paths. Forcing a full collection defeats the incremental scheduler and causes exactly the stall it exists to avoid — the fix for allocation pressure is to stop allocating (pooling, struct reuse, avoiding boxing), not to force more frequent collection.
 
 ### Multithreading — escalation territory, not a routine default
-- The Job System + Burst Compiler is the right tool for genuinely parallelizable, CPU-bound bulk work (large-scale simulation, batched pathfinding, etc.) — but most Unity APIs are main-thread-only, and introducing Job System/Burst/DOTS is an architecture-level decision with real added complexity, not a routine optimization. This is `technical-architect`'s call once profiling shows a genuinely CPU-bound, parallelizable bottleneck — don't reach for it as a first-pass default (see KISS/YAGNI in `coding-principles.md`).
+- The Job System + Burst Compiler is the right tool for genuinely parallelizable, CPU-bound bulk work (large-scale simulation, batched pathfinding, etc.) — but most Unity APIs are main-thread-only, and introducing Job System/Burst/DOTS is an architecture-level decision with real added complexity, not a routine optimization. This is `technical-architect`'s call once profiling shows a genuinely CPU-bound, parallelizable bottleneck — don't reach for it as a first-pass default (see KISS/YAGNI in `csharp-standards` → `coding-principles.md`).
 
 ## Verification
 
 - Any claimed performance improvement — in code review, in a handoff note, or in an Implementation Note — must be backed by a measurement (Unity Profiler frame time/allocations, or a micro-benchmark), not asserted from Big-O alone.
-- When there's no measured evidence that added complexity pays off, default to the simpler version. This doesn't override KISS/YAGNI in `coding-principles.md` — it's the same principle applied specifically to algorithm and data-structure choice.
+- When there's no measured evidence that added complexity pays off, default to the simpler version. This doesn't override KISS/YAGNI in `csharp-standards` → `coding-principles.md` — it's the same principle applied specifically to algorithm and data-structure choice.
 
 ## Rules
 
-- No per-frame heap allocations, no unnecessary boxing, no LINQ in hot paths — already required by `coding-principles.md`; this file adds the reasoning (allocation and GC pressure) and extends it to algorithm/data-structure choice generally, not just `Update()`-loop code.
+- No per-frame heap allocations, no unnecessary boxing, no LINQ in hot paths — already required by `csharp-standards` → `coding-principles.md`; this file adds the reasoning (allocation and GC pressure) and extends it to algorithm/data-structure choice generally, not just `Update()`-loop code.
 - Prefer the runtime's built-in, well-tested collection/algorithm implementations over hand-rolled ones unless a specific, measured case proves otherwise.
 - Every complexity/practicality trade-off claim ships with a measurement, not just an assertion.
-- Stay scoped to what the Tech Spec actually needs — don't add a low-level optimization nobody asked for at the cost of readability, unless a measured problem justifies it (see `unity-engineer`'s own agent file for when a problem is deep enough to warrant that trade-off).
+- Stay scoped to what the Tech Spec actually needs — don't add a low-level optimization nobody asked for at the cost of readability, unless a measured problem justifies it (see `gameplay-engineer`'s own agent file for when a problem is deep enough to warrant that trade-off).

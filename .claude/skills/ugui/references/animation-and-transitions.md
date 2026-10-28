@@ -40,6 +40,6 @@ without re-targeting them onto an `Animator Controller`.
 
 Reach for Animation mode only when Color Tint or Sprite Swap genuinely
 can't express the needed feedback (e.g. a multi-property or staged
-transition) — per KISS in `coding-principles.md`, the simpler transition
+transition) — per KISS in `csharp-standards` → `coding-principles.md`, the simpler transition
 modes cover the large majority of buttons/toggles without the overhead of
 an `Animator Controller` asset per interactive element.

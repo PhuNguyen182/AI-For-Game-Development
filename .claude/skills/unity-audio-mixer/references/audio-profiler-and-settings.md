@@ -52,5 +52,5 @@ overhead.
 
 **Critical caveat**: raising **Max Real Voices** without measuring DSP/
 Streaming CPU first trades a virtualization symptom for a CPU one — treat
-this as a trade-off to measure, per `performance-and-algorithms.md`'s
+this as a trade-off to measure, per `csharp-standards` → `performance-and-algorithms.md`'s
 Verification section, not a free fix.

@@ -32,7 +32,7 @@ without pulling in `UnityEngine`.
 
 **Critical caveat**: `NRandom.Unity`'s Vector/Quaternion/Color methods and
 `SerializableWeightedList<T>` all reference `UnityEngine` — per
-`naming-convention.md`'s namespace boundary, none of this belongs in
+`csharp-standards` → `naming-convention.md`'s namespace boundary, none of this belongs in
 `Game.Core.*`. Author the table/weights in `Game.Client.*` via
 `SerializableWeightedList<T>` for Inspector authoring, but resolve the actual
 gameplay-affecting roll through the same injected `IRandom` that

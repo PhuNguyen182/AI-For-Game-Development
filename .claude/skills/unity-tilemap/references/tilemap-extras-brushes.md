@@ -58,4 +58,4 @@ outside `TilemapCollider2D`'s generation.
 **Critical caveat**: `GridInformation` is a store, not a decision-maker.
 Carrying authoring metadata to the painting layer is its purpose; interpreting
 that metadata as a game rule belongs in `Game.Core.*`, per
-`coding-principles.md`'s Shared Core integrity section.
+`csharp-standards` → `coding-principles.md`'s Shared Core integrity section.

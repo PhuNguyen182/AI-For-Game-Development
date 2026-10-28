@@ -30,7 +30,7 @@ change once the measurement says animation is the problem.
 **Critical caveat**: every row above sounds obviously correct and several are
 wrong for a given scene. A crowd of ten characters is not where transform
 optimisation pays; a crowd of two hundred is. Capture before and after on the
-target device, per `performance-and-algorithms.md`'s Verification section.
+target device, per `csharp-standards` → `performance-and-algorithms.md`'s Verification section.
 
 ## Related behaviour worth knowing
 

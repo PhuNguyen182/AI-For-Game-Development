@@ -39,4 +39,4 @@ new structurally-shared instance. A collection mutated frequently by its own
 single owner should stay `List<T>`/`Dictionary<TKey,TValue>` — adopting
 `System.Collections.Immutable` there trades a real, measurable allocation
 cost for a safety guarantee nothing needs, which is exactly the speculative
-complexity YAGNI forbids in `coding-principles.md`.
+complexity YAGNI forbids in `csharp-standards` → `coding-principles.md`.

@@ -221,7 +221,7 @@ using (FastBufferWriter writer = new FastBufferWriter(1100, Allocator.Temp))
 }
 ```
 
-Register/unregister named handlers the same way an RPC-adjacent event would be managed: subscribe in `OnNetworkSpawn()`, unregister in `OnNetworkDespawn()`, per `coding-principles.md`'s event-subscription lifecycle rule.
+Register/unregister named handlers the same way an RPC-adjacent event would be managed: subscribe in `OnNetworkSpawn()`, unregister in `OnNetworkDespawn()`, per `csharp-standards` → `coding-principles.md`'s event-subscription lifecycle rule.
 
 ### Connection events
 

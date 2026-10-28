@@ -1,21 +1,12 @@
 ---
 name: risk-based-test-planning
-description: >
-  Derive test coverage from a Tech Spec instead of guessing at it —
-  equivalence partitioning, boundary value analysis, decision tables,
-  state-transition coverage, and risk ranking by impact against likelihood.
-  Produces a coverage assignment naming which QA agent owns each case, plus
-  the exit criteria a feature must satisfy before sign-off. Use when
-  scoping QA for a feature, or when choosing which cases a test suite
-  should actually contain. Not for: writing the tests, owned by
-  `unity-test-framework`; playing scenarios by hand, owned by
-  `playtest-scenario-execution`; measuring performance, owned by
-  `performance-budget-verification`; walking the cases on a device, owned
-  by `device-test-walkthrough`; the spec's own acceptance criteria, owned
-  by `technical-architect`.
+description: "Derive coverage from acceptance criteria: equivalence partitions, boundaries, decision tables, state transitions, risk ranking; outputs cases per QA agent and exit criteria. Use when scoping QA or choosing suite cases."
+user-invocable: false
 ---
 
 # Risk-Based Test Planning — coverage derived from the spec, not from intuition
+
+**Not for:** writing the tests, owned by `unity-test-framework`; playing scenarios by hand, owned by `playtest-scenario-execution`; measuring performance, owned by `performance-budget-verification`; walking the cases on a device, owned by `device-test-walkthrough`; the spec's own acceptance criteria, owned by `technical-architect`.
 
 ## 1. Objective
 Replace "test the feature" with a named, finite set of cases that someone can disagree with. Untargeted testing fails in two directions at once: it over-covers the obvious path, where defects were never likely, and leaves boundaries and state transitions untouched, where they cluster. This skill turns a spec into partitions and boundaries so the case list is derived rather than remembered, and ranks what remains by impact so that when time runs out, what gets dropped is a decision instead of an accident.
@@ -41,10 +32,10 @@ Act as the test-design specialist for the QA track, on behalf of `qa-lead` when 
 3. **Test every boundary on both sides, because that is where the defects are** — for a range the cases are the minimum, one below it, the maximum, one above it, and zero or empty where those are representable. Off-by-one errors survive every mid-range test ever written, so a plan without boundary cases has not covered the rule regardless of its case count.
 4. **Build a decision table when an outcome depends on more than one condition** — enumerate the combinations, then cover each distinct outcome rather than every permutation. This is the step that keeps a four-input rule from becoming sixteen tests when it has three behaviours.
 5. **Cover state machines by transition, not by state** — for each state, cover every legal transition out of it, plus the illegal ones the rule must reject. A state reached but never left is untested, and rejection paths are where the unhandled cases live.
-6. **Rank every case by impact against likelihood, and record what the ranking dropped** — impact uses `defect-reporting.md`'s Severity criteria so a plan and a defect report speak the same language. When coverage is cut for time, the plan states what was cut; silent truncation reads downstream as "this was covered".
-7. **Assign each case to the QA agent whose scope actually contains it** — deterministic rule logic to `qa-automation-engineer`, GDD scenarios and feel to `playtest-tester`, budgets to `performance-qa-engineer`, real-artifact behaviour to `build-verification-tester`. A case with no owner is a gap, not an assignment.
-8. **Write exit criteria as evidence, never as effort** — "the boundary cases pass and the playtest report shows the intended pacing" is checkable; "QA has been done" is not. Per `verification-standards.md`, each criterion names what must be observed for the feature to count as verified.
-9. **Scale the plan to the feature's assurance tier**, per `task-classification.md` — an A1/A2 change gets a few lines, an A4/A5 feature gets the full treatment. Speculative coverage of a case the spec does not require is the same waste as speculative code, per `coding-principles.md`'s YAGNI section.
+6. **Rank every case by impact against likelihood, and record what the ranking dropped** — impact uses skill `qa-standards`'s Severity criteria so a plan and a defect report speak the same language. When coverage is cut for time, the plan states what was cut; silent truncation reads downstream as "this was covered".
+7. **Assign each case to the QA agent whose scope actually contains it** — deterministic rule logic to `qa-automation-engineer`, GDD scenarios and feel to `playtest-tester`, budgets to `performance-qa-engineer`, real-artifact behaviour to `build-release-engineer`. A case with no owner is a gap, not an assignment.
+8. **Write exit criteria as evidence, never as effort** — "the boundary cases pass and the playtest report shows the intended pacing" is checkable; "QA has been done" is not. Per skill `qa-standards`, each criterion names what must be observed for the feature to count as verified.
+9. **Scale the plan to the feature's size**, per `routing.md` — an S change gets a few lines, an L feature or a risk-flagged one gets the full treatment. Speculative coverage of a case the spec does not require is the same waste as speculative code, per `csharp-standards` → `coding-principles.md`'s YAGNI section.
 
 ## 5. Specific goals / tasks this skill performs
 - Extracting testable claims from a Tech Spec and returning the untestable ones.
@@ -58,7 +49,7 @@ Act as the test-design specialist for the QA track, on behalf of `qa-lead` when 
 ## 6. Output format
 ```
 ## Test Plan — <feature>
-- Tier: <A1–A5, and the plan depth it justifies>
+- Size: <S | M | L, risk flag, and the plan depth it justifies>
 - Testable claims: <spec clause → the observable outcome it promises>
 - Untestable claims: <clause, and what is missing — or none>
 - Partitions: <input → equivalence classes, and the value chosen from each>
@@ -87,8 +78,8 @@ Act as the test-design specialist for the QA track, on behalf of `qa-lead` when 
 - Output: declined as a plan, though both cases stay in it. A happy path plus a null check covers neither boundary of the cooldown range nor the haste cap, which is where off-by-one and clamping defects actually live; per §4 step 3 a plan without boundary cases has not covered the rule. Produced the derived case list instead and noted that it is finite and reviewable, which "what we usually do" is not.
 
 **Example 3**
-- Input: an A1 fix correcting a typo in a UI label, with a request for a full test plan.
-- Output: a three-line plan, deliberately. Per §4 step 9 the plan scales to the tier, and deriving partitions for a static string would be the bureaucratic overhead `feature-documentation.md` and YAGNI both warn against. Exit criterion is a single visual confirmation, assigned to `playtest-tester`, with the tier stated so the brevity reads as a decision rather than an omission.
+- Input: an S fix correcting a typo in a UI label, with a request for a full test plan.
+- Output: a three-line plan, deliberately. Per §4 step 9 the plan scales to the tier, and deriving partitions for a static string would be the bureaucratic overhead skill `feature-docs` and YAGNI both warn against. Exit criterion is a single visual confirmation, assigned to `playtest-tester`, with the tier stated so the brevity reads as a decision rather than an omission.
 
 ## 8. Edge cases & guardrails
 - Never present a plan as complete while a spec clause remains untestable — return the clause and say the coverage is blocked on it.

@@ -1,24 +1,12 @@
 ---
 name: unity-test-framework
-description: >
-  Technique for Unity's Test Framework package — a customised NUnit
-  integration for Edit Mode and Play Mode tests: test assemblies, `UnityTest`
-  coroutine/async task tests, `UnitySetUp`/`UnityTearDown`,
-  `RequiresPlayMode`, `ConditionalIgnore`, `PrebuildSetup`, `LogAssert`,
-  `Utils` equality comparers, allocation `Constraints`,
-  `MonoBehaviourTest<T>`, the Test Runner window, the `-runTests` CLI, and
-  `TestRunnerApi`. Use when tests must be written, run, or a run scoped with
-  filters. Not for: which cases a suite should contain —
-  `risk-based-test-planning`; the CI job running and publishing results —
-  `jenkins-pipeline-authoring`; the `-runTests` command line itself —
-  `unity-batchmode-cli`; driving a `VisualElement` tree — `ui-toolkit`; the
-  game rules under test — `csharp-engineer`; manual walkthroughs against the
-  GDD — `playtest-tester`; real platform builds — `build-run-engineer`;
-  Profiler measurement — `unity-profiler-diagnostics`; plain NUnit
-  fundamentals — NUnit's own docs.
+description: "Unity Test Framework: Edit/Play Mode test assemblies, UnityTest, setup/teardown, LogAssert, allocation constraints, filters, -runTests, TestRunnerApi. Use when tests must be written or run."
+user-invocable: false
 ---
 
 # Unity Test Framework — Edit Mode, Play Mode, Assertions, CI
+
+**Not for:** which cases a suite should contain — `risk-based-test-planning`; the CI job running and publishing results — `jenkins-pipeline-authoring`; the `-runTests` command line itself — `unity-batchmode-cli`; driving a `VisualElement` tree — `ui-toolkit`; the game rules under test — `csharp-engineer`; manual walkthroughs against the GDD — `playtest-tester`; real platform builds — `build-release-engineer`; Profiler measurement — `unity-profiler-diagnostics`; plain NUnit fundamentals — NUnit's own docs.
 
 ## Bundled resources
 
@@ -40,7 +28,7 @@ Read-only context, loaded on demand so SKILL.md itself stays short.
 Produce tests that fail only when the code is wrong. The failures this prevents are the ones that make a suite worthless: a `Game.Core.*` test that reads real time or unseeded randomness and passes intermittently, a coroutine test parameterized with an attribute the framework silently ignores, a log expectation registered after the code already logged, a float comparison that fails on precision rather than on behaviour, and a setup method assumed to re-run after a domain reload that it does not survive.
 
 ## 2. Role
-Act as the automated-testing specialist for the QA track, testing client-track code — the tool reached for once code has passed Code Review and needs a verification gate. You choose the test kind, the attributes, and the assertions; you do not author the game rules being verified, walk the game manually against the design, or build for a device. `qa-automation-engineer` uses this skill to author and run tests in the Editor; `build-verification-tester` uses only its standalone-Player and command-line surface to run the existing suite against a real build.
+Act as the automated-testing specialist for the QA track, testing client-track code — the tool reached for once code has passed Code Review and needs a verification gate. You choose the test kind, the attributes, and the assertions; you do not author the game rules being verified, walk the game manually against the design, or build for a device. `qa-automation-engineer` uses this skill to author and run tests in the Editor; `build-release-engineer` uses only its standalone-Player and command-line surface to run the existing suite against a real build.
 
 ## 3. When to invoke this skill
 - Creating a test assembly or a test script, and deciding whether it targets Edit Mode, Play Mode, or both.
@@ -52,10 +40,10 @@ Act as the automated-testing specialist for the QA track, testing client-track c
 - Scoping a headless run with filters and producing the NUnit XML report the CI job publishes.
 - Building Editor tooling that drives test runs programmatically.
 - A test is flaky, or passes for a reason nobody can name.
-- Negative trigger: authoring the game rule the test verifies — damage formulas, state machines, economy maths — that is `csharp-engineer`'s Shared Core, per `coding-principles.md`'s Shared Core integrity rule.
+- Negative trigger: authoring the game rule the test verifies — damage formulas, state machines, economy maths — that is `csharp-engineer`'s Shared Core, per `csharp-standards` → `coding-principles.md`'s Shared Core integrity rule.
 - Negative trigger: deciding which cases the suite should contain — partitions, boundaries, decision tables, transition coverage, and what gets dropped for scope — that is `risk-based-test-planning`, owned by `qa-lead`. "Scoping" here means narrowing a run with filters, never deriving the case list.
 - Negative trigger: walking Play Mode by hand and comparing feel against the GDD — that is `playtest-tester`, a different activity that happens to share Play Mode with this one.
-- Negative trigger: producing a real platform build or running several Editor instances — that is `build-run-engineer`, and only on the GD's explicit request. Running the existing suite against an artifact that already exists is `build-verification-tester`, which uses this skill's standalone-Player and command-line coverage.
+- Negative trigger: producing a real platform build or running several Editor instances — that is `build-release-engineer`, and only on the GD's explicit request. Running the existing suite against an artifact that already exists is `build-release-engineer`, which uses this skill's standalone-Player and command-line coverage.
 - Negative trigger: measuring frame time, GC pressure, or memory — that is `unity-profiler-diagnostics`; the allocation constraint here is a pass-or-fail gate, not a measurement.
 - Negative trigger: the CI job that invokes the run, the agent it lands on, and the publisher that turns the NUnit XML into a build result — that is `jenkins-pipeline-authoring`, and the Unity invocation itself is `unity-batchmode-cli`; this skill owns what the tests assert and how the run is scoped, not the job around it.
 - Negative trigger: driving or asserting against a UI Toolkit `VisualElement` tree through the separate UI Test Framework package — that is `ui-toolkit`; this skill owns the assembly, harness and run the test executes in, not that package's own driver surface.
@@ -66,15 +54,15 @@ Act as the automated-testing specialist for the QA track, testing client-track c
 2. **Test `Game.Core.*` in Edit Mode and reserve Play Mode for what needs a running frame loop** — Shared Core has no `UnityEngine` dependency, so it needs no scene, no MonoBehaviour host, and no Play Mode at all, per [getting-started-and-workflows.md](references/getting-started-and-workflows.md) and the version pin in [root-links.md](references/root-links.md). Play Mode is for physics, timing, prefab instantiation and scene state.
 3. **Set up the test assembly and its mode markers before writing the first test** — the assembly's references decide which attributes even compile, and the mode marker decides where each test runs, per [getting-started-and-workflows.md](references/getting-started-and-workflows.md). Splitting assemblies purely to separate the two modes is no longer necessary, so do it only where the project already works that way.
 4. **Pick the attribute from Unity's own catalog rather than assuming an NUnit equivalent applies** — several NUnit attributes are unsupported or throw here, and at least one Unity attribute is absent from the manual's own table while existing in the API, per [attributes-reference.md](references/attributes-reference.md). Check before writing, not after a confusing failure.
-5. **Inject the seed and the clock production code already takes** — a Core test that reads real time or unseeded randomness is not testing determinism, it is concealing a violation of `coding-principles.md`'s Shared Core integrity rule behind a result that will eventually flicker.
-6. **Reach for a coroutine test only when the assertion genuinely spans frames** — a same-frame check wrapped in a frame yield is slower and no more correct, per KISS in `coding-principles.md`. Use the MonoBehaviour test wrapper when completion is naturally a condition rather than a fixed number of frames, per [async-coroutine-and-parameterized-tests.md](references/async-coroutine-and-parameterized-tests.md).
+5. **Inject the seed and the clock production code already takes** — a Core test that reads real time or unseeded randomness is not testing determinism, it is concealing a violation of `csharp-standards` → `coding-principles.md`'s Shared Core integrity rule behind a result that will eventually flicker.
+6. **Reach for a coroutine test only when the assertion genuinely spans frames** — a same-frame check wrapped in a frame yield is slower and no more correct, per KISS in `csharp-standards` → `coding-principles.md`. Use the MonoBehaviour test wrapper when completion is naturally a condition rather than a fixed number of frames, per [async-coroutine-and-parameterized-tests.md](references/async-coroutine-and-parameterized-tests.md).
 7. **Parameterize with the source the chosen test attribute actually supports** — the coroutine attribute accepts only one of the parameterization sources, and the others are ignored rather than rejected, per [async-coroutine-and-parameterized-tests.md](references/async-coroutine-and-parameterized-tests.md). Build cases from static data, since arguments computed at discovery time are unreliable here.
 8. **Settle the execution order before debugging a setup interaction** — the Unity setup and teardown hooks interleave with NUnit's own in a fixed order, and they do not resume the way plain NUnit hooks do after a domain reload, per [execution-order-and-setup-cleanup.md](references/execution-order-and-setup-cleanup.md). Most "the fixture is wrong" reports are this.
 9. **Expect a log before the code under test emits it** — the expectation is checked at frame end and matched in the order logged, so registering it afterwards fails, per [assertions-logging-and-monobehaviour-testing.md](references/assertions-logging-and-monobehaviour-testing.md). An unexpected error log fails the test on its own, which is a feature rather than noise.
 10. **Compare Unity value types through the framework's own comparers** — floats, vectors, quaternions and colours need a tolerance the default equality does not apply, and hand-rolled epsilon checks in every assertion are what the comparers exist to replace.
-11. **Gate a no-allocation claim with an allocation constraint rather than a review note** — it turns `performance-and-algorithms.md`'s hot-path rule into a regression gate that survives the next refactor, which a comment does not.
+11. **Gate a no-allocation claim with an allocation constraint rather than a review note** — it turns `csharp-standards` → `performance-and-algorithms.md`'s hot-path rule into a regression gate that survives the next refactor, which a comment does not.
 12. **Scope a CI run with filters, and pair the run flag with batch mode** — running the whole suite for every change wastes the pipeline's time, and the results file is standard NUnit XML that CI can parse directly, per [platform-build-and-command-line.md](references/platform-build-and-command-line.md).
-13. **Reach for `TestRunnerApi` only for genuine Editor tooling, and only through its static members** — the Test Runner window and the command line cover routine runs, and the instance members are flagged for future obsolescence, per `coding-principles.md`'s Obsolete APIs section and [scripting-api-test-runner-api.md](references/scripting-api-test-runner-api.md).
+13. **Reach for `TestRunnerApi` only for genuine Editor tooling, and only through its static members** — the Test Runner window and the command line cover routine runs, and the instance members are flagged for future obsolescence, per `csharp-standards` → `coding-principles.md`'s Obsolete APIs section and [scripting-api-test-runner-api.md](references/scripting-api-test-runner-api.md).
 14. **Root-cause a flaky test rather than widening its tolerance** — in Core code it almost always means real time or randomness leaked in, and in Play Mode it means an unaccounted frame-timing dependency. A loosened assertion converts a real defect into a test that can no longer find it.
 
 ## 5. Specific goals / tasks this skill performs
@@ -87,7 +75,7 @@ Act as the automated-testing specialist for the QA track, testing client-track c
 - Scoping a headless run and producing the NUnit XML the CI job publishes.
 - Building Editor tooling on `TestRunnerApi`.
 - Writing network-condition cases once the backend track is active, with the same mechanics.
-- Out of scope: the game rules under test (`csharp-engineer`); which cases the suite owes (`risk-based-test-planning`); manual GDD walkthroughs (`playtest-tester`); platform builds and multi-instance runs (`build-run-engineer`, on explicit request only); the CI job and NUnit XML publishing (`jenkins-pipeline-authoring`, `unity-batchmode-cli`); Profiler measurement (`unity-profiler-diagnostics`); the UI Test Framework package's own driver surface (`ui-toolkit`); plain NUnit fundamentals (NUnit's own documentation).
+- Out of scope: the game rules under test (`csharp-engineer`); which cases the suite owes (`risk-based-test-planning`); manual GDD walkthroughs (`playtest-tester`); platform builds and multi-instance runs (`build-release-engineer`, on explicit request only); the CI job and NUnit XML publishing (`jenkins-pipeline-authoring`, `unity-batchmode-cli`); Profiler measurement (`unity-profiler-diagnostics`); the UI Test Framework package's own driver surface (`ui-toolkit`); plain NUnit fundamentals (NUnit's own documentation).
 
 ## 6. Output format
 ```
@@ -128,7 +116,7 @@ Act as the automated-testing specialist for the QA track, testing client-track c
 
 **Example 4**
 - Input: "Can we run this feature's tests on the actual Android build as part of QA?"
-- Output: documented the standalone-Player run and the platform and build-path flags, and split the work — producing the APK is `build-run-engineer`'s territory and needs the GD's explicit request, while running the suite against that artifact once it exists is `build-verification-tester`'s. This skill supplied the configuration for both rather than triggering the build itself.
+- Output: documented the standalone-Player run and the platform and build-path flags, and split the work — producing the APK is `build-release-engineer`'s territory and needs the GD's explicit request, while running the suite against that artifact once it exists is `build-release-engineer`'s. This skill supplied the configuration for both rather than triggering the build itself.
 
 ## 8. Edge cases & guardrails
 - Never let a Core test read real time or unseeded randomness — it hides a determinism violation behind a result that eventually flickers.
@@ -140,7 +128,7 @@ Act as the automated-testing specialist for the QA track, testing client-track c
 - Never compare floats or Unity value types with default equality — use the framework's comparers, or the test fails on precision instead of behaviour.
 - Never assume the Unity setup hook resumes after a domain reload the way NUnit's does — it does not, and the omission is silent.
 - Never conclude a feature is undocumented because its manual page is missing at this package version — several pages moved onto their API pages, per [root-links.md](references/root-links.md).
-- Never write new tooling against `TestRunnerApi`'s instance members — they are flagged for obsolescence, per `coding-principles.md`'s Obsolete APIs section.
-- Never let scene-search calls used inside test code become a precedent for production code — that idiom is accepted here and banned there by `performance-and-algorithms.md`.
-- Never trigger a platform build or spin up extra Editor instances from this skill — flag the need and hand it to `build-run-engineer`, who acts only on the GD's explicit request.
+- Never write new tooling against `TestRunnerApi`'s instance members — they are flagged for obsolescence, per `csharp-standards` → `coding-principles.md`'s Obsolete APIs section.
+- Never let scene-search calls used inside test code become a precedent for production code — that idiom is accepted here and banned there by `csharp-standards` → `performance-and-algorithms.md`.
+- Never trigger a platform build or spin up extra Editor instances from this skill — flag the need and hand it to `build-release-engineer`, who acts only on the GD's explicit request.
 - Never re-test a repeatedly failing submission without routing it back through Code Review first — a fix that looks small is exactly the one that skips the gate.

@@ -1,26 +1,12 @@
 ---
 name: spine-animation
-description: >
-  spine-unity runtime integration: `SkeletonRenderer`, `SkeletonAnimation`,
-  `SkeletonGraphic`, `SkeletonMecanim`, the `Skeleton`/`AnimationState`/
-  `TrackEntry` API such as `SetAnimation`, `AddAnimation`,
-  `SetEmptyAnimation`, `SetSkin`, `SetupPoseSlots`, `FindBone`, the
-  SpineBone, SpineSlot and SpineAnimation attributes, followers such as
-  `BoneFollower`, `PointFollower`, `BoundingBoxFollower`, `SkeletonUtility`,
-  `SkeletonRootMotion`, `SkeletonRenderSeparator`, `SkeletonRenderTexture`,
-  `SkeletonGhost`, `AtlasUtilities` repacking, the `Spine/*` shader
-  catalog, PMA versus straight alpha, Spine Timeline tracks, and the
-  on-demand-loading/Addressables extension. Not for: non-Spine Mecanim
-  authoring, owned by `unity-animation`; the native Sprite pipeline, owned
-  by `unity-2d-sprite`; 2D physics simulation, owned by `unity-2d-physics`;
-  the Canvas, `RectTransform` and Layout Group hierarchy a
-  `SkeletonGraphic` sits in, owned by `ugui`; writing new shaders, owned by
-  `shader-authoring`; pipeline configuration, owned by
-  `unity-urp-rendering`; particle VFX, owned by `vfx-particle-authoring`;
-  the general Addressables contract, owned by `unity-addressables`.
+description: "spine-unity runtime: SkeletonAnimation/Graphic/Mecanim, AnimationState tracks, skins, attachments, events, bone follow, atlas/material setup, performance. Use on Spine-animated characters or UI."
+user-invocable: false
 ---
 
 # Spine Animation — Unity Runtime Integration
+
+**Not for:** non-Spine Mecanim authoring, owned by `unity-animation`; the native Sprite pipeline, owned by `unity-2d-sprite`; 2D physics simulation, owned by `unity-2d-physics`; the Canvas, `RectTransform` and Layout Group hierarchy a `SkeletonGraphic` sits in, owned by `ugui`; writing new shaders, owned by `shader-authoring`; pipeline configuration, owned by `unity-urp-rendering`; particle VFX, owned by `vfx-particle-authoring`; the general Addressables contract, owned by `unity-addressables`.
 
 ## Bundled resources
 
@@ -76,9 +62,9 @@ Act as the 2D skeletal-animation specialist for the client track — the tool Un
 9. **Use render separation whenever another GameObject must draw between skeleton parts**, per [utility-components.md](references/utility-components.md) — `Separator Slot Names` plus `SkeletonRenderSeparator`, or `SkeletonGraphic`'s built-in `Enable Separation`. A single skeleton's draw order is atomic, so sorting-order tweaks cannot achieve this.
 10. **Use `SkeletonRenderTexture` for a full-skeleton alpha fade, never a per-slot alpha reduction**, per [utility-components.md](references/utility-components.md) — overlapping attachments show through each other below full opacity. Keep the component disabled except while the fade runs; it costs an intermediate render pass.
 11. **On Timeline, order tracks base-first and verify mixing in Play Mode**, per [timeline.md](references/timeline.md) — assign each `Track Index` deliberately for multi-track mixing, and treat the Edit-mode preview as indicative only. `SkeletonMecanim` has no Timeline track support at all.
-12. **Reach for on-demand loading only once a measured build-size or memory problem justifies it**, per [on-demand-loading.md](references/on-demand-loading.md) and `performance-and-algorithms.md`'s Verification section — then install the Addressables extension, mark the textures Addressable, and use the `SpineAtlasAsset`'s "Add Addressables Loader"; no custom loading code is needed for the standard case.
+12. **Reach for on-demand loading only once a measured build-size or memory problem justifies it**, per [on-demand-loading.md](references/on-demand-loading.md) and `csharp-standards` → `performance-and-algorithms.md`'s Verification section — then install the Addressables extension, mark the textures Addressable, and use the `SpineAtlasAsset`'s "Add Addressables Loader"; no custom loading code is needed for the standard case.
 13. **Diagnose a Spine-specific symptom against the FAQ before assuming a generic Unity cause**, per [faq.md](references/faq.md) — dark borders, washed colours, and colourful stripes are almost always a PMA/straight-alpha or Color Space mismatch, and excessive draw calls are almost always multiple atlas pages or alternating slot blend modes.
-14. **Ship the binary `.skel.bytes` export and pool skeleton instances** — pre-warm, then `AnimationState.ClearTracks()` and disable rather than `Destroy()`, per [faq.md](references/faq.md). This is the Spine-specific instance of `performance-and-algorithms.md`'s pooling requirement, not a separate rule.
+14. **Ship the binary `.skel.bytes` export and pool skeleton instances** — pre-warm, then `AnimationState.ClearTracks()` and disable rather than `Destroy()`, per [faq.md](references/faq.md). This is the Spine-specific instance of `csharp-standards` → `performance-and-algorithms.md`'s pooling requirement, not a separate rule.
 15. **If the rendering surface, render pipeline, or alpha workflow is unstated, ask before wiring anything** — surface decides step 1, pipeline and alpha decide step 7, and all three are invisible in code that compiles and renders wrongly only on device.
 
 ## 5. Specific goals / tasks this skill performs

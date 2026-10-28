@@ -1,29 +1,18 @@
 ---
 name: memorypack-serialization
-description: >
-  MemoryPack is zero-encoding binary serialization for C#: the
-  `MemoryPackable` attribute for partial types, `MemoryPackOrder`,
-  `MemoryPackIgnore`, `MemoryPackInclude`, `MemoryPackConstructor`,
-  `MemoryPackOnDeserialized` callbacks, `MemoryPackUnion` polymorphism,
-  and `MemoryPackSerializer.Serialize`/`Deserialize` over `Span<byte>` or
-  `Stream`. No `UnityEngine` dependency, so DTOs are safe inside
-  `Game.Core.*`. Use when defining or changing a type that persists to
-  disk or crosses the network — a save snapshot, a message DTO, a
-  rollback/prediction state — especially when it must stay compatible
-  with data already written. Not for: RPC contract and transport design,
-  owned by `magiconion-rpc-networking`; generators around the DTOs,
-  owned by `source-generator-authoring`; human-readable or
-  designer-authored data, owned by `csvhelper-csv-data`; and text
-  building, owned by `zstring-zero-allocation-strings`.
+description: "MemoryPack binary serialization: MemoryPackable partial types, ordering, version-tolerant mode, formatters, IL2CPP setup. Use for saves, snapshots or network messages needing fast compact serialization."
+user-invocable: false
 ---
 
 # MemoryPack — Zero-Encoding Binary Serialization
+
+**Not for:** RPC contract and transport design, owned by `magiconion-rpc-networking`; generators around the DTOs, owned by `source-generator-authoring`; human-readable or designer-authored data, owned by `csvhelper-csv-data`; and text building, owned by `zstring-zero-allocation-strings`.
 
 ## 1. Objective
 Serialize save snapshots, network DTOs, and rollback state to compact binary through source-generated code — without silently breaking compatibility with data already on disk or in flight, without trusting a deserialized payload that may be corrupt or hostile, and without letting serialization concerns grow into the type's gameplay responsibilities.
 
 ## 2. Role
-Act as the binary-serialization specialist for the client track, and the rare one usable directly inside `Game.Core.*`: MemoryPack's generated code is plain C# with no `UnityEngine` reference, so C# Software Engineer can reach for it without crossing the Shared Core boundary that `coding-principles.md`'s Shared Core integrity section draws.
+Act as the binary-serialization specialist for the client track, and the rare one usable directly inside `Game.Core.*`: MemoryPack's generated code is plain C# with no `UnityEngine` reference, so C# Software Engineer can reach for it without crossing the Shared Core boundary that `csharp-standards` → `coding-principles.md`'s Shared Core integrity section draws.
 
 ## 3. When to invoke this skill
 - Defining a save-data snapshot, a network message DTO, or a rollback/prediction state type that must serialize to bytes efficiently.
@@ -40,10 +29,10 @@ Act as the binary-serialization specialist for the client track, and the rare on
 2. **Decide version tolerance before the type ships anywhere persistent, not after** — the default generated layout is positional, so adding or reordering a member later reinterprets existing bytes. Confirm the version-tolerant generation mode against the upstream README and choose it deliberately for save files and versioned protocols; the choice is effectively permanent once real data exists.
 3. **Set `[MemoryPackOrder]` explicitly on every member of a persisted type** — implicit declaration order works until someone inserts a field in the middle, at which point every previously written payload decodes into the wrong members with no error raised. Treat member order the way a schema migration treats columns.
 4. **Narrow the serialized surface with `[MemoryPackIgnore]`, and reach for `[MemoryPackInclude]` only for a private member that genuinely must round-trip** — a cached or recomputable value written into every payload costs bytes forever and adds a second source of truth (YAGNI).
-5. **Model polymorphism with `[MemoryPackUnion]` and stable, never-reused tag values** — a hand-rolled discriminator plus `switch` decoding must be edited for every new subtype, which is exactly the modification Open/Closed in `coding-principles.md` forbids. Reusing a retired tag silently decodes old data as the wrong type.
+5. **Model polymorphism with `[MemoryPackUnion]` and stable, never-reused tag values** — a hand-rolled discriminator plus `switch` decoding must be edited for every new subtype, which is exactly the modification Open/Closed in `csharp-standards` → `coding-principles.md` forbids. Reusing a retired tag silently decodes old data as the wrong type.
 6. **Give a type with a non-default constructor an explicit `[MemoryPackConstructor]`**, and put any post-load fixup in `[MemoryPackOnDeserialized]` rather than in a property setter — a setter that runs during deserialization produces order-dependent behaviour that is very hard to reproduce.
-7. **Serialize against `Span<byte>` or `ReadOnlySpan<byte>` rather than an intermediate `byte[]` wherever the call site allows** — per `performance-and-algorithms.md`'s Memory discipline section, an allocation per message in a per-frame or per-tick path is the cost this library exists to avoid.
-8. **Validate every deserialized payload at the call site that produced it, not inside the type** — a save file can be corrupt or tampered with and a network message can be hostile, which is precisely the case `coding-principles.md`'s Correctness boundaries section names. A successful `Deserialize<T>()` proves the bytes parsed, never that the values are in range.
+7. **Serialize against `Span<byte>` or `ReadOnlySpan<byte>` rather than an intermediate `byte[]` wherever the call site allows** — per `csharp-standards` → `performance-and-algorithms.md`'s Memory discipline section, an allocation per message in a per-frame or per-tick path is the cost this library exists to avoid.
+8. **Validate every deserialized payload at the call site that produced it, not inside the type** — a save file can be corrupt or tampered with and a network message can be hostile, which is precisely the case `csharp-standards` → `coding-principles.md`'s Correctness boundaries section names. A successful `Deserialize<T>()` proves the bytes parsed, never that the values are in range.
 9. **Keep the `[MemoryPackable]` type a pure data carrier** — its one job is to be an accurate wire or save representation, per Single Responsibility; gameplay rules on a DTO put a second reason to change into a type whose format is meant to stay frozen.
 10. **Confirm the type compiles with no `UnityEngine` reference before placing it in `Game.Core.*`** — the Core assembly must stay engine-free, and a DTO that pulls in `Vector3` fails that boundary even though MemoryPack itself does not.
 11. **Ask before changing a shipped type's shape when it is unclear whether live data exists** — if saves or in-flight messages are already out there, the change is a migration, not an edit, and guessing wrong corrupts player data irreversibly.
@@ -54,7 +43,7 @@ Act as the binary-serialization specialist for the client track, and the rare on
 - Model a polymorphic type family through `[MemoryPackUnion]` with stable tags.
 - Narrow a type's persisted surface with `[MemoryPackIgnore]`/`[MemoryPackInclude]`.
 - Place the boundary validation for deserialized data at the call site that owns the trust decision.
-- Out of scope: RPC contract and transport design (`magiconion-rpc-networking`), surrounding boilerplate generation (`source-generator-authoring`), the validation rules themselves (written per `coding-principles.md` at the call site), designer-authored and human-readable data (`csvhelper-csv-data`).
+- Out of scope: RPC contract and transport design (`magiconion-rpc-networking`), surrounding boilerplate generation (`source-generator-authoring`), the validation rules themselves (written per `csharp-standards` → `coding-principles.md` at the call site), designer-authored and human-readable data (`csvhelper-csv-data`).
 
 ## 6. Output format
 ```

@@ -1,26 +1,12 @@
 ---
 name: unity-entities-graphics
-description: >
-  Technique for `com.unity.entities.graphics`, the package that renders ECS
-  entities by feeding `Unity.Entities` data to URP or HDRP through
-  `BatchRendererGroup`: the rendering component set including
-  `RenderMeshArray`, `MaterialMeshInfo`, `RenderMeshDescription`,
-  `RenderBounds`, and `RenderMeshUnmanaged`; `RenderMeshUtility.AddComponents`
-  runtime creation; DOTS Instancing shader compatibility; the MaterialProperty
-  attribute and Material Override Asset overrides; Hybrid Per Instance
-  properties; Companion Components; compute mesh deformation; and
-  instances-per-draw-command batching. Use when entities must render, or render
-  wrongly. Not for: the URP versus HDRP decision —
-  `render-pipeline-urp-hdrp`; pipeline configuration — `unity-urp-rendering`
-  or `unity-hdrp-rendering`; shader node or HLSL content —
-  `shader-authoring`; general entity and system design —
-  `unity-ecs-architecture`; scheduling — `unity-job-system-and-burst`; Burst
-  tuning — `unity-burst-compiler`; maths types — `unity-mathematics`;
-  bespoke GPU compute passes — `compute-shader-vfx`; light setup, lightmap
-  UVs, the bake itself, and probe authoring — `unity-lighting`.
+description: "Entities Graphics: rendering ECS entities via BatchRendererGroup, RenderMeshArray, MaterialMeshInfo, material overrides, LODs, culling. Use when ECS entities must render."
+user-invocable: false
 ---
 
 # Unity Entities Graphics — Rendering ECS Entities Through URP & HDRP
+
+**Not for:** the URP versus HDRP decision — `render-pipeline-urp-hdrp`; pipeline configuration — `unity-urp-rendering` or `unity-hdrp-rendering`; shader node or HLSL content — `shader-authoring`; general entity and system design — `unity-ecs-architecture`; scheduling — `unity-job-system-and-burst`; Burst tuning — `unity-burst-compiler`; maths types — `unity-mathematics`; bespoke GPU compute passes — `compute-shader-vfx`; light setup, lightmap UVs, the bake itself, and probe authoring — `unity-lighting`.
 
 ## Bundled resources
 
@@ -75,7 +61,7 @@ Act as the Entities Graphics specialist for the client track — the tool reache
 8. **Match the override's property name to the shader's declared name exactly** — a mismatched `[MaterialProperty]` string compiles, runs, and silently never reaches the shader, so verify the rendered result changes rather than trusting that the component is being written.
 9. **Reach for a Companion Component only for a MonoBehaviour on the supported list**, per [companion-components.md](references/companion-components.md) — `Light`, `ReflectionProbe`, `ParticleSystem`, `VisualEffect` and the HDRP-specific types qualify; anything else is stripped during baking with no error. Disclose that access is main-thread managed iteration, never a Burst job, and that the companion becomes a root GameObject with its hierarchy lost.
 10. **Treat mesh deformation as an experimental, disclosed trade-off**, per [mesh-deformations.md](references/mesh-deformations.md) — compute-shader skinning has no frustum or occlusion culling, no VFX Graph integration, and no cloth or bake-mesh support, so confirm the Tech Spec genuinely requires it before building Compute Deformation graphs.
-11. **Measure batching as instances per draw command**, using FrameDebugger's Hybrid Batch Groups, `EntitiesGraphicsStatsDrawer`, and the `BatchRendererGroup` Profiler markers described in [batch-renderer-group.md](references/batch-renderer-group.md) — differing meshes or shader variants fragment batches, and per `performance-and-algorithms.md`'s Verification section a batching claim without this measurement is not a claim.
+11. **Measure batching as instances per draw command**, using FrameDebugger's Hybrid Batch Groups, `EntitiesGraphicsStatsDrawer`, and the `BatchRendererGroup` Profiler markers described in [batch-renderer-group.md](references/batch-renderer-group.md) — differing meshes or shader variants fragment batches, and per `csharp-standards` → `performance-and-algorithms.md`'s Verification section a batching claim without this measurement is not a claim.
 12. **Disclose the cases where this package costs more than it saves** — below a modest instance count, batch-creation overhead can make entity rendering slower than plain GameObjects, and `DOTS_INSTANCING_ON` variants are always compiled into a Player build, lengthening build times and raising memory. Say so rather than presenting the switch as free.
 13. **Check an unexplained symptom against the documented known issues before calling it a bug** — subscene lightmap limits, a directional light inside a subscene breaking ambient lighting, RenderTexture-on-subscene-material glitches, and missing Companion Component previews are all known and listed.
 14. **Ask which pipeline and path the project is actually on when it is not stated** — do not infer it from the presence of a URP asset; the Forward+ requirement is specific enough that guessing wrong invalidates everything downstream.
