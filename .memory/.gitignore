@@ -1,0 +1,3 @@
+# Framework repo only (not copied into game projects): its sessions are framework development,
+# not project memory, so traces stay local here. mem.py still indexes them from disk.
+traces/
