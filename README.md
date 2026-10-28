@@ -76,7 +76,8 @@ Every agent preloads skill `agent-protocol` (one return envelope) plus its stand
 ## Layout
 
 ```
-CLAUDE.md                 project identity, stack, tooling, overrides (template, ≤30 lines)
+CLAUDE.md                 summary, identity, stack headline, tooling, overrides (template, ≤30 lines)
+docs/tech-stack.md        every package, SDK and service (created by /new-project; read on demand)
 .claude/
   rules/core.md           always loaded: language, GD, truth, security, tools
   rules/routing.md        always loaded: routes, sizing, profile, checkpoints, stop rule

@@ -30,7 +30,7 @@ The main session runs this and is the only writer of the feature file. Rules: `r
 ## 4. Build — serial, one Editor holder at a time
 Order, skipping roles the tasks omit:
 `csharp-engineer` → `netcode-engineer` | `backend-engineer` → `technical-artist` → `gameplay-engineer` → `ui-engineer` → `unity-performance-engineer` (only when a budget is at risk). `sdk-platform-engineer` takes any slot.
-- Third-party package / DLL / `.unitypackage` → `security-reviewer` first.
+- Third-party package / DLL / `.unitypackage` → `security-reviewer` first. A package, SDK or service added, removed or upgraded → `docs/tech-stack.md` in the same commit.
 - Brief per `routing.md` → Dispatch, plus earlier returns' `Public contract:` / `Message contract:`.
 - **Compile check after every implementer:** `unity command script recompile` → poll `unity command script recompile_status` until `completed` → `unity command console status` (compile-failure flag) / `unity command console get --level error`. `up_to_date` does not prove the edits compiled — confirm a changed type exists (`script eval`). No Editor → `unity pipeline list` (Safe Mode?) and grep `Editor.log` for `error CS`. Errors → same agent, next attempt.
 - Commit per `git-commit`: stage only this feature's paths; another session's files stay out.

@@ -7,7 +7,7 @@ argument-hint: "<the capability or decision, as concrete behaviour>"
 # /decide
 
 ## 1. Research — `researcher` (Research mode), never skipped
-- Brief: the capability as behaviour ("research physics" is too vague), constraints from `CLAUDE.md` and the manifest, paid allowed?
+- Brief: the capability as behaviour ("research physics" is too vague), constraints from `CLAUDE.md`, `docs/tech-stack.md` and the manifest, paid allowed?
 - `Already in project:` covers it → report that; replacing it needs the GD's ask.
 
 ## 2. Spike — only when the GD asks, or a number is the blocker
@@ -19,6 +19,7 @@ argument-hint: "<the capability or decision, as concrete behaviour>"
 - Product consequence (cost, scope, timeline) → `cto` returns `Needs GD` → `AskUserQuestion` framed for a non-engineer.
 
 ## 4. Record
+- `docs/tech-stack.md`: the row for the area, with version and the decision's path.
 - Feature in flight → its file's `GD decisions`.
 - Sets a standard → GD approves (`AskUserQuestion`) → skill `engineering-standard-adr-authoring` writes the ADR in `docs/adr/`.
 - Report: the call, why in product terms, reversibility, what would make it stale.

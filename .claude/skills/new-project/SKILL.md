@@ -7,7 +7,7 @@ argument-hint: "<project path, or 'new'>"
 # /new-project
 
 ## 1. Identity — one `AskUserQuestion` call (≤4 questions)
-Profile · platforms · multiplayer · render pipeline. Write them into `CLAUDE.md`. Unity version from `ProjectSettings/ProjectVersion.txt`.
+Profile · platforms · multiplayer · render pipeline. Write them into `CLAUDE.md`, plus its 3-line Summary from the GDD or the GD's pitch. Unity version from `ProjectSettings/ProjectVersion.txt`.
 
 ## 2. Project
 - No project yet → plugin skill `unity:new-unity-project`, else verify it opens (`unity status` / `unity pipeline list`).
@@ -39,6 +39,7 @@ Write the answer into `CLAUDE.md` → Perf budget.
 
 ## 7. State
 Create `.workflow/bugs.md` from `/fix`'s template and `.workflow/features/`. Commit `.workflow/`.
+Create `docs/tech-stack.md` from `references/tech-stack-template.md`, filled from `Packages/manifest.json`, `ProjectSettings/` and the answers above.
 
 ## 8. CI — only if the GD wants it now
 `ci-cd-engineer`: build + test pipeline for the build targets, manual trigger.
