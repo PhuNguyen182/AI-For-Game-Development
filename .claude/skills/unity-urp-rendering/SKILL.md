@@ -1,24 +1,12 @@
 ---
 name: unity-urp-rendering
-description: >
-  Technique for configuring URP's own systems once URP is the confirmed
-  pipeline: `ScriptableRendererFeature` and `ScriptableRenderPass` including
-  the Render Graph `RecordRenderGraph` path, the Forward, Forward+, Deferred
-  and Deferred+ rendering paths, the URP Asset's render scale, shadow distance
-  and cascade settings, SRP Batcher compatibility, Rendering Layers, the 2D
-  Renderer and `Light2D`, and camera stacking through
-  `UniversalAdditionalCameraData` — which also carries the per-camera
-  post-process anti-aliasing mode. Use when URP must be configured or a
-  pass does not run.
-  Not for: which pipeline to use — `render-pipeline-urp-hdrp`; HDRP —
-  `unity-hdrp-rendering`; shader content — `shader-authoring`; Volumes and
-  post-processing — `unity-post-processing`; lights, probes and baking —
-  `unity-lighting`; `Camera` scripting — `unity-camera-fundamentals`; entity
-  rendering — `unity-entities-graphics`; sprite data 2D lighting reads —
-  `unity-2d-sprite`.
+description: "URP configuration: renderer features and passes (Render Graph), Forward/Forward+/Deferred, pipeline asset tiers, shadows, SRP Batcher, MSAA, mobile cost. Use once URP is the confirmed pipeline."
+user-invocable: false
 ---
 
 # Unity URP Rendering — Universal Render Pipeline Configuration
+
+**Not for:** which pipeline to use — `render-pipeline-urp-hdrp`; HDRP — `unity-hdrp-rendering`; shader content — `shader-authoring`; Volumes and post-processing — `unity-post-processing`; lights, probes and baking — `unity-lighting`; `Camera` scripting — `unity-camera-fundamentals`; entity rendering — `unity-entities-graphics`; sprite data 2D lighting reads — `unity-2d-sprite`.
 
 ## Bundled resources
 
@@ -56,18 +44,19 @@ Act as the URP configuration specialist for the client track — the tool reache
 - Negative trigger: plain `Camera` or `Transform` scripting with no URP system involved — that is `unity-camera-fundamentals`.
 - Negative trigger: how ECS entities reach the renderer — that is `unity-entities-graphics`, which requires the Forward+ path this skill configures.
 - Negative trigger: the sprite-side data 2D lighting reads — secondary normal and mask textures, sorting, masking — that is `unity-2d-sprite`; this skill owns the `Light2D` rig and 2D Renderer Data those settings are consumed by.
+- Companion, if the official Unity plugin (`unity@claude-plugins-official`) is installed: `unity:validate-urp-render-graph-renderer-feature` reviews a finished Render Graph `ScriptableRendererFeature` against a correctness checklist — run it after authoring one here; this skill still owns writing the feature, rendering paths, SRP Batcher, camera stacking and the 2D Renderer.
 
 ## 4. How to use this skill
 1. **Confirm the URP Asset that the target quality tier actually uses, not just the one in Graphics Settings** — Quality Settings can assign a different asset per level, and every later step in this skill applies to one specific asset. [root-links.md](references/root-links.md) pins the URP version these APIs belong to.
-2. **Write custom passes against the Render Graph API**, per [renderer-features-and-passes.md](references/renderer-features-and-passes.md) — in current URP a pass records into the graph via `RecordRenderGraph`, and the older `Execute`-based path survives only behind Compatibility Mode. Per `coding-principles.md`'s Obsolete APIs section, new work targets the current API rather than the compatibility path being kept alive for migration.
+2. **Write custom passes against the Render Graph API**, per [renderer-features-and-passes.md](references/renderer-features-and-passes.md) — in current URP a pass records into the graph via `RecordRenderGraph`, and the older `Execute`-based path survives only behind Compatibility Mode. Per `csharp-standards` → `coding-principles.md`'s Obsolete APIs section, new work targets the current API rather than the compatibility path being kept alive for migration.
 3. **Register the feature on the Renderer the target tier actually uses** — a `ScriptableRendererFeature` lives on a specific Renderer asset, so adding it to the default Renderer while a tier references another means it silently never runs for that tier, with nothing logged.
 4. **Choose the injection point from what the pass must read** — a pass sampling colour has to run after the content it samples, and one sampling depth after depth is written; picking the event by what the effect should look like rather than by its data dependency is the usual reason a pass renders a frame-old or empty texture.
-5. **Choose the rendering path against measured light counts per tier**, per [rendering-paths.md](references/rendering-paths.md) — Forward has a per-object light limit, so extra lights stop affecting an object rather than the scene; Forward+ removes that limit with a screen-space light structure; Deferred trades bandwidth for light-count scalability and gives up MSAA. Back the choice with a Profiler capture per `performance-and-algorithms.md`'s Verification section, never with folklore.
+5. **Choose the rendering path against measured light counts per tier**, per [rendering-paths.md](references/rendering-paths.md) — Forward has a per-object light limit, so extra lights stop affecting an object rather than the scene; Forward+ removes that limit with a screen-space light structure; Deferred trades bandwidth for light-count scalability and gives up MSAA. Back the choice with a Profiler capture per `csharp-standards` → `performance-and-algorithms.md`'s Verification section, never with folklore.
 6. **Confirm the active Renderer is the 2D Renderer before relying on `Light2D`**, per [2d-renderer.md](references/2d-renderer.md) — 2D lighting exists only under `Renderer2DData`, so a project on the Universal Renderer has none of it, and the components simply do nothing rather than warning.
 7. **Composite with a Base plus Overlay camera stack**, per [camera-stacking-and-asset-settings.md](references/camera-stacking-and-asset-settings.md) — `UniversalAdditionalCameraData.cameraStack` is URP's mechanism for layering, and independent full-screen cameras cost a full render each while bypassing it.
 8. **Scope light and decal influence with Rendering Layers rather than filtering in a shader** — Rendering Layers are distinct from physics and culling Layers, and they express the intent in the pipeline where it can be seen, rather than hiding it in shader logic.
 9. **Verify SRP Batcher compatibility rather than assuming the toggle is enough** — the batcher is enabled on the URP Asset, but a shader only qualifies if its per-material properties sit in the expected constant-buffer layout; confirm the shader side with `shader-authoring` instead of inferring from the setting.
-10. **Map every tier-sensitive setting deliberately** — render scale, shadow distance, cascade count, and per-tier feature toggles belong in URP Asset variants per device tier, per `performance-and-algorithms.md`'s platform-abstraction rule; template defaults are a decision nobody made.
+10. **Map every tier-sensitive setting deliberately** — render scale, shadow distance, cascade count, and per-tier feature toggles belong in URP Asset variants per device tier, per `csharp-standards` → `performance-and-algorithms.md`'s platform-abstraction rule; template defaults are a decision nobody made.
 11. **Verify on the real tier before claiming completion** — capture the effect on the quality level and device class that actually uses the configured asset, because a pass on the wrong Renderer and a correct one look identical in code.
 12. **Ask which tier a change is for when it is unstated** — URP configuration is per-asset, so a change applied to the wrong tier is both invisible where it was wanted and unexplained where it landed.
 
@@ -111,7 +100,7 @@ Act as the URP configuration specialist for the client track — the tool reache
 
 **Example 2**
 - Input: "Lights stop affecting the crowd in the arena — switch the project to Deferred, it handles more lights."
-- Output: declined as an unmeasured change. The symptom matches Forward's per-object light limit, which is why individual objects lose lights while the scene looks lit, and Forward+ removes exactly that limit without giving up MSAA, which this project's mobile tier uses. Profiled both paths on a mid-tier Android device under a worst-case light count per `performance-and-algorithms.md`, recommended Forward+ for the mobile tier with the frame-time delta attached, and left the PC tier unchanged since it was never light-bound.
+- Output: declined as an unmeasured change. The symptom matches Forward's per-object light limit, which is why individual objects lose lights while the scene looks lit, and Forward+ removes exactly that limit without giving up MSAA, which this project's mobile tier uses. Profiled both paths on a mid-tier Android device under a worst-case light count per `csharp-standards` → `performance-and-algorithms.md`, recommended Forward+ for the mobile tier with the frame-time delta attached, and left the PC tier unchanged since it was never light-bound.
 
 **Example 3**
 - Input: after a URP upgrade, a previously working custom blur pass renders nothing, with no errors in the console.

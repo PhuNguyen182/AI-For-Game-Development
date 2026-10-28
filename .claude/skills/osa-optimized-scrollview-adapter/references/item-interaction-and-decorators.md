@@ -76,7 +76,7 @@ class MyVH : BaseItemViewsHolder
 ```
 
 `CollectViews` runs once per instantiated row, so this is the only place a
-`GetComponent` belongs — `performance-and-algorithms.md`'s Scripting & GC
+`GetComponent` belongs — `csharp-standards` → `performance-and-algorithms.md`'s Scripting & GC
 section forbids it in the per-recycle path.
 
 ## `OSAContentDecorator` — headers, footers, inline ads

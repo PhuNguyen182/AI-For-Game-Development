@@ -1,24 +1,12 @@
 ---
 name: unity-addressables
-description: >
-  Technique for runtime asset and scene delivery through Unity's Addressables
-  package — `Addressables.LoadAssetAsync`, `LoadAssetsAsync`,
-  `InstantiateAsync`, `LoadSceneAsync`, `Release` and `ReleaseInstance`
-  reference counting, `AsyncOperationHandle`, `AssetReference` fields, groups,
-  labels, Profiles, catalogs, `GetDownloadSizeAsync`,
-  `DownloadDependenciesAsync`, `CheckForCatalogUpdates`, `UpdateCatalogs`, and
-  the Content Directory versus AssetBundle content build systems. Use when an
-  asset or scene should be addressed by key, label or reference instead of
-  hard-referenced, or when content ships or updates remotely. Not for: generic
-  await and cancellation mechanics — `unitask-async-programming`; pool design
-  — `unity-engineer`; import and compression settings — `unity-2d-sprite`
-  or `unity-audio-mixer`, otherwise `unity-engineer`; remote-config cadence —
-  `live-ops-content-pipeline`; CDN vendor choice — `tech-lead-sdk-platform`;
-  the headless invocation that runs the content build in CI —
-  `unity-batchmode-cli`.
+description: "Addressables: load/instantiate/release with reference counting, groups and labels, remote catalogs and content updates, memory and bundle layout. Use for runtime asset delivery or memory issues from assets."
+user-invocable: false
 ---
 
 # Unity Addressables — Addressing, Loading, Reference Counting, Remote Content
+
+**Not for:** generic await and cancellation mechanics — `unitask-async-programming`; pool design — `unity-performance-engineer`; import and compression settings — `unity-2d-sprite` or `unity-audio-mixer`, otherwise `unity-performance-engineer`; remote-config cadence — `live-ops-content-pipeline`; CDN vendor choice — `sdk-platform-engineer`; the headless invocation that runs the content build in CI — `unity-batchmode-cli`.
 
 ## Bundled resources
 
@@ -50,19 +38,19 @@ Act as the asset-streaming specialist for the client track — the tool reached 
 - Organizing groups and packing modes, or investigating a build that is larger than the assets in it should produce.
 - An asset will not unload, memory grows across level transitions, or a load throws for a key that visibly exists in the Groups window.
 - Negative trigger: the mechanics of awaiting, cancelling, or preserving an async operation in general — that is `unitask-async-programming`; this skill owns which Addressables call to make and when its handle is released.
-- Negative trigger: designing the pool that reuses instantiated objects — that is `unity-engineer` under `performance-and-algorithms.md`; this skill owns acquiring and releasing the handle behind a pooled object, not the pool.
-- Negative trigger: texture, audio, or mesh import and compression settings — sprite textures are `unity-2d-sprite`'s, audio clips are `unity-audio-mixer`'s, and the rest is `unity-engineer`'s asset pipeline; this skill assumes the import settings are already right and covers only how the asset is addressed and loaded.
+- Negative trigger: designing the pool that reuses instantiated objects — that is `unity-performance-engineer` under `csharp-standards` → `performance-and-algorithms.md`; this skill owns acquiring and releasing the handle behind a pooled object, not the pool.
+- Negative trigger: texture, audio, or mesh import and compression settings — sprite textures are `unity-2d-sprite`'s, audio clips are `unity-audio-mixer`'s, and the rest is `unity-performance-engineer`'s asset pipeline; this skill assumes the import settings are already right and covers only how the asset is addressed and loaded.
 - Negative trigger: remote-config, economy tuning, or event cadence infrastructure — that is `live-ops-content-pipeline`, tunable data rather than binary asset delivery.
-- Negative trigger: choosing a CDN or hosting vendor for remote content — that is `tech-lead-sdk-platform`; this skill wires the catalog and download API once a host exists.
+- Negative trigger: choosing a CDN or hosting vendor for remote content — that is `sdk-platform-engineer`; this skill wires the catalog and download API once a host exists.
 - Negative trigger: the headless invocation and `-executeMethod` entry point a CI run drives the content build from — that is `unity-batchmode-cli`, and the job around it is `jenkins-pipeline-authoring`; this skill owns what that build must produce and in what order, not the command line that starts it.
-- Negative trigger: any Addressables call inside `Game.Core.*` — the package depends on `UnityEngine`, so Shared Core receives already-resolved data from `Game.Client.*`, per `coding-principles.md`'s Shared Core integrity rule.
+- Negative trigger: any Addressables call inside `Game.Core.*` — the package depends on `UnityEngine`, so Shared Core receives already-resolved data from `Game.Client.*`, per `csharp-standards` → `coding-principles.md`'s Shared Core integrity rule.
 
 ## 4. How to use this skill
 1. **Pick the content build system once, per project** — Content Directory is the simpler workflow with automatic deduplication of shared plain assets, and it is local-only; the AssetBundle system is required for remote delivery, post-launch content updates, and older Editor versions, per [architecture-and-concepts.md](references/architecture-and-concepts.md) and the version pin in [root-links.md](references/root-links.md). Mixing both builds shared dependencies twice, so this is settled before the first group is created, not per group.
 2. **Address Inspector-wired assets through `AssetReference` and reserve string keys for runtime-resolved content** — an `AssetReference` stores a GUID, so renaming or moving the asset does not break it, and its typed subclasses reject the wrong asset type at authoring time, per [load-calls-and-awaiting.md](references/load-calls-and-awaiting.md). A string key built from data is right only where the target genuinely is not known until runtime.
 3. **Await the handle directly rather than blocking on `WaitForCompletion()`** — both handle types are awaitable once UniTask and Addressables are installed together, and the blocking call stalls the calling thread until the load finishes, which is the entire cost the async API exists to avoid. Cancellation and multi-await handling follow `unitask-async-programming`; failure surfacing does not, and is covered in [load-calls-and-awaiting.md](references/load-calls-and-awaiting.md).
 4. **Control scene activation explicitly rather than letting the load perform it** — load with `activateOnLoad` set to false and call `ActivateAsync()` at the point the scene should go live, so a loading screen is not cut short by the scene appearing the instant it finishes streaming.
-5. **Mirror every load with exactly one release, on every code path** — including early returns and caught exceptions, per [loading-and-reference-counting.md](references/loading-and-reference-counting.md) and `coding-principles.md`'s Correctness boundaries section. `Object.Destroy` on an Addressables-created instance removes the GameObject and leaves its reference counted for the rest of the session.
+5. **Mirror every load with exactly one release, on every code path** — including early returns and caught exceptions, per [loading-and-reference-counting.md](references/loading-and-reference-counting.md) and `csharp-standards` → `coding-principles.md`'s Correctness boundaries section. `Object.Destroy` on an Addressables-created instance removes the GameObject and leaves its reference counted for the rest of the session.
 6. **Decide each asset's lifetime scope up front rather than releasing reactively** — per level, per session, or per app. Releasing something that is needed again moments later forces an unload and reload of its whole bundle, and that churn costs more than holding the asset would have.
 7. **Size the download before the player is committed to it** — `GetDownloadSizeAsync` reports what is still missing after the cache, so zero means the prompt can be skipped entirely, per [remote-content-and-catalogs.md](references/remote-content-and-catalogs.md). Fetch ahead of the transition, not at the moment the content is first requested.
 8. **Organize groups by what loads together, then pick the packing mode from that** — grouping decides bundle boundaries under the AssetBundle system, so a group whose assets load at different times forces a load of all of them, per [architecture-and-concepts.md](references/architecture-and-concepts.md).
@@ -70,7 +58,7 @@ Act as the asset-streaming specialist for the client track — the tool reached 
 10. **Drive every build and load path from a Profile** — one Profile per environment, so changing environment is a selection rather than an edit, per [build-workflow-and-best-practices.md](references/build-workflow-and-best-practices.md). A hardcoded URL in gameplay code is the failure that ships a development build pointing at a staging bucket.
 11. **Treat a catalog update as a step the player sees** — check, then apply, then let the player through, per [remote-content-and-catalogs.md](references/remote-content-and-catalogs.md). Swapping content underneath a session that has already resolved against the old catalog produces failures with no clear cause.
 12. **Verify against a full content build before handing anything off** — Play Mode Scripts read from the Asset Database and never exercise catalog or bundle resolution, so the class of bug that only exists in a build is exactly the class they cannot show. Route the result to `qa-automation-engineer` and `playtest-tester` only after that build exists.
-13. **Keep every Addressables call inside `Game.Client.*`** — the package depends on `UnityEngine`, and Shared Core takes the already-resolved object or data, per `coding-principles.md`'s Shared Core integrity rule.
+13. **Keep every Addressables call inside `Game.Client.*`** — the package depends on `UnityEngine`, and Shared Core takes the already-resolved object or data, per `csharp-standards` → `coding-principles.md`'s Shared Core integrity rule.
 
 ## 5. Specific goals / tasks this skill performs
 - Converting hard-referenced or `Resources`-loaded assets and scenes to addressed loads.
@@ -80,7 +68,7 @@ Act as the asset-streaming specialist for the client track — the tool reached 
 - Auditing for leaks, churn, and non-Addressable dependency duplication.
 - Setting up Profiles per environment and selecting the right build-script tier for the moment.
 - Diagnosing loads that fail for keys that exist, and assets that will not unload.
-- Out of scope: async and cancellation mechanics (`unitask-async-programming`); pool design (`unity-engineer`); import and compression settings (`unity-2d-sprite`, `unity-audio-mixer`, `unity-engineer`); remote-config and economy cadence (`live-ops-content-pipeline`); CDN vendor choice (`tech-lead-sdk-platform`); the headless invocation that runs the content build in CI (`unity-batchmode-cli`); any `Game.Core.*` usage (`csharp-engineer`).
+- Out of scope: async and cancellation mechanics (`unitask-async-programming`); pool design (`unity-performance-engineer`); import and compression settings (`unity-2d-sprite`, `unity-audio-mixer`, `unity-performance-engineer`); remote-config and economy cadence (`live-ops-content-pipeline`); CDN vendor choice (`sdk-platform-engineer`); the headless invocation that runs the content build in CI (`unity-batchmode-cli`); any `Game.Core.*` usage (`csharp-engineer`).
 
 ## 6. Output format
 ```
@@ -126,7 +114,7 @@ Act as the asset-streaming specialist for the client track — the tool reached 
 
 ## 8. Edge cases & guardrails
 - Never call `Object.Destroy` on an Addressables-created instance — the GameObject goes, the reference count does not, and the leak is silent for the session.
-- Never leave a load handle unreleased on any path — early return and caught exception included, per `coding-principles.md`'s Correctness boundaries section.
+- Never leave a load handle unreleased on any path — early return and caught exception included, per `csharp-standards` → `coding-principles.md`'s Correctness boundaries section.
 - Never call `WaitForCompletion()` in gameplay code — it blocks the calling thread; reserve it, if ever, for editor tooling.
 - Never mix the Content Directory and AssetBundle systems in one project — shared dependencies build twice.
 - Never assume one release frees the asset — under the AssetBundle system nothing unloads until the whole bundle's count reaches zero.

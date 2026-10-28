@@ -43,7 +43,7 @@ version is the first thing worth comparing, and it only exists in the log if som
 
 | Not | Owner |
 |---|---|
-| A store channel, or a substitute for Google Play or App Store review | `tech-lead-sdk-platform` |
-| TestFlight — Apple's own testing channel, reached by an `app-store` export | `tech-lead-sdk-platform` |
-| Crashlytics, Analytics, or Remote Config, which are separate Firebase products compiled into the game | `tech-lead-sdk-platform` |
+| A store channel, or a substitute for Google Play or App Store review | `sdk-platform-engineer` |
+| TestFlight — Apple's own testing channel, reached by an `app-store` export | `sdk-platform-engineer` |
+| Crashlytics, Analytics, or Remote Config, which are separate Firebase products compiled into the game | `sdk-platform-engineer` |
 | A place to host a PC build; the accepted artifact types are APK, AAB and IPA | `jenkins-pipeline-authoring`, which archives it instead |

@@ -1,20 +1,12 @@
 ---
 name: ci-pipeline-failure-triage
-description: >
-  Decision procedure for a red CI run on a Unity project — separating agent
-  and workspace faults, Unity licence activation failures, editor version
-  mismatches, `Library` and package-resolution damage, C# compile errors,
-  genuine test failures against a test run that never happened, IL2CPP and
-  Gradle or Xcode build errors, code-signing and provisioning faults, and
-  distribution authentication faults — then routing each to its owner with
-  the log excerpt that proves it. Not for: runtime faults in an artifact
-  that built fine, owned by `build-fault-triage`; authoring the pipeline,
-  owned by `jenkins-pipeline-authoring`; the Unity command line, owned by
-  `unity-batchmode-cli`; released-build crashes, owned by
-  `crash-anr-investigator`.
+description: "Triage a red Unity CI run from its log: agent/workspace faults, licence activation, editor version mismatch, Library/package damage, compile errors, real test failures, signing, flakes. Use when a CI run fails."
+user-invocable: false
 ---
 
 # CI Pipeline Failure Triage — what a red run actually means
+
+**Not for:** runtime faults in an artifact that built fine, owned by `build-fault-triage`; authoring the pipeline, owned by `jenkins-pipeline-authoring`; the Unity command line, owned by `unity-batchmode-cli`; released-build crashes, owned by `crash-anr-investigator`.
 
 ## Bundled resources
 
@@ -52,8 +44,8 @@ Act as the CI diagnosis specialist for the devops track, on behalf of `ci-cd-eng
 4. **Separate a test that failed from a test run that never happened** — a crashed test stage, a missing NUnit XML, or a publisher tolerating empty results all read as "tests passed" or "tests failed" depending on the pipeline's configuration, and neither is what occurred, per `jenkins-pipeline-authoring`'s reporting rules.
 5. **Separate a compile error from a build error** — `error CS****` means `-executeMethod` never ran and no build was attempted; an IL2CPP, Gradle or Xcode error means the code compiled and the packaging stage failed. They have different owners, and the log states which plainly, per [unity-batchmode-log-signatures.md](references/unity-batchmode-log-signatures.md).
 6. **Attribute a signing or distribution failure to configuration rather than to code** — certificates, profiles, keystores and service accounts fail for reasons no gameplay change can cause, per [signing-and-distribution-failures.md](references/signing-and-distribution-failures.md). The only question worth asking is which configuration, and who owns it.
-7. **Establish whether the failure reproduces, and state how many runs you looked at** — one red run is a data point, not a pattern, and a green re-run does not clear it, per [flake-vs-real-failure.md](references/flake-vs-real-failure.md). Report an intermittent failure as intermittent, with its rate, per `defect-reporting.md`'s reproduction rules.
-8. **Route by the evidenced class and hand over the log excerpt that proves it** — with its surrounding lines, the stage, the agent and the commit, per `defect-reporting.md`'s five required elements. A routed finding without its evidence is re-diagnosed by whoever receives it.
+7. **Establish whether the failure reproduces, and state how many runs you looked at** — one red run is a data point, not a pattern, and a green re-run does not clear it, per [flake-vs-real-failure.md](references/flake-vs-real-failure.md). Report an intermittent failure as intermittent, with its rate, per skill `qa-standards`'s reproduction rules.
+8. **Route by the evidenced class and hand over the log excerpt that proves it** — with its surrounding lines, the stage, the agent and the commit, per skill `qa-standards`'s five required elements. A routed finding without its evidence is re-diagnosed by whoever receives it.
 9. **Return the class as inconclusive when the log does not settle it, and say what would** — the specific artifact missing, and which stage would have to be re-run with what added. An inconclusive triage stated as such is useful; a confident wrong class costs the cycle it was meant to save.
 
 The classes step 3 chooses between, and the owner each one implies. Where the evidence for a class lives is listed in [root-links.md](references/root-links.md).
@@ -63,13 +55,13 @@ The classes step 3 chooses between, and the owner each one implies. Where the ev
 | Agent / workspace | Node offline, disk full, checkout or LFS failure, network timeout | `ci-cd-engineer` for the job's assumptions; `gd` for the host itself |
 | Licence | `Failed to activate/update license`, no seat available | `gd` — a seat is a purchase, not a fix |
 | Editor provisioning | Version mismatch against `ProjectVersion.txt`, missing platform module | `ci-cd-engineer` |
-| Project state | Package resolution failure, `Library` damage, import errors on untouched assets | `ci-cd-engineer` for the cache key; `unity-engineer` for the project |
+| Project state | Package resolution failure, `Library` damage, import errors on untouched assets | `ci-cd-engineer` for the cache key; `gameplay-engineer` for the project |
 | Compile | `error CS****` with a file and line | The agent owning that file |
 | Test | A test ran and failed | The agent owning the code under test; `qa-automation-engineer` if the test itself is wrong |
 | Test-run | The stage crashed, produced no results, or published an empty set | `ci-cd-engineer` |
-| Build | IL2CPP, Gradle, Xcode, or `BuildResult.Failed` after a clean compile | `unity-engineer`; `ci-cd-engineer` where the build script is at fault |
-| Signing | Keychain, certificate, profile, keystore, fingerprint mismatch | `tech-lead-sdk-platform` for the identity; `ci-cd-engineer` for the wiring |
-| Distribution | Upload auth, app id, artifact rejected | `ci-cd-engineer`; `tech-lead-sdk-platform` for the Firebase project's own configuration |
+| Build | IL2CPP, Gradle, Xcode, or `BuildResult.Failed` after a clean compile | `gameplay-engineer`; `ci-cd-engineer` where the build script is at fault |
+| Signing | Keychain, certificate, profile, keystore, fingerprint mismatch | `sdk-platform-engineer` for the identity; `ci-cd-engineer` for the wiring |
+| Distribution | Upload auth, app id, artifact rejected | `ci-cd-engineer`; `sdk-platform-engineer` for the Firebase project's own configuration |
 
 ## 5. Specific goals / tasks this skill performs
 - Reconstructing what a run did before it failed, from its own log and stage history.
@@ -118,7 +110,7 @@ The classes step 3 chooses between, and the owner each one implies. Where the ev
 ## 8. Edge cases & guardrails
 - Never name a cause the log does not carry, and never route on the stage that went red — a stage fails for reasons owned by several different agents.
 - Never re-run a job to see whether it passes; that is an action, and this skill only reads. Ask for the re-run and say what it would establish.
-- Never treat a green re-run as a clearance — an intermittent failure that disappears is still an open finding, per `verification-standards.md`.
+- Never treat a green re-run as a clearance — an intermittent failure that disappears is still an open finding, per skill `qa-standards`.
 - Never report a test failure without confirming the tests actually ran, and never report a compile error as a build failure or the reverse.
 - Never file a signing, licence or infrastructure failure against the feature that happened to be merging; the timing is coincidence, and the cost of that mistake is a full cycle.
 - Never quote a log excerpt containing a secret; report the line's identity and mask the value, per `jenkins-pipeline-authoring`'s secret rules.

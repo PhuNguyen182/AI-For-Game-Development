@@ -23,4 +23,4 @@ Reach for this when a scene genuinely needs per-light exclusion — an interior
 light that must not reach the street, an exterior sun that must not enter a
 room's probe data. A scene-layout fix or a simpler light placement is usually
 cheaper to maintain than a mask scheme spread across lights and renderers,
-per KISS in `coding-principles.md`.
+per KISS in `csharp-standards` → `coding-principles.md`.

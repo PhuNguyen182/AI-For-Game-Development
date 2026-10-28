@@ -1,19 +1,12 @@
 ---
 name: vfx-particle-authoring
-description: >
-  Technique for particle visual effects in Unity: choosing between VFX Graph
-  and the built-in Particle System, VFX Graph's Spawn, Initialize, Update and
-  Output contexts with capacity, exposed properties, events and bounds, the
-  Particle System's Main, Emission, Shape, Noise, Sub Emitters, Collision,
-  Trails and Renderer modules, simulation space, blend and sort mode, overdraw
-  budget, per-tier scaling, and pooling. Use for any ability, impact, ambience
-  or trail effect built from particles. Not for: the shader an output stage
-  renders with — `shader-authoring`; custom simulation kernels —
-  `compute-shader-vfx`; pipeline choice — `render-pipeline-urp-hdrp`; the
-  bloom that makes an effect glow — `unity-post-processing`.
+description: "Particle effects: VFX Graph vs Particle System choice, contexts, capacity, events, bounds, sub-emitters, sorting, GPU/mobile cost. Use for particle visuals."
+user-invocable: false
 ---
 
 # VFX and Particle Authoring — VFX Graph and the Built-in Particle System
+
+**Not for:** the shader an output stage renders with — `shader-authoring`; custom simulation kernels — `compute-shader-vfx`; pipeline choice — `render-pipeline-urp-hdrp`; the bloom that makes an effect glow — `unity-post-processing`.
 
 ## Bundled resources
 
@@ -45,7 +38,7 @@ Act as the VFX author: pick the tool against the platform and the gameplay contr
 - Negative trigger: a custom HLSL or compute simulation step inside a graph — that is `compute-shader-vfx`; this skill consumes the kernel it produces.
 - Negative trigger: which render pipeline the project targets — that is `render-pipeline-urp-hdrp`, whose answer decides whether VFX Graph is available at all.
 - Negative trigger: the bloom or colour grading that makes an emissive effect read as glowing — that is `unity-post-processing`; an additive particle in a scene with no bloom is a different-looking effect.
-- Negative trigger: a gameplay rule triggered by particle collision — damage, status application, hit confirmation — that decision lives in `Game.Core.*` per `coding-principles.md`; this skill delivers the collision signal.
+- Negative trigger: a gameplay rule triggered by particle collision — damage, status application, hit confirmation — that decision lives in `Game.Core.*` per `csharp-standards` → `coding-principles.md`; this skill delivers the collision signal.
 
 ## 4. How to use this skill
 1. **Confirm the render pipeline before choosing the tool**, per [root-links.md](references/root-links.md) — VFX Graph runs on the Scriptable Render Pipelines and not on the Built-in one, so on a Built-in project the choice has already been made regardless of what the effect needs.
@@ -57,10 +50,10 @@ Act as the VFX author: pick the tool against the platform and the gameplay contr
 7. **Set the graph's bounds to cover where particles actually travel** — bounds drive culling, so an effect with default bounds and long-lived world-space particles vanishes as soon as its origin leaves the frustum, which reads as a rendering bug.
 8. **Budget in overdraw, not in particle count**, per [rendering-and-budget.md](references/rendering-and-budget.md) — a few dozen large transparent quads covering the screen cost more than thousands of small ones, so the number to agree with the Tech Spec is screen coverage and layer count, and reducing particle count alone often changes nothing.
 9. **Pick the cheapest blend and sort combination that reads correctly** — additive needs no sorting between its own particles because addition commutes, while alpha blending does, so a smoke effect and a spark effect have genuinely different costs at the same count.
-10. **Pool every repeatedly triggered effect, and clear it on release** — per the pooling rule in `performance-and-algorithms.md`, and because a pooled system restarted without clearing replays with the previous instance's particles still alive.
+10. **Pool every repeatedly triggered effect, and clear it on release** — per the pooling rule in `csharp-standards` → `performance-and-algorithms.md`, and because a pooled system restarted without clearing replays with the previous instance's particles still alive.
 11. **Scale by tier by removing whole sub-effects, not by thinning every emitter** — halving every count everywhere degrades the read of all of them, where dropping secondary sparks and detail smoke keeps the primary effect intact.
 12. **Watch the effect play in-engine before calling it done** — a graph that reads correctly in the node editor can still be wrong in motion, at speed, or against the scene's actual background.
-13. **Hand the collision signal to gameplay, never the decision** — a particle collision callback reports that something was hit; whether that is damage is a `Game.Core.*` rule per `coding-principles.md`'s Shared Core integrity rule.
+13. **Hand the collision signal to gameplay, never the decision** — a particle collision callback reports that something was hit; whether that is damage is a `Game.Core.*` rule per `csharp-standards` → `coding-principles.md`'s Shared Core integrity rule.
 
 ## 5. Specific goals / tasks this skill performs
 - Tool selection between VFX Graph and the built-in Particle System against pipeline, platform tier, and gameplay contract.

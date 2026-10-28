@@ -1,19 +1,12 @@
 ---
 name: unity-camera-fundamentals
-description: >
-  Technique for Unity's native `Camera` component and plain `Transform` camera
-  scripting: perspective and orthographic projection, vertical field of view
-  and aspect behaviour, physical camera and gate fit, clip planes and depth
-  precision, culling masks and per-layer cull distances, camera depth and clear
-  flags, viewport rects for split screen, `RenderTexture` output, world, screen
-  and viewport conversions, `ScreenPointToRay` picking, and hand-rolled follow,
-  bounds clamp and shake. Use when a `Camera` must be configured or scripted
-  directly. Not for: Cinemachine — `unity-cinemachine-authoring`; URP camera
-  stacking and renderer settings — `unity-urp-rendering`; post-process
-  effects — `unity-post-processing`; pointer input — `unity-input-system`.
+description: "Native Camera: projection, FOV, aspect and letterboxing, clip planes, culling masks, stacking, viewport, screen-to-world. Use for camera setup without Cinemachine."
+user-invocable: false
 ---
 
 # Unity Camera Fundamentals — The Camera Component and Transform-Level Scripting
+
+**Not for:** Cinemachine — `unity-cinemachine-authoring`; URP camera stacking and renderer settings — `unity-urp-rendering`; post-process effects — `unity-post-processing`; pointer input — `unity-input-system`.
 
 ## Bundled resources
 
@@ -45,8 +38,8 @@ Act as the native camera specialist — the `Camera` component, its adjacent per
 - Negative trigger: camera stacking, the renderer a camera uses, or anything on the per-pipeline sibling component — that is `unity-urp-rendering` under URP and `unity-hdrp-rendering` under HDRP; this skill owns the `Camera`'s own fields, not the pipeline behind them.
 - Negative trigger: the Camera's Post Processing toggle and anything a Volume drives — that is `unity-post-processing`.
 - Negative trigger: reading a pointer, stick, or touch position to feed a conversion — that is `unity-input-system`; this skill consumes the screen position it produces.
-- Negative trigger: UI safe area and notch handling — that is the UI/UX Programmer's scope.
-- Negative trigger: a gameplay decision made from a camera-driven raycast — the camera supplies the world point, `Game.Core.*` decides what it means, per `coding-principles.md`.
+- Negative trigger: UI safe area and notch handling — that is the Unity Engineer's scope.
+- Negative trigger: a gameplay decision made from a camera-driven raycast — the camera supplies the world point, `Game.Core.*` decides what it means, per `csharp-standards` → `coding-principles.md`.
 
 ## 4. How to use this skill
 1. **Confirm which component actually owns the setting on this pipeline** — plain `Camera` fields under the Built-in pipeline, with `UniversalAdditionalCameraData` or `HDAdditionalCameraData` holding the renderer, stacking, and post-processing toggles on an SRP. [root-links.md](references/root-links.md) pins the doc version these fields are read at.
@@ -57,12 +50,12 @@ Act as the native camera specialist — the `Camera` component, its adjacent per
 6. **Order multiple cameras with depth and clear flags together, never depth alone** — a higher-depth camera with Skybox or Solid Color clear erases what rendered before it, so a layered composite needs Depth Only on everything above the base.
 7. **Pass a real distance as the z component of `ScreenToWorldPoint`**, per [coordinates-and-raycasting.md](references/coordinates-and-raycasting.md) — the input's z is distance from the camera, not a screen coordinate, and leaving it zero returns the camera's own position, which looks like a broken conversion rather than a missing argument.
 8. **Check the returned z before trusting `WorldToScreenPoint`** — a point behind the camera returns a mirrored on-screen position with a negative z, so an off-screen indicator built without that check points confidently the wrong way.
-9. **Bound and mask every camera-driven raycast, and use the non-allocating overload in a per-frame path** — an unbounded ray against every layer is the default nobody chose, and the allocating overload violates the no-per-frame-allocation rule in `coding-principles.md`.
+9. **Bound and mask every camera-driven raycast, and use the non-allocating overload in a per-frame path** — an unbounded ray against every layer is the default nobody chose, and the allocating overload violates the no-per-frame-allocation rule in `csharp-standards` → `coding-principles.md`.
 10. **Follow in `LateUpdate`, and check the target's interpolation before blaming the smoothing**, per [follow-and-shake.md](references/follow-and-shake.md) — a target moved by physics only has a smooth transform if its `Rigidbody` has Interpolate enabled, and no amount of camera smoothing removes judder that is already in the target's position.
 11. **Smooth with `SmoothDamp` and a persistent velocity field, never `Lerp` against a raw constant** — `Lerp` with a per-frame constant is framerate-dependent, and a `SmoothDamp` velocity reset each frame silently degrades into the same thing.
 12. **Compose shake as an offset applied after the follow resolves, and sample noise at distinct coordinates per axis** — accumulating shake into the camera's own position drifts it permanently, and sampling `PerlinNoise` with the same input on two axes returns the same value, producing a diagonal slide rather than a shake.
 13. **Derive bounds clamping from the current view size, not a fixed padding constant** — half-extents come from `orthographicSize` times aspect, or the frustum width at the target depth, so a hard-coded margin breaks on the next aspect ratio.
-14. **Keep the camera presentational** — it reads an already-resolved target position and supplies world points; the gameplay meaning of a picked point is decided in `Game.Core.*` per `coding-principles.md`'s Shared Core integrity rule.
+14. **Keep the camera presentational** — it reads an already-resolved target position and supplies world points; the gameplay meaning of a picked point is decided in `Game.Core.*` per `csharp-standards` → `coding-principles.md`'s Shared Core integrity rule.
 
 ## 5. Specific goals / tasks this skill performs
 - Projection, field of view or orthographic size, physical camera and Gate Fit, and clip planes sized to the real scene.
@@ -71,7 +64,7 @@ Act as the native camera specialist — the `Camera` component, its adjacent per
 - Split screen through viewport rects, and minimap or picture-in-picture through a `RenderTexture`.
 - World, screen, and viewport conversions, and camera-driven picking.
 - Hand-written follow, bounds clamping, and shake for cameras not driven by Cinemachine.
-- Out of scope: Cinemachine (`unity-cinemachine-authoring`); camera stacking and per-camera pipeline data (`unity-urp-rendering`, `unity-hdrp-rendering`); post-processing (`unity-post-processing`); reading input devices (`unity-input-system`); UI safe area (`ui-ux-programmer`); gameplay decisions from a picked point (`csharp-engineer`).
+- Out of scope: Cinemachine (`unity-cinemachine-authoring`); camera stacking and per-camera pipeline data (`unity-urp-rendering`, `unity-hdrp-rendering`); post-processing (`unity-post-processing`); reading input devices (`unity-input-system`); UI safe area (`gameplay-engineer`); gameplay decisions from a picked point (`csharp-engineer`).
 
 ## 6. Output format
 ```
@@ -120,7 +113,7 @@ Act as the native camera specialist — the `Camera` component, its adjacent per
 - Never smooth with `Lerp` and a raw constant, and never reset a `SmoothDamp` velocity each frame — both are framerate-dependent in effect.
 - Never sample `PerlinNoise` with the same coordinate on two axes — identical values give a diagonal slide, not a shake.
 - Never accumulate shake into the camera's own position — apply it as an offset after the follow resolves, or the base position drifts.
-- Never call `Camera.main` in a per-frame method — cache it, per `performance-and-algorithms.md`.
-- Never reach for the legacy `Input` class to get a pointer position — the input owner supplies it, per the Obsolete APIs rule in `coding-principles.md`.
+- Never call `Camera.main` in a per-frame method — cache it, per `csharp-standards` → `performance-and-algorithms.md`.
+- Never reach for the legacy `Input` class to get a pointer position — the input owner supplies it, per the Obsolete APIs rule in `csharp-standards` → `coding-principles.md`.
 - Never hand-roll confiner-quality bounds, composited shake, or priority blending on a project that has Cinemachine — route to `unity-cinemachine-authoring`.
 - Never let camera code mutate gameplay state — it is presentational, and the picked point's meaning belongs to `Game.Core.*`.

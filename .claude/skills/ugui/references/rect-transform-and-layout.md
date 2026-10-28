@@ -47,7 +47,7 @@ before `CanvasScaler` ever enters the picture** — per
 combine both: anchors solve *where on the screen* an element sits at any
 aspect ratio, `CanvasScaler` solves *how big* everything is at any
 resolution. Neither alone is sufficient for a genuinely responsive PC +
-mobile HUD, per `coding-principles.md`'s responsive-UI expectation.
+mobile HUD, per `csharp-standards` → `coding-principles.md`'s responsive-UI expectation.
 
 ## Auto Layout
 
@@ -107,4 +107,4 @@ Content Size Fitter). See
 [scripting-api-and-extensibility.md](scripting-api-and-extensibility.md)
 before writing one from scratch — a `LayoutElement` override or a
 combination of existing Layout Group settings covers most cases without a
-new class, per KISS in `coding-principles.md`.
+new class, per KISS in `csharp-standards` → `coding-principles.md`.

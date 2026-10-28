@@ -6,7 +6,7 @@ Covers: SKILL.md §4 — **"Name the claimed source before anything else"**, **"
 What each service actually gives an investigation, and the difference between
 a service that is installed and one that is reporting. Resolving the frames a
 service hands over is `crash-anr-symbolication`'s; performing the integration
-is `tech-lead-sdk-platform`'s.
+is `sdk-platform-engineer`'s.
 
 ## What each service provides
 

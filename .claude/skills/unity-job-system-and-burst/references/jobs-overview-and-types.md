@@ -5,7 +5,7 @@ Covers: SKILL.md §4 — **"Pick the job type from how the work divides, not fro
 
 The four job interfaces and the constraints every one of them shares. Which
 container the job reads is `unity-collections`; whether the work should be
-parallelized at all is `tech-lead-performance`.
+parallelized at all is `technical-architect`.
 
 ## Shared constraints
 

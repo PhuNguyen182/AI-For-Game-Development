@@ -1,23 +1,12 @@
 ---
 name: shared-core-boundary-audit
-description: >
-  Audit of the `Game.Core.*` against `Game.Client.*` boundary that
-  `coding-principles.md` makes non-negotiable. Detects `using UnityEngine`
-  and asmdef leaks into Shared Core, determinism violations such as
-  `UnityEngine.Random`, `Random.Range`, `Time.time`, `Time.deltaTime`,
-  `DateTime.Now`, `Stopwatch`, or `Guid.NewGuid`, game-rule arithmetic
-  reimplemented inside a MonoBehaviour, reversed dependency direction, and
-  reach-through chains. Use when reviewing any submission that touches
-  gameplay rules, damage, cooldowns, economy maths, or crosses the Core
-  and Client line. Not for: authoring the rules, owned by
-  `csharp-engineer`; asserting them in tests, owned by
-  `unity-test-framework`; building the standing compile-time diagnostic
-  for a recurring violation, owned by `roslyn-analyzer-codefix`; secrets
-  and dangerous files, owned by `secret-and-supply-chain-scan`;
-  performance findings, owned by `unity-profiler-diagnostics`.
+description: "Audit Game.Core vs Game.Client: UnityEngine/asmdef leaks into Core, determinism violations (Random, Time, DateTime), rules reimplemented in MonoBehaviours, reversed dependencies. Use when reviewing rule or boundary changes."
+user-invocable: false
 ---
 
 # Shared Core Boundary Audit — determinism, layering, and rule duplication
+
+**Not for:** authoring the rules, owned by `csharp-engineer`; asserting them in tests, owned by `unity-test-framework`; building the standing compile-time diagnostic for a recurring violation, owned by `roslyn-analyzer-codefix`; secrets and dangerous files, owned by `secret-and-supply-chain-scan`; performance findings, owned by `unity-profiler-diagnostics`.
 
 ## 1. Objective
 Catch the one defect class this project cannot absorb: a game rule that exists in two places, or a Shared Core that cannot produce the same answer twice. Both silently break the client-prediction and server-authority model — prediction and authority disagree, and the desync surfaces months later as an unreproducible gameplay bug rather than as a compile error. This audit converts that risk into a mechanical, greppable check that a reviewer runs the same way every time, instead of a judgment that depends on how carefully one person happened to read a diff.
@@ -38,8 +27,8 @@ Act as the layering and determinism auditor for the QA track, on behalf of `code
 
 ## 4. How to use this skill
 1. **Establish which layer each changed file belongs to before reading any logic** — namespace and assembly definition decide it, not the folder. A file whose namespace says `Game.Core` while its asmdef references a `UnityEngine` module is already a finding, and every later step reads differently depending on the answer.
-2. **Grep Shared Core for the `UnityEngine` dependency directly** — search the Core files for `using UnityEngine`, `MonoBehaviour`, `ScriptableObject`, `GameObject`, `Transform`, and `Vector3`. Per `naming-convention.md`'s Namespace boundary section, a Core class that references a `UnityEngine` type belongs in `Game.Client.*` instead; report the file and the type, and route the placement decision.
-3. **Grep Shared Core for non-determinism, which the compiler cannot catch** — `UnityEngine.Random`, `Random.Range`, `Time.time`, `Time.deltaTime`, `Time.realtimeSinceStartup`, `DateTime.Now`, `DateTime.UtcNow`, `Stopwatch`, `Guid.NewGuid`, and `Environment.TickCount`. Each must instead arrive through an injected seed or clock abstraction, per `coding-principles.md`'s Shared Core integrity section. This is the highest-value step: none of these fail a build, and all of them break client and server agreement.
+2. **Grep Shared Core for the `UnityEngine` dependency directly** — search the Core files for `using UnityEngine`, `MonoBehaviour`, `ScriptableObject`, `GameObject`, `Transform`, and `Vector3`. Per `csharp-standards` → `naming-convention.md`'s Namespace boundary section, a Core class that references a `UnityEngine` type belongs in `Game.Client.*` instead; report the file and the type, and route the placement decision.
+3. **Grep Shared Core for non-determinism, which the compiler cannot catch** — `UnityEngine.Random`, `Random.Range`, `Time.time`, `Time.deltaTime`, `Time.realtimeSinceStartup`, `DateTime.Now`, `DateTime.UtcNow`, `Stopwatch`, `Guid.NewGuid`, and `Environment.TickCount`. Each must instead arrive through an injected seed or clock abstraction, per `csharp-standards` → `coding-principles.md`'s Shared Core integrity section. This is the highest-value step: none of these fail a build, and all of them break client and server agreement.
 4. **Hunt the reverse duplication — a rule reimplemented in the Client layer** — read every MonoBehaviour in the diff for arithmetic that decides an outcome: subtracting from health, comparing against a threshold, accumulating a cost, or advancing a state. If the same decision exists in `Game.Core.*`, the MonoBehaviour must call it rather than restate it. If it exists *only* in the MonoBehaviour, the rule is in the wrong layer entirely.
 5. **Verify the dependency direction points one way** — Client may depend on Core; Core may never depend on Client or Server. A Core file that names a Client type, even in a comment-driven workaround, inverts the model that lets the server run the same code.
 6. **Check reach-through chains against the Law of Demeter** — a chain such as `player.GetInventory().GetItem(0).GetStats().Damage` couples this call site to three objects it does not own, so a Core change ripples unpredictably into unrelated Client code. Report the chain and name the single method the owning object should expose instead.
@@ -53,7 +42,7 @@ Act as the layering and determinism auditor for the QA track, on behalf of `code
 - Detecting game-rule logic duplicated into, or living only in, a MonoBehaviour.
 - Confirming the dependency direction and flagging reach-through chains.
 - Producing a boundary verdict with `path:line` findings, routed to an owning agent.
-- Out of scope: writing or moving the code (`csharp-engineer`, `unity-engineer`); test coverage of the rule (`unity-test-framework`); secrets and dangerous files (`secret-and-supply-chain-scan`); performance verdicts (`unity-profiler-diagnostics`); the standing compile-time analyzer for a recurring violation (`roslyn-analyzer-codefix`); deciding where a new rule belongs (`technical-architect`).
+- Out of scope: writing or moving the code (`csharp-engineer`, `gameplay-engineer`); test coverage of the rule (`unity-test-framework`); secrets and dangerous files (`secret-and-supply-chain-scan`); performance verdicts (`unity-profiler-diagnostics`); the standing compile-time analyzer for a recurring violation (`roslyn-analyzer-codefix`); deciding where a new rule belongs (`technical-architect`).
 
 ## 6. Output format
 ```
@@ -65,7 +54,7 @@ Act as the layering and determinism auditor for the QA track, on behalf of `code
 - Dependency direction: <one-way confirmed / inverted at path:line>
 - Reach-through chains: <path:line and the method that should exist instead — or none>
 - Decision: <approve boundary / request changes / needs a placement decision>
-- Routed to: <csharp-engineer / unity-engineer / technical-architect / none>
+- Routed to: <csharp-engineer / gameplay-engineer / technical-architect / none>
 ```
 
 **Extended report — emit ONLY when the requester asks for it.** It replaces the decision's tail with all three fields:
@@ -82,7 +71,7 @@ Act as the layering and determinism auditor for the QA track, on behalf of `code
 
 **Example 2**
 - Input: "The cooldown check is two lines — just leave it in the MonoBehaviour, moving it to Core is over-engineering for this."
-- Output: declined. A cooldown decides an outcome, so `coding-principles.md`'s Shared Core integrity section places it in `Game.Core.*` regardless of size — and it is precisely the two-line rules that get quietly restated in a second place later, because they look too small to be worth calling into. Reported as rule duplication and routed to `csharp-engineer`; the size of the change is not the criterion.
+- Output: declined. A cooldown decides an outcome, so `csharp-standards` → `coding-principles.md`'s Shared Core integrity section places it in `Game.Core.*` regardless of size — and it is precisely the two-line rules that get quietly restated in a second place later, because they look too small to be worth calling into. Reported as rule duplication and routed to `csharp-engineer`; the size of the change is not the criterion.
 
 **Example 3**
 - Input: a Core file whose grep hit for `Time.deltaTime` turns out to sit inside an `#if UNITY_EDITOR` diagnostic block.

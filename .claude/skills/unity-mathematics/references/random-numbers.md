@@ -4,7 +4,7 @@ Source: [Random numbers](https://docs.unity3d.com/Packages/com.unity.mathematics
 Covers: SKILL.md §4 — **"For any Shared Core RNG need, use `Unity.Mathematics.Random` with an explicit, injected, nonzero seed"**.
 
 The RNG whose state is entirely caller-managed, which is what makes it the
-answer to `coding-principles.md`'s requirement for a seeded, injectable RNG in
+answer to `csharp-standards` → `coding-principles.md`'s requirement for a seeded, injectable RNG in
 Shared Core where `UnityEngine.Random`'s implicit global state is disallowed.
 
 ## State model

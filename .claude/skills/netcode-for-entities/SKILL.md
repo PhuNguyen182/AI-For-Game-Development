@@ -1,27 +1,12 @@
 ---
 name: netcode-for-entities
-description: >
-  Technique for Unity's Netcode for Entities, package `com.unity.netcode` —
-  the DOTS/ECS server-authoritative networking layer with client prediction:
-  `GhostAuthoringComponent`, GhostField and GhostComponent attributes,
-  `IRpcCommand`, `ICommandData`/`IInputComponentData`,
-  `ClientServerBootstrap`, `PredictedSimulationSystemGroup`, the Simulate
-  tag, `NetworkTime`, `ClientServerTickRate`, ghost groups, host migration,
-  connection approval, lag compensation. Use once NfE is the chosen
-  foundation — replicating entity state, writing RPCs or commands, tuning
-  prediction/interpolation/bandwidth, or debugging via the PlayMode Tool or
-  Network Profiler. Not for: choosing NfE or the sync model —
-  `netcode-architecture-decision`; the GameObject/MonoBehaviour stack —
-  `netcode-for-gameobjects`; general ECS modeling —
-  `unity-ecs-architecture`; job scheduling and Burst —
-  `unity-job-system-and-burst`, `unity-burst-compiler`; non-predicted
-  physics — `unity-physics`; ghost rendering — `unity-entities-graphics`;
-  input device actions and bindings behind a command —
-  `unity-input-system`; the UTP driver and Relay data under the connection —
-  `unity-transport`; UGS dashboard/account setup — `tech-lead-sdk-platform`.
+description: "Netcode for Entities (DOTS): ghosts, GhostField, RPCs, commands and prediction, prediction groups, snapshot tuning, relevancy, thin clients. Use on an NfE project."
+user-invocable: false
 ---
 
 # Netcode for Entities — Server-Authoritative Multiplayer with Client Prediction
+
+**Not for:** choosing NfE or the sync model — `netcode-architecture-decision`; the GameObject/MonoBehaviour stack — `netcode-for-gameobjects`; general ECS modeling — `unity-ecs-architecture`; job scheduling and Burst — `unity-job-system-and-burst`, `unity-burst-compiler`; non-predicted physics — `unity-physics`; ghost rendering — `unity-entities-graphics`; input device actions and bindings behind a command — `unity-input-system`; the UTP driver and Relay data under the connection — `unity-transport`; UGS dashboard/account setup — `sdk-platform-engineer`.
 
 ## Bundled resources
 
@@ -109,7 +94,7 @@ or diagnosed.
   `unity-entities-graphics`.
 - Negative trigger: creating the Unity Gaming Services project, Dashboard,
   or Lobby/Relay/Authentication account setup itself — that's
-  `tech-lead-sdk-platform`; this skill covers only the NfE-side API once
+  `sdk-platform-engineer`; this skill covers only the NfE-side API once
   those services exist.
 
 ## 4. How to use this skill
@@ -118,13 +103,13 @@ or diagnosed.
 3. **Configure the transport and connection lifecycle explicitly, rather than assuming a connection is ready for gameplay**, per [transport-and-connection.md](references/transport-and-connection.md) — `NetworkStreamInGame` must be added by hand once a connection is approved, and a Relay-backed session needs its own driver wiring; NfE does neither automatically.
 4. **Model every piece of networked state as a ghost, never as a stream of ad hoc RPCs** — `GhostAuthoringComponent` plus `[GhostField]`, per [ghost-authoring.md](references/ghost-authoring.md). Pick `SupportedGhostMode`/`DefaultGhostMode` from who needs to predict it — the owner predicts their own character, everyone else interpolates — and reach for [ghost-spawning-and-groups.md](references/ghost-spawning-and-groups.md) or [ghost-serialization-templates.md](references/ghost-serialization-templates.md) only once plain `[GhostField]` genuinely cannot express the case (YAGNI).
 5. **Choose RPC or command stream by who initiates and how often**, per [rpcs-and-commands.md](references/rpcs-and-commands.md) — `IRpcCommand` for a reliable, one-off event; `ICommandData`/`IInputComponentData` for continuous per-tick input. Never poll `UnityEngine.Input` inside a system that runs in the prediction loop; only the `GhostInputSystemGroup` gathering system may touch it.
-6. **Keep the game rule itself in `Game.Core.*`, even inside a predicted `ISystem`** — per `coding-principles.md`'s Shared Core integrity section. Determinism is not optional here: the client's resimulation has to reach the same result the server will, so a rule quietly reimplemented inside `OnUpdate` is a second, divergent copy of the authority the server already owns.
+6. **Keep the game rule itself in `Game.Core.*`, even inside a predicted `ISystem`** — per `csharp-standards` → `coding-principles.md`'s Shared Core integrity section. Determinism is not optional here: the client's resimulation has to reach the same result the server will, so a rule quietly reimplemented inside `OnUpdate` is a second, divergent copy of the authority the server already owns.
 7. **Write predicted-ghost systems against the `Simulate` tag, not a raw tick comparison**, per [prediction-core.md](references/prediction-core.md) and the tick math in [time-and-interpolation.md](references/time-and-interpolation.md) — `PredictedGhost.ShouldPredict()` still works but is the legacy pattern; write new queries against `Simulate` instead.
 8. **Treat every prediction correction as something to minimize, not eliminate**, per [prediction-caveats.md](references/prediction-caveats.md) — NfE's own documentation states it does not guarantee determinism even with quantized values, so budget `GhostPredictionSmoothingSystem` and the documented edge cases (partial-snapshot interactions, quantization drift, structural-change races) rather than treating a visible correction as an eliminable bug.
 9. **Route a predicted ghost's physics through `PredictedFixedStepSimulationSystemGroup`, never a bespoke physics loop**, per [physics-integration.md](references/physics-integration.md) — a second, unpredicted physics world is only for client-only VFX that must never interact with gameplay.
-10. **Tune bandwidth and CPU deliberately, before assuming the transport itself is the bottleneck**, per [optimization-and-bandwidth.md](references/optimization-and-bandwidth.md) — importance, `MaxSendRate`, relevancy, and preserialization each trade something specific; measure with the Network Profiler's Snapshot Overview tab first, per `performance-and-algorithms.md`'s Verification section.
-11. **Add host migration only for a client-hosted topology that actually needs to survive the host leaving**, per [host-migration.md](references/host-migration.md) — it requires `ENABLE_HOST_MIGRATION` plus Unity Lobby/Relay/Authentication, carries hard limits (10 MiB snapshot cap, no child-entity ghosts, WebGL unsupported), and is explicitly experimental; state that in the handoff per `coding-principles.md`'s Handoff section rather than presenting it as a finished guarantee.
-12. **Verify every latency, bandwidth, or prediction-cost claim against the Network Profiler or PlayMode Tool** — never against local-loopback testing alone, per [testing-and-debugging.md](references/testing-and-debugging.md) and `performance-and-algorithms.md`'s Verification section; an in-Editor session with network emulation off has zero RTT, jitter, and packet loss by construction and proves nothing about a real connection.
+10. **Tune bandwidth and CPU deliberately, before assuming the transport itself is the bottleneck**, per [optimization-and-bandwidth.md](references/optimization-and-bandwidth.md) — importance, `MaxSendRate`, relevancy, and preserialization each trade something specific; measure with the Network Profiler's Snapshot Overview tab first, per `csharp-standards` → `performance-and-algorithms.md`'s Verification section.
+11. **Add host migration only for a client-hosted topology that actually needs to survive the host leaving**, per [host-migration.md](references/host-migration.md) — it requires `ENABLE_HOST_MIGRATION` plus Unity Lobby/Relay/Authentication, carries hard limits (10 MiB snapshot cap, no child-entity ghosts, WebGL unsupported), and is explicitly experimental; state that in the handoff per `csharp-standards` → `coding-principles.md`'s Handoff section rather than presenting it as a finished guarantee.
+12. **Verify every latency, bandwidth, or prediction-cost claim against the Network Profiler or PlayMode Tool** — never against local-loopback testing alone, per [testing-and-debugging.md](references/testing-and-debugging.md) and `csharp-standards` → `performance-and-algorithms.md`'s Verification section; an in-Editor session with network emulation off has zero RTT, jitter, and packet loss by construction and proves nothing about a real connection.
 13. **Ask before guessing tick rate, build topology, or which ghosts are predicted versus interpolated** — each one reshapes the ghost authoring and system layout, and a value assumed wrong is expensive to unwind once gameplay code already depends on it.
 
 ## 5. Specific goals / tasks this skill performs
@@ -156,7 +141,7 @@ or diagnosed.
   (`unity-entities-graphics`); action assets, bindings and rebinding behind an
   input command (`unity-input-system`); the UTP driver, pipelines, TLS and Relay
   data under the connection (`unity-transport`); UGS account/dashboard setup
-  (`tech-lead-sdk-platform`).
+  (`sdk-platform-engineer`).
 
 ## 6. Output format
 ```
@@ -197,11 +182,11 @@ or diagnosed.
 
 ## 8. Edge cases & guardrails
 - Never poll `UnityEngine.Input` inside a system that runs in `PredictedSimulationSystemGroup` — a resimulated tick reads live input differently on each replay, which is misprediction by construction.
-- Never reimplement a `Game.Core.*` rule inside a networked `ISystem` — `Unity.Entities`/`Unity.NetCode` are Unity dependencies Core cannot reference, so the copy silently diverges from the authority the server already owns, per `coding-principles.md`'s Shared Core integrity section.
+- Never reimplement a `Game.Core.*` rule inside a networked `ISystem` — `Unity.Entities`/`Unity.NetCode` are Unity dependencies Core cannot reference, so the copy silently diverges from the authority the server already owns, per `csharp-standards` → `coding-principles.md`'s Shared Core integrity section.
 - Never assume NfE guarantees determinism, quantized values or not — its own documentation states it does not; the project's own determinism discipline is what actually keeps client and server in agreement.
 - Never write a predicted-ghost query without the `Simulate` tag — during a partial-snapshot rollback it runs on stale, frozen entities that should not be simulating this iteration.
 - Never remove and re-add a replicated component on a predicted ghost without checking `RollbackPredictionOnStructuralChanges` — the re-added component can reset silently to its default (zero) value instead of the server's.
-- Never ship host migration without flagging its experimental status and hard limits (10 MiB snapshot, no child-entity ghosts, WebGL unsupported) in the handoff, per `coding-principles.md`'s Handoff section.
+- Never ship host migration without flagging its experimental status and hard limits (10 MiB snapshot, no child-entity ghosts, WebGL unsupported) in the handoff, per `csharp-standards` → `coding-principles.md`'s Handoff section.
 - Never claim a bandwidth or latency fix worked from an in-Editor session with network emulation off — it has zero RTT, jitter, and loss by construction and cannot exercise the bug being fixed.
 - Never let a client-side value drift from the server's silently — NfE does not quantize between ticks during resimulation, so an unquantized local increment can diverge from the server's quantized one.
 - If tick rate, build topology, or which ghosts are predicted versus interpolated is unspecified, ask — do not guess a value gameplay code will come to depend on.

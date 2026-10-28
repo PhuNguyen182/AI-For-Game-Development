@@ -102,14 +102,14 @@ namespace Game.Client.Layout
 
 `LayoutBase.SetChildrenFillShrinkSize(node, childSize, layoutSize)` is the
 provided helper for the fill/shrink obligation — prefer it over calling
-`SetShrinkFillSize` per child, per KISS in `coding-principles.md`. The docs
+`SetShrinkFillSize` per child, per KISS in `csharp-standards` → `coding-principles.md`. The docs
 also ship a `CustomLayout` example under `Samples/Scripts`.
 
 ## The `FlexalonNode` members a layout needs
 
 | Member | Use | Source |
 |---|---|---|
-| `Children` (`IReadOnlyList<FlexalonNode>`) / `GetChild(int)` | The children to measure and arrange. Concrete-typed, so `for`/`foreach` over it does not allocate, per `performance-and-algorithms.md` | [Interface FlexalonNode](https://www.flexalon.com/docs/api/Flexalon.FlexalonNode.html) |
+| `Children` (`IReadOnlyList<FlexalonNode>`) / `GetChild(int)` | The children to measure and arrange. Concrete-typed, so `for`/`foreach` over it does not allocate, per `csharp-standards` → `performance-and-algorithms.md` | [Interface FlexalonNode](https://www.flexalon.com/docs/api/Flexalon.FlexalonNode.html) |
 | `GetSizeType(Axis)` / `GetSizeType(int)` | Which axes this layout must compute | [Interface FlexalonNode](https://www.flexalon.com/docs/api/Flexalon.FlexalonNode.html) |
 | `GetMeasureSize(int, float)` / `GetMeasureSize(Vector3)` | A child's size during measure | [Interface FlexalonNode](https://www.flexalon.com/docs/api/Flexalon.FlexalonNode.html) |
 | `GetArrangeSize()` | A child's size during arrange | [Interface FlexalonNode](https://www.flexalon.com/docs/api/Flexalon.FlexalonNode.html) |
@@ -124,8 +124,8 @@ also ship a `CustomLayout` example under `Samples/Scripts`.
 
 | Rule | Reason | Source |
 |---|---|---|
-| No allocation in `Measure`/`Arrange` | They run inside the per-frame update for every dirty node — treat them as hot paths, per `performance-and-algorithms.md` | synthesized |
+| No allocation in `Measure`/`Arrange` | They run inside the per-frame update for every dirty node — treat them as hot paths, per `csharp-standards` → `performance-and-algorithms.md` | synthesized |
 | No `Instantiate`/`Destroy`, no scene mutation | `Measure` may run several times per update; side effects would multiply | [Custom Layout](https://www.flexalon.com/docs/customLayout) |
 | No `UnityEngine.Random`, no wall-clock time | Layout re-runs constantly; use a seed field the way `FlexalonRandomLayout` does | [Random Layout](https://www.flexalon.com/docs/randomLayout) |
-| Keep the arrangement rule in `Game.Client.*` | `LayoutBase` is a MonoBehaviour; a game rule that *decides* the arrangement belongs in `Game.Core.*`, per `coding-principles.md`'s Shared Core integrity section | synthesized |
-| Prefer nesting built-ins first | A custom layout is permanent maintenance for a one-off shape — YAGNI in `coding-principles.md` | synthesized |
+| Keep the arrangement rule in `Game.Client.*` | `LayoutBase` is a MonoBehaviour; a game rule that *decides* the arrangement belongs in `Game.Core.*`, per `csharp-standards` → `coding-principles.md`'s Shared Core integrity section | synthesized |
+| Prefer nesting built-ins first | A custom layout is permanent maintenance for a one-off shape — YAGNI in `csharp-standards` → `coding-principles.md` | synthesized |

@@ -15,7 +15,7 @@ raiser and every subscriber, including across scene loads.
 |---|---|---|---|
 | `VoidEventChannelSO : ScriptableObject` with `event Action OnEventRaised;` and `RaiseEvent()` | Signals that something happened, no data | An on/off notification (e.g. "level loaded") needs zero payload | synthesized |
 | `EventChannelSO<T> : ScriptableObject` with `event Action<T> OnEventRaised;` and `RaiseEvent(T value)` | Signals what happened, with a typed payload | Damage dealt, item picked up — anything the subscriber needs data to react to | synthesized |
-| Subscriber lifecycle: `channel.OnEventRaised += this.OnDamageDealt;` in `OnEnable`, `-=` in `OnDisable` | Standard C# event subscription lifecycle | Every subscriber, without exception | `coding-principles.md`'s Event handlers section |
+| Subscriber lifecycle: `channel.OnEventRaised += this.OnDamageDealt;` in `OnEnable`, `-=` in `OnDisable` | Standard C# event subscription lifecycle | Every subscriber, without exception | `csharp-standards` → `coding-principles.md`'s Event handlers section |
 
 ## Code shape
 
@@ -62,6 +62,6 @@ public class ScoreDisplay : MonoBehaviour
 | Best fit | Many code-driven, cross-scene subscribers with typed data | Few designer-authored reactions, no payload | synthesized |
 
 **Critical caveat**: An unsubscribed `+=` is a leak exactly like any other C#
-event, per `performance-and-algorithms.md`'s Memory discipline — always pair
+event, per `csharp-standards` → `performance-and-algorithms.md`'s Memory discipline — always pair
 it with `-=` in `OnDisable`/`OnDestroy`. Unlike `GameEventListener`, nothing
 here unregisters a subscriber automatically.

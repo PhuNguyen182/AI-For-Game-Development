@@ -1,21 +1,12 @@
 ---
 name: unity-post-processing
-description: >
-  Technique for Unity post-processing and full-screen effects: the URP Volume
-  system — `Volume`, `VolumeProfile`, `VolumeComponent`, `VolumeManager`,
-  global versus local scope, priority, weight, blend distance — the built-in
-  Volume Override catalog from Bloom and Tonemapping through Depth of Field,
-  Color Adjustments, Motion Blur and Vignette, custom effects through
-  `FullScreenPassRendererFeature` or a scripted `ScriptableRendererFeature`
-  plus `VolumeComponent`, and legacy Post Processing Stack v2 on the Built-in
-  pipeline. Use when a full-screen effect must be added, tuned, or authored.
-  Not for: pipeline choice — `render-pipeline-urp-hdrp`; HDRP Volumes —
-  `unity-hdrp-rendering`; Renderer Features generally —
-  `unity-urp-rendering`; Adaptive Probe Volumes — `unity-lighting`; shader
-  content — `shader-authoring`.
+description: "Post-processing: Volume system, profiles, bloom, color grading, DoF, custom full-screen passes, mobile cost. Use for full-screen looks."
+user-invocable: false
 ---
 
 # Unity Post-Processing — Volumes, Effect Catalog, Custom Effects, Legacy PPv2
+
+**Not for:** pipeline choice — `render-pipeline-urp-hdrp`; HDRP Volumes — `unity-hdrp-rendering`; Renderer Features generally — `unity-urp-rendering`; Adaptive Probe Volumes — `unity-lighting`; shader content — `shader-authoring`.
 
 ## Bundled resources
 
@@ -49,7 +40,8 @@ Act as the post-processing specialist: choose the effect, set up the Volume that
 - Negative trigger: Renderer Features, rendering path, the 2D Renderer, or camera stacking — that is `unity-urp-rendering`, which owns Volume placement as pipeline configuration while this skill owns what the Volume drives.
 - Negative trigger: Adaptive Probe Volumes and light probes — that is `unity-lighting`; they share the word Volume with this system and nothing else.
 - Negative trigger: the Shader Graph nodes or HLSL a custom effect computes — that is `shader-authoring`; this skill delivers the pass and the parameter plumbing around it.
-- Negative trigger: the gameplay rule that decides when an effect should appear — a status effect, a low-health cue — that lives in `Game.Core.*` per `coding-principles.md`; this skill only wires the visual to consume it.
+- Negative trigger: the gameplay rule that decides when an effect should appear — a status effect, a low-health cue — that lives in `Game.Core.*` per `csharp-standards` → `coding-principles.md`; this skill only wires the visual to consume it.
+- Companion, if the official Unity plugin (`unity@claude-plugins-official`) is installed: `unity:urp-postprocessing` sets up and debugs URP Volumes and overrides in a live Editor; this skill still owns custom full-screen effects, PPv2 on Built-in and the cross-pipeline table. Where the two disagree this skill wins — the plugin marks reading `VolumeManager.instance.stack` as wrong, which holds for editing a profile but not for a renderer feature reading the resolved stack, per [custom-effects.md](references/custom-effects.md).
 
 ## 4. How to use this skill
 1. **Confirm the active render pipeline before citing a single API** — the three pipelines' post-processing systems are structurally parallel and mutually incompatible, and URP explicitly does not support the legacy PPv2 package, so installing it there adds a system that never renders. [root-links.md](references/root-links.md) pins the versions every page below is read at, and a Built-in RP project follows [postprocessing-v2-legacy.md](references/postprocessing-v2-legacy.md) from here instead.
@@ -62,8 +54,8 @@ Act as the post-processing specialist: choose the effect, set up the Volume that
 8. **Check the effect exists on the target pipeline before designing around it**, per [pipeline-availability.md](references/pipeline-availability.md) — Auto Exposure, Fog, and Screen Space Reflection are absent from URP, Panini Projection and Split Toning are absent from Built-in RP, and post-process anti-aliasing is a field on the camera's URP component rather than an override anyone can find in the catalog — `unity-urp-rendering` owns that component, so route it rather than searching the Volume list.
 9. **Choose the custom-effect path by whether the effect needs blendable parameters**, per [custom-effects.md](references/custom-effects.md) — `FullScreenPassRendererFeature` plus a Fullscreen Shader Graph needs no C# and gives no Volume blending; the scripted feature plus a `VolumeComponent` costs both and buys per-Volume tuning. Pick the second only when something must actually blend.
 10. **Pick the injection point from what the pass reads and whether its output should be graded** — an effect injected before post-processing is subsequently tonemapped and colour-graded, one injected after is not, and the same shader looks correct in one project and blown out in another for exactly this reason.
-11. **Treat turning post-processing on as the mobile cost, not the effect count** — a tile-based GPU resolves the framebuffer out of tile memory once the stack is enabled, so the meaningful decision on a low tier is whether that tier carries post-processing at all. Any claim that removing an effect helped ships with a Profiler GPU capture, per `performance-and-algorithms.md`'s Verification section.
-12. **Keep the decision in `Game.Core.*` and only the visual here** — the threshold at which a status effect darkens the screen is a game rule per `coding-principles.md`'s Shared Core integrity rule; this skill wires the vignette that rule drives.
+11. **Treat turning post-processing on as the mobile cost, not the effect count** — a tile-based GPU resolves the framebuffer out of tile memory once the stack is enabled, so the meaningful decision on a low tier is whether that tier carries post-processing at all. Any claim that removing an effect helped ships with a Profiler GPU capture, per `csharp-standards` → `performance-and-algorithms.md`'s Verification section.
+12. **Keep the decision in `Game.Core.*` and only the visual here** — the threshold at which a status effect darkens the screen is a game rule per `csharp-standards` → `coding-principles.md`'s Shared Core integrity rule; this skill wires the vignette that rule drives.
 
 ## 5. Specific goals / tasks this skill performs
 - Volume system setup: global and local scope, profiles, priority, weight, blend distance, layer masking.

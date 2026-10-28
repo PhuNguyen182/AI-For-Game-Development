@@ -5,7 +5,7 @@ Covers: SKILL.md §4 — **"Size the download before the player is committed to 
 
 Everything that only exists under the AssetBundle content build system: remote
 delivery, the download cache, and the post-launch content update flow. Where
-the content is hosted is `tech-lead-sdk-platform`'s decision, and what tunable
+the content is hosted is `sdk-platform-engineer`'s decision, and what tunable
 data ships alongside it is `live-ops-content-pipeline`'s.
 
 ## Pre-download

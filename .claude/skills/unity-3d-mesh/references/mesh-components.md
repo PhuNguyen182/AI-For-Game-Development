@@ -23,7 +23,7 @@ listed only for the boundary it marks — its actual configuration is
 |---|---|---|
 | `MeshFilter.mesh` | The `Mesh` instance a sibling `MeshRenderer` renders; a `MeshRenderer` alone with no `MeshFilter` renders nothing | [Mesh Filter component reference](https://docs.unity3d.com/Manual/class-MeshFilter.html) |
 | Changing the referenced mesh | Does **not** update the sibling `MeshRenderer`'s material list or any other of its settings — a mismatch against the new mesh's `subMeshCount` is the caller's responsibility | [Mesh Filter component reference](https://docs.unity3d.com/Manual/class-MeshFilter.html) |
-| `MeshFilter.mesh` vs `sharedMesh` | Reading `mesh` at runtime instantiates a private copy if none exists yet; `sharedMesh` reads/writes the shared asset directly, the same instance-vs-shared distinction `coding-principles.md`'s Memory discipline guidance applies to materials | [MeshFilter.mesh](https://docs.unity3d.com/ScriptReference/MeshFilter-mesh.html) |
+| `MeshFilter.mesh` vs `sharedMesh` | Reading `mesh` at runtime instantiates a private copy if none exists yet; `sharedMesh` reads/writes the shared asset directly, the same instance-vs-shared distinction `csharp-standards` → `coding-principles.md`'s Memory discipline guidance applies to materials | [MeshFilter.mesh](https://docs.unity3d.com/ScriptReference/MeshFilter-mesh.html) |
 
 ## MeshRenderer
 
@@ -35,7 +35,7 @@ listed only for the boundary it marks — its actual configuration is
 | `Light Probes` | Off / Blend Probes / Use Proxy Volume / Custom Provided — how this renderer samples baked indirect lighting | [Mesh Renderer component reference](https://docs.unity3d.com/Manual/class-MeshRenderer.html) |
 | `Reflection Probes` | Off / Blend Probes / Blend Probes and Skybox / Simple — how this renderer samples reflection data | [Mesh Renderer component reference](https://docs.unity3d.com/Manual/class-MeshRenderer.html) |
 | `Motion Vectors` | Camera Motion Only / Per Object Motion / Force No Motion — per-pixel motion tracking for motion blur and similar effects | [Mesh Renderer component reference](https://docs.unity3d.com/Manual/class-MeshRenderer.html) |
-| Mesh LOD section (`LOD Override`, `Override Level`, `LOD Selection Bias`) | Forces or biases which Mesh LOD level renders — the authoring workflow behind it belongs to `unity-engineer`/`tech-lead-performance`, per [root-links.md](root-links.md) | [Mesh LOD](https://docs.unity3d.com/Manual/lod/mesh-lod-introduction.html) |
+| Mesh LOD section (`LOD Override`, `Override Level`, `LOD Selection Bias`) | Forces or biases which Mesh LOD level renders — the authoring workflow behind it belongs to `gameplay-engineer`, per [root-links.md](root-links.md) | [Mesh LOD](https://docs.unity3d.com/Manual/lod/mesh-lod-introduction.html) |
 
 ## SkinnedMeshRenderer boundary
 
@@ -63,5 +63,5 @@ listed only for the boundary it marks — its actual configuration is
 
 Every mode but UV Layout supports a wireframe toggle. Press `F` while
 hovering the preview to reset zoom/pan. This panel, together with the
-Profiler per `performance-and-algorithms.md`'s Verification section, is
+Profiler per `csharp-standards` → `performance-and-algorithms.md`'s Verification section, is
 what turns a mesh-data claim into a measured one.

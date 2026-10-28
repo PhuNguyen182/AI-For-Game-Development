@@ -41,8 +41,8 @@ than an upstream statement.
 | Amend | Preserved unless explicitly reset | Whoever amended — so the sha changes while the author does not | [Rewriting History](https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History) |
 | `--author` override | Whatever string was passed, with no verification | The person who ran the command | synthesized |
 | Applied patch or emailed series | Taken from the patch's `From:` header | The maintainer who applied it | synthesized |
-| Squash of several commits | The **squashing** commit's author — the individual authors of the collapsed commits survive only in the message, if at all | synthesized |
-| Filtered or rewritten history | Whatever the rewrite wrote; original identities may be gone entirely | [Rewriting History](https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History) |
+| Squash of several commits | The **squashing** commit's author — the individual authors of the collapsed commits survive only in the message, if at all | The person who squashed | synthesized |
+| Filtered or rewritten history | Whatever the rewrite wrote; original identities may be gone entirely | Whoever ran the rewrite | [Rewriting History](https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History) |
 
 ```sh
 git log -5 --pretty=format:'%h | author %an | committer %cn | %s'
@@ -109,7 +109,7 @@ git shortlog -sne --no-merges HEAD
 Report the commit by default and a person only when the requester asked for
 one; when a person is named, name the identity field it came from (`%an` or
 `%cn`), the operations that could have changed it, and the detection level the
-trace ran at. Findings carry the five elements `defect-reporting.md`'s "Every
+trace ran at. Findings carry the five elements skill `qa-standards`'s "Every
 finding carries five things" section requires, and every claim here that rests
 on a git property rather than an upstream statement is marked `synthesized` so
 a reader can weigh it accordingly.

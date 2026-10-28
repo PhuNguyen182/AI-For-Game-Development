@@ -82,6 +82,6 @@ directions instead of preserving a ratio against an allocated width.
 | UI interaction needs an EventSystem, a GraphicsRaycaster, and a raycast-target `Graphic` | Missing any of the three fails silently — see [interactions-and-xr.md](interactions-and-xr.md) | [Interactable](https://www.flexalon.com/docs/interactable) |
 
 Splitting static and frequently-updating UI across separate `Canvas`
-components still applies here, per `performance-and-algorithms.md`'s
+components still applies here, per `csharp-standards` → `performance-and-algorithms.md`'s
 Rendering & draw calls section — a Flexalon layout that re-runs every frame
 also dirties the canvas geometry it sits on.

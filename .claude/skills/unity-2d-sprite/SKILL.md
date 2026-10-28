@@ -1,23 +1,12 @@
 ---
 name: unity-2d-sprite
-description: >
-  Unity built-in 2D Sprite authoring — `Sprite`, `SpriteRenderer`,
-  `SpriteMask`, `SortingGroup`, `SpriteAtlas`, `SpriteAtlasManager`.
-  Covers import settings such as Sprite Mode, Pixels Per Unit, Mesh Type
-  Full Rect versus Tight, and Generate Physics Shape; the Sprite Editor's
-  slicing, Custom Outline, Custom Physics Shape, and Secondary Textures
-  modules; Sorting Layer, Order in Layer, Transparency Sort Mode, Draw
-  Mode Sliced/Tiled 9-slicing, Mask Interaction; and atlas packing. Use
-  when a sprite renders wrong, sorts wrong, or costs too many draw calls.
-  Not for: `Rigidbody2D`/`Collider2D` dynamics, owned by
-  `unity-2d-physics`; `Light2D` setup, owned by `unity-urp-rendering`;
-  grid-cell painting, owned by `unity-tilemap`; spline level geometry,
-  owned by `unity-2d-spriteshape`; sprite shaders, owned by
-  `shader-authoring`; animation clips, owned by `unity-animation`; and
-  which sprite to show, owned by `csharp-engineer`.
+description: "2D sprites: import settings, Pixels Per Unit, SpriteRenderer, masks, sorting, Sprite Atlas and late binding, 9-slice. Use for sprite setup and 2D draw order."
+user-invocable: false
 ---
 
 # Unity 2D Sprite — Import, Sprite Editor, Sorting, Masking & Atlas Packing
+
+**Not for:** `Rigidbody2D`/`Collider2D` dynamics, owned by `unity-2d-physics`; `Light2D` setup, owned by `unity-urp-rendering`; grid-cell painting, owned by `unity-tilemap`; spline level geometry, owned by `unity-2d-spriteshape`; sprite shaders, owned by `shader-authoring`; animation clips, owned by `unity-animation`; and which sprite to show, owned by `csharp-engineer`.
 
 ## Bundled resources
 
@@ -58,20 +47,21 @@ Act as the built-in 2D Sprite authoring specialist for the client track — the 
 - Negative trigger: spline-based level geometry that tiles sprites along an outline — that's `unity-2d-spriteshape`.
 - Negative trigger: writing or modifying the shader on a sprite material — that's `shader-authoring`.
 - Negative trigger: authoring animation clips that key sprite frames, or the Animator driving them — that's `unity-animation`.
-- Negative trigger: deciding *which* sprite, tint, or visibility a game state should produce — that's `csharp-engineer`'s Shared Core, per `coding-principles.md`'s Shared Core integrity section.
+- Negative trigger: deciding *which* sprite, tint, or visibility a game state should produce — that's `csharp-engineer`'s Shared Core, per `csharp-standards` → `coding-principles.md`'s Shared Core integrity section.
+- Companion, if the official Unity plugin (`unity@claude-plugins-official`) is installed: `unity:sprite-editor` scripts slicing, pivots, borders and outlines through `ISpriteEditorDataProvider`, `unity:manage-sprite-atlas` automates Sprite Atlas V2 master/variant configuration, and `unity:2d-pixel-perfect` sets up pixel-art rendering; this skill still owns sorting, masking, draw modes and the project rules above.
 
 ## 4. How to use this skill
 1. **Settle Pixels Per Unit against the existing visual set before anything else**, per [import-settings.md](references/import-settings.md) — PPU fixes both the sprite's rendered world size and the scale of the physics shape derived from it, so a mismatch inside one set is simultaneously an art bug and a hitbox bug, and every later decision is measured against it; [root-links.md](references/root-links.md) pins the doc version each setting below is described at.
 2. **Pick Mesh Type by whether the sprite is 9-sliced, not by overdraw instinct** — Full Rect is mandatory for 9-slicing, and Unity forces Full Rect on any sprite under 32×32 regardless of the setting, so choosing Tight to save fill on small icons changes nothing. Choose Tight only for a large sprite with genuinely heavy transparent padding, then trim it with [custom-outline.md](references/custom-outline.md).
 3. **Slice with Method Safe or Smart on any sheet that already has references** ([sprite-editor.md](references/sprite-editor.md)) — Delete Existing rebuilds every rect and silently breaks animation clips and prefab fields that resolve sprites by name. Delete Existing is for a first slice or a deliberate re-cut, and nothing is written to the asset until Apply.
-4. **Author collision geometry once on the `Sprite` asset, never per instance**, per [custom-physics-shape.md](references/custom-physics-shape.md) — a shape stored on the sprite is reused by every GameObject referencing it. Tune Outline Detail down to the lowest silhouette that still reads: vertex count is paid per collision check, per `performance-and-algorithms.md`'s simplest-collider-shape guidance.
+4. **Author collision geometry once on the `Sprite` asset, never per instance**, per [custom-physics-shape.md](references/custom-physics-shape.md) — a shape stored on the sprite is reused by every GameObject referencing it. Tune Outline Detail down to the lowest silhouette that still reads: vertex count is paid per collision check, per `csharp-standards` → `performance-and-algorithms.md`'s simplest-collider-shape guidance.
 5. **Name a secondary texture exactly `_NormalMap` or `_MaskTex`**, per [secondary-textures.md](references/secondary-textures.md) — the URP 2D lit shaders look up those property names and nothing else; a custom name attaches the texture, raises no error, and produces no lighting. This is the first thing to check when normal-mapped sprites look flat.
 6. **Set Sorting Layer and Order in Layer explicitly for every depth relationship the design states**, per [sorting-sprites.md](references/sorting-sprites.md) — distance-from-camera is only the tie-breaker Unity falls back to once layer, order, and render queue are all equal, so an unconfigured scene sorts by an axis nobody chose. Add a `SortingGroup` the moment a multi-part object must stay uninterleaved, and set Transparency Sort Mode to Custom Axis for isometric or top-down cameras.
 7. **Reach for 9-slicing or `SpriteMask` only when the design actually resizes or reveals something** ([nine-slicing.md](references/nine-slicing.md), [sprite-mask.md](references/sprite-mask.md)) — Sliced for smooth frames, Tiled for repeating pattern. Masking is stencil-based, so confirm the active 2D Renderer Data has Depth/Stencil Buffer enabled before debugging anything else; that setting is the usual reason a mask does nothing.
-8. **Group an atlas by what appears on screen together**, per [sprite-atlas.md](references/sprite-atlas.md) — an atlas mixing unrelated content stays wholly resident for a scene using a fraction of it. Turn Allow Rotation and Tight Packing off for sprites a downstream system re-meshes (Sprite Shape, UI `Image`), ship a lower-resolution Variant instead of a duplicated Master, and subscribe `SpriteAtlasManager.atlasRequested` with a named method unsubscribed in `OnDisable`, per `coding-principles.md`'s Event handlers section.
-9. **Keep the sprite layer free of decisions**, per `coding-principles.md`'s Shared Core integrity section — `Game.Core.*` resolves which state is active; [sprite-renderer.md](references/sprite-renderer.md) code only assigns the already-resolved `sprite`, `color`, or sorting value, and only when it actually changed.
+8. **Group an atlas by what appears on screen together**, per [sprite-atlas.md](references/sprite-atlas.md) — an atlas mixing unrelated content stays wholly resident for a scene using a fraction of it. Turn Allow Rotation and Tight Packing off for sprites a downstream system re-meshes (Sprite Shape, UI `Image`), ship a lower-resolution Variant instead of a duplicated Master, and subscribe `SpriteAtlasManager.atlasRequested` with a named method unsubscribed in `OnDisable`, per `csharp-standards` → `coding-principles.md`'s Event handlers section.
+9. **Keep the sprite layer free of decisions**, per `csharp-standards` → `coding-principles.md`'s Shared Core integrity section — `Game.Core.*` resolves which state is active; [sprite-renderer.md](references/sprite-renderer.md) code only assigns the already-resolved `sprite`, `color`, or sorting value, and only when it actually changed.
 10. **Read sprite data through the members that stay valid under packing** ([sprite-asset-reference.md](references/sprite-asset-reference.md)) — `rect` and `bounds` hold regardless of atlas state, while `textureRect` throws on a tightly packed sprite. When art has not landed yet, block out with [placeholder-sprites.md](references/placeholder-sprites.md) and re-settle the Pixels Per Unit and Mesh Type decisions when the real texture arrives.
-11. **Confirm any draw-call or overdraw claim with the Profiler's 2D module before reporting it**, per `performance-and-algorithms.md`'s Verification section — its Usage percentage per atlas is the evidence that packing helped; asserting a batching win from the atlas count alone is not.
+11. **Confirm any draw-call or overdraw claim with the Profiler's 2D module before reporting it**, per `csharp-standards` → `performance-and-algorithms.md`'s Verification section — its Usage percentage per atlas is the evidence that packing helped; asserting a batching win from the atlas count alone is not.
 12. **When the requested visual result is ambiguous about ownership, state the boundary and ask** — "sprite is too dark" can be import gamma, a material, or a `Light2D` rig, and the three route to three different owners; name which one is being assumed rather than silently picking.
 
 ## 5. Specific goals / tasks this skill performs
@@ -113,7 +103,7 @@ Act as the built-in 2D Sprite authoring specialist for the client track — the 
 
 **Example 2**
 - Input: "Just put every sprite in the game into one big atlas — fewer atlases means fewer draw calls."
-- Output: declined. Batching is per-atlas-texture *and* per-material, so one oversized atlas does not reduce draw calls below what co-visible grouping already achieves, and it forces the whole combined texture resident for any scene touching a single sprite in it — the memory-footprint failure `performance-and-algorithms.md`'s Assets & memory footprint section describes. Packed instead by co-visibility (one HUD atlas, one per character set), with a 0.5-scale Variant for mobile, and measured the result in the Profiler's 2D module: Usage per resident atlas is the number that decides whether a grouping is right.
+- Output: declined. Batching is per-atlas-texture *and* per-material, so one oversized atlas does not reduce draw calls below what co-visible grouping already achieves, and it forces the whole combined texture resident for any scene touching a single sprite in it — the memory-footprint failure `csharp-standards` → `performance-and-algorithms.md`'s Assets & memory footprint section describes. Packed instead by co-visibility (one HUD atlas, one per character set), with a 0.5-scale Variant for mobile, and measured the result in the Profiler's 2D module: Usage per resident atlas is the number that decides whether a grouping is right.
 
 **Example 3**
 - Input: "Normal maps are attached to the tileset sprites but the 2D lights do nothing to them."
@@ -128,5 +118,5 @@ Act as the built-in 2D Sprite authoring specialist for the client track — the 
 - Never mirror a sprite with a negative Transform scale — use Flip X/Y, since negative scale also inverts child colliders and physics behaviour in ways the renderer flip does not.
 - Never assume an atlas-fetched sprite is reference-equal to a scene-authored one — `SpriteAtlas.GetSprite` returns a clone per call, so comparisons fail and repeated calls allocate.
 - Never ship both a Master and its Variant with Include in Build enabled — which one resolves at runtime becomes non-deterministic; disable it on the Master.
-- Never claim an atlas or mesh-type change improved performance without a Profiler 2D module measurement, per `performance-and-algorithms.md`'s Verification section.
+- Never claim an atlas or mesh-type change improved performance without a Profiler 2D module measurement, per `csharp-standards` → `performance-and-algorithms.md`'s Verification section.
 - If the requester's symptom could equally be import, material, or lighting, say which layer is being assumed and confirm before changing settings — guessing wrong here edits an asset that other scenes share.

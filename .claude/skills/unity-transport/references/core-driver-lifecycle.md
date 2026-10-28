@@ -117,7 +117,7 @@ This file is the entry point for the **standalone (non-NGO) integration path**: 
 
 ## The per-frame update loop
 
-Every driver — server or client — is driven the same way each frame: schedule the update job, complete it synchronously, then drain events before doing anything else. Skipping a frame's `ScheduleUpdate`/`Complete` call leaves incoming events queued and can cause a state transition (timeout, disconnect) to be missed entirely, per `coding-principles.md`'s Correctness boundaries section on cleaning up state at defined lifecycle boundaries.
+Every driver — server or client — is driven the same way each frame: schedule the update job, complete it synchronously, then drain events before doing anything else. Skipping a frame's `ScheduleUpdate`/`Complete` call leaves incoming events queued and can cause a state transition (timeout, disconnect) to be missed entirely, per `csharp-standards` → `coding-principles.md`'s Correctness boundaries section on cleaning up state at defined lifecycle boundaries.
 
 ```csharp
 public class EchoServer : MonoBehaviour
@@ -228,7 +228,7 @@ Custom `INetworkInterface`/`INetworkPipelineStage` implementations exchange data
 | `ManagedNetworkInterfaceExtensions.WrapToUnmanaged<T>()` | **`[Obsolete]`** — do not call it in new code. Managed `INetworkInterface` implementations now pass directly to `NetworkDriver.Create<N>`. | [ManagedNetworkInterfaceExtensions](https://docs.unity3d.com/Packages/com.unity.transport@6.6/api/Unity.Networking.Transport.ManagedNetworkInterfaceExtensions.html) |
 | `NetworkInterfaceUnmanagedWrapper<T>` | **`[Obsolete]`** — the wrapper `WrapToUnmanaged<T>()` used to produce; superseded the same way. | [NetworkInterfaceUnmanagedWrapper\<T\>](https://docs.unity3d.com/Packages/com.unity.transport@6.6/api/Unity.Networking.Transport.NetworkInterfaceUnmanagedWrapper-1.html) |
 
-**Critical caveat**: both `ManagedNetworkInterfaceExtensions.WrapToUnmanaged<T>()` and `NetworkInterfaceUnmanagedWrapper<T>` are marked `[Obsolete]` on this page. Per `coding-principles.md`'s Obsolete APIs section, never declare or consume either in new code — pass a managed `INetworkInterface` straight to `NetworkDriver.Create<N>(N)` instead.
+**Critical caveat**: both `ManagedNetworkInterfaceExtensions.WrapToUnmanaged<T>()` and `NetworkInterfaceUnmanagedWrapper<T>` are marked `[Obsolete]` on this page. Per `csharp-standards` → `coding-principles.md`'s Obsolete APIs section, never declare or consume either in new code — pass a managed `INetworkInterface` straight to `NetworkDriver.Create<N>(N)` instead.
 
 ## API index
 

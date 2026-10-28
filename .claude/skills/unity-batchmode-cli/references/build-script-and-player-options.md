@@ -5,7 +5,7 @@ Covers: SKILL.md §4 — **"Drive every build through one `-executeMethod` entry
 
 The API surface the entry point is written against, and the arguments it reads from the job. The boundary
 this file holds to: it sets what *this run* builds and how it is versioned. Permanent project settings —
-quality, stripping level, graphics APIs — belong to `unity-engineer` and are read here, never rewritten.
+quality, stripping level, graphics APIs — belong to `gameplay-engineer` and are read here, never rewritten.
 
 ## The call and its report
 

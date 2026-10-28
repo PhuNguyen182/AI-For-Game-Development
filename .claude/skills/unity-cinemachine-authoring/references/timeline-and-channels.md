@@ -14,7 +14,7 @@ resolution, in one case temporarily and in the other permanently by partition.
 | Cinemachine track and shot clips | Each clip names a `CinemachineCamera` and a time range. For the clip's duration the track **overrides** the Brain's priority resolution, which is why a script also changing priority during a cutscene produces a fight neither side wins | [Timeline integration](https://docs.unity3d.com/Packages/com.unity.cinemachine@3.1/manual/CinemachineTimeline.html) |
 | Clip overlap | Blending between shots comes from overlapping clips, not from the Brain's default blend — so cutscene transitions are tuned on the timeline, where they can be scrubbed | [Timeline integration](https://docs.unity3d.com/Packages/com.unity.cinemachine@3.1/manual/CinemachineTimeline.html) |
 | Handing back | When the last clip ends the Brain resumes priority resolution, so what the game returns to is whatever priority is highest at that moment — worth setting deliberately rather than discovering | [Timeline integration](https://docs.unity3d.com/Packages/com.unity.cinemachine@3.1/manual/CinemachineTimeline.html) |
-| Timeline itself | Track and clip authoring outside the Cinemachine track has no dedicated skill — route it to `unity-engineer` | [Timeline integration](https://docs.unity3d.com/Packages/com.unity.cinemachine@3.1/manual/CinemachineTimeline.html) |
+| Timeline itself | Track and clip authoring outside the Cinemachine track has no dedicated skill — route it to `gameplay-engineer` | [Timeline integration](https://docs.unity3d.com/Packages/com.unity.cinemachine@3.1/manual/CinemachineTimeline.html) |
 
 ## Channels
 

@@ -4,7 +4,7 @@ Sources: [User rebinding at runtime](https://docs.unity3d.com/Packages/com.unity
 Covers: SKILL.md §4 — **"Dispose the `RebindingOperation` and key saved overrides per player"**.
 
 Letting players change their controls without editing the asset. The menu's
-layout and visual design belong to `ui-ux-programmer`; what is here is the
+layout and visual design belong to `gameplay-engineer`; what is here is the
 operation, the override layer, and how it survives a restart.
 
 ## The interactive operation
@@ -19,7 +19,7 @@ operation, the override layer, and how it survives a restart.
 
 **Critical caveat**: the operation is disposable and is not cleaned up for
 you. Wrap it or dispose it explicitly when the rebind completes or cancels,
-per `coding-principles.md`'s Exception handling section.
+per `csharp-standards` → `coding-principles.md`'s Exception handling section.
 
 ## Overrides without the interactive flow
 

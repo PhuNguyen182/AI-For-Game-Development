@@ -1,22 +1,12 @@
 ---
 name: unity-audio-mixer
-description: >
-  Technique for Unity's audio system and Audio Mixer: `AudioSource`,
-  `AudioListener`, `AudioClip` import, compression, and streaming,
-  `AudioMixer`, `AudioMixerGroup`, exposed parameters via `SetFloat`,
-  `GetFloat`, and `ClearFloat`, snapshots via `TransitionTo`, Sends and
-  Receives, Duck Volume, AudioSource Filters versus Mixer Effects such as
-  Low/High Pass, Echo, Distortion, Reverb, Chorus, Flange, Compressor, and
-  Pitch Shifter, Audio Random Container, ambisonic decoder plugins, the Native
-  Audio Plugin SDK, and the Audio Profiler. Use when wiring, routing, or
-  diagnosing sound in a Unity scene. Not for: non-audio Profiler modules —
-  `unity-profiler-diagnostics`; third-party audio middleware or platform SDKs
-  — `tech-lead-sdk-platform`; netcode audio timing — `netcode-engineer`;
-  the gameplay rule triggering a sound — `csharp-engineer`; audio-reactive
-  VFX — `technical-artist`.
+description: "Unity audio: AudioSource, clip import and compression, Audio Mixer groups, snapshots, exposed parameters, ducking, spatial audio, voice limits. Use for audio setup and mixing."
+user-invocable: false
 ---
 
 # Unity Audio & Audio Mixer — Playback, Routing, Effects, Diagnostics
+
+**Not for:** non-audio Profiler modules — `unity-profiler-diagnostics`; third-party audio middleware or platform SDKs — `sdk-platform-engineer`; netcode audio timing — `netcode-engineer`; the gameplay rule triggering a sound — `csharp-engineer`; audio-reactive VFX — `technical-artist`.
 
 ## Bundled resources
 
@@ -62,13 +52,14 @@ third-party audio middleware.
 - Wiring 360°/XR ambisonic audio, or authoring a custom native DSP/decoder plugin.
 - A sound is silent, stutters, or a scripted mixer change has no effect, and the cause needs the Audio Profiler.
 - Negative trigger: general CPU/GPU/Memory/Rendering Profiler work — that's `unity-profiler-diagnostics`; this skill owns only the Audio module.
-- Negative trigger: integrating Wwise/FMOD or a platform-native audio SDK — that's `tech-lead-sdk-platform`.
+- Negative trigger: integrating Wwise/FMOD or a platform-native audio SDK — that's `sdk-platform-engineer`.
 - Negative trigger: the client-server timing of when a networked sound event fires — that's `netcode-engineer`.
-- Negative trigger: the gameplay rule deciding a sound should play (a health threshold, a combat event) — that lives in `Game.Core.*` per `coding-principles.md`; this skill only wires the resulting playback call.
+- Negative trigger: the gameplay rule deciding a sound should play (a health threshold, a combat event) — that lives in `Game.Core.*` per `csharp-standards` → `coding-principles.md`; this skill only wires the resulting playback call.
 - Negative trigger: an audio-reactive shader or particle system driven by spectrum data — that's `technical-artist`.
+- Companion, if the official Unity plugin (`unity@claude-plugins-official`) is installed: `unity:audio-setup-mixers` routes existing Audio Sources into existing mixer groups scene-wide, and `unity:optimize-audio` audits clip import settings and mixer CPU cost; neither creates mixers, groups, snapshots or exposed parameters — those, and the project rules above, stay here.
 
 ## 4. How to use this skill
-1. **Decide which layer owns the change before opening a reference** — sound design (import settings, `AudioSource`/`AudioListener` placement, the mixer graph) sits in `Game.Client.*`; the trigger condition for a sound is a gameplay rule that belongs in `Game.Core.*` per `coding-principles.md`'s Shared Core integrity section.
+1. **Decide which layer owns the change before opening a reference** — sound design (import settings, `AudioSource`/`AudioListener` placement, the mixer graph) sits in `Game.Client.*`; the trigger condition for a sound is a gameplay rule that belongs in `Game.Core.*` per `csharp-standards` → `coding-principles.md`'s Shared Core integrity section.
 2. **Set the AudioClip import settings by lifetime and length, not by habit** — per [audio-import-and-clips.md](references/audio-import-and-clips.md): short, frequently-triggered SFX default to Decompress On Load with PCM or ADPCM so they play with no per-call decode cost, while long music/dialog stream as Vorbis so they never sit fully decompressed in memory.
 3. **Configure `AudioSource` 2D/3D behaviour from `spatialBlend` and rolloff mode, not from Volume alone**, per [audio-source-and-listener.md](references/audio-source-and-listener.md) — a UI cue wants `spatialBlend = 0`, a positional sound wants `1`, and Custom rolloff is the only mode where the curve itself decides falloff shape.
 4. **Route every non-trivial AudioSource through an `AudioMixerGroup`, never leave Output on the implicit Audio Listener default** — per [audio-mixer-core.md](references/audio-mixer-core.md), routing is what makes ducking, snapshots, and per-category volume possible later; retrofitting it after dozens of sources exist is the expensive version of the same change.
@@ -77,9 +68,9 @@ third-party audio middleware.
 7. **Reach for Audio Random Container before hand-rolling clip/volume/pitch randomization in script** — per [audio-random-container.md](references/audio-random-container.md), for repeated SFX; write custom randomization only when a container's Playback Mode and Avoid Repeating Last genuinely cannot express the requested rule (YAGNI otherwise).
 8. **Escalate to the Native Audio Plugin SDK only once the built-in Filter/Effect catalog cannot express the DSP**, per [native-audio-plugin-sdk.md](references/native-audio-plugin-sdk.md) — it is a per-platform C/C++ build with a mandatory `audioplugin` filename prefix, not a routine authoring path.
 9. **Treat Ambisonic playback as a 360°/XR-specific path, and confirm a decoder plugin is installed before promising it works** — per [ambisonic-audio.md](references/ambisonic-audio.md), Unity ships no built-in ambisonic decoder, so the feature is inert until one is installed.
-10. **Pool `AudioSource` GameObjects for any sound triggered at high frequency**, per `performance-and-algorithms.md`'s Memory discipline section — `Instantiate`/`Destroy` per gunshot or footstep is exactly the allocation churn that section forbids; reuse a fixed pool instead.
+10. **Pool `AudioSource` GameObjects for any sound triggered at high frequency**, per `csharp-standards` → `performance-and-algorithms.md`'s Memory discipline section — `Instantiate`/`Destroy` per gunshot or footstep is exactly the allocation churn that section forbids; reuse a fixed pool instead.
 11. **Diagnose a playback or performance complaint from the Audio Profiler module before proposing a fix**, per [audio-profiler-and-settings.md](references/audio-profiler-and-settings.md) — the Virtual column explains "why is this sound silent" against Max Real Voices, and DSP CPU vs Streaming CPU tells whether the cost is mixing or decode.
-12. **Keep the gameplay decision in `Game.Core.*` and only the playback call here** — the health threshold that triggers a low-health sting is a game rule per `coding-principles.md`'s Shared Core integrity section; this skill wires the `AudioSource`/mixer call that rule drives.
+12. **Keep the gameplay decision in `Game.Core.*` and only the playback call here** — the health threshold that triggers a low-health sting is a game rule per `csharp-standards` → `coding-principles.md`'s Shared Core integrity section; this skill wires the `AudioSource`/mixer call that rule drives.
 13. **When a required input is missing — target platform, whether the project has multiplayer audio-sync needs, whether a decoder plugin already exists — ask rather than assume**, and flag the assumption made if the requester wants to proceed anyway.
 
 ## 5. Specific goals / tasks this skill performs
@@ -90,7 +81,7 @@ third-party audio middleware.
 - Audio Random Container setup for varied repeated SFX.
 - Ambisonic audio wiring and native audio plugin escalation for custom DSP/decoders.
 - Diagnosing silent, stuttering, or unresponsive audio via the Audio Profiler and Project Settings > Audio.
-- Out of scope: general Profiler modules (`unity-profiler-diagnostics`); third-party audio middleware/platform SDKs (`tech-lead-sdk-platform`); netcode audio timing (`netcode-engineer`); the gameplay rule a sound visualises (`csharp-engineer`); audio-reactive VFX (`technical-artist`).
+- Out of scope: general Profiler modules (`unity-profiler-diagnostics`); third-party audio middleware/platform SDKs (`sdk-platform-engineer`); netcode audio timing (`netcode-engineer`); the gameplay rule a sound visualises (`csharp-engineer`); audio-reactive VFX (`technical-artist`).
 
 ## 6. Output format
 ```
@@ -131,7 +122,7 @@ third-party audio middleware.
 - Never assume `SetFloat`/`GetFloat`/`ClearFloat` failed loudly — a typo'd exposed-parameter name returns `false` silently; verify the exact string against the Inspector's exposed-parameter name.
 - Never promise ambisonic playback works without first confirming a decoder plugin is installed — Unity ships none built-in, and the feature is otherwise inert.
 - Never reach for the Native Audio Plugin SDK before exhausting the built-in Filter/Effect catalog — it is a per-platform native build commitment, not a routine authoring step (YAGNI).
-- Never `Instantiate`/`Destroy` an `AudioSource` GameObject per one-shot sound in a hot path — pool it, per `performance-and-algorithms.md`'s Memory discipline section.
+- Never `Instantiate`/`Destroy` an `AudioSource` GameObject per one-shot sound in a hot path — pool it, per `csharp-standards` → `performance-and-algorithms.md`'s Memory discipline section.
 - Never assert a numeric default this skill's references flag as unconfirmed (Duck Volume parameters, some AudioSource/ARC slider bounds) — confirm in the Editor Inspector instead of inventing a number.
 - If the target Unity version differs from the `6000.5` pin in [root-links.md](references/root-links.md), confirm UI paths before relying on any step here — the Audio Mixer UI has changed shape across majors before.
 - If it is unclear which layer a change belongs in — a gameplay rule vs. a sound-design detail — ask rather than assume; do not let a threshold or condition drift into `Game.Client.*` code.

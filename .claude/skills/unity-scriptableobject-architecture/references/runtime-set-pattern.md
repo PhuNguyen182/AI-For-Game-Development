@@ -15,7 +15,7 @@ without a singleton, a static list, or a per-frame `FindObjectsOfType` scan.
 |---|---|---|---|
 | `abstract class RuntimeSetSO<T> : ScriptableObject` with `IReadOnlyList<T> Items`, `Add`, `Remove` | The generic set itself | Any "which instances of X exist right now" query, for a concrete `T` | synthesized |
 | `EnemyRuntimeSet : RuntimeSetSO<Enemy>` | The per-type concrete asset | Inspector fields need a concrete, non-generic asset type — Unity cannot serialize a generic SO reference field directly | synthesized |
-| `OnEnable`/`OnDisable` registration on each member | Add on enable, remove on disable, always paired | Every member, without exception — this is the entire lifecycle contract | `coding-principles.md`'s Correctness boundaries section |
+| `OnEnable`/`OnDisable` registration on each member | Add on enable, remove on disable, always paired | Every member, without exception — this is the entire lifecycle contract | `csharp-standards` → `coding-principles.md`'s Correctness boundaries section |
 
 ## Code shape
 
@@ -65,9 +65,9 @@ public class Enemy : MonoBehaviour
 
 | Risk | Why it happens | Fix | Source |
 |---|---|---|---|
-| The set grows without bound | A member is destroyed without going through `OnDisable` | Treat the set's count as a leak indicator during profiling; verify against the actual active-instance count, per `performance-and-algorithms.md`'s Memory discipline | synthesized |
+| The set grows without bound | A member is destroyed without going through `OnDisable` | Treat the set's count as a leak indicator during profiling; verify against the actual active-instance count, per `csharp-standards` → `performance-and-algorithms.md`'s Memory discipline | synthesized |
 | Stale references survive a scene reload with Domain Reloading disabled | The SO asset instance persists in memory across a Play-session boundary, the same way a `static` field would | Clear the list at a defined session-start point, consistent with [dual-serialization.md](dual-serialization.md)'s reset discipline | [Domain Reloading](https://docs.unity3d.com/Manual/DomainReloading.html) |
-| `Contains`/`Remove` cost grows on a large `List<T>` scanned every frame | Linear scan cost scales with set size | Cache a snapshot once per frame instead of querying `Items` repeatedly in a hot loop, per `performance-and-algorithms.md`'s Algorithmic complexity discipline | synthesized |
+| `Contains`/`Remove` cost grows on a large `List<T>` scanned every frame | Linear scan cost scales with set size | Cache a snapshot once per frame instead of querying `Items` repeatedly in a hot loop, per `csharp-standards` → `performance-and-algorithms.md`'s Algorithmic complexity discipline | synthesized |
 
 **Critical caveat**: A Runtime Set is populated state, not configuration —
 apply the same domain-reload reset discipline as [dual-serialization.md](dual-serialization.md)

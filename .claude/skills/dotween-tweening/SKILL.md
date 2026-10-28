@@ -1,26 +1,12 @@
 ---
 name: dotween-tweening
-description: >
-  DOTween is Unity's chained, component-shortcut tweening engine —
-  `DOTween.To` generic tweens, Shortcuts like `transform.DOMove`,
-  `Sequence` chaining via `Append`/`Join`/`Insert`/`Prepend`, the `Set-`
-  chain such as `SetEase`/`SetLoops`/`SetAutoKill`, `OnComplete`/`OnKill`
-  callbacks, `Play`/`Pause`/`Kill`/`DOTween.KillAll` control, `DOPath`,
-  Safe Mode and recycling, and awaiting completion via
-  `AsyncWaitForCompletion` or UniTask. Use for code-authored
-  interpolation via DOTween specifically. This project also maintains
-  `litmotion-tweening` for the same job with a different,
-  zero-allocation engine; which governs new work is a per-module
-  decision, never assumed here — see `coexistence-and-migration.md`.
-  Not for: LitMotion's API — `litmotion-tweening`; async orchestration
-  beyond awaiting a tween — `unitask-async-programming`; uGUI
-  setup/event wiring beyond the animated component — `ugui`; reactive
-  streams — `r3-reactive-extensions`; shader/particle VFX —
-  `vfx-particle-authoring`; and physics-driven movement not expressed
-  as a tween — `unity-3d-physics`/`unity-2d-physics`.
+description: "DOTween tweening: DOTween.To, transform shortcuts (DOMove), Sequences, SetEase/SetLoops, callbacks, Kill/KillAll, Safe Mode, awaiting tweens. Use for code-driven interpolation in a module already on DOTween."
+user-invocable: false
 ---
 
 # DOTween — Chained Tweening for Unity
+
+**Not for:** LitMotion's API — `litmotion-tweening`; async orchestration beyond awaiting a tween — `unitask-async-programming`; uGUI setup/event wiring beyond the animated component — `ugui`; reactive streams — `r3-reactive-extensions`; shader/particle VFX — `vfx-particle-authoring`; and physics-driven movement not expressed as a tween — `unity-3d-physics`/`unity-2d-physics`.
 
 ## Bundled resources
 
@@ -77,7 +63,7 @@ project/module decision per
 - Negative trigger: a general reactive event/state stream unrelated to a timed interpolation — that's `r3-reactive-extensions`.
 - Negative trigger: a shader-driven or particle-system visual effect — that's `vfx-particle-authoring`/`technical-artist`.
 - Negative trigger: physically simulated movement driven by forces/collisions rather than a fixed-duration interpolation — that's `unity-3d-physics`/`unity-2d-physics` (DOTween's own `Rigidbody`/`Rigidbody2D` shortcuts move via physics but are still a scripted tween, not a force simulation — the negative trigger is force/collision-driven movement with no tween involved at all).
-- Negative trigger: any `Game.Core.*` code — DOTween depends on `UnityEngine`, which `coding-principles.md`'s Shared Core integrity section forbids in Core. Drive Core state changes from `Game.Client.*` tweens instead.
+- Negative trigger: any `Game.Core.*` code — DOTween depends on `UnityEngine`, which `csharp-standards` → `coding-principles.md`'s Shared Core integrity section forbids in Core. Drive Core state changes from `Game.Client.*` tweens instead.
 
 ## 4. How to use this skill
 1. **Confirm which tweening engine governs this work before writing any tween code** — check the touched module's existing convention, then any stated project-wide choice, then ask if genuinely neither exists; never default to DOTween just because this skill was the one invoked, per [coexistence-and-migration.md](references/coexistence-and-migration.md).
@@ -89,8 +75,8 @@ project/module decision per
 7. **Filter static control (`DOTween.PlayAll`/`KillAll`/etc.) by `SetId`/`SetTarget` rather than calling the unfiltered form** — an unfiltered `KillAll()` touches every tween in the project, including ones the calling code has no knowledge of, per [control-methods.md](references/control-methods.md).
 8. **Leave Safe Mode on unless the platform specifically requires otherwise**, and null any held reference to a recyclable tween inside its own `OnKill` — a recycled tween's C# reference is reused for a future, unrelated tween, per [safe-mode-recycling-and-performance.md](references/safe-mode-recycling-and-performance.md).
 9. **Await completion through UniTask's native `UNITASK_DOTWEEN_SUPPORT` integration whenever `unitask-async-programming` already governs the project's async style**, tying cancellation to the same `GetCancellationTokenOnDestroy()` discipline that skill already requires; fall back to `AsyncWaitForCompletion()` only where UniTask is genuinely unavailable, checking the documented WebGL caveat first, per [async-and-unitask-integration.md](references/async-and-unitask-integration.md).
-10. **Reach for `DOPath`/`DOLocalPath` only when the motion genuinely follows multiple waypoints**, picking `PathType` and `resolution` deliberately rather than defaulting `CubicBezier` for a route `Linear`/`CatmullRom` would express more simply, per [path-tweens.md](references/path-tweens.md) and KISS in `coding-principles.md`.
-11. **Verify a claimed allocation/performance advantage with the Profiler before it drives the DOTween-vs-LitMotion choice**, per `performance-and-algorithms.md`'s Verification section and [safe-mode-recycling-and-performance.md](references/safe-mode-recycling-and-performance.md) — a hot-path volume claim is a real reason to prefer LitMotion, but only once measured, not assumed.
+10. **Reach for `DOPath`/`DOLocalPath` only when the motion genuinely follows multiple waypoints**, picking `PathType` and `resolution` deliberately rather than defaulting `CubicBezier` for a route `Linear`/`CatmullRom` would express more simply, per [path-tweens.md](references/path-tweens.md) and KISS in `csharp-standards` → `coding-principles.md`.
+11. **Verify a claimed allocation/performance advantage with the Profiler before it drives the DOTween-vs-LitMotion choice**, per `csharp-standards` → `performance-and-algorithms.md`'s Verification section and [safe-mode-recycling-and-performance.md](references/safe-mode-recycling-and-performance.md) — a hot-path volume claim is a real reason to prefer LitMotion, but only once measured, not assumed.
 12. **If the project's async ecosystem, target platform (WebGL caveat), or the DOTween-vs-LitMotion convention for this area is unstated, ask before committing to a mechanism** — all three gate a real decision and are expensive to unwind once tween code ships against the wrong assumption.
 
 ## 5. Specific goals / tasks this skill performs
@@ -153,5 +139,5 @@ the one-line `Known limitations` above with all three fields:
 - Never hold a reference to a `SetRecyclable(true)` tween without nulling it in `OnKill` — a recycled tween's reference gets reused for an unrelated future tween.
 - Never rely on `AsyncWaitForCompletion()` on a WebGL target without checking the documented freeze caveat; prefer UniTask's native integration wherever `unitask-async-programming` already governs the project.
 - Never place DOTween types in `Game.Core.*` — the package depends on `UnityEngine`; drive Core state changes from `Game.Client.*` instead.
-- Never claim an allocation/performance reason to prefer DOTween or LitMotion without a Profiler measurement backing it, per `performance-and-algorithms.md`.
+- Never claim an allocation/performance reason to prefer DOTween or LitMotion without a Profiler measurement backing it, per `csharp-standards` → `performance-and-algorithms.md`.
 - If the DOTween-vs-LitMotion convention for the touched area, the async ecosystem, or the target platform (WebGL) is unstated, ask rather than silently picking one — each gates a real, hard-to-unwind decision.

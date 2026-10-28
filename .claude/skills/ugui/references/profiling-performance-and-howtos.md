@@ -10,7 +10,7 @@ generates) and **Cumulative Batch Count** (including nested canvases),
 plus per-batch vertex counts and participating GameObjects in the Details
 pane. This is **Editor-only profiling data** — it does not function in a
 development build, so a batching claim made from an Editor session alone
-is an Editor-only result, per `verification-standards.md`'s rule on
+is an Editor-only result, per skill `qa-standards`'s rule on
 labelling Editor results as indicative.
 
 ### What breaks a batch
@@ -21,7 +21,7 @@ labelling Editor results as indicative.
 | A `CanvasGroup` in the hierarchy | Forces a new batch for everything under it — the Manual's own example is a dropdown's option list |
 | Material/texture mismatch | Elements need identical materials, masking state, textures, and texture alpha-channel usage to batch together |
 
-This is consistent with `performance-and-algorithms.md`'s general Unity
+This is consistent with `csharp-standards` → `performance-and-algorithms.md`'s general Unity
 rendering guidance (reduce draw calls, use `MaterialPropertyBlock` for
 per-instance variation) — the uGUI-specific addition is that a `Mask`
 (stencil-based, see [visual-components.md](visual-components.md)) and a
@@ -34,7 +34,7 @@ convenience wrapper.
 
 Not explicitly spelled out on the fetched `ProfilerUI.html` page itself,
 but it follows directly from how Canvas rebuilds work and from
-`performance-and-algorithms.md`'s own UI guidance (originally written
+`csharp-standards` → `performance-and-algorithms.md`'s own UI guidance (originally written
 for UI Toolkit's Canvas-rebuild equivalent, and equally true here): any
 change to one element inside a Canvas forces Unity to rebuild that
 Canvas's whole batch geometry. Put a frequently-updating element (a
@@ -87,5 +87,5 @@ for `GetComponent<T>()` on the instantiated root to customize per-instance
 values (text, sprite, bound data) after instantiation.
 
 Prefer this over constructing a UI element purely in code — per KISS in
-`coding-principles.md`, a prefab is inspectable, diffable, and editable by
+`csharp-standards` → `coding-principles.md`, a prefab is inspectable, diffable, and editable by
 a designer, where a hand-built hierarchy in C# is none of those.

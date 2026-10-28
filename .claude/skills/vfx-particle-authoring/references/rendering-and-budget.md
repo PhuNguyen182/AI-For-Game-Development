@@ -43,8 +43,8 @@ changes nothing measurable.
 
 | Rule | Why | Source |
 |---|---|---|
-| Pool anything triggered repeatedly | Instantiate and Destroy per hit, per shot, or per footstep is the exact case `performance-and-algorithms.md` requires pooling for. `ObjectPool<T>` is the built-in implementation to prefer over a hand-rolled one | [ObjectPool](https://docs.unity3d.com/ScriptReference/Pool.ObjectPool_1.html) |
+| Pool anything triggered repeatedly | Instantiate and Destroy per hit, per shot, or per footstep is the exact case `csharp-standards` → `performance-and-algorithms.md` requires pooling for. `ObjectPool<T>` is the built-in implementation to prefer over a hand-rolled one | [ObjectPool](https://docs.unity3d.com/ScriptReference/Pool.ObjectPool_1.html) |
 | Clear on release, not on take | A pooled effect released dirty replays with the previous use's particles alive. Cleaning on release means every take is known-clean | [ParticleSystem.Clear](https://docs.unity3d.com/ScriptReference/ParticleSystem.Clear.html) |
 | Release on liveness, not on a timer | A duration constant kept in step with the effect by hand drifts the moment the effect is retuned | [ParticleSystem.IsAlive](https://docs.unity3d.com/ScriptReference/ParticleSystem.IsAlive.html) |
-| Cap looping emitters | A loop with no rate or lifetime bound is unbounded growth in the sense `performance-and-algorithms.md` names — the cap is the release point | [Particle System component](https://docs.unity3d.com/Manual/class-ParticleSystem.html) |
+| Cap looping emitters | A loop with no rate or lifetime bound is unbounded growth in the sense `csharp-standards` → `performance-and-algorithms.md` names — the cap is the release point | [Particle System component](https://docs.unity3d.com/Manual/class-ParticleSystem.html) |
 | Measure before claiming a saving | A particle optimisation claim needs a Profiler or frame-debugger capture, per that file's Verification section — especially here, where the intuitive lever is often the wrong one | [Particle Systems](https://docs.unity3d.com/Manual/ParticleSystems.html) |

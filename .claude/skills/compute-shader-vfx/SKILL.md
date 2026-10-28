@@ -1,24 +1,12 @@
 ---
 name: compute-shader-vfx
-description: >
-  Technique for compute shaders whose deliverable is a visual effect — GPU
-  particle simulation, procedural mesh and vertex deformation, curl-noise
-  and flow fields, and any GPU buffer feeding a shader or VFX Graph.
-  Covers the C#-to-HLSL struct stride contract, `RWStructuredBuffer`,
-  `AppendStructuredBuffer`, the numthreads attribute and dispatch sizing,
-  ping-pong buffering, `DrawProceduralIndirect` with indirect args,
-  `AsyncGPUReadback` versus a blocking `GetData`, `ComputeBuffer.Release`,
-  and platform compute support. Use when a visual effect is GPU-driven.
-  Not for: non-visual compute throughput, owned by
-  `tech-lead-performance`; CPU parallel work, owned by
-  `unity-job-system-and-burst`; the shader consuming the buffer, owned by
-  `shader-authoring`; particle graph structure, owned by
-  `vfx-particle-authoring`; ECS mesh deformation, owned by
-  `unity-entities-graphics`; the CPU-side `Mesh` the deformed geometry
-  must exist in, owned by `unity-3d-mesh`.
+description: "Compute shaders whose output is a visual: GPU particles, procedural mesh/vertex deformation, flow fields, buffers feeding Shader/VFX Graph — dispatch sizing, buffer lifetime, mobile limits. Use when a visual effect needs GPU simulation."
+user-invocable: false
 ---
 
 # Compute Shaders for Visual Effects
+
+**Not for:** non-visual compute throughput, owned by `gameplay-engineer`; CPU parallel work, owned by `unity-job-system-and-burst`; the shader consuming the buffer, owned by `shader-authoring`; particle graph structure, owned by `vfx-particle-authoring`; ECS mesh deformation, owned by `unity-entities-graphics`; the CPU-side `Mesh` the deformed geometry must exist in, owned by `unity-3d-mesh`.
 
 ## 1. Objective
 Produce compute passes that drive a visual effect correctly, release what they allocate, and degrade honestly on hardware that cannot run them. It prevents the failure modes compute code has that ordinary C# does not: a C# struct whose stride disagrees with the HLSL one, which corrupts data rather than throwing; a kernel with no bounds check writing past the element count because dispatch rounds up to whole thread groups; an in-place read-modify-write across parallel threads that is a race rather than a sequence; a `ComputeBuffer` the GC can never reclaim; a blocking `GetData` that stalls the frame on GPU completion; and a compute-only effect that renders nothing at all on a device that does not support it.
@@ -32,7 +20,7 @@ Act as the GPU compute specialist for visual effects on the client track — the
 - Sizing `[numthreads]` and the dispatch, or fixing a kernel that processes the wrong element count.
 - Wiring compute output into rendering through `DrawProceduralIndirect`, `DrawMeshInstancedIndirect`, or a VFX Graph custom block.
 - A reported symptom: the effect renders garbage, renders nothing on one device class, drops frames at a specific point in the frame, or leaks memory across scene loads.
-- Negative trigger: the primary purpose is throughput on a non-visual system — pathfinding, inventory search, bulk simulation for its own sake — that is `tech-lead-performance`.
+- Negative trigger: the primary purpose is throughput on a non-visual system — pathfinding, inventory search, bulk simulation for its own sake — that is `gameplay-engineer`.
 - Negative trigger: the work is CPU-side parallelism over native containers — that is `unity-job-system-and-burst`; both are "many elements at once", but the deciding question is whether the result must reach the GPU as a buffer or the CPU as data.
 - Negative trigger: the shader that reads the buffer and shades the result — that is `shader-authoring`.
 - Negative trigger: the particle graph's emission and simulation structure — that is `vfx-particle-authoring`; this skill writes a custom kernel it consumes.
@@ -42,17 +30,17 @@ Act as the GPU compute specialist for visual effects on the client track — the
 ## 4. How to use this skill
 1. **Define the buffer contract before writing a kernel** — the HLSL `struct` must match the C# one in field order, type sizes, and resulting stride, because a mismatch does not throw; it reinterprets memory and produces plausible-looking garbage. State the stride explicitly on both sides.
 2. **Confirm compute support on every shipping platform before committing to the approach** — check `SystemInfo.supportsComputeShaders` and the project's actual device floor. If support is uncertain, design the fallback now, since a compute-only effect on unsupported hardware shows the player nothing at all, which is worse than a simpler effect that renders.
-3. **Give each kernel one job** — Emit, Simulate, Sort, Compact — rather than one kernel doing everything, per the Single Responsibility rule in `coding-principles.md`. Separate kernels are also independently profilable, which a monolithic one is not.
+3. **Give each kernel one job** — Emit, Simulate, Sort, Compact — rather than one kernel doing everything, per the Single Responsibility rule in `csharp-standards` → `coding-principles.md`. Separate kernels are also independently profilable, which a monolithic one is not.
 4. **Derive the dispatch from the live element count and bounds-check inside the kernel** — `Mathf.CeilToInt(count / (float)groupSize)` rounds up, so the final thread group runs threads with no element behind them; without an early `if (id.x >= count) return;` those threads write past the end. Never hardcode a group count.
 5. **Choose `[numthreads]` deliberately against the target hardware** — 64 suits AMD wavefronts, 32 suits NVIDIA warps, and 64 to 256 is the usual range on mobile; state which target drove the number rather than inheriting a template's default.
 6. **Ping-pong any buffer a pass both reads and writes in the same dispatch** — parallel threads have no ordering between them, so an in-place read-modify-write is a race, not a shortcut. Read from one buffer, write to the other, swap after the dispatch.
-7. **Keep the GPU result out of every gameplay decision** — per `coding-principles.md`'s Shared Core integrity section, the rule lives in `Game.Core.*` and the server evaluates it independently, so a value that exists only in GPU memory can never be the source of truth. Compute output drives visuals; if a rule needs the same data, compute it on the CPU as well and treat the GPU copy as presentation.
+7. **Keep the GPU result out of every gameplay decision** — per `csharp-standards` → `coding-principles.md`'s Shared Core integrity section, the rule lives in `Game.Core.*` and the server evaluates it independently, so a value that exists only in GPU memory can never be the source of truth. Compute output drives visuals; if a rule needs the same data, compute it on the CPU as well and treat the GPU copy as presentation.
 8. **Read back with `AsyncGPUReadback`, never a blocking `GetData` in a frame path** — `GetData` stalls the CPU until the GPU has finished, which is the whole pipeline's worth of latency; the async request delivers a frame or more later, so any consumer must tolerate that delay by design.
 9. **Feed rendering through an indirect draw** — `DrawProceduralIndirect` or `DrawMeshInstancedIndirect` with an args buffer filled from a GPU counter keeps the instance count on the GPU, so the CPU never has to read back just to know how many to draw.
-10. **Release every `ComputeBuffer` on every path**, in `OnDisable` or `OnDestroy` and on early returns, per `performance-and-algorithms.md`'s Memory discipline section — an unreleased buffer is native memory the managed GC never reclaims and never reports.
+10. **Release every `ComputeBuffer` on every path**, in `OnDisable` or `OnDestroy` and on early returns, per `csharp-standards` → `performance-and-algorithms.md`'s Memory discipline section — an unreleased buffer is native memory the managed GC never reclaims and never reports.
 11. **Validate at small scale before scaling up** — confirm correctness at a hundred elements with the Frame Debugger or a graphics inspector; a stride or bounds bug that is invisible at that size is obvious at ten thousand, and far cheaper to find first.
-12. **State the per-frame dispatch cost when it is non-trivial** — element count times kernel complexity, per `performance-and-algorithms.md`'s Algorithmic complexity discipline section, and back any performance claim with a capture rather than the expectation that the GPU is free.
-13. **Split the work when a request serves both a visual outcome and raw throughput** — say which half is which and coordinate with `tech-lead-performance` rather than silently owning both under one deliverable.
+12. **State the per-frame dispatch cost when it is non-trivial** — element count times kernel complexity, per `csharp-standards` → `performance-and-algorithms.md`'s Algorithmic complexity discipline section, and back any performance claim with a capture rather than the expectation that the GPU is free.
+13. **Split the work when a request serves both a visual outcome and raw throughput** — say which half is which and coordinate with `gameplay-engineer` rather than silently owning both under one deliverable.
 
 ## 5. Specific goals / tasks this skill performs
 - GPU particle simulation buffers feeding a shader or VFX Graph.
@@ -62,7 +50,7 @@ Act as the GPU compute specialist for visual effects on the client track — the
 - Dispatch sizing, `[numthreads]` selection, and kernel bounds correctness.
 - Indirect draw wiring and buffer lifecycle management.
 - Platform compute-support checks and fallback design.
-- Out of scope: non-visual compute throughput (`tech-lead-performance`); CPU-side parallel work (`unity-job-system-and-burst`); the CPU-readable `Mesh` (`unity-3d-mesh`); the consuming shader (`shader-authoring`); particle graph structure (`vfx-particle-authoring`); ECS mesh deformation (`unity-entities-graphics`).
+- Out of scope: non-visual compute throughput (`gameplay-engineer`); CPU-side parallel work (`unity-job-system-and-burst`); the CPU-readable `Mesh` (`unity-3d-mesh`); the consuming shader (`shader-authoring`); particle graph structure (`vfx-particle-authoring`); ECS mesh deformation (`unity-entities-graphics`).
 
 ## 6. Output format
 ```
@@ -111,4 +99,4 @@ Act as the GPU compute specialist for visual effects on the client track — the
 - Never leave a `ComputeBuffer` unreleased on any path — it is native memory the GC cannot see, and it survives the scene that created it.
 - Never ship a compute-only effect without checking platform support — an unsupported device shows nothing, which reads as a missing feature rather than a lower-fidelity one.
 - Never hardcode a dispatch group count — derive it from the live element count every frame.
-- If a request mixes a visual outcome with a raw throughput goal, split it with `tech-lead-performance` rather than owning both.
+- If a request mixes a visual outcome with a raw throughput goal, split it with `gameplay-engineer` rather than owning both.

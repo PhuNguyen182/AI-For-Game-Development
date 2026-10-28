@@ -1,25 +1,12 @@
 ---
 name: backend-build-vs-buy
-description: >
-  Per-component build-vs-buy framework for backend infrastructure —
-  matchmaking, player data persistence and save sync, dedicated server
-  hosting and orchestration, leaderboards, and party or social —
-  shortlisting managed options such as PlayFab, GameLift, or Nakama
-  Cloud, self-hosted open-source Nakama, and fully custom per component
-  instead of one monolithic vendor call, decided on the scaling-cost
-  crossover point, real ops capacity, and server-region coverage. Use
-  when choosing a managed backend versus self-hosted or custom
-  infrastructure. Not for: the sync protocol itself — message format,
-  tick rate, prediction and reconciliation, owned by
-  `netcode-architecture-decision` and `netcode-engineer`; server-side
-  gameplay validation, owned by `server-authoritative-engineer`; the
-  scoring rubric in `tco-reversibility-scoring`; remote-config content
-  cadence, owned by `live-ops-content-pipeline`; event pipelines, owned
-  by `analytics-telemetry-platform`; the virtual-currency ledger, owned
-  by `ad-mediation-monetization-platform`.
+description: "Per-component build-vs-buy for backend: matchmaking, cloud save, server hosting, leaderboards, social — managed (UGS, PlayFab, Nakama, Firebase) vs custom, with exit cost. Use when choosing backend services."
+user-invocable: false
 ---
 
 # Backend Build-vs-Buy — per-component infrastructure decision
+
+**Not for:** the sync protocol itself — message format, tick rate, prediction and reconciliation, owned by `netcode-architecture-decision` and `netcode-engineer`; server-side gameplay validation, owned by `netcode-engineer`; the scoring rubric in `tco-reversibility-scoring`; remote-config content cadence, owned by `live-ops-content-pipeline`; event pipelines, owned by `analytics-telemetry-platform`; the virtual-currency ledger, owned by `ad-mediation-monetization-platform`.
 
 ## 1. Objective
 Give the CTO a consistent framework for the backend infrastructure build-vs-buy call — matchmaking, persistence, hosting, social — kept independent of the netcode/gameplay-sync decision so it is not bundled into a single all-or-nothing vendor commitment by default.
@@ -31,7 +18,7 @@ Act as a backend-infrastructure CTO who has run both self-hosted and managed mul
 - Choosing between a managed backend platform and self-hosted or custom infrastructure for any backend component.
 - A vendor's bundled offering is being treated as one decision, and the components inside it have not been separated yet.
 - Negative trigger: the question is the client-server sync protocol — message format, tick rate, prediction/reconciliation — which belongs to `netcode-architecture-decision` for the foundation choice and `netcode-engineer` for the protocol itself.
-- Negative trigger: the backend is already chosen and the work is implementing server-side gameplay validation — that is `server-authoritative-engineer`.
+- Negative trigger: the backend is already chosen and the work is implementing server-side gameplay validation — that is `netcode-engineer`.
 - Negative trigger: the question is content cadence (remote config, live events) or the analytics event pipeline — separate infra decisions with their own skills.
 - Negative trigger: the virtual-currency ledger. It is player data, but it is scored with the monetization stack it lives under, in `ad-mediation-monetization-platform` — this skill owns profile data and save sync, never the currency balance.
 
@@ -43,7 +30,7 @@ Act as a backend-infrastructure CTO who has run both self-hosted and managed mul
 5. **Check server-region coverage against the target audience's geography** — for real-time competitive play a missing region is a latency floor no amount of client-side work can lift, which disqualifies the option outright rather than costing it points.
 6. **Check what persistence lock-in does to save data** — if the vendor's schema shapes the save format, exit cost is a live-player data migration, and reversibility drops to Low regardless of how clean the API looks.
 7. **Recommend per component, allowing a mixed result** — managed matchmaking alongside custom dedicated server hosting is a normal, often correct outcome. Forcing one vendor across every component to look tidy is not a technical argument.
-8. **Write the decision in English**, per `language-and-comments.md`'s Working language section — it is a durable artifact other roles act on; the Vietnamese reply to the GD is the final message, not the document.
+8. **Write the decision in English**, per `csharp.md`'s Working language section — it is a durable artifact other roles act on; the Vietnamese reply to the GD is the final message, not the document.
 9. **Flag any component whose requirement the team has no working basis to estimate as a feasibility unknown for `rd-engineer`** — projected concurrent player count is the usual one. Deciding on an unverified load assumption puts the whole component's score on a guess.
 
 ## 5. Specific goals / tasks this skill performs
@@ -51,7 +38,7 @@ Act as a backend-infrastructure CTO who has run both self-hosted and managed mul
 - Surface each component's scaling-cost crossover point explicitly, not just launch-day cost.
 - Test every option against the team's real ops capacity and the target regions.
 - Route load-bearing feasibility unknowns to `rd-engineer` instead of absorbing them into the decision.
-- Out of scope: the sync protocol (`netcode-architecture-decision`, `netcode-engineer`), server-side validation implementation (`server-authoritative-engineer`), live-ops content infra (`live-ops-content-pipeline`), the virtual-currency ledger (`ad-mediation-monetization-platform`).
+- Out of scope: the sync protocol (`netcode-architecture-decision`, `netcode-engineer`), server-side validation implementation (`netcode-engineer`), live-ops content infra (`live-ops-content-pipeline`), the virtual-currency ledger (`ad-mediation-monetization-platform`).
 
 ## 6. Output format
 ```
@@ -67,7 +54,7 @@ Act as a backend-infrastructure CTO who has run both self-hosted and managed mul
 - Save-data lock-in: <none / vendor schema shapes the save format>
 - Rule compliance: decision written in English, per Working language
 - Feasibility unknowns: <none / listed>
-- Routed to: `rd-engineer` for the unknowns above; `server-authoritative-engineer` for validation once chosen
+- Routed to: `rd-engineer` for the unknowns above; `netcode-engineer` for validation once chosen
 ```
 
 **Extended report — emit ONLY when the requester asks for it.** It replaces the one-line unknowns field with all three:

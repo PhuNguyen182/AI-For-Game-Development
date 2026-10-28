@@ -6,7 +6,7 @@ Covers: SKILL.md §4 — **"Tune bandwidth and CPU deliberately, before assuming
 Every lever here trades bandwidth for CPU, or accuracy for both — measure
 with [testing-and-debugging.md](testing-and-debugging.md)'s Network
 Profiler Snapshot Overview tab before and after, per
-`performance-and-algorithms.md`'s Verification section.
+`csharp-standards` → `performance-and-algorithms.md`'s Verification section.
 
 ## Importance and send priority
 

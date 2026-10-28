@@ -5,7 +5,7 @@ Covers: SKILL.md §4 — **"Compare build and symbol identifiers rather than ver
 
 Which artefact resolves which kind of frame, and how a build's identity is
 established independently of the version players see. Producing these
-artefacts is `build-run-engineer`'s and `tech-lead-sdk-platform`'s; this file
+artefacts is `build-release-engineer`'s and `sdk-platform-engineer`'s; this file
 is about recognising which one is absent.
 
 ## The artefacts

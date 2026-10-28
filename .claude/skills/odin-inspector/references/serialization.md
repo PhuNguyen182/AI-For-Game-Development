@@ -66,13 +66,13 @@ The `Sirenix.Serialization` namespace itself (formatters, `AnySerializer`,
 `BinaryDataReader`/`Writer`, per-type formatters like `DictionaryFormatter`,
 `ArrayFormatter<T>`) is internal machinery — reach for it directly only when
 building a custom serialization format or a completely custom persistence
-layer, which is `tech-lead-csharp-unity`/`tech-lead-sdk-platform` escalation
+layer, which is `technical-architect`/`sdk-platform-engineer` escalation
 territory, not routine Inspector work.
 
 **Critical caveat**: switching an existing type to `SerializedMonoBehaviour`/
 `SerializedScriptableObject` changes its underlying serialized data format.
 Existing scene/prefab/asset data serialized under Unity's own format is not
 automatically migrated — treat this as a breaking change to existing assets
-of that type, flag it in the Implementation Note per `coding-principles.md`'s
+of that type, flag it in the Implementation Note per `csharp-standards` → `coding-principles.md`'s
 Handoff section, and prefer the narrower `[OdinSerialize]`-on-one-member
 approach when the rest of the type does not need it.

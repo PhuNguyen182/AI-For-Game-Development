@@ -1,23 +1,12 @@
 ---
 name: dotnet-concurrency-and-async
-description: >
-  Concurrency and asynchronous programming in pure .NET — Task,
-  Task<TResult>, async and await, ValueTask, ValueTask<TResult>,
-  CancellationToken, CancellationTokenSource, TaskCompletionSource<TResult>,
-  IAsyncEnumerable<T>, System.Threading.Channels' Channel<T>,
-  System.Threading.Tasks.Parallel.For, Parallel.ForEach, lock, Monitor,
-  SemaphoreSlim, and Interlocked. Use when writing async I/O, cooperative
-  cancellation, producer or consumer pipelines, CPU-bound parallel loops,
-  or thread-safe shared state in Game.Core.*, Game.Server.*, or an SDK or
-  platform wrapper with no UnityEngine dependency — including bridging
-  that code into Unity's PlayerLoop. Not for: Unity PlayerLoop-native
-  async, owned by `unitask-async-programming`; reactive push streams,
-  owned by `r3-reactive-extensions`; Burst or Job System bulk
-  parallelism, owned by `unity-job-system-and-burst`; collection and
-  buffer selection, owned by `dotnet-memory-and-collections`.
+description: "Pure .NET concurrency: Task, ValueTask, async/await, CancellationToken, TaskCompletionSource, IAsyncEnumerable, Channels, locks, Interlocked, thread-safety. Use for async or cross-thread code outside Unity's PlayerLoop."
+user-invocable: false
 ---
 
 # .NET Concurrency and Async — Task, Cancellation, Channels, Parallel, and Threading Primitives
+
+**Not for:** Unity PlayerLoop-native async, owned by `unitask-async-programming`; reactive push streams, owned by `r3-reactive-extensions`; Burst or Job System bulk parallelism, owned by `unity-job-system-and-burst`; collection and buffer selection, owned by `dotnet-memory-and-collections`.
 
 ## Bundled resources
 
@@ -48,7 +37,7 @@ Act as the .NET concurrency specialist for the client track — the tool reached
 - Negative trigger: which container holds the shared state, or how a buffer is allocated and pooled — that's `dotnet-memory-and-collections`. This skill owns the primitive that coordinates access (`lock`/`Interlocked`/`SemaphoreSlim`/`Channel<T>`); it never picks the collection type that access lands on.
 
 ## 4. How to use this skill
-1. **Confirm the code has no UnityEngine dependency and isn't driven by Unity's PlayerLoop before reaching for raw `System.Threading.Tasks` types** — `Game.Core.*` and SDK/platform wrappers stay on the BCL; PlayerLoop-integrated work belongs to `unitask-async-programming` instead, per `naming-convention.md`'s namespace boundary.
+1. **Confirm the code has no UnityEngine dependency and isn't driven by Unity's PlayerLoop before reaching for raw `System.Threading.Tasks` types** — `Game.Core.*` and SDK/platform wrappers stay on the BCL; PlayerLoop-integrated work belongs to `unitask-async-programming` instead, per `csharp-standards` → `naming-convention.md`'s namespace boundary.
 2. **Default every async method to `Task`/`Task<TResult>`, and reach for `ValueTask`/`ValueTask<TResult>` only once profiling shows allocation pressure from a hot, frequently-synchronously-completing call**, per [task-types-and-combinators.md](references/task-types-and-combinators.md).
 3. **Accept a `CancellationToken` parameter on every asynchronous method that can run long enough to need cancellation, and link an internal timeout token with a caller-supplied one via `CancellationTokenSource.CreateLinkedTokenSource` rather than inventing a bespoke flag**, per [cancellation-and-async-streams.md](references/cancellation-and-async-streams.md).
 4. **Call `ConfigureAwait(false)` on every `await` inside library-style code with no UI/game-loop synchronization context to return to** — avoids the CA2007 deadlock risk described in [cancellation-and-async-streams.md](references/cancellation-and-async-streams.md); skip it only in true entry-point/UI-affinity code that must resume on the original context.
@@ -56,7 +45,7 @@ Act as the .NET concurrency specialist for the client track — the tool reached
 6. **Hand off data between an async producer and an async consumer through `System.Threading.Channels.Channel<T>` rather than a hand-rolled queue plus lock**, per [channels-and-parallel-multithreading.md](references/channels-and-parallel-multithreading.md); reserve `Parallel.For`/`Parallel.ForEach` for CPU-bound bulk work where a measurement shows the partitioning overhead pays off, never as a default replacement for a sequential loop.
 7. **Protect shared mutable state with the lightest primitive the contention pattern actually needs** — `Interlocked` for a single counter/flag, `lock`/`System.Threading.Lock` for a short critical section, `SemaphoreSlim`/`WaitAsync` for bounding concurrent access from async code, per [channels-and-parallel-multithreading.md](references/channels-and-parallel-multithreading.md).
 8. **Bridge into Unity's PlayerLoop through UniTask's `.AsUniTask()`/`.AsTask()` extension methods instead of re-deriving the async logic in `Game.Client.*`** — `.AsUniTask()` wraps the `Task`/`Task<TResult>` this skill returns from `Game.Core.*`/`Game.Server.*` so `Game.Client.*` can await it on Unity's `PlayerLoop` instead of blocking a thread-pool thread, and `.AsTask()` exposes a `Game.Client.*`-side `UniTask` back out to a `Task`-based contract when the direction reverses; `unitask-async-programming` owns the resulting `PlayerLoopTiming` placement and the struct-based, pooled-promise allocation profile on that side.
-9. **Verify the target Unity scripting runtime actually ships the API before using it** — confirm Player Settings' Api Compatibility Level against the `netstandard-2.1` pin in [root-links.md](references/root-links.md), per `coding-principles.md`'s Modern C# syntax section; if the Tech Spec doesn't specify a required cancellation/timeout or concurrency pattern, ask rather than guessing one.
+9. **Verify the target Unity scripting runtime actually ships the API before using it** — confirm Player Settings' Api Compatibility Level against the `netstandard-2.1` pin in [root-links.md](references/root-links.md), per `csharp-standards` → `coding-principles.md`'s Modern C# syntax section; if the Tech Spec doesn't specify a required cancellation/timeout or concurrency pattern, ask rather than guessing one.
 
 ## 5. Specific goals / tasks this skill performs
 - Implement `Task`/`Task<TResult>`-returning async methods in `Game.Core.*`/`Game.Server.*`/SDK wrappers with correct naming, cancellation, and exception propagation.
@@ -101,6 +90,6 @@ Act as the .NET concurrency specialist for the client track — the tool reached
 
 ## 8. Edge cases & guardrails
 - Never block on async code with `.Result`/`.Wait()` in `Game.Core.*`/SDK wrapper code — a classic deadlock source when a synchronization context is present; bridge with `TaskCompletionSource<TResult>` or await end-to-end instead.
-- Never reintroduce UniTask (or any UnityEngine-adjacent type) inside `Game.Core.*` — that breaks Shared Core's no-UnityEngine-dependency requirement; UniTask interop belongs at the `Game.Client.*` boundary only, per `naming-convention.md`'s namespace boundary.
-- Never reach for `Parallel.For`/`ForEach`, `Channel<T>`, or a hand-rolled lock as a default "just in case" — each carries real overhead with no measured concurrency need, which is speculative complexity YAGNI already forbids, per `performance-and-algorithms.md`'s Verification section.
+- Never reintroduce UniTask (or any UnityEngine-adjacent type) inside `Game.Core.*` — that breaks Shared Core's no-UnityEngine-dependency requirement; UniTask interop belongs at the `Game.Client.*` boundary only, per `csharp-standards` → `naming-convention.md`'s namespace boundary.
+- Never reach for `Parallel.For`/`ForEach`, `Channel<T>`, or a hand-rolled lock as a default "just in case" — each carries real overhead with no measured concurrency need, which is speculative complexity YAGNI already forbids, per `csharp-standards` → `performance-and-algorithms.md`'s Verification section.
 - If the Tech Spec doesn't state whether an operation needs a caller-supplied timeout vs. only caller cancellation, or what concurrency bound a parallel loop should use, ask rather than guessing a default.

@@ -27,7 +27,7 @@ Burst-compiled bulk simulation over `NativeArray<T>`.
 **Critical caveat**: `Parallel.For`/`ForEach` only pays off once the
 per-iteration work is expensive enough to outweigh partitioning/scheduling
 overhead — measure before replacing a sequential loop, per
-`performance-and-algorithms.md`'s Core principle. For Burst-compiled bulk
+`csharp-standards` → `performance-and-algorithms.md`'s Core principle. For Burst-compiled bulk
 simulation over `NativeArray<T>`, escalate to `unity-job-system-and-burst`
 instead.
 

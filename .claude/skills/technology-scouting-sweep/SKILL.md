@@ -1,22 +1,12 @@
 ---
 name: technology-scouting-sweep
-description: >
-  Tiered external search discipline for a capability the project lacks.
-  Tier 1 official docs — Unity Manual, Unity Scripting Reference, Microsoft
-  Learn, vendor docs, version-pinned. Tier 2 maintained GitHub repositories,
-  filtered with `stars:`, `pushed:`, `archived:`, `language:` qualifiers
-  plus release and issue history, and OpenUPM registry presence. Tier 3
-  established forums — Unity Discussions, Stack Overflow, GameDev Stack
-  Exchange — where visible consensus exists. Use when building a candidate
-  set or judging a sweep saturated. Not for: grading a source's
-  trustworthiness, owned by `source-credibility-grading`; screening
-  candidates against project constraints, owned by
-  `practical-fit-screening`; ranking survivors into one recommendation,
-  owned by `solution-comparison-report`; measuring a candidate, owned by
-  `rd-engineer`.
+description: "Tiered search for a capability the project lacks: official docs, then maintained GitHub repos, then forums, version-pinned, with a stop rule. Use for every research-mode question."
+user-invocable: false
 ---
 
 # Technology Scouting Sweep — finding candidate solutions in tiered source order
+
+**Not for:** grading a source's trustworthiness, owned by `source-credibility-grading`; screening candidates against project constraints, owned by `practical-fit-screening`; ranking survivors into one recommendation, owned by `solution-comparison-report`; measuring a candidate, owned by `rd-engineer`.
 
 ## 1. Objective
 Produce a candidate set that is complete enough to decide from, without inventing sources, mistaking marketing for documentation, or stopping at the first plausible hit. The failure modes it prevents are specific: recommending a third-party package for something the engine already ships, quoting a forum answer written against an engine version the project no longer runs, citing a repository whose last release predates that version, and reconstructing URLs from memory at report time.

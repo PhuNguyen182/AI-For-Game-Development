@@ -1,26 +1,12 @@
 ---
 name: osa-optimized-scrollview-adapter
-description: >
-  The Optimized ScrollView Adapter, OSA, by Forbidden Byte — the recycling
-  ListView/GridView/TableView that replaces uGUI's `ScrollRect`:
-  `OSA<TParams, TItemViewsHolder>`, `BaseParams`, `BaseItemViewsHolder`,
-  `CreateViewsHolder`, `UpdateViewsHolder`, `CollectItemsSizes`,
-  `ResetItems`/`InsertItems`/`RemoveItems`, `SimpleDataHelper`,
-  `LazyDataHelper`, `GridAdapter`, `CellGroupViewsHolder`,
-  `ScrollTo`/`SmoothScrollTo`, `ScheduleComputeVisibilityTwinPass`,
-  `Snapper8`, `ScrollbarFixer8`, `OSAContentDecorator`, and
-  `Params.optimization` pooling, under the current `Com.ForbiddenByte.OSA`
-  namespace root — `Com.TheFallenGames.OSA` before the v7.0 rename. Use
-  when a scrolling list is too long to instantiate one GameObject per row.
-  Not for: Canvas/RectTransform/Layout/`ScrollRect` setup around the
-  adapter, owned by `ugui`; UI Toolkit `ListView` virtualization, owned by
-  `ui-toolkit`; item-content asset loading, owned by `unity-addressables`;
-  animating items, owned by `dotween-tweening`; measuring the result,
-  owned by `unity-profiler-diagnostics`; the data model itself, owned by
-  `csharp-engineer`.
+description: "OSA recycling list/grid/table views replacing ScrollRect: adapters, views holders, data helpers, item sizes, ScrollTo, snapping, pooling. Use when a scrolling list is too long for one GameObject per row."
+user-invocable: false
 ---
 
 # OSA — Recycling ScrollView Adapter for uGUI
+
+**Not for:** Canvas/RectTransform/Layout/`ScrollRect` setup around the adapter, owned by `ugui`; UI Toolkit `ListView` virtualization, owned by `ui-toolkit`; item-content asset loading, owned by `unity-addressables`; animating items, owned by `dotween-tweening`; measuring the result, owned by `unity-profiler-diagnostics`; the data model itself, owned by `csharp-engineer`.
 
 ## Bundled resources
 
@@ -71,19 +57,19 @@ dataset is added to, removed from, resized, scrolled to, or snapped.
 - Negative trigger: the game rules, economy or state machine behind the displayed models — that's `csharp-engineer` in `Game.Core.*`.
 
 ## 4. How to use this skill
-1. **Confirm a recycling adapter is warranted before reaching for OSA at all** — a bounded list that fits a screen or two is cheaper as a plain `ScrollRect` with a Layout Group (`ugui`), and OSA's adapter/params/views-holder triad is real complexity that KISS in `coding-principles.md` only justifies once instantiating every row is genuinely untenable.
+1. **Confirm a recycling adapter is warranted before reaching for OSA at all** — a bounded list that fits a screen or two is cheaper as a plain `ScrollRect` with a Layout Group (`ugui`), and OSA's adapter/params/views-holder triad is real complexity that KISS in `csharp-standards` → `coding-principles.md` only justifies once instantiating every row is genuinely untenable.
 2. **Write every `using` against `Com.ForbiddenByte.OSA.*`, the current namespace root** — v7.0 renamed the whole tree from `Com.TheFallenGames.OSA.*`, so tutorials and samples predating 2023 carry a root that no longer compiles; reach for the legacy root only after confirming the project is actually pinned to 6.x, per [root-links.md](references/root-links.md).
 3. **Implement the three types in dependency order — views holder, then params, then adapter** — the adapter is generic over the other two, and `CollectViews` on the views holder is what makes `UpdateViewsHolder` a field assignment rather than a `GetComponent` call per recycle, per [core-classes-and-lifecycle.md](references/core-classes-and-lifecycle.md).
 4. **Let OSA initialize from `Start()` unless you call `Init()` yourself, and never assume a correct viewport size inside `Awake()`** — several Unity versions misreport `RectTransform` size that early, which surfaces as a wrong first layout rather than an error, per [core-classes-and-lifecycle.md](references/core-classes-and-lifecycle.md) and [known-issues-and-platform-caveats.md](references/known-issues-and-platform-caveats.md).
 5. **Route every dataset change through the adapter's count-change API, never through the backing list alone** — the adapter caches item count, per-item sizes and content size, and a list mutated behind its back leaves all three disagreeing with what is drawn; use the DataHelpers when you don't need the raw two-step control, per [data-and-count-changes.md](references/data-and-count-changes.md).
 6. **Decide the item-size strategy before the item prefab is authored** — uniform `DefaultItemSize` when rows genuinely match, `CollectItemsSizes` when sizes are known up front and the set is small enough to precompute, and the ContentSizeFitter twin-pass only when a row's size is knowable solely after its content is bound; each choice constrains the prefab's layout components, per [variable-item-sizes.md](references/variable-item-sizes.md) and the ContentSizeFitter prefab traps in [known-issues-and-platform-caveats.md](references/known-issues-and-platform-caveats.md).
 7. **Reach for `GridAdapter` only when the layout is genuinely a cell grid, and accept its data-path constraint up front** — a grid's views holder is a *group* of cells, its indices are not your model indices, and it does not offer the list's incremental insert/remove, per [grid-and-table.md](references/grid-and-table.md).
-8. **Keep `UpdateViewsHolder` a pure data-to-view bind** — it is called on every recycle, so it must not add or remove items, allocate, re-resolve components, or subscribe an event; wire listeners once at creation and read `ItemIndex` inside the handler so a recycled row acts on the item it currently shows, per [item-interaction-and-decorators.md](references/item-interaction-and-decorators.md) and `performance-and-algorithms.md`'s Update loop & callback overhead section.
+8. **Keep `UpdateViewsHolder` a pure data-to-view bind** — it is called on every recycle, so it must not add or remove items, allocate, re-resolve components, or subscribe an event; wire listeners once at creation and read `ItemIndex` inside the handler so a recycled row acts on the item it currently shows, per [item-interaction-and-decorators.md](references/item-interaction-and-decorators.md) and `csharp-standards` → `performance-and-algorithms.md`'s Update loop & callback overhead section.
 9. **Move the viewport only through the adapter's own scroll API** — `ScrollTo`/`SmoothScrollTo` resolve an item index against virtual positions the adapter owns, whereas writing `Content.localPosition` desynchronises it from the visibility pass, per [scrolling-navigation-and-snapping.md](references/scrolling-navigation-and-snapping.md).
 10. **Hang anything that is not an item off `OSAContentDecorator` under the Viewport, not as a child of Content** — Content's children are the recycled pool, so a header parented there is destroyed, recycled or repositioned without warning, per [item-interaction-and-decorators.md](references/item-interaction-and-decorators.md).
 11. **Size and persist the recycle pool deliberately rather than accepting the default** — OSA creates only the minimum visible count plus one, which is correct for steady scrolling but produces an instantiation spike on the first fast fling and on every count change that empties the list, per [pooling-and-performance.md](references/pooling-and-performance.md).
-12. **Keep every OSA type in `Game.Client.*`** — OSA is a `UnityEngine`/uGUI component set, which `coding-principles.md`'s Shared Core integrity section forbids in `Game.Core.*`; the adapter reads Core models and never decides a rule itself, and its serialized params fields follow the Inspector camelCase override in `naming-convention.md`.
-13. **Verify the recycling win and any pooling change with the Profiler before claiming it** — instantiated-object count, GC allocation during a sustained fling, and frame time on the lowest target device, per `performance-and-algorithms.md`'s Verification section; an untested "OSA made it faster" is an assertion, not a result.
+12. **Keep every OSA type in `Game.Client.*`** — OSA is a `UnityEngine`/uGUI component set, which `csharp-standards` → `coding-principles.md`'s Shared Core integrity section forbids in `Game.Core.*`; the adapter reads Core models and never decides a rule itself, and its serialized params fields follow the Inspector camelCase override in `csharp-standards` → `naming-convention.md`.
+13. **Verify the recycling win and any pooling change with the Profiler before claiming it** — instantiated-object count, GC allocation during a sustained fling, and frame time on the lowest target device, per `csharp-standards` → `performance-and-algorithms.md`'s Verification section; an untested "OSA made it faster" is an assertion, not a result.
 14. **If the installed OSA version, the scroll orientation, the expected item count, or whether item sizes vary is unstated, ask before writing the adapter** — each one changes which base classes and which size strategy are correct, and all four are expensive to unwind once the prefab and params are built.
 
 ## 5. Specific goals / tasks this skill performs
@@ -143,13 +129,13 @@ the one-line `Known limitations` above with all three fields:
 ## 8. Edge cases & guardrails
 - Never mutate the backing collection without a matching count-change call — the adapter's cached count, sizes and content size silently diverge from what is drawn, and the symptom appears later as a wrong row or a dead scroll region.
 - Never add or remove items from inside `UpdateViewsHolder` — it binds data and nothing else; the adapter is mid-layout and the result is undefined.
-- Never subscribe an event or call `GetComponent` inside `UpdateViewsHolder` — it runs on every recycle, so the subscription duplicates per reuse and the lookup is a per-recycle cost, per `performance-and-algorithms.md`'s Scripting & GC section.
+- Never subscribe an event or call `GetComponent` inside `UpdateViewsHolder` — it runs on every recycle, so the subscription duplicates per reuse and the lookup is a per-recycle cost, per `csharp-standards` → `performance-and-algorithms.md`'s Scripting & GC section.
 - Never capture an item index in a listener closure — capture the views holder and read its current `ItemIndex` at invocation, or a recycled row acts on the item it used to show.
 - Never parent a header, footer, ad or sticky element to Content — Content's children are the recycled pool; use a Viewport-level decorator instead.
 - Never let a Layout Group or `ContentSizeFitter` own an item's size along the scrolling axis unless the adapter's twin-pass explicitly cooperates with it, per `ugui`'s ownership of those components.
-- Never place OSA types in `Game.Core.*` — the package depends on `UnityEngine` and uGUI, which `coding-principles.md`'s Shared Core integrity section forbids there.
+- Never place OSA types in `Game.Core.*` — the package depends on `UnityEngine` and uGUI, which `csharp-standards` → `coding-principles.md`'s Shared Core integrity section forbids there.
 - Never write a workaround for odd clipping, WebGL stripping errors, early-`Awake` sizing, or truncated text before checking [known-issues-and-platform-caveats.md](references/known-issues-and-platform-caveats.md) — several are known engine or version bugs with a documented fix, and a hand-rolled workaround for one hides it.
-- Never claim a recycling or pooling improvement without a Profiler measurement, per `performance-and-algorithms.md`'s Verification section.
+- Never claim a recycling or pooling improvement without a Profiler measurement, per `csharp-standards` → `performance-and-algorithms.md`'s Verification section.
 - Never infer the namespace root from a code sample found online — most predate the v7.0 rename; read it out of the installed package, defaulting to `Com.ForbiddenByte.OSA.*`.
 - Never treat the vendor's generated API site as current — it stops at v4.3, so anything added in 5.0+ is absent rather than contradicted, and some params members were re-cased at 5.0. For those, the vendored `.cs` in the project is the only authority, per [root-links.md](references/root-links.md).
 - If the scroll orientation, expected item count, or size variability is unknown, ask rather than assume — each one changes which base classes and size strategy are correct.

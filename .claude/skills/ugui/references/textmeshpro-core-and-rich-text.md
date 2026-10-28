@@ -79,6 +79,6 @@ TextMesh Pro's Resources/Style Sheets) that can be swapped project-wide via
 TMP Settings, or overridden per-object in that object's Extra Settings.
 
 **Prefer a style sheet over repeating the same tag stack across many
-strings** — per DRY/KISS in `coding-principles.md`, a style edited in one
+strings** — per DRY/KISS in `csharp-standards` → `coding-principles.md`, a style edited in one
 place beats hunting down every inline tag combination when a heading style
 changes.

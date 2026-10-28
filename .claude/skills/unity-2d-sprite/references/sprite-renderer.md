@@ -4,7 +4,7 @@ Sources: [Sprite Renderer component reference](https://docs.unity3d.com/Manual/s
 Covers: SKILL.md §4 — **"Keep the sprite layer free of decisions"**, **"Confirm any draw-call or overdraw claim with the Profiler's 2D module before reporting it"**.
 
 `SpriteRenderer` draws a `Sprite` and nothing more: it renders state that
-`Game.Core.*` has already resolved, per `coding-principles.md`'s Shared Core
+`Game.Core.*` has already resolved, per `csharp-standards` → `coding-principles.md`'s Shared Core
 integrity section. This file holds its fields, its scripting surface, and the
 Profiler module that turns a claimed batching win into a measured one.
 
@@ -26,12 +26,12 @@ Profiler module that turns a claimed batching win into a measured one.
 
 | Member | What it decides | Source |
 |---|---|---|
-| `sprite` | The drawn asset; assign only when the value actually changed, per `performance-and-algorithms.md`'s only-update-on-change rule | [Sprite Renderer reference](https://docs.unity3d.com/Manual/sprite/renderer/sprite-renderer-reference.html) |
+| `sprite` | The drawn asset; assign only when the value actually changed, per `csharp-standards` → `performance-and-algorithms.md`'s only-update-on-change rule | [Sprite Renderer reference](https://docs.unity3d.com/Manual/sprite/renderer/sprite-renderer-reference.html) |
 | `color`, `flipX`, `flipY` | Script equivalents of the Inspector fields | [Sprite Renderer reference](https://docs.unity3d.com/Manual/sprite/renderer/sprite-renderer-reference.html) |
 | `drawMode`, `size`, `tileMode`, `adaptiveModeThreshold` | Runtime control of Sliced/Tiled sizing and the Adaptive stretch threshold | [Sprite Renderer reference](https://docs.unity3d.com/Manual/sprite/renderer/sprite-renderer-reference.html) |
 | `maskInteraction`, `spriteSortPoint` | Script equivalents of the masking and sort-point fields | [Sprite Renderer reference](https://docs.unity3d.com/Manual/sprite/renderer/sprite-renderer-reference.html) |
 | `sortingLayerName` / `sortingLayerID`, `sortingOrder` | Runtime sorting control; the ID overload avoids the per-call string lookup the name overload performs | [Sprite Renderer reference](https://docs.unity3d.com/Manual/sprite/renderer/sprite-renderer-reference.html) |
-| `RegisterSpriteChangeCallback` / `UnregisterSpriteChangeCallback` | Observes `sprite` reassignment; unregister on the same lifecycle boundary that registered, per `coding-principles.md`'s Event handlers section | [Sprite Renderer reference](https://docs.unity3d.com/Manual/sprite/renderer/sprite-renderer-reference.html) |
+| `RegisterSpriteChangeCallback` / `UnregisterSpriteChangeCallback` | Observes `sprite` reassignment; unregister on the same lifecycle boundary that registered, per `csharp-standards` → `coding-principles.md`'s Event handlers section | [Sprite Renderer reference](https://docs.unity3d.com/Manual/sprite/renderer/sprite-renderer-reference.html) |
 
 ## 2D Profiler module
 

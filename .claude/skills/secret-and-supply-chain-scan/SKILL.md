@@ -1,22 +1,12 @@
 ---
 name: secret-and-supply-chain-scan
-description: >
-  Scan for credentials and hostile code in a Unity repository — private
-  keys, `.keystore`, `.jks`, `.p12`, `.mobileprovision`, `.env`,
-  `google-services.json`, `GoogleService-Info.plist`, AWS and Google API
-  key shapes, and JWT and bearer tokens — plus Unity supply-chain risk that
-  auto-executes on import: the InitializeOnLoad, InitializeOnLoadMethod,
-  and DidReloadScripts attributes, Editor folder scripts inside an
-  imported package, and DLLs with no source. Distinguishes these from
-  public identifiers that only look secret: AdMob App and Ad Unit IDs, IAP
-  SKUs, bundle IDs, and Steam App IDs. Not for: correctness and spec
-  drift, owned by `shared-core-boundary-audit`; fixing an integration,
-  owned by `tech-lead-sdk-platform`; whether a credential ever entered git
-  history and is still reachable, owned by `git-forensics`; key rotation
-  and history rewrite decisions, owned by `cto`.
+description: "Scan for secrets (keys, keystores, .env, service JSON, tokens) and Unity supply-chain risk (InitializeOnLoad, Editor scripts in packages, source-less DLLs) without flagging public SDK ids. Use before commit, import or release."
+user-invocable: false
 ---
 
 # Secret and Supply-Chain Scan — credentials, hostile imports, and false positives
+
+**Not for:** correctness and spec drift, owned by `shared-core-boundary-audit`; fixing an integration, owned by `sdk-platform-engineer`; whether a credential ever entered git history and is still reachable, owned by `git-forensics`; key rotation and history rewrite decisions, owned by `cto`.
 
 ## 1. Objective
 Stop two different disasters with one pass: a credential committed to a repository that will outlive every attempt to delete it, and third-party Unity content that runs code the moment it is imported, before anyone has reviewed a line of it. The failure mode this skill exists to prevent is not missing a secret — it is the opposite. A scanner that flags every long hex string trains reviewers to wave findings through, so by the time a real private key appears nobody looks. Precision is the deliverable, not volume.
@@ -31,7 +21,7 @@ Act as the security scanner for the QA track, on behalf of `security-reviewer`. 
 - An older area of the repository is being audited standalone, outside any particular submission.
 - A value looks sensitive and nobody can say where it came from.
 - Negative trigger: correctness, Tech Spec drift, and Shared Core duplication — that is `shared-core-boundary-audit`, whose verdict is separate from this one.
-- Negative trigger: performing or repairing the SDK integration itself — that is `tech-lead-sdk-platform`; this skill reports and stops.
+- Negative trigger: performing or repairing the SDK integration itself — that is `sdk-platform-engineer`; this skill reports and stops.
 - Negative trigger: whether a credential ever entered git history and is still reachable there — that is `git-forensics`, which sweeps every reachable object; this skill reads the working tree only, so a clean scan here never means a clean history.
 - Negative trigger: deciding to rotate a key or rewrite git history — that is `cto`, because both are hard to reverse and affect more than this submission.
 - Negative trigger: a crash or fault in a released build — that is `crash-anr-investigator`, not a security finding.
@@ -39,12 +29,12 @@ Act as the security scanner for the QA track, on behalf of `security-reviewer`. 
 ## 4. How to use this skill
 1. **Sweep for credential file types before reading any code** — `.keystore`, `.jks`, `.p12`, `.pfx`, `.pem`, `.mobileprovision`, `.cer`, `.env`, `id_rsa`, `google-services.json`, and `GoogleService-Info.plist`. A committed signing keystore or service-account file is Critical on sight and needs no further analysis to report.
 2. **Then sweep file contents for credential shapes, not for keywords** — `BEGIN PRIVATE KEY`, `BEGIN RSA PRIVATE KEY`, `AKIA` prefixes, `AIza` prefixes, `ya29.` tokens, `Bearer ` followed by a long opaque string, `eyJ` JWT prefixes, and assignments to `password`, `secret`, `apiKey`, `token`, or `connectionString` whose value is a literal rather than a lookup. Searching for the word "key" alone produces the noise this skill exists to avoid.
-3. **Classify every hit against the public-identifier allowlist before assigning severity** — AdMob App IDs and Ad Unit IDs, IAP product and SKU identifiers, bundle IDs and package names, Steam App IDs, and Firebase project IDs are published in the shipped app by design. Flagging one is a false positive that costs the reviewer's trust; per `defect-reporting.md`'s Severity section, severity states impact if shipped, and these ship deliberately.
+3. **Classify every hit against the public-identifier allowlist before assigning severity** — AdMob App IDs and Ad Unit IDs, IAP product and SKU identifiers, bundle IDs and package names, Steam App IDs, and Firebase project IDs are published in the shipped app by design. Flagging one is a false positive that costs the reviewer's trust; per skill `qa-standards`'s Severity section, severity states impact if shipped, and these ship deliberately.
 4. **Treat an unresolvable value as `Needs Confirmation`, never as either verdict** — when you cannot tell whether a string is a public identifier or a live credential, say so and name what would settle it. Guessing Clear risks the leak; guessing Critical trains everyone to ignore you. This is the one case where the correct output is a question.
 5. **Scan imported third-party content for code that runs on import** — `[InitializeOnLoad]`, `[InitializeOnLoadMethod]`, `[DidReloadScripts]`, `[RuntimeInitializeOnLoadMethod]`, and any script under an `Editor/` folder inside a package the project did not author. These execute inside the Editor without anyone pressing Play, so review happens after execution unless this step catches them first.
 6. **Flag binaries that arrive without source** — a vendored `.dll`, native plugin, or obfuscated script cannot be reviewed, so report it as an unreviewable dependency with its origin, and route the accept-or-reject decision rather than making it.
-7. **Look for behaviour that contradicts the code's stated purpose** — network calls from code that claims to be local-only, reflection used to reach a payment or analytics path, encoded strings decoded at runtime, or a build step that reaches an external host. Per `coding-principles.md`'s POLA section a component must do what its name implies; here a mismatch is a security finding, not a naming one.
-8. **Report every finding with `path:line`, a category, and a severity, then stop** — per `defect-reporting.md`, a finding without its evidence anchor is not reportable. Never remediate: deleting a committed secret from the working tree leaves it in history and creates the false belief that it is gone.
+7. **Look for behaviour that contradicts the code's stated purpose** — network calls from code that claims to be local-only, reflection used to reach a payment or analytics path, encoded strings decoded at runtime, or a build step that reaches an external host. Per `csharp-standards` → `coding-principles.md`'s POLA section a component must do what its name implies; here a mismatch is a security finding, not a naming one.
+8. **Report every finding with `path:line`, a category, and a severity, then stop** — per skill `qa-standards`, a finding without its evidence anchor is not reportable. Never remediate: deleting a committed secret from the working tree leaves it in history and creates the false belief that it is gone.
 
 ## 5. Specific goals / tasks this skill performs
 - Detecting committed credential files by type and contents.
@@ -54,7 +44,7 @@ Act as the security scanner for the QA track, on behalf of `security-reviewer`. 
 - Detecting unreviewable binaries and source-less plugins.
 - Detecting logic whose behaviour contradicts its stated purpose.
 - Producing a security verdict of Clear, Blocked, or Needs Confirmation, with routed findings.
-- Out of scope: correctness and spec compliance (`shared-core-boundary-audit`); repairing an integration (`tech-lead-sdk-platform`); sweeping git history for a credential (`git-forensics`); rotating keys or rewriting history (`cto`); released-build faults (`crash-anr-investigator`).
+- Out of scope: correctness and spec compliance (`shared-core-boundary-audit`); repairing an integration (`sdk-platform-engineer`); sweeping git history for a credential (`git-forensics`); rotating keys or rewriting history (`cto`); released-build faults (`crash-anr-investigator`).
 
 ## 6. Output format
 ```
@@ -68,7 +58,7 @@ Act as the security scanner for the QA track, on behalf of `security-reviewer`. 
 - Behaviour contradicting stated purpose: <path:line and the mismatch — or none>
 - Findings: <category, severity, path:line, per finding>
 - Decision: <clear / block / confirm before deciding>
-- Routed to: <tech-lead-sdk-platform / cto / none>
+- Routed to: <sdk-platform-engineer / cto / none>
 ```
 
 **Extended report — emit ONLY when the requester asks for it.** It adds all three fields below the decision:

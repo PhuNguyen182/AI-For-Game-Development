@@ -6,6 +6,7 @@
 # See: https://github.com/github/gitignore/tree/main/Global
 #
 .utmp/
+/[Uu]nity
 /[Ll]ibrary/
 /[Tt]emp/
 /[Oo]bj/
@@ -104,3 +105,12 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
+
+# Python bytecode
+__pycache__/
+
+# Claude Code local runtime state
+.claude/scheduled_tasks.lock
+.claude/settings.local.json
+.claude/worktrees/
+.workflow/editor.lock

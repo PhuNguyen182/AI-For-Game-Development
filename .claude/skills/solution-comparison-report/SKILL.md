@@ -1,21 +1,12 @@
 ---
 name: solution-comparison-report
-description: >
-  Turns screened candidates into one dated, sourced recommendation. Fixes
-  comparison axes before the matrix is filled, names the single deciding
-  axis, picks the practical optimum for today, names the runner-up with the
-  condition that would flip the call, separates documented claims from
-  unmeasured ones, pins the recommendation to a version, and routes by what
-  it commits the project to: `cto` for a hard-to-reverse or paid bet,
-  `rd-engineer` for a spike, `technical-architect` for a Tech Spec. Use once
-  candidates pass screening. Not for: finding candidates, owned by
-  `technology-scouting-sweep`; grading sources, owned by
-  `source-credibility-grading`; the adoption gates, owned by
-  `practical-fit-screening`; scoring a strategic bet, owned by
-  `tco-reversibility-scoring`.
+description: "Turn screened candidates into one dated, sourced recommendation: fixed axes, the deciding axis, runner-up and its winning condition, staleness trigger. Use when 2+ candidates survive screening."
+user-invocable: false
 ---
 
 # Solution Comparison Report — ranking screened candidates into one recommendation
+
+**Not for:** finding candidates, owned by `technology-scouting-sweep`; grading sources, owned by `source-credibility-grading`; the adoption gates, owned by `practical-fit-screening`; scoring a strategic bet, owned by `tco-reversibility-scoring`.
 
 ## 1. Objective
 Produce a recommendation someone can act on: one option, the reason it wins, the runner-up, and the condition that would change the answer — without manufacturing a winner where the candidates genuinely tie, presenting an unmeasured claim as measured, or letting a recommendation read as current a year after the picture was taken.
@@ -41,7 +32,7 @@ Act as the synthesis step of the research track — the point where screened can
 6. **Separate documented claims from measured ones in every cell** — anything not measured on this project's hardware is `unverified`, per performance-and-algorithms.md's Verification section, and a claim that decides the call becomes a spike request rather than a conclusion.
 7. **Name the runner-up together with the condition that would flip the call** — "X, unless the mobile build's AOT rules out Y's codegen, which only a device test settles". A recommendation with no flip condition cannot be revisited intelligently.
 8. **Pin the recommendation to a version and stamp the date the picture was taken** — "the best option today" has a shelf life, and an undated recommendation is read as current for as long as it survives in the repository.
-9. **Route by what the recommendation commits the project to** — hard-to-reverse or paid goes to `cto`; needs measurement goes to `rd-engineer`; accepted and ready to specify goes to `technical-architect`; a vendor SDK to wire in goes to `tech-lead-sdk-platform`.
+9. **Route by what the recommendation commits the project to** — hard-to-reverse or paid goes to `cto`; needs measurement goes to `rd-engineer`; accepted and ready to specify goes to `technical-architect`; a vendor SDK to wire in goes to `sdk-platform-engineer`.
 10. **Return "no recommendation" as a valid result when every candidate fails the must-haves** — say what building it in-house would take instead, since an unmet requirement is the finding.
 11. **Write the report in English, per language-and-comments.md's Working language section** — it is a durable artifact; only the final message back to the GD is Vietnamese.
 
@@ -67,7 +58,7 @@ Act as the synthesis step of the research track — the point where screened can
 - Unverified: <claims needing measurement, each with the spike that would settle it>
 - Picture taken: <date> — restate if <the release or version bump that invalidates it>
 - Decision: RECOMMENDED / TIE — LOWER RISK CHOSEN / NO VIABLE CANDIDATE
-- Routed to: <cto / rd-engineer / technical-architect / tech-lead-sdk-platform>
+- Routed to: <cto / rd-engineer / technical-architect / sdk-platform-engineer>
 ```
 
 **Extended report — emit ONLY when the requester asks for it.** It adds all three fields below the decision:

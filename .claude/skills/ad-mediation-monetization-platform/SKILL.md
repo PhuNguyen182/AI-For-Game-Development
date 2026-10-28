@@ -1,22 +1,12 @@
 ---
 name: ad-mediation-monetization-platform
-description: >
-  Vendor and infrastructure framework for two commonly bundled but
-  independent decisions — which ad mediation platform to commit to, such
-  as AppLovin MAX, ironSource, or Google AdMob, and whether the
-  virtual-currency ledger should be a managed service or custom-built —
-  weighing fill rate and eCPM against take rate, switching cost, and
-  store disclosure policy for gacha, loot-box, and IAP receipt
-  validation. Use when choosing a mediation vendor or economy backend.
-  Not for: integrating the chosen SDK or wiring IAP, owned by
-  `tech-lead-sdk-platform`; designing the economy, gacha rates, or
-  currency sinks, a GD decision with `advisor` and `critic`; the scoring
-  rubric in `tco-reversibility-scoring`; general dependency vetting via
-  `tech-vendor-dependency-risk-assessment`; player-data persistence,
-  owned by `backend-build-vs-buy`.
+description: "Decide the ad mediation vendor (AppLovin MAX, ironSource, AdMob) and whether the currency ledger is managed or custom — fill/eCPM vs take rate, switching cost, loot-box disclosure. Use when choosing a mediation or economy backend."
+user-invocable: false
 ---
 
 # Ad Mediation & Monetization Platform — vendor and ledger decision
+
+**Not for:** integrating the chosen SDK or wiring IAP, owned by `sdk-platform-engineer`; designing the economy, gacha rates, or currency sinks, a GD decision with `researcher` and `critic`; the scoring rubric in `tco-reversibility-scoring`; general dependency vetting via `tech-vendor-dependency-risk-assessment`; player-data persistence, owned by `backend-build-vs-buy`.
 
 ## 1. Objective
 Give the CTO a consistent framework for the infrastructure decisions behind monetization — kept separate from the game-design question of what the economy is — so the mediation platform and the currency ledger are chosen deliberately rather than defaulted to whatever integrates fastest.
@@ -28,8 +18,8 @@ Act as a monetization-infrastructure CTO: aware of mediation vendor market share
 - Choosing an ad mediation platform for the project.
 - Deciding whether the economy/virtual-currency ledger runs on a managed service or custom-built infrastructure.
 - A mediation SDK or ledger service is about to be adopted without the store-policy check having been run.
-- Negative trigger: the vendor is chosen and the work is integrating the SDK or wiring IAP against store APIs — that is `tech-lead-sdk-platform`.
-- Negative trigger: the question is what the economy, gacha rates, or currency sinks should be — a GD design decision supported by `advisor` and `critic`; this skill owns only the infra beneath it.
+- Negative trigger: the vendor is chosen and the work is integrating the SDK or wiring IAP against store APIs — that is `sdk-platform-engineer`.
+- Negative trigger: the question is what the economy, gacha rates, or currency sinks should be — a GD design decision supported by `researcher` and `critic`; this skill owns only the infra beneath it.
 - Negative trigger: the question is whether a third-party dependency in general is safe to build on — that is `tech-vendor-dependency-risk-assessment`.
 
 ## 4. How to use this skill
@@ -40,7 +30,7 @@ Act as a monetization-infrastructure CTO: aware of mediation vendor market share
 5. **Decide whether the ledger needs server authority at all before shortlisting ledger vendors** — any real-money-adjacent economy, player-to-player trading, or fraud-sensitive currency needs an authoritative ledger; a cosmetic soft currency usually needs only client-tracked value with server validation on spend. This question decides whether a managed ledger is even in scope.
 6. **Score both shortlists with `tco-reversibility-scoring`** — mediation typically lands Medium reversibility, since an SDK swap behind a wrapper is real but contained; a currency ledger baked into the save-data format typically lands Low and should be weighted accordingly.
 7. **Run the store-policy check as a gate, not a scoring factor** — gacha and loot-box disclosure rules, and IAP receipt-validation requirements, differ per store and move. An option that risks rejection is out, because the exposure is the whole app's store standing rather than one feature's revenue.
-8. **Write both verdicts in English**, per `language-and-comments.md`'s Working language section — `tech-lead-sdk-platform` implements against this document; the Vietnamese reply to the GD is the final message, not the document.
+8. **Write both verdicts in English**, per `csharp.md`'s Working language section — `sdk-platform-engineer` implements against this document; the Vietnamese reply to the GD is the final message, not the document.
 9. **Redirect the economy design question to the GD when it turns out to be undecided** — this skill cannot choose a ledger for an economy whose shape is still contested, and guessing the shape produces a ledger that fits nothing.
 
 ## 5. Specific goals / tasks this skill performs
@@ -48,7 +38,7 @@ Act as a monetization-infrastructure CTO: aware of mediation vendor market share
 - Establish the ledger's authority requirement before any ledger vendor is considered.
 - Gate both verdicts on current store disclosure and receipt-validation policy.
 - Score switching cost from real existing integrations rather than treating vendors as interchangeable.
-- Out of scope: SDK integration and IAP wiring (`tech-lead-sdk-platform`), economy and gacha design (GD, `advisor`, `critic`), persistence infra (`backend-build-vs-buy`).
+- Out of scope: SDK integration and IAP wiring (`sdk-platform-engineer`), economy and gacha design (GD, `researcher`, `critic`), persistence infra (`backend-build-vs-buy`).
 
 ## 6. Output format
 ```
@@ -70,7 +60,7 @@ Act as a monetization-infrastructure CTO: aware of mediation vendor market share
 - Decision: <option> — <one line>
 
 - Rule compliance: both verdicts written in English, per Working language
-- Routed to: `tech-lead-sdk-platform` for integration
+- Routed to: `sdk-platform-engineer` for integration
 ```
 
 **Extended report — emit ONLY when the requester asks for it.** It replaces each one-line decision rationale with all three fields:

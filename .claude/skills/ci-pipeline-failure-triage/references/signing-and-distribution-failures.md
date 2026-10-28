@@ -12,10 +12,10 @@ to the wrong person — the failure appears on the run that carried a feature, a
 | Signature | Class | Owner |
 |---|---|---|
 | `No signing certificate "iOS Distribution" found` | The keychain has no identity — `setup_ci` missing, or `match` not called | `ci-cd-engineer` (lane wiring) |
-| `No profiles for '<bundle id>' were found` | The profile is absent from the match store, or the bundle id disagrees with Unity's player settings | `tech-lead-sdk-platform` (identity) or `ci-cd-engineer` (bundle id in the lane) |
+| `No profiles for '<bundle id>' were found` | The profile is absent from the match store, or the bundle id disagrees with Unity's player settings | `sdk-platform-engineer` (identity) or `ci-cd-engineer` (bundle id in the lane) |
 | The lane hangs at a keychain or Apple ID prompt | Interactive auth on a headless agent | `ci-cd-engineer` |
-| Certificate expired, or revoked while another machine ran `match` in write mode | The shared identity changed underneath the pipeline | `tech-lead-sdk-platform` |
-| Export succeeds; the `.ipa` installs for nobody | Wrong `export_method`, or the device UDIDs were not in the profile at signing time | `ci-cd-engineer` for the method; `tech-lead-sdk-platform` for the profile's device list |
+| Certificate expired, or revoked while another machine ran `match` in write mode | The shared identity changed underneath the pipeline | `sdk-platform-engineer` |
+| Export succeeds; the `.ipa` installs for nobody | Wrong `export_method`, or the device UDIDs were not in the profile at signing time | `ci-cd-engineer` for the method; `sdk-platform-engineer` for the profile's device list |
 
 The last row is the one worth stating explicitly in a report: **it is a build-time fact, so no re-upload
 repairs it** — the fix is a new build against an updated profile, per `fastlane-mobile-delivery`.
@@ -26,7 +26,7 @@ repairs it** — the fix is a new build against an updated profile, per `fastlan
 |---|---|---|
 | `INSTALL_PARSE_FAILED_NO_CERTIFICATES` on a device | The artifact was never signed — the keystore properties were absent from the build | `ci-cd-engineer` |
 | Signing config resolving to empty strings | The credential was bound to a different stage than the one that ran | `ci-cd-engineer` |
-| Upload rejected on certificate fingerprint | Signed with a key other than the expected upload key | `tech-lead-sdk-platform` |
+| Upload rejected on certificate fingerprint | Signed with a key other than the expected upload key | `sdk-platform-engineer` |
 | Installs only on the developer's device | Built with Unity's debug keystore, because the custom keystore was never enabled | `ci-cd-engineer` |
 | `keytool`/`jarsigner` password errors | A wrong or truncated secret — often a trailing newline in a stored value | `ci-cd-engineer` |
 
@@ -34,9 +34,9 @@ repairs it** — the fix is a new build against an updated profile, per `fastlan
 
 | Signature | Class | Owner |
 |---|---|---|
-| Permission denied fetching app information | The service account lacks the App Distribution role, or the credential path is empty on this agent | `ci-cd-engineer`; `tech-lead-sdk-platform` if the role must be granted |
+| Permission denied fetching app information | The service account lacks the App Distribution role, or the credential path is empty on this agent | `ci-cd-engineer`; `sdk-platform-engineer` if the role must be granted |
 | An error naming the app id | The other platform's id, or an id from a different Firebase project | `ci-cd-engineer` |
-| AAB rejected | The Firebase app is not linked to Google Play | `tech-lead-sdk-platform` |
+| AAB rejected | The Firebase app is not linked to Google Play | `sdk-platform-engineer` |
 | Upload succeeds, nobody is notified | An empty group, or a group alias that does not exist | `ci-cd-engineer` |
 | Auth worked yesterday, fails today, nothing changed | A personal token rather than a service account — the person's access changed | `ci-cd-engineer`, and the fix is the service account |
 

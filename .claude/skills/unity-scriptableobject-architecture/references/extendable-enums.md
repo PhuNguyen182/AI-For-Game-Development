@@ -15,7 +15,7 @@ integer.
 | Member | Effect | Use when | Source |
 |---|---|---|---|
 | `abstract class DamageTypeSO : ScriptableObject` with `[SerializeField] private string id;` | The base "enum" type | A design-time category needs new members added by content, not by a programmer | synthesized |
-| One asset per case (`SO_DamageType_Fire.asset`) | Each "value" of the enum | Designers add a new category without touching code, per `coding-principles.md`'s Open/Closed section | synthesized |
+| One asset per case (`SO_DamageType_Fire.asset`) | Each "value" of the enum | Designers add a new category without touching code, per `csharp-standards` → `coding-principles.md`'s Open/Closed section | synthesized |
 | `Dictionary<DamageTypeSO, float>` (e.g. a resistance table) | Lookup keyed by the SO reference instead of an int | A `switch` on the type would otherwise grow one branch per case | synthesized |
 
 ## Code shape

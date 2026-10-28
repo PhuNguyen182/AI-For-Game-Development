@@ -133,7 +133,7 @@ scene diffs.
 
 Upstream publishes no benchmark, so these are the documented mechanics that
 determine cost, not measured numbers. Every claim about a specific scene
-still needs the Profiler, per `performance-and-algorithms.md`'s Verification
+still needs the Profiler, per `csharp-standards` → `performance-and-algorithms.md`'s Verification
 section.
 
 | Mechanic | Cost consequence | Source |

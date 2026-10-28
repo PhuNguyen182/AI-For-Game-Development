@@ -72,5 +72,5 @@ the test stage ahead of it and let the stage's own exit status fail the run.
 - An artifact existing at a path — it may be the previous run's, per `unity-batchmode-cli`.
 - A stage that was skipped by `when` — skipped is not passed, and the report must say which it was.
 - A publisher that found no results, whatever the build status ended up as.
-- A green run on a job whose test stage was disabled to make it green; that is `verification-standards.md`'s
+- A green run on a job whose test stage was disabled to make it green; that is skill `qa-standards`'s
   weakened assertion, and it is a finding rather than a fix.

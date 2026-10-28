@@ -9,7 +9,7 @@ at two specific moments — the first fast fling, and a count change that
 empties the list — where objects are created or destroyed in a burst.
 Everything below trades memory for the absence of those bursts. Measuring
 whether a burst actually costs anything is `unity-profiler-diagnostics`'
-job, per `performance-and-algorithms.md`'s Verification section.
+job, per `csharp-standards` → `performance-and-algorithms.md`'s Verification section.
 
 ## `Params.optimization`
 

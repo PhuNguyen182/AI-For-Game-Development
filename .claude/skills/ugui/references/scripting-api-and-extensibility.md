@@ -63,7 +63,7 @@ UI Profiler (see [profiling-performance-and-howtos.md](profiling-performance-and
 
 ## When to reach for a custom component at all
 
-Per YAGNI in `coding-principles.md`: a `LayoutElement` override, an
+Per YAGNI in `csharp-standards` → `coding-principles.md`: a `LayoutElement` override, an
 existing Layout Group's settings, or composing several built-in components
 covers most "custom UI" requests without a new `Graphic`/`LayoutGroup`
 subclass. Write one only once a built-in composition genuinely can't

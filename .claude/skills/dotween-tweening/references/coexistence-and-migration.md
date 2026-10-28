@@ -23,12 +23,12 @@ In order:
    Follow existing convention in that area rather than introducing a
    second tweening library into the same feature. Mixing both inside one
    screen/system for no reason is exactly the kind of avoidable complexity
-   KISS in `coding-principles.md` warns against.
+   KISS in `csharp-standards` → `coding-principles.md` warns against.
 2. **Is there a project-wide convention already established** (a Tech
    Spec, an architecture decision, an existing pattern followed
    consistently across features)? Follow it.
 3. **If genuinely neither applies — a new module, no prior art, no stated
-   convention — ask the GD/Tech Lead which engine governs this work
+   convention — ask the GD or `technical-architect` which engine governs this work
    before writing tween code**, rather than defaulting to whichever skill
    happened to be invoked first. This mirrors the general "ask rather than
    guess" pattern both tweening skills already use for their own

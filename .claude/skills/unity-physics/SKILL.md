@@ -1,24 +1,12 @@
 ---
 name: unity-physics
-description: >
-  Technique for `com.unity.physics`, the deterministic stateless ECS rigid-body
-  and spatial-query engine: `PhysicsCollider`, `PhysicsVelocity`, `PhysicsMass`,
-  `PhysicsDamping`, `PhysicsGravityFactor`, `PhysicsWorldIndex`,
-  `PhysicsCustomTags`, the scene-global `PhysicsStep`; collider shapes from box
-  through convex hull, mesh, terrain and compound; joints and motors; ray,
-  collider-cast, distance and overlap queries against `CollisionWorld`;
-  `ICollisionEventsJob`, `ITriggerEventsJob`, `IBodyPairsJob`, `IContactsJob`,
-  `IJacobiansJob`; authoring, runtime body creation, multiple worlds, ghost
-  collisions. Use when entities must simulate or be queried.
-  Not for: built-in PhysX bodies — `unity-3d-physics`; built-in Box2D —
-  `unity-2d-physics`; the ECS-adoption decision and general entity design —
-  `unity-ecs-architecture`; scheduling — `unity-job-system-and-burst`;
-  container choice — `unity-collections`; `float3` maths — `unity-mathematics`;
-  Burst tuning — `unity-burst-compiler`; prediction protocols —
-  `netcode-engineer`.
+description: "Unity Physics (DOTS, deterministic): PhysicsCollider/Velocity/Mass, simulation groups, queries, collision filters, events, stateless stepping. Use for ECS physics."
+user-invocable: false
 ---
 
 # Unity Physics — Deterministic ECS Rigid Bodies & Spatial Queries
+
+**Not for:** built-in PhysX bodies — `unity-3d-physics`; built-in Box2D — `unity-2d-physics`; the ECS-adoption decision and general entity design — `unity-ecs-architecture`; scheduling — `unity-job-system-and-burst`; container choice — `unity-collections`; `float3` maths — `unity-mathematics`; Burst tuning — `unity-burst-compiler`; prediction protocols — `netcode-engineer`.
 
 ## Bundled resources
 
@@ -63,10 +51,10 @@ Act as the Unity Physics specialist for the client track — the tool reached fo
 
 ## 4. How to use this skill
 1. **Confirm this is DOTS Physics and not PhysX before touching a component**, per [design-and-pipeline.md](references/design-and-pipeline.md) — the two engines share no runtime code path, only some authoring component names, so a request about a `Rigidbody` on an ordinary GameObject routes to `unity-3d-physics` instead. [root-links.md](references/root-links.md) pins the package version below.
-2. **Name the ECS-adoption decision this physics work sits on top of**, per [dots-relationship.md](references/dots-relationship.md) — `PhysicsWorld` is rebuilt from ECS component data every step, so with no approved ECS adoption there is nothing to build on and the request routes to `tech-lead-performance`.
-3. **Keep the game rule in `Game.Core.*` and treat physics output as input to it** — per `coding-principles.md`'s Shared Core integrity section, Unity Physics needs a live Entities `World` and therefore cannot live in Core; pass the resolved contact or query result into the pure Core function rather than deciding the outcome inside a physics system.
+2. **Name the ECS-adoption decision this physics work sits on top of**, per [dots-relationship.md](references/dots-relationship.md) — `PhysicsWorld` is rebuilt from ECS component data every step, so with no approved ECS adoption there is nothing to build on and the request routes to `technical-architect`.
+3. **Keep the game rule in `Game.Core.*` and treat physics output as input to it** — per `csharp-standards` → `coding-principles.md`'s Shared Core integrity section, Unity Physics needs a live Entities `World` and therefore cannot live in Core; pass the resolved contact or query result into the pure Core function rather than deciding the outcome inside a physics system.
 4. **Choose the body's component set from its body type**, per [rigid-bodies-and-components.md](references/rigid-bodies-and-components.md) — every body needs `PhysicsCollider`, a transform, and `PhysicsWorldIndex`; adding `PhysicsVelocity` and `PhysicsMass` is what makes a body dynamic, so putting them on something meant to stay static changes its behaviour rather than merely describing it.
-5. **Pick the simplest collider shape the gameplay requirement allows**, per [colliders.md](references/colliders.md) and `performance-and-algorithms.md`'s Physics section — primitives first, convex hull for an arbitrary convex form, mesh only for static or kinematic detail geometry, and a compound of simple shapes in preference to one coarse hull when a body needs detail.
+5. **Pick the simplest collider shape the gameplay requirement allows**, per [colliders.md](references/colliders.md) and `csharp-standards` → `performance-and-algorithms.md`'s Physics section — primitives first, convex hull for an arbitrary convex form, mesh only for static or kinematic detail geometry, and a compound of simple shapes in preference to one coarse hull when a body needs detail.
 6. **Set bevel radius and Force Unique deliberately rather than by default** — the default bevel radius of 0.05 inflates the hull, which is why a body can rest a visible fraction above a surface, and a collider must be marked Force Unique before non-uniform runtime scaling, or the shared instance rescales every body using it.
 7. **Choose a joint or motor by the degrees of freedom the mechanic needs**, per [joints-and-motors.md](references/joints-and-motors.md) — hinge or limited hinge for one rotational axis, prismatic for one translational axis, ball and socket or ragdoll for constrained multi-axis motion, stiff spring for a distance constraint; a motor is a joint with one driven constraint, tuned by spring frequency and damping ratio.
 8. **Pick the query type from the question being asked**, per [spatial-queries-and-events.md](references/spatial-queries-and-events.md) — ray cast for a line segment, collider cast to sweep a shape along a path, collider or point distance for proximity, overlap for region containment; query one collider when the target is known and `CollisionWorld` when it is not, and express selection through collision filters rather than post-filtering results.

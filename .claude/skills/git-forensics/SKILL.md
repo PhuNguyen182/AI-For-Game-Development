@@ -1,19 +1,12 @@
 ---
 name: git-forensics
-description: >
-  Trace a change to the commit that caused it, and attribute it without
-  naming the wrong one. Instruments: `git blame -w -C -C -C --ignore-rev`,
-  `.git-blame-ignore-revs`, `git log -L`, pickaxe `-S` and `-G`,
-  `git bisect run`, `--diff-filter=D` with `--full-history`,
-  `git reflog --all`, `git fsck --lost-found`, `git shortlog -sn`,
-  `git rev-list --all`. Answers which commit introduced a line, a string, a
-  behaviour or a credential, where deleted work went, and who holds context
-  on a file. Not for: backing up before a command runs, owned by
-  `git-safety-anchor`; restoring lost state, owned by `git-recovery`; and
-  Unity asset specifics, owned by `git-unity-repo`.
+description: "Trace a change to the commit that caused it: blame with ignore-revs, log -L, pickaxe -S/-G, bisect run, where deleted work went, whether a secret entered history. Use when attributing a defect or a leak."
+user-invocable: false
 ---
 
 # Git Forensics — Tracing a Change to Its Commit, and Attributing It Honestly
+
+**Not for:** backing up before a command runs, owned by `git-safety-anchor`; restoring lost state, owned by `git-recovery`; and Unity asset specifics, owned by `git-unity-repo`.
 
 ## Bundled resources
 
@@ -53,9 +46,9 @@ Act as the repository forensics specialist for the devops track — the skill re
 6. **Distinguish `-S` from `-G` on a content search** — `-S` reports commits that change how many times a string occurs, so a change that edits a line without altering the count is invisible to it, and `-G` is the one that matches the diff text itself.
 7. **Separate the commit that exposed a fault from the commit that caused it** — `bisect` finds the first commit where the test fails, which is frequently an innocent change that made a pre-existing latent fault reachable; state which of the two the report is naming, per [attribution-honesty.md](references/attribution-honesty.md).
 8. **Report the commit, and report a person only when explicitly asked** — author and committer diverge after rebase, cherry-pick and amend, a squashed commit's author is whoever squashed it, and a commit implementing a spec or a review comment is not the origin of the decision it encodes.
-9. **Give every finding a location, an expected, an actual, evidence, and an owning agent-id** — adopting the five elements `defect-reporting.md`'s "Every finding carries five things" section requires, so the receiving agent can act without a follow-up question.
+9. **Give every finding a location, an expected, an actual, evidence, and an owning agent-id** — adopting the five elements skill `qa-standards`'s "Every finding carries five things" section requires, so the receiving agent can act without a follow-up question.
 10. **Treat ownership data as routing information, never as an assessment of a person** — `git shortlog` answers who holds context on a file so the fix reaches someone who can make it; a question about whose performance is at fault is a decision for `gd`, not an output of this skill.
-11. **Report and write in English** — per `language-and-comments.md`'s Working language section, including any `.git-blame-ignore-revs` entry authored along the way.
+11. **Report and write in English** — per `csharp.md`'s Working language section, including any `.git-blame-ignore-revs` entry authored along the way.
 12. **Ask for the target when the trace has none** — a line range, a string, or a reproducible pass/fail check; `blame` without a target and `bisect` without a test both produce output that looks like a result, so state the gap rather than picking a target.
 
 ## 5. Specific goals / tasks this skill performs

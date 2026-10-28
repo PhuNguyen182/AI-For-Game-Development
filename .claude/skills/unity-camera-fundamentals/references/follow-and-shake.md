@@ -54,4 +54,4 @@ project not using it for that camera.
 
 | Reference | Rule | Source |
 |---|---|---|
-| `Camera.main` | Performs a tagged lookup rather than reading a field — cache it in `Awake` and never call it per frame, per `performance-and-algorithms.md` | [Camera.main](https://docs.unity3d.com/ScriptReference/Camera-main.html) |
+| `Camera.main` | Performs a tagged lookup rather than reading a field — cache it in `Awake` and never call it per frame, per `csharp-standards` → `performance-and-algorithms.md` | [Camera.main](https://docs.unity3d.com/ScriptReference/Camera-main.html) |

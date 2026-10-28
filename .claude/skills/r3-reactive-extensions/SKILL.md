@@ -1,33 +1,21 @@
 ---
 name: r3-reactive-extensions
-description: >
-  R3 — reactive streams for Unity and the UniRx successor: `Observable<T>`,
-  `Observer<T>`, `Subject<T>`, `ReactiveProperty<T>`,
-  `SerializableReactiveProperty<T>`, operators such as
-  `Where`/`Select`/`DistinctUntilChanged`/`Throttle`/`CombineLatest`/
-  `Pairwise`/`SelectMany`/`Switch`, frame-based `FrameProvider` timing via
-  `IntervalFrame`/`DelayFrame` versus wall-clock `TimeProvider`, the
-  `OnErrorResume` error model, and `AddTo`/`DisposableBag`/`ObservableTracker`.
-  Use for a continuously observed value or event stream — health changing,
-  an input stream, a cooldown ticking, UI data binding. `Game.Client.*`
-  only. Not for: one-shot awaits, owned by `unitask-async-programming`;
-  single addressed messages, owned by `messagepipe-event-messaging`;
-  subscription lifetime scoping in DI, owned by
-  `vcontainer-dependency-injection`; formatting the text a sink writes,
-  owned by `zstring-zero-allocation-strings`; discrete named states and the
-  legal transitions between them, owned by `stateless-state-machines`.
+description: "R3 reactive streams: Observable, Subject, ReactiveProperty, operators, Unity frame providers, AddTo disposal, UI binding. Use for continuous event streams; one-shot async is UniTask."
+user-invocable: false
 ---
 
 # R3 — Reactive Extensions for Continuous Event Streams
+
+**Not for:** one-shot awaits, owned by `unitask-async-programming`; single addressed messages, owned by `messagepipe-event-messaging`; subscription lifetime scoping in DI, owned by `vcontainer-dependency-injection`; formatting the text a sink writes, owned by `zstring-zero-allocation-strings`; discrete named states and the legal transitions between them, owned by `stateless-state-machines`.
 
 ## 1. Objective
 Model continuously observed state and event streams as composable `Observable<T>` pipelines — without leaking a subscription past its owner's lifetime, multiplying subscriptions through a nested `Subscribe`, or reaching for a stream where a one-shot await or a single routed message was the actual shape of the problem.
 
 ## 2. Role
-Act as the reactive-programming specialist for the client track — the tool Unity Engineer and UI/UX Programmer reach for when UI or gameplay feedback must react to a changing value rather than poll it every frame, and the one responsible for that pipeline's disposal.
+Act as the reactive-programming specialist for the client track — the tool Unity Engineer reach for when UI or gameplay feedback must react to a changing value rather than poll it every frame, and the one responsible for that pipeline's disposal.
 
 ## 3. When to invoke this skill
-- Binding UI to a changing gameplay value so it updates only when the value actually changes, satisfying `performance-and-algorithms.md`'s rule against unconditional per-frame UI rebuilds.
+- Binding UI to a changing gameplay value so it updates only when the value actually changes, satisfying `csharp-standards` → `performance-and-algorithms.md`'s rule against unconditional per-frame UI rebuilds.
 - Composing or filtering an input or state stream with operators instead of hand-rolled polling and flag tracking inside `Update()`.
 - Timing that should follow Unity's frame cadence rather than wall-clock seconds, or the reverse, where the distinction changes behaviour under a frame-rate drop.
 - Auditing an existing pipeline for leaked subscriptions after a scene reload or a long session.
@@ -36,15 +24,15 @@ Act as the reactive-programming specialist for the client track — the tool Uni
 - Negative trigger: a fixed set of named states with rules about which transitions are legal — that is `stateless-state-machines`. A `ReactiveProperty<GameState>` carries the current state but enforces nothing about how it changes, so the transition rules end up scattered across subscribers instead of declared in one graph.
 - Negative trigger: deciding where a subscription's lifetime is scoped in the DI object graph — that is `vcontainer-dependency-injection`; this skill writes and disposes the pipeline once the scope exists.
 - Negative trigger: how the sink builds its display string — that is `zstring-zero-allocation-strings`, downstream of the stream decision.
-- Negative trigger: any `Game.Core.*` code — the Unity-facing package depends on `UnityEngine`, which `coding-principles.md`'s Shared Core integrity section forbids in Core. Expose Core state as a plain C# event and adapt it to an `Observable<T>` from `Game.Client.*`.
+- Negative trigger: any `Game.Core.*` code — the Unity-facing package depends on `UnityEngine`, which `csharp-standards` → `coding-principles.md`'s Shared Core integrity section forbids in Core. Expose Core state as a plain C# event and adapt it to an `Observable<T>` from `Game.Client.*`.
 
 ## 4. How to use this skill
 1. **Choose the source by whether new subscribers need the current value**, per the [R3 documentation](https://github.com/Cysharp/R3) — `Subject<T>` for an imperatively pushed event with no retained state, `ReactiveProperty<T>` for a value a late subscriber must receive immediately, and `SerializableReactiveProperty<T>` when the Inspector has to bind it.
 2. **Do not stack `DistinctUntilChanged` on a `ReactiveProperty<T>` by reflex** — the property already suppresses equal values through its equality comparer, so the extra operator is a redundant link that reads as though duplicates were expected. Supply an explicit comparer instead when the value type has no meaningful default equality.
-3. **Compose with operators rather than manual state tracking** — a chain of `Where`, `Select`, `Pairwise`, and `CombineLatest` reads as one narrative at a single level of abstraction, which is what SLAP in `coding-principles.md` asks for, where an imperative tangle of flags inside a callback does not.
+3. **Compose with operators rather than manual state tracking** — a chain of `Where`, `Select`, `Pairwise`, and `CombineLatest` reads as one narrative at a single level of abstraction, which is what SLAP in `csharp-standards` → `coding-principles.md` asks for, where an imperative tangle of flags inside a callback does not.
 4. **Never call `Subscribe` inside another `Subscribe`** — each outer emission creates a fresh inner subscription that nothing disposes, so both the work and the leak multiply with every event. Flatten with `SelectMany`, or with `Switch` when only the newest inner stream should stay live.
 5. **Pick `FrameProvider` or `TimeProvider` from the intended semantics, not from convenience** — `IntervalFrame` and `DelayFrame` track Unity's update cadence and so stretch under a frame-rate drop, which is correct for animation-adjacent and gameplay-tick work; wall-clock `TimeProvider` timing is correct when real elapsed time is the requirement, such as a toast auto-dismiss.
-6. **Give every subscription a disposal path tied to a real lifetime** — `.AddTo(this)` for a component-scoped subscription, a `DisposableBag` when one owner holds several. An undisposed subscription keeps its entire capture graph alive, which is the leak `performance-and-algorithms.md`'s Memory discipline section describes and `coding-principles.md`'s Correctness boundaries section requires cleaning up.
+6. **Give every subscription a disposal path tied to a real lifetime** — `.AddTo(this)` for a component-scoped subscription, a `DisposableBag` when one owner holds several. An undisposed subscription keeps its entire capture graph alive, which is the leak `csharp-standards` → `performance-and-algorithms.md`'s Memory discipline section describes and `csharp-standards` → `coding-principles.md`'s Correctness boundaries section requires cleaning up.
 7. **Dispose the `ReactiveProperty<T>` itself, not only its subscribers** — it is `IDisposable` and owns its subscriber list, so an undisposed property outliving its scene keeps every subscriber reachable.
 8. **Decide `OnErrorResume` behaviour explicitly and state it in the handoff** — R3's error model does not terminate the subscription on an exception the way classic Rx did, so a pipeline that should stop on failure must be made to stop; leaving it default means a broken stream keeps emitting unnoticed.
 9. **Do not rebuild pub/sub out of a `Subject<T>`** — if the requirement is notifying decoupled systems once with no ongoing composition, that is a routed message and belongs to `messagepipe-event-messaging`; an ad hoc subject bus reimplements it without the filters, keying, or disposal discipline.

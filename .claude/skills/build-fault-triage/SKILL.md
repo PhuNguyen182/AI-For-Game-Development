@@ -1,27 +1,18 @@
 ---
 name: build-fault-triage
-description: >
-  Diagnose faults that exist only in a real player build and never in the
-  Editor — IL2CPP and AOT failures, managed code stripping and missing
-  `link.xml` entries, reflection and generic virtual methods stripped away,
-  `ExecutionEngineException`, `TypeInitializationException`, missing native
-  libraries and ABI mismatches, and platform signing or permission faults.
-  Covers reading `Player.log` and Android logcat, and running an existing
-  suite against a standalone Player. Not for: producing the build, owned
-  by `build-run-engineer`; a CI run that failed before producing one,
-  owned by `ci-pipeline-failure-triage`; Editor Play Mode testing, owned
-  by `playtest-scenario-execution` and `unity-test-framework`; frame
-  cost, owned by `performance-budget-verification`; released-build
-  crashes, owned by `crash-anr-investigator`.
+description: "Diagnose faults only in a real player build: IL2CPP/AOT, code stripping and link.xml, reflection, missing shaders, Addressables catalog, signing and manifest issues, player logs/logcat. Use when a build fails at runtime but the Editor works."
+user-invocable: false
 ---
 
 # Build Fault Triage — the defects the Editor structurally cannot show
+
+**Not for:** producing the build, owned by `build-release-engineer`; a CI run that failed before producing one, owned by `ci-pipeline-failure-triage`; Editor Play Mode testing, owned by `playtest-scenario-execution` and `unity-test-framework`; frame cost, owned by `performance-budget-verification`; released-build crashes, owned by `crash-anr-investigator`.
 
 ## 1. Objective
 Identify the class of defect that no amount of Editor testing can reach, and identify it correctly. Between the Editor and a player build sit IL2CPP's ahead-of-time compilation, managed code stripping, platform-specific native libraries, and real signing and permission models — each of which can remove or break code that ran perfectly minutes earlier. The failure this skill prevents is misattribution: a stripped generic method and a genuine null-reference bug produce similar-looking exceptions, and routing the first to a gameplay engineer wastes a cycle on code that was never wrong.
 
 ## 2. Role
-Act as the build-fault specialist for the QA track, on behalf of `build-verification-tester`. You consume an artifact someone else produced and explain why it misbehaves; you never build, rebuild, re-sign, or modify one.
+Act as the build-fault specialist for the QA track, on behalf of `build-release-engineer`. You consume an artifact someone else produced and explain why it misbehaves; you never build, rebuild, re-sign, or modify one.
 
 ## 3. When to invoke this skill
 - A produced artifact fails to launch, crashes on startup, or misbehaves in a way the Editor never showed.
@@ -29,7 +20,7 @@ Act as the build-fault specialist for the QA track, on behalf of `build-verifica
 - The existing test suite passes in the Editor and fails against the standalone Player.
 - A feature that works in Play Mode is missing, inert, or throws in the shipped artifact.
 - A platform permission, signing, or store-configuration fault blocks the artifact from running.
-- Negative trigger: producing the build or starting extra Editor instances — that is `build-run-engineer`, and only on the GD's explicit request.
+- Negative trigger: producing the build or starting extra Editor instances — that is `build-release-engineer`, and only on the GD's explicit request.
 - Negative trigger: a CI run that went red before it produced an artifact — a licence, compile, packaging, signing or distribution failure — that is `ci-pipeline-failure-triage`. The dividing question is whether a correct artifact exists to consume at all.
 - Negative trigger: any Editor-based testing — that is `playtest-scenario-execution` for manual play and `unity-test-framework` for automated tests.
 - Negative trigger: frame time, allocation, or memory verdicts on the artifact — that is `performance-budget-verification`.
@@ -43,7 +34,7 @@ Act as the build-fault specialist for the QA track, on behalf of `build-verifica
 5. **Confirm a stripping diagnosis against what is actually preserved** — check whether the type or assembly is named in a `link.xml`, and whether the call reaches it through reflection or serialization, which the stripper cannot see. The fix is a preservation entry rather than a code change, so a stripping fault reported as a logic bug sends the wrong agent looking in the wrong file.
 6. **Run the existing suite against the standalone Player when the fault is not obvious from launch** — use the platform and build-path flags and consume the NUnit XML the run produces, per `unity-test-framework`'s command-line surface. Never author a new case here; a suite that passes in the Editor and fails against the Player has localized the fault to the build layer, which is the finding.
 7. **Separate a build-only fault from a genuine defect the build merely exposed** — a race that the Editor's timing always won and the device's timing loses is a real defect, not a build fault, even though it only ever appears in the artifact. State which of the two you are reporting, because they route to different owners.
-8. **Route by the evidenced cause, not by the symptom** — stripping and IL2CPP configuration to `unity-engineer`, native libraries, signing, permissions, and store configuration to `tech-lead-sdk-platform`, and a genuine logic defect to the agent that owns the code. Attach the log excerpt with its surrounding lines, per `defect-reporting.md`'s five required elements.
+8. **Route by the evidenced cause, not by the symptom** — stripping and IL2CPP configuration to `gameplay-engineer`, native libraries, signing, permissions, and store configuration to `sdk-platform-engineer`, and a genuine logic defect to the agent that owns the code. Attach the log excerpt with its surrounding lines, per skill `qa-standards`'s five required elements.
 
 ## 5. Specific goals / tasks this skill performs
 - Identifying an artifact by platform, configuration, scripting backend, stripping level, and version.
@@ -53,7 +44,7 @@ Act as the build-fault specialist for the QA track, on behalf of `build-verifica
 - Confirming a stripping diagnosis against `link.xml` preservation and reflection or serialization call paths.
 - Running an existing suite against a standalone Player and consuming its NUnit XML report.
 - Routing each finding to the owner its evidenced cause implies.
-- Out of scope: producing or re-signing the artifact (`build-run-engineer`); Editor testing (`playtest-scenario-execution`, `unity-test-framework`); performance verdicts (`performance-budget-verification`); released-build telemetry (`crash-anr-investigator`).
+- Out of scope: producing or re-signing the artifact (`build-release-engineer`); Editor testing (`playtest-scenario-execution`, `unity-test-framework`); performance verdicts (`performance-budget-verification`); released-build telemetry (`crash-anr-investigator`).
 
 ## 6. Output format
 ```
@@ -67,7 +58,7 @@ Act as the build-fault specialist for the QA track, on behalf of `build-verifica
 - Evidence for the class: <link.xml state, reflection path, ABI list, or the log line that settles it>
 - Suite against Player: <pass and fail counts, and how they differ from the Editor run — or not run, and why>
 - Decision: <build-only fault / ordinary defect / inconclusive>
-- Routed to: <unity-engineer / tech-lead-sdk-platform / owning code agent / build-run-engineer>
+- Routed to: <gameplay-engineer / sdk-platform-engineer / owning code agent / build-release-engineer>
 - Not covered: <paths, configurations, and devices this triage did not reach>
 ```
 
@@ -81,18 +72,18 @@ Act as the build-fault specialist for the QA track, on behalf of `build-verifica
 ## 7. Examples
 **Example 1**
 - Input: a development Android APK where the inventory screen opens empty, while the Editor shows it populated.
-- Output: build-only fault. Logcat carried a `TypeInitializationException` on the save-data deserializer, a type reached only through reflection and therefore invisible to the stripper, with no matching `link.xml` entry. Reported as a stripping fault with the log excerpt and the missing preservation entry named, routed to `unity-engineer` — not to the inventory author, whose code is correct.
+- Output: build-only fault. Logcat carried a `TypeInitializationException` on the save-data deserializer, a type reached only through reflection and therefore invisible to the stripper, with no matching `link.xml` entry. Reported as a stripping fault with the log excerpt and the missing preservation entry named, routed to `gameplay-engineer` — not to the inventory author, whose code is correct.
 
 **Example 2**
 - Input: "The build crashes on that screen — file it against the inventory feature so the gameplay engineer fixes it."
-- Output: declined as filed. The crash is a `DllNotFoundException` on a native audio plugin, so the inventory code never ran at all and its author has nothing to fix; the artifact was built for an ABI the plugin does not ship. Reported as a native library fault and routed to `tech-lead-sdk-platform`, with the note that filing it against the feature would have consumed a full cycle before anyone opened the log.
+- Output: declined as filed. The crash is a `DllNotFoundException` on a native audio plugin, so the inventory code never ran at all and its author has nothing to fix; the artifact was built for an ABI the plugin does not ship. Reported as a native library fault and routed to `sdk-platform-engineer`, with the note that filing it against the feature would have consumed a full cycle before anyone opened the log.
 
 **Example 3**
 - Input: a standalone Windows player where one test in the existing suite fails, while the same test passes in Editor Play Mode.
 - Output: reported as a genuine defect the build exposed rather than a build fault, per §4 step 7. The test asserts on an operation that completes within one frame in the Editor and takes two on the player build, so the race existed all along and the Editor's timing was hiding it. Routed to the owning code agent, with the distinction stated explicitly so nobody looks for a stripping cause that is not there.
 
 ## 8. Edge cases & guardrails
-- Never build, rebuild, re-sign, or modify an artifact — this skill consumes what already exists; producing one needs the GD's explicit request through `build-run-engineer`.
+- Never build, rebuild, re-sign, or modify an artifact — this skill consumes what already exists; producing one needs the GD's explicit request through `build-release-engineer`.
 - Never diagnose from the visible symptom when a log exists; an artifact that closes silently has usually recorded exactly why.
 - Never name a fault class without the evidence that distinguishes it — a stripping fault and a logic bug can raise similar exceptions, and the difference decides the owner.
 - Never author or edit a test here; run the suite that exists, because a new case written against a build fault tests the build rather than the code.

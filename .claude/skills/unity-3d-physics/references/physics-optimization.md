@@ -45,7 +45,7 @@ expensive when nothing about physics changed.
 | Technique | What it decides | Source |
 |---|---|---|
 | `Physics.reuseCollisionCallbacks` | Reuses one `Collision` instance for every callback, removing per-contact allocation. The cost: a cached reference to that object changes underneath the holder, so callbacks must read it and not store it | [Optimize for memory usage](https://docs.unity3d.com/Manual/physics-optimization-memory.html) |
-| `NonAlloc` query variants and result buffers | Fills a caller-owned array instead of allocating per call — the direct application of `performance-and-algorithms.md`'s Memory discipline section to physics queries | [Optimize for memory usage](https://docs.unity3d.com/Manual/physics-optimization-memory.html) |
+| `NonAlloc` query variants and result buffers | Fills a caller-owned array instead of allocating per call — the direct application of `csharp-standards` → `performance-and-algorithms.md`'s Memory discipline section to physics queries | [Optimize for memory usage](https://docs.unity3d.com/Manual/physics-optimization-memory.html) |
 | `Physics.invokeCollisionCallbacks` | Turns off MonoBehaviour collision messages entirely, for simulations whose results are read by polling instead | [Physics.invokeCollisionCallbacks](https://docs.unity3d.com/ScriptReference/Physics-invokeCollisionCallbacks.html) |
 
 ## Tuning knobs
@@ -60,4 +60,4 @@ expensive when nothing about physics changed.
 | `Time.fixedDeltaTime` | Scales with `Time.timeScale` and is quantised internally, so the getter can return a value one bit from what was assigned | [Time.fixedDeltaTime](https://docs.unity3d.com/ScriptReference/Time-fixedDeltaTime.html) |
 
 Every claim made from this file ships with the measurement that produced it,
-per `performance-and-algorithms.md`'s Verification section.
+per `csharp-standards` → `performance-and-algorithms.md`'s Verification section.

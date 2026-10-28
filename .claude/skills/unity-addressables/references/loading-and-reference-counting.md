@@ -6,7 +6,7 @@ Covers: SKILL.md §4 — **"Mirror every load with exactly one release, on every
 The contract that decides whether memory is ever reclaimed, and the two ways
 it is broken: a release that never happens, and a release that happens too
 eagerly. General GC and allocation discipline is
-`performance-and-algorithms.md`'s; what is here is the Addressables count.
+`csharp-standards` → `performance-and-algorithms.md`'s; what is here is the Addressables count.
 
 ## The contract
 

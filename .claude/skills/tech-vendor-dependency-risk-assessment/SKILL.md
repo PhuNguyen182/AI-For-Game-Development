@@ -1,23 +1,12 @@
 ---
 name: tech-vendor-dependency-risk-assessment
-description: >
-  Due-diligence rubric judging whether a third-party plugin, SDK, or
-  engine-level dependency is safe to keep building on — maintenance signal,
-  release cadence, single-maintainer versus company-backed, license
-  compatibility with commercial shipping, integration lock-in depth, exit
-  cost, and platform reach against every committed platform — ending in a
-  keep, keep-with-mitigation, replace-now, or replace-on-timeline verdict.
-  Use before committing to a foundational dependency, or when a repeated
-  failure traces back to one. Not for: whether this project could adopt a
-  new candidate — IL2CPP, engine version, `Game.Core.*` determinism, owned
-  by `practical-fit-screening`; reviewing this project's own code, owned by
-  `code-reviewer`; trivial swappable utilities; SDK integration work, owned
-  by `tech-lead-sdk-platform`; the scoring rubric, owned by
-  `tco-reversibility-scoring`; recording it as a standard, owned by
-  `engineering-standard-adr-authoring`.
+description: "Judge whether a plugin, SDK or engine dependency is safe to build on: maintenance, release cadence, backing, licence, lock-in, exit path — keep, mitigate or replace. Use when a dependency's future is in doubt."
+user-invocable: false
 ---
 
 # Tech Vendor / Dependency Risk Assessment — keep, mitigate, or replace
+
+**Not for:** whether this project could adopt a new candidate — IL2CPP, engine version, `Game.Core.*` determinism, owned by `practical-fit-screening`; reviewing this project's own code, owned by `code-reviewer`; trivial swappable utilities; SDK integration work, owned by `sdk-platform-engineer`; the scoring rubric, owned by `tco-reversibility-scoring`; recording it as a standard, owned by `engineering-standard-adr-authoring`.
 
 ## 1. Objective
 Give the CTO — and Technical Architect surfacing a concerning dependency — a consistent rubric for judging whether a third-party plugin, SDK, or library is safe to keep building on, so foundational vendor risk is caught before it becomes a repeated production failure.
@@ -31,7 +20,7 @@ Act as a vendor-risk technical due-diligence reviewer: the person who asks what 
 - When a dependency's maintenance signal visibly changes — a maintainer steps away, a release cadence stalls, a license changes.
 - Negative trigger: the code under question is this project's own — that is `code-reviewer`'s job, and this rubric measures nothing useful about it.
 - Negative trigger: a trivial, easily-swappable utility with no gameplay-critical surface — formalising that risk costs more than the risk.
-- Negative trigger: the dependency is already chosen and the work is integrating it — that is `tech-lead-sdk-platform`.
+- Negative trigger: the dependency is already chosen and the work is integrating it — that is `sdk-platform-engineer`.
 - Negative trigger: the candidate is not in the project yet and the question is whether this project could adopt it at all — scripting backend, engine and language version, `Game.Core.*` determinism, duplication against `Packages/manifest.json` — that is `practical-fit-screening`; this rubric judges vendor survival, not adoptability.
 
 ## 4. How to use this skill
@@ -42,7 +31,7 @@ Act as a vendor-risk technical due-diligence reviewer: the person who asks what 
 5. **Check platform reach against every platform in the GDD, including planned ones** — a dependency that does not support a committed future platform is a decision already made against that platform, whether or not anyone has noticed.
 6. **Weight lock-in and exit cost by gameplay criticality** — a rendering, physics, or netcode foundation deserves scrutiny an analytics helper does not. The same lock-in score means something different at each end of that range.
 7. **Conclude with one of four verdicts, never a summary of concerns** — keep as-is; keep with a named mitigation (wrap it behind an internal interface to cut lock-in); replace now; replace on a defined timeline. A verdict without a date or a trigger is not a verdict.
-8. **Write the assessment in English**, per `language-and-comments.md`'s Working language section — it is a durable record other roles act on; the Vietnamese reply to the GD is the final message, not the document.
+8. **Write the assessment in English**, per `csharp.md`'s Working language section — it is a durable record other roles act on; the Vietnamese reply to the GD is the final message, not the document.
 9. **Route the verdict onward when it sets precedent** — a 3-strikes escalation from Technical Architect makes the outcome a standing rule for how future dependencies get vetted, and that belongs in `engineering-standard-adr-authoring` rather than in this one assessment.
 10. **Ask when maintenance signal cannot be established** — a closed-source SDK with no public repository has no readable cadence. Say the signal is unavailable and score lock-in and exit cost higher for it; do not infer health from the vendor's own marketing.
 
@@ -51,7 +40,7 @@ Act as a vendor-risk technical due-diligence reviewer: the person who asks what 
 - Catch vendor risk before it becomes a repeated production failure rather than after.
 - Name a concrete mitigation whenever the verdict is "keep with mitigation", not a general intention to reduce coupling.
 - Escalate precedent-setting verdicts into a recorded standard.
-- Out of scope: this project's own code quality (`code-reviewer`), day-to-day SDK integration (`tech-lead-sdk-platform`), trivial swappable utilities, the adoption gates on a candidate not yet in the project (`practical-fit-screening`).
+- Out of scope: this project's own code quality (`code-reviewer`), day-to-day SDK integration (`sdk-platform-engineer`), trivial swappable utilities, the adoption gates on a candidate not yet in the project (`practical-fit-screening`).
 
 ## 6. Output format
 ```
@@ -64,7 +53,7 @@ Act as a vendor-risk technical due-diligence reviewer: the person who asks what 
 - Gameplay criticality: low / medium / high
 - Rule compliance: assessment written in English, per Working language
 - Verdict: keep / keep with mitigation: <the mitigation> / replace now / replace by <date or trigger>
-- Routed to: `tech-lead-sdk-platform` to act; `engineering-standard-adr-authoring` if this sets precedent
+- Routed to: `sdk-platform-engineer` to act; `engineering-standard-adr-authoring` if this sets precedent
 ```
 
 **Extended report — emit ONLY when the requester asks for it.** It replaces the one-line verdict rationale with all three fields:
