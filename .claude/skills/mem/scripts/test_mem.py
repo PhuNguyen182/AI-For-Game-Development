@@ -403,6 +403,13 @@ class MemTest(unittest.TestCase):
     def test_add_rejects_frontmatter_injection(self):
         self.assertEqual(run(self.root, "add", "lesson", "x", "--desc", "d", "--tags", "a]\nstatus: superseded")[0], 1)
 
+    def test_gitignored_traces_still_indexed(self):
+        write(self.root, ".memory/.gitignore", "traces/\n")
+        self.capture()
+        _, out = run(self.root, "stats")
+        self.assertNotIn("T 0 turns", out)
+        self.assertIn("t:2026-10-28-abcdef12#3", run(self.root, "q", "HUD binding", "-l", "T")[1])
+
     def test_merge_two_machines(self):
         git(self.root, "add", "-A")
         git(self.root, "commit", "-q", "-m", "base")

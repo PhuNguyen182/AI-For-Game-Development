@@ -428,7 +428,13 @@ def refresh(root: Path, full=False, seconds: float = 0) -> sqlite3.Connection:
             db.execute("DELETE FROM %s" % t)
     inc, exc = read_sources(mem)
     wanted = {}
-    for p in list_files(root):
+    # Traces and notes are read from disk too: a repo may gitignore its traces and still query them locally.
+    own = []
+    for sub in ("traces", "notes"):
+        d = mem / sub
+        if d.is_dir():
+            own += [rel(root, Path(dp) / f) for dp, _, files in os.walk(d) for f in files]
+    for p in sorted(set(list_files(root)) | set(own)):
         low = p.lower()
         if low.startswith(".memory/"):
             if low.startswith(".memory/traces/") and low.endswith(".jsonl"):
