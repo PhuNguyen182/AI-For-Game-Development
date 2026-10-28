@@ -1,10 +1,8 @@
 # Client Track — Performance & Algorithm Engineering
 
-Applies to: C# Software Engineer, Unity Engineer, Technical Artist, Netcode Engineer, SDK/Platform Engineer.
-
 ## Relationship to other rules
 
-This file governs **algorithm and data-structure selection, memory-lifetime discipline, and Unity engine-specific optimization technique**, for all client-track code (`Game.Core.*` and `Game.Client.*`). It complements, not replaces, the baseline hot-path hygiene already required by `coding-principles.md`'s "Performance discipline" section (no per-frame allocations in `Update()`, caching `GetComponent<T>()`, pooling `UnityEngine.Object` instances, platform abstraction) — that section is the non-negotiable floor; this file goes further into engine-specific technique and CS-fundamentals discipline. Unity Engineer still owns deep, escalated, measured optimization work beyond the baseline expected here — this file is the baseline every submission is expected to meet before it ever needs to reach that escalation.
+This file governs **algorithm and data-structure selection, memory-lifetime discipline, and Unity engine-specific optimization technique**, for all client-track code (`Game.Core.*` and `Game.Client.*`). It complements, not replaces, the baseline hot-path hygiene already required by `coding-principles.md`'s "Performance discipline" section (no per-frame allocations in `Update()`, caching `GetComponent<T>()`, pooling `UnityEngine.Object` instances, platform abstraction) — that section is the non-negotiable floor; this file goes further into engine-specific technique and CS-fundamentals discipline. `unity-performance-engineer` owns deep, escalated, measured optimization work beyond the baseline expected here — this file is the baseline every submission is expected to meet before it ever needs to reach that escalation.
 
 ## Core principle — measured, practical performance over theoretical purity
 
@@ -36,7 +34,7 @@ Whichever case it is — listed here or not — never adopt a "faster in theory,
 
 ## Algorithmic complexity discipline
 
-- Know the time and space complexity of any non-trivial function you write. When it isn't obvious from the code, state it in a comment (per the comment-depth policy in `.claude/rules/language-and-comments.md`) — an O(n²) nested loop over gameplay entities should be a deliberate, documented choice, not an accident nobody noticed.
+- Know the time and space complexity of any non-trivial function you write. When it isn't obvious from the code, state it in a comment (per the comment-depth policy in rule `csharp.md`) — an O(n²) nested loop over gameplay entities should be a deliberate, documented choice, not an accident nobody noticed.
 - For any system that scales with player count, entity count, or inventory size, actively avoid quadratic-or-worse behavior once N is unbounded by design (entity-vs-entity checks, inventory search, etc.) — use spatial partitioning, indexing, or an explicitly bounded/capped N instead of a naive nested loop once N can plausibly grow past a small constant.
 - Don't over-engineer for an N that structurally cannot grow — a fixed 4-slot ability bar doesn't need a hash-indexed lookup; a linear scan over 4 elements is both simpler (see KISS in `coding-principles.md`) and faster in practice than any "smarter" structure's overhead.
 

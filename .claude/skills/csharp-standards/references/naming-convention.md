@@ -1,7 +1,5 @@
 # Client Track — Naming Convention
 
-Applies to: C# Software Engineer, Unity Engineer, Technical Artist, Netcode Engineer, SDK/Platform Engineer.
-
 Source: [Microsoft Learn — Identifier names: rules and conventions (C#)](https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/identifier-names), combined with the standard Unity convention for Inspector-serialized fields (see override below).
 
 ## Mandatory naming quality requirement

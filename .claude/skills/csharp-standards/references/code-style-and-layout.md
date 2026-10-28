@@ -1,7 +1,5 @@
 # Client Track — Code Style & Layout
 
-Applies to: C# Software Engineer, Unity Engineer, Technical Artist, Netcode Engineer, SDK/Platform Engineer.
-
 ## Relationship to other rules
 
 This file governs **mechanical style**: explicit declaration modifiers, brace/indentation layout, statement shape, and the preference for modern language operators over hand-rolled equivalents. It does not replace `coding-principles.md`, which owns architecture-level design principles (SOLID/KISS/YAGNI), Shared Core integrity, correctness/safety boundaries (exception handling, null safety), and submission handoff — read both before writing any code. `naming-convention.md` owns identifier casing and namespace-to-folder mapping; this file owns how a declaration and its body are shaped once named.
@@ -57,7 +55,7 @@ class AbilityRunner : MonoBehaviour   // Missing access modifier on the type.
 }
 ```
 
-- Code Reviewer checks this on every submission, same as SOLID/KISS/YAGNI in `coding-principles.md` — a missing access modifier is grounds for "request changes" regardless of the feature's assurance tier.
+- Code Reviewer checks this on every submission, same as SOLID/KISS/YAGNI in `coding-principles.md` — a missing access modifier is grounds for "request changes" at any size.
 
 ## Layout
 
