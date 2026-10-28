@@ -59,7 +59,7 @@ Risk flag (signing, real-money IAP, store, PII, save migration, published histor
 
 **Shared Core** — game rules live once in `Game.Core.*` (pure C#, deterministic, no `UnityEngine`); `Game.Client.*` integrates them; `Game.Server.*` validates them when multiplayer.
 
-**One Editor, one device** — implementers run one at a time; read-only agents run in parallel.
+**One Editor, one device** — implementers run one at a time, across sessions too (lock hook); read-only agents run in parallel.
 
 **State** — `.workflow/features/<slug>.md` per M/L feature, `.workflow/bugs.md` for bugs, `.workflow/backlog.md` from `/plan-game`. Commit it. A new session lists in-flight features automatically.
 
@@ -100,6 +100,7 @@ framework-docs/           design history, templates, backlog — not copied into
 | `git commit` | Blocks staged secrets, Unity assets without `.meta`, orphan `.meta`, `.meta` left behind |
 | Edit under `.claude/` | Runs `/verify-layer` on the file |
 | Session start | Lists in-flight features |
+| Agent dispatch, `unity …` | Cross-session Editor lock (`.workflow/editor.lock`): a second session cannot dispatch an Editor-holding agent or run `unity` while another holds it; released on subagent stop and turn end |
 
 ## Extending
 

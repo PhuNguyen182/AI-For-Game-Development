@@ -5,7 +5,7 @@ Open work on the framework itself. Not copied into projects. Add a row when foun
 | Item | State |
 |---|---|
 | Pilot v2 on a real project (S UI tweak, `/fix`, M `/feature`, `/release --dry-run`) and fix from real failures | Open |
-| Editor-lock hook (PreToolUse on Agent + SubagentStop) — build only if the pilot shows serial-Editor violations | Deferred |
+| Editor-lock hook — the pilot showed two sessions writing through one Editor | Done: `.claude/hooks/editor-lock.ps1` |
 | Confirm `skills:` preload works with `user-invocable: false` in a fresh session | Open |
 
 ## Pre-slim history (superseded by the v2 slim-down; kept for reference)

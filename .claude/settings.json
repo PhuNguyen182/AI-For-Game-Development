@@ -136,6 +136,32 @@
             "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/pre-commit.ps1\"; exit $LASTEXITCODE",
             "timeout": 30,
             "statusMessage": "Checking staged secrets and .meta pairing"
+          },
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/editor-lock.ps1\" -Mode check; exit $LASTEXITCODE",
+            "timeout": 15,
+            "if": "Bash(unity *)"
+          },
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/editor-lock.ps1\" -Mode check; exit $LASTEXITCODE",
+            "timeout": 15,
+            "if": "PowerShell(unity *)"
+          }
+        ]
+      },
+      {
+        "matcher": "Agent|Task",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/editor-lock.ps1\" -Mode acquire; exit $LASTEXITCODE",
+            "timeout": 15,
+            "statusMessage": "Checking the Unity Editor lock"
           }
         ]
       }
@@ -151,6 +177,42 @@
             "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/verify-on-edit.ps1\"; exit $LASTEXITCODE",
             "timeout": 60,
             "statusMessage": "Verifying the .claude layer"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/editor-lock.ps1\" -Mode release; exit $LASTEXITCODE",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/editor-lock.ps1\" -Mode clear; exit $LASTEXITCODE",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/editor-lock.ps1\" -Mode clear; exit $LASTEXITCODE",
+            "timeout": 15
           }
         ]
       }
