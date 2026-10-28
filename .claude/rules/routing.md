@@ -1,0 +1,53 @@
+# Routing
+
+## Route every input (first match wins; match the work asked for, not the words)
+| Input | Route |
+|---|---|
+| Question, explanation | Answer, or one read-only agent |
+| Git task | `git-expert` |
+| CI/CD pipeline, failed CI run | `ci-cd-engineer` |
+| Crash/ANR from production telemetry | `crash-anr-investigator` (test device: `/investigate-device-crash`) |
+| Bug | `/fix` |
+| Audit existing code | `/review` |
+| Tests or evidence on existing work | `/qa` |
+| Technology, vendor or "what exists for X" | `/decide` |
+| New project · GDD → backlog · build/release/store | `/new-project` · `/plan-game` · `/release` |
+| Change to a feature past CP2 | `/feature` → change request |
+| Anything else | Size it ↓ |
+
+## Size
+| Size | When | Do |
+|---|---|---|
+| S | One role; judgeable by looking or one test; no new contract | Directly, or one agent. The reply closes it |
+| M | 2+ roles, a new contract or screen, or touches `Game.Core.*` | `/feature` |
+| L | New Core system, netcode, architecture, project-wide migration, or a direction the GD has not decided | `/feature` with CP1 |
+
+**Risk flag** — credential/signing, real-money IAP, store submission, player PII, save-data migration, published git history, released build, shipped perf budget, server authority/anti-cheat. Flag set, any size → `/review` (code + security) runs automatically, and verification means running, never reading.
+
+Escalate the size the moment the work turns out bigger; never shrink it to skip a step.
+
+## Profile defaults (`CLAUDE.md` → Profile; unset → ask once, write it there)
+| | hyper-casual | mid-core | hard-core |
+|---|---|---|---|
+| CP1 + `critic` | off | L | L, or M with risk flag |
+| Tech Spec (else acceptance criteria only) | L | M, L | M, L |
+| Netcode / backend / anti-cheat | off | optional | on if multiplayer |
+| Perf-budget device | Android low-end | Android mid + oldest iOS | GD-defined |
+| Default QA | playtest + device smoke | + Core automation | + automation, perf, netcode |
+
+## Checkpoints — GD approves via `AskUserQuestion`
+CP1 direction (L) · CP2 spec or acceptance criteria (M, L) · CP3 built vs spec (L) · CP4 closure (M, L).
+
+## Dispatch
+- Brief = goal, acceptance criteria, size + flag, profile, feature file path, files in scope, earlier agents' outputs. Agents see only the brief and the disk.
+- One Editor-holding agent at a time. Read-only agents may run in parallel.
+- An agent's `Next:` is a recommendation; you act on it.
+
+## Stop rule
+- Attempts per dispatch: S 2, M 3, L 4.
+- Same step fails twice (review rejection, failed test, reopened bug) → `technical-architect` root-causes once → fails again → stop. Report to the GD: what was tried, last verified state, next best action.
+- The GD may order another round; state the cost first.
+
+## State (main session is the only writer)
+- `.workflow/features/<slug>.md` per M/L feature — template in `/feature`. `.workflow/bugs.md` — bug index.
+- Resume a session from the feature file's `CP:` line.
