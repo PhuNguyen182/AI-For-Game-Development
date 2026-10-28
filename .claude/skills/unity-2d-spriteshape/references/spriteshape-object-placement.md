@@ -25,5 +25,5 @@ placement that references it. Nothing warns, and the props simply appear in
 the wrong places.
 
 If a placed object's *appearance* should react to game state, that decision
-belongs in `Game.Core.*` per `coding-principles.md`'s Shared Core integrity
+belongs in `Game.Core.*` per `csharp-standards` → `coding-principles.md`'s Shared Core integrity
 section; this component only answers where along the spline it sits.

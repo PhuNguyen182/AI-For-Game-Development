@@ -28,7 +28,7 @@ physics convention compiles, runs, and behaves exactly backwards.
 | Hit struct | Carries the position, the distance, the normal, the area, and a validity flag — a call that returns without a valid hit has produced a position that means nothing | [NavMeshHit](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshHit.html) |
 | Path object | Holds the corner list and the status; the corners are the actual route, and their count is what tells you whether a path exists at all | [NavMeshPath](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshPath.html) |
 | Path status | Complete, partial, or invalid — partial means a route toward the target that does not reach it, which is the status most code forgets to test | [NavMeshPathStatus](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshPathStatus.html) |
-| Reusing a path object | Path objects are reusable; allocating one per query in a per-frame check is avoidable garbage, per `performance-and-algorithms.md` | [NavMeshPath](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshPath.html) |
+| Reusing a path object | Path objects are reusable; allocating one per query in a per-frame check is avoidable garbage, per `csharp-standards` → `performance-and-algorithms.md` | [NavMeshPath](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshPath.html) |
 
 ## Scoping a query
 

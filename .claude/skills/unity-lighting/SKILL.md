@@ -1,21 +1,12 @@
 ---
 name: unity-lighting
-description: >
-  Technique for Unity lighting on the Built-in pipeline and URP: `Light`
-  sources and their parameters, baked, realtime and mixed Global Illumination
-  through the Progressive Lightmapper, Lighting Modes, lightmap UVs, Light
-  Probes, shadow cascades, distance, bias and resolution, Reflection Probes
-  and box projection, Adaptive Probe Volume authoring, lighting-side Rendering
-  Layers, and the URP lighting HLSL a custom lit shader consults. Use when a
-  scene must be lit, baked, or its shadows and reflections tuned. Not for:
-  pipeline choice — `render-pipeline-urp-hdrp`; HDRP pipeline settings —
-  `unity-hdrp-rendering`; rendering path, Renderer Features and `Light2D` —
-  `unity-urp-rendering`; post-process Volumes — `unity-post-processing`;
-  shader content — `shader-authoring`; how an entity subscene renders and
-  the lighting limits that package documents — `unity-entities-graphics`.
+description: "Lighting on Built-in and URP: light types, baked/mixed/realtime GI, lightmapping, Light Probes, Reflection Probes, shadows and cascades, mobile cost. Use for lighting setup or bake issues."
+user-invocable: false
 ---
 
 # Unity Lighting — Sources, Global Illumination, Shadows, Reflections, Probe Volumes
+
+**Not for:** pipeline choice — `render-pipeline-urp-hdrp`; HDRP pipeline settings — `unity-hdrp-rendering`; rendering path, Renderer Features and `Light2D` — `unity-urp-rendering`; post-process Volumes — `unity-post-processing`; shader content — `shader-authoring`; how an entity subscene renders and the lighting limits that package documents — `unity-entities-graphics`.
 
 ## Bundled resources
 
@@ -54,7 +45,7 @@ Act as the lighting specialist for Built-in RP and URP, and as the probe and lig
 - Negative trigger: post-processing Volumes and their overrides — that is `unity-post-processing`; a `VolumeProfile` and a `ProbeVolume` share a word and nothing else.
 - Negative trigger: the Shader Graph or HLSL of a custom lighting model — that is `shader-authoring`; this skill supplies the API surface it calls.
 - Negative trigger: a bake whose geometry lives in an ECS subscene, or a `Light` that vanished when its prefab was baked into entities — that is `unity-entities-graphics`, which documents this package's own subscene lightmap limits and Companion Component list; a bad bake there is one of those before it is a lightmapper problem.
-- Negative trigger: a gameplay rule that reads light state — stealth detection, a day-night trigger, a light-based puzzle — that decision lives in `Game.Core.*` per `coding-principles.md`.
+- Negative trigger: a gameplay rule that reads light state — stealth detection, a day-night trigger, a light-based puzzle — that decision lives in `Game.Core.*` per `csharp-standards` → `coding-principles.md`.
 
 ## 4. How to use this skill
 1. **Confirm the pipeline and then confirm which asset actually owns the setting being changed** — Built-in RP reads Quality Settings, URP reads its own Asset, and editing the wrong one changes nothing while looking correct. [root-links.md](references/root-links.md) pins the doc version and maps each setting to its owner.
@@ -68,8 +59,8 @@ Act as the lighting specialist for Built-in RP and URP, and as the probe and lig
 9. **Treat an APV light leak as a placement problem before reaching for bias** — a probe sitting inside a wall carries outdoor light into the room next to it, and a Probe Adjustment Volume or a rendering layer mask removes the cause, where raising leak-reduction bias only trades it for a different artifact.
 10. **Scope lights with Rendering Layers rather than culling masks under an SRP**, per [rendering-layers.md](references/rendering-layers.md) — the mask must be enabled on the pipeline Asset before it does anything, and it is what filters the shadow pass, so an object excluded from a light by culling mask alone can still appear in that light's shadows.
 11. **Supply the lighting API and hand the shader off**, per [custom-lighting-api.md](references/custom-lighting-api.md) — `GetMainLight`, the `GetAdditionalLightsCount` loop, the attenuation and indirect helpers, and the include files they live in; the Shader Graph or HLSL that uses them is `shader-authoring`'s work.
-12. **Attach a measurement to any lighting performance claim**, per `performance-and-algorithms.md`'s Verification section — bake time, frame time, or memory, captured on the tier being claimed for, not inferred from the optimization guide.
-13. **Keep the gameplay decision in `Game.Core.*`** — a stealth threshold that reads light level is a game rule per `coding-principles.md`'s Shared Core integrity rule; this skill configures the light it reads from.
+12. **Attach a measurement to any lighting performance claim**, per `csharp-standards` → `performance-and-algorithms.md`'s Verification section — bake time, frame time, or memory, captured on the tier being claimed for, not inferred from the optimization guide.
+13. **Keep the gameplay decision in `Game.Core.*`** — a stealth threshold that reads light level is a game rule per `csharp-standards` → `coding-principles.md`'s Shared Core integrity rule; this skill configures the light it reads from.
 
 ## 5. Specific goals / tasks this skill performs
 - Light placement and parameter setup across Directional, Point, Spot, and Area, including intensity units and URP light limits.

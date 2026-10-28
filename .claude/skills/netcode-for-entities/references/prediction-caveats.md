@@ -67,7 +67,7 @@ guarantee determinism if you use unquantized values either. Fundamentally,
 Netcode is not a deterministic package."* — this is a materially different
 guarantee than a lockstep/rollback framework provides; do not sell it to
 design as bit-exact determinism, and keep the Shared Core's own determinism
-discipline (`coding-principles.md`'s Shared Core integrity section) as the
+discipline (`csharp-standards` → `coding-principles.md`'s Shared Core integrity section) as the
 actual source of client/server agreement, not an assumption about NfE.
 
 ## Server-side rewind (lag compensation)

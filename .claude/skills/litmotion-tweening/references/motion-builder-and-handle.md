@@ -42,7 +42,7 @@ LMotion.Create(0f, 10f, 2f)
     .Bind(target, (x, state) => state.Value = x);
 ```
 
-**Critical caveat**: `Bind(Action<TValue>)` allocates whenever the lambda captures an outside variable. Prefer the `Bind(TState, ...)` overload whenever the state already exists as an object reference — per `performance-and-algorithms.md`'s Memory discipline section.
+**Critical caveat**: `Bind(Action<TValue>)` allocates whenever the lambda captures an outside variable. Prefer the `Bind(TState, ...)` overload whenever the state already exists as an object reference — per `csharp-standards` → `performance-and-algorithms.md`'s Memory discipline section.
 
 ## `MotionHandle` — control and lifecycle
 

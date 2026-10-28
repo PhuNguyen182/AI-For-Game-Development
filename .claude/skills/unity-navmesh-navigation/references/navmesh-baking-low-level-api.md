@@ -15,7 +15,7 @@ so it earns its place only when that component cannot see the geometry at all.
 | Geometry generated at runtime with no GameObject | The collect modes all walk scene objects, so there is nothing for them to find | [NavMeshBuilder](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshBuilder.html) |
 | Sources assembled from several origins under custom rules | The component's filters are layer, volume, hierarchy and modifier; anything else has to build the source list itself | [NavMeshBuildSource](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshBuildSource.html) |
 | Data built off the main thread and applied later | The asynchronous update entry point takes a data object the caller owns | [NavMeshBuilder](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshBuilder.html) |
-| Anything a surface can already express | Not a case — this layer costs code and explicit data lifetime that the component handles, per KISS in `coding-principles.md` | [NavMeshBuilder](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshBuilder.html) |
+| Anything a surface can already express | Not a case — this layer costs code and explicit data lifetime that the component handles, per KISS in `csharp-standards` → `coding-principles.md` | [NavMeshBuilder](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/AI.NavMeshBuilder.html) |
 
 ## The pieces
 

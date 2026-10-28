@@ -23,7 +23,7 @@ In order:
    Follow existing convention in that area rather than introducing a
    second tweening library into the same feature. Mixing both inside one
    screen/system for no reason is exactly the kind of avoidable complexity
-   KISS in `coding-principles.md` warns against.
+   KISS in `csharp-standards` → `coding-principles.md` warns against.
 2. **Is there a project-wide convention already established** (a Tech
    Spec, an architecture decision, an existing pattern followed
    consistently across features)? Follow it.

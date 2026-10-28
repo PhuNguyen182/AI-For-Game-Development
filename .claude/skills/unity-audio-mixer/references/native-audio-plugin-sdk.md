@@ -46,5 +46,5 @@ than production-ready code as-is.
   SDK](https://docs.unity3d.com/Manual/AudioSpatializerSDK.html), not a
   general-purpose effect plugin.
 - The team has no per-platform native build pipeline already in place —
-  this is `sdk-platform-engineer`/`unity-engineer` escalation
+  this is `sdk-platform-engineer`/`gameplay-engineer` escalation
   territory, not a routine Unity Engineer task.

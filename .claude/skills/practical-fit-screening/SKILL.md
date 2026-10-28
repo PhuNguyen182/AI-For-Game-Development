@@ -1,23 +1,12 @@
 ---
 name: practical-fit-screening
-description: >
-  Hard-gate screen deciding whether this project can actually adopt a
-  candidate package, SDK or technique. Gates: duplication against
-  `Packages/manifest.json` and existing assemblies, engine and C# language
-  version, scripting backend risk — IL2CPP AOT stripping,
-  `System.Reflection.Emit`, generic virtual calls — platform and
-  binary-size cost, licence via SPDX identifier and LICENSE file,
-  `Game.Core.*` determinism boundary, maintenance bus factor, and
-  integration and exit cost. Use before ranking any candidate. Not for:
-  the long-run vendor-health keep/replace verdict on a dependency, owned by
-  `tech-vendor-dependency-risk-assessment`; finding candidates, owned by
-  `technology-scouting-sweep`; grading a source's trust, owned by
-  `source-credibility-grading`; ranking the survivors, owned by
-  `solution-comparison-report`; measuring on device, owned by
-  `rd-engineer`; integrating the winner, owned by `sdk-platform-engineer`.
+description: "Hard-gate whether the project can adopt a candidate package: duplication vs manifest, engine and C# version, scripting backend, platforms, licence, Core boundary, maintenance. Use before ranking research candidates."
+user-invocable: false
 ---
 
 # Practical Fit Screening — can this project actually adopt the candidate
+
+**Not for:** the long-run vendor-health keep/replace verdict on a dependency, owned by `tech-vendor-dependency-risk-assessment`; finding candidates, owned by `technology-scouting-sweep`; grading a source's trust, owned by `source-credibility-grading`; ranking the survivors, owned by `solution-comparison-report`; measuring on device, owned by `rd-engineer`; integrating the winner, owned by `sdk-platform-engineer`.
 
 ## 1. Objective
 Drop every candidate this project cannot adopt before any effort goes into ranking it, and state each gate's verdict explicitly so a pass is never confused with an unchecked assumption. It exists to stop four expensive discoveries made late: a licence that forbids shipping, a package that works in the Editor and dies under IL2CPP on device, a dependency that drags `UnityEngine` types into `Game.Core.*`, and a "new" package doing what the project already has.

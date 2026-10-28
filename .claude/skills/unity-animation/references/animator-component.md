@@ -42,7 +42,7 @@ culled, however far away it is.
 
 | Member | Effect | Source |
 |---|---|---|
-| Parameter setters by name | Hash the string on every call, which is the per-frame cost `performance-and-algorithms.md` names — the integer overloads exist to avoid it | [Animator scripting API](https://docs.unity3d.com/ScriptReference/Animator.html) |
+| Parameter setters by name | Hash the string on every call, which is the per-frame cost `csharp-standards` → `performance-and-algorithms.md` names — the integer overloads exist to avoid it | [Animator scripting API](https://docs.unity3d.com/ScriptReference/Animator.html) |
 | String-to-hash | Converts a parameter or state name once; store the result in a static readonly field rather than recomputing it | [Animator scripting API](https://docs.unity3d.com/ScriptReference/Animator.html) |
 | Play | Jumps straight to a state with no blend, which is right for a hard cut and wrong for anything that should ease | [Animator scripting API](https://docs.unity3d.com/ScriptReference/Animator.html) |
 | Cross-fade | Blends into a state over a given duration, bypassing the authored transition and its conditions | [Animator scripting API](https://docs.unity3d.com/ScriptReference/Animator.html) |

@@ -56,7 +56,7 @@ misconfigured collider.
 |---|---|---|
 | `PhysicsMaterial` friction and bounciness | Static friction, dynamic friction, and restitution for the surface | [Collider surfaces](https://docs.unity3d.com/Manual/collider-surfaces.html) |
 | Combine modes | Average, Minimum, Maximum, Multiply — applied to the *pair*, so one collider's material never decides the contact alone | [Collider surfaces](https://docs.unity3d.com/Manual/collider-surfaces.html) |
-| `Collider.material` vs `sharedMaterial` | Reading `material` instantiates a per-collider copy and leaks it if never destroyed; `sharedMaterial` edits the asset for every user — a direct instance of `performance-and-algorithms.md`'s Memory discipline concern | [Collider.material](https://docs.unity3d.com/ScriptReference/Collider-material.html) |
+| `Collider.material` vs `sharedMaterial` | Reading `material` instantiates a per-collider copy and leaks it if never destroyed; `sharedMaterial` edits the asset for every user — a direct instance of `csharp-standards` → `performance-and-algorithms.md`'s Memory discipline concern | [Collider.material](https://docs.unity3d.com/ScriptReference/Collider-material.html) |
 
 ## Detection and filtering
 

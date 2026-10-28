@@ -40,7 +40,7 @@ Editor version (per [root-links.md](root-links.md)) before choosing.
 | Mode | Fields | Use for | Source |
 |---|---|---|---|
 | Constant Pixel Size | `Scale` multiplier (must be > 0), Reference Sprite Pixels Per Unit | A UI that must stay pixel-exact regardless of resolution | [Runtime Panel Settings](https://docs.unity3d.com/Manual/UIE-Runtime-Panel-Settings.html) |
-| Scale With Screen Size | Reference Resolution, Screen Match Mode (`Match Width or Height` with a 0–1 slider, `Shrink`, `Expand`) | A responsive PC + mobile HUD — the direct analog of uGUI's `CanvasScaler`, per `coding-principles.md`'s responsive-UI expectation | [Runtime Panel Settings](https://docs.unity3d.com/Manual/UIE-Runtime-Panel-Settings.html) |
+| Scale With Screen Size | Reference Resolution, Screen Match Mode (`Match Width or Height` with a 0–1 slider, `Shrink`, `Expand`) | A responsive PC + mobile HUD — the direct analog of uGUI's `CanvasScaler`, per `csharp-standards` → `coding-principles.md`'s responsive-UI expectation | [Runtime Panel Settings](https://docs.unity3d.com/Manual/UIE-Runtime-Panel-Settings.html) |
 | Constant Physical Size | Reference DPI, Fallback DPI, Reference Sprite Pixels Per Unit | A UI that must keep a constant real-world size across devices | [Runtime Panel Settings](https://docs.unity3d.com/Manual/UIE-Runtime-Panel-Settings.html) |
 
 ## PanelSettings — atlas and budget

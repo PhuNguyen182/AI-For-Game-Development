@@ -1,22 +1,12 @@
 ---
 name: render-pipeline-urp-hdrp
-description: >
-  Decision gate for which Scriptable Render Pipeline a project targets and
-  which one is actually active: URP versus HDRP versus the legacy Built-in
-  pipeline, the Render Pipeline Asset in Graphics Settings and the
-  per-quality-level override that can replace it, Shader Graph master-stack
-  targets, platform scope, and pipeline migration cost. Use before any
-  pipeline-dependent shader, VFX, render pass, or lighting work, and to
-  resolve which pipeline is active. Not for: URP Renderer Features,
-  rendering paths, and camera stacking, owned by `unity-urp-rendering`;
-  HDRP Frame Settings, Volumes, and Custom Passes, owned by
-  `unity-hdrp-rendering`; shader node or HLSL content, owned by
-  `shader-authoring`; particle graph structure, owned by
-  `vfx-particle-authoring`; compute kernels, owned by `compute-shader-vfx`;
-  entity rendering, owned by `unity-entities-graphics`.
+description: "Confirm which render pipeline is active (URP, HDRP, Built-in) per quality level and what it limits, before any rendering, shader or post work. Use first in any rendering task."
+user-invocable: false
 ---
 
 # Render Pipeline Targeting — URP, HDRP & the Built-in Pipeline
+
+**Not for:** URP Renderer Features, rendering paths, and camera stacking, owned by `unity-urp-rendering`; HDRP Frame Settings, Volumes, and Custom Passes, owned by `unity-hdrp-rendering`; shader node or HLSL content, owned by `shader-authoring`; particle graph structure, owned by `vfx-particle-authoring`; compute kernels, owned by `compute-shader-vfx`; entity rendering, owned by `unity-entities-graphics`.
 
 ## 1. Objective
 Establish, with evidence, which render pipeline a project runs before anyone writes something that depends on it — and, when the pipeline is genuinely still open, frame the choice as the hard-to-reverse decision it is. It prevents the failures that look like unrelated bugs later: a shader authored against the wrong master stack that renders magenta, an HDRP-only feature specified for a project that also ships mobile, a pipeline confirmed from Graphics Settings while the active quality level silently overrides it, and a pipeline switch proposed as a settings change when it is in fact a re-authoring of every material in the project.
@@ -45,7 +35,7 @@ Act as the render pipeline targeting gate for the client track — the first sto
 4. **When the choice is genuinely open, decide it on platform scope first** — HDRP is PC and console class and does not target mobile; URP covers mobile through console. Fidelity ambition is the second criterion and never overrides the first, because a platform HDRP does not support is not a trade-off, it is an exclusion.
 5. **Name the master stack the shader work will target** — Universal Lit, Unlit, or Sprite-Lit for URP; Lit, Unlit, Decal, Fabric, Hair, or StackLit for HDRP. This is the single fact `shader-authoring` needs from this skill, and getting it wrong is what produces a graph that cannot compile against the installed pipeline.
 6. **Confirm every requested high-fidelity feature exists on the target before it enters a Tech Spec** — ray tracing, path tracing, volumetric fog and clouds, and the Water System are HDRP-only and PC/console-class; Forward+ is URP-specific. A feature named in a spec that the target pipeline lacks is a scope error found cheapest here.
-7. **Keep dual-pipeline support as separate per-pipeline assets, not branches inside one file** — a URP-target graph and an HDRP-target graph sharing subgraphs, rather than one HLSL file threaded with `#if UNIVERSAL_PIPELINE`/`#if HDRP`, per `performance-and-algorithms.md`'s platform-abstraction rule applied to pipelines. Dual support doubles the authoring and verification cost, so confirm it is genuinely required.
+7. **Keep dual-pipeline support as separate per-pipeline assets, not branches inside one file** — a URP-target graph and an HDRP-target graph sharing subgraphs, rather than one HLSL file threaded with `#if UNIVERSAL_PIPELINE`/`#if HDRP`, per `csharp-standards` → `performance-and-algorithms.md`'s platform-abstraction rule applied to pipelines. Dual support doubles the authoring and verification cost, so confirm it is genuinely required.
 8. **Hand off with the target, the platform scope, and the master stack stated together** — an incomplete hand-off is what causes the receiving skill to re-derive the pipeline and sometimes get a different answer.
 9. **Ask when Graphics Settings and the Tech Spec disagree** — do not reconcile them by picking the more likely one. A mismatch is either a stale spec or a misconfigured project, and both need a person to say which.
 

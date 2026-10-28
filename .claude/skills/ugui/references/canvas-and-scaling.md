@@ -38,7 +38,7 @@ Add `CanvasScaler` to the root `Canvas` to make a layout resolution-independent.
 | Mode | Key properties | Behavior |
 |---|---|---|
 | **Constant Pixel Size** (default) | Scale Factor, Reference Pixels Per Unit | UI elements keep the same pixel size regardless of screen size — simplest, but does not adapt to different device resolutions |
-| **Scale With Screen Size** | Reference Resolution, Screen Match Mode (Match Width Or Height / Expand / Shrink), Match (0–1 slider), Reference Pixels Per Unit | Scales the whole canvas relative to a Reference Resolution — the standard choice for a responsive PC + mobile HUD, per `coding-principles.md`'s responsive-UI expectation |
+| **Scale With Screen Size** | Reference Resolution, Screen Match Mode (Match Width Or Height / Expand / Shrink), Match (0–1 slider), Reference Pixels Per Unit | Scales the whole canvas relative to a Reference Resolution — the standard choice for a responsive PC + mobile HUD, per `csharp-standards` → `coding-principles.md`'s responsive-UI expectation |
 | **Constant Physical Size** | Physical Unit (mm/points/picas), Fallback Screen DPI, Default Sprite DPI, Reference Pixels Per Unit | UI elements keep the same real-world size across devices/resolutions — rare outside print-like or accessibility-driven UI |
 
 **Match slider pitfall**: at `Match = 0` (Width), a landscape resolution

@@ -57,4 +57,4 @@ LMotion.Create<Vector3, NoOptions, Vector3MotionAdapter>(from, to, duration)
     .BindToPosition(transform);
 ```
 
-**Critical caveat**: forgetting the `RegisterGenericJobType` assembly attribute is not caught at compile time — LitMotion uses generic Jobs internally, and Burst/IL2CPP need this attribute to know which concrete generic job to ahead-of-time-compile for the new type combination. Always add it in the same change as the adapter, and verify the motion still runs correctly on an IL2CPP device build (per `performance-and-algorithms.md`'s Verification section), not only in the Editor.
+**Critical caveat**: forgetting the `RegisterGenericJobType` assembly attribute is not caught at compile time — LitMotion uses generic Jobs internally, and Burst/IL2CPP need this attribute to know which concrete generic job to ahead-of-time-compile for the new type combination. Always add it in the same change as the adapter, and verify the motion still runs correctly on an IL2CPP device build (per `csharp-standards` → `performance-and-algorithms.md`'s Verification section), not only in the Editor.

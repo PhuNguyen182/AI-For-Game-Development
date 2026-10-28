@@ -52,6 +52,6 @@ swap already handles the real build.
 |---|---|---|
 | Many skins or atlas pages per skeleton, with a measured size or memory problem | Adopt it | synthesized |
 | A small, fixed skin set | Do not adopt — the complexity buys nothing | synthesized |
-| No measurement taken yet | Measure first, per `performance-and-algorithms.md`'s Verification section | synthesized |
+| No measurement taken yet | Measure first, per `csharp-standards` → `performance-and-algorithms.md`'s Verification section | synthesized |
 
 A Spine license is required to integrate the Spine Runtimes into an application.

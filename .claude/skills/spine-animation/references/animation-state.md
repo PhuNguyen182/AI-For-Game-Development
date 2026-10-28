@@ -66,7 +66,7 @@ moment anything can interrupt that animation.
 
 | Concern | Guidance | Source |
 |---|---|---|
-| Event comparison cost | Cache the `EventData` once via `Skeleton.Data.FindEvent("targetEvent")` and compare by reference, not by string, per `performance-and-algorithms.md`'s hot-path rules | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
+| Event comparison cost | Cache the `EventData` once via `Skeleton.Data.FindEvent("targetEvent")` and compare by reference, not by string, per `csharp-standards` → `performance-and-algorithms.md`'s hot-path rules | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
 | Changing state inside a callback | Callbacks fire during `SkeletonAnimation.Update()`, before the `LateUpdate()` mesh rebuild; calling `SetAnimation` from an `End` callback fires `Start` the same frame, and mixing can put the next `Start` before the previous `End` | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
 | Enforcing order | Defer the follow-up one frame with a coroutine when strict ordering matters | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
 

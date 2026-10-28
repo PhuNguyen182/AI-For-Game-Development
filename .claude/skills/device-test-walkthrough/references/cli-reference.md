@@ -2,7 +2,7 @@
 
 Every subcommand echoes the literal command it is about to run to stderr
 before executing it, so the transcript itself is usable as
-`defect-reporting.md` evidence. Exit code is non-zero only on a tool-level
+skill `qa-standards` evidence. Exit code is non-zero only on a tool-level
 failure (missing binary, device unreachable) — never on an app-level
 outcome, since the script has no way to judge whether an app-level outcome
 is right or wrong. That judgment stays with the calling agent.

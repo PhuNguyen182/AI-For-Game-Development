@@ -79,4 +79,4 @@ public class GameEventListener : MonoBehaviour
 that computes a game-rule outcome (e.g. `TakeDamage(amount)` with the amount
 decided inline in that method) — the event only notifies that something
 happened; the amount and its resolution belong in `Game.Core.*`, per
-`coding-principles.md`'s Shared Core integrity section.
+`csharp-standards` → `coding-principles.md`'s Shared Core integrity section.

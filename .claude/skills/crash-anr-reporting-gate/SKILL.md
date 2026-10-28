@@ -1,22 +1,12 @@
 ---
 name: crash-anr-reporting-gate
-description: >
-  Gate that confirms a real production crash and ANR reporting service is
-  actually integrated and reporting — Google Play Console Android vitals,
-  Firebase Crashlytics, or App Store Connect — before any trace is read.
-  Use at the start of every crash or ANR investigation whenever live
-  reporting is not already confirmed for this engagement, or the
-  report's source is unstated or unverifiable. Not for: reading the
-  trace once the gate passes, owned by `crash-anr-symbolication`;
-  attributing the fault, owned by `crash-anr-fault-domain-triage`;
-  performing the integration, owned by `sdk-platform-engineer`;
-  choosing the reporting vendor when none is committed, owned by
-  `analytics-telemetry-platform`; pre-release Editor logs, owned by
-  `qa-automation-engineer` and `playtest-tester`; or a fault in a
-  pre-release player build, owned by `build-fault-triage`.
+description: "Confirm a real production crash/ANR reporting service (Play Console vitals, Crashlytics, App Store Connect) is integrated and reporting before reading any trace. Use as stage 1 of a production crash investigation."
+user-invocable: false
 ---
 
 # Crash and ANR Reporting Gate — is there a trustworthy signal at all
+
+**Not for:** reading the trace once the gate passes, owned by `crash-anr-symbolication`; attributing the fault, owned by `crash-anr-fault-domain-triage`; performing the integration, owned by `sdk-platform-engineer`; choosing the reporting vendor when none is committed, owned by `analytics-telemetry-platform`; pre-release Editor logs, owned by `qa-automation-engineer` and `playtest-tester`; or a fault in a pre-release player build, owned by `build-fault-triage`.
 
 ## Bundled resources
 

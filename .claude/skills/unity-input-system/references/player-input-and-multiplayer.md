@@ -6,7 +6,7 @@ Covers: SKILL.md §4 — **"Set `PlayerInput` to Invoke C# Events, never Send or
 What `PlayerInput` adds over plain actions, which of its four dispatch modes
 this project permits, and how several local players are wired. The camera
 half of a split-screen feature is `unity-cinemachine-authoring`'s or
-`unity-camera-fundamentals`', and its UI layout is `unity-engineer`'s.
+`unity-camera-fundamentals`', and its UI layout is `gameplay-engineer`'s.
 
 ## What the component owns
 
@@ -21,7 +21,7 @@ half of a split-screen feature is `unity-cinemachine-authoring`'s or
 
 | Behaviour | Mechanism | Verdict | Source |
 |---|---|---|---|
-| Send Messages | Reflection dispatch on the component's own object, with the handler name derived from the action name | Banned by `performance-and-algorithms.md`; a renamed action breaks the handler with no compile error | [Select a notification behavior](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/select-notification-behavior.html) |
+| Send Messages | Reflection dispatch on the component's own object, with the handler name derived from the action name | Banned by `csharp-standards` → `performance-and-algorithms.md`; a renamed action breaks the handler with no compile error | [Select a notification behavior](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/select-notification-behavior.html) |
 | Broadcast Messages | The same reflection dispatch, propagated down the whole hierarchy | Banned for the same reason, and more expensive again | [Select a notification behavior](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/select-notification-behavior.html) |
 | Invoke Unity Events | One serialized event per notification, wired in the Inspector | Acceptable where Inspector wiring is genuinely wanted and the handler lifetime is scoped | [Select a notification behavior](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/select-notification-behavior.html) |
 | Invoke C# Events | Plain events on the component, subscribed in code | The default for this project — no reflection, and a rename is a compile error | [Select a notification behavior](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/select-notification-behavior.html) |

@@ -1,22 +1,12 @@
 ---
 name: unity-input-system
-description: >
-  Technique for Unity's Input System package, `UnityEngine.InputSystem` —
-  `InputAction`, `InputActionAsset`, `InputActionMap`, action types, bindings
-  and composite bindings, Interactions and Processors, Control Schemes,
-  `PlayerInput` notification behaviours, `PlayerInputManager` split-screen,
-  `InputSystemUIInputModule`, `Gamepad.current` device polling,
-  `OnScreenButton` and `OnScreenStick`, interactive rebinding and binding
-  overrides, and the Active Input Handling setting. Use when player input must
-  be read, bound, rebound, or routed into UI. Not for: what a press means as a
-  game rule — `csharp-engineer`; UI layout — `unity-engineer`; Animator
-  parameters — `unity-animation`; camera axis controllers —
-  `unity-cinemachine-authoring`; gathering an action's value into a per-tick
-  command struct for a predicted netcode simulation — `netcode-for-entities`;
-  XR Interaction Toolkit and XR rendering, no owning skill, flag the gap.
+description: "Input System: actions and maps, bindings and composites, interactions and processors, control schemes, PlayerInput, rebinding, touch and gamepad. Use for any player input."
+user-invocable: false
 ---
 
 # Unity Input System — Actions, Bindings, PlayerInput, Rebinding, UI Input
+
+**Not for:** what a press means as a game rule — `csharp-engineer`; UI layout — `gameplay-engineer`; Animator parameters — `unity-animation`; camera axis controllers — `unity-cinemachine-authoring`; gathering an action's value into a per-tick command struct for a predicted netcode simulation — `netcode-for-entities`; XR Interaction Toolkit and XR rendering, no owning skill, flag the gap.
 
 ## Bundled resources
 
@@ -49,8 +39,8 @@ Act as the input specialist for the client track — the tool reached for whenev
 - Touch controls, or wiring a scene's `EventSystem` so UI responds to gamepad and pointer input.
 - Migrating from the legacy `UnityEngine.Input` API, or deciding the Active Input Handling setting.
 - An action does not fire, fires twice, or the wrong device drives it.
-- Negative trigger: whether the action the player just requested is currently allowed — cooldown, resource cost, stun — that is `csharp-engineer`'s Shared Core, per `coding-principles.md`'s Shared Core integrity rule; this skill reports only that the input happened.
-- Negative trigger: the Canvas hierarchy, widget design, or screen layout the UI module ends up driving — that is `unity-engineer`; this skill stops at the input module and its action map.
+- Negative trigger: whether the action the player just requested is currently allowed — cooldown, resource cost, stun — that is `csharp-engineer`'s Shared Core, per `csharp-standards` → `coding-principles.md`'s Shared Core integrity rule; this skill reports only that the input happened.
+- Negative trigger: the Canvas hierarchy, widget design, or screen layout the UI module ends up driving — that is `gameplay-engineer`; this skill stops at the input module and its action map.
 - Negative trigger: the Animator parameters or blend trees a movement value feeds — that is `unity-animation`; this skill delivers the value.
 - Negative trigger: a Cinemachine camera that does not respond to a stick — the axis controller component belongs to `unity-cinemachine-authoring`, which this skill feeds; the binding behind it is this skill's.
 - Negative trigger: destination and pathfinding decisions behind a click-to-move gesture — that is `unity-navmesh-navigation`; this skill supplies the screen position.
@@ -65,11 +55,11 @@ Act as the input specialist for the client track — the tool reached for whenev
 5. **Add an Interaction only when a timing pattern is genuinely required** — an Interaction changes when the action reaches its phases, so one applied to a gesture the player never performs means the action never fires at all, per [interactions-and-processors.md](references/interactions-and-processors.md). Check the project's default deadzones before adding a Processor that duplicates them.
 6. **Set the Update Mode from where the input-driven logic actually runs** — dynamic for logic in `Update`, fixed for physics-driven movement in `FixedUpdate`, per [architecture-and-update-loop.md](references/architecture-and-update-loop.md). Reading one action from both callbacks in the same frame sees it at different points in its lifecycle.
 7. **Choose the consumption workflow from what the feature needs** — the generated wrapper or direct action polling for a single player, `PlayerInput` when its device-pairing and per-player machinery is actually wanted, and raw device polling only for a prototype or a fixed single-platform scheme, since it forfeits rebinding, composites and deadzones outright.
-8. **Set `PlayerInput` to Invoke C# Events, never Send or Broadcast Messages** — both message behaviours are literally the reflection dispatch `performance-and-algorithms.md` bans, and their handler names derive from the action name, so renaming an action breaks them with no compile error. See [player-input-and-multiplayer.md](references/player-input-and-multiplayer.md) for the full comparison.
-9. **Enable what you intend to read, and cache the reference you read it from** — an action that was never enabled returns its default value silently and forever, and a per-frame lookup by string is the hot-path cost `performance-and-algorithms.md` forbids. Resolve once in `Awake` or `OnEnable`, and disable and unsubscribe in `OnDisable`.
-10. **Hand gameplay an interface rather than an Input System type** — an `IInputProvider`-style abstraction exposing resolved signals keeps `Game.Core.*` free of `UnityEngine` and testable by `qa-automation-engineer`, per Dependency Inversion in `coding-principles.md`. The interface is also what lets the decision behind a press stay in Shared Core.
+8. **Set `PlayerInput` to Invoke C# Events, never Send or Broadcast Messages** — both message behaviours are literally the reflection dispatch `csharp-standards` → `performance-and-algorithms.md` bans, and their handler names derive from the action name, so renaming an action breaks them with no compile error. See [player-input-and-multiplayer.md](references/player-input-and-multiplayer.md) for the full comparison.
+9. **Enable what you intend to read, and cache the reference you read it from** — an action that was never enabled returns its default value silently and forever, and a per-frame lookup by string is the hot-path cost `csharp-standards` → `performance-and-algorithms.md` forbids. Resolve once in `Awake` or `OnEnable`, and disable and unsubscribe in `OnDisable`.
+10. **Hand gameplay an interface rather than an Input System type** — an `IInputProvider`-style abstraction exposing resolved signals keeps `Game.Core.*` free of `UnityEngine` and testable by `qa-automation-engineer`, per Dependency Inversion in `csharp-standards` → `coding-principles.md`. The interface is also what lets the decision behind a press stay in Shared Core.
 11. **Drive UI through `InputSystemUIInputModule` on the scene's `EventSystem`** — it replaces the legacy standalone module and feeds uGUI and UI Toolkit alike, per [devices-and-ui-integration.md](references/devices-and-ui-integration.md). A module present in the scene takes precedence over the project-wide asset's UI map, so check both before concluding the asset is wrong.
-12. **Dispose the `RebindingOperation` and key saved overrides per player** — it is `IDisposable` and is not cleaned up for you, per `coding-principles.md`'s Exception handling section, and loading overrides clears the existing ones unless told otherwise, per [rebinding.md](references/rebinding.md).
+12. **Dispose the `RebindingOperation` and key saved overrides per player** — it is `IDisposable` and is not cleaned up for you, per `csharp-standards` → `coding-principles.md`'s Exception handling section, and loading overrides clears the existing ones unless told otherwise, per [rebinding.md](references/rebinding.md).
 13. **Take a non-firing action to the Input Debugger before re-reading the asset** — binding resolution depends on which devices are actually connected and paired at runtime, which the asset cannot show, per [editor-tooling-and-debugging.md](references/editor-tooling-and-debugging.md).
 14. **Check the feature against the package's documented gaps before promising it** — text entry into uGUI, IMGUI, split-screen alongside Cinemachine, and several device and platform combinations are documented limitations rather than bugs, per [migration-and-settings.md](references/migration-and-settings.md).
 
@@ -82,7 +72,7 @@ Act as the input specialist for the client track — the tool reached for whenev
 - On-screen touch controls, and `InputSystemUIInputModule` setup on a scene's `EventSystem`.
 - Deciding Active Input Handling and migrating legacy `UnityEngine.Input` call sites to actions.
 - Diagnosing non-firing, double-firing, or wrongly paired input through the Input Debugger and Device Simulator.
-- Out of scope: the game rule behind a press (`csharp-engineer`); UI layout and widget design (`unity-engineer`); Animator parameters and blend trees (`unity-animation`); camera axis controllers and camera behaviour (`unity-cinemachine-authoring`); destination and pathfinding decisions (`unity-navmesh-navigation`); per-tick input commands inside a predicted netcode simulation (`netcode-for-entities`); XR Interaction Toolkit and XR rendering (no owning skill — flag the gap).
+- Out of scope: the game rule behind a press (`csharp-engineer`); UI layout and widget design (`gameplay-engineer`); Animator parameters and blend trees (`unity-animation`); camera axis controllers and camera behaviour (`unity-cinemachine-authoring`); destination and pathfinding decisions (`unity-navmesh-navigation`); per-tick input commands inside a predicted netcode simulation (`netcode-for-entities`); XR Interaction Toolkit and XR rendering (no owning skill — flag the gap).
 
 ## 6. Output format
 ```
@@ -117,7 +107,7 @@ Act as the input specialist for the client track — the tool reached for whenev
 
 **Example 2**
 - Input: "Use Send Messages on `PlayerInput`, it is the default and it works."
-- Output: declined — Send Messages is `GameObject.SendMessage`, the reflection dispatch `performance-and-algorithms.md` bans, and its handler name is derived from the action name, so renaming `Fire` to `Attack` silently stops the handler with no compile error. Switched to Invoke C# Events, subscribed through a named method per `coding-principles.md`'s Event handlers rule, and unsubscribed in `OnDisable`.
+- Output: declined — Send Messages is `GameObject.SendMessage`, the reflection dispatch `csharp-standards` → `performance-and-algorithms.md` bans, and its handler name is derived from the action name, so renaming `Fire` to `Attack` silently stops the handler with no compile error. Switched to Invoke C# Events, subscribed through a named method per `csharp-standards` → `coding-principles.md`'s Event handlers rule, and unsubscribed in `OnDisable`.
 
 **Example 3**
 - Input: "The interact button does nothing, but the binding is right in the asset."
@@ -130,14 +120,14 @@ Act as the input specialist for the client track — the tool reached for whenev
 ## 8. Edge cases & guardrails
 - Never read an action that was never enabled — it returns its default value silently, which reads as a dead binding rather than a lifecycle mistake.
 - Never store an `InputAction.CallbackContext` or an `InputValue` and read it after the callback returns — both are valid only during the callback and return plausible, wrong data afterwards.
-- Never call the non-generic value accessor on `InputValue` in a hot path — it boxes and allocates, per `performance-and-algorithms.md`.
+- Never call the non-generic value accessor on `InputValue` in a hot path — it boxes and allocates, per `csharp-standards` → `performance-and-algorithms.md`.
 - Never look an action up by string inside `Update` — cache the reference, or use the generated wrapper's typed property.
 - Never set `PlayerInput` to Send or Broadcast Messages — reflection dispatch plus a handler name derived from the action name, so a rename breaks it silently.
 - Never enable or disable a map directly while a `PlayerInput` owns it — its notion of the current map only tracks changes made through its own API, and the two desynchronise.
 - Never assume a UI click suppresses the gameplay action bound to the same control — this system does not consume input the way the legacy one appeared to, so both fire.
 - Never promise text entry into uGUI or TextMesh Pro, or any IMGUI input, through this package — both are documented limitations that still require the legacy path.
 - Never wire `PlayerInput` split-screen and Cinemachine without surfacing the documented incompatibility first — it is cheaper to design around than to discover after both exist.
-- Never author new code against the obsolete pose action properties on the tracked pose driver — use the current input properties, per `coding-principles.md`'s Obsolete APIs section.
+- Never author new code against the obsolete pose action properties on the tracked pose driver — use the current input properties, per `csharp-standards` → `coding-principles.md`'s Obsolete APIs section.
 - Never leave a `RebindingOperation` undisposed, and never load binding overrides without deciding whether the existing ones should survive.
 - Never treat direct device polling as a production default — it forfeits rebinding, composites and deadzones, and needs a null check on every read.
 - Never expand this skill into XR Interaction Toolkit or XR rendering — no skill in this project owns that surface; say so rather than improvising from Input System knowledge.

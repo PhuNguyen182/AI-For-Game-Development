@@ -21,4 +21,4 @@ impulse is a property of the world that whichever camera is live responds to.
 
 Firing the impulse belongs to the Client-layer handler that already knows the
 event happened. The rule deciding that it happened — the hit landing, the
-damage applying — lives in `Game.Core.*` per `coding-principles.md`.
+damage applying — lives in `Game.Core.*` per `csharp-standards` → `coding-principles.md`.

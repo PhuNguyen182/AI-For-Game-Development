@@ -1,22 +1,12 @@
 ---
 name: jenkins-pipeline-authoring
-description: >
-  Technique for writing a Unity project's `Jenkinsfile` as declarative
-  pipeline code — `pipeline`, an `agent` scoped by label, `stages`,
-  `when`, the `environment` block's credentials, `withCredentials`,
-  `parameters`, the `options` block for timeout, disableConcurrentBuilds,
-  buildDiscarder, and timestamps, `lock` for the single-editor resource,
-  the `post` block's always/failure/cleanup conditions, `junit`,
-  `archiveArtifacts`, `stash`/`unstash`, `parallel`, `input` gates,
-  `triggers` such as cron and pollSCM, multibranch `env.BRANCH_NAME`,
-  shared libraries in `vars/`, and `cleanWs`. Not for: the Unity command
-  line a stage runs, owned by `unity-batchmode-cli`; signing and
-  packaging, owned by `fastlane-mobile-delivery`; the upload step, owned
-  by `firebase-app-distribution`; and diagnosing a red run, owned by
-  `ci-pipeline-failure-triage`.
+description: "Write a Unity project's declarative Jenkinsfile: agents by label, stages, credentials, parameters, locks, artifacts, JUnit/NUnit reports, shared libraries. Use when authoring Jenkins CI."
+user-invocable: false
 ---
 
 # Jenkins Pipeline Authoring — declarative pipelines for a Unity project
+
+**Not for:** the Unity command line a stage runs, owned by `unity-batchmode-cli`; signing and packaging, owned by `fastlane-mobile-delivery`; the upload step, owned by `firebase-app-distribution`; and diagnosing a red run, owned by `ci-pipeline-failure-triage`.
 
 ## Bundled resources
 
@@ -59,7 +49,7 @@ Act as the CI orchestration specialist for the devops track, on behalf of `ci-cd
 6. **Publish the test report as a real result set, and treat an empty one as a failure** — Unity writes NUnit 3 XML, which the `junit` publisher does not read natively, and a crashed test stage that produced no XML is indistinguishable from one that passed unless the publisher is told to object. Both traps are closed in [artifacts-test-reports-and-notifications.md](references/artifacts-test-reports-and-notifications.md); together they are the most common way a Unity pipeline reports green while testing nothing.
 7. **Collect logs and reports from `post { always }`, and artifacts only on success** — a failed run is the one whose log matters most, and a step that only runs on success guarantees its absence exactly then.
 8. **Put a human between the pipeline and anything that reaches people** — an `input` gate before a distribution stage, wrapped in its own timeout so an unanswered prompt releases the agent rather than holding it, per [declarative-syntax-and-stages.md](references/declarative-syntax-and-stages.md). Delivery to real testers is the GD's decision, per `ci-cd-engineer`'s guardrails.
-9. **Extract a shared library only when a second pipeline actually needs the same logic** — one `vars/` function serving one job is indirection with no payer, and it moves the logic back out of the repository the job lives in (YAGNI, per `coding-principles.md`'s YAGNI section).
+9. **Extract a shared library only when a second pipeline actually needs the same logic** — one `vars/` function serving one job is indirection with no payer, and it moves the logic back out of the repository the job lives in (YAGNI, per `csharp-standards` → `coding-principles.md`'s YAGNI section).
 10. **Name every input you had to assume — labels, credential ids, branch triggers — in the output rather than defaulting it** — a pipeline that references a credential id nobody created fails on its first run at the step that matters, and the fix is a five-second answer somebody could have given up front.
 
 ## 5. Specific goals / tasks this skill performs
@@ -112,5 +102,5 @@ Act as the CI orchestration specialist for the devops track, on behalf of `ci-cd
 - Never publish test results with empty results allowed, and never decide a run passed from the absence of a failure message.
 - Never trigger a store submission or a distribution to real testers from a branch event; a human gate is the difference between a pipeline and an accident.
 - Never leave a stage unbounded by `timeout` — a hung Unity process holds an agent until someone notices, which on a small fleet stops every other job.
-- Never disable a failing stage or mark it as tolerable to get a green run; report what blocks it, per `verification-standards.md`'s honesty constraints.
+- Never disable a failing stage or mark it as tolerable to get a green run; report what blocks it, per skill `qa-standards`'s honesty constraints.
 - If the agent labels, credential ids, or branch triggers were not supplied, state the assumption in the output rather than inventing a value that fails on first run.

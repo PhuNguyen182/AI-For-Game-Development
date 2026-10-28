@@ -1,21 +1,12 @@
 ---
 name: unity-navmesh-navigation
-description: >
-  Technique for Unity's navigation stack across both of its layers — the
-  built-in `UnityEngine.AI` module, covering `NavMesh` queries,
-  `NavMeshAgent` steering, `NavMeshObstacle` carving, `NavMeshBuilder` and
-  `NavMeshData`, and `NavMeshLinkData` runtime links — and the
-  `com.unity.ai.navigation` package, covering `NavMeshSurface` baking,
-  `NavMeshModifier` and `NavMeshModifierVolume` area overrides, the authored
-  `NavMeshLink`, and agent types and area costs in the Navigation window.
-  Use when a character must path, a mesh must bake or stream, or a gap
-  needs a connector. Not for: choosing the destination — `csharp-engineer`;
-  the input behind a click-to-move — `unity-input-system`; locomotion
-  blending — `unity-animation`; physics unrelated to navigation —
-  `unity-3d-physics`, `unity-physics`.
+description: "Navigation: NavMesh baking and surfaces, NavMeshAgent steering, obstacles, links, areas and costs, runtime rebuilds, queries. Use for AI pathfinding."
+user-invocable: false
 ---
 
 # Unity NavMesh Navigation — Baking, Agents, Obstacles, Links, Runtime Building
+
+**Not for:** choosing the destination — `csharp-engineer`; the input behind a click-to-move — `unity-input-system`; locomotion blending — `unity-animation`; physics unrelated to navigation — `unity-3d-physics`, `unity-physics`.
 
 ## Bundled resources
 
@@ -50,7 +41,7 @@ Act as the navigation specialist for the client track — the tool reached for w
 - Querying the mesh from code for a position, a path, or an edge.
 - Migrating a project off the legacy in-scene bake and its deprecated link component.
 - An agent stops short of its destination, refuses a link, or will not enter a region that looks navigable.
-- Negative trigger: which destination to move to, when to move, or which target to chase — behaviour trees, utility scoring, patrol-route selection — that is `csharp-engineer`'s Shared Core, per `coding-principles.md`'s Shared Core integrity rule; this skill executes an already-chosen destination.
+- Negative trigger: which destination to move to, when to move, or which target to chase — behaviour trees, utility scoring, patrol-route selection — that is `csharp-engineer`'s Shared Core, per `csharp-standards` → `coding-principles.md`'s Shared Core integrity rule; this skill executes an already-chosen destination.
 - Negative trigger: reading the click, tap, or stick behind a move order — that is `unity-input-system`, which hands this skill a screen position or a world point.
 - Negative trigger: the Animator Controller and blend tree that visualise the movement — that is `unity-animation`; this skill supplies the agent's velocity it consumes.
 - Negative trigger: rigid bodies, colliders, joints, or DOTS physics with no navigation involvement — `unity-3d-physics` and `unity-physics`; this skill only touches collider geometry as a bake source.
@@ -59,7 +50,7 @@ Act as the navigation specialist for the client track — the tool reached for w
 
 ## 4. How to use this skill
 1. **Confirm which documentation layer the task actually needs** — the package owns authoring and baking, the built-in module owns runtime queries and scripted building, and most features touch both, per [root-links.md](references/root-links.md). The classic built-in navigation Manual pages no longer resolve, so a remembered page title is not a source.
-2. **Bake through `NavMeshSurface` before reaching for the low-level builder** — the component expresses collect mode, geometry source, voxel and tile size, and minimum region area declaratively, per [navmesh-components-surface-and-modifiers.md](references/navmesh-components-surface-and-modifiers.md). Drop to [navmesh-baking-low-level-api.md](references/navmesh-baking-low-level-api.md)'s builder only when the source geometry has no scene object to collect from, per KISS in `coding-principles.md`.
+2. **Bake through `NavMeshSurface` before reaching for the low-level builder** — the component expresses collect mode, geometry source, voxel and tile size, and minimum region area declaratively, per [navmesh-components-surface-and-modifiers.md](references/navmesh-components-surface-and-modifiers.md). Drop to [navmesh-baking-low-level-api.md](references/navmesh-baking-low-level-api.md)'s builder only when the source geometry has no scene object to collect from, per KISS in `csharp-standards` → `coding-principles.md`.
 3. **Override areas per object and per region with modifiers rather than by editing geometry** — a modifier marks one object, a modifier volume marks a space with no geometry of its own, and both keep the art untouched, per [navmesh-components-surface-and-modifiers.md](references/navmesh-components-surface-and-modifiers.md). Re-bake after any change to geometry, modifiers, or agent types, because a stale bake looks exactly like a correct one.
 4. **Add an agent type only when a character's dimensions or slope tolerance genuinely differ** — the type drives the bake, so each one is another mesh to build and hold, per [agent-types-areas-and-navigation-window.md](references/agent-types-areas-and-navigation-window.md). Cosmetic scale differences do not need one.
 5. **Configure the agent's steering to the character rather than leaving the defaults** — braking, stopping distance, avoidance tier and priority all change how the movement reads, and the highest avoidance tier is the most expensive one, so it is a choice rather than a safe default, per [navmesh-agent.md](references/navmesh-agent.md).
@@ -69,8 +60,8 @@ Act as the navigation specialist for the client track — the tool reached for w
 9. **Update a runtime NavMesh incrementally rather than rebuilding the surface** — the asynchronous update touches only affected regions, and attaching or detaching pre-baked data is what streams a world without rebuilding anything, per [runtime-building-samples-and-upgrade.md](references/runtime-building-samples-and-upgrade.md). Start from the package's own streaming samples rather than deriving a scheme cold.
 10. **Read a NavMesh raycast's true as blocked, not as clear** — the return is inverted from the physics raycast it resembles, and the mistake produces logic that behaves exactly backwards while compiling and running, per [navmesh-queries-and-pathfinding-api.md](references/navmesh-queries-and-pathfinding-api.md).
 11. **Feed the Animator from the agent's own velocity** — the agent already knows its speed and its desired speed, so computing one separately from transform deltas produces a second, disagreeing number. The Animator side of that handoff is `unity-animation`'s.
-12. **Keep the destination decision in `Game.Core.*`** — which target, which route, whether to give up the chase, are all game rules, per `coding-principles.md`'s Shared Core integrity rule; this layer receives a resolved point and moves to it.
-13. **Back any bake-time or avoidance-tier claim with a measurement** — voxel size, tile size and avoidance quality all trade cost against accuracy in ways that depend on the scene, per `performance-and-algorithms.md`'s Verification section.
+12. **Keep the destination decision in `Game.Core.*`** — which target, which route, whether to give up the chase, are all game rules, per `csharp-standards` → `coding-principles.md`'s Shared Core integrity rule; this layer receives a resolved point and moves to it.
+13. **Back any bake-time or avoidance-tier claim with a measurement** — voxel size, tile size and avoidance quality all trade cost against accuracy in ways that depend on the scene, per `csharp-standards` → `performance-and-algorithms.md`'s Verification section.
 
 ## 5. Specific goals / tasks this skill performs
 - Baking a NavMesh through `NavMeshSurface`, with modifier and volume overrides.
@@ -82,7 +73,7 @@ Act as the navigation specialist for the client track — the tool reached for w
 - Building and streaming meshes at runtime.
 - Querying the mesh for positions, paths, and edges.
 - Migrating a legacy in-scene bake and its deprecated links to the current package.
-- Out of scope: destination and target selection (`csharp-engineer`); the input behind a move order (`unity-input-system`); locomotion blending (`unity-animation`); physics unrelated to navigation (`unity-3d-physics`, `unity-physics`); escalated navigation performance work (`unity-engineer`).
+- Out of scope: destination and target selection (`csharp-engineer`); the input behind a move order (`unity-input-system`); locomotion blending (`unity-animation`); physics unrelated to navigation (`unity-3d-physics`, `unity-physics`); escalated navigation performance work (`gameplay-engineer`).
 
 ## 6. Output format
 ```
@@ -138,5 +129,5 @@ Act as the navigation specialist for the client track — the tool reached for w
 - Never leave a bake stale after changing geometry, a modifier, or an agent type — a stale mesh is indistinguishable from a correct one until something refuses to path.
 - Never relocate an agent by writing its transform — use the warp call, or the agent and its simulated position disagree.
 - Never let navigation-layer code choose a target or abandon a chase — it moves to a point `Game.Core.*` already decided on.
-- Never claim a bake-time or avoidance-tier improvement without a measurement, per `performance-and-algorithms.md`'s Verification section.
+- Never claim a bake-time or avoidance-tier improvement without a measurement, per `csharp-standards` → `performance-and-algorithms.md`'s Verification section.
 - If a task needs the sparsely documented low-level navigation types, say plainly that member-level documentation does not exist at this version rather than inventing plausible members.

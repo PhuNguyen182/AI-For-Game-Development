@@ -1,24 +1,12 @@
 ---
 name: unity-collections
-description: >
-  Unity Collections package, `Unity.Collections`: picking and using unmanaged
-  containers — `NativeArray`, `NativeSlice`, `NativeList`, `NativeHashMap`,
-  `NativeParallelHashMap`, `NativeHashSet`, `NativeQueue`, `NativeStream`,
-  `NativeReference` — plus `FixedString*Bytes`, `FixedList*Bytes`, `Unsafe-`
-  variants, aliasing, `AsParallelWriter`, and allocator strategy beyond Temp,
-  TempJob, and Persistent, including rewindable and custom allocators,
-  `AllocatorHelper`, and `CollectionHelper`. Use when choosing a container for
-  a data shape, replacing a managed `List`, `Dictionary`, or `string` that must
-  cross into a job, Burst method, or ECS component, or auditing disposal and
-  aliasing. Not for: job scheduling and `JobHandle` chains —
-  `unity-job-system-and-burst`; Burst compilation tuning —
-  `unity-burst-compiler`; ECS component, buffer, and query design —
-  `unity-ecs-architecture`; `float3`, `quaternion`, `Random`, and `noise` —
-  `unity-mathematics`; physics data types — `unity-physics`;
-  `RenderMeshArray` — `unity-entities-graphics`.
+description: "Unity.Collections unmanaged containers: NativeArray/List/HashMap/Queue, allocators, disposal and safety checks, FixedString, parallel writers. Use for Job/Burst-compatible data."
+user-invocable: false
 ---
 
 # Unity Collections — Native Containers, FixedString/FixedList & Allocators
+
+**Not for:** job scheduling and `JobHandle` chains — `unity-job-system-and-burst`; Burst compilation tuning — `unity-burst-compiler`; ECS component, buffer, and query design — `unity-ecs-architecture`; `float3`, `quaternion`, `Random`, and `noise` — `unity-mathematics`; physics data types — `unity-physics`; `RenderMeshArray` — `unity-entities-graphics`.
 
 ## Bundled resources
 
@@ -40,7 +28,7 @@ Read-only context, loaded on demand so this file stays short.
 Pick and use the right unmanaged collection type for the data and access pattern at hand — correct type choice, correct allocator, correct disposal — without drifting into job-scheduling mechanics, Burst tuning, or ECS component design, which are sibling skills' territory.
 
 ## 2. Role
-Act as the Collections-package specialist for the client track — the tool reached for whenever a feature needs unmanaged, GC-free data (feeding a job, a Burst-compiled method, an ECS buffer, or a MonoBehaviour avoiding GC pressure per `performance-and-algorithms.md`). You choose the container, its allocator, and its safe access pattern; you do not schedule the job that consumes it or tune its Burst compilation.
+Act as the Collections-package specialist for the client track — the tool reached for whenever a feature needs unmanaged, GC-free data (feeding a job, a Burst-compiled method, an ECS buffer, or a MonoBehaviour avoiding GC pressure per `csharp-standards` → `performance-and-algorithms.md`). You choose the container, its allocator, and its safe access pattern; you do not schedule the job that consumes it or tune its Burst compilation.
 
 ## 3. When to invoke this skill
 - Choosing between `NativeArray<T>`, `NativeList<T>`, `NativeHashMap<TKey,TValue>`/`NativeParallelHashMap<TKey,TValue>`, `NativeHashSet<T>`, `NativeQueue<T>`, `NativeStream`, or `NativeReference<T>` for a specific data shape and access pattern.
@@ -57,13 +45,13 @@ Act as the Collections-package specialist for the client track — the tool reac
 
 ## 4. How to use this skill
 1. **Confirm the actual access pattern before picking a type**, per [collection-types.md](references/collection-types.md) (anchored to the version pinned in [root-links.md](references/root-links.md)) — sequential append → `NativeList<T>`; key-value lookup → `NativeHashMap`/`NativeParallelHashMap`; uniqueness → `NativeHashSet<T>`; FIFO → `NativeQueue<T>`; per-thread append-only → `NativeStream`; one value crossing into a job → `NativeReference<T>`. Defaulting to `NativeList<T>` the way managed code defaults to `List<T>` picks the type before the question is asked.
-2. **Decide managed vs. unmanaged deliberately**, per [dots-relationship.md](references/dots-relationship.md). Unmanaged containers cost allocator-lifetime bookkeeping; that cost only buys something at a job/Burst/ECS boundary. If the data never crosses one, a managed `List<T>`/`Dictionary<TKey,TValue>` is the correct answer under `performance-and-algorithms.md`'s data-structure guidance.
+2. **Decide managed vs. unmanaged deliberately**, per [dots-relationship.md](references/dots-relationship.md). Unmanaged containers cost allocator-lifetime bookkeeping; that cost only buys something at a job/Burst/ECS boundary. If the data never crosses one, a managed `List<T>`/`Dictionary<TKey,TValue>` is the correct answer under `csharp-standards` → `performance-and-algorithms.md`'s data-structure guidance.
 3. **Use `FixedString*Bytes`/`FixedList*Bytes<T>` for small, fixed-capacity data that must be Burst/job-compatible**, per [fixedstring-and-fixedlist.md](references/fixedstring-and-fixedlist.md) — pick the smallest size (32/64/128/512/4096 bytes) that comfortably fits, since the struct is copied by value on every pass. Neither family takes an `Allocator` or needs `Dispose()`.
-4. **Reach for an `Unsafe-` variant only for a specific, justified low-level case**, per [unsafe-collections-and-aliasing.md](references/unsafe-collections-and-aliasing.md) — building a custom container on top of one, or a *measured* safety-check overhead problem per `performance-and-algorithms.md`'s Verification section. Absent that measurement, `Native-` is the answer: its checks catch real disposal and race bugs.
+4. **Reach for an `Unsafe-` variant only for a specific, justified low-level case**, per [unsafe-collections-and-aliasing.md](references/unsafe-collections-and-aliasing.md) — building a custom container on top of one, or a *measured* safety-check overhead problem per `csharp-standards` → `performance-and-algorithms.md`'s Verification section. Absent that measurement, `Native-` is the answer: its checks catch real disposal and race bugs.
 5. **Use aliasing deliberately, and name the owner**, per [unsafe-collections-and-aliasing.md](references/unsafe-collections-and-aliasing.md) — an alias shares its parent's allocation and becomes invalid, not merely stale, the instant the parent is disposed. Record which collection owns the allocation wherever an alias is introduced.
 6. **Pick the allocator by actual data lifetime**, per [allocators.md](references/allocators.md), escalating only when the built-in three provably don't fit. Many short-lived allocations freed together at a defined checkpoint → a **rewindable** allocator; a lifetime neither built-in nor rewindable covers → a **custom** allocator, per [rewindable-and-custom-allocators.md](references/rewindable-and-custom-allocators.md).
 7. **For concurrent writes from a parallel job, decide on write order first**, per [parallel-readers-writers.md](references/parallel-readers-writers.md) — `AsParallelWriter()` is simplest but its order follows thread scheduling and it cannot grow capacity, so pre-size the list; when the indeterminism itself is the problem, use `NativeStream`/`UnsafeStream`, or sort afterward to recover order.
-8. **Dispose every `Native-`/custom-allocator allocation on every code path**, including early returns — the Collections-specific case of `performance-and-algorithms.md`'s Memory discipline rule. An alias is the sole exception, since disposing its parent already covers it.
+8. **Dispose every `Native-`/custom-allocator allocation on every code path**, including early returns — the Collections-specific case of `csharp-standards` → `performance-and-algorithms.md`'s Memory discipline rule. An alias is the sole exception, since disposing its parent already covers it.
 9. **If the request's data shape or crossing boundary is unstated, ask before choosing** — access pattern and boundary are the two inputs steps 1–2 consume, and guessing either silently picks the wrong container. Once the container is chosen and populated, state the hand-off: scheduling belongs to `unity-job-system-and-burst`, Burst tuning to `unity-burst-compiler`, per [dots-relationship.md](references/dots-relationship.md).
 
 ## 5. Specific goals / tasks this skill performs
@@ -104,7 +92,7 @@ Act as the Collections-package specialist for the client track — the tool reac
 
 **Example 2**
 - Input: "Can you make this per-frame debug label use a `NativeHashMap<int, FixedString64Bytes>` so it works inside our Burst job?" — the label is only ever touched on the main thread, never inside a job.
-- Output: declined — nothing here crosses into a job or Burst-compiled code, so the unmanaged container buys nothing and costs allocator-lifetime bookkeeping and `Dispose()` calls. Kept a managed `Dictionary<int, string>`, per `performance-and-algorithms.md`'s rule to default to the simpler structure when the smarter one buys nothing.
+- Output: declined — nothing here crosses into a job or Burst-compiled code, so the unmanaged container buys nothing and costs allocator-lifetime bookkeeping and `Dispose()` calls. Kept a managed `Dictionary<int, string>`, per `csharp-standards` → `performance-and-algorithms.md`'s rule to default to the simpler structure when the smarter one buys nothing.
 
 **Example 3**
 - Input: an Editor-side mesh importer makes thousands of small short-lived allocations across a multi-frame import, all dead once the import ends.

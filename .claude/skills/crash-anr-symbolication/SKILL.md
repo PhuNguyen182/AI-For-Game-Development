@@ -1,21 +1,12 @@
 ---
 name: crash-anr-symbolication
-description: >
-  Gate that confirms a crash or ANR trace is fully symbolicated — every
-  frame resolved to a function, file and line rather than a raw address —
-  and that the uploaded symbols' build ID matches the build that actually
-  crashed. Covers Android native debug symbols and the R8 mapping file,
-  iOS dSYM bundles, and IL2CPP frames on a Unity title. Use immediately
-  after the reporting gate passes, or whenever a trace shows unresolved
-  offsets. Not for: confirming the report source, owned by
-  `crash-anr-reporting-gate`; attributing the fault, owned by
-  `crash-anr-fault-domain-triage`; producing the build or wiring the
-  upload, owned by `build-run-engineer` and `sdk-platform-engineer`;
-  Editor stack traces, owned by `qa-automation-engineer`; or faults in a
-  pre-release player build, owned by `build-fault-triage`.
+description: "Confirm a crash/ANR trace is fully symbolicated and that uploaded symbols match the crashing build id — IL2CPP symbols, NDK, dSYM, mapping files. Use as stage 2 of a production crash investigation."
+user-invocable: false
 ---
 
 # Crash and ANR Symbolication — is this trace readable at all
+
+**Not for:** confirming the report source, owned by `crash-anr-reporting-gate`; attributing the fault, owned by `crash-anr-fault-domain-triage`; producing the build or wiring the upload, owned by `build-release-engineer` and `sdk-platform-engineer`; Editor stack traces, owned by `qa-automation-engineer`; or faults in a pre-release player build, owned by `build-fault-triage`.
 
 ## Bundled resources
 
@@ -42,7 +33,7 @@ Act as the build and symbol hygiene checkpoint of the crash pipeline, on behalf 
 - Negative trigger: the trace already resolves completely, including the faulting frame — go to `crash-anr-fault-domain-triage` rather than re-checking.
 - Negative trigger: whether the report is a production signal at all — that was `crash-anr-reporting-gate`, and this skill assumes it passed.
 - Negative trigger: deciding which layer is at fault — that is `crash-anr-fault-domain-triage`; reading meaning into a trace here is exactly what this gate exists to defer.
-- Negative trigger: producing a build, or configuring the symbol upload step — those are `build-run-engineer` and `sdk-platform-engineer`; this skill states what is needed and routes it.
+- Negative trigger: producing a build, or configuring the symbol upload step — those are `build-release-engineer` and `sdk-platform-engineer`; this skill states what is needed and routes it.
 - Negative trigger: an Editor or development-build stack trace, which resolves on its own because nothing stripped it — an Editor trace belongs to `qa-automation-engineer`'s pipeline and a pre-release player build's to `build-fault-triage`, and neither poses a symbolication question.
 
 ## 4. How to use this skill
@@ -51,7 +42,7 @@ Act as the build and symbol hygiene checkpoint of the crash pipeline, on behalf 
 3. **Name which artefact is missing for the platform in hand** — native debug symbols, the obfuscation mapping file, or a dSYM bundle resolve different frames, and "symbols are missing" without naming which one produces an unactionable request, per [symbol-artefacts-by-platform.md](references/symbol-artefacts-by-platform.md).
 4. **Treat managed and native frames as separate problems on a Unity title** — an IL2CPP build turns C# into native code, so a managed frame and an engine frame can require different artefacts and fail independently. One resolving is not evidence about the other.
 5. **Re-associate the existing symbols when the identifiers match** — the artefact exists and was simply never attached to this build in the service; upload it, then re-check the trace from step 1 rather than assuming the association worked.
-6. **Request a new build with symbol generation when the identifiers do not match** — this cannot be fixed retroactively, because the binary that crashed has no symbols anywhere. Route the build to `build-run-engineer` and the upload step to `sdk-platform-engineer`, and wait for a fresh matching report.
+6. **Request a new build with symbol generation when the identifiers do not match** — this cannot be fixed retroactively, because the binary that crashed has no symbols anywhere. Route the build to `build-release-engineer` and the upload step to `sdk-platform-engineer`, and wait for a fresh matching report.
 7. **Report an unresolvable trace as a limit rather than reasoning past it** — if no new build is available and no other sample resolves, say so explicitly in the handoff. An honest block is a finding; a domain guessed from offsets is not, and it sends work to an owner who cannot act on it.
 
 ## 5. Specific goals / tasks this skill performs
@@ -60,7 +51,7 @@ Act as the build and symbol hygiene checkpoint of the crash pipeline, on behalf 
 - Naming the specific artefact required for the platform and build type in hand.
 - Separating managed from native symbolication on an IL2CPP title.
 - Routing the next action: attach existing symbols, or request a new symboled build.
-- Out of scope: confirming the report's source (`crash-anr-reporting-gate`); attributing the fault (`crash-anr-fault-domain-triage`); producing builds (`build-run-engineer`); wiring the upload pipeline (`sdk-platform-engineer`); Editor stack traces (`qa-automation-engineer`); pre-release player-build faults (`build-fault-triage`).
+- Out of scope: confirming the report's source (`crash-anr-reporting-gate`); attributing the fault (`crash-anr-fault-domain-triage`); producing builds (`build-release-engineer`); wiring the upload pipeline (`sdk-platform-engineer`); Editor stack traces (`qa-automation-engineer`); pre-release player-build faults (`build-fault-triage`).
 
 ## 6. Output format
 ```
@@ -72,7 +63,7 @@ Act as the build and symbol hygiene checkpoint of the crash pipeline, on behalf 
 - Artefact involved: <native debug symbols / obfuscation mapping / dSYM / IL2CPP managed frames>
 - Decision: <proceed / block>
 - Action requested: <attach existing symbols / new build with symbol generation and upload / none needed>
-- Routed to: <crash-anr-fault-domain-triage / build-run-engineer / sdk-platform-engineer>
+- Routed to: <crash-anr-fault-domain-triage / build-release-engineer / sdk-platform-engineer>
 ```
 
 **Extended report — emit ONLY when the requester asks for it.** It adds all three fields below the decision:
@@ -85,7 +76,7 @@ Act as the build and symbol hygiene checkpoint of the crash pipeline, on behalf 
 ## 7. Examples
 **Example 1**
 - Input: a Crashlytics report in which every frame is a bare hexadecimal address.
-- Output: BLOCKED. No symbols on file share a build identifier with the crashing binary, so the trace cannot be resolved retroactively at all. Requested a new build with symbol generation enabled from `build-run-engineer` and the upload step from `sdk-platform-engineer`, and stated plainly that no domain can be named until a fresh matching report arrives.
+- Output: BLOCKED. No symbols on file share a build identifier with the crashing binary, so the trace cannot be resolved retroactively at all. Requested a new build with symbol generation enabled from `build-release-engineer` and the upload step from `sdk-platform-engineer`, and stated plainly that no domain can be named until a fresh matching report arrives.
 
 **Example 2**
 - Input: an ANR report whose native frames are unresolved, while the correct symbol artefact exists in the build output for that exact build.
@@ -101,6 +92,6 @@ Act as the build and symbol hygiene checkpoint of the crash pipeline, on behalf 
 - Never say "symbols are missing" without naming the artefact and the platform — the request cannot be acted on otherwise.
 - Never assume that resolving native frames also resolved managed ones on an IL2CPP title, or the reverse.
 - Never treat an attached artefact as a resolved trace — re-read the trace and confirm, since attaching the wrong file succeeds quietly.
-- Never build, upload, or edit anything from this skill — it diagnoses the gap and routes it to `build-run-engineer` and `sdk-platform-engineer`.
+- Never build, upload, or edit anything from this skill — it diagnoses the gap and routes it to `build-release-engineer` and `sdk-platform-engineer`.
 - Never let a block stall silently — if the tooling access needed to attach symbols sits outside this pipeline, state that and name who has it.
 - If a signature's samples are old enough that the service's retention may have dropped their detail, say so rather than waiting on traces that will not arrive, per `crash-anr-reporting-gate`.

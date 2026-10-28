@@ -1,22 +1,12 @@
 ---
 name: live-ops-content-pipeline
-description: >
-  Framework for deciding whether a dedicated remote-config platform is
-  warranted for live content and economy tuning, and which one — Firebase
-  Remote Config, Unity Remote Config, PlayFab Title Data, or a versioned
-  config file — so events and balance ship without an app store release.
-  Weighs cadence need, segmentation and A/B targeting, staged rollout and
-  rollback safety, and schema versioning against config-consuming code. Use
-  when choosing the infrastructure behind live content cadence. Not for:
-  designing the events or economy, owned by the GD; shipping new assets
-  rather than tuning values in the build, owned by `unity-addressables`;
-  event analytics, owned by `analytics-telemetry-platform`; backend
-  platform choice, owned by `backend-build-vs-buy`; post-release crash
-  triage, owned by `crash-anr-fault-domain-triage`; and the scoring
-  rubric, owned by `tco-reversibility-scoring`.
+description: "Decide whether live content and economy tuning need a remote-config platform (Firebase/Unity Remote Config, PlayFab, versioned file) — cadence, rollback, targeting. Use when planning live-ops tuning."
+user-invocable: false
 ---
 
 # Live-Ops Content Pipeline — remote config for content and economy cadence
+
+**Not for:** designing the events or economy, owned by the GD; shipping new assets rather than tuning values in the build, owned by `unity-addressables`; event analytics, owned by `analytics-telemetry-platform`; backend platform choice, owned by `backend-build-vs-buy`; post-release crash triage, owned by `crash-anr-fault-domain-triage`; and the scoring rubric, owned by `tco-reversibility-scoring`.
 
 ## 1. Objective
 Decide what infrastructure, if any, the game needs to change events and economy values without shipping a build — so the choice matches the GDD's real cadence, keeps a bad value's blast window measured in minutes, and never buys a value-tuning service to solve an asset-delivery problem it structurally cannot solve.
@@ -45,7 +35,7 @@ Act as a live-service infrastructure CTO who has run an economy on remote config
 7. **Define config schema versioning and what an old client does with an unknown or missing key** — live players run months-old builds while the service serves one payload to all of them, so a key added for the current build must degrade predictably on older ones rather than throwing.
 8. **Score the surviving options with `tco-reversibility-scoring`** — this choice rates Medium reversibility when config reads go through one internal access module, and Low when vendor SDK calls are scattered across gameplay code, which makes step 9 a cost decision rather than a style preference.
 9. **Set the consumption standard in code — every config read through one access module, never a scattered SDK call** — and record it via `engineering-standard-adr-authoring`, since this convention is what keeps the platform swappable later.
-10. **Write the decision and its reasoning in English**, per `language-and-comments.md`'s Working language section — only the closing reply to the GD is Vietnamese.
+10. **Write the decision and its reasoning in English**, per `csharp.md`'s Working language section — only the closing reply to the GD is Vietnamese.
 11. **Ask before deciding when planned cadence, segmentation needs, or who operates the config console is unstated** — each one alone moves the shortlist, and an unowned publish path is a decision the CTO cannot make alone.
 
 ## 5. Specific goals / tasks this skill performs

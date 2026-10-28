@@ -1,29 +1,12 @@
 ---
 name: litmotion-tweening
-description: >
-  LitMotion is zero-allocation, DOTS-optimized Unity tweening:
-  `LMotion.Create`, `MotionBuilder<TValue,TOptions,TAdapter>`,
-  `MotionHandle` with
-  `Complete`/`Cancel`/`TryComplete`/`AddTo`/`Preserve`/`PlaybackSpeed`/`Time`,
-  the `With-` chain such as
-  `WithEase`/`WithLoops`/`WithDelay`/`WithScheduler`/`WithOnComplete`,
-  `Bind`/`BindTo*` extensions across Transform, RectTransform, uGUI,
-  TextMeshPro, and other component types, `LSequence` composition,
-  `LMotion.Punch`/`LMotion.Shake`, and the Inspector-driven
-  `LitMotion.Animation` package. Use for code- or Inspector-authored
-  interpolation via LitMotion specifically. This project also maintains
-  `dotween-tweening` for the same job with a different engine; which one
-  governs new work is a standing per-module or per-project decision,
-  never assumed here alone. Not for: DOTween's own API surface, owned by
-  `dotween-tweening`; general reactive streams, owned by
-  `r3-reactive-extensions`; plain async orchestration, owned by
-  `unitask-async-programming`; shader/particle VFX, owned by
-  `vfx-particle-authoring`; physics-driven movement, owned by
-  `unity-3d-physics`; and uGUI construction and event wiring around the
-  animated component, owned by `ugui`.
+description: "LitMotion zero-allocation tweening: LMotion.Create, MotionBuilder options, MotionHandle control, Bind/BindTo, easing, sequences, awaiting. Use for code-driven interpolation in a module on LitMotion."
+user-invocable: false
 ---
 
 # LitMotion — Zero-Allocation Tweening for Unity
+
+**Not for:** DOTween's own API surface, owned by `dotween-tweening`; general reactive streams, owned by `r3-reactive-extensions`; plain async orchestration, owned by `unitask-async-programming`; shader/particle VFX, owned by `vfx-particle-authoring`; physics-driven movement, owned by `unity-3d-physics`; and uGUI construction and event wiring around the animated component, owned by `ugui`.
 
 ## Bundled resources
 
@@ -63,19 +46,19 @@ Act as the tweening/animation specialist for the client track — the tool Unity
 - Negative trigger: a shader-driven or particle-system visual effect — that's `vfx-particle-authoring`/`technical-artist`; LitMotion animates discrete properties, not GPU-simulated effects.
 - Negative trigger: physically simulated movement driven by forces/collisions rather than a fixed-duration interpolation — that's `unity-3d-physics`/`unity-2d-physics`.
 - Negative trigger: building, laying out, or event-wiring the uGUI component whose property is being animated — that's `ugui`; this skill binds to an already-built component, and must never leave a motion and a Layout Group/Content Size Fitter driving the same `RectTransform` property at once.
-- Negative trigger: any `Game.Core.*` code — LitMotion's core package depends on `UnityEngine` (Vector3, Color, MonoBehaviour scheduling), which `coding-principles.md`'s Shared Core integrity section forbids in Core. Drive Core state changes from `Game.Client.*` motions instead.
+- Negative trigger: any `Game.Core.*` code — LitMotion's core package depends on `UnityEngine` (Vector3, Color, MonoBehaviour scheduling), which `csharp-standards` → `coding-principles.md`'s Shared Core integrity section forbids in Core. Drive Core state changes from `Game.Client.*` motions instead.
 
 ## 4. How to use this skill
 1. **Pick the `LMotion.Create` overload matching the value's built-in type** (int/long/float/double/Vector2/Vector3/Vector4/Quaternion/Color/Rect), per [getting-started.md](references/getting-started.md) — escalate to a custom adapter (step 8) only once the type is genuinely unsupported, never by routing an unsupported type through a lossy float proxy.
 2. **Bind with a built-in `LitMotion.Extensions` `BindTo*` method before writing a manual `Bind()` lambda**, per [component-bindings.md](references/component-bindings.md) — the axis-decomposed family (`BindToPosition`/`BindToPositionX`/`BindToPositionXY`, etc.) already covers Transform, RectTransform, uGUI, TextMeshPro, SpriteRenderer, Material, Camera, Rigidbody. For a string, a numeric readout, or per-character TMP animation, use the dedicated `LMotion.String`/`BindToText`/`BindToTMPChar*` surface in [text-and-tmp-animation.md](references/text-and-tmp-animation.md) instead. Write a custom binding extension method only once the same property is bound at more than one call site — a single-use extension is speculative complexity YAGNI forbids.
-3. **Pass captured state into `Bind(TState, Action<TValue,TState>)` instead of a capturing lambda** whenever the callback references an object already available by reference, per [motion-builder-and-handle.md](references/motion-builder-and-handle.md) — the motion struct itself allocates nothing, but a closure inside `Bind()` still does, which is exactly the per-frame/per-call allocation `performance-and-algorithms.md`'s Memory discipline section forbids.
+3. **Pass captured state into `Bind(TState, Action<TValue,TState>)` instead of a capturing lambda** whenever the callback references an object already available by reference, per [motion-builder-and-handle.md](references/motion-builder-and-handle.md) — the motion struct itself allocates nothing, but a closure inside `Bind()` still does, which is exactly the per-frame/per-call allocation `csharp-standards` → `performance-and-algorithms.md`'s Memory discipline section forbids.
 4. **Configure via the `With-` chain rather than re-deriving the same behavior by hand**, per [motion-settings.md](references/motion-settings.md) — choose `WithScheduler` deliberately by the required update cadence and whether `Time.timeScale`/pause should apply; leaving it default silently ties the motion to `Update()` with time-scale applied even when the feature needs otherwise.
 5. **Give every `MotionHandle` an explicit disposal path** — `AddTo(GameObject/Component, LinkBehavior)` for a component-scoped motion, `CompositeMotionHandle` for several owned together, or an explicit `Cancel()`/`Complete()`. Never leave a `Preserve()`d handle unmanaged, per [motion-builder-and-handle.md](references/motion-builder-and-handle.md) — it is designed to keep running until `Cancel()` is called explicitly.
 6. **Reach for `LSequence` only for structural composition** (`Append`/`Join`/`Insert`/`AppendInterval`), per [sequence-and-vibration.md](references/sequence-and-vibration.md). Once the animation needs a mid-sequence callback, branching, or per-step side effects, switch to procedural `async`/`await` chaining instead — `LSequence` intentionally has no `AppendCallback`, by the same design reasoning as the FAQ's `DelayedCall` answer in [migration-and-rx-integration.md](references/migration-and-rx-integration.md).
 7. **Await completion with the mechanism matching the call site**, per [async-lifecycle-and-debugging.md](references/async-lifecycle-and-debugging.md) — `await handle` or `ToUniTask()` inside an `async` method (preferred once UniTask is installed), `ToYieldInstruction()` only inside a legacy coroutine, `ToValueTask()`/`ToAwaitable()` only when UniTask is unavailable.
 8. **Write a custom `IMotionAdapter<TValue,TOptions>` only for a genuinely unsupported value type**, per [custom-adapters.md](references/custom-adapters.md) — keep the adapter stateless, register `RegisterGenericJobType<MotionUpdateJob<TValue,TOptions,TAdapter>>` for Burst, and use `NoOptions` unless the motion needs real extra state.
 9. **Reach for the `LitMotion.Animation` package only when the animation is meant to be authored/iterated in the Inspector**, per [litmotion-animation-component.md](references/litmotion-animation-component.md) — a one-off, programmer-authored tween stays in code via `LMotion.Create`; reserve Inspector-built `LitMotionAnimation` components for designer/artist iteration without a recompile.
-10. **Verify the zero-allocation and Burst claims with the Profiler before shipping a hot-path or high-volume motion**, per `performance-and-algorithms.md`'s Verification section — confirm Burst 1.6.0+/Collections 1.5.1+/Mathematics are present (per [getting-started.md](references/getting-started.md)) and call `MotionDispatcher.EnsureStorageCapacity()` at startup for any value/options/adapter combination expected at high volume, per [async-lifecycle-and-debugging.md](references/async-lifecycle-and-debugging.md).
+10. **Verify the zero-allocation and Burst claims with the Profiler before shipping a hot-path or high-volume motion**, per `csharp-standards` → `performance-and-algorithms.md`'s Verification section — confirm Burst 1.6.0+/Collections 1.5.1+/Mathematics are present (per [getting-started.md](references/getting-started.md)) and call `MotionDispatcher.EnsureStorageCapacity()` at startup for any value/options/adapter combination expected at high volume, per [async-lifecycle-and-debugging.md](references/async-lifecycle-and-debugging.md).
 11. **If the async ecosystem (UniTask/R3/UniRx availability), target Unity/C# version, or hot-path volume is unstated, ask before committing to an async mechanism or a scripting define** — per [migration-and-rx-integration.md](references/migration-and-rx-integration.md), UniTask vs. `ValueTask` and R3 vs. UniRx are project-wide ecosystem choices that ripple through every call site once picked, and are not recoverable from the code alone afterward.
 
 ## 5. Specific goals / tasks this skill performs

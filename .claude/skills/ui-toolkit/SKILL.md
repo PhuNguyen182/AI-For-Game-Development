@@ -1,24 +1,12 @@
 ---
 name: ui-toolkit
-description: >
-  Unity UI Toolkit technique for `UnityEngine.UIElements` — UXML and UI
-  Builder, `VisualElement`/`UxmlElement` custom controls, USS styling and
-  Flexbox layout, typed events such as `RegisterCallback<T>`/Manipulators,
-  runtime hosting via `UIDocument`/Panel Renderer and
-  `PanelSettings`, data binding via `INotifyBindablePropertyChanged` and
-  `SerializedObject.Bind`, Editor tooling via `CreateGUI`,
-  `CreateInspectorGUI`, `CreatePropertyGUI`, text/font assets, and the
-  UI Test Framework package. Use for building or debugging a runtime
-  HUD/menu or an Editor window/inspector in UI Toolkit. Not for:
-  uGUI/Canvas UI, owned by `ugui`; Odin attribute-driven inspectors and
-  drawers, owned by `odin-inspector`; Animator-driven UI, owned by
-  `unity-animation`; input device polling and action binding, owned by
-  `unity-input-system`; the NUnit harness a UI test sits in, owned by
-  `unity-test-framework`; and any gameplay rule behind the UI, owned by
-  `csharp-engineer`.
+description: "UI Toolkit runtime UI: UXML/UI Builder, custom VisualElements, USS and Flexbox, events and manipulators, data binding, ListView virtualization, panel settings. Use for UI Toolkit screens."
+user-invocable: false
 ---
 
 # Unity UI Toolkit — UXML, USS, Events, Runtime Hosting, Editor Tooling
+
+**Not for:** uGUI/Canvas UI, owned by `ugui`; Odin attribute-driven inspectors and drawers, owned by `odin-inspector`; Animator-driven UI, owned by `unity-animation`; input device polling and action binding, owned by `unity-input-system`; the NUnit harness a UI test sits in, owned by `unity-test-framework`; and any gameplay rule behind the UI, owned by `csharp-engineer`.
 
 ## Bundled resources
 
@@ -71,22 +59,22 @@ and binding; you never decide what a UI displays as a game-rule outcome.
 - Negative trigger: an inspector or Editor window driven by Odin attributes (`[ShowIf]`, `[TableList]`, `OdinEditorWindow`, `OdinValueDrawer<T>`) rather than UXML/USS — that's `odin-inspector`; one window is built on one of the two, never both.
 - Negative trigger: the test assembly, NUnit attributes, Play Mode harness and run filters a UI test lives in — that's `unity-test-framework`; this skill owns only what the UI Test Framework package drives and asserts against a `VisualElement` tree.
 - Negative trigger: reading the input device or authoring `.inputactions` — that's `unity-input-system`; this skill only reacts to the events that system (or UI Toolkit's own default runtime input) delivers.
-- Negative trigger: whether a button press is currently allowed, what a value on screen means for the game, or any cooldown/resource check — that's `csharp-engineer`'s Shared Core, per `coding-principles.md`'s Shared Core integrity section.
-- Companion, if the official Unity plugin (`unity@claude-plugins-official`) is installed: `unity:ui-uitk` writes UXML/USS files and checks them through a reimport loop, and `unity:ui` picks between UI systems; this skill still owns text, events, runtime hosting, Editor authoring, `SerializedObject` binding, testing and the project rules above. Where the two disagree — the default binding mode, or which Unity version introduced the Panel Renderer — this skill's version-pinned facts in [root-links.md](references/root-links.md) win.
+- Negative trigger: whether a button press is currently allowed, what a value on screen means for the game, or any cooldown/resource check — that's `csharp-engineer`'s Shared Core, per `csharp-standards` → `coding-principles.md`'s Shared Core integrity section.
+- Companion, if the official Unity plugin (`unity@claude-plugins-official`) is installed: `unity:ui-uitk` writes UXML/USS files and checks them through a reimport loop; this skill still owns text, events, runtime hosting, Editor authoring, `SerializedObject` binding, testing and the project rules above. Where the two disagree — the default binding mode, or which Unity version introduced the Panel Renderer — this skill's version-pinned facts in [root-links.md](references/root-links.md) win.
 
 ## 4. How to use this skill
 1. **Confirm UI Toolkit is the right system for this surface before authoring anything** — Unity still recommends uGUI as the *primary* system for runtime game UI and reserves UI Toolkit as the default only for Editor tooling, per [choosing-ui-system.md](references/choosing-ui-system.md). Flag it rather than assuming when the surface needs Animation Clip/Timeline integration or Inspector-wired `UnityEvent`s, since neither exists in UI Toolkit.
 2. **Author structure in UXML and UI Builder, not ad-hoc C#-only construction** — per [uxml-and-visual-tree.md](references/uxml-and-visual-tree.md). Build purely in C# only where content is genuinely not known until runtime; even then, query/register inside `OnUIReload`/`CreateGUI`, never `Awake`.
-3. **Write a custom `UxmlElement` only once no built-in element or template fits** — per YAGNI in `coding-principles.md` and [uxml-and-visual-tree.md](references/uxml-and-visual-tree.md); it needs a default constructor, and the UXML-first pattern keeps UI Builder able to navigate it, unlike the `CloneTree()` element-first pattern.
+3. **Write a custom `UxmlElement` only once no built-in element or template fits** — per YAGNI in `csharp-standards` → `coding-principles.md` and [uxml-and-visual-tree.md](references/uxml-and-visual-tree.md); it needs a default constructor, and the UXML-first pattern keeps UI Builder able to navigate it, unlike the `CloneTree()` element-first pattern.
 4. **Style through USS selectors and BEM-style class names, never one-off inline styles** — per [uss-styling-and-layout.md](references/uss-styling-and-layout.md). Inline C# styles always win the override stack and carry per-element memory cost; reserve them for values genuinely computed at runtime.
 5. **Verify a layout or CSS-parity assumption against USS's documented subset before trusting it** — `flex-direction` defaults to `column`, not CSS's `row`, and `!important`, `float`, `calc()`, and sibling selectors do not exist at all, per [uss-styling-and-layout.md](references/uss-styling-and-layout.md).
 6. **Author text with dynamic SDF font assets, never a static/bitmap asset** — the Advanced Text Generator does not support static font assets at all, per [text-and-fonts.md](references/text-and-fonts.md); pick SDFAA/SDF16/SDF32 by whether the text is an input field, label, or title.
-7. **Wire behavior through typed `RegisterCallback<T>` events and Manipulators, never string-based dispatch** — per [events-and-manipulators.md](references/events-and-manipulators.md) and `coding-principles.md`'s Event handlers rule: use a named method, and unregister it in the same teardown path a MonoBehaviour would use for `OnDisable`.
-8. **Pick Panel Renderer or `UIDocument` by the installed Editor version, and set the Scale Mode from the target platform** — Panel Renderer supersedes `UIDocument` only from Unity 6.5 onward; confirm the version pinned in [root-links.md](references/root-links.md) against the installed Editor before assuming it exists, per [runtime-panels-and-input.md](references/runtime-panels-and-input.md). Set Scale With Screen Size for a responsive PC + mobile HUD, per `coding-principles.md`'s responsive-UI expectation.
+7. **Wire behavior through typed `RegisterCallback<T>` events and Manipulators, never string-based dispatch** — per [events-and-manipulators.md](references/events-and-manipulators.md) and `csharp-standards` → `coding-principles.md`'s Event handlers rule: use a named method, and unregister it in the same teardown path a MonoBehaviour would use for `OnDisable`.
+8. **Pick Panel Renderer or `UIDocument` by the installed Editor version, and set the Scale Mode from the target platform** — Panel Renderer supersedes `UIDocument` only from Unity 6.5 onward; confirm the version pinned in [root-links.md](references/root-links.md) against the installed Editor before assuming it exists, per [runtime-panels-and-input.md](references/runtime-panels-and-input.md). Set Scale With Screen Size for a responsive PC + mobile HUD, per `csharp-standards` → `coding-principles.md`'s responsive-UI expectation.
 9. **Add an `EventSystem` only when uGUI shares the scene** — UI Toolkit creates its own default runtime event system with no scene component needed at all, per [runtime-panels-and-input.md](references/runtime-panels-and-input.md); adding one unconditionally just changes which pipeline UI Toolkit runs under, for no benefit in a pure UI Toolkit scene.
-10. **Bind gameplay state through runtime data binding, and Editor state through `SerializedObject` binding — never poll a value in `Update`** — per [data-binding.md](references/data-binding.md) and `performance-and-algorithms.md`'s hot-path rules. A source that never raises `propertyChanged` silently never updates its bound controls.
+10. **Bind gameplay state through runtime data binding, and Editor state through `SerializedObject` binding — never poll a value in `Update`** — per [data-binding.md](references/data-binding.md) and `csharp-standards` → `performance-and-algorithms.md`'s hot-path rules. A source that never raises `propertyChanged` silently never updates its bound controls.
 11. **Build Editor tooling through `CreateGUI`/`CreateInspectorGUI`/`CreatePropertyGUI`, and persist state in `[SerializeField]`, not on the `VisualElement`** — per [editor-ui-authoring.md](references/editor-ui-authoring.md); a `VisualElement` is not serializable and does not survive a domain reload.
-12. **Keep draw-call batches intact: budget the dynamic atlas, animate transforms not layout, and pool elements with callbacks unregistered first** — per [rendering-and-performance.md](references/rendering-and-performance.md) and `performance-and-algorithms.md`'s Unity-specific optimization section. Textures over 64×64 are excluded from the default dynamic atlas; animating `width`/`left` rebuilds geometry every frame.
+12. **Keep draw-call batches intact: budget the dynamic atlas, animate transforms not layout, and pool elements with callbacks unregistered first** — per [rendering-and-performance.md](references/rendering-and-performance.md) and `csharp-standards` → `performance-and-algorithms.md`'s Unity-specific optimization section. Textures over 64×64 are excluded from the default dynamic atlas; animating `width`/`left` rebuilds geometry every frame.
 13. **Test through the UI Test Framework package, and flag a documented migration blocker before promising a 1:1 port** — hand the written test to `qa-automation-engineer`, per [testing-and-migration.md](references/testing-and-migration.md); UI Toolkit has no anchor/pivot equivalent for a uGUI layout, and several IMGUI calls have no UI Toolkit equivalent at all.
 14. **Ask rather than guess when the target Unity version, or the uGUI-vs-UI-Toolkit choice, is not stated** — both gate real decisions (Panel Renderer availability, whether a screen even belongs in this skill); proceed only on a clearly flagged assumption if the requester is unavailable.
 
@@ -133,7 +121,7 @@ and binding; you never decide what a UI displays as a game-rule outcome.
 
 **Example 2**
 - Input: "Just poll the player's HP field in `Update` and set the label text every frame, it's simpler than setting up binding."
-- Output: declined — per `performance-and-algorithms.md`'s hot-path rules and [data-binding.md](references/data-binding.md), a `.ToString()` plus label update every frame is wasted work even when HP hasn't changed. Wired `INotifyBindablePropertyChanged` on the health view-model instead, raising `propertyChanged` only on an actual change, with `updateTrigger` left on change detection.
+- Output: declined — per `csharp-standards` → `performance-and-algorithms.md`'s hot-path rules and [data-binding.md](references/data-binding.md), a `.ToString()` plus label update every frame is wasted work even when HP hasn't changed. Wired `INotifyBindablePropertyChanged` on the health view-model instead, raising `propertyChanged` only on an actual change, with `updateTrigger` left on change detection.
 
 **Example 3**
 - Input: "The custom Editor window loses its search filter every time a script recompiles."
@@ -152,4 +140,4 @@ and binding; you never decide what a UI displays as a game-rule outcome.
 - Never author a new static/bitmap font asset — the Advanced Text Generator does not support it.
 - Never assume Panel Renderer exists without confirming the installed Editor is Unity 6.5 or later; `UIDocument` remains correct on earlier versions.
 - If the target Unity version or the uGUI-vs-UI-Toolkit choice is not stated, ask rather than silently pick one — both gate real decisions in this skill.
-- Never let this layer decide what a bound value means for gameplay — it displays and reacts to input; `Game.Core.*` decides the outcome, per `coding-principles.md`'s Shared Core integrity section.
+- Never let this layer decide what a bound value means for gameplay — it displays and reacts to input; `Game.Core.*` decides the outcome, per `csharp-standards` → `coding-principles.md`'s Shared Core integrity section.

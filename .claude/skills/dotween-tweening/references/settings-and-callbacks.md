@@ -42,7 +42,7 @@ transform.DOMoveX(4, 1).OnComplete(MyCallback);
 
 Prefer a named method over an inline lambda when the callback references
 state that could outlive a single call (a MonoBehaviour field, a captured
-object) — per `coding-principles.md`'s Event handlers rule, so the
+object) — per `csharp-standards` → `coding-principles.md`'s Event handlers rule, so the
 callback can actually be reasoned about and, if needed, unregistered by
 replacing the tween rather than leaking a stale closure.
 

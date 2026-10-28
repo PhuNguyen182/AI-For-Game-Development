@@ -1,6 +1,6 @@
 # Flake against Real Failure — reproduction discipline for a red run
 
-Sources: [Pipeline: Basic Steps — retry](https://www.jenkins.io/doc/pipeline/steps/workflow-basic-steps/). Not sourced from a single URL otherwise — synthesized from this project's `defect-reporting.md` and `verification-standards.md` rules, which govern how an intermittent finding is reported.
+Sources: [Pipeline: Basic Steps — retry](https://www.jenkins.io/doc/pipeline/steps/workflow-basic-steps/). Not sourced from a single URL otherwise — synthesized from this project's skill `qa-standards` and skill `qa-standards` rules, which govern how an intermittent finding is reported.
 Covers: SKILL.md §4 — **"Establish whether the failure reproduces, and state how many runs you looked at"**.
 
 What a re-run proves, what it does not, and why "add a retry" is a decision to stop investigating rather than
@@ -23,7 +23,7 @@ behind them.
 
 ## Reporting an intermittent failure
 
-Per `defect-reporting.md`'s reproduction rules, a finding that does not reproduce every time is reported as
+Per skill `qa-standards`'s reproduction rules, a finding that does not reproduce every time is reported as
 intermittent **with its rate** — never as reliable, and never discarded because the second run was green.
 
 ```
@@ -45,7 +45,7 @@ comparison is the instrument; the count alone is a statistic.
 
 A pipeline whose green rate depends on retries has an unmeasured failure rate. When a retry is added anyway,
 the run must still record that the earlier attempts failed — a hidden retry is a false verification claim, per
-`verification-standards.md`.
+skill `qa-standards`.
 
 ## Timing and ordering faults worth suspecting
 

@@ -73,4 +73,4 @@ ambiguity is only discovered when someone tries to reproduce a defect weeks late
 | Embed tester email addresses in the repository | Personal data in permanent history, and a list that goes stale unnoticed |
 | Distribute automatically on every merge | Testers stop reading notifications, and the one build that mattered is lost in the noise |
 | Reuse a version or build number across releases | Two distinct releases become indistinguishable in every report about either |
-| Report a distribution without the release link | An exit code is not evidence that anyone received anything, per `verification-standards.md` |
+| Report a distribution without the release link | An exit code is not evidence that anyone received anything, per skill `qa-standards` |

@@ -1,20 +1,12 @@
 ---
 name: unity-cinemachine-authoring
-description: >
-  Technique for authoring camera behaviour with Cinemachine 3: the
-  `CinemachineBrain` that drives the render camera, `CinemachineCamera`
-  composed from a Position Control and Rotation Control pair, priority and
-  blend resolution, `CinemachineConfiner2D` and `CinemachineConfiner3D` bounds,
-  `CinemachineDeoccluder` obstruction handling, Impulse sources and listeners
-  for shake, `CinemachineTargetGroup` with group framing, State-Driven and
-  ClearShot selection, Timeline shot clips, and Channels for split screen. Use
-  for any `Cinemachine` component or API. Not for: plain `Camera` and
-  `Transform` scripting — `unity-camera-fundamentals`; the Animator a
-  State-Driven camera reads — `unity-animation`; axis input —
-  `unity-input-system`; screen effects — `unity-post-processing`.
+description: "Cinemachine 3: Brain, CinemachineCamera, position/rotation controls, follow and aim, blends, impulse, confiner, state-driven cameras. Use for authored camera behaviour."
+user-invocable: false
 ---
 
 # Unity Cinemachine Authoring — Procedural Camera Behaviour on Cinemachine 3
+
+**Not for:** plain `Camera` and `Transform` scripting — `unity-camera-fundamentals`; the Animator a State-Driven camera reads — `unity-animation`; axis input — `unity-input-system`; screen effects — `unity-post-processing`.
 
 ## Bundled resources
 
@@ -50,8 +42,8 @@ Act as the Cinemachine specialist — the Brain, the cameras, their control pair
 - Negative trigger: authoring the Animator Controller and its states — that is `unity-animation`; a State-Driven camera consumes those states.
 - Negative trigger: reading a stick, mouse, or touch to drive an orbit — that is `unity-input-system`, which feeds the axis controller this skill attaches.
 - Negative trigger: screen-space effects, vignettes, or colour shifts during a shot — that is `unity-post-processing`.
-- Negative trigger: Timeline track and clip authoring beyond the Cinemachine shot track — no skill owns general Timeline; route it to `unity-engineer`.
-- Negative trigger: the gameplay rule a camera reacts to — that lives in `Game.Core.*` per `coding-principles.md`; Cinemachine targets are read-only references to already-resolved Client state.
+- Negative trigger: Timeline track and clip authoring beyond the Cinemachine shot track — no skill owns general Timeline; route it to `gameplay-engineer`.
+- Negative trigger: the gameplay rule a camera reacts to — that lives in `Game.Core.*` per `csharp-standards` → `coding-principles.md`; Cinemachine targets are read-only references to already-resolved Client state.
 
 ## 4. How to use this skill
 1. **Confirm the installed Cinemachine major version before writing a single type name** — Cinemachine 3 renamed the namespace to `Unity.Cinemachine` and replaced `CinemachineVirtualCamera` and its Body and Aim model with `CinemachineCamera` plus separate control components. The two generations do not interoperate, and [root-links.md](references/root-links.md) carries the rename map for reading existing code.
@@ -68,7 +60,7 @@ Act as the Cinemachine specialist — the Brain, the cameras, their control pair
 12. **Give ClearShot children something to evaluate** — shot quality comes from a Deoccluder on each child, so a ClearShot whose children have none falls back to priority and appears to ignore obstruction entirely.
 13. **Sequence cutscenes with Timeline's Cinemachine shot clips rather than scripted priority changes**, per [timeline-and-channels.md](references/timeline-and-channels.md) — the clip overrides the Brain's resolution for its duration and blends through clip overlap, which is why a scripted sequence and a Timeline both running fight each other.
 14. **Give each split-screen player its own Channel and matching Brain mask** — Cinemachine resolves priority per channel, so a shared channel makes one player's camera change decide the other's.
-15. **Keep the camera presentational** — follow and look-at targets are read-only references to already-resolved Client state, and the rule that decides when a shot changes lives in `Game.Core.*` per `coding-principles.md`'s Shared Core integrity rule.
+15. **Keep the camera presentational** — follow and look-at targets are read-only references to already-resolved Client state, and the rule that decides when a shot changes lives in `Game.Core.*` per `csharp-standards` → `coding-principles.md`'s Shared Core integrity rule.
 
 ## 5. Specific goals / tasks this skill performs
 - Brain placement, update method, priority resolution, and default or per-pair blends.
@@ -78,7 +70,7 @@ Act as the Cinemachine specialist — the Brain, the cameras, their control pair
 - Impulse-based shake across camera switches, including channel setup.
 - Multi-target framing with target groups plus a framing extension, and automatic shot selection through State-Driven or ClearShot.
 - Timeline shot sequencing and per-player Cinemachine Channels.
-- Out of scope: the `Camera` component's own fields and plain transform camera scripting (`unity-camera-fundamentals`); Animator authoring (`unity-animation`); input devices (`unity-input-system`); screen effects (`unity-post-processing`); general Timeline authoring (`unity-engineer`); the gameplay rule behind a shot change (`csharp-engineer`).
+- Out of scope: the `Camera` component's own fields and plain transform camera scripting (`unity-camera-fundamentals`); Animator authoring (`unity-animation`); input devices (`unity-input-system`); screen effects (`unity-post-processing`); general Timeline authoring (`gameplay-engineer`); the gameplay rule behind a shot change (`csharp-engineer`).
 
 ## 6. Output format
 ```

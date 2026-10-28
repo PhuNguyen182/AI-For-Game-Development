@@ -71,4 +71,4 @@ stated for the lower tiers in [mesh-scripting-api.md](mesh-scripting-api.md).
 |---|---|---|
 | Always dispose a `MeshDataArray` once done with it | Undisposed arrays leak the underlying native memory tracking | [Mesh.AcquireReadOnlyMeshData](https://docs.unity3d.com/ScriptReference/Mesh.AcquireReadOnlyMeshData.html) |
 | `AcquireReadOnlyMeshData` causes no allocation or copy, as long as the array is disposed before the source mesh is modified | Modifying the mesh while a snapshot is still open forces a copy Unity would otherwise avoid | [Mesh.AcquireReadOnlyMeshData](https://docs.unity3d.com/ScriptReference/Mesh.AcquireReadOnlyMeshData.html) |
-| Prefer a `using` block over a manual dispose call | Matches `coding-principles.md`'s Exception handling section's guidance for any `IDisposable` | synthesized |
+| Prefer a `using` block over a manual dispose call | Matches `csharp-standards` → `coding-principles.md`'s Exception handling section's guidance for any `IDisposable` | synthesized |

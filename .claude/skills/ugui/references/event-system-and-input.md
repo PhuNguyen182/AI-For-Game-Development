@@ -46,7 +46,7 @@ dispatched by `ExecuteEvents`. Implement the interface directly on a
 `MonoBehaviour` for a component that always needs the behavior; use the
 `EventTrigger` component instead only for a one-off, Inspector-wired
 handler on an object that doesn't otherwise need a dedicated script — per
-`coding-principles.md`'s Event handlers rule, still name a method rather
+`csharp-standards` → `coding-principles.md`'s Event handlers rule, still name a method rather
 than leaving an inline lambda wired in the Inspector where the object's
 lifetime could outlive a subscription.
 

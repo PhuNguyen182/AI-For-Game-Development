@@ -62,7 +62,7 @@ Check these before debugging the component.
 | `State` (`InteractableState`) | `Init = 0`, `Hovering = 1`, `Selecting = 2`, `Dragging = 3` | [Enum InteractableState](https://www.flexalon.com/docs/api/Flexalon.FlexalonInteractable.InteractableState.html) |
 
 All six are `UnityEvent`s (`FlexalonInteractable.InteractableEvent`), so they
-are Inspector-wireable — which is exactly the case `coding-principles.md`'s
+are Inspector-wireable — which is exactly the case `csharp-standards` → `coding-principles.md`'s
 Structure section names as the reason to accept `UnityEvent` over
 `Action<>`. Subscribing from code still owes an unsubscribe in
 `OnDisable`/`OnDestroy`, per that file's Event handlers section.

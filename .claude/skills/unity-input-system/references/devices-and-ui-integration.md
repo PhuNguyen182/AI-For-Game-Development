@@ -5,7 +5,7 @@ Covers: SKILL.md §4 — **"Drive UI through `InputSystemUIInputModule` on the s
 
 How input reaches a device read, a UI callback, or a touchscreen overlay. The
 Canvas hierarchy and widget design on the other side of the module belong to
-`unity-engineer`; the XR surface named at the end has no owner here.
+`gameplay-engineer`; the XR surface named at the end has no owner here.
 
 ## Device categories
 

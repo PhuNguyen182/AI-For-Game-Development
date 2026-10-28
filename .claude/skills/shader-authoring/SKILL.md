@@ -1,24 +1,12 @@
 ---
 name: shader-authoring
-description: >
-  Technique for authoring shader content — Shader Graph node graphs and
-  hand-written HLSL/ShaderLab: stylized and toon shading, custom lighting
-  models, screen distortion, dissolve, outline, rim, hologram, decal and
-  material-driven VFX shaders, reusable subgraphs, `UnityPerMaterial`
-  CBUFFER layout for SRP Batcher compatibility, `shader_feature` versus
-  `multi_compile` variant control, and `half` precision on mobile. Use
-  when a shader must be written, fixed, or made to compile. Not for:
-  pipeline choice, owned by `render-pipeline-urp-hdrp`; pass injection,
-  owned by `unity-urp-rendering` and `unity-hdrp-rendering`; Volume
-  plumbing around a full-screen effect, owned by `unity-post-processing`;
-  compute kernels, owned by `compute-shader-vfx`; particle graphs, owned
-  by `vfx-particle-authoring`; the light rig it reads, owned by
-  `unity-lighting`; DOTS Instancing requirements, owned by
-  `unity-entities-graphics`; tuning an unchanged shader, owned by
-  `unity-engineer`.
+description: "Author Shader Graph and HLSL/ShaderLab: toon, custom lighting, dissolve, outline, distortion, keywords and variants, SRP Batcher compatibility, mobile precision. Use for any shader work."
+user-invocable: false
 ---
 
 # Shader Authoring — Shader Graph & HLSL Content
+
+**Not for:** pipeline choice, owned by `render-pipeline-urp-hdrp`; pass injection, owned by `unity-urp-rendering` and `unity-hdrp-rendering`; Volume plumbing around a full-screen effect, owned by `unity-post-processing`; compute kernels, owned by `compute-shader-vfx`; particle graphs, owned by `vfx-particle-authoring`; the light rig it reads, owned by `unity-lighting`; DOTS Instancing requirements, owned by `unity-entities-graphics`; tuning an unchanged shader, owned by `gameplay-engineer`.
 
 ## 1. Objective
 Produce shader content that is visually correct, compiles on every pipeline and platform the Tech Spec targets, and stays inside its budget for variants, precision, and batching. It prevents the failures that a working Editor preview hides: a shader that breaks SRP batching because its properties are not in the expected constant-buffer layout, a `multi_compile` that ships every combination into the build whether or not any material uses it, `float` precision applied everywhere on a mobile GPU that pays for it, a gameplay decision encoded in shader logic where the server cannot see it, and an effect verified on exactly one of the platforms it ships to.
@@ -40,19 +28,19 @@ Act as the shader programmer for the client track — the tool reached for whene
 - Negative trigger: particle emission and simulation graph structure — that is `vfx-particle-authoring`; this skill writes the shader its output stage renders with.
 - Negative trigger: the lights, probes and limits a lit shader reads — including a shader that receives fewer lights than expected, which is the rendering path's per-object limit rather than the shader — that is `unity-lighting`, which supplies the HLSL entry points this skill calls.
 - Negative trigger: deciding that a shader must be DOTS Instancing compatible, or which properties are Hybrid Per Instance — that is `unity-entities-graphics`; authoring the shader itself stays here.
-- Negative trigger: making an already-correct shader faster with no visual change requested — that is `unity-engineer`.
+- Negative trigger: making an already-correct shader faster with no visual change requested — that is `gameplay-engineer`.
 - Companion, if the official Unity plugin (`unity@claude-plugins-official`) is installed: `unity:shader-graph-create-custom-node` turns existing HLSL into a reflected Shader Graph custom node; this skill still owns everything else about the shader.
 
 ## 4. How to use this skill
 1. **Take the pipeline target and master stack as given, and stop if they are missing** — shader structure, includes, and available lighting functions differ per pipeline, so authoring before `render-pipeline-urp-hdrp` has answered means guessing at the one input that invalidates everything.
 2. **Default to Shader Graph and justify hand-written HLSL** — a graph is artist-editable, self-documenting, and generates SRP Batcher-compatible output automatically. Reach for HLSL only when the requirement is genuinely inexpressible in nodes: a custom lighting model, direct `StructuredBuffer` consumption, or control the graph does not surface.
 3. **Put every material-tunable property in one `UnityPerMaterial` CBUFFER** — SRP Batcher compatibility depends on that block existing and matching across shaders in the batch, so a property declared outside it silently drops the shader out of batching with no warning anywhere.
-4. **Know that a `MaterialPropertyBlock` breaks the SRP batch for that renderer** — `performance-and-algorithms.md` rightly requires it over assigning `renderer.material`, which instantiates and leaks a material; both facts hold, so where per-instance variation is wanted at scale, raise the conflict and let a measurement decide between material variants, GPU instancing, and accepting the lost batch.
+4. **Know that a `MaterialPropertyBlock` breaks the SRP batch for that renderer** — `csharp-standards` → `performance-and-algorithms.md` rightly requires it over assigning `renderer.material`, which instantiates and leaks a material; both facts hold, so where per-instance variation is wanted at scale, raise the conflict and let a measurement decide between material variants, GPU instancing, and accepting the lost batch.
 5. **Choose `shader_feature` over `multi_compile` unless a variant is selected at runtime** — `shader_feature` strips variants no material in the build references, while `multi_compile` ships every combination unconditionally. Variant count is multiplicative, so state it in the handoff whenever a shader declares more than a couple of keywords.
 6. **Use `half` precision by default in fragment work on mobile targets** — tile-based mobile GPUs execute `half` meaningfully faster than `float`, and blanket `float` is a cost paid on every pixel; keep `float` for positions, depth reconstruction, and anywhere banding would show.
 7. **Work in the latest coordinate space the effect allows** — transform to world space only where the effect actually needs world coordinates, since an unnecessary per-vertex or per-pixel transform is repeated work no visual requirement asked for.
-8. **Name properties per Unity convention and never inline a tunable number** — underscore-prefixed PascalCase reference names (`_BaseColor`, `_FoamWidth`), camelCase HLSL locals, and every tunable exposed as a property rather than a literal, per `coding-principles.md`'s no-magic-numbers rule.
-9. **Comment only the non-obvious maths** — a hand-derived BRDF term, a refraction formula, a platform workaround — per `language-and-comments.md`'s Comment depth policy; a `lerp` needs no explanation.
+8. **Name properties per Unity convention and never inline a tunable number** — underscore-prefixed PascalCase reference names (`_BaseColor`, `_FoamWidth`), camelCase HLSL locals, and every tunable exposed as a property rather than a literal, per `csharp-standards` → `coding-principles.md`'s no-magic-numbers rule.
+9. **Comment only the non-obvious maths** — a hand-derived BRDF term, a refraction formula, a platform workaround — per `csharp.md`'s Comment depth policy; a `lerp` needs no explanation.
 10. **Verify on every platform the Tech Spec targets before calling it done** — capture the effect on each target quality tier; a shader validated only on PC can fail to compile, band, or lose precision on mobile GLES or Vulkan, and none of that shows in the Editor.
 11. **Ask when the visual intent is described only by an adjective** — "make it feel weightier" is not a shader specification; get a reference image, a named comparable, or a concrete parameter before authoring, rather than iterating blind.
 
@@ -64,7 +52,7 @@ Act as the shader programmer for the client track — the tool reached for whene
 - SRP Batcher compatibility work and diagnosis of a shader that is not batching.
 - Variant-count control through deliberate `shader_feature`/`multi_compile` choice.
 - Precision and platform-compatibility work across the project's shipping targets.
-- Out of scope: pipeline targeting (`render-pipeline-urp-hdrp`); pass injection (`unity-urp-rendering`, `unity-hdrp-rendering`); Volume plumbing for post effects (`unity-post-processing`); compute kernels (`compute-shader-vfx`); particle graphs (`vfx-particle-authoring`); the light rig a lit shader reads (`unity-lighting`); DOTS Instancing requirements (`unity-entities-graphics`); pure performance tuning (`unity-engineer`).
+- Out of scope: pipeline targeting (`render-pipeline-urp-hdrp`); pass injection (`unity-urp-rendering`, `unity-hdrp-rendering`); Volume plumbing for post effects (`unity-post-processing`); compute kernels (`compute-shader-vfx`); particle graphs (`vfx-particle-authoring`); the light rig a lit shader reads (`unity-lighting`); DOTS Instancing requirements (`unity-entities-graphics`); pure performance tuning (`gameplay-engineer`).
 
 ## 6. Output format
 ```
@@ -95,7 +83,7 @@ Act as the shader programmer for the client track — the tool reached for whene
 
 **Example 2**
 - Input: "Make the shader flash red when the hit is a critical, it already knows the damage number."
-- Output: declined that shape — a shader must not decide what counts as critical, because that rule lives in `Game.Core.*` where the server evaluates the same logic, per `coding-principles.md`'s Shared Core integrity section. Exposed `_HitFlashColor` and `_HitFlashIntensity` instead and let the already-resolved outcome drive them from the client layer, which also makes the effect reusable for any hit category without touching the shader.
+- Output: declined that shape — a shader must not decide what counts as critical, because that rule lives in `Game.Core.*` where the server evaluates the same logic, per `csharp-standards` → `coding-principles.md`'s Shared Core integrity section. Exposed `_HitFlashColor` and `_HitFlashIntensity` instead and let the already-resolved outcome drive them from the client layer, which also makes the effect reusable for any hit category without touching the shader.
 
 **Example 3**
 - Input: a material with per-instance tint colour set through a `MaterialPropertyBlock` shows far more draw calls than expected after an SRP Batcher audit.

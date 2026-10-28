@@ -30,7 +30,7 @@ callback.
 | `CompositeCollider2D` | Merges Box and Polygon colliders marked Used By Composite into one generated shape — the fix for hundreds of per-tile colliders | [Composite Collider 2D](https://docs.unity3d.com/Manual/2d-physics/collider/composite-collider/composite-collider-2d-landing.html) |
 
 Prefer Circle, Box, or Capsule over Polygon, and Polygon over a traced
-per-pixel outline, per `performance-and-algorithms.md`'s Physics section. The
+per-pixel outline, per `csharp-standards` → `performance-and-algorithms.md`'s Physics section. The
 sprite-side authoring of that outline belongs to `unity-2d-sprite`.
 
 ## Composite collider
@@ -61,7 +61,7 @@ sprite-side authoring of that outline belongs to `unity-2d-sprite`.
 | `ContactPoint2D.point` / `normal` | World contact position and surface normal — the two values a hit reaction is built from | [ContactPoint2D](https://docs.unity3d.com/ScriptReference/ContactPoint2D.html) |
 | `ContactPoint2D.separation` | Distance between colliders at the contact; negative means penetration, which is how overlap depth is measured | [ContactPoint2D](https://docs.unity3d.com/ScriptReference/ContactPoint2D.html) |
 | `ContactPoint2D.normalImpulse` / `tangentImpulse` | Impulse actually applied along and across the normal — the measured impact, as distinct from approach speed | [ContactPoint2D](https://docs.unity3d.com/ScriptReference/ContactPoint2D.html) |
-| `Collider2D.GetContacts(...)` buffer overloads | Fills a caller-owned array instead of allocating, which is what keeps contact polling out of the GC per `performance-and-algorithms.md`'s Memory discipline section | [Collider2D.GetContacts](https://docs.unity3d.com/ScriptReference/Collider2D.GetContacts.html) |
+| `Collider2D.GetContacts(...)` buffer overloads | Fills a caller-owned array instead of allocating, which is what keeps contact polling out of the GC per `csharp-standards` → `performance-and-algorithms.md`'s Memory discipline section | [Collider2D.GetContacts](https://docs.unity3d.com/ScriptReference/Collider2D.GetContacts.html) |
 | `Cast`, `Overlap`, `OverlapPoint`, `Distance`, `ClosestPoint`, `Raycast` | Direct queries from an existing collider — cheaper and more precise than a `Physics2D` world query the caller then filters | [Collider2D.Cast](https://docs.unity3d.com/ScriptReference/Collider2D.Cast.html) |
 
 ## Layer filtering

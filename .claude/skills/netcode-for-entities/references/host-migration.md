@@ -13,7 +13,7 @@ Must be manually enabled with the **`ENABLE_HOST_MIGRATION`** scripting
 define (Project Settings → Player). Verbatim from the manual: *"Host
 migration is an experimental feature so the API and implementation can
 change in the future."* Flag this explicitly in the Handoff note per
-`coding-principles.md`'s Handoff section — it is not a stable, load-bearing
+`csharp-standards` → `coding-principles.md`'s Handoff section — it is not a stable, load-bearing
 guarantee yet.
 
 ## Prerequisites

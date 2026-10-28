@@ -7,7 +7,7 @@ Import settings are asset metadata, not scene state: they decide the sprite's
 world size, its mesh, and the collision outline every instance inherits, so
 they are settled before any component is wired. Setting **Texture Type** to
 **Sprite (2D and UI)** is what exposes everything below. Compression and Max
-Size decisions follow `performance-and-algorithms.md`'s Assets & memory
+Size decisions follow `csharp-standards` → `performance-and-algorithms.md`'s Assets & memory
 footprint section.
 
 ## Geometry and scale

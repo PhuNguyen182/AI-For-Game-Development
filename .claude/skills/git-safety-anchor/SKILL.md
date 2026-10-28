@@ -1,19 +1,12 @@
 ---
 name: git-safety-anchor
-description: >
-  Pre-flight gate for any state-changing git command: classify its blast
-  radius, create a named backup ref before it runs, and derive the literal
-  undo command. Covers `git tag backup/...`, `git stash create` for
-  uncommitted work, `git rev-parse` ref snapshots, `ORIG_HEAD`, and what the
-  reflog cannot recover — untracked files, a fresh clone, anything dropped by
-  `gc --prune` or `reflog expire`. Use before `reset`, `rebase`, `merge`,
-  `checkout`, `push --force`, `filter-repo`, `clean -xdf`, or `branch -D`.
-  Not for: recovering state already lost, owned by `git-recovery`; tracing
-  a change to its commit, owned by `git-forensics`; and Unity asset and LFS
-  specifics, owned by `git-unity-repo`.
+description: "Before any state-changing git command: classify blast radius, create a backup ref, derive the literal undo. Covers what reflog cannot recover. Use before reset, rebase, merge, checkout, force-push, filter-repo, clean, branch -D."
+user-invocable: false
 ---
 
 # Git Safety Anchor — Blast Radius, Backup Refs, and the Undo Command
+
+**Not for:** recovering state already lost, owned by `git-recovery`; tracing a change to its commit, owned by `git-forensics`; and Unity asset and LFS specifics, owned by `git-unity-repo`.
 
 ## Bundled resources
 
@@ -49,7 +42,7 @@ Act as the repository safety gate for the devops track — the skill reached for
 6. **Derive the literal undo command before the operation runs** — a named reversal (`git reset --hard <sha>`, `git update-ref refs/heads/<b> <sha>`) is verifiable now, whereas "recover it from the reflog" is a hope that has to hold later. Take the exact form from [anchor-and-undo-recipes.md](references/anchor-and-undo-recipes.md).
 7. **State what this anchor does not cover** — check the operation against [what-cannot-be-anchored.md](references/what-cannot-be-anchored.md) and name every gap, because a requester who believes everything is covered will authorize an operation they would otherwise refuse.
 8. **Verify the anchor resolves before returning** — run `git rev-parse <backup-ref>` and `git cat-file -e <stash-sha>` and report what they returned; an anchor that was never confirmed to exist is indistinguishable from no anchor, and must never be reported as one. Read only plumbing output when a check is scripted, per the stability table in [root-links.md](references/root-links.md).
-9. **Name backup refs and report in English** — per `language-and-comments.md`'s Working language section, so a ref created in one session is readable in the next.
+9. **Name backup refs and report in English** — per `csharp.md`'s Working language section, so a ref created in one session is readable in the next.
 10. **Return `Decision: blocked` when the radius cannot be determined or the anchor cannot be made** — an unanchorable radius-2 or radius-3 operation is a stop, not a judgement call to make on the requester's behalf.
 
 ## 5. Specific goals / tasks this skill performs

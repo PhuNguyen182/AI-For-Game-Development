@@ -26,7 +26,7 @@ physics plus one of its foundations.
 | `float3`/`quaternion` type and function choice in every parameter | `unity-mathematics` | synthesized |
 | HPC# compliance and `FloatMode` for physics-adjacent jobs | `unity-burst-compiler` | synthesized |
 | Client prediction and reconciliation built on this determinism | `netcode-engineer` | synthesized |
-| `Rigidbody`, `Collider`, `Physics.Raycast` on ordinary GameObjects | `unity-engineer` | synthesized |
+| `Rigidbody`, `Collider`, `Physics.Raycast` on ordinary GameObjects | `unity-performance-engineer` | synthesized |
 
 **Critical caveat**: determinism makes this engine attractive for rollback
 netcode, and that attraction is where scope creep starts. Determinism is a

@@ -67,7 +67,7 @@ character indices still line up.
 
 - **Default to a Shortcut over hand-computing a Lerp inside `Update()`** —
   same reasoning as `ugui`'s own performance guardrail against unconditional
-  per-frame updates, and `performance-and-algorithms.md`'s general
+  per-frame updates, and `csharp-standards` → `performance-and-algorithms.md`'s general
   hot-path rules: a `DOFade`/`DOColor`/`DOAnchorPos` call already handles
   timing, easing, and completion in one line.
 - **Don't let a DOTween tween and a `ugui` Layout Group/Content Size

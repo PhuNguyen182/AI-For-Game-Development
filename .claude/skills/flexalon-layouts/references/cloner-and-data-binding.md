@@ -75,7 +75,7 @@ namespace Game.Client.Layout
 entry is boxed on the way in and unboxed in `SetData`. Bind reference types
 (a class holding the row's fields) rather than `int`/`float`/`struct`
 entries in anything that re-binds frequently, per
-`performance-and-algorithms.md`'s Memory discipline section.
+`csharp-standards` → `performance-and-algorithms.md`'s Memory discipline section.
 
 ## Rules that follow from the design
 
@@ -85,4 +85,4 @@ entries in anything that re-binds frequently, per
 | Raise `DataChanged` on every mutation | The cloner regenerates on the event, not on inspection — a mutated list that never raises it leaves stale clones on screen | [Interface DataSource](https://www.flexalon.com/docs/api/Flexalon.DataSource.html) |
 | Put the `DataBinding` component on the prefab | The cloner searches the instantiated object for it; a binding living on a parent or a sibling is never found | [Cloner](https://www.flexalon.com/docs/cloner) |
 | Expect one gameObject per data item | No pooling or recycling is documented — cost scales linearly with `Data.Count` | [Cloner](https://www.flexalon.com/docs/cloner) |
-| Keep the data model itself in Shared Core | `DataSource`/`DataBinding` are `UnityEngine`-side adapters over Core state, per `coding-principles.md`'s Shared Core integrity section | synthesized |
+| Keep the data model itself in Shared Core | `DataSource`/`DataBinding` are `UnityEngine`-side adapters over Core state, per `csharp-standards` → `coding-principles.md`'s Shared Core integrity section | synthesized |
