@@ -23,7 +23,7 @@ The main session runs this and is the only writer of the feature file. Rules: `r
 
 ## 3. Spec + CP2 — `technical-architect` (Spec mode)
 - Profile decides full spec vs acceptance criteria only.
-- `Open questions:` design → GD · technology → `/decide`, then re-spec · architecture → the architect settles it.
+- `Open questions:` design → GD · architecture → the architect settles it · technology → `/decide` **only** when hard to reverse, paid, or a foundation (netcode, backend, ads, analytics); a cheap reversible choice (UI system, local save format, a tween library) is the architect's, using what the project already has.
 - CP2 `AskUserQuestion`: approve / revise (what) / rethink direction (back to step 2).
 
 ## 4. Build — serial, one Editor holder at a time

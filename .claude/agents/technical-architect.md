@@ -5,6 +5,7 @@ model: opus
 tools: Read, Grep, Glob, Write, Edit
 skills:
   - agent-protocol
+  - csharp-standards
 color: magenta
 ---
 
@@ -19,5 +20,5 @@ color: magenta
 ## Never
 - Write implementation code, or pad the spec — specific, not exhaustive.
 - Fill a silence without listing it under `Assumptions:`.
-- Settle a strategic technology choice or a project-wide pattern → `Needs-decision`, `Next: cto`.
+- Settle a strategic technology choice (hard to reverse, paid, a foundation) or a project-wide pattern → `Needs-decision`, `Next: cto`. A cheap reversible choice is yours: prefer what the project already has, list it under `Assumptions:`.
 - A design question is the GD's → list it under `Open questions:`, never answer it.

@@ -9,7 +9,9 @@ export const meta = {
   ],
 }
 
-// args: { base?: 'develop', spec?: '.workflow/features/<slug>.md' } — or a plain diff range string.
+// args: { root?: '<repo path>', base?: 'develop', spec?: '.workflow/features/<slug>.md' } — or a plain diff range string.
+const root = (args && args.root) || '.'
+const git = root === '.' ? 'git' : `git -C "${root}"`
 const base = typeof args === 'string' ? args : (args && args.base) || 'develop'
 const spec = (args && args.spec) || null
 
@@ -62,7 +64,7 @@ const VERDICTS = {
 
 phase('Scope')
 const scope = await agent(
-  `Resolve the review scope. Run \`git diff --name-only ${base}...HEAD\` (fall back to \`git diff --name-only ${base}\` if the range is invalid). ` +
+  `Resolve the review scope. In ${root}, run \`${git} diff --name-only ${base}...HEAD\` (fall back to \`${git} diff --name-only ${base}\` if the range is invalid), plus untracked files from \`${git} ls-files --others --exclude-standard\`. ` +
   `Return the range used, the changed files, and the spec: ${spec ? `read ${spec} and return its acceptance criteria verbatim` : 'the acceptance criteria if a .workflow/features/*.md file covers these files, else "none — audit"'}. Read-only.`,
   { label: 'scope', schema: SCOPE, effort: 'low' },
 )
@@ -80,7 +82,7 @@ const GATES = [
 const results = await pipeline(
   GATES,
   g => agent(
-    `Review the diff \`git diff ${scope.range}\` for ${g.ask}. Files: ${scope.files.join(', ')}. ` +
+    `Review the diff \`${git} diff ${scope.range}\` (repo ${root}; read untracked files in full) for ${g.ask}. Files: ${scope.files.join(', ')}. ` +
     `Spec / acceptance criteria: ${scope.spec}. Another gate runs in parallel — do not cover its lens. ` +
     `Report only findings confirmed in the file, each with path:line and the concrete fix.`,
     { label: `review:${g.key}`, phase: 'Review', agentType: g.agentType, schema: FINDINGS },

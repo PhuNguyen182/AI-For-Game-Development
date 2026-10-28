@@ -15,4 +15,6 @@ Rule `csharp.md` is the binding summary. Open a reference only when the summary 
 | `references/naming-convention.md` | Any identifier, asset, asmdef or namespace name |
 | `references/performance-and-algorithms.md` | Hot paths, data-structure choice, GC, draw calls, complexity |
 
+Asset names (specs use them too): Prefab `Category_Name` · Scene `Scene_Name` · ScriptableObject `SO_Name` · `Mat_` · `Tex_` · `Anim_` · Animator `AC_` · `Shader_` · `VFX_` · asmdef = its root namespace.
+
 Review checks every submission against all four; a violation is "request changes" at any size.

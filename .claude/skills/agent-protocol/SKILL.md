@@ -11,6 +11,7 @@ user-invocable: false
 - Read the feature's docs per skill `feature-docs` (README → INTEGRATION → CONTRACTS), then only the source those name.
 - Attempts: the brief's budget is a ceiling. Each retry changes the cause, not the wording. Apply every cheap, sure fix now.
 - Stay in scope. Notice something outside it → list it under `Out of scope`, never fix it.
+- Evidence (screenshots, logs, reports) → `.workflow/evidence/<slug>/`, never under `Assets/`. A temporary Editor helper is deleted before you return, or listed under `Changed`.
 
 ## Return — always this envelope
 ```

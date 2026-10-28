@@ -9,8 +9,10 @@ export const meta = {
   ],
 }
 
-// args: { modules?: ['Assets/Game.Core', ...] } — omit to discover. At most MAX modules are audited per run.
+// args: { root?: '<project path>', modules?: ['Assets/Game.Core', ...] } — omit modules to discover. At most MAX are audited per run.
 const MAX = 4
+const root = (args && args.root) || '.'
+const at = p => (root === '.' ? p : `${root}/${p}`)
 
 const MODULES = {
   type: 'object',
@@ -67,7 +69,7 @@ phase('Discover')
 let modules = (args && args.modules) ? args.modules.map(p => ({ path: p, asmdef: '?', csFiles: 0 })) : null
 if (!modules) {
   const found = await agent(
-    'List the code modules of this Unity project: every folder under Assets/ (excluding Plugins, ThirdParty, ' +
+    `List the code modules of the Unity project at ${root}: every folder under Assets/ (excluding Plugins, ThirdParty, ` +
     'Packages and Library) that holds an .asmdef, with its .cs file count. Sort by Game.Core first, then by .cs count descending. Read-only.',
     { label: 'discover', schema: MODULES, effort: 'low' },
   )
@@ -80,13 +82,13 @@ if (modules.length > MAX) {
 
 const audits = parallel([
   ...modules.map(m => () => agent(
-    `Audit ${m.path} (read-only). Lenses: (1) runtime perf, memory and crash/ANR risk in hot paths — the ` +
+    `Audit ${at(m.path)} (read-only). Lenses: (1) runtime perf, memory and crash/ANR risk in hot paths — the ` +
     `review-code-risks lens; (2) the Game.Core / Game.Client boundary — skill shared-core-boundary-audit. ` +
     `Only findings confirmed in the file, each with path:line and the concrete fix.`,
     { label: `audit:${m.path}`, phase: 'Audit', agentType: 'code-reviewer', schema: FINDINGS },
   ).then(r => r && { scope: m.path, ...r })),
   () => agent(
-    'Scan the whole repository for leaked secrets and Unity supply-chain risk with skill secret-and-supply-chain-scan. ' +
+    `Scan the whole repository at ${root} for leaked secrets and Unity supply-chain risk with skill secret-and-supply-chain-scan. ` +
     'Never flag allowlisted public ids. Read-only.',
     { label: 'audit:secrets', phase: 'Audit', agentType: 'security-reviewer', schema: FINDINGS },
   ).then(r => r && { scope: 'secrets', ...r }),
