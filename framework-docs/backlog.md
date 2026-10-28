@@ -1,4 +1,14 @@
-# Open Items
+# Framework backlog
+
+Open work on the framework itself. Not copied into projects. Add a row when found; close it with what closed it.
+
+| Item | State |
+|---|---|
+| Pilot v2 on a real project (S UI tweak, `/fix`, M `/feature`, `/release --dry-run`) and fix from real failures | Open |
+| Editor-lock hook (PreToolUse on Agent + SubagentStop) — build only if the pilot shows serial-Editor violations | Deferred |
+| Confirm `skills:` preload works with `user-invocable: false` in a fresh session | Open |
+
+## Pre-slim history (superseded by the v2 slim-down; kept for reference)
 
 What is still open about the workflow layer itself — not per-feature state, which is in each `LEDGER.md` and
 `<state-root>/project-state.md`. The full authoring history is kept outside the runtime layer, as reference
