@@ -44,10 +44,12 @@ Anything else: just ask. `rules/routing.md` routes it and states the route in on
 | Size | Means | Flow |
 |---|---|---|
 | S | One role, judgeable by looking, no new contract | Directly or one agent; the reply closes it |
-| M | 2+ roles, a new contract or screen, or touches `Game.Core.*` | `/feature`: spec → CP2 → build → review → QA → CP4 |
+| M | 2+ roles, a new contract or screen, or touches `Game.Core.*` | `/feature`: spec → CP2 → build → review? → QA? → CP4 |
 | L | Architecture, netcode, new Core system, or an undecided direction | `/feature` with CP1 (options → critic → GD locks) and CP3 |
 
-Risk flag (signing, real-money IAP, store, PII, save migration, published history, released build, perf budget, anti-cheat) → review and security run automatically, at any size.
+Risk flag (signing, real-money IAP, store, PII, save migration, published history, released build, perf budget, anti-cheat) → verification by running, and review is recommended.
+
+**Gates are optional** — review and QA are offered once when the code is built, with a recommendation and the cost of skipping; the GD decides. A declined gate is listed under known limitations and at CP4. Only the third-party supply-chain check and the secret hooks are always on.
 
 **Profile** (`CLAUDE.md`) sets the defaults — hyper-casual skips CP1 and the full spec, hard-core turns on netcode, perf and automation QA. Table in `rules/routing.md`.
 

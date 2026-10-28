@@ -23,9 +23,15 @@
 | M | 2+ roles, a new contract or screen, or touches `Game.Core.*` | `/feature` |
 | L | New Core system, netcode, architecture, project-wide migration, or a direction the GD has not decided | `/feature` with CP1 |
 
-**Risk flag** — credential/signing, real-money IAP, store submission, player PII, save-data migration, published git history, released build, shipped perf budget, server authority/anti-cheat. Flag set on a code change, any size → `/review` (code + security) runs automatically, and verification means running, never reading. `/release` has its own gate.
+**Risk flag** — credential/signing, real-money IAP, store submission, player PII, save-data migration, published git history, released build, shipped perf budget, server authority/anti-cheat. Flag set: verification means running, never reading, and the gate offer recommends yes. `/release` has its own gate.
 
 Escalate the size the moment the work turns out bigger; never shrink it to skip a step.
+
+## Gates — offered, never imposed
+- Review and QA are the GD's choice: one `AskUserQuestion` when the code is built — recommendation first, the concrete cost of skipping stated. Recommend yes for M/L, the risk flag or `Game.Core.*`.
+- S work that changed code: offer `/review` only with the risk flag.
+- Declined → `Known limitations` ("not reviewed" / "not QA'd"), shown again at CP4. Never re-ask at the same point.
+- Always on, not a gate: the supply-chain check before a third-party package lands, and the secret hooks.
 
 ## Profile defaults (`CLAUDE.md` → Profile; unset → ask once, write it there)
 | | hyper-casual | mid-core | hard-core |
@@ -34,7 +40,7 @@ Escalate the size the moment the work turns out bigger; never shrink it to skip 
 | Tech Spec (else acceptance criteria only) | L | M, L | M, L |
 | Netcode / backend / anti-cheat | off | optional | on if multiplayer |
 | Perf-budget device | Android low-end | Android mid + oldest iOS | GD-defined |
-| Default QA | playtest + device smoke | + Core automation | + automation, perf, netcode |
+| Recommended QA | playtest + device smoke | + Core automation | + automation, perf, netcode |
 
 ## Checkpoints — GD approves via `AskUserQuestion`
 CP1 direction (L) · CP2 spec or acceptance criteria (M, L) · CP3 built vs spec (L) · CP4 closure (M, L).

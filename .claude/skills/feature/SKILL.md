@@ -1,6 +1,6 @@
 ---
 name: feature
-description: "Run an M/L feature from request to closure: size, CP1 direction (L), spec + CP2, Core first, serial client build with a compile check after each agent, review, QA, CP4. Also handles change requests and abandonment."
+description: "Run an M/L feature from request to closure: size, CP1 direction (L), spec + CP2, Core first, serial client build with a compile check after each agent, optional review and QA (GD's choice), CP4. Also handles change requests and abandonment."
 argument-hint: "<the request, in the GD's words>"
 ---
 
@@ -36,17 +36,19 @@ Order, skipping roles the tasks omit:
 - Commit per `git-commit`: stage only this feature's paths; another session's files stay out.
 - Log each return under `Log`: agent, `Changed`, `Verified`, `Limitations`, `Needs GD` (tell the GD at once).
 
-## 5. Review — automatic for M/L or the risk flag
-`/review` on the feature diff. Request changes → back to the author; the stop rule applies.
+## 5. Gate offer — one `AskUserQuestion`, two questions
+Review? QA? Each: yes (Khuyến nghị) / no, with what skipping leaves unchecked (`routing.md` → Gates). Record the answers.
+- Review yes → `/review` on the feature diff. Request changes → back to the author; the stop rule applies.
+- No → `Known limitations`: "not reviewed" / "not QA'd".
 
 ## 6. CP3 — L only
 `technical-architect` (CP3) → GD approves, or the named drift goes back to step 4.
 
-## 7. QA
-`/qa <slug>`. Profile default QA is the floor. Each defect → `/fix` with the bug id.
+## 7. QA — only if chosen at step 5
+`/qa <slug>`, the profile's recommended QA as its plan. Each defect → `/fix` with the bug id.
 
 ## 8. CP4 — `AskUserQuestion`
-Show: each acceptance criterion → evidence | gap · open bugs · limitations · what did not run.
+Show: each acceptance criterion → evidence | gap · open bugs · limitations · gates declined · what did not run.
 Options: close / fix gaps first / accept named gaps (cost stated). Close → `Status: Closed`; each accepted gap into the `DEBT.md` of the root that owns it (Core or Client).
 
 ## Change request (open feature past CP2; a closed feature takes new work instead)

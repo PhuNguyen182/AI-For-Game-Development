@@ -27,11 +27,11 @@ Main session is the only writer of `.workflow/bugs.md`. Finding format and statu
 
 ## 5. Fix
 - Owner fixes it, `Fixes: BUG-####` in its return. Compile check as in `/feature` step 4.
-- Risk flag on the touched code, or Core touched → `/review` on the diff.
+- Risk flag on the touched code, or Core touched → offer `/review` on the diff (`routing.md` → Gates).
 
 ## 6. Verify
 - The regression test passes; the original repro no longer fails; nearby tests still pass. Ran → `Fixed`.
-- A QA run with evidence → `Closed`. Still fails → `Reopened`; the stop rule (`routing.md`) applies.
+- Offer a QA verification run (`AskUserQuestion`): yes → a QA agent re-runs the repro → `Closed`, or `Reopened` and the stop rule applies · no → stays `Fixed`, listed at CP4 or in the reply.
 
 ## 7. Report
 Reply: cause, fix, test name, what was verified and what was not.
