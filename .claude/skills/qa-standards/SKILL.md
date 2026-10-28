@@ -32,12 +32,13 @@ user-invocable: false
 | Repro | Steps from a known state; attempts and hits (intermittent → rate) |
 
 - One severity per finding; impact if shipped, never cost to fix.
-- **Defect** (code ≠ spec) → owner. **Design flaw** (spec itself wrong) → GD immediately, never downgraded. **As designed** → report it as such.
+- **Defect** (code ≠ spec) → owner. **Design flaw** (spec itself wrong, including a spec assumption that contradicts an acceptance criterion — the criterion wins) → GD immediately, never downgraded. **As designed** → report it as such.
 - No fix code in a finding; name the change if obvious.
 
 ## Bugs
 - Main session is the only writer of `.workflow/bugs.md` and bug records. Agents propose; never invent an ID.
 - Check existing bugs first: a match is evidence on that ID; a match on a closed bug reopens it.
+- A defect seen out of scope, with evidence but no repro yet → record it `Open`, repro "not yet"; never drop it.
 - Status: **Open** → **Fixed** (owner names the ID in `Fixes:`) → **Closed** (only a QA run with evidence) or **Reopened**. **Won't fix** / **Accepted** — only the GD; mirrored into `DEBT.md`. **As designed**, **Duplicate of BUG-####**.
 - Settled: Closed, Won't fix, Accepted, As designed, Duplicate. QA sign-off needs zero unsettled. When QA was declined, CP4 lists each `Fixed` bug for the GD to accept unverified (→ Accepted) or send to QA.
 - Verifying bugs by ID → one verdict per ID with evidence; unexercised → "unverified".

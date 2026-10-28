@@ -51,7 +51,7 @@ CP1 direction (L) · CP2 spec or acceptance criteria (M, L) · CP3 built vs spec
 - An agent's `Next:` is a recommendation; you act on it.
 
 ## Stop rule
-- Attempts per dispatch: S 2, M 3, L 4; unsized routes 2.
+- Attempts per dispatch: S 2, M 3, L 4; `/fix` sizes by what the fix touches; other unsized routes 2.
 - Same step fails twice for the same cause (repeated findings, same failing test, reopened bug), or a review reaches round 4 → `technical-architect` root-causes once → fails again → stop. Report to the GD: what was tried, last verified state, next best action.
 - The GD may order another round; state the cost first.
 

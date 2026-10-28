@@ -11,7 +11,7 @@ Main session is the only writer of `.workflow/bugs.md`. Finding format and statu
 ## 1. Record
 - New bug → next `BUG-####` in `.workflow/bugs.md` (create from `references/bugs-template.md`): title, severity, feature, repro, owner, `Open`.
 - Matches an existing bug → add evidence to it; a `Closed` one → `Reopened`.
-- On a feature with a file → also add it to that file's `Bugs` table.
+- On a feature with a file → also add it to that file's `Bugs` table. A closed feature stays `Closed`.
 
 ## 2. Reproduce
 - Steps from a known state until it fails reliably, or the hit rate is stated. Tools: Play Mode (`playtest-tester`), a test, device (`/investigate-device-crash` for a device crash).
