@@ -1,0 +1,31 @@
+name: Hooks and layer
+
+on:
+  push:
+    paths: ['.claude/**', 'CLAUDE.md', '.github/workflows/hooks.yml']
+  pull_request:
+    paths: ['.claude/**', 'CLAUDE.md', '.github/workflows/hooks.yml']
+  workflow_dispatch:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Hook tests (PowerShell 7)
+        shell: pwsh
+        run: ./.claude/hooks/tests/run.ps1
+
+      - name: Hook tests (Windows PowerShell 5.1)
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: ./.claude/hooks/tests/run.ps1
+
+      - name: Layer verifier
+        shell: pwsh
+        run: ./.claude/skills/verify-layer/scripts/verify.ps1

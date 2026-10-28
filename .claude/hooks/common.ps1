@@ -14,6 +14,9 @@ $script:SecretPatterns = [ordered]@{
 # Files that legitimately contain the patterns above: the hooks themselves and the scan skill's docs.
 $script:SecretScanExempt = '[\\/]\.claude[\\/](?:hooks[\\/]|skills[\\/]secret-and-supply-chain-scan[\\/])'
 
+# First non-empty argument. Stands in for ?? so the hooks also run on Windows PowerShell 5.1.
+function First { foreach ($v in $args) { if ($null -ne $v -and [string]$v -ne '') { return $v } }; return $null }
+
 function Read-HookInput {
     $raw = [Console]::In.ReadToEnd()
     if ([string]::IsNullOrWhiteSpace($raw)) { return $null }

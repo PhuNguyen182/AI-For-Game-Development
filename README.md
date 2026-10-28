@@ -4,7 +4,17 @@ A Claude Code framework for producing Unity games — Windows/macOS/Linux, Andro
 
 ## Install
 
-Requirements: Claude Code; a Unity project (Unity CLI recommended — `com.unity.pipeline`); **PowerShell 7+** (`pwsh`) for the hooks, on every OS; optionally a Unity MCP server and the official Unity plugin (`unity@claude-plugins-official`).
+Requirements: Claude Code; a Unity project (Unity CLI recommended — `com.unity.pipeline`); optionally a Unity MCP server and the official Unity plugin (`unity@claude-plugins-official`).
+
+**PowerShell 7 (`pwsh`) on every machine** — the hooks are one PowerShell implementation for all three OS. The security hooks fail closed: without `pwsh`, edits and commits are blocked with an error instead of silently unchecked.
+
+| OS | Install `pwsh` |
+|---|---|
+| Windows | `winget install Microsoft.PowerShell` (the scripts also run on the built-in Windows PowerShell 5.1) |
+| macOS | `brew install --cask powershell` |
+| Linux | Microsoft's package repo (`sudo apt install powershell` after adding it) or `sudo snap install powershell --classic` |
+
+Check a machine: `pwsh -NoProfile -File .claude/hooks/tests/run.ps1` → `hooks: all tests passed`. CI (`.github/workflows/hooks.yml`) runs the same tests on Windows, macOS and Ubuntu.
 
 ```bash
 git clone <this repo> /tmp/aigd
@@ -93,6 +103,8 @@ framework-docs/           design history, templates, backlog — not copied into
 ```
 
 ## Hooks
+
+Scripts are ASCII-only PowerShell, compatible with pwsh 7 and Windows PowerShell 5.1 (`/verify-layer` enforces ASCII). Security hooks use `onFailure: block`.
 
 | Event | Does |
 |---|---|

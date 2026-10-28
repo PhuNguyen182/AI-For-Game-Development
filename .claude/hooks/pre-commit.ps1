@@ -7,13 +7,13 @@ $cmd = [string]$in.tool_input.command
 if ($cmd -notmatch '\bgit\b(?:\s+-C\s+(?:"[^"]*"|''[^'']*''|\S+))?\s+commit\b') { exit 0 }
 
 # Resolve the repository the commit runs in: `cd <dir> &&`, `git -C <dir>`, else the session cwd.
-$dir = [string]($in.cwd ?? (Get-Location).Path)
+$dir = [string](First $in.cwd (Get-Location).Path)
 $cd = [regex]::Match($cmd, '^\s*(?:cd|Set-Location)\s+(?:"([^"]+)"|''([^'']+)''|(\S+))\s*(?:&&|;)')
 if ($cd.Success) { $dir = @($cd.Groups[1].Value, $cd.Groups[2].Value, $cd.Groups[3].Value | Where-Object { $_ })[0] }
 $gc = [regex]::Match($cmd, '\bgit\s+-C\s+(?:"([^"]+)"|(\S+))')
 if ($gc.Success) { $dir = @($gc.Groups[1].Value, $gc.Groups[2].Value | Where-Object { $_ })[0] }
 # Git Bash spells C:\ as /c/.
-if ($IsWindows -and $dir -match '^/([a-zA-Z])(/|$)') { $dir = "$($Matches[1]):/" + $dir.Substring(3) }
+if ($env:OS -eq 'Windows_NT' -and $dir -match '^/([a-zA-Z])(/|$)') { $dir = "$($Matches[1]):/" + $dir.Substring(3) }
 if (-not (Test-Path $dir)) { exit 0 }
 
 $root = git -C $dir rev-parse --show-toplevel 2>$null

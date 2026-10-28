@@ -4,7 +4,7 @@
 $in = Read-HookInput
 if (-not $in) { exit 0 }
 $t = $in.tool_input
-$path = [string]($t.file_path ?? $t.notebook_path ?? '')
+$path = [string](First $t.file_path $t.notebook_path '')
 if ($path -match $script:SecretScanExempt) { exit 0 }
 
 $parts = @($t.content, $t.new_string, $t.new_source)

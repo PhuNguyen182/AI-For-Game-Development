@@ -13,21 +13,21 @@ $StaleHours = 3
 
 $in = Read-HookInput
 if (-not $in) { exit 0 }
-$root = $env:CLAUDE_PROJECT_DIR ?? [string]$in.cwd
+$root = First $env:CLAUDE_PROJECT_DIR ([string]$in.cwd)
 if (-not (Test-Path (Join-Path $root 'Assets'))) { exit 0 }
 $lockPath = Join-Path $root '.workflow/editor.lock'
 $session = [string]$in.session_id
 
 $lock = $null
-if (Test-Path $lockPath) { try { $lock = Get-Content $lockPath -Raw | ConvertFrom-Json } catch { $lock = $null } }
-$foreign = $lock -and $lock.session -ne $session -and
-    ((Get-Date).ToUniversalTime() - [datetime]$lock.updated).TotalHours -lt $StaleHours
+if (Test-Path $lockPath) { try { $lock = Get-Content $lockPath -Raw -Encoding UTF8 | ConvertFrom-Json } catch { $lock = $null } }
+$now = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+$foreign = $lock -and $lock.session -ne $session -and (($now - [long]$lock.updatedUnix) / 3600) -lt $StaleHours
 
 function Save($holds) {
     if (-not $holds -or $holds.Count -eq 0) { Remove-Item $lockPath -ErrorAction SilentlyContinue; return }
     New-Item -ItemType Directory -Force (Split-Path $lockPath) | Out-Null
-    [ordered]@{ session = $session; holds = @($holds); since = ($lock.since ?? (Get-Date).ToUniversalTime().ToString('o'))
-        updated = (Get-Date).ToUniversalTime().ToString('o') } | ConvertTo-Json | Set-Content $lockPath
+    [ordered]@{ session = $session; holds = @($holds); since = (First $lock.since (Get-Date).ToUniversalTime().ToString('o'))
+        updated = (Get-Date).ToUniversalTime().ToString('o'); updatedUnix = $now } | ConvertTo-Json | Set-Content $lockPath
 }
 
 function Refuse {

@@ -3,7 +3,7 @@
 
 $in = Read-HookInput
 if (-not $in) { exit 0 }
-$path = [string]($in.tool_input.file_path ?? '')
+$path = [string](First $in.tool_input.file_path '')
 if ($path -notmatch '[\\/]\.claude[\\/]') { exit 0 }
 
 $verifier = Join-Path $PSScriptRoot '../skills/verify-layer/scripts/verify.ps1'

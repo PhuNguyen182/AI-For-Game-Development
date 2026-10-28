@@ -98,7 +98,8 @@
             "shell": "powershell",
             "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/secret-scan.ps1\"; exit $LASTEXITCODE",
             "timeout": 15,
-            "statusMessage": "Scanning for secrets"
+            "statusMessage": "Scanning for secrets",
+            "onFailure": "block"
           }
         ]
       },
@@ -111,7 +112,8 @@
             "shell": "powershell",
             "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/pre-commit.ps1\"; exit $LASTEXITCODE",
             "timeout": 30,
-            "statusMessage": "Checking staged secrets and .meta pairing"
+            "statusMessage": "Checking staged secrets and .meta pairing",
+            "onFailure": "block"
           },
           {
             "type": "command",
@@ -119,7 +121,8 @@
             "shell": "powershell",
             "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/pre-commit.ps1\"; exit $LASTEXITCODE",
             "timeout": 30,
-            "statusMessage": "Checking staged secrets and .meta pairing"
+            "statusMessage": "Checking staged secrets and .meta pairing",
+            "onFailure": "block"
           },
           {
             "type": "command",
@@ -127,7 +130,8 @@
             "shell": "powershell",
             "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/pre-commit.ps1\"; exit $LASTEXITCODE",
             "timeout": 30,
-            "statusMessage": "Checking staged secrets and .meta pairing"
+            "statusMessage": "Checking staged secrets and .meta pairing",
+            "onFailure": "block"
           },
           {
             "type": "command",
@@ -135,21 +139,24 @@
             "shell": "powershell",
             "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/pre-commit.ps1\"; exit $LASTEXITCODE",
             "timeout": 30,
-            "statusMessage": "Checking staged secrets and .meta pairing"
+            "statusMessage": "Checking staged secrets and .meta pairing",
+            "onFailure": "block"
           },
           {
             "type": "command",
             "shell": "powershell",
             "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/editor-lock.ps1\" -Mode check; exit $LASTEXITCODE",
             "timeout": 15,
-            "if": "Bash(unity *)"
+            "if": "Bash(unity *)",
+            "onFailure": "block"
           },
           {
             "type": "command",
             "shell": "powershell",
             "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/editor-lock.ps1\" -Mode check; exit $LASTEXITCODE",
             "timeout": 15,
-            "if": "PowerShell(unity *)"
+            "if": "PowerShell(unity *)",
+            "onFailure": "block"
           }
         ]
       },
@@ -161,7 +168,8 @@
             "shell": "powershell",
             "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/editor-lock.ps1\" -Mode acquire; exit $LASTEXITCODE",
             "timeout": 15,
-            "statusMessage": "Checking the Unity Editor lock"
+            "statusMessage": "Checking the Unity Editor lock",
+            "onFailure": "block"
           }
         ]
       }

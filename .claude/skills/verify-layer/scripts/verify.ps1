@@ -14,7 +14,7 @@ $fails = [System.Collections.Generic.List[string]]::new()
 $warns = [System.Collections.Generic.List[string]]::new()
 function Fail($m) { $fails.Add($m) }
 function Warn($m) { $warns.Add($m) }
-function Rel($p) { [IO.Path]::GetRelativePath($root, $p) -replace '\\', '/' }
+function Rel($p) { $(if ($p.StartsWith($root)) { $p.Substring($root.Length).TrimStart('/', [char]92) } else { $p }) -replace '\\', '/' }
 
 $Budget = @{ ClaudeMd = 30; AlwaysRules = 100; PathRule = 40; Desc = 250; AgentBody = 25; Pipeline = 120; Skill = 500 }
 $RetiredAgents = 'unity-engineer', 'assurance-evaluator', 'build-run-engineer', 'build-verification-tester'
@@ -65,8 +65,9 @@ function Test-Tables([string]$path, [string[]]$lines) {
 
 function Test-Paths([string]$path, [string]$text) {
     $dir = Split-Path $path
-    foreach ($m in [regex]::Matches($text, '`(\.claude/[^`\s*<>{}…]+)`')) {
+    foreach ($m in [regex]::Matches($text, '`(\.claude/[^`\s*<>{}]+)`')) {
         $p = $m.Groups[1].Value.TrimEnd('/', '.', ',')
+        if ($p.Contains([string][char]0x2026)) { continue }
         if (-not (Test-Path (Join-Path $root $p))) { Fail "$(Rel $path): path '$p' does not exist" }
     }
     foreach ($m in [regex]::Matches($text, '\]\(([^)\s#]+)(?:#[^)]*)?\)')) {
@@ -86,12 +87,19 @@ function Test-File([string]$path) {
     $rel = Rel $path
     if ($rel -match '^\.claude/workflows/') {
         if ($path -notlike '*.js') { Fail "${rel}: .claude/workflows/ holds only .js workflow scripts" }
-        elseif ((Get-Content $path -Raw) -notmatch '^\s*export const meta\s*=') { Fail "${rel}: must start with 'export const meta = {...}'" }
+        elseif ((Get-Content $path -Raw -Encoding UTF8) -notmatch '^\s*export const meta\s*=') { Fail "${rel}: must start with 'export const meta = {...}'" }
         return
     }
     if ($rel -match '^\.claude/.*\.workflow') { Fail "${rel}: state belongs in <project>/.workflow/, never under .claude/" }
+    if ($path -like '*.ps1') {
+        # Windows PowerShell 5.1 reads a BOM-less script as ANSI; a UTF-8 dash can become a closing quote.
+        foreach ($c in [IO.File]::ReadAllText($path).ToCharArray()) {
+            if ([int]$c -gt 127) { Fail "${rel}: non-ASCII character in a PowerShell script"; break }
+        }
+        return
+    }
     if ($path -notlike '*.md') { return }
-    $text = Get-Content $path -Raw
+    $text = Get-Content $path -Raw -Encoding UTF8
     $lines = $text -split '\r?\n'
     Test-Tables $path $lines
     Test-Paths $path $text
@@ -140,14 +148,14 @@ if ($File) {
     $p = if ([IO.Path]::IsPathRooted($File)) { $File } else { Join-Path $root $File }
     Test-File $p
 } else {
-    $files = @(Get-ChildItem $claude -Recurse -File | Where-Object { $_.FullName -notmatch '[\\/](scripts|assets)[\\/]' -and $_.Extension -in '.md', '.js' -or $_.FullName -match '[\\/]workflows[\\/]' })
+    $files = @(Get-ChildItem $claude -Recurse -File | Where-Object { $_.FullName -notmatch '[\\/](scripts|assets)[\\/]' -and $_.Extension -in '.md', '.js' -or $_.FullName -match '[\\/]workflows[\\/]' -or $_.Extension -eq '.ps1' })
     $files += Get-Item (Join-Path $root 'CLAUDE.md'), (Join-Path $root 'README.md') -ErrorAction SilentlyContinue
     foreach ($f in $files) { Test-File $f.FullName }
 
     $always = 0
     foreach ($r in Get-ChildItem (Join-Path $claude 'rules') -Filter *.md) {
-        $fm = Get-Frontmatter (Get-Content $r.FullName -Raw)
-        if (-not ($fm -and $fm.paths)) { $always += (Get-Content $r.FullName).Count }
+        $fm = Get-Frontmatter (Get-Content $r.FullName -Raw -Encoding UTF8)
+        if (-not ($fm -and $fm.paths)) { $always += (Get-Content $r.FullName -Encoding UTF8).Count }
     }
     if ($always -gt $Budget.AlwaysRules) { Warn ".claude/rules: always-loaded rules $always lines > $($Budget.AlwaysRules) recommended" }
     if (Test-Path (Join-Path $claude 'commands')) { Fail ".claude/commands: convert commands to skills" }
