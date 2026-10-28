@@ -95,7 +95,7 @@ Primitives (`bool`, `byte`, `sbyte`, `char`, `decimal`, `double`, `float`, `int`
 | `AsNativeArray()` | `NativeArray<T>` | Zero-allocation read-only view; valid only until the next mutation | same |
 | `OnListChanged` | `event ... NetworkListEvent<T>` | Fires once per structural change | [NetworkListEvent\<T\> API](https://docs.unity3d.com/Packages/com.unity.netcode.gameobjects@2.13/api/Unity.Netcode.NetworkListEvent-1.html) |
 | `LastModifiedTick` | — | Obsolete, no longer used | [API](https://docs.unity3d.com/Packages/com.unity.netcode.gameobjects@2.13/api/Unity.Netcode.NetworkList-1.html) |
-| Delta support | By default, collection types support delta updates — full serialization happens on spawn/for late joiners, deltas apply afterward | [NetworkVariable manual](https://docs.unity3d.com/Packages/com.unity.netcode.gameobjects@2.13/manual/basics/networkvariable.html) |
+| Delta support | — | By default, collection types support delta updates — full serialization happens on spawn/for late joiners, deltas apply afterward | [NetworkVariable manual](https://docs.unity3d.com/Packages/com.unity.netcode.gameobjects@2.13/manual/basics/networkvariable.html) |
 
 `NetworkListEvent<T>` fields: `Type` (`EventType`), `Index` (`int`, if applicable), `Value` (`T`, if applicable), `PreviousValue` (`T`, when `Type == Value`, i.e. an in-place change).
 

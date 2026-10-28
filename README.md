@@ -1,455 +1,112 @@
 # AI-For-Game-Development
 
-A complete, drop-in **AI game-development team** for [Claude Code](https://claude.com/claude-code), built for
-Unity production work. It is not a game and not a library — it is the `.claude/` configuration layer that
-turns a single general-purpose assistant into a **28-role studio** with explicit ownership boundaries, review
-gates, QA sign-off, and human checkpoints where decisions actually belong to a person.
+A Claude Code framework for producing Unity games — Windows/macOS/Linux, Android, iOS; hyper-casual to hard-core — with a Game Designer (GD) directing and agents doing the engineering. Copy `.claude/` and `CLAUDE.md` into a Unity project and work through slash commands.
 
-Everything here is Markdown, JSON and one PowerShell script. No runtime, no build step, no dependency to
-install — copy `.claude/` into a Unity project and the behaviour changes.
+## Install
 
-## Table of contents
-
-- [Why this exists](#why-this-exists)
-- [What you get](#what-you-get)
-- [Core concepts](#core-concepts)
-- [Installation](#installation)
-- [Quick start](#quick-start)
-- [How work is routed](#how-work-is-routed)
-- [The pipelines](#the-pipelines)
-- [Checkpoints](#checkpoints)
-- [The agent roster](#the-agent-roster)
-- [The skill library](#the-skill-library)
-- [Rules and standards](#rules-and-standards)
-- [Slash commands](#slash-commands)
-- [State: the ledger and the two locks](#state-the-ledger-and-the-two-locks)
-- [Repository layout](#repository-layout)
-- [Extending the framework](#extending-the-framework)
-- [Project conventions](#project-conventions)
-- [Maintenance and verification](#maintenance-and-verification)
-- [Known limitations](#known-limitations)
-
-## Why this exists
-
-A single assistant working on a Unity codebase fails in predictable ways: a damage formula lives inside a
-`MonoBehaviour` where the server can never validate it, the author reviews their own work and finds nothing,
-"tested" means "read the file". None of that is a knowledge failure — it is a **structure** failure: no
-separation of authorship from review, no owner for a decision, no gate where a human says yes.
-
-| Failure | What this framework puts in the way |
-|---|---|
-| Game rules duplicated between client and server | A hard `Game.Core.*` boundary, plus `shared-core-boundary-audit` |
-| The author reviews their own work | `code-reviewer` and `security-reviewer` are always different agents, run in parallel, and cannot edit files |
-| "It works" with nothing behind it | `verification-standards.md` — every QA output states what it did **not** cover |
-| An expensive process on a trivial ask | Step 0 sizing: over a dozen rows, first match wins, zero agent calls to decide |
-| Consequence buying an 8-call pipeline | The **gated-direct lane** — a criterion tripped for consequence alone still costs three calls, not eight |
-| A big decision made silently | Four checkpoints where the human, not an agent, approves |
-| A loop that never converges | Every cap in the layer is counted and composes into a stop — `references/bounds.md` |
-| A question the GD should have been asked, skipped | Every ask, approval and notice is registered by ID in `gd-touchpoints.md` and machine-checked against the file that owns it |
-| Secrets in code, history, or logs | `security.md` — zero-tolerance, no tier exemption, ever |
-
-The premise throughout: **agents are isolated, stateless, silent and alone** — each sees only its own dispatch
-prompt, cannot remember a prior run, and cannot dispatch another agent. Every counter belongs to the caller,
-which is why this repository has a workflow layer and a ledger at all.
-
-## What you get
-
-| Layer | Path | Count | What it does |
-|---|---|---|---|
-| **Rules** | `.claude/rules/` | 12 files, flat | Auto-loaded into every session — standards every agent obeys before it can even read its task |
-| **Standards** | `.claude/standards/` | 8 files — `client/` (5), `qa/` (3) | Loaded **on demand**, only by the agents whose track owns them |
-| **Agents** | `.claude/agents/` | 22 agents, flat | Each a system prompt: one role, its scope, its refusals, its output envelope |
-| **Skills** | `.claude/skills/` | 90 skills, flat | On-demand technique packages, one per `.claude/skills/<name>/SKILL.md` |
-| **Workflows** | `.claude/workflows/` | orchestrator + 6 pipelines, a GD touchpoint registry, 3 shared references, 5 state templates, 1 verification script | Entries, hard ordering, GD touchpoints, bounds and exits — the model plans everything between them |
-| **Commands** | `.claude/commands/` | 6 slash commands | Self-contained investigations — one of which edits code |
-| **Docs** | `docs/` under `.claude/` | Reference material only | Authoring templates, prompt templates and review history. **Nothing outside it depends on it** |
-| **Settings** | `.claude/settings.json` | 35 allow-rules | Pre-approved read-only git/lfs commands so routine inspection does not prompt |
-
-**The division of labour is strict**: `rules/`+`standards/` are standards, `agents/` is who owns what,
-`skills/` is how a technique works, `workflows/` is what runs when. An agent file that describes sequence is
-wrong; a workflow file that explains a technique is wrong; a skill that owns a decision is wrong.
-
-## Core concepts
-
-### The GD
-
-**GD** means the Game Designer / Director — *you*. Agents never decide on the GD's behalf; four checkpoints
-exist so direction, spec approval, build acceptance and feature closure are answered by a person.
-
-### Tiers — `task-classification.md`
-
-Every task is classified on **five independent axes** (D difficulty, C criticality, U uncertainty, R
-reversibility, X exposure) into an **A1–A5** assurance tier — the retired Simple/Medium/Complex triage tier
-appears nowhere in this framework anymore. Tier = the **highest** of D/C/R/X; **U2** raises it one level
-unless resolved, **U3** forces **A5** until bounded. **D sets shape** (roles, Tech Spec, checkpoints); **C/R/X
-set depth** (verification, evidence) and never buy a checkpoint or extra agent alone — feature-root documents
-follow the tier itself; **U** is the direction gate, spent down once resolved. The tier also sets the
-verification floor (V1→V4) and attempt budget (2→5) an execution must meet — full axis definitions and the
-per-tier table are in [`task-classification.md`](.claude/rules/task-classification.md) and
-[`effort-allocation.md`](.claude/rules/effort-allocation.md), not restated here.
-
-### Tracks
-
-The **backend track** (multiplayer / server-authoritative) is *caller state* — `netcode-engineer` returns
-`Blocked` rather than assume it's on; `technical-architect` assumes client-only, and says so, when nobody says
-otherwise.
-
-### The Shared Core boundary
-
-| Namespace | Contains | May reference `UnityEngine` |
-|---|---|---|
-| `Game.Core.*` | Every rule that decides an outcome — damage, cooldowns, economy math, state machines | **Never** |
-| `Game.Client.*` | MonoBehaviours, scenes, prefabs, UI, rendering, input | Yes |
-| `Game.Server.*` | Server-side validation wrapping the Core — backend track only | No |
-
-Shared Core is additionally **deterministic** — no `UnityEngine.Random`, no wall-clock time, no float
-operation that can diverge across platforms — which is what lets prediction and authority ever agree.
-
-### The output envelope
-
-Every agent returns a structured value, not a chat message:
-
-```
-Status: Done | Blocked | Rejected | Needs-decision
-Routed to: <agent-id> | gd | none
-Needs: <missing input | none>
-[role-specific fields]
-```
-
-`Blocked` is a **correct result**, not a failure — supply exactly what `Needs:` names, never guess. `Routed to:`
-is a **recommendation**, never an action taken, since agents cannot dispatch each other. For any review, read
-`Verdict:`, never `Status:` — a review requesting changes still returns `Status: Done`.
-
-## Installation
-
-### Requirements
-
-- **Claude Code** (CLI, desktop, web, or an IDE extension).
-- A **Unity project** — this framework assumes Unity/C# throughout; the bundled `.gitignore` is the standard
-  Unity one, which tells you where `.claude/` is meant to sit: the project root.
-- A **Unity Editor MCP server**, for the ten agents that declare Editor tools in their `tools:` frontmatter.
-- *Recommended, not required:* the official **Unity plugin**, `unity@claude-plugins-official`. Its `unity:*`
-  skills are narrow Editor-action workflows; the repo skills stay the technique references and carry the
-  project's rules. Twelve repo skills name their plugin counterpart in a "Companion" line, and the repo skill
-  wins where the two disagree. Without the plugin those lines are simply unused.
-
-### Steps
+Requirements: Claude Code; a Unity project (Unity CLI recommended — `com.unity.pipeline`); **PowerShell 7+** (`pwsh`) for the hooks, on every OS; optionally a Unity MCP server and the official Unity plugin (`unity@claude-plugins-official`).
 
 ```bash
-git clone https://github.com/<your-fork>/AI-For-Game-Development /tmp/ai-gamedev
-cp -r /tmp/ai-gamedev/.claude .
-cp /tmp/ai-gamedev/.gitignore .          # skip if your project has its own
-cp /tmp/ai-gamedev/CLAUDE.md .           # then fill in every <!-- TODO -->
-claude                                   # from the project root
+git clone <this repo> /tmp/aigd
+cp -r /tmp/aigd/.claude /tmp/aigd/CLAUDE.md <your-unity-project>/
+cd <your-unity-project> && claude
+> /new-project          # fills CLAUDE.md, asmdefs, git/LFS, perf budget, .workflow/
 ```
 
-### Connecting the Unity Editor
+Editor agents name MCP tools exactly (`mcp__unity-mcp__…`). Check they match your server:
+`grep -h '^tools:' .claude/agents/*.md | tr ',' '\n' | grep mcp__ | sort -u`. Without an Editor connection everything still runs except Play Mode, profiling and in-Editor tests, which QA reports as not covered.
 
-Editor-driven agents name their MCP tools **exactly** in frontmatter (e.g. `Unity_RunCommand`). A mismatch
-with your connected server fails silently at call time. Verify the names line up, then fix any mismatch in
-each agent's `tools:` line — nothing else needs changing:
+## Use
 
-```bash
-grep -h '^tools:' .claude/agents/*.md | tr ',' '\n' | grep mcp__ | sort -u
-```
+| You want | Type |
+|---|---|
+| Set up a project | `/new-project` |
+| GDD → milestones → sized backlog | `/plan-game <gdd>` |
+| Build a feature | `/feature <request>` |
+| Fix a bug | `/fix <bug or symptom>` |
+| Review code | `/review <diff or path>` · large: workflow `review-gate` |
+| Test / evidence | `/qa <feature>` |
+| Tech or vendor decision | `/decide <capability>` |
+| Release candidate | `/release <platforms> [--dry-run]` |
+| Project health check | workflow `project-audit` |
+| Crash on a test device | `/investigate-device-crash` |
+| Test plan only | `/plan-test-coverage` · static risk review: `/review-code-risks` |
+| Merge conflicts | `/resolve-merge-conflicts` |
 
-### Without a Unity Editor connection
+Anything else: just ask. `rules/routing.md` routes it and states the route in one line.
 
-Everything else still works — triage, Tech Specs, Shared Core, both review gates, research, git, CI/CD, and
-every planning role. What you lose is Play Mode verification, profiling and in-Editor tests, and QA reports
-those as **uncovered** rather than silently passing.
+## How it works
 
-## Quick start
+**Sizing** — every input is S, M or L, plus a risk flag.
 
-- **Ask a question — costs nothing.** *"How does the ability cooldown flow through `Game.Core.Combat`?"*
-  Answered directly, or by one read-only agent.
-- **Make a small, visible change — one agent.** *"The camera zoom feels slow — snap it up, judge it by
-  playing."* Judgeable by looking → direct, no fan-out, no checkpoint.
-- **Build a feature — the full pipeline.** Describe it with its objective, scope, constraints and what "done"
-  means; step 0 checks it against the five escalation criteria below.
-- **Investigate something specific** — `/review-code-risks Assets/Scripts/Combat`,
-  `/plan-test-coverage --spec docs/specs/fireball.md`, `/investigate-device-crash android com.studio.game`.
-- **Call one role directly — your cost override.** *"Have `unity-engineer` wire the Fireball prefab in."*
-  Naming an `agent-id` bypasses Step 0 outright; review debt still accrues, but nothing blocks.
-
-## How work is routed
-
-`orchestrator.md` Step 0 sizes every input the GD did **not** address to an agent or a pipeline — zero agent
-calls, stated out loud so you can redirect immediately. **Read top-down, first match wins, specific before
-general** — a catch-all takes only what nothing above it claimed.
-
-| Input | Handling | Calls |
+| Size | Means | Flow |
 |---|---|---|
-| A git or version-control task | `git-expert` | 1 |
-| A CI/CD task — author a pipeline, or diagnose a failed run | `ci-cd-engineer` | 1 |
-| A crash/ANR from **released production telemetry** | `crash-anr-investigator` — a device *under test* is `/investigate-device-crash` instead | 1 |
-| A change to a spec the GD already approved | `change-request.md` **E1** — halt new work against it first | 1–3 |
-| A bug in something the pipeline built, spec still stands | `feature-development.md` **E3** | 1–3 |
-| An audit of code already in the repo — read, never run | `review-pipeline.md` **E2** | 1–2 |
-| Coverage/evidence on work already built — run, never only read | `qa-pipeline.md` **E4** | 2–5 |
-| "What exists today" for a missing capability | `research-decision.md` **E5** | 1–4 |
-| "Measure it on our own hardware first" | `research-decision.md` **E6** — asking *is* the summon | 2–4 |
-| **Consequence only** — one role, no contract moves, behaviour already stated | **Gated-direct** — the agent, then both gates if the GD authorises them | 1–3 |
-| Any of the five escalation criteria below | `feature-intake.md` **E1** — classification sets the tier | 8+ |
-| Judgeable by looking — UI, layout, a tuned value, one local behaviour | Directly, or one agent — no fan-out, no checkpoint | 0–1 |
-| A chore, or a question | Directly, or one read-only agent | 0–1 |
+| S | One role, judgeable by looking, no new contract | Directly or one agent; the reply closes it |
+| M | 2+ roles, a new contract or screen, or touches `Game.Core.*` | `/feature`: spec → CP2 → build → review → QA → CP4 |
+| L | Architecture, netcode, new Core system, or an undecided direction | `/feature` with CP1 (options → critic → GD locks) and CP3 |
 
-### The five escalation criteria
+Risk flag (signing, real-money IAP, store, PII, save migration, published history, released build, perf budget, anti-cheat) → review and security run automatically, at any size.
 
-Any one of these trips `feature-intake.md` **E1**: touches `Game.Core.*` (C2+), touches a consequence path —
-credential/signing, real-money IAP/billing, a store submission, player PII, save-data migration, published git
-history, a released build, a shipped perf budget (C3+), needs more than one role (D3+), is
-multiplayer-relevant (C2+), or rests on something the GD has not decided yet (U3). Full criteria and axis
-definitions live in [`task-classification.md`](.claude/rules/task-classification.md).
+**Profile** (`CLAUDE.md`) sets the defaults — hyper-casual skips CP1 and the full spec, hard-core turns on netcode, perf and automation QA. Table in `rules/routing.md`.
 
-**Route by the cost of being wrong, never by whether behaviour changed** — consequence buys the *gates*, never
-the pipeline. Tripped for **consequence alone**, with one role and no moving contract, it's the **gated-direct
-lane** above: the agent, then — once the GD says yes, with a recommendation to — both gates, capped at two
-strikes before escalating anyway. **D3+ or U3 is different in kind** — that input needs coordination or a
-direction, which is shape.
+**Checkpoints** — CP1 direction · CP2 spec · CP3 built vs spec · CP4 closure. The GD answers every question through `AskUserQuestion`, recommended option first.
 
-### The three modes
+**One stop rule** — the same step failing twice gets one root-cause pass from `technical-architect`; failing again stops and reports to the GD.
 
-| Mode | The GD says | What runs | Cost |
-|---|---|---|---|
-| **1 — routed** | A feature request, nothing named | Step 0 picks a lane; each optional gate is offered at its own boundary | Whatever the lane costs |
-| **2 — a named pipeline** | Names a pipeline, or an entry in one | That file, from that entry, returning **to the GD** | One pipeline's worth |
-| **3 — direct agent** | Names one or more `agent-id`s | Exactly those, serialised where the Editor lock applies | One call each |
+**Shared Core** — game rules live once in `Game.Core.*` (pure C#, deterministic, no `UnityEngine`); `Game.Client.*` integrates them; `Game.Server.*` validates them when multiplayer.
 
-Naming an `agent-id` is the GD's **cost override** — debt is recorded, nothing is blocked. Modes change
-**when** an invariant is satisfied, never **whether** it is owed.
+**One Editor, one device** — implementers run one at a time; read-only agents run in parallel.
 
-## The pipelines
+**State** — `.workflow/features/<slug>.md` per M/L feature, `.workflow/bugs.md` for bugs, `.workflow/backlog.md` from `/plan-game`. Commit it. A new session lists in-flight features automatically.
 
-`orchestrator.md` is not itself a pipeline — it owns Step 0 above, the three modes, the ledgers and the locks.
-Each pipeline is written as a **contract, not a procedure**: its entries, the agents it may dispatch, the few
-orderings whose violation breaks something, its GD touchpoints and bounds by ID, and its exits. Everything
-between those walls is the model's judgment. Three shared references hold what every pipeline cites:
-`bounds.md` (every loop cap), `optional-gates.md` (the shape of every gate ask) and `dispatch-brief.md` (what
-every dispatch carries). [`gd-touchpoints.md`](.claude/workflows/gd-touchpoints.md) is the registry of every
-point where the GD is asked, approves or is told — and where asking is forbidden.
+## Agents (23)
 
-| Pipeline | Scope | Dispatches | The mechanic worth knowing |
-|---|---|---|---|
-| **1. `feature-intake.md`** | Request → approved Tech Spec | `technical-architect`, `researcher` (Options), `critic` | Classification runs first, unconditionally. Options⇄Critic fires only at **D4–D5 or U3**, capped 3 rounds → CP1. **D1–D2 skips the Tech Spec** — direct notes to one agent |
-| **2. `research-decision.md`** | Missing capability → settled decision | `researcher`, `rd-engineer`, `cto` | Three depth lanes (Direct/Considered/Escalate) that only ever raise. `cto` never runs without a candidate set; `rd-engineer` only on an explicit GD summon; one measure-and-confirm cycle, hard capped |
-| **3. `feature-development.md`** | Approved spec → code at the gate offer | The 5 implementing roles, `technical-architect` for escalations | Shared Core first — downstream agents return `Blocked` without its contract. The client fan-out is serial (one Editor). **Review and QA are asked for, never auto-dispatched** |
-| **4. `review-pipeline.md`** | One submission, both gates → CP3 | `code-reviewer`, `security-reviewer`, `technical-architect` | Optional. Both gates run in parallel, wait for both, neither edits. Clear only on `Approve` **and** `Clear`; else +1 strike, capped 3 (2 on gated-direct) before root cause |
-| **5. `qa-pipeline.md`** | Cleared (or declined) review → CP4 | `qa-lead`, 4 executors, **`assurance-evaluator`** (A3+); the orchestrator writes the CP4 report | Optional, doesn't require review. `qa-lead` plans early; `assurance-evaluator` checks a claimed verification is actually evidenced — `FAIL` is an integrity finding, beyond any waiver. **CP4 always fires** |
-| **6. `change-request.md`** | A change to an approved spec | `technical-architect` | Halts new dispatch against the questioned spec first. **Minor** updates in place, no gate; **Moderate** reopens CP2; **Major** reopens CP1. Resets every rejection counter it invalidates |
-
-## Checkpoints
-
-Four checkpoints — each a point where an **agent stops and a person answers.**
-
-| CP | Fires at | The GD approves | Rejecting means |
-|---|---|---|---|
-| **1** | D4–D5, or U3 at any D | The locked direction, and which risks they accept | Back into the loop, capped at 3 rounds |
-| **2** | D3–D5 | The Tech Spec | Back to `technical-architect`, capped at 3 |
-| **3** | D3–D5, only when review ran; merged into CP4 at D1–D2 | What was built, against the spec | Drift to its author, capped at 2 |
-| **4** | Every shape, always — the only gate that fires whether or not the others did | Closing the feature, gaps and declined gates included | A defect (capped at 2) or a change request (unbounded) |
-
-**Review and QA are both optional** (`references/optional-gates.md`) — whoever reaches the boundary asks,
-states the cost of skipping, dispatches only on a yes. A decline is debt, never silence — **CP4 always fires
-regardless**: closing a feature is the GD's decision, never a gate's verdict.
-
-## The agent roster
-
-22 agents, **flat** — every one lives at `.claude/agents/<agent-name>.md`, no group subfolder (the harness
-resolves an agent one level deep, not two). An agent type exists only where it earns one: a distinct tool
-sandbox, independence from the author (every gate), a distinct model tier, or a distinct activation condition —
-domain knowledge alone lives in skills. Grouped informally, by concern:
-
-| Group (informal) | Count | Covers |
-|---|---:|---|
-| **Architecture** | 4 | Tech Spec, triage and escalations (`technical-architect`), strategic tech calls (`cto`), research and options, spikes |
-| **Client** | 4 | Shared Core; Unity integration, UI and all optimisation; shaders/VFX; SDK/platform |
-| **Backend** | 1 | Sync protocol and server authority — multiplayer track only |
-| **QA** | 8 | Scope/sign-off, both review gates, independent scoring (A3+ only), 4 execution roles |
-| **DevOps** | 3 | Git ops/forensics, CI/CD authoring, builds (GD-summoned only) |
-| **Direction** | 1 | Attacking a direction the GD leans toward |
-| **Live-Ops** | 1 | Released production crash/ANR telemetry only |
-
-Every agent's own frontmatter `description` in `.claude/agents/` is the authoritative one-line summary — not
-repeated here. **The `tools:` list is the hard sandbox.** 12 agents hold no `Write`/`Edit` — reports leave no
-source, so direct dispatch accrues no review debt. 7 hold Editor tools and 2 hold device tools, neither ever
-two at once, project-wide. `code-reviewer` and `security-reviewer` cannot edit, ever.
-
-## The skill library
-
-90 skills, **flat** — every one lives at `.claude/skills/<skill-name>/SKILL.md`, no group subfolder (they were
-flattened out because the harness resolves a skill one level deep, not two). Frontmatter carries only `name`
-and `description`; there is no category field left, so grouping below is informal, read off each skill's own
-description rather than off any folder or frontmatter key.
-
-| Area (informal) | Skills |
+| Group | Agents |
 |---|---|
-| **Client/Unity (57)** | Rendering, UI, physics, 2D/3D content, camera & audio, DOTS, networking primitives, architecture patterns, performance, tooling & data — the full Unity/.NET surface, e.g. `render-pipeline-urp-hdrp`, `ugui`, `unity-ecs-architecture`, `netcode-for-gameobjects`, `unity-job-system-and-burst`, `zstring-zero-allocation-strings` |
-| **QA (7)** | `shared-core-boundary-audit`, `secret-and-supply-chain-scan`, `risk-based-test-planning`, `playtest-scenario-execution`, `performance-budget-verification`, `device-test-walkthrough`, `build-fault-triage` |
-| **Architecture (10)** | `netcode-architecture-decision`, `backend-build-vs-buy`, `anti-cheat-strategy`, `ad-mediation-monetization-platform`, `analytics-telemetry-platform`, `live-ops-content-pipeline`, `cross-platform-expansion-assessment`, `tech-vendor-dependency-risk-assessment`, `tco-reversibility-scoring`, `engineering-standard-adr-authoring` |
-| **DevOps (9)** | `git-safety-anchor`, `git-recovery`, `git-forensics`, `git-unity-repo`, `jenkins-pipeline-authoring`, `unity-batchmode-cli`, `fastlane-mobile-delivery`, `firebase-app-distribution`, `ci-pipeline-failure-triage` |
-| **Live-Ops (3)** | `crash-anr-fault-domain-triage`, `crash-anr-symbolication`, `crash-anr-reporting-gate` |
-| **Research (4)** | `technology-scouting-sweep`, `source-credibility-grading`, `practical-fit-screening`, `solution-comparison-report` |
+| Build | `csharp-engineer` (Core) · `gameplay-engineer` · `ui-engineer` · `unity-performance-engineer` · `technical-artist` · `netcode-engineer` · `sdk-platform-engineer` · `backend-engineer` (optional) |
+| Design & decide | `technical-architect` · `cto` · `researcher` · `critic` · `rd-engineer` |
+| Gates | `code-reviewer` · `security-reviewer` |
+| QA | `qa-lead` · `qa-automation-engineer` · `playtest-tester` · `performance-qa-engineer` |
+| Ship & ops | `build-release-engineer` · `ci-cd-engineer` · `git-expert` · `crash-anr-investigator` |
 
-None of the 90 duplicates a skill in the official Unity plugin: where the two touch, the plugin skill is
-narrower — one Editor action — and the repo skill names it as a companion rather than repeating it.
+Every agent preloads skill `agent-protocol` (one return envelope) plus its standards (`csharp-standards`, `qa-standards`), and loads domain skills on demand.
 
-`shared-core-boundary-audit` is the one to know: it turns the project's one unabsorbable defect class — a rule
-duplicated in two places, or a Core that cannot produce the same answer twice — into a mechanical grep, rather
-than a judgement that depends on how carefully one person read a diff.
-
-## Rules and standards
-
-`.claude/rules/` is **auto-loaded into every session** — 12 flat files, no subfolders, covering orchestration
-and dispatch invariants, task classification, effort/verification budgets, the execution-attempt loop,
-feature-context reading order, security (zero tolerance, no tier exemption), the implementation-note handoff,
-commit-message convention, working language, shell and Unity-tooling preference. Each file is short and
-single-purpose; read the file itself rather than a summary here.
-
-`.claude/standards/` is loaded **on demand**, only by the agents whose track it governs — `client/` (coding
-principles, style, naming, performance, feature documentation) and `qa/` (verification standards, defect
-reporting, assurance scoring). [`standards-index.md`](.claude/rules/standards-index.md) is the authoritative
-"who reads what, when" table and the reason these live outside the auto-loaded tree at all.
-
-Three worth knowing without opening a file: **`this.` qualification is mandatory** (`this.health -= damage;`).
-**Unity null checks use the implicit `bool`** (`if (this.rb)`) on `UnityEngine.Object`-derived types only;
-plain C# and `Game.Core.*` types use `!= null`. **Every QA output states what it did not cover**, never `none`
-unless coverage was genuinely exhaustive.
-
-## Slash commands
-
-| Command | Arguments | What it does |
-|---|---|---|
-| [`/review-code-risks`](.claude/commands/review-code-risks.md) | `[paths...]` | Static C#/Unity review for perf, memory and crash/ANR risk — report only, never edits |
-| [`/plan-test-coverage`](.claude/commands/plan-test-coverage.md) | `[paths...] [--spec doc]` | Derives normal + edge test cases and a manual flow — never decides which are owed |
-| [`/investigate-device-crash`](.claude/commands/investigate-device-crash.md) | `[android\|ios] [package-id]` | Investigates a crash/ANR on the **currently connected device** |
-| [`/resolve-merge-conflicts`](.claude/commands/resolve-merge-conflicts.md) | — | Resolves an in-progress merge across code, prefabs, scenes, SOs, Addressables — **this one edits files** |
-| [`/verify-workflow-layer`](.claude/commands/verify-workflow-layer.md) | — | Runs `tools/verify-workflow-layer.ps1` and reports any break in the workflow layer's integrity |
-| [`/save-workmemory`](.claude/commands/save-workmemory.md) | `[feature-root-path]` | Summarizes the session into `WORKMEMORY.md` at the feature root — creates or updates in place |
-
-`/plan-test-coverage` also runs inside `qa-pipeline.md`'s device lane, filtered to whatever `qa-lead`
-assigned.
-
-## State: the ledger and the two locks
-
-Cross-run state is what no agent can hold, written **whenever a counter, a checkpoint or a gate answer
-changes**, before the next dispatch. **None of it lives under `.claude/`** — that directory is the framework
-every project copies unchanged.
-
-| State | Where |
-|---|---|
-| One feature's run state, the GD's decisions, its gaps and counters | `<state-root>/features/<slug>/LEDGER.md` — the orchestrator's, outside the Unity project |
-| One feature's implementation decisions | `<feature-root>/DECISIONS.md` — read before undoing a design |
-| The in-flight index, gate debt, gated-direct counters, standalone decisions, project-wide patterns, both locks | `<state-root>/project-state.md` — `.workflow/` at the project root unless `CLAUDE.md` says otherwise |
-| One feature's test cases, each with its latest result, and its bugs in full | `<state-root>/features/<slug>/BUGS.md` |
-| The project-wide bug index — the only place a bug ID is allocated — and bugs with no feature | `<state-root>/bug-log.md` |
-| One row per closed feature, measuring what the layer's chosen constants actually cost | `<state-root>/calibration.md` |
-
-**Review debt**: any `Write`/`Edit`-capable agent dispatched outside a gate accrues it — recorded, never
-enforced, settling in batch. A **declined** gate is the same kind of debt, per `references/optional-gates.md`.
-
-**Bugs**: every defect QA or the GD reports gets a project-wide ID (`BUG-0001`) and moves
-`Open → Fixed → Closed`, or back through `Reopened`. The implementing agent may only mark a bug `Fixed`; only
-a QA verification closes or reopens it; only the GD accepts one as `Won't fix`. A bug reopened twice goes to
-root cause. The orchestrator is the only writer of both bug files — agents propose in their returns.
-
-**The Editor lock**: one Unity Editor, project-wide. **The device lock**: one physical device, independent of
-the Editor lock. Two holders of the same lock never run at once; a holder that dies leaves it *suspect*, never
-silently free — `state/README.md` carries the three-step reclaim.
-
-## Repository layout
+## Layout
 
 ```
-.
-├── .claude/
-│   ├── agents/                     # 28 roles, flat: <agent-name>.md
-│   ├── commands/                   # 6 slash commands
-│   ├── docs/                       # reference material only — nothing outside it depends on it
-│   ├── rules/                      # 12 auto-loaded files, flat
-│   ├── standards/                  # 8 files, loaded on demand — client/ (5), qa/ (3)
-│   ├── skills/                     # 90 skills, flat: <name>/SKILL.md
-│   ├── workflows/
-│   │   ├── orchestrator.md         # the router, modes, ledgers, locks
-│   │   ├── gd-touchpoints.md       # every GD ask, approval, notice — and every no-ask — by ID
-│   │   ├── feature-intake.md · research-decision.md · feature-development.md
-│   │   ├── review-pipeline.md · qa-pipeline.md · change-request.md
-│   │   ├── open-items.md           # what is still open about the layer itself
-│   │   ├── references/             # bounds.md · optional-gates.md · dispatch-brief.md
-│   │   ├── state/                  # rules + templates for the state layer — never state itself
-│   │   └── tools/                  # verify-workflow-layer.ps1
-│   └── settings.json               # pre-approved read-only git/lfs commands
-├── .gitignore                      # the standard Unity ignore set
-├── CLAUDE.md                       # per-project template — fill in every TODO before first use
-└── README.md                       # this file
+CLAUDE.md                 project identity, stack, tooling, overrides (template, ≤30 lines)
+.claude/
+  rules/core.md           always loaded: language, GD, truth, security, tools
+  rules/routing.md        always loaded: routes, sizing, profile, checkpoints, stop rule
+  rules/csharp.md         loaded only when a .cs file is touched
+  agents/                 23 agents
+  skills/                 pipelines (/feature …), standards, ~90 domain skills
+  workflows/*.js          Claude Code workflows: review-gate, project-audit
+  hooks/*.ps1             secret scan, pre-commit secret + .meta check, layer verify, session resume
+  settings.json           permissions (deny force-push/reset --hard/keystores; ask push/checkout) + hooks
+framework-docs/           design history, templates, backlog — not copied into projects
 ```
 
-This repository contains no Unity project and no C# source — it is the configuration layer only.
+## Hooks
 
-## Extending the framework
-
-**Adding an agent** — create `.claude/agents/<agent-name>.md`, **flat**, no group folder. Frontmatter: `name`
-(equal to the filename), `description` (the only text the dispatcher reads — scope, plus "Not for" naming
-the neighbouring owners), `model`, `tools` (the hard sandbox) and `color`. Body, as short as the role allows: a
-purpose paragraph, then `## Inputs` (each with its `absent:` fallback), `## Skills`, `## Read` (the track
-standards it loads), `## Return` (the envelope plus role fields) and `## Never`. Rules under `.claude/rules/`
-load on their own — never restate them. Check for an overlapping owner first; a new domain usually wants a skill,
-not an agent. Model matches the hardest judgment the role makes, not how important it sounds.
-
-**Adding a skill** — create `.claude/skills/<skill-name>/SKILL.md`, **flat**; `name:` must equal the folder
-name. `description` is a retrieval index (surface, when, not for), 50–100 words. Keep the body under 200 lines
-and push depth into `references/*.md` beside it.
-
-**Adding a workflow step** — state what must be true, not how to get there. Add a re-enterable step's door to
-its pipeline's **Entries** table and to `orchestrator.md`'s mode-2 doors; name its required inputs in
-`references/dispatch-brief.md`; register any new GD ask, approval or notice in `gd-touchpoints.md` and cite
-its ID where it fires; put any new loop cap in `references/bounds.md`; then run the verifier.
-
-| Concern | Home |
+| Event | Does |
 |---|---|
-| Entries, hard ordering, exits | the pipeline in `.claude/workflows/` |
-| Every point the GD is asked, approves or is told | `.claude/workflows/gd-touchpoints.md` |
-| Every loop cap | `.claude/workflows/references/bounds.md` |
-| Cross-run state; acting on a `Routed to:` | `orchestrator.md` + `<state-root>/features/<slug>/LEDGER.md` + `<state-root>/project-state.md` |
-| How a technique works | the skill |
-| Coding standards, naming, working language | `.claude/rules/*` and `.claude/standards/*` |
+| Edit/Write | Blocks content with a secret shape (private keys, AWS/Google/GitHub/Slack/Stripe keys, JWTs, password literals) |
+| `git commit` | Blocks staged secrets, Unity assets without `.meta`, orphan `.meta`, `.meta` left behind |
+| Edit under `.claude/` | Runs `/verify-layer` on the file |
+| Session start | Lists in-flight features |
 
-## Project conventions
+## Extending
 
-| Where | Language |
-|---|---|
-| Your input | Vietnamese, English, or mixed — parsed as-is |
-| All internal work — reasoning, specs, verdicts, code, commit messages, logs | **English, always** |
-| The final reply to you | **Vietnamese, always** — every role, without exception |
+- New agent: only for a distinct tool sandbox, an independent gate, a model tier or an activation condition — template in `framework-docs/agent-template.md`. Domain knowledge is a skill.
+- New skill: `.claude/skills/<name>/SKILL.md`, description ≤ 250 chars (what + when), detail in `references/`.
+- Keep every file terse: bullets and tables, no rationale unless omitting it causes wrong behaviour.
+- Run `/verify-layer` before committing changes under `.claude/`.
 
-**Commits**: English, imperative subject, blank line, a body explaining *why* — no `feat:`/`fix:` prefixes.
-One commit, one change. **Document length**: files under `.claude/` stay short. For the workflow layer —
-`workflows/` and the orchestrator — under 200 lines is **recommended, not required**; the verifier only warns.
-Skill bodies keep their own 200-line budget. This README is meant to be read whole, so it is not bound by
-either — but it stays a summary, pointing at the rule or standard for detail.
+## Conventions
 
-## Maintenance and verification
+English for code, docs and commits; replies to the GD in Vietnamese. Commits: imperative subject, why-body, no `feat:` prefixes. Never push without asking.
 
-Run `.claude/workflows/tools/verify-workflow-layer.ps1` (or `/verify-workflow-layer`) after any change under
-`.claude/`. It checks integrity and cross-file meaning, never exact phrases: every reference resolves; every
-agent, skill, invariant, bound and pipeline door cited exists; every GD touchpoint is cited by the file that
-owns it and, when it asks, says what happens on no; a pipeline routes only to agents it may dispatch; every
-state field and pre-filled counter matches its template and bound; every standard reaches its readers; no
-runtime state sits under `.claude/`; and nothing outside the docs folder depends on it. What is still open
-about the layer itself is in `.claude/workflows/open-items.md`.
-
-## Known limitations
-
-- **Optional gates mean asked, not assumed** — a decline is recorded as debt, but nobody independently checked
-  the claim until that debt is paid off.
-- **One Editor, one device, project-wide** — Editor-driven work is serial regardless of what runs in parallel,
-  and no build means no device lane at all.
-- **`assurance-evaluator` only runs at A3+** — below that, no gate independently checks a claimed
-  verification.
-- **The layer has never run against a real Unity project** — every bound is chosen, not measured until
-  `calibration.md` gathers rows; see `open-items.md`.
-- **MCP tool names are project-specific** — a mismatch with your connected server fails silently at call time.
-- **`.claude/workflows/*` is not auto-loaded** — only `.claude/rules/**` is; `orchestration.md` is the
-  ignition.
 ## License
 
 No license file is present in this repository. Add one before distributing.

@@ -1,7 +1,8 @@
 ---
-description: Resolve an in-progress git merge across C# code, prefabs, scenes, ScriptableObjects, Addressables config and text — merging every feature from both branches on a major conflict, picking the standards-compliant side on a cosmetic one, and rewiring every asset reference
+name: resolve-merge-conflicts
+description: "Resolve an in-progress git merge across C#, prefabs, scenes, ScriptableObjects, Addressables and text: keep every feature from both sides on a major conflict, pick the standards-compliant side on a cosmetic one, rewire references."
 argument-hint: "[optional notes on which feature areas to prioritize]"
-allowed-tools: Bash, PowerShell, Read, Grep, Glob, Edit, Git
+allowed-tools: Bash, PowerShell, Read, Grep, Glob, Edit
 ---
 
 # Resolve a git merge conflict across code and Unity assets
@@ -16,7 +17,7 @@ allowed-tools: Bash, PowerShell, Read, Grep, Glob, Edit, Git
 
 **4 — Resolve big conflicts (mandatory, feature-preserving)**: combine both branches so every feature-bearing addition from either `ours` or `theirs` still exists after the merge — this is an H requirement, never picked around. Only when two features genuinely collide on the exact same line/field (both changed the same call in incompatible ways) does that specific span become a real small-scope decision (Step 5) — everything else in the file still merges additively. When a collision is a true contradiction in intent, not just code shape, say so and flag it for `technical-architect` rather than guessing which side "wins".
 
-**5 — Resolve small/cosmetic conflicts**: when a span differs only in form, pick whichever side already matches `.claude/standards/client/coding-principles.md` and `.claude/standards/client/code-style-and-layout.md` (explicit access modifiers, Allman braces, `this.` qualification, modern null/pattern operators, no inline statement bodies, named temporaries over chained calls), citing the clause, and fix the losing side up rather than leaving it non-compliant. If neither side is compliant, write the compliant form fresh.
+**5 — Resolve small/cosmetic conflicts**: when a span differs only in form, pick whichever side already matches `.claude/skills/csharp-standards/references/coding-principles.md` and `.claude/skills/csharp-standards/references/code-style-and-layout.md` (explicit access modifiers, Allman braces, `this.` qualification, modern null/pattern operators, no inline statement bodies, named temporaries over chained calls), citing the clause, and fix the losing side up rather than leaving it non-compliant. If neither side is compliant, write the compliant form fresh.
 
 **6 — Unity serialized assets**: check `git config merge.unityyamlmerge.driver` and `.gitattributes` for a `merge=unityyamlmerge` mapping; if configured, resolve via `git mergetool` on that file instead of hand-editing YAML — Unity's driver understands `fileID`/`m_CorrespondingSourceObject` structure a text merge doesn't. If unconfigured or it fails, resolve by hand applying Steps 3–5 at the GameObject/component/field level: every component and serialized field either branch added must survive; a genuine same-field value clash is the actual small conflict. Never invent a new `fileID` — reuse whichever one a branch already assigned.
 

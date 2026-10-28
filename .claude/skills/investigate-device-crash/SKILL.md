@@ -1,12 +1,13 @@
 ---
+name: investigate-device-crash
 description: Investigate a crash or ANR on the currently connected Android/iOS device and report the bug, root cause, and fix direction
 argument-hint: "[android|ios] [package-or-bundle-id]"
-allowed-tools: Powershell, Bash, Read, Grep, Glob, Skill
+allowed-tools: PowerShell, Bash, Read, Grep, Glob, Skill
 ---
 
 # Investigate a crash/ANR on the connected device
 
-`$ARGUMENTS`: optional `[android|ios] [package-or-bundle-id]` — infer what's missing below, ask the user rather than guess if it stays ambiguous. Ad-hoc, live-device only: not production telemetry (`crash-anr-investigator`'s job) and not verifying a known build artifact (`build-verification-tester`'s job) — redirect if that's what's meant. Reason in English (`language-and-comments.md`); final report to the user is in Vietnamese, evidence verbatim.
+`$ARGUMENTS`: optional `[android|ios] [package-or-bundle-id]` — infer what's missing below, ask the user rather than guess if it stays ambiguous. Ad-hoc, live-device only: not production telemetry (`crash-anr-investigator`'s job) and not verifying a known build artifact (`build-release-engineer`'s job) — redirect if that's what's meant. Reason in English (`language-and-comments.md`); final report to the user is in Vietnamese, evidence verbatim.
 
 **1 — Detect the device**: `adb devices -l`, and `idevice_id -l` if present. One answers, no platform given → use it. Both or neither → disambiguate from `$1` or ask, never pick arbitrarily. None connected → `Status: Blocked` (a correct result per `verification-standards.md`).
 

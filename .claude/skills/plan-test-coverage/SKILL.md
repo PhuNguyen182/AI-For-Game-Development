@@ -1,7 +1,8 @@
 ---
+name: plan-test-coverage
 description: Derive a full test case list (normal + edge cases), a manual test flow, and a cross-feature impact analysis from docs/spec, the request itself, or the code — reports only, never writes or runs tests
 argument-hint: "[file-or-directory-path...] [--spec path-to-doc]"
-allowed-tools: Powershell, Read, Grep, Glob, Bash, Skill
+allowed-tools: PowerShell, Read, Grep, Glob, Bash, Skill
 ---
 
 # Plan test coverage for a feature or change
@@ -12,7 +13,7 @@ allowed-tools: Powershell, Read, Grep, Glob, Bash, Skill
 
 **2 — Derive the test case list**: invoke `risk-based-test-planning` directly with the testable claims from Step 1 — it already covers equivalence partitions, boundary values, decision tables, state-transition coverage; don't re-derive by hand. Doc/code mismatch → record as its own finding, routed per `defect-reporting.md`, don't silently test around it. Carry the skill's severity ranking into the report, most-impactful first.
 
-**3 — Write the test flow**, per case: starting state, actions, expected result (unambiguous pass/fail), where to observe it (Editor Play Mode / automated assertion / build/device / log), and a recommended owner (`qa-automation-engineer`, `playtest-tester`, `performance-qa-engineer`, `build-verification-tester`) — a recommendation for the reader, not a dispatch this command performs.
+**3 — Write the test flow**, per case: starting state, actions, expected result (unambiguous pass/fail), where to observe it (Editor Play Mode / automated assertion / build/device / log), and a recommended owner (`qa-automation-engineer`, `playtest-tester`, `performance-qa-engineer`, `build-release-engineer`) — a recommendation for the reader, not a dispatch this command performs.
 
 **4 — Cross-feature impact analysis**: name the changed public surface (class/method/event/Shared Core rule/asset/prefab/scene object), grep for other callers/subscribers/references — other call sites, a `Game.Core.*` rule used by more than one `Game.Client.*` caller, a static/singleton field, a shared prefab/scene/Addressables asset. Per dependent: `path:line`, how it's affected, dangerous yes/no per `defect-reporting.md`'s Severity table. Nothing found → say so, naming the limit (reflection, `Activator.CreateInstance`, event bus, service locator can hide a dependency from grep) rather than implying isolation was proven.
 

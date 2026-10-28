@@ -1,12 +1,13 @@
 ---
+name: review-code-risks
 description: Static review of C#/Unity code for runtime performance, memory efficiency, and hidden crash/ANR risk — concise report, fix direction only, never edits code
 argument-hint: "[file-or-directory-path...]"
-allowed-tools: Powershell, Read, Grep, Glob, Bash, Skill
+allowed-tools: PowerShell, Read, Grep, Glob, Bash, Skill
 ---
 
 # Review code for performance, memory, and hidden crash/ANR risk
 
-`$ARGUMENTS`: optional paths; else scope from the current git diff (below). Both empty → ask, never guess. Static-analysis risk sweep, additive to — not a replacement for — `code-reviewer` (full correctness), `performance-qa-engineer` (measured verdict), `/investigate-device-crash`/`crash-anr-investigator` (confirmed fault), `build-verification-tester`/`build-fault-triage` (confirmed build fault); name matching findings as risks to verify there, never as confirmed. Reason in English; final report to the user is in Vietnamese, concise, code verbatim.
+`$ARGUMENTS`: optional paths; else scope from the current git diff (below). Both empty → ask, never guess. Static-analysis risk sweep, additive to — not a replacement for — `code-reviewer` (full correctness), `performance-qa-engineer` (measured verdict), `/investigate-device-crash`/`crash-anr-investigator` (confirmed fault), `build-release-engineer`/`build-fault-triage` (confirmed build fault); name matching findings as risks to verify there, never as confirmed. Reason in English; final report to the user is in Vietnamese, concise, code verbatim.
 
 **1 — Scope**: `$ARGUMENTS` paths (`.cs` only), else union of `git diff --name-only HEAD -- '*.cs'` + staged. Both empty → ask; never scan the whole repo silently.
 
