@@ -41,7 +41,32 @@
       "Bash(git checkout *)",
       "Bash(git push *)",
       "PowerShell(git checkout *)",
-      "PowerShell(git push *)"
+      "PowerShell(git push *)",
+      "Bash(unity build*)",
+      "Bash(unity command build run*)",
+      "Bash(unity command build.target switch*)",
+      "Bash(fastlane *)",
+      "Bash(bundle exec fastlane *)",
+      "Bash(firebase appdistribution*)",
+      "Bash(xcrun altool*)",
+      "Bash(xcrun notarytool*)",
+      "Bash(git filter-repo*)",
+      "Bash(git filter-branch*)",
+      "Bash(git lfs migrate*)",
+      "PowerShell(unity build*)",
+      "PowerShell(unity command build run*)",
+      "PowerShell(unity command build.target switch*)",
+      "PowerShell(fastlane *)",
+      "PowerShell(bundle exec fastlane *)",
+      "PowerShell(firebase appdistribution*)",
+      "PowerShell(xcrun altool*)",
+      "PowerShell(xcrun notarytool*)",
+      "PowerShell(git filter-repo*)",
+      "PowerShell(git filter-branch*)",
+      "PowerShell(git lfs migrate*)",
+      "mcp__unity-editor-mcp__build",
+      "mcp__unity-editor-mcp__switch_build_target",
+      "mcp__unity_extended-mcp__unity_build"
     ],
     "deny": [
       "Bash(git push --force*)",
@@ -73,7 +98,11 @@
       "Edit(**/.env)",
       "Edit(**/.env.*)",
       "Read(**/Temp/UnityConnectCache.json)",
-      "Read(**/Library/Pipeline/.unity-pipeline-port)"
+      "Read(**/Library/Pipeline/.unity-pipeline-port)",
+      "Edit(/Library/**)",
+      "Edit(/Temp/**)",
+      "Edit(/Logs/**)",
+      "Edit(/UserSettings/**)"
     ]
   },
   "hooks": {
@@ -187,6 +216,37 @@
             "statusMessage": "Verifying the .claude layer"
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/package-changed.ps1\"; exit $LASTEXITCODE",
+            "timeout": 15,
+            "if": "Edit(/Packages/manifest.json)"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/package-changed.ps1\"; exit $LASTEXITCODE",
+            "timeout": 15,
+            "if": "Bash(unity command package *)"
+          },
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/package-changed.ps1\"; exit $LASTEXITCODE",
+            "timeout": 15,
+            "if": "PowerShell(unity command package *)"
+          }
+        ]
       }
     ],
     "SubagentStop": [
@@ -196,7 +256,7 @@
             "type": "command",
             "shell": "powershell",
             "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/editor-lock.ps1\" -Mode release; exit $LASTEXITCODE",
-            "timeout": 15
+            "timeout": 30
           }
         ]
       }

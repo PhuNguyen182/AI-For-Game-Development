@@ -1,7 +1,7 @@
 # Cross-session Unity Editor lock in <project>/.workflow/editor.lock.
 #   acquire  PreToolUse Agent: an Editor-holding agent takes the lock; blocked if another session holds it.
 #   check    PreToolUse Bash/PowerShell `unity ...`: blocked if another session holds it.
-#   release  SubagentStop: drops that agent's hold.
+#   release  SubagentStop: an Editor holder left in Play Mode or with compile errors is sent back once; else its hold drops.
 #   clear    Stop / SessionEnd: drops every hold this session owns.
 param([Parameter(Mandatory)][ValidateSet('acquire', 'check', 'release', 'clear')][string]$Mode)
 . "$PSScriptRoot/common.ps1"
@@ -36,6 +36,40 @@ function Refuse {
         '"unity command editor status", then ask the GD before deleting .workflow/editor.lock.')
 }
 
+# First value of a property anywhere in parsed JSON (the CLI nests results differently per output format).
+function Find-Prop($obj, [string]$name) {
+    if ($null -eq $obj -or $obj -is [string] -or $obj -is [ValueType]) { return $null }
+    foreach ($p in $obj.PSObject.Properties) {
+        if ($p.Name -eq $name) { return $p.Value }
+        $v = Find-Prop $p.Value $name
+        if ($null -ne $v) { return $v }
+    }
+    return $null
+}
+
+function Get-UnityJson([string]$command) {
+    $out = (& unity command $command status 2>$null | Out-String)
+    $i = $out.IndexOf('{'); $j = $out.LastIndexOf('}')
+    if ($i -lt 0 -or $j -le $i) { return $null }
+    try { return $out.Substring($i, $j - $i + 1) | ConvertFrom-Json } catch { return $null }
+}
+
+# What an Editor-holding agent left wrong, or $null. No reachable Editor means nothing to check.
+function Get-EditorProblem {
+    if ($env:HOOK_TEST_EDITOR_STATE) {
+        switch ($env:HOOK_TEST_EDITOR_STATE) { 'playing' { return 'Play Mode is still on' } 'compile' { return 'the project has compile errors' } default { return $null } }
+    }
+    if (-not (Get-Command unity -ErrorAction SilentlyContinue)) { return $null }
+    Push-Location $root
+    try {
+        $mode = Find-Prop (Get-UnityJson 'editor') 'playMode'
+        if ($mode -and $mode -ne 'stopped') { return "Play Mode is still $mode - run: unity command editor.playmode stop" }
+        if ((Find-Prop (Get-UnityJson 'console') 'compilationFailed') -eq $true) { return 'the project has compile errors - see: unity command console get --level error' }
+        return $null
+    }
+    finally { Pop-Location }
+}
+
 switch ($Mode) {
     'acquire' {
         $agent = [string]$in.tool_input.subagent_type
@@ -51,6 +85,11 @@ switch ($Mode) {
     }
     'release' {
         if (-not $lock -or $lock.session -ne $session) { exit 0 }
+        # Exit 2 keeps the agent running so it cleans up; stop_hook_active means it was already told once.
+        if ($Holders -contains [string]$in.agent_type -and -not $in.stop_hook_active) {
+            $problem = Get-EditorProblem
+            if ($problem) { Block "Before you return: $problem. Leave the Editor clean (skill agent-protocol)." }
+        }
         $holds = [System.Collections.Generic.List[string]]@($lock.holds)
         [void]$holds.Remove([string]$in.agent_type)
         Save $holds.ToArray()

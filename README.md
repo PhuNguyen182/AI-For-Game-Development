@@ -14,7 +14,7 @@ Requirements: Claude Code; a Unity project (Unity CLI recommended — `com.unity
 | macOS | `brew install --cask powershell` |
 | Linux | Microsoft's package repo (`sudo apt install powershell` after adding it) or `sudo snap install powershell --classic` |
 
-Check a machine: `pwsh -NoProfile -File .claude/hooks/tests/run.ps1` → `hooks: all tests passed`. CI (`.github/workflows/hooks.yml`) runs the same tests on Windows, macOS and Ubuntu.
+Check a machine: `pwsh -NoProfile -File .claude/hooks/tests/run.ps1` → `hooks: all tests passed`. Run it once on each new machine (Windows, macOS, Linux) before relying on the hooks.
 
 ```bash
 git clone <this repo> /tmp/aigd
@@ -109,10 +109,14 @@ Scripts are ASCII-only PowerShell, compatible with pwsh 7 and Windows PowerShell
 | Event | Does |
 |---|---|
 | Edit/Write | Blocks content with a secret shape (private keys, AWS/Google/GitHub/Slack/Stripe keys, JWTs, password literals) |
-| `git commit` | Blocks staged secrets, Unity assets without `.meta`, orphan `.meta`, `.meta` left behind |
+| `git commit` | Blocks staged secrets; Unity assets without `.meta`, orphan or left-behind `.meta`; a changed `.meta` GUID; binaries and files over 5 MB outside Git LFS (`git config claude.lfs off` to opt out) |
+| Agent dispatch, `unity …` | Cross-session Editor lock (`.workflow/editor.lock`): a second session cannot dispatch an Editor-holding agent or run `unity` while another holds it |
+| Subagent stop | An Editor-holding agent left in Play Mode or with compile errors is sent back once to clean up; then its lock hold is released |
+| `Packages/manifest.json` edit, `unity command package add/remove` | Reminds: security-reviewer for third-party packages, update `docs/tech-stack.md` |
 | Edit under `.claude/` | Runs `/verify-layer` on the file |
 | Session start | Lists in-flight features |
-| Agent dispatch, `unity …` | Cross-session Editor lock (`.workflow/editor.lock`): a second session cannot dispatch an Editor-holding agent or run `unity` while another holds it; released on subagent stop and turn end |
+
+**Permissions** — deny: force-push, `reset --hard`, `clean -f`, reading or editing keystores and `.env`, editing `Library/`, `Temp/`, `Logs/`, `UserSettings/`. Ask: `git push`, `git checkout`, player builds, build-target switch, Fastlane, Firebase App Distribution, `xcrun altool`/`notarytool`, `git filter-repo`/`filter-branch`, `git lfs migrate`.
 
 ## Extending
 
