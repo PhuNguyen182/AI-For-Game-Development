@@ -8,7 +8,7 @@ Requirements: Claude Code; a Unity project (Unity CLI recommended — `com.unity
 
 ```bash
 git clone <this repo> /tmp/aigd
-cp -r /tmp/aigd/.claude /tmp/aigd/CLAUDE.md <your-unity-project>/
+git -C /tmp/aigd archive HEAD .claude CLAUDE.md .gitignore | tar -x -C <your-unity-project>   # tracked files only
 cd <your-unity-project> && claude
 > /new-project          # fills CLAUDE.md, asmdefs, git/LFS, perf budget, .workflow/
 ```
