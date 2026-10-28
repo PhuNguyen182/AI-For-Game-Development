@@ -7,6 +7,22 @@ Open work on the framework itself. Not copied into projects. Add a row when foun
 | Pilot v2 on a real project (S UI tweak, `/fix`, M `/feature`, `/release --dry-run`) and fix from real failures | Open |
 | Editor-lock hook — the pilot showed two sessions writing through one Editor | Done: `.claude/hooks/editor-lock.ps1` |
 | Confirm `skills:` preload works with `user-invocable: false` in a fresh session | Open |
+| Zero-Mem memory + XERJ code search (`mem`, `code-search` skills; capture, search-guard hooks) | Done: `5b7c1df`, reviewed + QA signed off 2026-10-28 |
+| Pre-commit secret scan skipped `git -c ... commit`, `commit -C <rev>`, relative `cd`/`-C` paths | Done: `862cd2c` |
+| Git-level pre-commit (`core.hooksPath` → `.githooks/`) so a person's terminal commit of `.memory/traces` is secret-scanned too (GD chose to add it, S). Check first: `core.hooksPath` replaces `.git/hooks`, so Git LFS's own hooks must be chained from it | Open |
+
+### Zero-Mem known limitations (GD-accepted 2026-10-28)
+- Python 3.10–3.13 runtime untested (only 3.14.7 run); macOS/Linux not run.
+- XERJ only on a loopback `XERJ_URL`; any other value means no XERJ.
+- No dense embeddings: lexical BM25 + entity graph; a Vietnamese query matches English text only on shared terms or entities.
+- Traces are committed; redaction covers known secret patterns, emails and user-name paths only. A bare user name or other PII in prose is not redacted (QA's trace scanner reports it as REVIEW).
+- The transcript format is internal to Claude Code and may change; capture fails silently.
+- Agents without a shell get memory only through the brief.
+- A PEM block with no END line is redacted to the end of its turn.
+- The index keys on mtime + size: a same-size edit with its mtime restored is missed until `mem reindex --full`.
+- An earlier duplicate heading shifts later `#slug-n` ids; a report from an unknown agentId has no agent name; notes have no eol rule.
+- Claude Code 2.1.312 ignores `if` filters on PowerShell hooks: every PowerShell call runs all PowerShell hooks (slower, still correct).
+- No allow-rules for `mem.py`/`xerj` (the permission classifier blocked the author): each call prompts until the GD adds them.
 
 ## Pre-slim history (superseded by the v2 slim-down; kept for reference)
 
