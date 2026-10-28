@@ -49,7 +49,7 @@ Order, skipping roles the tasks omit:
 Show: each acceptance criterion → evidence | gap · open bugs · limitations · what did not run.
 Options: close / fix gaps first / accept named gaps (cost stated). Close → `Status: Closed`; each accepted gap into the `DEBT.md` of the root that owns it (Core or Client).
 
-## Change request (feature past CP2)
+## Change request (open feature past CP2; a closed feature takes new work instead)
 - Halt new dispatches. `technical-architect` rates it: **Minor** → edit spec + criteria, continue · **Major** → CP2 again (CP1 if the direction moves).
 - Rework list → step 4. Work already reviewed and unchanged keeps its verdict.
 

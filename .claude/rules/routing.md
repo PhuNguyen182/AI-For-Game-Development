@@ -12,7 +12,8 @@
 | Tests or evidence on existing work | `/qa` |
 | Technology, vendor or "what exists for X" | `/decide` |
 | New project · GDD → backlog · build/release/store | `/new-project` · `/plan-game` · `/release` |
-| Change to a feature past CP2 | `/feature` → change request |
+| Change to an open feature past CP2 | `/feature` → change request |
+| Change to a closed feature | New work: size it below (a cosmetic tweak is S) |
 | Anything else | Size it ↓ |
 
 ## Size
