@@ -88,7 +88,8 @@ const audits = parallel([
     { label: `audit:${m.path}`, phase: 'Audit', agentType: 'code-reviewer', schema: FINDINGS },
   ).then(r => r && { scope: m.path, ...r })),
   () => agent(
-    `Scan the whole repository at ${root} for leaked secrets and Unity supply-chain risk with skill secret-and-supply-chain-scan. ` +
+    `Scan the repository at ${root} for leaked secrets and Unity supply-chain risk with skill secret-and-supply-chain-scan. ` +
+    'Scan only files git can see (`git ls-files -co --exclude-standard`); never open Temp/, Library/, Logs/ or UserSettings/ — Editor caches. ' +
     'Never flag allowlisted public ids. Read-only.',
     { label: 'audit:secrets', phase: 'Audit', agentType: 'security-reviewer', schema: FINDINGS },
   ).then(r => r && { scope: 'secrets', ...r }),

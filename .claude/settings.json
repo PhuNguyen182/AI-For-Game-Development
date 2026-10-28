@@ -71,7 +71,9 @@
       "Edit(**/*.p12)",
       "Edit(**/*.pfx)",
       "Edit(**/.env)",
-      "Edit(**/.env.*)"
+      "Edit(**/.env.*)",
+      "Read(**/Temp/UnityConnectCache.json)",
+      "Read(**/Library/Pipeline/.unity-pipeline-port)"
     ]
   },
   "hooks": {

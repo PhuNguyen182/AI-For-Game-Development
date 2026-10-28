@@ -14,7 +14,7 @@ Full detail: skill `csharp-standards`. Feature docs: skill `feature-docs`.
 - Validate only at real boundaries: user input, save data, network messages, SDK callbacks, Inspector slots, Unity API returns.
 
 ## Style
-- Explicit access modifier on every type and member. File-scoped namespaces; `using` outside them.
+- Explicit access modifier on every type and member. `using` outside the namespace. File-scoped namespaces need C# 10 — Unity 6.0 is C# 9, so block-scoped unless the project's compiler is newer.
 - Allman braces, 4 spaces. Never a body on its header's line; a one-statement body may skip braces.
 - `this.` on every instance member. Private fields `_camelCase`, static `s_camelCase`, serialized fields `camelCase`, constants PascalCase, booleans `Is/Has/Can`, handlers `On<Event>`, async `…Async`.
 - `var` only when the type is obvious; explicit type in `foreach`. Keywords over `System.Int32`.

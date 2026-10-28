@@ -26,6 +26,7 @@
 - Authoritative outcomes (currency, ownership, match result) never trust a client value.
 - Fail closed: never swallow an exception around signature, token or payment validation.
 - Third-party package, DLL or `.unitypackage` → `security-reviewer` before it lands.
+- `Temp/`, `Library/`, `Logs/`, `UserSettings/` hold Editor session tokens: never copy them into evidence, reports, archives or tracked files.
 - A secret already in git history → stop and route to `cto`. Deleting it from the working tree fixes nothing.
 
 ## Tools
