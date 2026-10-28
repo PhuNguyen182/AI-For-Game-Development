@@ -1,0 +1,24 @@
+# XERJ autoindex: never index Unity caches, build output or credential files (Editor session tokens live in some caches).
+Library/
+Temp/
+Logs/
+UserSettings/
+obj/
+Build/
+Builds/
+MemoryCaptures/
+Recordings/
+*.keystore
+*.jks
+*.p12
+*.pfx
+*.pem
+*.p8
+*.key
+*.cer
+*.mobileprovision
+*.provisionprofile
+google-services.json
+GoogleService-Info.plist
+*service-account*.json
+*credentials*.json

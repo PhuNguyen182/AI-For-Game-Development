@@ -9,6 +9,7 @@ user-invocable: false
 ## On arrival
 - The brief is your whole context. Missing input you need → return `Blocked` naming it. Never guess a game rule or a contract.
 - Read the feature's docs per skill `feature-docs` (README → INTEGRATION → CONTRACTS), then only the source those name.
+- Memory hits in the brief → read those paths. With a shell, `mem q` (skill `mem`) before touching an area the brief does not cover; search code per skill `code-search`.
 - Attempts: the brief's budget is a ceiling. Each retry changes the cause, not the wording. Apply every cheap, sure fix now.
 - Stay in scope. Notice something outside it → list it under `Out of scope`, never fix it.
 - Leave no side effects: Play Mode stopped, no unsaved scene changes, Editor settings you changed restored (Game view size, Run In Background), PlayerPrefs keys you wrote removed, background processes you started stopped.

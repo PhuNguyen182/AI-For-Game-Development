@@ -16,9 +16,13 @@ Requirements: Claude Code; a Unity project (Unity CLI recommended — `com.unity
 
 Check a machine: `pwsh -NoProfile -File .claude/hooks/tests/run.ps1` → `hooks: all tests passed`. Run it once on each new machine (Windows, macOS, Linux) before relying on the hooks.
 
+**Python 3.10+ with SQLite FTS5** (python.org, Homebrew and Linux builds have it; stdlib only, no pip) for memory — skill `mem`. Without it the session still runs; memory capture and queries are off. Check: `python -I .claude/skills/mem/scripts/test_mem.py`.
+
+**Optional: [XERJ](https://github.com/xerj-org/xerj)** for code search. When a node is up (`xerj --data-dir ~/xerj-data`, data dir outside the repo), agents search with `xerj search`/`xerj def` and a repo-wide Grep is denied — skill `code-search`.
+
 ```bash
 git clone <this repo> /tmp/aigd
-git -C /tmp/aigd archive HEAD .claude CLAUDE.md .gitignore | tar -x -C <your-unity-project>   # tracked files only
+git -C /tmp/aigd archive HEAD .claude CLAUDE.md .gitignore .xerjignore .memory/sources.txt | tar -x -C <your-unity-project>   # tracked files only
 cd <your-unity-project> && claude
 > /new-project          # fills CLAUDE.md, asmdefs, git/LFS, perf budget, .workflow/
 ```
@@ -90,6 +94,8 @@ Every agent preloads skill `agent-protocol` (one return envelope) plus its stand
 ```
 CLAUDE.md                 summary, identity, stack headline, tooling, overrides (template, ≤30 lines)
 docs/tech-stack.md        every package, SDK and service (created by /new-project; read on demand)
+.memory/                  Zero-Mem, committed: traces/ (sessions, by hook), notes/<type>/ (lessons, feedback), sources.txt (docs to index)
+                          .index/ (SQLite FTS5) and .state/ are local and gitignored — rebuilt after every pull
 .claude/
   rules/core.md           always loaded: language, GD, truth, security, tools
   rules/routing.md        always loaded: routes, sizing, profile, checkpoints, stop rule
@@ -97,7 +103,7 @@ docs/tech-stack.md        every package, SDK and service (created by /new-projec
   agents/                 23 agents
   skills/                 pipelines (/feature …), standards, ~90 domain skills
   workflows/*.js          Claude Code workflows: review-gate, project-audit
-  hooks/*.ps1             secret scan, pre-commit secret + .meta check, layer verify, session resume
+  hooks/*.ps1             secret scan, pre-commit secret + .meta check, layer verify, session resume, memory capture, search guard
   settings.json           permissions (deny force-push/reset --hard/keystores; ask push/checkout) + hooks
 framework-docs/           design history, templates, backlog — not copied into projects
 ```
@@ -114,9 +120,11 @@ Scripts are ASCII-only PowerShell, compatible with pwsh 7 and Windows PowerShell
 | Subagent stop | An Editor-holding agent left in Play Mode or with compile errors is sent back once to clean up; then its lock hold is released |
 | `Packages/manifest.json` edit, `unity command package add/remove` | Reminds: security-reviewer for third-party packages, update `docs/tech-stack.md` |
 | Edit under `.claude/` | Runs `/verify-layer` on the file |
-| Session start | Lists in-flight features |
+| Session start | Lists in-flight features; one status line each for memory (counts, query command) and code search (XERJ up/down/absent); refreshes the XERJ index in the background when up. No memory content is preloaded |
+| Turn end, session end | Copies the session's prompts, replies, agent briefs/returns and GD answers into `.memory/traces/` — no tool output, secrets redacted, no LLM. `MEM_CAPTURE=0` skips a session |
+| Grep, `grep -r`/`rg`/`git grep`/`Select-String` | While XERJ is up, denies a repo-wide content search and names the `xerj search` command; files, deep folders, hidden folders and file lists stay allowed |
 
-**Permissions** — deny: force-push, `reset --hard`, `clean -f`, reading or editing keystores and `.env`, editing `Library/`, `Temp/`, `Logs/`, `UserSettings/`. Ask: `git push`, `git checkout`, player builds, build-target switch, Fastlane, Firebase App Distribution, `xcrun altool`/`notarytool`, `git filter-repo`/`filter-branch`, `git lfs migrate`.
+**Permissions** — deny: `xerj feedback` (it publishes to GitHub), force-push, `reset --hard`, `clean -f`, reading or editing keystores and `.env`, editing `Library/`, `Temp/`, `Logs/`, `UserSettings/`. Ask: `git push`, `git checkout`, player builds, build-target switch, Fastlane, Firebase App Distribution, `xcrun altool`/`notarytool`, `git filter-repo`/`filter-branch`, `git lfs migrate`.
 
 ## Extending
 

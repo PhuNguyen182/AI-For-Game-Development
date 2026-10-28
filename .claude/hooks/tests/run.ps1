@@ -40,6 +40,29 @@ try {
     $r = Invoke-Hook 'secret-scan.ps1' @{ tool_name = 'Edit'; tool_input = @{ file_path = "$tmp/.claude/hooks/x.ps1"; new_string = $fakeKey } }
     Check 'secret-scan exempts the hooks folder' $r.Code 0
 
+    # secret patterns: missing or empty file fails closed (run against a copy of the hooks)
+    $hk = Join-Path $tmp 'hookcopy'
+    New-Item -ItemType Directory -Force $hk | Out-Null
+    Copy-Item (Join-Path $hooks 'common.ps1'), (Join-Path $hooks 'secret-scan.ps1') $hk
+    $clean = @{ tool_name = 'Write'; tool_input = @{ file_path = "$tmp/Assets/C.cs"; content = 'class C {}' } }
+    function ScanCopy { $json = $clean | ConvertTo-Json -Depth 5 -Compress; $json | & $shell -NoProfile -NonInteractive -File (Join-Path $hk 'secret-scan.ps1') 2>&1 | Out-Null; $LASTEXITCODE }
+    Check 'secret-scan blocks when the patterns file is missing' (ScanCopy) 2
+    Set-Content (Join-Path $hk 'secret-patterns.txt') '# only a comment'
+    Check 'secret-scan blocks when the patterns file is empty' (ScanCopy) 2
+    Set-Content (Join-Path $hk 'secret-patterns.txt') ((Get-Content (Join-Path $hooks 'secret-patterns.txt')) + "broken`t([unclosed")
+    Check 'secret-scan blocks when a pattern is an invalid regex' (ScanCopy) 2
+    Copy-Item (Join-Path $hooks 'secret-patterns.txt') $hk -Force
+    Check 'secret-scan passes clean content with the real file' (ScanCopy) 0
+    $r = 'not json' | & $shell -NoProfile -NonInteractive -File (Join-Path $hooks 'secret-scan.ps1') 2>&1 | Out-String
+    Check 'malformed hook input exits quietly' ($LASTEXITCODE -eq 0 -and [string]::IsNullOrWhiteSpace($r)) $true
+    . (Join-Path $hooks 'common.ps1')
+    Check 'loopback: [::1] counts' (Test-LoopbackUrl 'http://[::1]:9200') $true
+    Check 'loopback: localhost@evil.test does not' (Test-LoopbackUrl 'http://localhost@evil.test:9200') $false
+    Check 'loopback: unparsable URL does not' (Test-LoopbackUrl 'http:\\bad url') $false
+    Check 'loopback: the name "loopback" does not' (Test-LoopbackUrl 'http://loopback:9200') $false
+    Check 'loopback: decimal IPv4 does not' (Test-LoopbackUrl 'http://2130706433:9200') $false
+    Check 'loopback: 127.0.0.1 with port counts' (Test-LoopbackUrl 'http://127.0.0.1:9200/') $true
+
     # pre-commit (path with a space, as Unity project folders often have)
     $repo = Join-Path $tmp 'Pilot Project'
     New-Repo $repo
@@ -58,6 +81,31 @@ try {
     Set-Content (Join-Path $repo 'Assets/K.cs.meta') 'guid: 3'
     git -C $repo add Assets/K.cs Assets/K.cs.meta 2>&1 | Out-Null
     Check 'pre-commit blocks a staged secret' (Invoke-Hook 'pre-commit.ps1' $commit).Code 2
+    git -C $repo rm -q --cached Assets/K.cs Assets/K.cs.meta 2>&1 | Out-Null
+    New-Item -ItemType Directory -Force (Join-Path $repo '.memory/traces') | Out-Null
+    $pw = 'pass' + 'word'
+    Set-Content (Join-Path $repo '.memory/traces/t.jsonl') "{`"text`":`"$pw = \`"hunter2hunter2\`"`"}"
+    git -C $repo add .memory/traces/t.jsonl 2>&1 | Out-Null
+    Check 'pre-commit sees a quoted secret through JSON escaping' (Invoke-Hook 'pre-commit.ps1' $commit).Code 2
+    git -C $repo rm -q --cached .memory/traces/t.jsonl 2>&1 | Out-Null
+    git -C $repo add Assets/K.cs Assets/K.cs.meta 2>&1 | Out-Null
+    foreach ($form in @(
+            "git -C `"$repo`" -c user.name=t -c user.email=t@t commit -m x",
+            "git -c core.x=y -C `"$repo`" commit -m x",
+            "git -C `"$repo`" --no-pager commit -m x",
+            "git --git-dir `"$repo/.git`" -C `"$repo`" commit -m x")) {
+        Check "pre-commit sees through global options: $($form -replace [regex]::Escape($repo), '<repo>')" (Invoke-Hook 'pre-commit.ps1' @{ tool_name = 'PowerShell'; cwd = $tmp; tool_input = @{ command = $form } }).Code 2
+    }
+    Check 'pre-commit ignores git -c k=v log' (Invoke-Hook 'pre-commit.ps1' @{ tool_name = 'Bash'; cwd = $tmp; tool_input = @{ command = "git -C `"$repo`" -c a=b log" } }).Code 0
+    Check 'pre-commit: commit -C <rev> is not a directory' (Invoke-Hook 'pre-commit.ps1' @{ tool_name = 'Bash'; cwd = $repo; tool_input = @{ command = 'git commit -C HEAD -m x' } }).Code 2
+    Check 'pre-commit: an unresolvable -C falls back to cwd' (Invoke-Hook 'pre-commit.ps1' @{ tool_name = 'PowerShell'; cwd = $repo; tool_input = @{ command = 'git -C nowhere commit -m x' } }).Code 2
+    Check 'pre-commit: plain commit from cwd' (Invoke-Hook 'pre-commit.ps1' @{ tool_name = 'Bash'; cwd = $repo; tool_input = @{ command = 'git commit -m x' } }).Code 2
+    $leaf = Split-Path $repo -Leaf
+    Check 'pre-commit: relative -C resolves against the session cwd' (Invoke-Hook 'pre-commit.ps1' @{ tool_name = 'Bash'; cwd = $tmp; tool_input = @{ command = "git -C `"$leaf`" commit -m x" } }).Code 2
+    Check 'pre-commit: relative cd resolves against the session cwd' (Invoke-Hook 'pre-commit.ps1' @{ tool_name = 'Bash'; cwd = $tmp; tool_input = @{ command = "cd `"$leaf`" && git commit -m x" } }).Code 2
+    foreach ($nc in @('git -c commit.gpgsign=false log -1', 'git commit-tree HEAD^{tree} -m x', 'git commit-graph write')) {
+        Check "pre-commit ignores: $nc" (Invoke-Hook 'pre-commit.ps1' @{ tool_name = 'Bash'; cwd = $repo; tool_input = @{ command = $nc } }).Code 0
+    }
     $cdForm = @{ tool_name = 'Bash'; cwd = $tmp; tool_input = @{ command = "cd `"$repo`" && git commit -m x" } }
     Check 'pre-commit resolves cd <dir> && git commit' (Invoke-Hook 'pre-commit.ps1' $cdForm).Code 2
     Check 'pre-commit ignores non-commit commands' (Invoke-Hook 'pre-commit.ps1' @{ tool_name = 'Bash'; tool_input = @{ command = 'git status' } }).Code 0
@@ -147,15 +195,100 @@ try {
     New-Item -ItemType Directory -Force (Join-Path $proj '.workflow/features') | Out-Null
     Set-Content (Join-Path $proj '.workflow/features/open-one.md') "# Open one`n`n- Status: Open`n- CP: build"
     Set-Content (Join-Path $proj '.workflow/features/done-one.md') "# Done one`n`n- Status: Closed`n- CP: CP4"
+    $env:HOOK_TEST_XERJ = 'none'
     $r = Invoke-Hook 'session-start.ps1' @{}
     Check 'session-start lists the open feature' ($r.Out -match 'open-one') $true
     Check 'session-start skips closed features' ($r.Out -match 'done-one') $false
+    Check 'session-start reports Grep without XERJ' ($r.Out -match 'Search: Grep') $true
+
+    # memory: capture (Stop hook) and the session-start status line, against a copy of mem.py
+    $memDir = Join-Path $proj '.claude/skills/mem/scripts'
+    New-Item -ItemType Directory -Force $memDir, (Join-Path $proj '.claude/hooks') | Out-Null
+    Copy-Item (Join-Path $hooks '../skills/mem/scripts/mem.py') $memDir
+    Copy-Item (Join-Path $hooks 'secret-patterns.txt') (Join-Path $proj '.claude/hooks')
+    $tr = Join-Path $tmp 'transcript.jsonl'
+    $lines = @(
+        @{ type = 'user'; timestamp = '2026-10-28T01:00:00Z'; message = @{ content = "Remember key $fakeKey" } },
+        @{ type = 'assistant'; timestamp = '2026-10-28T01:00:01Z'; message = @{ content = @(@{ type = 'text'; text = 'Noted.' }) } }
+    ) | ForEach-Object { $_ | ConvertTo-Json -Depth 6 -Compress }
+    [IO.File]::WriteAllLines($tr, [string[]]$lines)
+    $stopIn = @{ session_id = 'cafe0123-x'; transcript_path = $tr; cwd = $proj }
+    $env:MEM_CAPTURE = '0'
+    Invoke-Hook 'memory-capture.ps1' $stopIn | Out-Null
+    Check 'capture honours MEM_CAPTURE=0' (Test-Path (Join-Path $proj '.memory/traces')) $false
+    Remove-Item Env:MEM_CAPTURE
+    Check 'capture exits 0' (Invoke-Hook 'memory-capture.ps1' $stopIn).Code 0
+    $trace = Join-Path $proj '.memory/traces/2026/10/2026-10-28-cafe0123.jsonl'
+    Check 'capture writes the session trace' (Test-Path $trace) $true
+    $traceText = if (Test-Path $trace) { Get-Content $trace -Raw } else { '' }
+    Check 'capture redacts the secret' ($traceText -match 'REDACTED' -and $traceText -notmatch $fakeKey) $true
+    $env:HOOK_TEST_XERJ = 'up'
+    $r = Invoke-Hook 'session-start.ps1' @{}
+    Check 'session-start reports memory counts' ($r.Out -match 'Memory: T 2 turns/1 sessions') $true
+    Check 'session-start reports XERJ up' ($r.Out -match 'Search: XERJ up, prefix lockproject') $true
+
+    # search-guard: deny repo-wide content search while XERJ is up
+    function Guard([hashtable]$Payload) { ((Invoke-Hook 'search-guard.ps1' $Payload).Out -match '"permissionDecision":"deny"') }
+    function GrepIn([string]$Path, [string]$Mode = 'content') { @{ tool_name = 'Grep'; cwd = $proj; tool_input = @{ pattern = 'Foo'; path = $Path; output_mode = $Mode } } }
+    function Shell([string]$Tool, [string]$Command) { @{ tool_name = $Tool; cwd = $proj; tool_input = @{ command = $Command } } }
+    Check 'guard: Grep content over the repo denied' (Guard (GrepIn '')) $true
+    Check 'guard: Grep content over a top folder denied' (Guard (GrepIn 'Assets')) $true
+    Check 'guard: Grep content in a deep folder allowed' (Guard (GrepIn 'Assets/_Project/Scripts')) $false
+    Check 'guard: ./Assets/ is a top folder, denied' (Guard (GrepIn './Assets/')) $true
+    Check 'guard: .\ is the root, denied' (Guard (GrepIn '.\')) $true
+    Check 'guard: Grep content in a file allowed' (Guard (GrepIn "$proj/Assets/A.cs")) $false
+    Check 'guard: Grep in a hidden folder allowed' (Guard (GrepIn '.claude/skills')) $false
+    Check 'guard: Grep file list allowed' (Guard (GrepIn '' 'files_with_matches')) $false
+    Check 'guard: rg over the repo denied' (Guard (Shell 'Bash' 'rg -n Foo')) $true
+    Check 'guard: cd && grep -rn . denied' (Guard (Shell 'Bash' 'cd /p && grep -rn Foo .')) $true
+    Check 'guard: git grep denied' (Guard (Shell 'PowerShell' 'git grep Foo')) $true
+    Check 'guard: Select-String -Recurse denied' (Guard (Shell 'PowerShell' 'Get-ChildItem -Recurse | Select-String Foo')) $true
+    Check 'guard: rg in a file allowed' (Guard (Shell 'Bash' 'rg Foo Assets/A.cs')) $false
+    Check 'guard: grep without -r allowed' (Guard (Shell 'Bash' 'grep Foo notes.txt')) $false
+    Check 'guard: rg -l allowed' (Guard (Shell 'Bash' 'rg -l Foo')) $false
+    Check 'guard: rg --files allowed' (Guard (Shell 'Bash' 'rg --files')) $false
+    Check 'guard: grep -rl allowed' (Guard (Shell 'Bash' 'grep -rl Foo .')) $false
+    Check 'guard: grep --recursive denied' (Guard (Shell 'Bash' 'grep --recursive Foo .')) $true
+    Check 'guard: rg -C 3 still denied' (Guard (Shell 'Bash' 'rg -C 3 Foo')) $true
+    Check 'guard: Select-String -SimpleMatch -Recurse denied' (Guard (Shell 'PowerShell' 'Get-ChildItem -Recurse | Select-String -SimpleMatch Foo')) $true
+    Check 'guard: Select-String -List allowed' (Guard (Shell 'PowerShell' 'Get-ChildItem -Recurse | Select-String Foo -List')) $false
+    New-Item -ItemType Directory -Force (Join-Path $proj '.claude/agents') | Out-Null
+    Set-Content (Join-Path $proj '.claude/agents/code-reviewer.md') "---`nname: code-reviewer`ntools: Read, Grep, Glob`n---"
+    Set-Content (Join-Path $proj '.claude/agents/ui-engineer.md') "---`nname: ui-engineer`ntools: Read, Grep, PowerShell`n---"
+    $sub = GrepIn ''
+    $sub.agent_type = 'code-reviewer'
+    Check 'guard: shell-less subagent allowed' (Guard $sub) $false
+    $sub.agent_type = 'ui-engineer'
+    Check 'guard: subagent with a shell denied' (Guard $sub) $true
+    Set-Content (Join-Path $proj '.claude/agents/all-tools.md') "---`nname: all-tools`nmodel: x`n---"
+    $sub.agent_type = 'all-tools'
+    Check 'guard: agent without a tools line has a shell' (Guard $sub) $true
+    Set-Content (Join-Path $proj '.claude/agents/listed.md') "---`nname: listed`ntools:`n  - Read`n  - Grep`nmodel: x`n---"
+    $sub.agent_type = 'listed'
+    Check 'guard: YAML-list tools without a shell allowed' (Guard $sub) $false
+    $env:HOOK_TEST_XERJ = 'down'
+    Check 'guard: XERJ down allows everything' (Guard (GrepIn '')) $false
+    Remove-Item Env:HOOK_TEST_XERJ
+    $now = [long]([DateTime]::UtcNow - [DateTime]'1970-01-01').TotalSeconds
+    Set-Content (Join-Path $proj '.memory/.state/xerj.json') "{`"state`":`"none`",`"at`":$now}"
+    Check 'probe: a fresh none/down result is reused' ((Invoke-Hook 'session-start.ps1' @{}).Out -match 'Search: Grep\.') $true
+    Set-Content (Join-Path $proj '.memory/.state/xerj.json') "{`"state`":`"none`",`"at`":$($now - 600)}"
+    $env:XERJ_URL = 'http://127.0.0.1:1'
+    $r = (Invoke-Hook 'session-start.ps1' @{}).Out
+    $expect = if (Get-Command xerj -CommandType Application -ErrorAction SilentlyContinue) { 'node down' } else { 'Search: Grep\.' }
+    Check 'probe: an expired result is probed again' ($r -match $expect) $true
+    Set-Content (Join-Path $proj '.memory/.state/xerj.json') "{`"state`":`"up`",`"at`":$now}"
+    Check 'probe: a cached up is never trusted' (Guard (GrepIn '')) $false
+    $env:XERJ_URL = 'http://10.0.0.5:9200'
+    Remove-Item (Join-Path $proj '.memory/.state/xerj.json')
+    Check 'probe: a non-loopback node counts as no XERJ' ((Invoke-Hook 'session-start.ps1' @{}).Out -match 'not loopback') $true
+    Remove-Item Env:XERJ_URL
 
     # verify-on-edit
     Check 'verify-on-edit ignores files outside .claude' (Invoke-Hook 'verify-on-edit.ps1' @{ tool_input = @{ file_path = "$proj/Assets/A.cs" } }).Code 0
 }
 finally {
-    Remove-Item Env:CLAUDE_PROJECT_DIR -ErrorAction SilentlyContinue
+    Remove-Item Env:CLAUDE_PROJECT_DIR, Env:HOOK_TEST_XERJ, Env:MEM_CAPTURE, Env:XERJ_URL -ErrorAction SilentlyContinue
     Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue
 }
 

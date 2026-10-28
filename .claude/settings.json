@@ -1,4 +1,8 @@
 {
+  "autoMemoryEnabled": false,
+  "env": {
+    "XERJ_DISABLE_FEEDBACK": "true"
+  },
   "permissions": {
     "allow": [
       "Bash(git status:*)",
@@ -69,6 +73,17 @@
       "mcp__unity_extended-mcp__unity_build"
     ],
     "deny": [
+      "Bash(xerj feedback*)",
+      "PowerShell(xerj feedback*)",
+      "Bash(xerj -* feedback*)",
+      "PowerShell(xerj -* feedback*)",
+      "Bash(xerj share*)",
+      "PowerShell(xerj share*)",
+      "Bash(xerj -* share*)",
+      "PowerShell(xerj -* share*)",
+      "Bash(xerj init*)",
+      "PowerShell(xerj init*)",
+      "mcp__xerj__xerj_field_report",
       "Bash(git push --force*)",
       "Bash(git push -f*)",
       "Bash(git push * --force*)",
@@ -155,6 +170,15 @@
           },
           {
             "type": "command",
+            "if": "Bash(git * commit*)",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/pre-commit.ps1\"; exit $LASTEXITCODE",
+            "timeout": 30,
+            "statusMessage": "Checking staged secrets and .meta pairing",
+            "onFailure": "block"
+          },
+          {
+            "type": "command",
             "if": "PowerShell(git commit*)",
             "shell": "powershell",
             "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/pre-commit.ps1\"; exit $LASTEXITCODE",
@@ -186,6 +210,50 @@
             "timeout": 15,
             "if": "PowerShell(unity *)",
             "onFailure": "block"
+          }
+        ]
+      },
+      {
+        "matcher": "Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/search-guard.ps1\"; exit $LASTEXITCODE",
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(grep *)",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/search-guard.ps1\"; exit $LASTEXITCODE",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "if": "Bash(rg *)",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/search-guard.ps1\"; exit $LASTEXITCODE",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "if": "Bash(git grep*)",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/search-guard.ps1\"; exit $LASTEXITCODE",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "if": "PowerShell(*)",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/search-guard.ps1\"; exit $LASTEXITCODE",
+            "timeout": 15
           }
         ]
       },
@@ -269,6 +337,12 @@
             "shell": "powershell",
             "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/editor-lock.ps1\" -Mode clear; exit $LASTEXITCODE",
             "timeout": 15
+          },
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/memory-capture.ps1\"; exit $LASTEXITCODE",
+            "timeout": 30
           }
         ]
       }
@@ -281,6 +355,12 @@
             "shell": "powershell",
             "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/editor-lock.ps1\" -Mode clear; exit $LASTEXITCODE",
             "timeout": 15
+          },
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/memory-capture.ps1\"; exit $LASTEXITCODE",
+            "timeout": 30
           }
         ]
       }

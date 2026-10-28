@@ -1,0 +1,13 @@
+# Knowledge (layer K): docs indexed in place. One glob per line; ! excludes; ** spans folders.
+CLAUDE.md
+README.md
+docs/**/*.md
+.workflow/**/*.md
+.claude/rules/*.md
+.claude/agents/*.md
+.claude/skills/**/*.md
+framework-docs/**/*.md
+**/{README,CONTRACTS,INTEGRATION,ARCHITECTURE,DECISIONS,DEBT,NOTES,WORKMEMORY}.md
+!Assets/Plugins/**
+!Packages/**
+!**/ThirdParty/**
