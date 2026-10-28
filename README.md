@@ -105,7 +105,7 @@ framework-docs/           design history, templates, backlog — not copied into
 
 - New agent: only for a distinct tool sandbox, an independent gate, a model tier or an activation condition — template in `framework-docs/agent-template.md`. Domain knowledge is a skill.
 - New skill: `.claude/skills/<name>/SKILL.md`, description ≤ 250 chars (what + when), detail in `references/`.
-- Keep every file terse: bullets and tables, no rationale unless omitting it causes wrong behaviour.
+- Keep every file terse: bullets and tables, no rationale unless omitting it causes wrong behaviour. Line budgets (`/verify-layer`) are recommendations; longer is fine when it cannot be shorter.
 - Run `/verify-layer` before committing changes under `.claude/`.
 
 ## Conventions

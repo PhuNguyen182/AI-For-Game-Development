@@ -1,7 +1,7 @@
 <#
 .SYNOPSIS
 Checks the .claude/ layer: paths resolve, agent and skill frontmatter, skill references, workflows are JS,
-size budgets, no retired IDs or agents, table widths. Exit 0 = pass (warnings allowed), 1 = failure.
+size budgets (line counts warn only; description length fails), no retired IDs or agents, table widths. Exit 0 = pass (warnings allowed), 1 = failure.
 .PARAMETER File
 Check only this file (used by the PostToolUse hook). Omit for the whole layer.
 #>
@@ -106,7 +106,7 @@ function Test-File([string]$path) {
         if (-not $fm.tools) { Fail "${rel}: no tools" }
         foreach ($s in @($fm.skills)) { if ($s) { Test-SkillRef $s $rel } }
         $body = ($text.Substring($fm._end).Trim() -split '\r?\n').Count
-        if ($body -gt $Budget.AgentBody) { Fail "${rel}: body $body lines > $($Budget.AgentBody)" }
+        if ($body -gt $Budget.AgentBody) { Warn "${rel}: body $body lines > $($Budget.AgentBody) recommended" }
         foreach ($m in [regex]::Matches($text.Substring($fm._end), '`((?:unity:)?[a-z0-9]+(?:-[a-z0-9]+)+)`')) {
             $n = $m.Groups[1].Value
             if ($n -match ':' -or $skills -contains $n -or $agents -contains $n) { if ($n -match ':') { Test-SkillRef $n $rel }; continue }
@@ -123,17 +123,17 @@ function Test-File([string]$path) {
         if (-not $fm.description) { Fail "${rel}: no description" }
         elseif ($fm.description.Length -gt $Budget.Desc) { Fail "${rel}: description $($fm.description.Length) > $($Budget.Desc) chars" }
         $limit = if ($fm.'user-invocable' -eq 'false') { $Budget.Skill } else { $Budget.Pipeline }
-        if ($lines.Count -gt $limit) { Fail "${rel}: $($lines.Count) lines > $limit" }
+        if ($lines.Count -gt $limit) { Warn "${rel}: $($lines.Count) lines > $limit recommended" }
         if ($fm.'user-invocable' -ne 'false' -and $text -cmatch $IdPattern) { Fail "${rel}: retired ID '$($Matches[0])'" }
     }
     elseif ($rel -match '^\.claude/rules/') {
         $fm = Get-Frontmatter $text
         if ($fm -and $fm.paths) {
-            if ($lines.Count -gt $Budget.PathRule) { Fail "${rel}: path-scoped rule $($lines.Count) lines > $($Budget.PathRule)" }
+            if ($lines.Count -gt $Budget.PathRule) { Warn "${rel}: path-scoped rule $($lines.Count) lines > $($Budget.PathRule) recommended" }
         }
         if ($text -cmatch $IdPattern) { Fail "${rel}: retired ID '$($Matches[0])'" }
     }
-    elseif ($rel -eq 'CLAUDE.md' -and $lines.Count -gt $Budget.ClaudeMd) { Fail "${rel}: $($lines.Count) lines > $($Budget.ClaudeMd)" }
+    elseif ($rel -eq 'CLAUDE.md' -and $lines.Count -gt $Budget.ClaudeMd) { Warn "${rel}: $($lines.Count) lines > $($Budget.ClaudeMd) recommended" }
 }
 
 if ($File) {
@@ -149,7 +149,7 @@ if ($File) {
         $fm = Get-Frontmatter (Get-Content $r.FullName -Raw)
         if (-not ($fm -and $fm.paths)) { $always += (Get-Content $r.FullName).Count }
     }
-    if ($always -gt $Budget.AlwaysRules) { Fail ".claude/rules: always-loaded rules $always lines > $($Budget.AlwaysRules)" }
+    if ($always -gt $Budget.AlwaysRules) { Warn ".claude/rules: always-loaded rules $always lines > $($Budget.AlwaysRules) recommended" }
     if (Test-Path (Join-Path $claude 'commands')) { Fail ".claude/commands: convert commands to skills" }
 }
 
