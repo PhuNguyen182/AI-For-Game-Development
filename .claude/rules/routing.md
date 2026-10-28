@@ -22,7 +22,7 @@
 | M | 2+ roles, a new contract or screen, or touches `Game.Core.*` | `/feature` |
 | L | New Core system, netcode, architecture, project-wide migration, or a direction the GD has not decided | `/feature` with CP1 |
 
-**Risk flag** — credential/signing, real-money IAP, store submission, player PII, save-data migration, published git history, released build, shipped perf budget, server authority/anti-cheat. Flag set, any size → `/review` (code + security) runs automatically, and verification means running, never reading.
+**Risk flag** — credential/signing, real-money IAP, store submission, player PII, save-data migration, published git history, released build, shipped perf budget, server authority/anti-cheat. Flag set on a code change, any size → `/review` (code + security) runs automatically, and verification means running, never reading. `/release` has its own gate.
 
 Escalate the size the moment the work turns out bigger; never shrink it to skip a step.
 
@@ -44,7 +44,7 @@ CP1 direction (L) · CP2 spec or acceptance criteria (M, L) · CP3 built vs spec
 - An agent's `Next:` is a recommendation; you act on it.
 
 ## Stop rule
-- Attempts per dispatch: S 2, M 3, L 4.
+- Attempts per dispatch: S 2, M 3, L 4; unsized routes 2.
 - Same step fails twice (review rejection, failed test, reopened bug) → `technical-architect` root-causes once → fails again → stop. Report to the GD: what was tried, last verified state, next best action.
 - The GD may order another round; state the cost first.
 

@@ -10,7 +10,8 @@ The main session runs this and is the only writer of the feature file. Rules: `r
 
 ## 0. Open
 - Slug = kebab-case name. `.workflow/features/<slug>.md` exists → resume at its `CP:` line. Never a second file for one feature.
-- New → copy `references/feature-template.md`; paste the GD's words verbatim; Profile from `CLAUDE.md`.
+- New → copy `references/feature-template.md`; paste the GD's words verbatim; Profile from `CLAUDE.md`. No `.workflow/bugs.md` → create it from `/fix`'s template.
+- Every GD answer → `GD decisions` at once; an accepted gap or risk also → `Known limitations` in the same edit.
 
 ## 1. Size — `technical-architect` (Spec mode, size only)
 - State `Size` + `Risk flag` in one line. S → do it directly, delete the file; the reply closes it.
