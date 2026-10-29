@@ -24,6 +24,8 @@ LAYER_PRIOR = {"M": 1.3, "K": 1.0, "T": 0.8}
 TRACE_HALF_LIFE_DAYS = 90.0
 MAX_TURN_CHARS = 20000
 MAX_CHUNK_CHARS = 6000
+GET_CAP = 4000  # chars `get` prints without --full
+ENT_CAP = 3  # entity cards `ent` prints
 DEFAULT_SOURCES = """\
 # Knowledge (layer K): docs indexed in place. One glob per line; ! excludes; ** spans folders.
 CLAUDE.md
@@ -628,9 +630,13 @@ def snippet(body: str, text: str, width=160) -> str:
 
 
 def line_of(r, text: str) -> str:
-    date = (r["ts"] or "")[:10]
-    head = " ".join(x for x in (r["id"], r["layer"], r["type"], date) if x)
-    return "%s | %s | %s:%s" % (head, snippet(r["body"], text), r["path"], r["line"])
+    """Only what the id does not say: a T role, a K line and kind. `get` prints the path."""
+    head = {"T": "%s %s" % (r["id"], r["type"]), "K": "%s :%s %s" % (r["id"], r["line"], r["type"])}.get(r["layer"], r["id"])
+    return "%s | %s" % (head, snippet(r["body"], text))
+
+
+def capped(text: str, cap: int) -> str:
+    return text if len(text) <= cap else text[:cap] + "\n[+%d chars; --full]" % (len(text) - cap)
 
 
 def print_budgeted(lines: list[str], budget: int, n: int):
@@ -642,7 +648,7 @@ def print_budgeted(lines: list[str], budget: int, n: int):
         used += len(line) + 1
         shown += 1
     if len(lines) > shown:
-        print("(+%d more: raise -n/--budget or narrow with -l/-t/-e)" % (len(lines) - shown))
+        print("(+%d more)" % (len(lines) - shown))
 
 
 # ---------------------------------------------------------------- capture (Stop hook)
@@ -953,30 +959,39 @@ def cmd_get(root, a):
     if r["layer"] == "T" and a.ctx:
         for n in db.execute(sel + "WHERE d.session=? AND d.turn BETWEEN ? AND ? ORDER BY d.turn",
                             (r["session"], r["turn"] - a.ctx, r["turn"] + a.ctx)):
-            body = n["body"] if n["rid"] == r["rid"] else n["body"][:600] + ("..." if len(n["body"]) > 600 else "")
-            print("## %s (%s %s)\n%s\n" % (n["id"], n["title"], (n["ts"] or "")[:19], body))
+            body = body_of(n["body"], a) if n["rid"] == r["rid"] else n["body"][:600] + ("..." if len(n["body"]) > 600 else "")
+            where = " %s:%s" % (n["path"], n["line"]) if n["rid"] == r["rid"] else ""
+            print("## %s%s (%s %s)\n%s\n" % (n["id"], where, n["title"], (n["ts"] or "")[:19], body))
         return 0
-    print("## %s (%s %s %s:%s)\n%s\n%s" % (r["id"], r["layer"], r["type"], r["path"], r["line"], r["title"], r["body"]))
+    title = "" if r["layer"] == "M" else r["title"] + "\n"  # a note's title is its slug
+    print("## %s %s:%s\n%s%s" % (r["id"], r["path"], r["line"], title, body_of(r["body"], a)))
     return 0
+
+
+def body_of(body: str, a) -> str:
+    return body if a.full else capped(body, GET_CAP)
 
 
 def cmd_ent(root, a):
     db = refresh(root)
     eids = resolve_entity(db, a.name, Vocab(root)) or {r[0] for r in db.execute(
-        "SELECT eid FROM entity WHERE name LIKE ? LIMIT 5", ("%" + a.name.lower() + "%",))}
+        "SELECT eid FROM entity WHERE name LIKE ?", ("%" + a.name.lower() + "%",))}
     if not eids:
         print("no entity: " + a.name)
         return 1
-    for eid in sorted(eids):
-        name, kind = db.execute("SELECT name, kind FROM entity WHERE eid=?", (eid,)).fetchone()
-        count = db.execute("SELECT COUNT(*) FROM mention WHERE eid=?", (eid,)).fetchone()[0]
+    q = ",".join("?" * len(eids))
+    ents = db.execute("SELECT e.eid, e.name, e.kind, (SELECT COUNT(*) FROM mention m WHERE m.eid=e.eid) c FROM entity e "
+                      "WHERE e.eid IN (%s) ORDER BY c DESC, e.name" % q, sorted(eids)).fetchall()
+    for eid, name, kind, count in ents[:ENT_CAP]:
         co = db.execute("SELECT e.name, COUNT(*) c FROM mention m1 JOIN mention m2 ON m1.rid=m2.rid JOIN entity e "
                         "ON e.eid=m2.eid WHERE m1.eid=? AND m2.eid!=? GROUP BY e.eid ORDER BY c DESC LIMIT 8", (eid, eid)).fetchall()
-        latest = db.execute("SELECT d.id, d.layer FROM mention m JOIN doc d ON d.rid=m.rid WHERE m.eid=? AND d.status!='superseded' "
+        latest = db.execute("SELECT d.id FROM mention m JOIN doc d ON d.rid=m.rid WHERE m.eid=? AND d.status!='superseded' "
                             "ORDER BY CASE d.layer WHEN 'M' THEN 0 WHEN 'K' THEN 1 ELSE 2 END, d.ts DESC LIMIT 6", (eid,)).fetchall()
         print("%s [%s] %d mentions" % (name, kind, count))
         print("  with: " + ", ".join("%s(%d)" % c for c in co))
-        print("  see:  " + " . ".join("%s %s" % r for r in latest))
+        print("  see:  " + " . ".join(r[0] for r in latest))
+    if len(ents) > ENT_CAP:
+        print("(+%d more)" % (len(ents) - ENT_CAP))
     return 0
 
 
@@ -1117,20 +1132,21 @@ def main(argv=None) -> int:
         sp.add_argument("-e", "--entity")
         sp.add_argument("--since", help="YYYY-MM-DD")
         sp.add_argument("-n", type=int, default=8)
-        sp.add_argument("--budget", type=int, default=1500, help="max output characters")
+        sp.add_argument("--budget", type=int, default=1200, help="max output characters")
         sp.add_argument("--all", action="store_true", help="include superseded entries")
 
     filters(sub.add_parser("q", help="ranked search"))
-    g = sub.add_parser("get", help="full entry; --ctx N adds neighbouring turns")
+    g = sub.add_parser("get", help="entry with its file path; --ctx N adds neighbouring turns")
     g.add_argument("id")
     g.add_argument("--ctx", type=int, default=0)
+    g.add_argument("--full", action="store_true", help="no %d-char cap" % GET_CAP)
     sub.add_parser("ent", help="entity card").add_argument("name")
     f = sub.add_parser("for", help="entries mentioning a file")
     f.add_argument("path")
     filters(f, text=False)
     s = sub.add_parser("sessions", help="captured sessions, newest first")
     s.add_argument("--since")
-    s.add_argument("-n", type=int, default=15)
+    s.add_argument("-n", type=int, default=8)
     ad = sub.add_parser("add", help="scaffold a note")
     ad.add_argument("type")
     ad.add_argument("slug")
@@ -1141,7 +1157,8 @@ def main(argv=None) -> int:
     sub.add_parser("lint", help="validate notes and scan .memory for secrets")
     sub.add_parser("stats", help="entry counts per layer").add_argument(
         "--seconds", type=float, default=0, help="stop indexing after this long (session start)")
-    sub.add_parser("reindex").add_argument("--full", action="store_true")
+    sub.add_parser("reindex", help="refresh the index, then stats").add_argument(
+        "--full", action="store_true", help="rebuild from scratch")
     c = sub.add_parser("capture", help="Stop hook: transcript -> .memory/traces")
     c.add_argument("--transcript", required=True)
     c.add_argument("--session", required=True)

@@ -124,8 +124,8 @@ class MemTest(unittest.TestCase):
         write(self.root, ".memory/notes/lesson/editor-lock.md", note("editor-lock", "Never run two Editors; editor-lock.ps1 blocks it", "lesson"))
         _, out = run(self.root, "q", "editor lock")
         first = out.splitlines()[0]
-        self.assertTrue(first.startswith("m:lesson/editor-lock M lesson"), out)
-        self.assertIn("k:.claude/rules/core.md#tools", out)
+        self.assertTrue(first.startswith("m:lesson/editor-lock | "), out)
+        self.assertIn("k:.claude/rules/core.md#tools :3 rule | ", out)
 
     def test_superseded_filtered_unless_all(self):
         write(self.root, ".memory/notes/project/old.md", note("old", "Netcode uses Mirror", "project", status="superseded"))
@@ -179,15 +179,20 @@ class MemTest(unittest.TestCase):
         self.assertEqual(len(list((self.root / ".memory/traces").rglob("*.jsonl"))), 1)
 
     def test_trace_query_get_ctx_and_entity_graph(self):
+        write(self.root, ".memory/.gitignore", "traces/\n")  # gitignored traces are still indexed
+        write(self.root, ".memory/notes/lesson/lock.md", note("lock", "editor-lock.ps1 blocks two Editors", "lesson"))
         self.capture()
         _, out = run(self.root, "q", "HUD binding", "-l", "T")
-        self.assertIn("t:2026-10-28-abcdef12#3 T brief", out)
+        self.assertIn("t:2026-10-28-abcdef12#3 brief | ", out)
+        _, out = run(self.root, "get", "t:2026-10-28-abcdef12#3")
+        self.assertIn(".memory/traces/2026/10/2026-10-28-abcdef12.jsonl:3", out.splitlines()[0])
         _, out = run(self.root, "get", "t:2026-10-28-abcdef12#3", "--ctx", "1")
         self.assertIn("#2", out)
         self.assertIn("#4", out)
         _, out = run(self.root, "ent", "editor-lock.ps1")
         self.assertIn("editor-lock.ps1 [file]", out)
-        self.assertIn("k:.claude/rules/core.md#tools", out)
+        see = [l for l in out.splitlines() if l.strip().startswith("see:")][0]
+        self.assertIn("m:lesson/lock . k:.claude/rules/core.md#tools", see)
         _, out = run(self.root, "for", ".claude/hooks/editor-lock.ps1")
         self.assertIn("t:2026-10-28-abcdef12#2", out)
         _, out = run(self.root, "sessions")
@@ -203,7 +208,7 @@ class MemTest(unittest.TestCase):
         for i in range(12):
             write(self.root, "docs/n%d.md" % i, "# Note %d\nshared keyword zebra\n" % i)
         _, out = run(self.root, "q", "zebra", "--budget", "200", "-n", "12")
-        self.assertIn("more:", out)
+        self.assertRegex(out, r"\(\+\d+ more\)\n$")
         self.assertLessEqual(len(out.splitlines()), 4)
 
     def test_add_and_lint(self):
@@ -364,12 +369,30 @@ class MemTest(unittest.TestCase):
         self.capture_lines([self.user("delta")])
         self.assertEqual([json.loads(l)["text"] for l in f.read_text(encoding="utf-8").splitlines()], ["alpha", "charlie", "delta"])
 
-    def test_ent_hits_carry_layer(self):
-        write(self.root, ".memory/notes/lesson/lock.md", note("lock", "editor-lock.ps1 blocks two Editors", "lesson"))
-        _, out = run(self.root, "ent", "editor-lock.ps1")
-        see = [l for l in out.splitlines() if l.strip().startswith("see:")][0]
-        self.assertIn("m:lesson/lock M", see)
-        self.assertIn("k:.claude/rules/core.md#tools K", see)
+    def test_get_caps_body_unless_full(self):
+        write(self.root, ".memory/notes/lesson/long.md", note("long", "Long note", "lesson", body="word " * 1500))
+        _, out = run(self.root, "get", "m:lesson/long")
+        self.assertIn("chars; --full]", out)
+        self.assertLess(len(out), mem.GET_CAP + 200)
+        _, out = run(self.root, "get", "m:lesson/long", "--full")
+        self.assertNotIn("--full]", out)
+        self.assertGreater(len(out), 7000)
+
+    def test_ent_caps_cards_by_mentions(self):
+        write(self.root, "docs/z1.md", "# Z\nzeta1.cs zeta2.cs zeta3.cs zeta4.cs zeta5.cs\n")
+        for i in (2, 3, 4):  # indexed after z1: the most-mentioned name is the newest entity
+            write(self.root, "docs/z%d.md" % i, "# Z\nzeta6.cs\n")
+        _, out = run(self.root, "ent", "zeta")
+        self.assertTrue(out.startswith("zeta6.cs [file] 3 mentions"), out)
+        self.assertEqual(out.count(" mentions"), mem.ENT_CAP, out)
+        self.assertTrue(out.endswith("(+3 more)\n"), out)
+
+    def test_get_ctx_caps_target_turn(self):
+        self.capture_lines([self.user("word " * 1500), self.user("short")])
+        _, out = run(self.root, "get", "t:2026-10-28-eeee0000#1", "--ctx", "1")
+        self.assertIn("## t:2026-10-28-eeee0000#1 .memory/traces/2026/10/2026-10-28-eeee0000.jsonl:1 ", out)
+        self.assertIn("chars; --full]", out)
+        self.assertNotIn("--full]", run(self.root, "get", "t:2026-10-28-eeee0000#1", "--ctx", "1", "--full")[1])
 
     def test_age_days_handles_milliseconds(self):
         self.assertGreater(mem.age_days("2020-01-01T00:00:00.786Z"), 1000)
@@ -402,13 +425,6 @@ class MemTest(unittest.TestCase):
 
     def test_add_rejects_frontmatter_injection(self):
         self.assertEqual(run(self.root, "add", "lesson", "x", "--desc", "d", "--tags", "a]\nstatus: superseded")[0], 1)
-
-    def test_gitignored_traces_still_indexed(self):
-        write(self.root, ".memory/.gitignore", "traces/\n")
-        self.capture()
-        _, out = run(self.root, "stats")
-        self.assertNotIn("T 0 turns", out)
-        self.assertIn("t:2026-10-28-abcdef12#3", run(self.root, "q", "HUD binding", "-l", "T")[1])
 
     def test_merge_two_machines(self):
         git(self.root, "add", "-A")
