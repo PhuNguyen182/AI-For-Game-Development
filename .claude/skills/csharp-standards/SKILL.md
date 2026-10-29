@@ -18,4 +18,4 @@ Rule `csharp.md` binds every `.cs` change. Writers open a reference only when th
 Asset names (specs use them too): Prefab `Category_Name` · `Scene_` · `SO_` · `Mat_` · `Tex_` · `Anim_` · Animator `AC_` · `Shader_` · `VFX_` · asmdef = its root namespace.
 
 ## Review
-Review checks every submission against `csharp.md` and all four references; a violation is "request changes" at any size.
+Review checks every submission against `csharp.md` and all four references; a violation is a finding at any size. Its severity and the verdict it earns: skill `code-review-method` — style, layout, naming and comments are Low; a violation with runtime impact takes that impact's severity.

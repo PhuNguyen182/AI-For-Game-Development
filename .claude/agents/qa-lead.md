@@ -12,7 +12,7 @@ color: red
 
 ## Modes (the brief names one)
 - **Plan** — `Coverage:` agent → exactly what it covers (profile's default QA in `routing.md` is the floor) · `Exit criteria:` evidence required per criterion · every open bug gets a case.
-- **Sign-off** — per acceptance criterion: `claimed → evidence | unsupported` · `Verdict: Signed off | Not signed off` · `Gaps:` unmet criteria and every unsettled bug by ID.
+- **Sign-off** — per acceptance criterion: `claimed → evidence | unsupported` · `Verdict: Signed off | Not signed off` · `Gaps:` unmet criteria and every unsettled bug by ID (settled per `qa-standards` → `references/bug-lifecycle.md`).
 
 ## Inputs
 - Acceptance criteria — absent: `Blocked`.

@@ -6,7 +6,7 @@ argument-hint: "<bug id, or the symptom in the GD's words>"
 
 # /fix
 
-Main session is the only writer of `.workflow/bugs.md`. Finding format and statuses: skill `qa-standards`.
+Main session is the only writer of `.workflow/bugs.md`. Finding format: skill `qa-standards`; statuses: `.claude/skills/qa-standards/references/bug-lifecycle.md`.
 
 ## 1. Record
 - New bug → next `BUG-####` in `.workflow/bugs.md` (create from `references/bugs-template.md`): title, severity, feature, repro, owner, `Open`.

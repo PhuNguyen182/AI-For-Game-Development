@@ -35,7 +35,7 @@ const FINDINGS = {
         properties: {
           file: { type: 'string' },
           line: { type: 'integer' },
-          severity: { type: 'string', enum: ['Critical', 'High', 'Medium', 'Low', 'Info'] },
+          severity: { type: 'string', enum: ['Critical', 'High', 'Medium', 'Low'] },
           category: { type: 'string' },
           issue: { type: 'string' },
           fix: { type: 'string' },
@@ -79,16 +79,22 @@ const GATES = [
   { key: 'security', agentType: 'security-reviewer', ask: 'secrets, dangerous files, auto-executing imports, fraud logic' },
 ]
 
+// Refuted findings no longer back the gate's verdict; recompute it from what survived.
+const verdictAfterVerify = (gate, verdict, kept) => {
+  if (gate === 'code') return verdict === 'Needs-decision' ? verdict : kept.some(f => f.severity !== 'Low') ? 'Request changes' : 'Approve'
+  return kept.length === 0 ? 'Clear' : verdict
+}
+
 const results = await pipeline(
   GATES,
   g => agent(
     `Review the diff \`${git} diff ${scope.range}\` (repo ${root}; read untracked files in full) for ${g.ask}. Files: ${scope.files.join(', ')}. ` +
-    `Spec / acceptance criteria: ${scope.spec}. Another gate runs in parallel — do not cover its lens. ` +
+    `Spec / acceptance criteria: ${scope.spec} (none → audit mode). Another gate runs in parallel — do not cover its lens. ` +
     `Report only findings confirmed in the file, each with path:line and the concrete fix.`,
     { label: `review:${g.key}`, phase: 'Review', agentType: g.agentType, schema: FINDINGS },
   ),
   (review, g) => {
-    if (!review || review.findings.length === 0) return { gate: g.key, review, kept: [] }
+    if (!review || review.findings.length === 0) return { gate: g.key, review, kept: [], verdict: review ? review.verdict : 'no result' }
     const list = review.findings.map((f, i) => `${i}. [${f.severity}] ${f.file}:${f.line || '?'} — ${f.issue}`).join('\n')
     return agent(
       `You are a skeptic. For each finding below, open the cited file and try to REFUTE it: wrong line, ` +
@@ -97,7 +103,8 @@ const results = await pipeline(
       { label: `verify:${g.key}`, phase: 'Verify', schema: VERDICTS, effort: 'high' },
     ).then(v => {
       const real = new Set(((v && v.results) || []).filter(r => r.real).map(r => r.index))
-      return { gate: g.key, review, kept: review.findings.filter((_, i) => real.has(i)) }
+      const kept = review.findings.filter((_, i) => real.has(i))
+      return { gate: g.key, review, kept, verdict: verdictAfterVerify(g.key, review.verdict, kept) }
     })
   },
 )
@@ -105,13 +112,13 @@ const results = await pipeline(
 const done = results.filter(Boolean)
 const dropped = done.reduce((n, r) => n + ((r.review && r.review.findings.length) || 0) - r.kept.length, 0)
 if (dropped) log(`${dropped} findings refuted by verification and dropped`)
-const order = { Critical: 0, High: 1, Medium: 2, Low: 3, Info: 4 }
+const order = { Critical: 0, High: 1, Medium: 2, Low: 3 }
 const findings = done.flatMap(r => r.kept.map(f => ({ gate: r.gate, ...f })))
   .sort((a, b) => order[a.severity] - order[b.severity])
 
 return {
   range: scope.range,
-  verdicts: Object.fromEntries(done.map(r => [r.gate, r.review ? r.review.verdict : 'no result'])),
+  verdicts: Object.fromEntries(done.map(r => [r.gate, r.verdict])),
   findings,
   refuted: dropped,
   notCovered: done.map(r => `${r.gate}: ${r.review ? r.review.notCovered : 'gate did not return'}`),
