@@ -1,34 +1,31 @@
-# Component Types — The Five Kinds & Their Storage Cost
+# Component Types and Blob Assets
 
-Sources: [Unmanaged components](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/components-unmanaged.html), [Shared components](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/components-shared-introducing.html), [Enableable components](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/components-enableable.html).
-Covers: SKILL.md §4 — **"Choose each component kind from how its value changes, not from what it holds"**.
+Docs: https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/ (components-unmanaged, components-shared, components-buffer, components-enableable, blob-assets-concept, blob-assets-create).
 
-Each kind has a different storage consequence, and the consequence — not the
-data's type — is what decides the choice. The field types inside a component
-(`float3`, `quaternion`) are `unity-mathematics`'s territory, not this file's.
+## Kinds
+| Kind | Storage consequence |
+|---|---|
+| `IComponentData` struct | Default: blittable, inline in the chunk, usable from jobs and Burst |
+| `IComponentData` class | Managed, deprecated: GC-tracked, outside the chunk, unusable in jobs/Burst; never for new code |
+| `ISharedComponentData` | Partitions chunks by value: entities with different values never share a chunk; a per-entity-unique value yields about one chunk per entity |
+| `IBufferElementData` | Resizable `DynamicBuffer<T>`, in-chunk up to declared capacity, then spills to a heap allocation |
+| `IEnableableComponent` | Toggles per entity with no structural change, so frequent flips cost no archetype move |
 
-## The five kinds
+## Choosing
+| Situation | Kind |
+|---|---|
+| Per-entity value read by a hot query | `IComponentData` struct |
+| A few distinct values shared by thousands of entities (team, faction, material set) | `ISharedComponentData` |
+| Value differs per entity | Never shared |
+| Variable-length per-entity list (inventory, waypoints) | `IBufferElementData`, capacity = common case |
+| State toggled several times per second (stunned, invulnerable) | `IEnableableComponent`, not add/remove churn |
+| Filter with no payload | Empty tag `IComponentData` |
 
-| Kind | What it decides | Source |
-|---|---|---|
-| `IComponentData` on a struct | The default: blittable, stored inline in the chunk, readable from jobs and Burst-compiled code | [Unmanaged components](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/components-unmanaged.html) |
-| `IComponentData` on a class | Managed and **deprecated** — GC-tracked, stored outside the chunk behind an extra indirection, unusable in jobs or Burst; never the answer for new code | [Managed components](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/components-managed.html) |
-| `ISharedComponentData` | Partitions the archetype's chunks by value: entities with different values never share a chunk, so a value that is unique per entity yields roughly one chunk per entity | [Shared components](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/components-shared-introducing.html) |
-| `IBufferElementData` | Gives the entity a resizable `DynamicBuffer<T>`, stored in-chunk up to its declared capacity and spilling to a heap allocation past it | [Dynamic buffer components](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/components-buffer.html) |
-| `IEnableableComponent` | Toggles a component on or off per entity with **no** structural change, so frequently-flipping state costs no archetype move | [Enableable components](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/components-enableable.html) |
+Queries match only entities where the component is enabled, unless `EntityQueryOptions.IgnoreComponentEnabledState` is set; `IJobChunk` must apply the enabled mask itself. Enableable removes the structural change, not the iteration. (Unverified against the 6.6 page; from Entities behaviour.)
 
-## Choosing between them
-
-| Situation | Kind | Source |
-|---|---|---|
-| Ordinary per-entity value read by a hot query | `IComponentData` struct | [Unmanaged components](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/components-unmanaged.html) |
-| A handful of distinct values shared by thousands of entities (team, faction, material set) | `ISharedComponentData` | [Shared components](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/components-shared-introducing.html) |
-| A value that differs per entity | Never `ISharedComponentData` — it fragments the archetype | [Shared components](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/components-shared-introducing.html) |
-| Variable-length per-entity list (inventory slots, waypoints) | `IBufferElementData`, capacity set to the common case | [Dynamic buffer components](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/components-buffer.html) |
-| State toggled several times per second (stunned, invulnerable) | `IEnableableComponent`, not add/remove churn | [Use enableable components](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/components-enableable-use.html) |
-| Query filter with no payload | Empty tag `IComponentData` — free at rest, matched by the query | [Component concepts](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/concepts-components.html) |
-
-**Critical caveat**: a query does not skip a disabled `IEnableableComponent`
-for free by default — filtering on enabled state is a query option, and a
-query written without it still visits those entities. Enableable components
-remove the *structural change*, not the iteration.
+## Blob assets
+- `BlobAssetReference<T>`: a component-storable handle to one shared, permanently immutable allocation; copying the component copies the handle.
+- No managed data (no arrays, strings, object references): use `BlobArray<T>` and `BlobString`, or the build fails.
+- Per-entity-changing data is an ordinary component, not blob content.
+- `BlobBuilder` allocates the root, fills nested arrays, produces the reference, and is disposed afterwards. Build it in a Baker so it is authored once into the entity scene.
+- Internal pointers are relative offsets; read through the reference, never copy fields out of the allocation.

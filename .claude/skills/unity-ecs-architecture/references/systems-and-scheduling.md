@@ -1,41 +1,31 @@
-# Systems, Update Order & the Job Hand-off
+# Systems, Update Order and Iteration
 
-Sources: [System groups and update order](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/systems-update-order.html), [SystemBase overview](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/systems-systembase.html), [SystemAPI overview](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/systems-systemapi.html).
-Covers: SKILL.md §4 — **"Prefer `ISystem` in an existing `SystemGroup`"**.
-
-Which system type to write, where it updates, and the exact point at which the
-work stops being an ECS concern. Everything past that point — `JobHandle`
-chaining, `.Complete()` placement, container disposal — is
-`unity-job-system-and-burst`, and is deliberately not restated here.
+Docs: https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/ (systems-update-order, systems-systembase, systems-systemapi, systems-iterating-data).
 
 ## System type
-
-| Subject | What it decides | Source |
-|---|---|---|
-| `ISystem` | Unmanaged struct, Burst-compilable — the default, and the only one that can be `[BurstCompile]`d | [Systems comparison](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/systems-comparison.html) |
-| `SystemBase` | Managed class; can call managed APIs and capture managed state, but is not Burst-compilable — pick it only when a managed API is genuinely required | [SystemBase overview](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/systems-systembase.html) |
-| `SystemAPI` | Source-generated cached access to queries, lookups, and singletons — only usable inside a system, so it cannot be lifted into a plain static helper | [SystemAPI overview](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/systems-systemapi.html) |
+- `ISystem`: unmanaged struct, Burst-compilable (the only one that can be `[BurstCompile]`d); the default.
+- `SystemBase`: managed class; only when a managed API is required; not Burst-compilable.
+- `SystemAPI`: source-generated cached access to queries, lookups, singletons; usable only inside a system.
 
 ## Update order
+- `InitializationSystemGroup` first (setup), `SimulationSystemGroup` for most feature systems, `PresentationSystemGroup` last (display reads).
+- `[UpdateBefore]`/`[UpdateAfter]` order within one group only; a cross-group expectation written this way silently does nothing.
+- `[OrderFirst]`/`[OrderLast]` pin to the edge of the group, ahead of the Before/After sort.
+- A custom `ComponentSystemGroup` is worth it only when several systems share ordering and update rate.
 
-| Subject | What it decides | Source |
-|---|---|---|
-| `InitializationSystemGroup` | Runs first each frame — setup that later groups depend on | [Update order](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/systems-update-order.html) |
-| `SimulationSystemGroup` | Gameplay simulation; where most feature systems belong | [Update order](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/systems-update-order.html) |
-| `PresentationSystemGroup` | Runs last, before rendering; anything reading simulation results for display | [Update order](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/systems-update-order.html) |
-| `[UpdateBefore]` / `[UpdateAfter]` | Order *within* one group only — they cannot order across groups, and a cross-group expectation written this way silently does nothing | [Update order](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/systems-update-order.html) |
-| `[OrderFirst]` / `[OrderLast]` | Pins a system to the edge of its group, ahead of the `UpdateBefore`/`UpdateAfter` sort | [Update order](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/systems-update-order.html) |
-| Custom `ComponentSystemGroup` | Groups related systems under one ordering unit and one update rate — worth it only when several systems share both | [Update order](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/systems-update-order.html) |
+## Job hand-off
+- Choosing to schedule an `IJobEntity` instead of iterating on the main thread is decided here.
+- `JobHandle` chaining, `.Complete()` placement and container disposal are `unity-job-system-and-burst`.
+- Burst verification of the system is `unity-burst-compiler`.
+- Assign the scheduled job back to `state.Dependency`; otherwise the next system may read the same data concurrently.
 
-## The hand-off point
+## Iteration form
+All three sit on `EntityQuery`.
+| Form | Use when |
+|---|---|
+| `SystemAPI.Query<T>` | Main-thread `foreach`, caches its query; a few dozen entities, or managed APIs |
+| `IJobEntity` | Per-entity `Execute()`, schedulable and Burst-compilable, query inferred from parameters; thousands of uniform entities |
+| `IJobChunk` | Raw per-chunk `NativeArray` access; branch on an optional component once per chunk instead of per entity |
 
-| Situation | Owner | Source |
-|---|---|---|
-| Deciding a system schedules an `IJobEntity` rather than iterating on the main thread | This skill — see [queries-and-iteration.md](queries-and-iteration.md) | synthesized |
-| Chaining that job's `JobHandle`, choosing where `.Complete()` lands, disposing its containers | `unity-job-system-and-burst` | [Scheduling jobs in Entities](https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/systems-scheduling-jobs.html) |
-| Making the system itself Burst-compile and verifying it did | `unity-burst-compiler` | synthesized |
-
-**Critical caveat**: `state.Dependency` is the system's job handle, and a
-system that schedules a job without assigning it back leaves the next system
-free to read the same data concurrently. Assigning it is the ECS-side half of
-the contract; everything else about that handle is the Job System skill's.
+- Entity-to-entity lookups: either job form plus a `ComponentLookup<T>`, `[ReadOnly]` where possible.
+- `IJobEntity` infers its query from `Execute()` parameters: adding a parameter silently narrows the entities touched, so a job processing fewer entities is usually a signature change, not a data change.
