@@ -1,33 +1,32 @@
-# Allocators — Built-in Lifetimes & Disposal
+# Allocators
 
-Source: [Use allocators to control unmanaged memory](https://docs.unity3d.com/Packages/com.unity.collections@6.6/manual/allocation.html), [Allocator overview](https://docs.unity3d.com/Packages/com.unity.collections@6.6/manual/allocator-overview.html).
-Covers: SKILL.md §4 — **"Pick the allocator by actual data lifetime"**, **"Dispose every `Native-`/custom-allocator allocation on every code path"**.
+Source: [Use allocators](https://docs.unity3d.com/Packages/com.unity.collections@6.6/manual/allocation.html), [Allocator overview](https://docs.unity3d.com/Packages/com.unity.collections@6.6/manual/allocator-overview.html), [Rewindable allocator](https://docs.unity3d.com/Packages/com.unity.collections@6.6/manual/allocator-rewindable.html), [Custom allocator](https://docs.unity3d.com/Packages/com.unity.collections@6.6/manual/allocator-custom-use.html).
 
-The three built-in allocators and what disposal actually requires. `Native-`
-and `Unsafe-` collections live outside the GC's awareness, so every allocation
-is deallocated explicitly or it is a leak. Escalation past these three is
-[rewindable-and-custom-allocators.md](rewindable-and-custom-allocators.md);
-the routine allocator pick for data feeding one scheduled job belongs to
-`unity-job-system-and-burst`, not here.
+`Native-` and `Unsafe-` memory is outside the GC: every allocation is deallocated explicitly or it leaks.
 
-## The three built-in allocators
+## Built-in
+| Allocator | Behaviour | Use when |
+|---|---|---|
+| `Temp` | Fastest; auto-freed at end of frame or job; cannot cross threads | Consumed within the frame or job that made it |
+| `TempJob` | Dispose within ~4 frames or a leak warning is raised | Outlives one job, not the frame's job chain |
+| `Persistent` | Slowest; indefinite; always disposed manually | Lives across frames with no defined checkpoint |
 
-| Allocator | Effect | Use when | Source |
-|---|---|---|---|
-| `Allocator.Temp` | Fastest; auto-freed at the end of the frame or job; cannot cross threads | The data is consumed within the same frame or job that made it | [Allocator overview](https://docs.unity3d.com/Packages/com.unity.collections@6.6/manual/allocator-overview.html) |
-| `Allocator.TempJob` | Must be disposed within ~4 frames or it raises a leak warning | The data outlives one job but not the frame's job chain | [Allocator overview](https://docs.unity3d.com/Packages/com.unity.collections@6.6/manual/allocator-overview.html) |
-| `Allocator.Persistent` | Slowest to allocate; indefinite lifetime; always disposed manually | The data lives across frames with no defined checkpoint | [Allocator overview](https://docs.unity3d.com/Packages/com.unity.collections@6.6/manual/allocator-overview.html) |
+## Disposal
+- `Dispose()`: frees now; illegal while a job still reads the container.
+- `Dispose(JobHandle)`: defers the free until the handle completes and returns a new handle.
+- `IsCreated`: per allocation, not per copy; every struct copy and alias reports `true` until the one allocation is freed, so it cannot say which copy owns it.
 
-## Disposal mechanics
+## Rewindable allocator
+Use when many short-lived allocations share one release point and per-allocation `Dispose()` bookkeeping is the actual cost.
+- Bump allocation from pre-allocated blocks; one rewind frees every allocation it made.
+- Blocks are 64-byte aligned, double in size up to a cap, then grow linearly; a rewind keeps some blocks for reuse and releases others.
+- Created through `AllocatorHelper`.
 
-| Mechanism | Effect | Use when | Source |
-|---|---|---|---|
-| `Dispose()` | Frees immediately; illegal while a job still reads the container | Nothing scheduled is still using it | [Allocator overview](https://docs.unity3d.com/Packages/com.unity.collections@6.6/manual/allocator-overview.html) |
-| `Dispose(JobHandle)` | Defers the free until the given handle completes, returning a new handle | A scheduled job still holds the container | [Allocator overview](https://docs.unity3d.com/Packages/com.unity.collections@6.6/manual/allocator-overview.html) |
-| `IsCreated` | Reports whether the handle refers to a live allocation — survives struct copies and aliases | Guarding a disposal path that may run twice | [Allocator overview](https://docs.unity3d.com/Packages/com.unity.collections@6.6/manual/allocator-overview.html) |
+## Custom allocator
+Use only for a lifetime or strategy neither the built-in three nor rewindable covers.
+- Create via `AllocatorHelper`, register globally, then initialize.
+- `Native-`: `CollectionHelper.CreateNativeArray` / `CollectionHelper.Dispose`. `Unsafe-`: `AllocatorManager.Allocate` / `AllocatorManager.Free`.
+- Teardown order is load-bearing: rewind the handle, unregister it, then free its backing memory. Unregistering before rewinding leaks the held blocks, unreported.
 
-**Critical caveat**: `IsCreated` is per-allocation, not per-copy. Every struct
-copy and every alias reports `true` until the one underlying allocation is
-freed, and `false` for all of them afterward — it cannot tell you *which* copy
-owns it. That is why §4 requires the owner to be named where an alias is
-introduced.
+## Example
+An Editor importer makes thousands of small allocations over many frames, all dead at import end: `TempJob` fails (lifetime over ~4 frames), `Persistent` means thousands of `Dispose()` calls. Use a rewindable allocator, `CollectionHelper.CreateNativeArray`, one rewind at the end.
