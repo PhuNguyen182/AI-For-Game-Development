@@ -9,6 +9,10 @@ Open work on the framework itself. Not copied into projects. Add a row when foun
 | Confirm `skills:` preload works with `user-invocable: false` in a fresh session | Open |
 | Zero-Mem memory + XERJ code search (`mem`, `code-search` skills; capture, search-guard hooks) | Done: `5b7c1df`, reviewed + QA signed off 2026-10-28 |
 | Pre-commit secret scan skipped `git -c ... commit`, `commit -C <rev>`, relative `cd`/`-C` paths | Done: `862cd2c` |
+| Engineer skill gaps — 10 new skills (save migration, IAP ledger, Firebase SDK, consent/ATT, server validation, safe area, localization, Core↔scene, determinism, Core tests) | Done: `.workflow/features/engineer-skill-gaps.md`, reviewed + security Clear + QA, closed 2026-10-29 with GD-accepted gaps |
+| Run the engineer-gap skills on a real project: Device Simulator safe area, Localization init, Firebase gate + consent order on device, NGO sender checks, replay test + dotnet mirror, Play/App Store/Functions/UGS sandbox flows; settle the `Unverified:` lines they carry | Open |
+| High gaps from the 2026-10-29 re-score: ads SDK integration + rewarded-ad server-side verification (sdk → backend), server-side ID-token verification (Firebase Admin / UGS auth) | Open |
+| Still-missing engineer skills from the audit: Firebase App Check client, leaderboard score validation, Firestore rules tests / staging procedure, MagicOnion server side, Steamworks / Play Games / Game Center, Core fixed-point maths and config models, SO→Core data projection, mobile GPU tools, frame pacing / thermal, IAP subscriptions (renewal, grace, RTDN), RTL text, object pooling, scene loading/lifecycle, Timeline, GPU Resident Drawer, texture/mesh import + build size, shader variant stripping | Open |
 | Git-level pre-commit (`core.hooksPath` → `.githooks/`) so a person's terminal commit of `.memory/traces` is secret-scanned too (GD chose to add it, S). Check first: `core.hooksPath` replaces `.git/hooks`, so Git LFS's own hooks must be chained from it | Open |
 
 ### Zero-Mem known limitations (GD-accepted 2026-10-28)
