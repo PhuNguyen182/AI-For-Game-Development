@@ -1,52 +1,35 @@
-# Numerics and Unity Integration — NRandom.Numerics, NRandom.Unity, Installation
+# Numerics and Unity Integration
 
-Source: [NumericsRandomExtensions.cs](https://github.com/nuskey8/NRandom/blob/v2.0.2/src/NRandom.Numerics/NumericsRandomExtensions.cs), [UnityRandomExtensions.cs](https://github.com/nuskey8/NRandom/blob/v2.0.2/src/NRandom.Unity/Assets/NRandom.Unity/Runtime/UnityRandomExtensions.cs), [SerializableWeightedList.cs](https://github.com/nuskey8/NRandom/blob/v2.0.2/src/NRandom.Unity/Assets/NRandom.Unity/Runtime/SerializableWeightedList.cs), [README — Unity section](https://github.com/nuskey8/NRandom/blob/v2.0.2/README.md#unity).
-Covers: SKILL.md §4 — **"Use `NRandom.Numerics` in `Game.Core.*` and `NRandom.Unity` only in `Game.Client.*`"**.
+Sources: [a] `src/NRandom.Numerics/NumericsRandomExtensions.cs`, [b] `src/NRandom.Unity/Assets/NRandom.Unity/Runtime/UnityRandomExtensions.cs`, [c] same folder `SerializableWeightedList.cs`, [d] README `#installation`, `#unity` — all at `v2.0.2` (SKILL.md `Docs:` base).
 
-Vector/Quaternion/Color randomization and the Unity package's installation
-path. `rng-algorithms-and-determinism.md` owns which `IRandom` instance
-these extension methods are called on.
+## NRandom.Numerics: `System.Numerics`, no UnityEngine, safe for `Game.Core.*` [a]
 
-## NRandom.Numerics (`System.Numerics` types — no UnityEngine dependency, safe for Game.Core.*)
+| Method | Returns |
+|---|---|
+| `NextVector2/3/4()` | components in `[0,1)`; `(max)` and `(min,max)` overloads |
+| `NextVector2Direction()` / `NextVector3Direction()` | unit vector, uniform direction |
+| `NextVector2InsideCircle()` / `NextVector3InsideSphere()` | uniform point inside the unit circle/sphere |
+| `NextQuaternionRotation()` | unit `System.Numerics.Quaternion`, uniform 3D rotation |
 
-| Method | Returns | Source |
-|---|---|---|
-| `NextVector2()` / `NextVector3()` / `NextVector4()` | components in `[0,1)`; overloaded for `(max)` and `(min,max)` using `System.Numerics.Vector2/3/4` | [NumericsRandomExtensions.cs](https://github.com/nuskey8/NRandom/blob/v2.0.2/src/NRandom.Numerics/NumericsRandomExtensions.cs) |
-| `NextVector2Direction()` / `NextVector3Direction()` | unit-length vector, uniformly random direction | [NumericsRandomExtensions.cs](https://github.com/nuskey8/NRandom/blob/v2.0.2/src/NRandom.Numerics/NumericsRandomExtensions.cs) |
-| `NextVector2InsideCircle()` / `NextVector3InsideSphere()` | uniformly random point inside the unit circle/sphere | [NumericsRandomExtensions.cs](https://github.com/nuskey8/NRandom/blob/v2.0.2/src/NRandom.Numerics/NumericsRandomExtensions.cs) |
-| `NextQuaternionRotation()` | unit `System.Numerics.Quaternion`, uniformly random 3D rotation | [NumericsRandomExtensions.cs](https://github.com/nuskey8/NRandom/blob/v2.0.2/src/NRandom.Numerics/NumericsRandomExtensions.cs) |
+Separate NuGet package `NRandom.Numerics`, installed alongside `NRandom`.
 
-Ships as a separate NuGet package (`NRandom.Numerics`) — install it alongside
-`NRandom` when `Game.Core.*` code needs vector/rotation randomization
-without pulling in `UnityEngine`.
+## NRandom.Unity: UnityEngine, `Game.Client.*` only [b][c]
 
-## NRandom.Unity (`UnityEngine` types — Game.Client.* only)
+| Member | Fact |
+|---|---|
+| `NextVector2/3/4`, `NextVector2Direction`, `NextVector3InsideSphere`, `NextQuaternionRotation` | Same as Numerics, on `UnityEngine` types |
+| `NextColor()` / `(Color max)` / `(Color min, Color max)` | Componentwise random `Color` |
+| `NextColor(Gradient)` | Gradient evaluated at random `[0,1)` |
+| `NextColorHSV(hueMin, hueMax, satMin, satMax, valMin, valMax[, alphaMin, alphaMax])` | Independently ranged HSV(A) |
+| `SerializableWeightedList<T>` | `WeightedList<T>` + `ISerializationCallbackReceiver`, backed by `[SerializeField] WeightedValue<T>[]`: Inspector-editable, survives domain reload |
 
-| Member | Effect | Source |
-|---|---|---|
-| `NextVector2/3/4`, `NextVector2Direction`, `NextVector3InsideSphere`, `NextQuaternionRotation` | Same methods as `NRandom.Numerics`, re-implemented against `UnityEngine.Vector2/3/4`/`Quaternion` instead of `System.Numerics`. | [UnityRandomExtensions.cs](https://github.com/nuskey8/NRandom/blob/v2.0.2/src/NRandom.Unity/Assets/NRandom.Unity/Runtime/UnityRandomExtensions.cs) |
-| `NextColor()` / `NextColor(Color max)` / `NextColor(Color min, Color max)` | Random `UnityEngine.Color`, componentwise. | [UnityRandomExtensions.cs](https://github.com/nuskey8/NRandom/blob/v2.0.2/src/NRandom.Unity/Assets/NRandom.Unity/Runtime/UnityRandomExtensions.cs) |
-| `NextColor(Gradient gradient)` | Evaluates a `UnityEngine.Gradient` at a random `[0,1)` position. | [UnityRandomExtensions.cs](https://github.com/nuskey8/NRandom/blob/v2.0.2/src/NRandom.Unity/Assets/NRandom.Unity/Runtime/UnityRandomExtensions.cs) |
-| `NextColorHSV(hueMin, hueMax, satMin, satMax, valMin, valMax[, alphaMin, alphaMax])` | Random color built from independently ranged HSV(A) components. | [UnityRandomExtensions.cs](https://github.com/nuskey8/NRandom/blob/v2.0.2/src/NRandom.Unity/Assets/NRandom.Unity/Runtime/UnityRandomExtensions.cs) |
-| `SerializableWeightedList<T>` | `WeightedList<T>` subclass implementing `ISerializationCallbackReceiver`, backed by a `[SerializeField] WeightedValue<T>[]` — makes a loot table Inspector-editable and survives domain reload. | [SerializableWeightedList.cs](https://github.com/nuskey8/NRandom/blob/v2.0.2/src/NRandom.Unity/Assets/NRandom.Unity/Runtime/SerializableWeightedList.cs) |
+**Caveat:** all of this references `UnityEngine` and stays out of `Game.Core.*` (`csharp-standards` → `naming-convention.md`, namespace boundary). Author tables in `Game.Client.*` via `SerializableWeightedList<T>`, but resolve the gameplay-affecting roll through the same injected `IRandom` that `Game.Core.*` uses.
 
-**Critical caveat**: `NRandom.Unity`'s Vector/Quaternion/Color methods and
-`SerializableWeightedList<T>` all reference `UnityEngine` — per
-`csharp-standards` → `naming-convention.md`'s namespace boundary, none of this belongs in
-`Game.Core.*`. Author the table/weights in `Game.Client.*` via
-`SerializableWeightedList<T>` for Inspector authoring, but resolve the actual
-gameplay-affecting roll through the same injected `IRandom` that
-`Game.Core.*` uses, per
-[rng-algorithms-and-determinism.md](rng-algorithms-and-determinism.md).
+## Installation [d]
 
-## Installation
+| Target | Steps |
+|---|---|
+| Pure .NET | `dotnet add package NRandom` |
+| Unity (2021.3+) | Install NugetForUnity; `NuGet > Manage NuGet Packages`, install `NRandom`; Package Manager `[+] > Add package from git URL`: `https://github.com/nuskey8/NRandom.git?path=src/NRandom.Unity/Assets/NRandom.Unity` |
 
-| Target | Steps | Source |
-|---|---|---|
-| Pure .NET | `dotnet add package NRandom` (NuGet, requires .NET Standard 2.1+) | [README — Installation](https://github.com/nuskey8/NRandom/blob/v2.0.2/README.md#installation) |
-| Unity | 1. Install [NugetForUnity](https://github.com/GlitchEnzo/NuGetForUnity). 2. `NuGet > Manage NuGet Packages`, search `NRandom`, install. 3. Package Manager → `[+] > Add package from git URL` → `https://github.com/nuskey8/NRandom.git?path=src/NRandom.Unity/Assets/NRandom.Unity` | [README — Unity](https://github.com/nuskey8/NRandom/blob/v2.0.2/README.md#unity) |
-
-Requires Unity 2021.3 or higher and NugetForUnity. The Unity git-URL package
-only adds the `NRandom.Unity` extension methods on top of the
-NuGet-installed core — it is not a standalone replacement for the core
-`NRandom` package.
+The git-URL package only adds the `NRandom.Unity` extensions over the NuGet-installed core; it does not replace it.
