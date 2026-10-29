@@ -1,38 +1,27 @@
-# Sprite Asset — Runtime Data & Packing-Safe Members
+# Sprite Asset Data and Placeholders
 
-Sources: [Sprite asset reference](https://docs.unity3d.com/Manual/class-Sprite.html), [Sprites](https://docs.unity3d.com/Manual/sprite/sprite-landing.html).
-Covers: SKILL.md §4 — **"Read sprite data through the members that stay valid under packing"**.
+Page: https://docs.unity3d.com/Manual/class-Sprite.html
 
-Half of `Sprite`'s scripting surface describes the sprite on its *original*
-texture and half describes it wherever it currently sits, which for an
-atlas-packed sprite are different places. Choosing the wrong half produces
-code that works in the Editor and throws once packing is enabled.
+Some `Sprite` members describe the original texture, others the current one; for an atlas-packed sprite these differ, so wrong choices work in the Editor and throw once packing is on.
 
-## Geometry and scale
+| Member | Note |
+|---|---|
+| `rect` | Location on the **original** texture; stable under packing, the default choice |
+| `textureRect`, `textureRectOffset` | Location on the **current** texture; `textureRect` throws for a tightly packed sprite. Guard with `packed` / `packingMode` / `packingRotation` |
+| `texture` | Atlas texture when packed, source otherwise |
+| `bounds` | World-space centre and extents with pivot and PPU applied; use instead of deriving from `rect` and `pixelsPerUnit` |
+| `pixelsPerUnit`, `pivot`, `border` | Import-time values |
+| `triangles`, `uv`, `vertices` | Copies of the render mesh (reflects Custom Outline); each access copies, so cache |
+| `spriteAtlasTextureScale` | Resolution scale when resolved through a Variant |
+| `associatedAlphaSplitTexture` | Separate alpha texture forced by ETC1 (no alpha channel); a mobile-only second texture to count in memory budgets |
+| `GetPhysicsShapeCount()`, `GetPhysicsShape(int, List<Vector2>)`, `GetPhysicsShapePointCount(int)` | Read the authored collision outlines; reuse the caller-owned list; point count sizes a buffer |
+| `Sprite.Create(...)` | Runtime sprite for procedural content only; the caller owns the result |
+| `OverrideGeometry(...)`, `OverridePhysicsShape(...)` | Replace mesh/collision at runtime, bypassing Sprite Editor data; an escape hatch |
 
-| Member | What it decides | Source |
-|---|---|---|
-| `rect` | Location on the **original** source texture — stable regardless of atlas state, and therefore the default choice | [Sprite asset reference](https://docs.unity3d.com/Manual/class-Sprite.html) |
-| `textureRect` | Location on the **current** texture — throws for a tightly packed atlas sprite, which has no simple rect | [Sprite asset reference](https://docs.unity3d.com/Manual/class-Sprite.html) |
-| `textureRectOffset` | Offset of `textureRect` from the sprite's unpacked bounds | [Sprite asset reference](https://docs.unity3d.com/Manual/class-Sprite.html) |
-| `texture` | The backing `Texture2D` — the atlas texture when packed, the source otherwise | [Sprite asset reference](https://docs.unity3d.com/Manual/class-Sprite.html) |
-| `bounds` | World-space centre and extents, already accounting for pivot and PPU — use it instead of deriving size from `rect` and `pixelsPerUnit` by hand | [Sprite asset reference](https://docs.unity3d.com/Manual/class-Sprite.html) |
-| `pixelsPerUnit`, `pivot`, `border` | The import-time values, readable at runtime — see [import-settings.md](import-settings.md) | [Sprite asset reference](https://docs.unity3d.com/Manual/class-Sprite.html) |
-| `triangles`, `uv`, `vertices` | Copies of the render mesh, reflecting whatever [custom-outline.md](custom-outline.md) authored — each access copies, so cache rather than reading per frame | [Sprite asset reference](https://docs.unity3d.com/Manual/class-Sprite.html) |
+## Placeholder sprites
 
-## Packing and platform state
+GameObject > 2D Object > Sprites (2D Sprite package; the shape list varies by Editor version, read the live menu) creates a GameObject with a `SpriteRenderer` using a generated white primitive. Page: https://docs.unity3d.com/Manual/sprite/placeholder/placeholder-landing.html
 
-| Member | What it decides | Source |
-|---|---|---|
-| `packed`, `packingMode`, `packingRotation` | Whether and how the sprite is in an atlas — the guard to test before touching `textureRect` | [Sprite asset reference](https://docs.unity3d.com/Manual/class-Sprite.html) |
-| `spriteAtlasTextureScale` | The resolution scale applied when the sprite resolved through a Variant atlas, see [sprite-atlas.md](sprite-atlas.md) | [Sprite asset reference](https://docs.unity3d.com/Manual/class-Sprite.html) |
-| `associatedAlphaSplitTexture` | The separate alpha texture ETC1 compression forces, since ETC1 carries no alpha channel — a mobile-only second texture that is easy to forget in a memory budget | [Sprite asset reference](https://docs.unity3d.com/Manual/class-Sprite.html) |
-
-## Physics shape and runtime construction
-
-| Member | What it decides | Source |
-|---|---|---|
-| `GetPhysicsShapeCount()` / `GetPhysicsShape(int, List<Vector2>)` | Reads the outlines authored in [custom-physics-shape.md](custom-physics-shape.md); the list overload fills a caller-owned buffer, so reuse it rather than allocating per call | [Sprite asset reference](https://docs.unity3d.com/Manual/class-Sprite.html) |
-| `GetPhysicsShapePointCount(int)` | Vertex count of one shape — the cheap way to size a buffer before reading | [Sprite asset reference](https://docs.unity3d.com/Manual/class-Sprite.html) |
-| `Sprite.Create(...)` | Builds a sprite from a texture at runtime — for genuinely procedural content only, and the result is an object the caller now owns | [Sprite asset reference](https://docs.unity3d.com/Manual/class-Sprite.html) |
-| `OverrideGeometry(...)` / `OverridePhysicsShape(...)` | Replaces mesh or collision data at runtime, bypassing everything authored in the Sprite Editor — an escape hatch, not a substitute for authoring | [Sprite asset reference](https://docs.unity3d.com/Manual/class-Sprite.html) |
+- No texture backs it, so it cannot be opened in the Sprite Editor: no slicing, outline, physics shape or border.
+- Swapping in final art is a reassignment of the renderer's Sprite; sorting, colliders and animation bindings survive.
+- The swap carries no import decisions (PPU, Mesh Type, pivot, physics shape): a blockout scene changes size when real art lands at a different PPU, so run import-settings.md then.
