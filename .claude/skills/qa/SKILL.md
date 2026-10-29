@@ -10,6 +10,7 @@ argument-hint: "<feature slug, or what to test>"
 - May run while `/review` is in progress; execution waits for review approval.
 - Brief: acceptance criteria, open bugs, platforms, profile default QA (`routing.md`), multiplayer on/off.
 - Device or perf coverage needs a build that does not exist → ask the GD now (`/release` builds); no → that coverage is a gap from the start.
+- Multi-client cases need MPPM virtual players (extra Editor instances, `playtest-tester`) or a multi-instance build (`build-release-engineer`) → ask the GD now; record the answer in each brief. No → gap from the start.
 
 ## 2. Execute — serial on the Editor, serial on the device
 Order, only the agents the plan names:

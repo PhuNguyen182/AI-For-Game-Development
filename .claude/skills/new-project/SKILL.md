@@ -33,10 +33,10 @@ Memory and search (skills `mem`, `code-search`): `.gitignore` += `.memory/.index
 ## 6. Perf budget — `AskUserQuestion`, recommended first
 | Profile | Recommended default |
 |---|---|
-| hyper-casual | 60 fps (16.6 ms) on Android low-end · ≤ 500 MB RAM · ≤ 150 MB install |
-| mid-core | 30–60 fps on Android mid + oldest supported iOS · ≤ 1 GB RAM |
+| hyper-casual | 60 fps (16.6 ms) on Android low-end · 0 B GC/frame steady state · ≤ 100 draw calls · ≤ 500 MB RAM · ≤ 150 MB install |
+| mid-core | 30–60 fps on Android mid + oldest supported iOS · 0 B GC/frame steady state · ≤ 200 draw calls · ≤ 1 GB RAM |
 | hard-core | GD-defined per tier |
-Write the answer into `CLAUDE.md` → Perf budget.
+Write the answer into `CLAUDE.md` → Perf budget, every metric with its unit and tier; a metric left out gets no verdict from `performance-qa-engineer`.
 
 ## 7. State
 Create `.workflow/bugs.md` from `/fix`'s template and `.workflow/features/`. Commit `.workflow/` and `.memory/`.

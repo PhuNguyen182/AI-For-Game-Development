@@ -9,10 +9,10 @@ user-invocable: false
 Not for: taking the measurement (`unity-profiler-diagnostics`), choosing or writing the fix (`unity-performance-engineer`), allocation asserted as a test gate (`unity-test-framework`), functional verification of a build (`build-fault-triage`).
 
 ## Steps
-1. **Fix the budget first** — metric, value, unit and named device tier; a frame budget is ms on a tier, not "60fps" (16.7ms covers CPU and GPU, a feature owns a slice). No budget supplied → report absolute numbers, say so, give no verdict.
+1. **Fix the budget first** — metric, value, unit and named device tier, from the brief, else `CLAUDE.md` → Perf budget; a frame budget is ms on a tier, not "60fps" (16.7ms covers CPU and GPU, a feature owns a slice). No budget for a metric → report its absolute number, say so, give that metric no verdict.
 2. **Measure in a Development Build on the target device** — an Editor run is labelled "indicative" every time and never satisfies a device claim (`qa-standards`); it only compares against another Editor run.
-3. **Discard warm-up frames** (shader compile, first-call cost, pool priming, loads) and state the steady-state window.
-4. **Run several times; report min, median and max, never the best run.** Spread larger than the delta judged → verdict `inconclusive`, not pass.
+3. **Discard warm-up frames** (shader compile, first-call cost, pool priming, loads) and state the steady-state window. Default when the brief sets none: drop the first 10 s after the scenario starts, measure ≥ 30 s of steady state.
+4. **Run several times — default 5, never fewer than 3; report min, median and max, never the best run.** Judge the median against the budget. Spread larger than the delta judged → verdict `inconclusive`, not pass.
 5. **Compare to a baseline taken the same way** (device, build config, scenario, warm-up). No baseline → this run is the baseline; say so.
 6. **Sustained mobile run** → record elapsed time per figure; a figure at minute 10 is not comparable to a baseline at minute 1 (thermal throttling).
 7. **Attribute each regression** to a named system, call or batch break (`csharp-standards` → `performance-and-algorithms.md` Verification); "frame time went up" is not actionable.

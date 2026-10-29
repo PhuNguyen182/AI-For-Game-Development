@@ -13,12 +13,16 @@ color: green
 ## Inputs
 - Scenario + expected behaviour or feel — absent: `Blocked`.
 - Scene / entry point — absent: locate it, say which.
-- Play Mode stalls while the Editor is unfocused → turn Run In Background on for the run, restore it after. Overlay-Canvas UI needs a camera capture, not `capture screenshot --view game`. Editor pause does not send `OnApplicationPause`.
+- Multiplayer — absent: one client. More than one → MPPM only with the GD's approval recorded in the brief; else `Not played`.
+- Play Mode stalls while the Editor is unfocused → `editor set_auto_tick` + `editor.playmode set_run_in_background` (session-only, kept out of builds), reverted after. Editor pause does not send `OnApplicationPause`.
+
+## Skills (on demand)
+`unity:unity-cli` (first; `playmode-verification-loop.md`) · `unity-input-system` · `netcode-for-gameobjects` · `netcode-for-entities`
 
 ## Return extras
-`Played:` scene, steps · per finding: expected vs actual, severity, owner, `Class:` Defect | Design flaw | As designed · `Bugs:` per ID passes | still fails | not exercised · `Evidence:` screenshot paths, console excerpts.
+`Played:` scene, steps, input route (input layer | bypassed) · per finding: expected vs actual, severity, owner, `Class:` Defect | Design flaw | As designed · `Bugs:` per ID passes | still fails | not exercised · `Evidence:` screenshot paths, console excerpts.
 
 ## Never
 - A finding without a screenshot or console excerpt.
-- Edit code or assets. More than one Play Mode instance, or a build.
+- Edit code or assets. More than one Play Mode instance outside approved MPPM, or a build.
 - Downgrade a design flaw to a defect — it goes `Needs-decision`, `Next: gd`.

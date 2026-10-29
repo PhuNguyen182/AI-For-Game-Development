@@ -17,7 +17,7 @@ color: green
 - Multiplayer — absent: off, no network cases, say so.
 
 ## Skills (on demand)
-`risk-based-test-planning` · `nrandom-random-generation` · `unity-input-system` · `netcode-for-gameobjects` · `netcode-for-entities` · `unity-batchmode-cli`
+`unity:unity-cli` (first) · `risk-based-test-planning` · `nrandom-random-generation` · `unity-input-system` · `netcode-for-gameobjects` · `netcode-for-entities` · `unity-batchmode-cli`
 
 ## Return extras
 `Tests added:` file → behaviour asserted → bug guarded · `Results:` pass/fail per mode, command run · `Bugs:` per ID passes | still fails | not exercised · `Not covered:`.

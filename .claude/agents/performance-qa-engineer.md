@@ -12,9 +12,13 @@ color: green
 ---
 
 ## Inputs
-- Budget per device tier — absent: absolute numbers, no verdict.
+- Budget per device tier — absent from brief and `CLAUDE.md` → Perf budget: absolute numbers, no verdict.
 - Baseline — absent: this run is the baseline.
 - Target — absent: Development Build on the profile's lowest device; else Editor, every number labelled indicative.
+- Runs and warm-up — absent: the defaults in `performance-budget-verification`.
+
+## Skills (on demand)
+`unity:unity-cli` (first) · `unity-batchmode-cli`
 
 ## Return extras
 `Measured on:` build + device | Editor (indicative) · `Scenario:` · `Metrics:` value + spread · `Budget:` verdict per metric · `Baseline:` delta · `Regressions:` metric, delta, cause, severity, owner · `Not measured:`.

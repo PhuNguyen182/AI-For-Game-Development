@@ -17,7 +17,7 @@ Docs: `https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/manual/` (
 | [running.md](references/running.md) | Scoping a headless run, running in a Player, or driving runs from Editor tooling |
 
 ## Steps
-1. **Confirm the code under test has passed review** — tests gate reviewed code.
+1. **Record the review status of the code under test** — unreviewed: still test it and say no correctness gate stands behind the results. A regression test written before the fix (`/fix` step 4) runs against unreviewed code by design.
 2. **Test `Game.Core.*` in Edit Mode**; Play Mode only for physics, timing, prefabs, scene state — Core has no `UnityEngine` dependency.
 3. **Set up the assembly and mode marker first**, per [authoring.md](references/authoring.md). A test missing from the Test Runner is an assembly problem (missing reference, script outside a test assembly).
 4. **Check the attribute against Unity's catalog** — several NUnit ones are unsupported or throw ([authoring.md](references/authoring.md)).

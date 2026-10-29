@@ -15,7 +15,7 @@
 | Multiplayer | no |
 | Stack headline | networking · backend · ads · IAP · analytics — or none |
 | Full tech stack | `docs/tech-stack.md` — read before adding or choosing a package, SDK or service |
-| Perf budget (ms per device tier) | |
+| Perf budget per device tier (frame ms · GC/frame · RAM · draw calls · install size) | |
 | Min OS / device | |
 | Compliance | COPPA / GDPR / none |
 | Unity CLI editor alias | |

@@ -15,7 +15,7 @@ Not for: writing or running tests (`unity-test-framework`), hand-played scenario
 4. **Decision table when an outcome depends on several conditions** — enumerate combinations, cover each distinct outcome, not every permutation.
 5. **State machines by transition, not state** — every legal transition out of each state plus the illegal ones the rule must reject.
 6. **Rank each case by impact × likelihood** (impact uses `qa-standards` Severity) and record every case the ranking dropped, with reason.
-7. **Assign each case to the agent whose scope contains it** — deterministic rule logic `qa-automation-engineer`, GDD scenarios and feel `playtest-tester`, budgets `performance-qa-engineer`, real-artifact behaviour `build-release-engineer`. An unowned case is a gap.
+7. **Assign each case to the agent whose scope contains it** — deterministic rule logic and latency/loss cases `qa-automation-engineer`, GDD scenarios and feel `playtest-tester` (multi-client: MPPM, GD-approved), budgets `performance-qa-engineer`, real-artifact behaviour `build-release-engineer`. An unowned case is a gap.
 8. **Exit criteria are evidence, not effort** — "boundary cases pass and the playtest shows the intended pacing", never "QA done".
 9. **Scale to size** (`routing.md`): S gets a few lines, L or risk-flagged the full treatment. No cases for behaviour the spec does not require (`coding-principles.md` YAGNI).
 
