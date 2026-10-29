@@ -1,35 +1,25 @@
-# Frame Debugger and Profile Analyzer — batch attribution and before-and-after proof
+# Frame Debugger and Profile Analyzer
 
-Sources: [Frame Debugger](https://docs.unity3d.com/Manual/FrameDebugger.html), [Profile Analyzer](https://docs.unity3d.com/Manual/com.unity.performance.profile-analyzer.html), [Rendering module](https://docs.unity3d.com/Manual/ProfilerRendering.html).
-Covers: SKILL.md §4 — **"Take a batching or draw-call regression to the Frame Debugger, not to a timing module"**, **"Back any before-and-after claim with the Profile Analyzer"**.
+Docs: https://docs.unity3d.com/Manual/FrameDebugger.html · https://docs.unity3d.com/Manual/com.unity.performance.profile-analyzer.html
 
-Two tools that answer questions no Profiler module can. The Frame Debugger
-explains a draw-call sequence and never times it; the Profile Analyzer turns
-many frames into one defensible figure. Fixing what either reveals — batching
-setup, material variants, GPU instancing — is `unity-urp-rendering`'s and
-`unity-performance-engineer`'s work.
+Fixing what either reveals (batching setup, material variants, GPU instancing) is `unity-urp-rendering` / `unity-performance-engineer`.
 
 ## Frame Debugger
-
-| Subject | What it decides | Source |
-|---|---|---|
-| Draw-call list | Freezes one frame and replays its calls in submission order, so the render target's state at any point is inspectable — this is the only view of what actually reached the GPU | [Frame Debugger](https://docs.unity3d.com/Manual/FrameDebugger.html) |
-| Batch-break reason | States why a call could not be batched with the one before it — a different material, a different texture, a shadow-casting flag, a changed render state — which is the actual answer to "why did draw calls jump" | [Frame Debugger](https://docs.unity3d.com/Manual/FrameDebugger.html) |
-| No timing data | It reports ordering and state only; a call that appears once is not thereby cheap, and a long list is not thereby the bottleneck — pair it with the Rendering or GPU Usage module for cost | [Frame Debugger](https://docs.unity3d.com/Manual/FrameDebugger.html) |
-| Remote use | Attaches to a connected development player, so a batching problem that only appears on device is inspectable where it happens rather than being reproduced in the Editor | [Frame Debugger](https://docs.unity3d.com/Manual/FrameDebugger.html) |
-| Shader property panel | Shows the properties and keywords the selected call was issued with, which is how a "wrong variant" suspicion is confirmed instead of assumed | [Frame Debugger](https://docs.unity3d.com/Manual/FrameDebugger.html) |
+| Subject | Rule |
+|---|---|
+| Draw-call list | Freezes one frame and replays calls in submission order; the only view of what reached the GPU |
+| Batch-break reason | Why a call could not batch with the previous (material, texture, shadow flag, render state): the answer to "why did draw calls jump" |
+| No timing data | A call that appears once is not cheap and a long list is not the bottleneck; pair with Rendering or GPU Usage for cost |
+| Remote use | Attaches to a connected development player, so a device-only batching problem is inspected where it happens |
+| Shader property panel | Properties and keywords of the selected call; confirms a "wrong variant" suspicion |
 
 ## Profile Analyzer
+| Subject | Rule |
+|---|---|
+| Aggregation | Median, mean and distribution per marker over a capture |
+| Compare view | Two captures side by side with per-marker delta; surfaces a regression hidden in an improved total |
+| Input | Saved Profiler captures; a comparison cannot be rebuilt from an unsaved session |
+| Comparability | Same device, scene and similar frame count, or the delta measures conditions |
+| Median vs mean | A few bad frames drag the mean; the median is the frame a player sees. Quote both when they disagree |
 
-| Subject | What it decides | Source |
-|---|---|---|
-| Aggregation across frames | Produces median, mean, and distribution per marker over a whole capture, which is what makes a claim about typical behaviour possible at all | [Profile Analyzer](https://docs.unity3d.com/Manual/com.unity.performance.profile-analyzer.html) |
-| Compare view | Loads two captures side by side and reports the per-marker delta, so a regression hidden inside an improved total still surfaces | [Profile Analyzer](https://docs.unity3d.com/Manual/com.unity.performance.profile-analyzer.html) |
-| Input | Consumes Profiler captures, so both sides must be saved at capture time; there is no way to reconstruct a comparison from a session that was not saved | [Profile Analyzer](https://docs.unity3d.com/Manual/com.unity.performance.profile-analyzer.html) |
-| Comparability | The two captures must come from the same device, the same scene, and a similar frame count, or the delta measures the difference in conditions rather than the change | [Profile Analyzer](https://docs.unity3d.com/Manual/com.unity.performance.profile-analyzer.html) |
-| Median over mean | A few catastrophic frames drag the mean while the median describes the frame a player actually sees — quote both when they disagree, because the disagreement is itself the finding | [Profile Analyzer](https://docs.unity3d.com/Manual/com.unity.performance.profile-analyzer.html) |
-
-**Critical caveat**: a change that lowers median frame time while raising the
-maximum has traded steady cost for hitching. On a fixed frame budget that is
-usually a regression, not a win — report both numbers rather than the one
-that supports the change.
+A change that lowers median frame time but raises the maximum has traded steady cost for hitching, usually a regression on a fixed budget: report both.

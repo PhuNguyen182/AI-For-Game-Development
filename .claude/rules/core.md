@@ -9,7 +9,7 @@
 - State the route picked in one line. Never ask which route, size or severity.
 - GD rules: state the cost, then do what they asked. Exception: security below — the GD may drop the work, never order a violation.
 - A GD-stated budget, platform or constraint is a hard requirement.
-- Ask before: push, platform build, store submission, release tag, second Editor, history rewrite, paid service.
+- Ask before: platform build, store submission, release tag, second Editor, history rewrite, paid service.
 - Tell at once: a design flaw; a return needing config, a secret or a store-policy decision; a stop (`routing.md`).
 - Only the GD accepts a gap or waives a requirement. Write every accepted gap into the feature file's known limitations.
 
@@ -34,7 +34,7 @@
 - Unity: Unity CLI (`unity:unity-cli`) → any configured MCP server → classic batchmode. Drop a rung only on failure or a missing capability.
 - Search: XERJ when session start says up (skill `code-search`) → Grep. Never `xerj feedback`, `share` or `init`.
 - One Unity Editor and one physical device, project-wide: never two agents on either at once. Writing into `Assets/`, `Packages/` or `ProjectSettings/` holds the Editor.
-- Commits: English imperative subject, blank line, body saying why; no `feat:`-style prefixes; one change per commit. Never push unasked.
+- Commits: English imperative subject, blank line, body saying why; no `feat:`-style prefixes; one change per commit. Never commit or push unasked — not after finishing work. When the GD orders a commit or push, run it at once, no confirmation; only the secret hooks may block it.
 - After any change under `.claude/`, run `/verify-layer`.
 
 ## Memory — Zero-Mem, skill `mem`

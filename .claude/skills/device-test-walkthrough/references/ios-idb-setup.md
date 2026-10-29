@@ -1,63 +1,23 @@
 # iOS real-device setup — idb + WebDriverAgent
 
-This is genuinely heavier than the Android path: `adb` needs only USB
-debugging enabled on the device. Real-device iOS input injection needs a
-signed, running on-device agent, which needs a paired macOS host and an
-Apple developer identity. Read this before assuming `doctor --platform ios`
-passing means input injection will actually work — `doctor` can only confirm
-the binaries and pairing exist, not that WebDriverAgent is currently running.
+Sources: [a] https://fbidb.io/docs/installation, [b] https://libimobiledevice.org.
 
-## Why this is macOS-only
+`idb_companion` is macOS-only; on Windows/Linux iOS is `Status: Blocked`.
 
-`idb_companion` depends on private Apple frameworks that only exist on
-macOS — it cannot run on Linux or Windows, at all. If this skill is invoked
-from a non-macOS host, the iOS branch of `device_playtest.py` cannot execute
-regardless of setup; the same caveat `/investigate-device-crash` already
-states for its own iOS section. On a Linux host, iOS device work under this
-skill is structurally unavailable — report `Status: Blocked` rather than
-attempting a workaround.
+## One-time setup, macOS host
 
-## One-time setup, on the macOS host
+| Step | How |
+|---|---|
+| libimobiledevice (`idevice_id`, `idevicecrashreport`, `idevicesyslog`, `idevicepair`) | `brew install libimobiledevice` [b] |
+| Pair | USB, trust the host on the device, check `idevice_id -l`; not listed → `idevicepair pair` |
+| idb | `brew install idb-companion`, `pip3 install fb-idb`; check `idb list-targets` [a] |
+| WebDriverAgent (every `idb ui *` call needs it running) | Build and sign from Facebook's `WebDriverAgent` repo (`xcodebuild ... -scheme WebDriverAgentRunner test`) with an Apple Team ID and a provisioning profile covering the device UDID |
+| Confirm WDA | `idb ui tap --udid <udid> 1 1` on a foreground app returns without error — the only check. `doctor` stops at binaries + pairing; a `doctor` pass then a `idb ui` failure means rebuild WDA |
 
-1. **Install `libimobiledevice`** (provides `idevice_id`, `idevicecrashreport`,
-   `idevicesyslog`, `idevicepair`) — e.g. via Homebrew: `brew install
-   libimobiledevice`.
-2. **Pair the device with the host**: connect over USB, trust the host on
-   the device when prompted, then confirm with `idevice_id -l`. If the
-   device does not appear, `idevicepair pair` re-triggers the trust prompt.
-3. **Install `idb` and `idb_companion`** (Facebook's iOS Debug Bridge) —
-   e.g. `brew install idb-companion` then `pip3 install fb-idb`. Confirm with
-   `idb list-targets`.
-4. **Build and sign WebDriverAgent** for the target device — this needs a
-   real Apple Developer Team ID and a provisioning profile that covers the
-   device's UDID. `idb` can drive this via `idb_companion --udid <udid>` once
-   Xcode has WDA's scheme configured with that team, or it can be built
-   directly from Facebook's `WebDriverAgent` repo in Xcode
-   (`xcodebuild ... -scheme WebDriverAgentRunner test`).
-5. **Confirm WDA is actually running**: `idb ui tap --udid <udid> 1 1`
-   against a foreground app should return without error. This is the only
-   real confirmation — `doctor`'s checks stop at "the binaries and pairing
-   exist" and cannot see whether WDA is currently alive on the device.
+## Recurring failures
 
-## Recurring maintenance
-
-- **Signing expiry**: a free Apple ID's provisioning profile expires after
-  7 days; a paid Apple Developer Program profile lasts about a year. When
-  `idb ui *` starts failing with a signing/trust error after previously
-  working, this is almost always why — rebuild and reinstall WDA rather than
-  treating it as a device or script fault.
-- **Device OS updates**: a major iOS update can require rebuilding WDA
-  against a newer Xcode/SDK before it will install again.
-- **Re-pairing after a host or device reset**: if `idevice_id -l` stops
-  listing a previously-working device, re-run `idevicepair pair` and accept
-  the trust prompt again before assuming a deeper fault.
-
-## What `doctor --platform ios` does and does not confirm
-
-Confirms: `idevice_id`, `idb`, and `idb_companion` are on `PATH`, and at
-least one device is visible to `idevice_id -l`.
-
-Does **not** confirm: that WebDriverAgent is built, signed, installed, or
-currently running on that device. A `doctor` pass followed by an `idb ui
-tap` failure almost always means WDA needs (re)building per step 4/5 above,
-not that the script or device is broken.
+| Symptom | Cause → fix |
+|---|---|
+| `idb ui *` signing/trust error after it worked | Profile expired (free Apple ID 7 days, paid ~1 year) → rebuild and reinstall WDA, not a device or script fault |
+| WDA will not install after a major iOS update | Rebuild WDA against the newer Xcode/SDK |
+| `idevice_id -l` drops a known device | Host or device reset → `idevicepair pair`, accept trust again |

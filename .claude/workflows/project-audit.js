@@ -71,7 +71,7 @@ if (!modules) {
   const found = await agent(
     `List the code modules of the Unity project at ${root}: every folder under Assets/ (excluding Plugins, ThirdParty, ` +
     'Packages and Library) that holds an .asmdef, with its .cs file count. Sort by Game.Core first, then by .cs count descending. Read-only.',
-    { label: 'discover', schema: MODULES, effort: 'low' },
+    { label: 'discover', schema: MODULES, model: 'haiku', effort: 'low' },
   )
   modules = (found && found.modules) || []
 }
@@ -85,7 +85,7 @@ const audits = parallel([
     `Audit ${at(m.path)} (read-only). Lenses: (1) runtime perf, memory and crash/ANR risk in hot paths — the ` +
     `review-code-risks lens; (2) the Game.Core / Game.Client boundary — skill shared-core-boundary-audit. ` +
     `Only findings confirmed in the file, each with path:line and the concrete fix.`,
-    { label: `audit:${m.path}`, phase: 'Audit', agentType: 'code-reviewer', schema: FINDINGS },
+    { label: `audit:${m.path}`, phase: 'Audit', agentType: 'code-reviewer', model: 'sonnet', schema: FINDINGS },
   ).then(r => r && { scope: m.path, ...r })),
   () => agent(
     `Scan the repository at ${root} for leaked secrets and Unity supply-chain risk with skill secret-and-supply-chain-scan. ` +

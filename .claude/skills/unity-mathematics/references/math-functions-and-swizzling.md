@@ -1,36 +1,36 @@
-# The math Class & Swizzling — Elementary Functions and Component Rearrangement
+# The math Class, Swizzling and noise
 
-Source: [math](https://docs.unity3d.com/Packages/com.unity.mathematics@1.3/api/Unity.Mathematics.math.html), [float3](https://docs.unity3d.com/Packages/com.unity.mathematics@1.3/api/Unity.Mathematics.float3.html).
-Covers: SKILL.md §4 — **"Use swizzling for readable component rearrangement"**, **"Use the static `math` class for every elementary function"**.
+Sources: [a] api/Unity.Mathematics.math.html, [b] api/Unity.Mathematics.float3.html, [c] api/Unity.Mathematics.noise.html — below the SKILL.md `Docs:` base.
 
-The function surface that replaces `Mathf`/`System.Math` inside `Game.Core.*`
-and Burst-compiled code, and the swizzle accessors that rearrange components
-without building a new vector by hand. Why `Mathf` is disallowed on that side
-of the boundary is
-[shared-core-and-burst-compatibility.md](shared-core-and-burst-compatibility.md).
+## math members [a]
 
-## Commonly used math members
+| Member | Fact that decides |
+|---|---|
+| `math.normalize` | Unit vector; use when a direction, not a displacement, is needed |
+| `math.dot` / `math.cross` | Angle tests and projection / perpendicular axis |
+| `math.distance` | True distance (square root); use when the value itself is used |
+| `math.distancesq` | No square root; use for threshold comparison, pre-squaring the threshold |
+| `math.saturate` | Replaces `Mathf.Clamp01` |
+| `math.clamp` / `math.lerp` | Replace `Mathf.Clamp` / `Mathf.Lerp` |
+| `math.sin` / `cos` / `sqrt` | Replace `Mathf`/`System.Math` equivalents |
 
-| Member | Effect | Use when | Source |
-|---|---|---|---|
-| `math.normalize` | Returns the unit-length vector | A direction is needed, not a displacement | [math](https://docs.unity3d.com/Packages/com.unity.mathematics@1.3/api/Unity.Mathematics.math.html) |
-| `math.dot` / `math.cross` | Scalar and vector products | Angle tests, projection, or a perpendicular axis | [math](https://docs.unity3d.com/Packages/com.unity.mathematics@1.3/api/Unity.Mathematics.math.html) |
-| `math.distance` | True Euclidean distance — computes a square root | The absolute distance value itself is used | [math](https://docs.unity3d.com/Packages/com.unity.mathematics@1.3/api/Unity.Mathematics.math.html) |
-| `math.distancesq` | Squared distance — no square root | Only comparing against a threshold; pre-square the threshold | [math](https://docs.unity3d.com/Packages/com.unity.mathematics@1.3/api/Unity.Mathematics.math.html) |
-| `math.saturate` | Clamps to `[0, 1]` | Replacing `Mathf.Clamp01` | [math](https://docs.unity3d.com/Packages/com.unity.mathematics@1.3/api/Unity.Mathematics.math.html) |
-| `math.clamp` / `math.lerp` | Bounded range and linear interpolation | Replacing `Mathf.Clamp`/`Mathf.Lerp` | [math](https://docs.unity3d.com/Packages/com.unity.mathematics@1.3/api/Unity.Mathematics.math.html) |
-| `math.sin` / `math.cos` / `math.sqrt` | Transcendental and root functions | Replacing `Mathf`/`System.Math` equivalents | [math](https://docs.unity3d.com/Packages/com.unity.mathematics@1.3/api/Unity.Mathematics.math.html) |
+**Caveat:** `math` and `Mathf`/`System.Math` are not guaranteed to agree bit-for-bit; verify precision-sensitive comparisons.
 
-**Critical caveat**: `math` and `Mathf`/`System.Math` are not guaranteed to
-agree bit-for-bit on the same named function — a precision-sensitive
-comparison must be verified, not assumed, per SKILL.md's verification step.
+## Swizzling [b]
 
-## Swizzling
+- Result width follows the name: `v.xy` is `float2`, `v.xyz` `float3`, `v.xxyy` `float4`.
+- Repetition and reordering are legal (`v.zyx`, `v.xxyy`) on every vector type, including `int`/`bool`/`double` variants.
+- Read/write generated properties: no allocation.
+- Each combination is its own API property (e.g. `float3.yzxy`); see the type's API page for the list.
 
-| Property | What it decides | Source |
+## noise [c]
+
+| Function | Character | Use when |
 |---|---|---|
-| Result width follows the name | `v.xy` yields a `float2`, `v.xyz` a `float3`, `v.xxyy` a `float4` — the component count named is the type returned | [float3](https://docs.unity3d.com/Packages/com.unity.mathematics@1.3/api/Unity.Mathematics.float3.html) |
-| Repetition and reordering are legal | `v.zyx` reverses, `v.xxyy` duplicates — any combination of the type's component letters | [float3](https://docs.unity3d.com/Packages/com.unity.mathematics@1.3/api/Unity.Mathematics.float3.html) |
-| Available on every vector type | `float2`/`float3`/`float4` and their `int`/`bool`/`double` variants alike | [float3](https://docs.unity3d.com/Packages/com.unity.mathematics@1.3/api/Unity.Mathematics.float3.html) |
-| Read/write accessors, not copies of a field | Generated properties, so no allocation and no manual construction | [float3](https://docs.unity3d.com/Packages/com.unity.mathematics@1.3/api/Unity.Mathematics.float3.html) |
-| Documented per combination | Each swizzle is its own Scripting API property (e.g. `float3.yzxy`) rather than one consolidated page — consult the type's own API page for the full list, see [vector-and-matrix-types.md](vector-and-matrix-types.md) | [float3](https://docs.unity3d.com/Packages/com.unity.mathematics@1.3/api/Unity.Mathematics.float3.html) |
+| `noise.cnoise` | Classic Perlin: smooth, gradient-based | Terrain height, gradual drift |
+| `noise.snoise` | Simplex: smooth, different artefact profile | Same need as Perlin where simplex suits |
+| `noise.cellular` | Worley: discrete cells, distance boundaries | Biome regions, cracks, scales, stone |
+
+Each family exists at several input dimensionalities: sample a planar generator with `float2`, not `float3`.
+
+**Caveat:** `cellular` is not a thresholded `snoise`; no threshold on smooth noise yields true cell boundaries.

@@ -1,140 +1,57 @@
-# Main Components — SkeletonRenderer, SkeletonAnimation, SkeletonGraphic, SkeletonMecanim
+# Main Components
 
-Source: [spine-unity Main Components](https://esotericsoftware.com/spine-unity-main-components#Main-Components) (spine-unity v4.3+).
-Covers: SKILL.md §4 — **"Pick the right main component before anything else"**, **"Use the `[Spine*]` attributes on every string field naming skeleton data"**.
+Since 4.3 renderer and animation driver are separate components: choose both. Page: main-components.
 
-Since v4.3 rendering and animation are separate components rather than one
-inheritance chain, so the choice is really two choices: which renderer, and
-which animation driver. Skeleton and skin manipulation is
-[skeleton-api.md](skeleton-api.md); track playback is
-[animation-state.md](animation-state.md); shader and material selection is
-[rendering.md](rendering.md).
-
-## Contents
-
-- [The component matrix](#the-component-matrix)
-- [SkeletonRenderer](#skeletonrenderer)
-- [SkeletonAnimation](#skeletonanimation)
-- [SkeletonGraphic — UI Canvas](#skeletongraphic--ui-canvas)
-- [SkeletonMecanim](#skeletonmecanim)
-- [String-property attributes](#string-property-attributes)
-- [Runtime instantiation](#runtime-instantiation)
-
-## The component matrix
-
-| Component | Renders? | Animates? | Use when | Source |
-|---|---|---|---|---|
-| `SkeletonRenderer` | Yes, via `MeshRenderer` | No | World-space rendering; needs an animation driver alongside it | [Main Components](https://esotericsoftware.com/spine-unity-main-components#Main-Components) |
-| `SkeletonGraphic` | Yes, via `CanvasRenderer` | No | The skeleton lives inside a UI `Canvas` | [Main Components](https://esotericsoftware.com/spine-unity-main-components#Main-Components) |
-| `SkeletonAnimation` | No | Yes, Spine's own `AnimationState` | The default animation driver — highest customizability | [Main Components](https://esotericsoftware.com/spine-unity-main-components#Main-Components) |
-| `SkeletonMecanim` | No | Yes, via Unity Mecanim | Mecanim authoring is specifically wanted, limitations accepted | [Main Components](https://esotericsoftware.com/spine-unity-main-components#Main-Components) |
+| Component | Renders | Animates | Use when |
+|---|---|---|---|
+| `SkeletonRenderer` | `MeshRenderer` | no | World space; needs a driver (alone only for fully manual posing, e.g. a UI gauge) |
+| `SkeletonGraphic` | `CanvasRenderer` | no | Skeleton inside a UI Canvas |
+| `SkeletonAnimation` | no | Spine `AnimationState` | Default driver, most customisable |
+| `SkeletonMecanim` | no | Unity Mecanim | Mecanim authoring wanted, limits accepted |
 
 ## SkeletonRenderer
-
-| Aspect | What it decides | Source |
-|---|---|---|
-| Mesh generation | Procedural mesh via `MeshRenderer`/`MeshFilter`, referencing the atlas texture assets | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
-| Notable Inspector settings | `Initial Skin`, `Update When Invisible`, `Fix Draw Order` (blocks aggressive batching at 3+ submeshes), `Immutable Triangles`, `Separator Slot Names`, `Use Clipping`, `Z Spacing`, `Use Single Submesh`, `Use Threading`, `PMA Vertex Colors`, `Tint Black`, `Add Normals`, `Solve Tangents` | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
-| Delegates | `OnRebuild` (after init), `OnMeshAndMaterialsUpdated` (end of `LateUpdate()`), `UpdateLocal`, `UpdateComplete`, `UpdateWorld` | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
-| `UpdateMesh()` | Forces mesh regeneration regardless of `UpdateMode` | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
-| Alone-usage limit | Only valid when animation is applied fully manually with no transitions, e.g. a UI gauge | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
-
-**Critical caveat**: bones visible with no images almost always means `Initial
-Skin` is still `default` — not a material or atlas fault.
+- Bones visible, no images: `Initial Skin` is still `default` — not a material/atlas fault.
+- Inspector: `Initial Skin`, `Update When Invisible`, `Fix Draw Order` (blocks aggressive batching at 3+ submeshes), `Immutable Triangles`, `Separator Slot Names`, `Use Clipping`, `Z Spacing`, `Use Single Submesh`, `Use Threading`, `PMA Vertex Colors`, `Tint Black`, `Add Normals`, `Solve Tangents`.
+- Delegates: `OnRebuild` (after init), `OnMeshAndMaterialsUpdated` (end of `LateUpdate()`), `UpdateLocal`, `UpdateWorld`, `UpdateComplete`. `UpdateMesh()` forces regeneration regardless of `UpdateMode`.
 
 ## SkeletonAnimation
+- Pairs with `SkeletonRenderer` or `SkeletonGraphic`. Inspector: `Animation Name`, `Loop`, `Time Scale`, `Unscaled Time`, `Animation Update` (`Update`/`FixedUpdate`/`Manual`), `Use Threading`.
+- Order: `SkeletonAnimation.Update()` advances and applies `AnimationState`, then `SkeletonRenderer.LateUpdate()` rebuilds the mesh.
+- Run before animations apply: execution order earlier than `SkeletonAnimation` (`[DefaultExecutionOrder(-1)]`). Run after: later in `Update()`, or before `SkeletonRenderer` in `LateUpdate()`.
+- With `Rigidbody`/`Rigidbody2D`: `Animation Update` = `In FixedUpdate`.
+- When execution order is not usable: `skeletonAnimation.Update(0)` after a full-skeleton change, `AnimationState.Apply(skeleton)` after a slot-only change, `UpdateMesh()` when the script runs after `SkeletonAnimation`'s `LateUpdate()`.
+- Cache `skeletonAnimation.Skeleton` and `.AnimationState` in `Awake`.
 
-| Aspect | What it decides | Source |
-|---|---|---|
-| Requires a renderer | Pairs with `SkeletonRenderer` (world) or `SkeletonGraphic` (UI) | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
-| Inspector settings | `Animation Name`, `Loop`, `Time Scale`, `Unscaled Time`, `Animation Update` (`Update`/`FixedUpdate`/`Manual`), `Use Threading` | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
-| Update order | `SkeletonAnimation.Update()` advances and applies `AnimationState`, then `SkeletonRenderer.LateUpdate()` rebuilds the mesh | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
-| Running before animations apply | Script execution order earlier than `SkeletonAnimation`, e.g. `[DefaultExecutionOrder(-1)]` | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
-| Running after | Execution order after `SkeletonAnimation` in `Update()`, or before `SkeletonRenderer` in `LateUpdate()` | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
-| With a `Rigidbody`/`Rigidbody2D` | Set `Animation Update` to `In FixedUpdate` | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
-
-```csharp
-public class SpineDriver : MonoBehaviour
-{
-    private SkeletonAnimation skeletonAnimation;
-    private Spine.AnimationState animationState;
-    private Spine.Skeleton skeleton;
-
-    private void Awake()
-    {
-        this.skeletonAnimation = this.GetComponent<SkeletonAnimation>();
-        this.skeleton = this.skeletonAnimation.Skeleton;
-        this.animationState = this.skeletonAnimation.AnimationState;
-    }
-}
-```
-
-Manual update calls, when execution order cannot be used: `skeletonAnimation.Update(0)`
-after a full-skeleton change, `AnimationState.Apply(skeleton)` after a
-slot-only change, and `UpdateMesh()` when the modifying script runs after
-`SkeletonAnimation`'s own `LateUpdate()`.
-
-## SkeletonGraphic — UI Canvas
-
-| Constraint | What it decides | Source |
-|---|---|---|
-| Material requirement | Only `Spine/SkeletonGraphic*` shaders work — never URP/LWRP shaders, never the non-UI `Spine/Skeleton` | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
-| Single texture | `CanvasRenderer` supports one texture; `Advanced → Multiple CanvasRenderers` adds a child renderer per submesh at real cost | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
-| Detection helpers | `Advanced → Vertex Data` exposes `Tint Black`, `CanvasGroup Compatible`, `PMA Vertex Color`, each with a `Detect` button, plus `Detect Settings` and `Detect Material` | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
-| `CanvasGroup` alpha brightens | Vertex-colour alpha modification conflicts with premultiplied-alpha shaders | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
-| Fix without Tint Black | Use a `CanvasGroup` material from `Materials/UI-PMATexture/CanvasGroup` or `UI-StraightAlphaTex/CanvasGroup`, and disable `PMA Vertex Colors` — losing additive batching | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
-| Fix with Tint Black | Use the `SkeletonGraphic TintBlack` material from the `CanvasGroup` folder and enable `CanvasGroup Compatible`; `PMA Vertex Colors` may stay on, and should, for additive batching | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
-| Bounds | Visibility follows the `RectTransform`; if it is smaller than the mesh, `RectMask2D` culls incorrectly — fix with `Match RectTransform with Mesh` | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
-| Layout | `Layout Scale Mode`: `None`, `Width Controls Height`, `Height Controls Width`, `Fit In Parent`, `Envelope Parent` | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
-
-**Critical caveat**: a wrong shader on `SkeletonGraphic` can look correct in
-the Editor and still fail on device. Verify with `Detect Material` rather than
-by eye.
+## SkeletonGraphic
+- Only `Spine/SkeletonGraphic*` materials; never URP/LWRP shaders or non-UI `Spine/Skeleton`. A wrong shader can look right in the Editor and fail on device — verify with `Detect Material`, not by eye.
+- `CanvasRenderer` takes one texture; `Advanced → Multiple CanvasRenderers` adds a child renderer per submesh at real cost.
+- `Advanced → Vertex Data`: `Tint Black`, `CanvasGroup Compatible`, `PMA Vertex Color`, each with `Detect`; also `Detect Settings`, `Detect Material`.
+- A `CanvasGroup` alpha fade brightens the skeleton (vertex-colour alpha vs PMA shaders):
+  - without Tint Black: use a `CanvasGroup` material (`Materials/UI-PMATexture/CanvasGroup` or `UI-StraightAlphaTex/CanvasGroup`) and disable `PMA Vertex Colors` (loses additive batching);
+  - with Tint Black: `SkeletonGraphic TintBlack` material from the `CanvasGroup` folder, enable `CanvasGroup Compatible`, keep `PMA Vertex Colors` on.
+- Visibility follows the `RectTransform`; smaller than the mesh makes `RectMask2D` cull wrongly — `Match RectTransform with Mesh`.
+- `Layout Scale Mode`: `None`, `Width Controls Height`, `Height Controls Width`, `Fit In Parent`, `Envelope Parent`. No Layout Group may size the same `RectTransform` the skeleton drives.
 
 ## SkeletonMecanim
+Mecanim drives high-level control; Spine still poses the skeleton. Mecanim transition durations apply; `SkeletonDataAsset` mix values are ignored.
 
-| Aspect | What it decides | Source |
+| Mix mode | Behaviour | Recommended for |
 |---|---|---|
-| Division of labour | Mecanim drives high-level control; Spine still poses the skeleton | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
-| Mix mode `Mix Next` | Default — applies the previous track fully and mixes the next in by Mecanim's weights; recommended for Base Layer and Override | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
-| Mix mode `Always Mix` | Fades out previous, mixes in next; recommended for Additive | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
-| Mix mode `Hard` | Applies the next animation immediately, no mixing | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
-| Mix mode `Match` | 4.2+; computes Spine mix weights matching Mecanim's clip weights; recommended for Blend Trees | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
-| `Auto Reset` | Mixes to setup pose when an animation finishes — a sharp transition, not a smooth one | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
-| Mix durations | Mecanim's own transition durations apply; `SkeletonDataAsset` mix values are ignored | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
-| Animation events | Stored per `AnimationClip` with standard Unity event-method naming; a folder path concatenates onto the name with no separator (`FoldernameFootstep`) | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
+| `Mix Next` (default) | Applies previous track fully, mixes next by Mecanim weights | Base Layer, Override |
+| `Always Mix` | Fades out previous, mixes in next | Additive |
+| `Hard` | Applies next immediately | — |
+| `Match` (4.2+) | Spine mix weights match Mecanim clip weights | Blend Trees |
 
-| Limitation vs. SkeletonAnimation | Consequence | Source |
-|---|---|---|
-| Setup-pose keys required on the next animation's first frame | Needed to mix out a previous timeline's non-setup-pose end state; `SkeletonAnimation` handles this automatically. Export with `Animation cleanup` disabled so those keys survive | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
-| No mix thresholds | `TrackEntry.MixAttachmentThreshold` and equivalents have no counterpart | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
-| Threading gains less | Mecanim state queries force main-thread work, so `Use Threading` cannot parallelize the whole task | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
+- `Auto Reset` mixes to setup pose on finish — a sharp transition.
+- Events are stored per `AnimationClip` with Unity event-method naming; a folder path concatenates onto the name with no separator (`FoldernameFootstep`).
+- Limits vs `SkeletonAnimation`: the next animation's first frame needs setup-pose keys to mix out a previous non-setup end state (export with `Animation cleanup` disabled); no `MixAttachmentThreshold` equivalents; `Use Threading` gains less (Mecanim queries force main-thread work); no Timeline track.
 
-## String-property attributes
-
-| Attribute | Populates the dropdown from | Source |
-|---|---|---|
-| `[SpineBone]`, `[SpineSlot]`, `[SpineAttachment]`, `[SpineSkin]` | Bones, slots, attachments, and skins in the assigned `SkeletonDataAsset` | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
-| `[SpineAnimation]`, `[SpineEvent]` | Animation and event names in the same asset | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
-| `[SpineIkConstraint]`, `[SpineTransformConstraint]`, `[SpinePathConstraint]` | The corresponding constraint names | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
-
-**Critical caveat**: a bare `string` field naming skeleton data fails at
-runtime as a silent no-op when misspelled. The attribute turns that into an
-edit-time dropdown, which is the entire reason it exists.
+## `[Spine*]` attributes
+`[SpineBone]`, `[SpineSlot]`, `[SpineAttachment]`, `[SpineSkin]`, `[SpineAnimation]`, `[SpineEvent]`, `[SpineIkConstraint]`, `[SpineTransformConstraint]`, `[SpinePathConstraint]` — dropdown from the assigned `SkeletonDataAsset`. A bare string misspelling is a silent no-op.
 
 ## Runtime instantiation
-
-| Call | Effect | Source |
-|---|---|---|
-| `SkeletonAnimation.NewSkeletonAnimationGameObject(skeletonDataAsset)` | Creates a wired world-space instance | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
-| `SkeletonGraphic.NewSkeletonGraphicGameObject(asset, parent, material)` | Creates a wired UI instance | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
-| `SkeletonRenderer.NewSpineGameObject<TRenderer, TAnimator>(asset)` | Generic form, e.g. pairing with `SkeletonMecanim` | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
-| `SpineAtlasAsset.CreateRuntimeInstance` + `SkeletonDataAsset.CreateRuntimeInstance` | Builds both assets from raw exports with no prior import | [Main Components](https://esotericsoftware.com/spine-unity-main-components) |
-
-**Critical caveat**: prefer the normal prefab and pooling workflow. Runtime
-instantiation from exports is harder to customize and is justified only by a
-genuinely dynamic case.
-
-Rendering separation is summarized here and owned by
-[utility-components.md](utility-components.md). A Spine license is required to
-integrate the Spine Runtimes into an application.
+Prefer prefabs and pooling; use these only for a genuinely dynamic case.
+- `SkeletonAnimation.NewSkeletonAnimationGameObject(skeletonDataAsset)`
+- `SkeletonGraphic.NewSkeletonGraphicGameObject(asset, parent, material)`
+- `SkeletonRenderer.NewSpineGameObject<TRenderer, TAnimator>(asset)` (e.g. with `SkeletonMecanim`)
+- `SpineAtlasAsset.CreateRuntimeInstance` + `SkeletonDataAsset.CreateRuntimeInstance`: assets from raw exports, no import.

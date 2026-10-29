@@ -10,8 +10,7 @@ allowed-tools: PowerShell, Bash, Read
 pwsh -NoProfile -File .claude/skills/verify-layer/scripts/verify.ps1            # whole layer
 pwsh -NoProfile -File .claude/skills/verify-layer/scripts/verify.ps1 -File <p>  # one file (the hook)
 ```
-Exit 0 = pass (warnings allowed). 1 = a `FAIL` line names each file and problem.
-Line budgets are recommendations: over budget → `WARN`, never a failure. Write shorter when you can; longer is fine when it cannot be shorter. Description length stays a failure — the skill listing truncates past it.
+Exit 0 = pass (warnings allowed). 1 = a `FAIL` line names each file and problem. Line budgets only `WARN`; description length is a failure (the skill listing truncates past it). Over budget and cannot be shorter → leave it.
 
 | Check | Budget / rule |
 |---|---|

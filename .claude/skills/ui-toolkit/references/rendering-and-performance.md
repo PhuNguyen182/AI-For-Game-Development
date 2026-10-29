@@ -1,76 +1,35 @@
-# Rendering & Performance — Batching, Dynamic Atlas, UsageHints, Pooling
+# Rendering and performance
 
-Sources: [UI Renderer](https://docs.unity3d.com/Manual/UIE-ui-renderer.html), [Control textures of the dynamic atlas](https://docs.unity3d.com/Manual/UIE-control-textures-of-the-dynamic-atlas.html), [`DynamicAtlasSettings` API](https://docs.unity3d.com/ScriptReference/UIElements.DynamicAtlasSettings.html), [Image import settings](https://docs.unity3d.com/Manual/UIE-image-import-settings.html), [Optimizing performance (Best Practice Guide)](https://docs.unity3d.com/Manual/best-practice-guides/ui-toolkit-for-advanced-unity-developers/optimizing-performance.html), [Performance consideration for runtime UI](https://docs.unity3d.com/Manual/UIE-performance-consideration-runtime.html), [`UsageHints` API](https://docs.unity3d.com/ScriptReference/UIElements.VisualElement-usageHints.html), [Work with vector graphics](https://docs.unity3d.com/Manual/ui-systems/work-with-vector-graphics.html), [Generate 2D visual content](https://docs.unity3d.com/Manual/UIE-generate-2d-visual-content.html), [Parallel tessellation](https://docs.unity3d.com/Manual/UIE-parallel-tessellation.html), [Best practices for managing elements](https://docs.unity3d.com/Manual/UIE-best-practices-for-managing-elements.html).
-Covers: SKILL.md §4 — **"Keep draw-call batches intact: budget the dynamic atlas, animate transforms not layout, and pool elements with callbacks unregistered first"**.
-
-The concrete thresholds and rules behind "why did this UI's draw calls
-jump" — dynamic atlas exclusion, what breaks a shared batch, and the
-element lifecycle choices that avoid GC pressure.
-
-## Table of contents
-- [Dynamic atlas](#dynamic-atlas)
-- [What breaks batching](#what-breaks-batching)
-- [VectorImage / SVG](#vectorimage--svg)
-- [Custom mesh generation](#custom-mesh-generation)
-- [Element lifecycle and pooling](#element-lifecycle-and-pooling)
+Sources: [Dynamic atlas](https://docs.unity3d.com/Manual/UIE-control-textures-of-the-dynamic-atlas.html), [DynamicAtlasSettings](https://docs.unity3d.com/ScriptReference/UIElements.DynamicAtlasSettings.html), [Image import](https://docs.unity3d.com/Manual/UIE-image-import-settings.html), [BPG perf](https://docs.unity3d.com/Manual/best-practice-guides/ui-toolkit-for-advanced-unity-developers/optimizing-performance.html), [Runtime perf](https://docs.unity3d.com/Manual/UIE-performance-consideration-runtime.html), [UsageHints](https://docs.unity3d.com/ScriptReference/UIElements.VisualElement-usageHints.html), [Vector](https://docs.unity3d.com/Manual/ui-systems/work-with-vector-graphics.html), [2D content](https://docs.unity3d.com/Manual/UIE-generate-2d-visual-content.html), [Tessellation](https://docs.unity3d.com/Manual/UIE-parallel-tessellation.html), [Elements](https://docs.unity3d.com/Manual/UIE-best-practices-for-managing-elements.html).
 
 ## Dynamic atlas
-
-| Subject | What it decides | Source |
-|---|---|---|
-| Default Size filter | **Textures larger than 64×64 are excluded from the dynamic atlas by default** — the concrete threshold that forces a separate draw call | [Control textures of the dynamic atlas](https://docs.unity3d.com/Manual/UIE-control-textures-of-the-dynamic-atlas.html) |
-| `DynamicAtlasSettings` fields | `minAtlasSize`/`maxAtlasSize` (both powers of two, min ≤ max), `maxSubTextureSize` (exceeding it excludes a texture when the Size filter is active), `activeFilters`, `customFilter` delegate for per-texture opt-out | [`DynamicAtlasSettings` API](https://docs.unity3d.com/ScriptReference/UIElements.DynamicAtlasSettings.html) |
-| Memory-constrained platforms | Lower Max Atlas Size to **2048px** as a starting point on mobile | [Control textures of the dynamic atlas](https://docs.unity3d.com/Manual/UIE-control-textures-of-the-dynamic-atlas.html) |
-| What is eligible at all | Every image type not already atlased; Sprites imported as Sprite Mode = Multiple, or textures already placed in a static Sprite Atlas, are excluded from *dynamic* atlasing and use their own static atlas instead | [Image import settings](https://docs.unity3d.com/Manual/UIE-image-import-settings.html) |
-| Import recommendations | Plain textures: Compression None, Alpha Is Transparency true, Non-Power-of-2 None. Sprites: Compression None, Alpha Is Transparency true, Mesh Type Tight | [Image import settings](https://docs.unity3d.com/Manual/UIE-image-import-settings.html) |
-| Fragmentation | Heavy add/remove churn fragments the atlas over time; call `RuntimePanelUtils.ResetDynamicAtlas()` to reset it cleanly | [Control textures of the dynamic atlas](https://docs.unity3d.com/Manual/UIE-control-textures-of-the-dynamic-atlas.html) |
+- Textures larger than 64×64 are excluded by default (the Size filter): each costs a separate draw call.
+- `DynamicAtlasSettings`: `minAtlasSize`/`maxAtlasSize` (powers of two, min ≤ max), `maxSubTextureSize`, `activeFilters`, `customFilter` (per-texture opt-out).
+- On memory-constrained mobile start with Max Atlas Size 2048.
+- Sprites with Sprite Mode = Multiple, or already in a static Sprite Atlas, use their own atlas, not the dynamic one.
+- Import: textures Compression None, Alpha Is Transparency on, Non-Power-of-2 None; sprites Compression None, Alpha Is Transparency on, Mesh Type Tight.
+- Heavy add/remove fragments the atlas: `RuntimePanelUtils.ResetDynamicAtlas()`.
 
 ## What breaks batching
-
-| Subject | What it decides | Source |
-|---|---|---|
-| Shared-batch requirement | Elements batch only when they share GPU state — same shader, same textures, same mesh data | [Optimizing performance](https://docs.unity3d.com/Manual/best-practice-guides/ui-toolkit-for-advanced-unity-developers/optimizing-performance.html) |
-| Texture-per-batch limit | The UI Toolkit uber shader supports **up to 8 textures per batch**; exceeding it forces additional draw calls | [Optimizing performance](https://docs.unity3d.com/Manual/best-practice-guides/ui-toolkit-for-advanced-unity-developers/optimizing-performance.html) |
-| Layout-property animation | Animating `width`/`height`/`left`/`top`/`position` forces a geometry rebuild every change — the most expensive thing to animate every frame | [Performance consideration for runtime UI](https://docs.unity3d.com/Manual/UIE-performance-consideration-runtime.html) |
-| Mask nesting limit | Non-rectangular masks use the stencil buffer and support **up to 7 nested levels**; purely rectangular masks skip the stencil buffer and nest without limit | [Optimizing performance](https://docs.unity3d.com/Manual/best-practice-guides/ui-toolkit-for-advanced-unity-developers/optimizing-performance.html) |
-| Custom materials | Any element on a non-default shader/material cannot share a batch with elements on the default UI shader | [Optimizing performance](https://docs.unity3d.com/Manual/best-practice-guides/ui-toolkit-for-advanced-unity-developers/optimizing-performance.html) |
-| `UsageHints.DynamicTransform` / `.DynamicColor` / `.GroupTransform` | Keeps transform/color changes GPU-side instead of rebuilding geometry — the fix for animating a hierarchy every frame | [`UsageHints` API](https://docs.unity3d.com/ScriptReference/UIElements.VisualElement-usageHints.html) |
-| Vertex Budget | Default `0` (automatic); raising it manually (e.g. to 20,000) can collapse several draw calls into one for complex UIs by avoiding buffer-resize-triggered splits | [Optimizing performance](https://docs.unity3d.com/Manual/best-practice-guides/ui-toolkit-for-advanced-unity-developers/optimizing-performance.html) |
-
-**Critical caveat**: animate `translate`/`scale`/`rotate` (transform
-properties) instead of `width`/`height`/`left`/`top` (layout properties)
-wherever the visual effect allows it — this single substitution avoids the
-per-frame relayout cost above and is why USS transitions in
-[uss-styling-and-layout.md](uss-styling-and-layout.md) are recommended to
-stay on transform properties.
+- Batching needs shared GPU state (shader, textures, mesh data). The uber shader takes up to 8 textures per batch.
+- A custom shader/material on an element cannot share a batch with default-shader elements.
+- Non-rectangular masks use the stencil buffer, nest up to 7 levels; rectangular masks nest without limit.
+- Animating `width`/`height`/`left`/`top`/`position` rebuilds geometry on every change: animate `translate`/`scale`/`rotate` instead (and keep USS transitions on them).
+- `UsageHints.DynamicTransform` / `.DynamicColor` / `.GroupTransform` keep transform/color changes GPU-side: the fix for animating a hierarchy every frame.
+- Vertex Budget default `0` (automatic); raising it (e.g. 20,000) can merge draw calls in complex UIs by avoiding buffer-resize splits.
 
 ## VectorImage / SVG
+- Set Generated Asset Type = "UI Toolkit Vector Image" on the SVG for use in USS `background-image`/UI Builder.
+- SVG import and `VectorImage` in USS `background-image`/UI Builder need the optional `com.unity.vectorgraphics` package (Sprite needs `com.unity.2d.sprite`).
+- Only a subset of SVG 1.1: no text, per-pixel masking, filters, interactivity, animation.
+- `-no-graphics` can break SVG import.
+- Unverified: whether `VectorImage` batches in the dynamic atlas like raster textures. Do not assume parity.
 
-| Subject | What it decides | Source |
-|---|---|---|
-| Import as VectorImage | Set Generated Asset Type = "UI Toolkit Vector Image" on an imported SVG to get a `VectorImage` usable in USS `background-image`/UI Builder/runtime UI | [Work with vector graphics](https://docs.unity3d.com/Manual/ui-systems/work-with-vector-graphics.html) |
-| SVG feature gap | Supports only a subset of SVG 1.1 — no text elements, per-pixel masking, filter effects, interactivity, or animation | [Work with vector graphics](https://docs.unity3d.com/Manual/ui-systems/work-with-vector-graphics.html) |
-| `-no-graphics` gotcha | Starting the Editor with `-no-graphics` can break SVG import — avoid it while working with vector assets | [Work with vector graphics](https://docs.unity3d.com/Manual/ui-systems/work-with-vector-graphics.html) |
-| Dynamic-atlas parity | Unconfirmed by the Manual whether `VectorImage` batches into the dynamic atlas the same way raster textures do — do not assume parity, per [root-links.md](root-links.md) | — |
+## Custom mesh
+- `generateVisualContent`: `MeshGenerationContext.Allocate()` (manual vertices/indices) or `Painter2D` (lines, arcs, shapes).
+- Parallel tessellation: `AddMeshGenerationJob()` (simple) or `InsertMeshGenerationNode()`/`GetTempMeshAllocator()` (expensive); UI Toolkit waits for job completion.
 
-## Custom mesh generation
-
-| Subject | What it decides | Source |
-|---|---|---|
-| `MeshGenerationContext.Allocate()` | Low-level manual vertex/index allocation for custom `generateVisualContent` content | [Generate 2D visual content](https://docs.unity3d.com/Manual/UIE-generate-2d-visual-content.html) |
-| `Painter2D` | Higher-level, Canvas-inspired vector drawing API (lines, arcs, shapes) for the same callback | [Generate 2D visual content](https://docs.unity3d.com/Manual/UIE-generate-2d-visual-content.html) |
-| Parallel tessellation | Job-System-backed mesh generation for expensive custom content; `AddMeshGenerationJob()` for the simple case, `InsertMeshGenerationNode()`/`GetTempMeshAllocator()` for the expensive one — UI Toolkit waits for job completion automatically before reading the mesh | [Parallel tessellation](https://docs.unity3d.com/Manual/UIE-parallel-tessellation.html) |
-
-## Element lifecycle and pooling
-
-| Subject | What it decides | Source |
-|---|---|---|
-| Pool, don't `new()` | Reuse elements instead of instantiating repeatedly, per `csharp-standards` → `performance-and-algorithms.md`'s pooling rule | [Best practices for managing elements](https://docs.unity3d.com/Manual/UIE-best-practices-for-managing-elements.html) |
-| Unregister before pooling | An event callback left registered on a pooled-and-returned element keeps firing — unregister it first, per `csharp-standards` → `coding-principles.md`'s Event handlers rule | [Best practices for managing elements](https://docs.unity3d.com/Manual/UIE-best-practices-for-managing-elements.html) |
-| `ListView` built-in recycling | Already pools its row elements during scroll — prefer it over manually instantiating one element per data row | [Best practices for managing elements](https://docs.unity3d.com/Manual/UIE-best-practices-for-managing-elements.html) |
-| Hide-vs-remove decision | `visibility: hidden` (drops render commands, keeps layout cost) → `opacity: 0` (still shaded on GPU) → `display: none` (recomputes sibling layout, zero GPU cost, data retained) → move off-screen (minimal CPU, still GPU-shaded) → `RemoveFromHierarchy()` (zero cost, all data freed) — pick by how soon the element reappears | [Best practices for managing elements](https://docs.unity3d.com/Manual/UIE-best-practices-for-managing-elements.html) |
-
-**Critical caveat**: a cheap toggle that will reappear soon should use
-`display`/`visibility`, not `RemoveFromHierarchy()` — removal is cheapest at
-rest but costs a full rebuild to bring back, which can be worse than the
-hidden element's idle cost if it toggles frequently.
+## Elements and pooling
+- Pool instead of `new()` (`csharp-standards` → `performance-and-algorithms.md`). Unregister callbacks before returning an element to a pool, or it keeps firing.
+- `ListView` already recycles rows: prefer it over one element per data row.
+- Hide vs remove, by how soon it reappears: `visibility: hidden` (no render commands, keeps layout cost) → `opacity: 0` (still shaded) → `display: none` (sibling relayout, no GPU cost, data kept) → off-screen (low CPU, still shaded) → `RemoveFromHierarchy()` (zero cost, data freed, full rebuild to return). A frequently toggled element should use `display`/`visibility`.

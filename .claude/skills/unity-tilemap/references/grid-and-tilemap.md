@@ -1,37 +1,44 @@
-# Grid & Tilemap — Hierarchy, Cell Layout & Painting Flow
+# Grid, Tilemap, Isometric & Hexagonal
 
-Sources: [Tilemaps](https://docs.unity3d.com/Manual/tilemaps/tilemaps.html), [Grid component reference](https://docs.unity3d.com/Manual/tilemaps/grid-reference.html), [Create a Tilemap](https://docs.unity3d.com/Manual/tilemaps/work-with-tilemaps/create-tilemap.html), [Tilemap component reference](https://docs.unity3d.com/Manual/tilemaps/work-with-tilemaps/tilemap-reference.html).
-Covers: SKILL.md §4 — **"Settle the Cell Layout before creating anything"**.
+Pages: https://docs.unity3d.com/Manual/tilemaps/grid-reference.html, https://docs.unity3d.com/Manual/tilemaps/work-with-tilemaps/create-tilemap-landing.html
 
-`Grid` is the infinite layout guide that owns cell geometry; `Tilemap` is a
-child holding painted data and a `TilemapRenderer`. The structural decision
-this file exists for: **several `Tilemap` children under one `Grid`** keeps
-ground, walls, and decoration provably cell-aligned, whereas separate `Grid`
-hierarchies with differing cell sizes drift apart invisibly.
+`Grid` owns cell geometry; `Tilemap` is a child holding painted data plus a `TilemapRenderer`. Several `Tilemap` children under one `Grid` are provably cell-aligned.
 
-## Creating the hierarchy
+## Hierarchy
 
-| Step | What it decides | Source |
-|---|---|---|
-| **Hierarchy > 2D Object > Tilemap > <type>** | Creates the `Grid` plus one `Tilemap` child, with the Cell Layout implied by the type chosen — Rectangular, Hexagonal, or Isometric | [Create a Tilemap](https://docs.unity3d.com/Manual/tilemaps/work-with-tilemaps/create-tilemap.html) |
-| Add further `Tilemap` children | One layer per role, all sharing the parent's cell geometry — the only way to guarantee alignment between layers | [Create a Tilemap](https://docs.unity3d.com/Manual/tilemaps/work-with-tilemaps/create-tilemap.html) |
-| **Window > 2D > Tile Palette**, set Active Tilemap | Which layer painting operations write into; painting into the wrong layer is silent | [Tile Palette](https://docs.unity3d.com/Manual/tilemaps/tile-palettes/tile-palette-editor-reference.html) |
+- Hierarchy > 2D Object > Tilemap > <type> creates the Grid plus one Tilemap, Cell Layout implied by the type (Rectangular, Hexagonal, Isometric). Add further Tilemap children per role.
+- Window > 2D > Tile Palette, **Active Tilemap** selects the layer painted into; painting into the wrong layer is silent.
 
-## Grid properties
+| Grid property | Decision |
+|---|---|
+| Cell Size | World size of a cell; must agree with the palette's value; derived for isometric |
+| Cell Gap | Spacing that shifts every tile after the first; rarely wanted |
+| Cell Layout | Rectangle, Hexagon, Isometric, Isometric Z as Y (height in one tilemap; plain Isometric needs one tilemap per level) |
+| Cell Swizzle | World axes the grid occupies; XYZ is flat 2D default |
 
-| Property | What it decides | Source |
-|---|---|---|
-| Cell Size | The world size of one cell. Must agree with the palette's own value, and for isometric it is derived rather than chosen — see [isometric-hexagonal.md](isometric-hexagonal.md) | [Grid reference](https://docs.unity3d.com/Manual/tilemaps/grid-reference.html) |
-| Cell Gap | Spacing between cells, which shifts every tile after the first — rarely wanted outside deliberate lattice art | [Grid reference](https://docs.unity3d.com/Manual/tilemaps/grid-reference.html) |
-| Cell Layout | **Rectangle**, **Hexagon**, **Isometric**, or **Isometric Z as Y**. Z as Y encodes height in a single tilemap; plain Isometric needs one tilemap per level | [Grid reference](https://docs.unity3d.com/Manual/tilemaps/grid-reference.html) |
-| Cell Swizzle | Which world axes the grid occupies — XYZ is the flat 2D default, and the others place a tile grid into a 3D scene | [Grid reference](https://docs.unity3d.com/Manual/tilemaps/grid-reference.html) |
+| Tilemap property | Decision |
+|---|---|
+| Animation Frame Rate | Multiplier for every animated tile on the layer |
+| Color | Tints the layer; white leaves art untouched |
+| Tile Anchor | Tile position in its cell, default (0.5, 0.5, 0); shifts art half a cell when it disagrees with the sprite pivot |
+| Orientation | Paint plane (XY, XZ, ...) or Custom offset/rotation/scale |
+| Info | Read-only list of tiles/sprites in use; selecting pings the asset |
 
-## Tilemap properties
+## Isometric
 
-| Property | What it decides | Source |
-|---|---|---|
-| Animation Frame Rate | Multiplier over the base rate for every animated tile on this layer — the single dial that speeds up or slows a whole layer's animation | [Tilemap reference](https://docs.unity3d.com/Manual/tilemaps/work-with-tilemaps/tilemap-reference.html) |
-| Color | Tints every tile the layer renders; white leaves art untouched | [Tilemap reference](https://docs.unity3d.com/Manual/tilemaps/work-with-tilemaps/tilemap-reference.html) |
-| Tile Anchor | Tile position within its cell, default (0.5, 0.5, 0) — the setting that shifts art half a cell when it disagrees with the sprite's pivot | [Tilemap reference](https://docs.unity3d.com/Manual/tilemaps/work-with-tilemaps/tilemap-reference.html) |
-| Orientation | Which plane tiles paint into — XY, XZ, and the rest, or Custom with explicit offset, rotation, and scale | [Tilemap reference](https://docs.unity3d.com/Manual/tilemaps/work-with-tilemaps/tilemap-reference.html) |
-| Info | Read-only list of tiles and sprites in use; selecting one pings it in the Project window, which is how an unexpected tile is traced back to its asset | [Tilemap reference](https://docs.unity3d.com/Manual/tilemaps/work-with-tilemaps/tilemap-reference.html) |
+Cells that do not line up and depth that reads backwards are two independent failures; fix both.
+
+1. Import sprites at Mesh Type Tight, PPU equal to tile pixel width, pivot at the centre of the tile's 3D floor (import work: `unity-2d-sprite`).
+2. Palette type Isometric, **Cell Size y = floor height px ÷ tile width px** (32 px floor on a 64 px tile = 0.5). Derive, never round.
+3. Isometric vs **Isometric Z as Y**: flat Isometric stacks one tilemap per height; Z as Y encodes height in one tilemap, needed for ramps and multi-level terrain.
+4. Match the Grid's Cell Size y to the palette's (two copies of one derived number; usually only one gets updated).
+5. Transparency Sort Mode = Custom Axis, axis (0, 1, 0); otherwise depth sorts by camera distance and reads inverted. Set on the 2D Renderer Data (URP) or Project Settings > Graphics > Camera Settings (Built-in). Sprite sorting semantics: `unity-2d-sprite`.
+
+## Hexagonal
+
+| Type | Decision |
+|---|---|
+| Point Top | Vertex top and bottom; alternating **rows** offset right by half a cell |
+| Flat Top | Flat edge top and bottom, **x and y swapped** vs Point Top (Cell Size x governs vertical spacing, y horizontal); alternating **columns** offset downward |
+
+Sprites: rectangular slices work; Sprite Mode Polygon gives a tighter hex silhouette. Palette type (Hexagonal Point Top / Flat Top) must match the Grid's Cell Layout Hexagon.

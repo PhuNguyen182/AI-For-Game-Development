@@ -1,41 +1,31 @@
-# Profiler Window and Modules — picking a module and reading it correctly
+# Profiler Window and Modules
 
-Sources: [Profiler window reference](https://docs.unity3d.com/Manual/ProfilerWindow.html), [CPU Usage module](https://docs.unity3d.com/Manual/ProfilerCPU.html), [GPU Usage module](https://docs.unity3d.com/Manual/ProfilerGPU.html), [Rendering module](https://docs.unity3d.com/Manual/ProfilerRendering.html), [Memory module](https://docs.unity3d.com/Manual/ProfilerMemory.html), [Highlights module](https://docs.unity3d.com/Manual/ProfilerHighlights.html).
-Covers: SKILL.md §4 — **"Name the question before opening a module"**, **"Capture the hitch inside the Profiler's frame buffer"**, **"Attribute a GC spike to the frame that allocated, not the frame that stalled"**.
-
-Which module answers which question, and the reading mistakes each one invites.
-Memory growth over a session is deliberately not settled here — the built-in
-Memory module cannot compare two points in time, and [memory-profiler.md](memory-profiler.md) owns that.
+Docs: https://docs.unity3d.com/Manual/ — pages `ProfilerWindow.html`, `ProfilerCPU.html`, `ProfilerGPU.html`, `ProfilerRendering.html`, `ProfilerMemory.html`, `ProfilerHighlights.html`, `profiler-profiling-applications.html`.
 
 ## Module selection
-
-| Module | What it decides | Source |
-|---|---|---|
-| CPU Usage | Which thread and which managed call own the frame time; the only module carrying the GC Alloc column | [CPU Usage module](https://docs.unity3d.com/Manual/ProfilerCPU.html) |
-| GPU Usage | Whether the GPU rather than the CPU is the limit — unavailable in a plain Editor session, and unsupported on some platform and graphics-API combinations, so confirm it populates before planning around it | [GPU Usage module](https://docs.unity3d.com/Manual/ProfilerGPU.html) |
-| Rendering | Batches, SetPass calls, triangle and vertex counts — spots a batching regression, but never says which object caused it | [Rendering module](https://docs.unity3d.com/Manual/ProfilerRendering.html) |
-| Memory | A quick per-frame total; its Simple view holds one point in time and cannot diff two | [Memory module](https://docs.unity3d.com/Manual/ProfilerMemory.html) |
-| Highlights | CPU-versus-GPU-bound verdict against a target frame rate, at a glance, before committing to a deeper module | [Highlights module](https://docs.unity3d.com/Manual/ProfilerHighlights.html) |
+| Module | Answers |
+|---|---|
+| CPU Usage | Which thread and managed call own frame time; the only module with the GC Alloc column |
+| GPU Usage | Whether the GPU is the limit; unavailable in a plain Editor session and on some platform/graphics-API combinations |
+| Rendering | Batches, SetPass calls, triangle/vertex counts; spots a batching regression, never names the object |
+| Memory | Quick per-frame total; Simple view is one point in time and cannot diff (use [memory-profiler.md](memory-profiler.md)) |
+| Highlights | CPU- vs GPU-bound against a target frame rate, before committing to a deeper module |
 
 ## Reading a CPU capture
-
-| Subject | What it decides | Source |
-|---|---|---|
-| Timeline view | Shows work laid out per thread, so a main-thread stall is visually distinguishable from job-worker or render-thread work — the right first view for a spike of unknown origin | [CPU Usage module](https://docs.unity3d.com/Manual/ProfilerCPU.html) |
-| Hierarchy view | Merges every call of the same marker into one row; sort by Self time to find the expensive call rather than its callers | [CPU Usage module](https://docs.unity3d.com/Manual/ProfilerCPU.html) |
-| Raw Hierarchy view | Keeps each call site separate instead of merging them — use it when one instance out of many is the outlier and the merged total hides it | [CPU Usage module](https://docs.unity3d.com/Manual/ProfilerCPU.html) |
-| `EditorLoop` marker | Editor-only work counted inside the frame time an Editor capture reports; its presence is what makes an Editor number unusable as a build figure | [Profiler window reference](https://docs.unity3d.com/Manual/ProfilerWindow.html) |
-| GC Alloc column | Bytes allocated in that frame — the frame that stalls is the frame that collected, so read the column across the surrounding frames to find the code that caused it | [CPU Usage module](https://docs.unity3d.com/Manual/ProfilerCPU.html) |
+| Subject | Rule |
+|---|---|
+| Timeline | Work per thread; separates a main-thread stall from job-worker or render-thread work. First view for a spike of unknown origin |
+| Hierarchy | Merges calls of one marker; sort by Self time to find the expensive call, not its callers |
+| Raw Hierarchy | Keeps each call site; use when one instance out of many is the outlier |
+| `EditorLoop` | Editor-only work inside an Editor capture's frame time; why Editor numbers are unusable as build figures |
+| GC Alloc column | Bytes allocated that frame; the stalling frame collected, so read surrounding frames |
 
 ## Capture mechanics
+| Subject | Rule |
+|---|---|
+| Retained frame count | Bounded; oldest frames discarded. Raise it in Preferences before chasing an intermittent spike |
+| Record / pause | Pause on the spike to preserve it; recording on overwrites it |
+| Saving | Save the `.data` capture of both sides at capture time; the Profile Analyzer consumes it |
+| First frames | Carry shader warm-up, first-time allocations, scene-load tails; not steady state |
 
-| Subject | What it decides | Source |
-|---|---|---|
-| Retained frame count | The window keeps a bounded window of frames and discards the oldest, so a hitch noticed late is already gone; raise the count in Preferences before chasing an intermittent spike | [Profiler window reference](https://docs.unity3d.com/Manual/ProfilerWindow.html) |
-| Record toggle and pause | Pausing on the spike frame is what preserves it for inspection; leaving recording on overwrites it | [Profiler window reference](https://docs.unity3d.com/Manual/ProfilerWindow.html) |
-| Saving a capture | A saved `.data` capture is what the Profile Analyzer consumes for a before-and-after comparison, so save both sides at capture time rather than re-running later | [Profiler window reference](https://docs.unity3d.com/Manual/ProfilerWindow.html) |
-| First frames of a capture | Carry one-time costs — shader warm-up, first-time allocations, scene load tails — and are not representative of steady state | [Collecting performance data](https://docs.unity3d.com/Manual/profiler-profiling-applications.html) |
-
-**Critical caveat**: the Rendering module tells you batching regressed and the
-Frame Debugger tells you why — neither substitutes for the other, and a
-timing module will never name the material or object that broke a batch.
+The Rendering module says batching regressed; the Frame Debugger says why. Neither substitutes for the other.

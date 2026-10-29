@@ -1,43 +1,20 @@
-# Playables API — graphs, mixers, custom behaviours, lifetime
+# Playables API
 
-Sources: [Playables API](https://docs.unity3d.com/Manual/Playables.html), [Playables graph](https://docs.unity3d.com/Manual/Playables-Graph.html), [ScriptPlayable and PlayableBehaviour](https://docs.unity3d.com/Manual/Playables-ScriptPlayable.html), [Playables examples](https://docs.unity3d.com/Manual/Playables-Examples.html), [Blend two animation clips](https://docs.unity3d.com/Manual/playables-ex-blend-clips.html), [Blend a clip with a controller](https://docs.unity3d.com/Manual/playables-ex-blend-clip-controller.html), [PlayableGraph Visualizer](https://docs.unity3d.com/Manual/playables-visualizer.html).
-Covers: SKILL.md §4 — **"Reach for the Playables API only when the state machine cannot express the need"**.
+Pages: `Playables`, `Playables-Graph`, `Playables-ScriptPlayable`, `playables-ex-blend-clips`, `playables-ex-blend-clip-controller`, `playables-visualizer`. Timeline sits on this but is out of scope.
 
-The layer the Animator itself runs on, exposed for graphs composed at
-runtime. Timeline is built on this too, but its track and clip authoring is a
-separate system no skill in this project owns — see [root-links.md](root-links.md).
+Use a graph for: a clip set unknown until runtime; weights computed per frame from arbitrary maths; layering a one-off clip over a running controller without adding a state/layer. Anything a state and transition already express is not a case (YAGNI, `csharp-standards` → `coding-principles.md`).
 
-## When the state machine is not enough
+| Type | Role |
+|---|---|
+| `PlayableGraph` | Owns nodes, drives evaluation; created and destroyed explicitly |
+| Output (`AnimationPlayableOutput`) | Connects to the `Animator` |
+| Clip playable | One clip with own time and speed |
+| Mixer playable | Blends inputs by per-input weight |
+| Layer mixer playable | Layers with optional masking |
+| Controller playable | Wraps an Animator Controller so a graph blends against it |
+| `ScriptPlayable` / `PlayableBehaviour` | Custom node with per-frame callbacks |
 
-| Case | Why the graph is needed | Source |
-|---|---|---|
-| Clip set unknown until runtime | An authored state machine has to name its clips; a graph can mix a set assembled from data | [Playables API](https://docs.unity3d.com/Manual/Playables.html) |
-| Weights computed per frame | A Blend Tree maps parameters to weights through authored thresholds; a graph sets weights directly from arbitrary maths | [Blend two animation clips](https://docs.unity3d.com/Manual/playables-ex-blend-clips.html) |
-| Blending a clip against an existing controller | Layering a one-off animation over a running state machine without adding a state or a layer for it | [Blend a clip with a controller](https://docs.unity3d.com/Manual/playables-ex-blend-clip-controller.html) |
-| Anything a state and a transition already express | Not a case — the graph costs code, lifetime management and debuggability that the authored asset does not, per YAGNI in `csharp-standards` → `coding-principles.md` | [Playables API](https://docs.unity3d.com/Manual/Playables.html) |
-
-## Graph structure
-
-| Type | Role | Source |
-|---|---|---|
-| Graph | Owns the nodes and drives evaluation; created explicitly and destroyed explicitly | [Playables graph](https://docs.unity3d.com/Manual/Playables-Graph.html) |
-| Output | Connects the graph to what it drives — an `Animator` for animation | [Playables graph](https://docs.unity3d.com/Manual/Playables-Graph.html) |
-| Clip playable | A single clip as a node, with its own time and speed | [Play an animation clip](https://docs.unity3d.com/Manual/playables-ex-play-clip.html) |
-| Mixer playable | Blends its inputs by per-input weight, which is where a runtime-computed blend actually happens | [Blend two animation clips](https://docs.unity3d.com/Manual/playables-ex-blend-clips.html) |
-| Layer mixer playable | Blends inputs as layers, with optional masking, mirroring what layers do in a controller | [Playables graph](https://docs.unity3d.com/Manual/Playables-Graph.html) |
-| Controller playable | Wraps an existing Animator Controller as a node, so a graph can blend against the authored state machine rather than replacing it | [Blend a clip with a controller](https://docs.unity3d.com/Manual/playables-ex-blend-clip-controller.html) |
-| Script playable and behaviour | A custom node with per-frame callbacks, for logic the built-in nodes do not express | [ScriptPlayable and PlayableBehaviour](https://docs.unity3d.com/Manual/Playables-ScriptPlayable.html) |
-
-**Critical caveat**: a graph is not garbage collected. Every created graph
-needs an explicit destroy on a defined lifecycle boundary, or it survives the
-object that made it for the rest of the session — the same discipline
-`csharp-standards` → `performance-and-algorithms.md` requires of any unmanaged lifetime.
-
-## Working with a graph
-
-| Subject | What it decides | Source |
-|---|---|---|
-| Play and stop on the graph | Whether the graph evaluates at all; a correctly built graph that was never played produces no motion and no error | [Control the play state](https://docs.unity3d.com/Manual/playables-ex-play-state.html) |
-| Node time and speed | Set per node, so one input can be scrubbed or slowed without touching the rest of the graph | [Control the timing of a playable](https://docs.unity3d.com/Manual/playables-ex-control-timing.html) |
-| Several outputs | One graph can drive more than one kind of output, which is how animation and audio stay on one clock | [PlayableGraph with different outputs](https://docs.unity3d.com/Manual/playables-ex-different-outputs.html) |
-| Visualizer | A separate package that draws the live graph, which turns an invisible wiring mistake into something you can see | [PlayableGraph Visualizer](https://docs.unity3d.com/Manual/playables-visualizer.html) |
+- A graph is **not garbage collected**: destroy every created graph at a defined lifecycle boundary (e.g. `OnDestroy`), or it outlives its owner for the session.
+- A built graph that was never played produces no motion and no error.
+- Time and speed are set per node. One graph can drive several output kinds (animation and audio on one clock).
+- PlayableGraph Visualizer package draws the live graph to find wiring mistakes.

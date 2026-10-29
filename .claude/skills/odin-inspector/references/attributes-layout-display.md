@@ -1,72 +1,43 @@
-# Layout & Display Attributes — Sirenix.OdinInspector grouping, ordering, cosmetics
+# Layout & Display Attributes
 
-Source: [BoxGroupAttribute](https://odininspector.com/documentation/sirenix.odininspector.boxgroupattribute), [FoldoutGroupAttribute](https://odininspector.com/documentation/sirenix.odininspector.foldoutgroupattribute), [HorizontalGroupAttribute](https://odininspector.com/documentation/sirenix.odininspector.horizontalgroupattribute), [VerticalGroupAttribute](https://odininspector.com/documentation/sirenix.odininspector.verticalgroupattribute), [TabGroupAttribute](https://odininspector.com/documentation/sirenix.odininspector.tabgroupattribute), [TitleGroupAttribute](https://odininspector.com/documentation/sirenix.odininspector.titlegroupattribute), [ToggleGroupAttribute](https://odininspector.com/documentation/sirenix.odininspector.togglegroupattribute), [PropertyOrderAttribute](https://odininspector.com/documentation/sirenix.odininspector.propertyorderattribute), [PropertySpaceAttribute](https://odininspector.com/documentation/sirenix.odininspector.propertyspaceattribute), [IndentAttribute](https://odininspector.com/documentation/sirenix.odininspector.indentattribute), [TitleAttribute](https://odininspector.com/documentation/sirenix.odininspector.titleattribute), [InfoBoxAttribute](https://odininspector.com/documentation/sirenix.odininspector.infoboxattribute), [DetailedInfoBoxAttribute](https://odininspector.com/documentation/sirenix.odininspector.detailedinfoboxattribute), [HideLabelAttribute](https://odininspector.com/documentation/sirenix.odininspector.hidelabelattribute), [LabelTextAttribute](https://odininspector.com/documentation/sirenix.odininspector.labeltextattribute), [LabelWidthAttribute](https://odininspector.com/documentation/sirenix.odininspector.labelwidthattribute), [GUIColorAttribute](https://odininspector.com/documentation/sirenix.odininspector.guicolorattribute), [SuffixLabelAttribute](https://odininspector.com/documentation/sirenix.odininspector.suffixlabelattribute), [PropertyTooltipAttribute](https://odininspector.com/documentation/sirenix.odininspector.propertytooltipattribute).
-Covers: SKILL.md §4 — **"Route to the narrowest reference file for the concern"**.
+Where and how a member renders; all Editor-only. Visibility/validity lives in [attributes-conditional-validation.md](attributes-conditional-validation.md).
 
-Attributes that organize *where* and *how* a field/property/method renders in
-the Inspector, without touching whether it's visible, editable, or valid
-(that's [attributes-conditional-validation.md](attributes-conditional-validation.md)).
-All of these are `[Conditional("UNITY_EDITOR")]` — zero runtime cost, zero
-runtime effect.
+## Grouping
+Group attributes derive from `PropertyGroupAttribute`; members sharing a group string merge. Nest with `/` (`"Split/Left"`). Build multi-row layouts as `[HorizontalGroup("Split")]` + nested `[BoxGroup("Split/Left")]`/`VerticalGroup`, never two `HorizontalGroup`s on one member.
 
-## Table of contents
-- [Grouping attributes](#grouping-attributes)
-- [Ordering & spacing](#ordering--spacing)
-- [Headers & message boxes](#headers--message-boxes)
-- [Label & cosmetic attributes](#label--cosmetic-attributes)
+| Attribute | Notes |
+|---|---|
+| `BoxGroup(group, showLabel = true, centerLabel = false, order = 0)` | Name may be `"$Member"` for a dynamic title |
+| `FoldoutGroup(groupName, expanded, order = 0)` | `expanded` = default state |
+| `HorizontalGroup(width = 0, marginLeft, marginRight, order)` / `(group, ...)` | Width 0-1 = fraction of space, else pixels, 0 = auto. Also `MinWidth`, `MaxWidth`, `PaddingLeft/Right`, `Gap`, `Title`, `DisableAutomaticLabelWidth` |
+| `VerticalGroup(groupId, order)` | `PaddingTop/Bottom`; mainly a column inside `HorizontalGroup` |
+| `TabGroup(tab, useFixedHeight = false, order)` / `(group, tab, ...)` | Nested tabs: `"Parent/Tab/Inner"`. `Icon` (`SdfIconType`), `TextColor`, `Paddingless`, `HideTabGroupIfTabGroupOnlyHasOneTab` |
+| `TitleGroup(title, subtitle, alignment, horizontalLine = true, boldTitle = true, indent = false)` | Group with title header |
+| `ToggleGroup(toggleMemberName, order, groupTitle)` | Whole group enabled by a `bool` member; static members unsupported |
 
-## Grouping attributes
-
-All grouping attributes derive from `PropertyGroupAttribute`; members sharing
-the same group-name string merge into one group. Nested groups use `/` in the
-group path (e.g. `"Split/Left"`).
-
-| Attribute | Key constructor / fields | What it decides | Source |
-|---|---|---|---|
-| `BoxGroupAttribute(string group, bool showLabel = true, bool centerLabel = false, float order = 0)` | `CenterLabel`, `LabelText`, `ShowLabel` | Boxes members together; group name can be a literal or `"$MemberName"` for a dynamic title | [BoxGroupAttribute](https://odininspector.com/documentation/sirenix.odininspector.boxgroupattribute) |
-| `FoldoutGroupAttribute(string groupName, bool expanded, float order = 0)` | `Expanded` | Collapsible group; `expanded` sets the default open/closed state | [FoldoutGroupAttribute](https://odininspector.com/documentation/sirenix.odininspector.foldoutgroupattribute) |
-| `HorizontalGroupAttribute(float width = 0, int marginLeft = 0, int marginRight = 0, float order = 0)` — also `HorizontalGroupAttribute(string group, ...)` | `Width`/`MinWidth`/`MaxWidth`, `MarginLeft/Right`, `PaddingLeft/Right`, `Gap`, `Title`, `DisableAutomaticLabelWidth` | Lays members out in a row; width `0`–`1` is a percentage of available space, otherwise pixels, `0` = auto-size | [HorizontalGroupAttribute](https://odininspector.com/documentation/sirenix.odininspector.horizontalgroupattribute) |
-| `VerticalGroupAttribute(string groupId, float order = 0)` | `PaddingTop`, `PaddingBottom` | Stacks members in a column — mainly useful nested inside a `HorizontalGroup` column (e.g. `"Split/Left"`) | [VerticalGroupAttribute](https://odininspector.com/documentation/sirenix.odininspector.verticalgroupattribute) |
-| `TabGroupAttribute(string tab, bool useFixedHeight = false, float order = 0)` — also a `(group, tab, ...)` overload for multiple tab groups | `TabLayouting`, `Paddingless`, `HideTabGroupIfTabGroupOnlyHasOneTab`, `TextColor`, `Icon` (`SdfIconType`) | Puts members into tabs; nesting tabs inside tabs uses `"ParentGroup/Tab/InnerGroup"` as the group path | [TabGroupAttribute](https://odininspector.com/documentation/sirenix.odininspector.tabgroupattribute) |
-| `TitleGroupAttribute(string title, string subtitle = null, TitleAlignments alignment = Left, bool horizontalLine = true, bool boldTitle = true, bool indent = false, float order = 0)` | `Alignment`, `BoldTitle`, `HorizontalLine`, `Indent`, `Subtitle` | Vertical group with a title/subtitle header — combine title styling with grouping in one attribute | [TitleGroupAttribute](https://odininspector.com/documentation/sirenix.odininspector.titlegroupattribute) |
-| `ToggleGroupAttribute(string toggleMemberName, float order = 0, string groupTitle = null)` | `CollapseOthersOnExpand`, `ToggleGroupTitle` | Group that is entirely enabled/disabled by a `bool` member named `toggleMemberName`; static members unsupported | [ToggleGroupAttribute](https://odininspector.com/documentation/sirenix.odininspector.togglegroupattribute) |
-
-**Critical caveat**: only apply one grouping attribute of each *kind* per
-member for a given group — combining `HorizontalGroup` with a nested
-`BoxGroup`/`VerticalGroup` (e.g. `[HorizontalGroup("Split")] [BoxGroup("Split/Left")]`)
-is the supported way to build a multi-row layout, not stacking two
-`HorizontalGroup` attributes on the same member.
-
-## Ordering & spacing
-
-| Attribute | Key constructor | What it decides | Source |
-|---|---|---|---|
-| `PropertyOrderAttribute(float order)` | `Order` | Lower values draw first; the only reliable way to force draw order, since declaration order is not guaranteed | [PropertyOrderAttribute](https://odininspector.com/documentation/sirenix.odininspector.propertyorderattribute) |
-| `PropertySpaceAttribute(float spaceBefore = 8, float spaceAfter = 0)` | `SpaceBefore`, `SpaceAfter` | Adds (or, with a negative value, removes) vertical pixels between properties; works on properties/methods, unlike Unity's `Space` | [PropertySpaceAttribute](https://odininspector.com/documentation/sirenix.odininspector.propertyspaceattribute) |
-| `IndentAttribute(int indentLevel = 1)` | `IndentLevel` | Shifts the member's label right by the given indent level | [IndentAttribute](https://odininspector.com/documentation/sirenix.odininspector.indentattribute) |
+## Order & spacing
+| Attribute | Notes |
+|---|---|
+| `PropertyOrder(float)` | Lower first; the only reliable way to force order |
+| `PropertySpace(spaceBefore = 8, spaceAfter = 0)` | Negative removes space; works on properties/methods, unlike `Space` |
+| `Indent(indentLevel = 1)` | Shifts the label right |
 
 ## Headers & message boxes
+| Attribute | Notes |
+|---|---|
+| `Title(title, subtitle, alignment, horizontalLine, bold)` | `"$Member"` for dynamic text |
+| `InfoBox(message, InfoMessageType = Info, visibleIfMemberName)` | `visibleIfMemberName` = bool field/property/method, static or instance |
+| `DetailedInfoBox(message, details, type, visibleIf)` | `details` behind an expand toggle |
+| `TypeInfoBox(message)` | On a class/struct/interface; top of the type, no `PropertyOrder` needed |
 
-| Attribute | Key constructor | What it decides | Source |
-|---|---|---|---|
-| `TitleAttribute(string title, string subtitle = null, TitleAlignments titleAlignment = Left, bool horizontalLine = true, bool bold = true)` | `Bold`, `HorizontalLine`, `Subtitle`, `TitleAlignment` | Bold header above a member; title/subtitle accept `"$MemberName"` for dynamic text | [TitleAttribute](https://odininspector.com/documentation/sirenix.odininspector.titleattribute) |
-| `InfoBoxAttribute(string message, InfoMessageType infoMessageType = Info, string visibleIfMemberName = null)` | `GUIAlwaysEnabled`, `IconColor` | Message box above a member; `visibleIfMemberName` names a bool field/property/method (static or instance) that hides the box when false | [InfoBoxAttribute](https://odininspector.com/documentation/sirenix.odininspector.infoboxattribute) |
-| `DetailedInfoBoxAttribute(string message, string details, InfoMessageType infoMessageType = Info, string visibleIf = null)` | same as `InfoBox` plus `Details` | Same as `InfoBox` but `details` is hidden behind an expand toggle | [DetailedInfoBoxAttribute](https://odininspector.com/documentation/sirenix.odininspector.detailedinfoboxattribute) |
-| `TypeInfoBoxAttribute(string message)` | `Message` | Info box at the very top of a class/struct/interface, without needing `PropertyOrder` tricks | [TypeInfoBoxAttribute](https://odininspector.com/documentation/sirenix.odininspector.typeinfoboxattribute) |
+## Labels & cosmetics
+| Attribute | Notes |
+|---|---|
+| `HideLabel` | Common with `HorizontalGroup`/`PreviewField` |
+| `LabelText(text, nicifyText, icon)` | Overrides the label |
+| `LabelWidth(float)` | Pixels; pair with `HorizontalGroup` columns |
+| `GUIColor(r, g, b, a = 1)` / `(string getColor)` | String: member, `"@this.MyColor"`, hex or named colour |
+| `SuffixLabel(label, overlay = false)` | `overlay` draws inside the field |
+| `PropertyTooltip(tooltip)` | Unlike `Tooltip`, works on properties |
 
-## Label & cosmetic attributes
-
-| Attribute | Key constructor | What it decides | Source |
-|---|---|---|---|
-| `HideLabelAttribute()` | — | Removes the member's label entirely — common alongside `HorizontalGroup`/`PreviewField` to save horizontal space | [HideLabelAttribute](https://odininspector.com/documentation/sirenix.odininspector.hidelabelattribute) |
-| `LabelTextAttribute(string text, bool nicifyText = ..., SdfIconType icon = ...)` | `Text`, `NicifyText`, `Icon`, `IconColor` | Overrides the auto-generated label; `nicifyText` re-applies Unity's "m_someField" → "Some Field" formatting to a resolved value | [LabelTextAttribute](https://odininspector.com/documentation/sirenix.odininspector.labeltextattribute) |
-| `LabelWidthAttribute(float width)` | `Width` | Fixed label width in pixels — frequently paired with `HorizontalGroup` columns to keep labels from eating column width | [LabelWidthAttribute](https://odininspector.com/documentation/sirenix.odininspector.labelwidthattribute) |
-| `GUIColorAttribute(float r, float g, float b, float a = 1)` — also `GUIColorAttribute(string getColor)` | `Color`, `GetColor` | Tints the member's GUI color; the string overload accepts a resolved color expression (`"GetColor"`, `"@this.MyColor"`, hex, named colors) | [GUIColorAttribute](https://odininspector.com/documentation/sirenix.odininspector.guicolorattribute) |
-| `SuffixLabelAttribute(string label, bool overlay = false)` | `Label`, `Overlay`, `IconColor` | Trailing label conveying units/intent (e.g. "Prefab", "ms"); `overlay = true` draws it inside the field instead of after it | [SuffixLabelAttribute](https://odininspector.com/documentation/sirenix.odininspector.suffixlabelattribute) |
-| `PropertyTooltipAttribute(string tooltip)` | `Tooltip` | Same as Unity's `Tooltip`, but works on properties too, not just fields | [PropertyTooltipAttribute](https://odininspector.com/documentation/sirenix.odininspector.propertytooltipattribute) |
-
-**Critical caveat**: resolved-string arguments in this file (group titles via
-`"$Member"`, `GUIColor`'s `getColor`, `InfoBox`'s `visibleIfMemberName`) are
-reflection-resolved at edit time with no compile check — see
-[attributes-conditional-validation.md](attributes-conditional-validation.md)'s
-verification caveat, which applies identically here.
+`"$Member"`, `getColor` and `visibleIfMemberName` are resolved strings: see the syntax and no-compile-check warning in [attributes-conditional-validation.md](attributes-conditional-validation.md).

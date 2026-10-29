@@ -1,57 +1,22 @@
-# Delegate Objects & Pluggable Behavior — Strategy via ScriptableObject
+# Delegate Objects (Strategy) and Extendable Enums
 
-Sources: [ScriptableObject](https://docs.unity3d.com/Manual/class-ScriptableObject.html), [CreateAssetMenuAttribute](https://docs.unity3d.com/ScriptReference/CreateAssetMenuAttribute.html). Pattern synthesized from Ryan Hipple's "Delegate/Strategy" ScriptableObject technique (Unite Austin 2017) and the classic Strategy design pattern.
-Covers: SKILL.md §4 — **"Use a Delegate Object SO for pluggable/strategy behavior swapped without new code"**.
+Sources: Manual `class-ScriptableObject.html`; `CreateAssetMenuAttribute`. Shapes follow Ryan Hipple (Unite Austin 2017) and the classic Strategy pattern.
 
-An abstract SO with one behavior-defining method, implemented by several
-concrete SO subclasses, lets a MonoBehaviour or a caller swap the algorithm by
-swapping which asset is assigned in the Inspector — no code edit, no growing
-`switch` on a "behavior type" enum. This is the Strategy pattern expressed as
-an asset instead of a `new`-ed class, which is what makes it
-Inspector-configurable per prefab without a programmer.
+## Delegate Object
+An abstract SO with one behavior method, implemented by concrete SO subclasses (one asset per variant). The consuming prefab holds `[SerializeField] AbilityTargetingSO targeting`; swapping behavior is reassigning the asset, with no code edit or `switch` on a behavior enum (Open/Closed, per `csharp-standards`).
+- Contract example: `abstract IReadOnlyList<Vector3> GetTargetPoints(Vector3 origin, Vector3 direction)`; subclasses `ConeTargetingSO`, `SingleTargetTargetingSO`.
+- Use when behavior varies by design-time choice, not by a runtime condition one method could branch on.
+- The method may resolve spatial candidates (presentation concern). What those points mean (damage, hit, cooldown) stays in `Game.Core.*`; pass resolved points in as data. A Delegate Object that also computes damage reimplements a rule outside Core.
 
-## Shape
+## Extendable Enum
+Replaces a closed C# `enum` (every new case recompiles every `switch`) with a base SO type (`DamageTypeSO`, `[SerializeField] string id`) and one asset per case (`SO_DamageType_Fire.asset`). Designers add cases as assets; lookups use `Dictionary<DamageTypeSO, float>` (e.g. a resistance table) instead of a growing `switch`.
+- Compare by `Id`, not reference `==`, whenever a case could load twice (duplicated import, two Addressables bundles each containing a copy). Reference equality is safe only when every case loads from exactly one asset.
+- It adds cases only; it does not model transitions or guards (`stateless-state-machines`).
 
-| Member | Effect | Use when | Source |
-|---|---|---|---|
-| `abstract class AbilityTargetingSO : ScriptableObject` with `public abstract IReadOnlyList<Vector3> GetTargetPoints(...)` | Declares the contract every strategy implements | A behavior varies by design-time choice, not by a runtime condition a single method could branch on | synthesized |
-| Concrete subclasses (`ConeTargetingSO`, `SingleTargetTargetingSO`) | Each ships one algorithm as its own asset | Adding a new variant should never touch existing callers, per `csharp-standards` → `coding-principles.md`'s Open/Closed section | synthesized |
-| `[SerializeField] private AbilityTargetingSO targeting;` on the consuming prefab | The swap point — reassign the asset reference, nothing else | A designer must be able to change behavior without a programmer | synthesized |
+## Which one
+| | Delegate Object | Extendable Enum |
+|---|---|---|
+| Varies | Behavior (what happens) | Identity/category (which kind) |
+| Typical member | Abstract method | `Id`/data fields only |
 
-## Code shape
-
-```csharp
-public abstract class AbilityTargetingSO : ScriptableObject
-{
-    public abstract IReadOnlyList<Vector3> GetTargetPoints(Vector3 origin, Vector3 direction);
-}
-
-[CreateAssetMenu(menuName = "Abilities/Targeting/Cone", fileName = "SO_ConeTargeting")]
-public class ConeTargetingSO : AbilityTargetingSO
-{
-    [SerializeField] private float coneAngle = 45f;
-    [SerializeField] private int rayCount = 5;
-
-    public override IReadOnlyList<Vector3> GetTargetPoints(Vector3 origin, Vector3 direction)
-    {
-        // Fan `rayCount` points across `coneAngle` around `direction`, returning candidate points only.
-        return this.BuildConePoints(origin, direction, this.coneAngle, this.rayCount);
-    }
-}
-```
-
-## When to reach for this over an Extendable Enum
-
-| Concern | Delegate Object | Extendable Enum | Source |
-|---|---|---|---|
-| What varies | Behavior/algorithm (what happens) | Identity/category (which kind is this) | synthesized |
-| Typical member | An abstract method every subclass implements | An `Id`/data field only | synthesized |
-| Combine them | A [extendable-enums.md](extendable-enums.md) category SO can hold a Delegate Object reference for "what this category does" | | synthesized |
-
-**Critical caveat**: `GetTargetPoints` may resolve *which points to check* — a
-presentation/spatial concern using `UnityEngine.Vector3` — but the decision of
-*what those points mean* (damage dealt, a hit resolved, a cooldown consumed)
-stays in `Game.Core.*`; pass the resolved points in as already-computed data,
-per `csharp-standards` → `coding-principles.md`'s Shared Core integrity section. A Delegate Object
-that also computes damage is reimplementing a rule outside Core, not
-delegating to it.
+They combine: a category SO can hold a Delegate Object reference for "what this category does".

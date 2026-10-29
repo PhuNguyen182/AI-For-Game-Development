@@ -4,193 +4,59 @@ description: "Walk a test-case list on an installed build on a real Android/iOS 
 user-invocable: false
 ---
 
-# Device Test Walkthrough — running supplied test cases on a real device build
+# Device Test Walkthrough
 
-**Not for:** Editor Play Mode scenarios, owned by `playtest-scenario-execution`; build-only fault diagnosis, owned by `build-fault-triage`; authoring or running the automated NUnit suite, owned by `unity-test-framework`; deciding which test cases are owed, owned by `risk-based-test-planning`; root-causing a crash once one occurs, per `crash-anr-investigator`'s `/investigate-device-crash` convention.
+Not for: Editor Play Mode (`playtest-scenario-execution`), why a build-only fault happens (`build-fault-triage`), the NUnit suite (`unity-test-framework`), choosing cases (`risk-based-test-planning`), root-causing a crash (`investigate-device-crash`).
 
-## Bundled resources
+Judge a real build case by case from screenshots — supplied cases, or an Editor-reported defect to confirm on the device build; the script acts, only you judge.
 
-### References
-Read-only context, loaded on demand so SKILL.md itself stays short.
+| Reference | Read when |
+|---|---|
+| [cli-reference.md](references/cli-reference.md) | Picking a command's args, launch mode, keyevent code or pull-logs output |
+| [ios-idb-setup.md](references/ios-idb-setup.md) | Target is iOS and `doctor` or an `idb ui *` call fails |
 
-| File | Contents | Read when |
-|---|---|---|
-| [cli-reference.md](references/cli-reference.md) | Every subcommand, its per-platform command mapping, and exit-code conventions | Running any `device_playtest.py` command |
-| [ios-idb-setup.md](references/ios-idb-setup.md) | idb/idb_companion/WebDriverAgent host setup, pairing, and signing-expiry maintenance | Setting up or troubleshooting the iOS device toolchain |
+| Script | Run |
+|---|---|
+| [device_playtest.py](scripts/device_playtest.py) | `python .claude/skills/device-test-walkthrough/scripts/device_playtest.py <command> [args]` → device action, screenshot file or log dir |
 
-### Scripts
+Each command echoes its literal command to stderr — paste it as evidence. Exit 1 = missing binary or adb/idb failed; exit 0 says nothing about the app. Flags: `<cmd> --help`.
 
-| File | Purpose | Run when | Input → Output |
-|---|---|---|---|
-| [scripts/device_playtest.py](scripts/device_playtest.py) | CLI wrapping adb/idb device control — devices, doctor, install, launch, tap/swipe/text/keyevent, screenshot, pull-logs | Every step of a device walkthrough | Command + args → device action, screenshot, or log file |
+## Steps
+1. **Confirm the device** — `devices`, then `doctor --platform <p>`. No device or a missing tool → `Status: Blocked`, naming what is missing.
+2. **Install, launch, screenshot** — read the screenshot before any case; only it shows the app is running.
+3. **Walk the supplied cases one at a time, in order** — restate `Starting state`, `Actions`, `Expected` verbatim; turn each action into `tap`/`swipe`/`text`/`keyevent` from the current screenshot. A target the screenshot does not show, or a step too vague to turn into input → `Ambiguous` (or `Fail` if it should be there); never an invented coordinate.
+4. **Screenshot at the moment `Expected` should hold**, not after — the intermediate state is usually the finding.
+5. **Actual ≠ expected → `pull-logs`.** Crash → stop the walkthrough and `pull-logs`; never relaunch and continue silently.
+6. **Classify (Defect / Design flaw / As designed) and grade severity per `qa-standards`** — from observed impact, not the case's `Impact if this breaks`. Design flaw → `gd` at once.
+7. **Timing-dependent finding → repeat it and state attempts vs reproductions** — never reliable from one run, never dropped because a later run looked clean.
+8. **Every case not reached → `Not played`**, with why (device stopped, blocked by an earlier case, time).
 
-### Prerequisites
-Android needs only `adb` on `PATH` with USB debugging authorized. iOS is
-macOS-host-only and needs `idb`/`idb_companion`/WebDriverAgent set up first —
-see [ios-idb-setup.md](references/ios-idb-setup.md) before attempting it.
+## Never
+- Report a finding without the screenshot or log excerpt that evidences it.
+- Fake iOS coverage with Android tools, or the reverse — report `Blocked` naming the missing binary or device.
+- Build, rebuild, re-sign, publish or deploy the artifact.
+- Keep state across invocations — the caller (`build-release-engineer`) owns which cases are current and retry counts.
+- Share the device — one physical device, one agent at a time.
+- Put secrets or PII (tokens, player data) in screenshot or logcat evidence — redact, or cite the path only.
 
-## 1. Objective
-Close the one gap none of the Editor-based QA skills can reach: whether a
-build actually behaves correctly on a real device, judged case by case
-against a test plan someone already wrote, rather than by ad-hoc exploration.
-A prose test step ("tap the attack button twice") cannot be executed by a
-script — only an agent reading a screenshot can resolve that into an actual
-tap. This skill fixes the two failures that make a walkthrough untrustworthy:
-skipping evidence because "it obviously worked", and letting the tooling
-silently decide a result that only human-equivalent judgment can.
-
-## 2. Role
-Act as the hands-on device tester for the QA track, on behalf of
-`build-release-engineer`. You install, launch, drive input, and capture
-evidence on the real artifact; you never build, rebuild, re-sign, or modify
-it, and you never author a test case — you execute the ones you were given.
-
-## 3. When to invoke this skill
-- `build-release-engineer` was handed a test-case list (the
-  `plan-test-coverage`/`risk-based-test-planning` per-case format) alongside
-  a produced build artifact and a reachable device.
-- A case's `Observe via` field names `build/device` rather than Editor Play
-  Mode or an automated assertion.
-- A defect reported from the Editor needs confirming — or ruling out — on
-  the real artifact before it is routed.
-- Negative trigger: the case can be observed in Editor Play Mode — that is
-  `playtest-scenario-execution`.
-- Negative trigger: diagnosing *why* a build-only fault occurs (AOT,
-  stripping, native library, signing) — that is `build-fault-triage`, invoked
-  by the same caller alongside this skill.
-- Negative trigger: authoring or running the automated NUnit suite — that is
-  `unity-test-framework`.
-- Negative trigger: deciding which test cases are owed in the first place —
-  that is `risk-based-test-planning`, owned by `qa-lead`.
-- Negative trigger: a crash or ANR already occurred and needs root-causing —
-  stop the walkthrough, preserve the logs this skill already pulled, and hand
-  off per `/investigate-device-crash`'s convention rather than re-diagnosing
-  here.
-
-## 4. How to use this skill
-1. **Confirm the device before touching the artifact** — run
-   `device_playtest.py devices`, then `doctor --platform <platform>`. No
-   device, or a missing `idb`/`idb_companion`/WebDriverAgent on the iOS host,
-   is `Status: Blocked`, per skill `qa-standards`'s "Blocked is a
-   valid result" — never guess a device is ready.
-2. **Install and launch, then confirm with a screenshot, not an exit code** —
-   `install <path>` and `launch <app_id>` can both exit 0 while the app then
-   crashes instantly; the script cannot tell you that. Take a screenshot
-   immediately after launch and read it yourself before starting any case.
-3. **Walk one supplied case at a time, in the order given** — restate its
-   `Starting state`, `Actions`, and `Expected` verbatim from the input; a case
-   you cannot resolve into concrete taps/swipes is reported `Ambiguous`, never
-   guessed at.
-4. **Capture the screenshot at the moment each case's expectation is
-   evaluated, not afterwards** — the intermediate state is usually the
-   finding. Use `screenshot` right when the checkpoint in `Expected` should be
-   true.
-5. **Drive input only through the primitives this skill wraps** — `tap`,
-   `swipe`, `text`, `keyevent`. Never invent a coordinate the screenshot does
-   not support; if the target isn't visible, that is itself the finding
-   (`Result: Fail` or `Ambiguous`, not a guess).
-6. **Pull logs whenever a case's actual result deviates from expected, and
-   always after a crash** — `pull-logs` reuses the same log sources
-   `/investigate-device-crash` already reads (logcat crash buffer, FATAL
-   EXCEPTION / ANR greps on Android; `idevicecrashreport`/`idevicesyslog` on
-   iOS). A crash mid-walkthrough stops that case's path immediately; do not
-   attempt to relaunch and continue past it silently.
-7. **Classify before routing, using skill `qa-standards`'s three-way split**
-   — a Defect when the build does not do what the case says it should, a
-   Design flaw when it does exactly that and the case's own expectation is
-   wrong, and As designed when the behaviour is correct and the case's
-   expectation was mistaken. A Design flaw routes to `gd` immediately, never
-   downgraded to stay in the routine cycle.
-8. **Assign severity from skill `qa-standards`'s impact-if-shipped table,
-   not from the case's own stated risk** — a case's `Impact if this breaks`
-   field is planning-time context, not a substitute for judging the actual
-   observed impact.
-9. **State a reproduction rate for anything timing-dependent** — repeat it if
-   there's reason to suspect intermittency, and report attempts against
-   reproductions, never as reliable on a single run.
-10. **Report every case you did not reach** — a device that stopped
-    responding, a case blocked by an earlier one, or time not spent on a
-    lower-priority case all belong under `Not played`, per
-    skill `qa-standards`'s coverage-claimed-is-coverage-owed rule.
-
-## 5. Specific goals / tasks this skill performs
-- Confirming device and tooling readiness before any device action.
-- Installing, launching, stopping, and uninstalling a build artifact on a
-  real Android or iOS device.
-- Resolving a prose test-case step into concrete tap/swipe/text/keyevent
-  input, screenshot by screenshot.
-- Capturing screenshot and log evidence at the moment each case's
-  expectation is evaluated.
-- Classifying each finding as Defect / Design flaw / As designed and
-  assigning severity.
-- Reporting reproduction rate for intermittent findings and every case not
-  reached.
-- Out of scope: producing the artifact (`build-release-engineer`); diagnosing
-  *why* a build-only fault occurs (`build-fault-triage`); Editor-based
-  testing (`playtest-scenario-execution`, `unity-test-framework`); deciding
-  which cases are owed (`risk-based-test-planning`); root-causing a crash
-  once one occurs (`/investigate-device-crash`).
-
-## 6. Output format
+## Output
 ```
 ## Device Test Walkthrough — <artifact>
 - Artifact: <path, platform, configuration>
 - Device: <model/serial or UDID, OS version, how detected>
-- Installed & launched: <commands run, confirmation the app was actually running>
-- Test cases: <source, count run / count supplied>
+- Installed & launched: <commands run, screenshot showing the app running>
+- Test cases: <source, run / supplied>
 - [N] <name> — Result: Pass | Fail | Blocked | Ambiguous
-  - Starting state / Actions / Expected: <as supplied, verbatim>
+  - Starting state / Actions / Expected: <verbatim>
   - Actual: <observed>
   - Evidence: <screenshot path(s) + timestamp, log excerpt>
-  - Reproduction: <attempts vs. reproduced, for any finding worth repeating>
+  - Reproduction: <attempts vs reproduced>
   - Classification: <Defect | Design flaw | As designed — only when Result != Pass>
-  - Severity: <Critical | High | Medium | Low, per defect-reporting.md>
-- Crash/ANR encountered: <yes/no — if yes, which case, pull-logs output path, and that this routes to /investigate-device-crash rather than being re-diagnosed here>
-- Routed to: <agent-id per failing case, gd for any design flaw>
-- Not played: <cases not reached, and why>
+  - Severity: <Critical | High | Medium | Low>
+- Crash/ANR: <no | case, pull-logs dir, routed to investigate-device-crash>
+- Routed to: <agent per failing case; gd for a design flaw>
+- Not played: <case — why>
 ```
 
-## 7. Examples
-**Example 1**
-- Input: build-release-engineer hands over a development Android APK, a
-  connected device, and case `[3] Normal — inventory opens with the last
-  equipped item selected`.
-- Output: installed and launched, screenshot confirmed the main menu; walked
-  the case's `Actions` (open inventory), captured a screenshot at the moment
-  `Expected` should hold. The last-equipped item was not selected — a
-  different item was. Reported `Result: Fail`, `Classification: Defect`,
-  `Severity: Medium`, evidence attached, routed to `gameplay-engineer`.
-
-**Example 2**
-- Input: case `[7] Edge — rapid double-tap on the attack button does not
-  double-cast the ability`.
-- Output: the build double-casts on 4 of 5 attempts. Reported
-  `Reproduction: 4/5`, `Result: Fail`, `Classification: Defect`, not marked
-  reliable and not dropped because one attempt looked clean.
-
-**Example 3**
-- Input: mid-walkthrough, the app crashes on case `[9]`.
-- Output: that case marked `Result: Blocked`, `pull-logs` run immediately and
-  its output path recorded as evidence, remaining unreached cases listed
-  under `Not played`, and the report states the crash routes to
-  `/investigate-device-crash` rather than being diagnosed here.
-
-## 8. Edge cases & guardrails
-- Never report a finding without the screenshot or log excerpt that
-  evidences it — per skill `qa-standards`, a recollection is not evidence.
-- Never guess a tap/swipe coordinate the current screenshot does not
-  support; report the case `Ambiguous` instead.
-- Never continue a walkthrough past a crash by relaunching silently — stop
-  that case's path, pull logs, and hand off per `/investigate-device-crash`.
-- Never fake iOS coverage from Android tooling, or vice versa, when the
-  required binary or device is missing — report `Status: Blocked` and name
-  exactly what's missing (see [ios-idb-setup.md](references/ios-idb-setup.md)
-  for the iOS prerequisites).
-- Never downgrade a Design flaw into a Defect to keep it in the routine
-  cycle — it routes to `gd` immediately, per skill `qa-standards`.
-- Never report an intermittent finding as reliable, and never drop it
-  because a later attempt looked clean; state the rate.
-- Never build, rebuild, re-sign, publish, or deploy the artifact — this
-  skill only drives an artifact that already exists.
-- The caller (`build-release-engineer`) owns which cases are "current"
-  and any retry counts; this skill cannot hold state across invocations.
+## Example
+- App crashes on case [9] → `Result: Blocked`, `pull-logs` dir as evidence, remaining cases under `Not played`, crash routed to `investigate-device-crash`, not diagnosed here.

@@ -1,44 +1,28 @@
-# DOTS Instancing Compatibility & Material Overrides
+# DOTS Instancing and material overrides
 
-Sources: [DOTS Instancing Shader](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/dots-instancing-shader.html), [Material Overrides Using C#](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/material-overrides-code.html), [Material Overrides Using an Asset](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/material-overrides-asset.html).
-Covers: SKILL.md §4 — **"Confirm DOTS Instancing compatibility before a custom shader reaches an entity"**, **"Choose the material-override mechanism by who has to change the value"**.
+Sources (under `manual/`): `dots-instancing-shader.html`, `material-overrides-code.html`, `material-overrides-asset.html`.
 
-Whether a shader can render entities at all, and the two supported ways to vary
-one of its properties per entity. The shader's own node logic belongs to
-`shader-authoring`; only the compatibility contract lives here.
+Shader node logic is `shader-authoring`; only the compatibility contract is here.
 
 ## Compatibility
+| Shader | Status |
+|---|---|
+| Built-in URP/HDRP shaders | Already compatible |
+| Custom Shader Graph | Gains compatibility for its own properties by implementing material overrides (not a separate switch) |
+| Hand-written | Follow the package's sample custom unlit shader |
 
-| Shader | What it decides | Source |
-|---|---|---|
-| Built-in URP or HDRP shaders | Already DOTS Instancing compatible — no work required | [DOTS Instancing Shader](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/dots-instancing-shader.html) |
-| Custom Shader Graph | Gains compatibility for its own properties by implementing material overrides — compatibility is a consequence of the override setup, not a separate switch | [DOTS Instancing Shader](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/dots-instancing-shader.html) |
-| Hand-written shader | Must follow the package's sample custom unlit shader's pattern | [DOTS Instancing Shader](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/dots-instancing-shader.html) |
-
-## The two override mechanisms
-
-| Mechanism | Use when | Source |
-|---|---|---|
-| Built-in override components (`BaseColor`, `Metallic`, `Smoothness`) | The property is one URP/HDRP already exposes — add the pre-built `IComponentData` and write it | [Overrides using C#](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/material-overrides-code.html) |
-| `[MaterialProperty("_Name")] IComponentData` | The value is computed, animated, or systemic; a Burst system writes it via `SystemAPI.Query<RefRW<T>>()` | [Overrides using C#](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/material-overrides-code.html) |
-| Material Override Asset | A designer sets a fixed per-instance value with no code — `Assets > Create > Shader > Material Override Asset`, then a Material Override component referencing it | [Overrides using an asset](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/material-overrides-asset.html) |
+## Override mechanisms
+| Mechanism | Use when |
+|---|---|
+| Built-in override components (`BaseColor`, `Metallic`, `Smoothness`) | URP/HDRP already exposes the property: add the pre-built `IComponentData` and write it |
+| `[MaterialProperty("_Name")] IComponentData` | Value is computed or animated; a Burst system writes it via `SystemAPI.Query<RefRW<T>>()` |
+| Material Override Asset | A designer sets a fixed per-instance value with no code: `Assets > Create > Shader > Material Override Asset`, then a Material Override component referencing it |
 
 ```csharp
 [MaterialProperty("_BaseColor")]
-public struct TintOverride : IComponentData
-{
-    public float4 Value;
-}
+public struct TintOverride : IComponentData { public float4 Value; }
 ```
 
-| Rule | What it decides | Source |
-|---|---|---|
-| Hybrid Per Instance declaration | A Shader Graph property must be marked Hybrid Per Instance in Node Settings before any override can reach it | [Overrides using C#](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/material-overrides-code.html) |
-| One struct per property | Every Hybrid Per Instance property needs its own matching `IComponentData` | [Overrides using C#](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/material-overrides-code.html) |
-| Asset-level versus instance-level editing | Editing the asset affects every user; per-GameObject edits show with blue margins and bold text in the Inspector | [Overrides using an asset](https://docs.unity3d.com/Packages/com.unity.entities.graphics@6.6/manual/material-overrides-asset.html) |
-
-**Critical caveat**: the string in `[MaterialProperty]` must match the shader's
-declared property name exactly. A mismatch produces no compile error, no
-runtime warning, and no visible binding — the system writes a component that
-nothing reads, which is why verification means watching the rendered result
-change, not confirming the component is written.
+- A Shader Graph property must be marked Hybrid Per Instance (Node Settings) before any override reaches it; each such property needs its own matching struct.
+- The `[MaterialProperty]` string must equal the shader's declared name exactly; a mismatch gives no compile error, warning or binding.
+- Asset-level edits affect every user; per-GameObject edits show blue margins and bold text in the Inspector.

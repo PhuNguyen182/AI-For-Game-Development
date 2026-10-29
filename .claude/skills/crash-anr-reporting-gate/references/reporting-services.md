@@ -1,41 +1,31 @@
-# Reporting Services — what each one provides, and what "integrated" means
+# Reporting Services
 
-Sources: [Android vitals](https://developer.android.com/topic/performance/vitals), [ANRs](https://developer.android.com/topic/performance/vitals/anr), [Crashlytics](https://firebase.google.com/docs/crashlytics), [Get started with Crashlytics on Unity](https://firebase.google.com/docs/crashlytics/get-started?platform=unity), [Diagnosing issues using crash reports and device logs](https://developer.apple.com/documentation/xcode/diagnosing-issues-using-crash-reports-and-device-logs).
-Covers: SKILL.md §4 — **"Name the claimed source before anything else"**, **"Confirm the service is reporting, not merely installed"**.
-
-What each service actually gives an investigation, and the difference between
-a service that is installed and one that is reporting. Resolving the frames a
-service hands over is `crash-anr-symbolication`'s; performing the integration
-is `sdk-platform-engineer`'s.
+Sources: [a] Android vitals, [b] vitals/anr, [c] Crashlytics, [d] Crashlytics for Unity, [e] Apple crash-report diagnosis; URLs in the SKILL.md `Docs:` line.
 
 ## What each service provides
 
-| Service | Covers | Notable limit | Source |
-|---|---|---|---|
-| Android vitals | Crashes and ANRs on Android, aggregated across the installed base with device, OS and version breakdowns, and measured against the thresholds Google Play holds a title to | Android only, and it reports what the platform observed rather than what the app chose to send — so an app that never integrated an SDK still appears here | [Android vitals](https://developer.android.com/topic/performance/vitals) |
-| Firebase Crashlytics | Crashes, non-fatal exceptions and ANRs across platforms, with custom keys and logs the app attaches itself | Requires an SDK in the build, so a version shipped before the integration reports nothing at all and never will | [Crashlytics](https://firebase.google.com/docs/crashlytics) |
-| App Store Connect | Crash reports from opted-in users on Apple platforms | Depends on user opt-in, so low-volume signatures can be absent rather than absent-because-fixed | [Diagnosing issues using crash reports and device logs](https://developer.apple.com/documentation/xcode/diagnosing-issues-using-crash-reports-and-device-logs) |
-
-**Critical caveat**: the platform consoles and the SDK answer different
-questions. Android vitals shows what the platform saw across everyone;
-Crashlytics shows what the app reported from builds carrying the SDK. A
-signature present in one and missing from the other is normal, and is not
-evidence that either is broken.
-
-## What "integrated and reporting" requires
-
-| Condition | Why it matters to this gate | Source |
+| Service | Covers | Limit |
 |---|---|---|
-| The SDK is in the build under investigation | A later integration does not backfill — the crashing version either carried it or it did not, which is why a blocked gate resumes from a new report rather than the one that failed it | [Get started with Crashlytics on Unity](https://firebase.google.com/docs/crashlytics/get-started?platform=unity) |
-| Events have arrived for that version | A dashboard populated only by an older release cannot confirm or count anything about this one | [Crashlytics](https://firebase.google.com/docs/crashlytics) |
-| The title is actually distributed through the store | Vitals aggregate what the store's installed base reports, so an internally sideloaded build produces nothing there | [Android vitals](https://developer.android.com/topic/performance/vitals) |
-| Reporting was not disabled at runtime | Collection can be turned off by configuration or by a consent flow, which looks identical to an absent integration from the dashboard side | [Crashlytics](https://firebase.google.com/docs/crashlytics) |
+| Android vitals [a] | Android crashes and ANRs across the installed base, with device/OS/version breakdowns, against Google Play thresholds | Android only; reports what the platform saw, so an app with no SDK still appears |
+| Firebase Crashlytics [c] | Crashes, non-fatals and ANRs cross-platform, with app-attached custom keys and logs | Needs an SDK in the build: a version shipped before the integration never reports |
+| App Store Connect [e] | Crash reports from opted-in Apple users | User opt-in, so low-volume signatures can be absent without being fixed |
 
-## Limits worth stating in a gate result
+**Caveat:** vitals shows what the platform saw across everyone; Crashlytics shows what builds carrying the SDK reported. A signature in one and not the other is normal, not a sign either is broken.
 
-| Limit | Consequence for the investigation | Source |
-|---|---|---|
-| Retention | Each service keeps detail for a bounded period the vendor sets, so an old signature may still show a summary while its underlying traces have expired | [Crashlytics](https://firebase.google.com/docs/crashlytics) |
-| Aggregation and sampling | Reports are grouped by signature, and a group's representative trace is not necessarily the one that matters — pull several samples before treating one as typical | [Android vitals](https://developer.android.com/topic/performance/vitals) |
-| Opt-in coverage | Apple's reports depend on user consent, so absence is weaker evidence than presence | [Diagnosing issues using crash reports and device logs](https://developer.apple.com/documentation/xcode/diagnosing-issues-using-crash-reports-and-device-logs) |
-| ANR versus crash | An ANR is the system deciding the app stopped responding rather than the app terminating, so it appears in different views with different thresholds — see `crash-anr-fault-domain-triage` | [ANRs](https://developer.android.com/topic/performance/vitals/anr) |
+## "Integrated and reporting" requires
+
+| Condition | Why |
+|---|---|
+| SDK is in the build under investigation [d] | A later integration does not backfill; hence a blocked gate resumes from a new report |
+| Events have arrived for that version [c] | A dashboard filled by an older release cannot count this one |
+| Title is distributed through the store [a] | Vitals aggregates the store's installed base; a sideloaded build produces nothing |
+| Reporting not disabled at runtime [c] | Config or a consent flow can turn collection off; looks identical to no integration |
+
+## Limits to state in a gate result
+
+| Limit | Consequence |
+|---|---|
+| Retention [c] | An old signature may show a summary while its traces have expired |
+| Aggregation and sampling [a] | A group's representative trace may not be typical; pull several samples |
+| Opt-in coverage [e] | Absence is weaker evidence than presence |
+| ANR vs crash [b] | Different views and thresholds; see `crash-anr-fault-domain-triage` |

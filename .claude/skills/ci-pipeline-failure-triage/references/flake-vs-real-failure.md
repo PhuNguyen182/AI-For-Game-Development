@@ -1,65 +1,48 @@
-# Flake against Real Failure — reproduction discipline for a red run
+# Flake against Real Failure
 
-Sources: [Pipeline: Basic Steps — retry](https://www.jenkins.io/doc/pipeline/steps/workflow-basic-steps/). Not sourced from a single URL otherwise — synthesized from this project's skill `qa-standards` and skill `qa-standards` rules, which govern how an intermittent finding is reported.
-Covers: SKILL.md §4 — **"Establish whether the failure reproduces, and state how many runs you looked at"**.
+Sources: Jenkins `retry` (`https://www.jenkins.io/doc/pipeline/steps/workflow-basic-steps/`); reporting rules from `qa-standards`.
 
-What a re-run proves, what it does not, and why "add a retry" is a decision to stop investigating rather than
-a fix. The failure this file prevents is the expensive one: a real defect that reproduces one run in three,
-closed as a flake, and shipped.
-
-## What a green re-run establishes
+## What a re-run establishes
 
 | Observation | Establishes | Does not establish |
 |---|---|---|
-| Failed once, passed once | The failure is not deterministic under these conditions | That it is fixed, or that it was infrastructure |
-| Failed twice on the same agent, passed on another | Agent state is implicated | Which state, or that the code is innocent |
-| Failed on every agent, at the same stage | A deterministic failure | Anything about its class |
-| Passed after a cache wipe | Cache damage is implicated | That the cache key is wrong, only that this run's cache was |
-| Passed after "nothing changed" | Something changed that nobody is tracking — the clock, an external service, a dependency resolved at run time | That there is no defect |
+| Failed once, passed once | Not deterministic under these conditions | That it is fixed, or that it was infrastructure |
+| Failed twice on one agent, passed on another | Agent state is implicated | Which state, or that the code is innocent |
+| Failed on every agent at the same stage | Deterministic failure | Its class |
+| Passed after a cache wipe | This run's cache was damaged | That the cache key is wrong |
+| Passed after "nothing changed" | Something untracked changed: clock, external service, run-time dependency | That there is no defect |
 
-The last row is the one that matters most in a Unity pipeline: an unpinned CLI, an unpinned gem, a package
-resolved from a registry, and a certificate with an expiry date are all inputs that change with no commit
-behind them.
+Inputs that change with no commit: an unpinned CLI or gem, a package resolved from a registry, a certificate with an expiry date.
 
 ## Reporting an intermittent failure
 
-Per skill `qa-standards`'s reproduction rules, a finding that does not reproduce every time is reported as
-intermittent **with its rate** — never as reliable, and never discarded because the second run was green.
-
 ```
 - Reproduction: 2 of 3 runs (builds #418, #419 failed; #420 passed), same agent, same commit
-- Common to the failing runs: <the line, timing, or resource both share>
+- Common to the failing runs: <line, timing or resource both share>
 - Absent from the passing run: <what differed>
 ```
 
-Two failing runs with one shared symptom are worth more than ten runs counted without comparison. The
-comparison is the instrument; the count alone is a statistic.
+Two failing runs with one shared symptom beat ten runs counted without comparison.
 
 ## Retries
 
 | Retry is | When |
 |---|---|
-| Legitimate | A genuinely external, transient step — a network fetch, a registry call — where the failure mode is known and bounded |
-| Not a diagnosis | Anywhere else. It converts a one-in-three failure into a silent one-in-twenty-seven and removes the evidence that it happens |
-| Actively harmful | Around a Unity build or a signing step: it costs a full stage each time, holds an agent, and can leave partial state the next attempt inherits |
+| Legitimate | A genuinely external transient step (network fetch, registry call) with a known, bounded failure mode |
+| Not a diagnosis | Anywhere else: it turns a one-in-three failure into a silent one-in-twenty-seven |
+| Harmful | Around a Unity build or signing step: costs a full stage, holds an agent, may leave partial state |
 
-A pipeline whose green rate depends on retries has an unmeasured failure rate. When a retry is added anyway,
-the run must still record that the earlier attempts failed — a hidden retry is a false verification claim, per
-skill `qa-standards`.
+If a retry is added anyway, the run must still record that earlier attempts failed; a hidden retry is a false verification claim (`qa-standards`).
 
-## Timing and ordering faults worth suspecting
+## Timing and ordering patterns
 
 | Pattern | Usual cause |
 |---|---|
-| Fails only on the nightly, passes on demand | Something time-bound — a licence lease, a token, a scheduled external service, or another job racing it |
-| Fails only when two jobs run close together | A missing lock over the project, the licence pool, or a device |
-| Fails only on the first run after an agent is rebuilt | A step that depends on state the previous run left behind — a cache, an installed tool, an unlocked keychain |
-| Fails only on the slowest agent | A real timing dependency in a test, not infrastructure — this one is a defect, and it belongs to the code's owner |
+| Only on the nightly | Something time-bound: licence lease, token, scheduled external service, another job racing it |
+| Only when two jobs run close together | Missing lock over the project, licence pool or device |
+| Only on the first run after an agent rebuild | Dependence on state a prior run left: cache, installed tool, unlocked keychain |
+| Only on the slowest agent | A real timing dependency in a test: a defect, owned by the code's owner |
 
-## When to stop
+## Inconclusive
 
-Return the class as **inconclusive** rather than guessing when: only one run is available and its log does not
-reach a signature; the log is truncated at the failure; or the two failing runs share no observable symptom.
-State what would settle it — a clean-cache run, a run on a different agent, the log at a higher verbosity —
-and route the request rather than acting on it. An honest inconclusive costs one round trip; a confident
-wrong class costs a cycle and sends someone looking in a file that was never involved.
+Return inconclusive when only one run is available and its log reaches no signature, the log is truncated at the failure, or the failing runs share no symptom. Name what would settle it (clean-cache run, different agent, higher log verbosity) and route the request.

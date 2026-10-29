@@ -1,38 +1,23 @@
-# Projection, Framing, and Depth Precision
+# Projection, framing and depth precision
 
-Sources: [Camera component reference](https://docs.unity3d.com/Manual/class-Camera.html), [Physical Cameras](https://docs.unity3d.com/Manual/PhysicalCameras.html), [Camera API](https://docs.unity3d.com/ScriptReference/Camera.html).
-Covers: SKILL.md §4 — **"Treat field of view as vertical and let the aspect ratio decide the width"**, **"Reach for the physical camera and Gate Fit when framing must survive several screen shapes"**, **"Push the near clip plane out before pulling the far plane in"**.
+Source: [Camera component](https://docs.unity3d.com/Manual/class-Camera.html), [Physical Cameras](https://docs.unity3d.com/Manual/PhysicalCameras.html), [Camera API](https://docs.unity3d.com/ScriptReference/Camera.html).
 
-Two facts here cause most camera framing and precision problems, and neither
-is visible in the Inspector. Unity's field of view is **vertical**, so the
-horizontal extent is derived from the screen's aspect ratio and changes
-between devices. And depth-buffer precision is governed overwhelmingly by the
-**near** plane, not the far one, so the intuitive fix for distant z-fighting
-is the wrong end of the range.
+Field of view is vertical, and depth precision is governed by the near plane. Neither is visible in the Inspector.
 
 ## Projection
-
-| Property | What it decides | Source |
-|---|---|---|
-| `orthographic` | No perspective divide — parallel lines stay parallel and distance no longer affects size. The projection for 2D and isometric, and the reason a 3D scene can look like a diagram in it | [Camera component reference](https://docs.unity3d.com/Manual/class-Camera.html) |
-| `orthographicSize` | **Half** the vertical view height in world units. The visible width is `orthographicSize * 2 * aspect`, so it is never a direct statement of how much of the level is on screen | [Camera.orthographicSize](https://docs.unity3d.com/ScriptReference/Camera-orthographicSize.html) |
-| `fieldOfView` | The **vertical** angle in degrees. Horizontal coverage follows from the aspect ratio, which is why a portrait phone at the same value shows dramatically less width than a landscape monitor | [Camera.fieldOfView](https://docs.unity3d.com/ScriptReference/Camera-fieldOfView.html) |
-| `aspect` | Defaults to the screen's, and can be overridden — but an override that does not match the viewport stretches the image rather than reframing it | [Camera.aspect](https://docs.unity3d.com/ScriptReference/Camera-aspect.html) |
+- `orthographic`: no perspective divide; the projection for 2D and isometric.
+- `orthographicSize`: half the vertical view height in world units; visible width is `orthographicSize * 2 * aspect`.
+- `fieldOfView`: vertical angle in degrees; a portrait phone at the same value shows far less width than a landscape monitor.
+- `aspect`: defaults to the screen's; an override not matching the viewport stretches the image instead of reframing.
 
 ## Physical camera and Gate Fit
-
-| Property | What it decides | Source |
-|---|---|---|
-| `usePhysicalProperties` | Switches FOV to being derived from `focalLength` and `sensorSize`, in real lens terms. Useful when framing is specified by a cinematographer, and when a fixed composition must survive several screen shapes | [Physical Cameras](https://docs.unity3d.com/Manual/PhysicalCameras.html) |
-| `gateFit` | What happens when the sensor's aspect and the screen's disagree — **Vertical** keeps vertical framing and crops or extends horizontally, **Horizontal** does the reverse, **Fill** shows the larger of the two, **Overscan** the smaller, **None** stretches. This is the actual control for cross-aspect framing, in place of branching on aspect ratio in script | [Physical Cameras](https://docs.unity3d.com/Manual/PhysicalCameras.html) |
-| `focalLength` / `sensorSize` | Lens and sensor in millimetres; the same focal length on a different sensor is a different field of view, so both must be stated together | [Physical Cameras](https://docs.unity3d.com/Manual/PhysicalCameras.html) |
-| `lensShift` | Offsets the frustum without rotating the camera — keeps vertical lines parallel while reframing, which rotation cannot do | [Physical Cameras](https://docs.unity3d.com/Manual/PhysicalCameras.html) |
+- `usePhysicalProperties`: FOV derived from `focalLength` and `sensorSize`; use when framing is specified in lens terms or a fixed composition must survive several screen shapes.
+- `gateFit` (sensor vs screen aspect disagree): Vertical keeps vertical framing and crops/extends horizontally; Horizontal the reverse; Fill shows the larger of the two; Overscan the smaller; None stretches.
+- `focalLength` / `sensorSize`: millimetres; the same focal length on another sensor is another FOV, so state both.
+- `lensShift`: offsets the frustum without rotating, keeping vertical lines parallel.
 
 ## Clip planes and precision
-
-| Property | What it decides | Source |
-|---|---|---|
-| `nearClipPlane` | The dominant term in depth precision under a perspective projection — precision is distributed hyperbolically, so most of the buffer is spent close to the near plane. Raising it is the cheapest recovery for distant z-fighting | [Camera.nearClipPlane](https://docs.unity3d.com/ScriptReference/Camera-nearClipPlane.html) |
-| `farClipPlane` | The visible range, and a secondary precision factor. Reducing it helps far less than raising near does, though it does cull geometry | [Camera.farClipPlane](https://docs.unity3d.com/ScriptReference/Camera-farClipPlane.html) |
-| Orthographic depth | Distributed **linearly** rather than hyperbolically, so the near-plane rule above does not apply — an orthographic camera's precision problems are about range, not distribution | [Camera component reference](https://docs.unity3d.com/Manual/class-Camera.html) |
-| `clearFlags` / `backgroundColor` | Skybox, Solid Color, Depth Only, or Nothing. Only meaningful alongside camera ordering — see [culling-and-multi-camera.md](culling-and-multi-camera.md) | [Camera.clearFlags](https://docs.unity3d.com/ScriptReference/Camera-clearFlags.html) |
+- `nearClipPlane`: dominant under perspective (precision is hyperbolic, most of the buffer is spent near the near plane). Raising it is the cheapest cure for distant z-fighting.
+- `farClipPlane`: secondary; lowering it helps far less, though it culls geometry.
+- Orthographic depth is linear, so the near-plane rule does not apply; problems there are about range.
+- `clearFlags` / `backgroundColor`: Skybox, Solid Color, Depth Only, Nothing; meaningful only with camera ordering (see culling reference).

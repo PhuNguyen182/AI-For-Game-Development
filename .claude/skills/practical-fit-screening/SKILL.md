@@ -4,53 +4,26 @@ description: "Hard-gate whether the project can adopt a candidate package: dupli
 user-invocable: false
 ---
 
-# Practical Fit Screening — can this project actually adopt the candidate
+# Practical Fit Screening
 
-**Not for:** the long-run vendor-health keep/replace verdict on a dependency, owned by `tech-vendor-dependency-risk-assessment`; finding candidates, owned by `technology-scouting-sweep`; grading a source's trust, owned by `source-credibility-grading`; ranking the survivors, owned by `solution-comparison-report`; measuring on device, owned by `rd-engineer`; integrating the winner, owned by `sdk-platform-engineer`.
+Not for: finding candidates (`technology-scouting-sweep`), source trust (`source-credibility-grading`), ranking survivors (`solution-comparison-report`), device measurement (`rd-engineer`), integrating the winner (`sdk-platform-engineer`), keep/replace verdict on a dependency already in the project (`tech-vendor-dependency-risk-assessment`).
 
-## 1. Objective
-Drop every candidate this project cannot adopt before any effort goes into ranking it, and state each gate's verdict explicitly so a pass is never confused with an unchecked assumption. It exists to stop four expensive discoveries made late: a licence that forbids shipping, a package that works in the Editor and dies under IL2CPP on device, a dependency that drags `UnityEngine` types into `Game.Core.*`, and a "new" package doing what the project already has.
+## Steps
+1. **Check what the project already has first** — `Packages/manifest.json`, asmdefs, existing skills. A covered capability turns the question into "what does the existing one fail to do".
+2. **Run hard gates and drop failures immediately**; never score or rank a candidate that failed one.
+3. **Licence** — read the repository's own LICENSE file only (identifier: https://spdx.org/licenses). MIT, Apache-2.0, BSD, Unlicense pass; GPL/AGPL block shipped game code; Asset Store EULA, source-available or any non-commercial clause need the GD's explicit acceptance.
+4. **Scripting backend, not just platform** — IL2CPP AOT-compiles and strips, so `System.Reflection.Emit`, runtime code generation and unconstrained generic virtual calls pass in the Editor and fail on device. Mono-only means PC-only.
+5. **Engine and C# version** — the project's configured compiler decides what compiles, not the README (`csharp-standards` → `coding-principles.md` Modern C# syntax).
+6. **`Game.Core.*` determinism** — a candidate pulling `UnityEngine` types, wall-clock time or unseeded randomness is blocked for Core (`coding-principles.md` Shared Core integrity) but may still pass for `Game.Client.*`.
+7. **Mobile cost as a gate** — added binary size, per-ABI natives, hot-path allocation (`performance-and-algorithms.md` Memory discipline). PC-only fit fails a cross-platform feature.
+8. **Soft criteria for survivors only** — maintenance and bus factor, adoption, integration effort, documentation, removal path. Exit cost: Low (hidden behind an interface) / Medium / High (its types appear in gameplay signatures).
+9. **Gate needs a build, a device or a GD licence decision → `UNKNOWN`** with the exact question, routed to `rd-engineer`; never guess a pass.
+10. **State every gate's verdict, passes included.**
 
-## 2. Role
-Act as the adoption gate for the research track — the screen every external candidate passes before it may appear in a comparison, applying this project's real constraints rather than the candidate's own claims about itself.
-
-## 3. When to invoke this skill
-- A candidate set exists and must be reduced to what is genuinely adoptable here.
-- A single candidate looks strong and its licence, engine version or platform support is unconfirmed.
-- Something is destined for `Game.Core.*` and its dependencies have not been checked against the determinism boundary.
-- A mobile target is in scope and the candidate ships native plugins or leans on runtime code generation.
-- Negative trigger: no candidates exist yet — that's `technology-scouting-sweep`.
-- Negative trigger: the question is whether a source can be trusted at all — that's `source-credibility-grading`.
-- Negative trigger: candidates already passed and must be ranked into a recommendation — that's `solution-comparison-report`.
-- Negative trigger: the gate needs numbers from a real build or device — that's a spike, owned by `rd-engineer`.
-- Negative trigger: the winner is chosen and needs wiring into the project — that's `sdk-platform-engineer` or the owning implementation role.
-- Negative trigger: the dependency is already in the project and the question is whether it is still safe to build on — maintenance decay, a licence change, a maintainer stepping away — that's `tech-vendor-dependency-risk-assessment`, which ends in keep/mitigate/replace; this screen only answers whether a candidate is adoptable here at all.
-
-## 4. How to use this skill
-1. **Check what the project already has before screening anything external** — read `Packages/manifest.json`, the assembly definitions and the existing skill set. A capability already covered turns the question into "what does the existing one fail to do", which is a different question with a different owner.
-2. **Run the hard gates first and drop failures immediately** — licence, scripting backend, engine and language version, determinism boundary. A candidate failing any one of these cannot be adopted at any quality level, so scoring it further only inflates the comparison.
-3. **Read the licence against shipping a commercial game** — MIT, Apache-2.0, BSD and Unlicense are safe to link; GPL and AGPL are disqualifying for shipped game code; Asset Store EULA terms, "source-available" and any non-commercial clause need the GD's explicit acceptance, never an assumption. Resolve the identifier at https://spdx.org/licenses.
-4. **Verify the scripting backend, not merely the platform** — IL2CPP ahead-of-time compiles and strips, so `System.Reflection.Emit`, runtime code generation and unconstrained generic virtual calls can pass in the Editor and fail on device. A Mono-only candidate is a PC-only candidate.
-5. **Check the engine and C# language version the candidate requires against the project's own, per coding-principles.md's Modern C# syntax section** — the project's configured compiler decides what compiles, not the package's README.
-6. **Gate anything destined for `Game.Core.*` on determinism, per coding-principles.md's Shared Core integrity section** — a candidate pulling `UnityEngine` types, wall-clock time or unseeded randomness into Core is disqualified there whatever its quality, and may still pass for `Game.Client.*`.
-7. **Weigh mobile cost as a gate, not a footnote** — added binary size, per-ABI native libraries, and runtime allocation behaviour in hot paths, per performance-and-algorithms.md's Memory discipline section. Mobile is the tighter budget, so a candidate that only fits on PC fails a cross-platform feature.
-8. **Score the soft criteria only for candidates that cleared every hard gate** — maintenance signal and bus factor, adoption breadth, integration effort, documentation quality, and how the project would remove it later. They separate candidates from each other; a foundational dependency's keep-or-replace verdict on vendor health itself belongs to `tech-vendor-dependency-risk-assessment`, not to this screen.
-9. **Rate exit cost by how far the candidate's types would spread** — one hidden behind an interface is cheap to replace; one whose types appear in gameplay signatures across the codebase is a structural commitment that outlives the feature.
-10. **State every gate's verdict, including the ones that passed** — an unstated pass is indistinguishable from a gate nobody ran, which is how a licence problem reaches production.
-11. **Mark a gate `UNKNOWN` and name what would settle it whenever the answer needs a real build or device** — route that to `rd-engineer` rather than guessing a pass, because a guessed gate is worse than an open one.
-
-## 5. Specific goals / tasks this skill performs
-- A pass or fail verdict per hard gate, per candidate, with the evidence behind each.
-- Candidates that cannot ship here removed before ranking, with the disqualifying gate named.
-- The duplication check against what the project already contains, run first.
-- Soft criteria scored only for survivors: maintenance, integration cost, exit cost, mobile cost.
-- Gates needing measurement marked `UNKNOWN` with the spike that would settle them.
-- Out of scope: finding candidates (`technology-scouting-sweep`), source trust (`source-credibility-grading`), ranking (`solution-comparison-report`), device measurement (`rd-engineer`), integration (`sdk-platform-engineer`), the vendor-health keep/replace verdict (`tech-vendor-dependency-risk-assessment`).
-
-## 6. Output format
+## Output
 ```
 ## Fit Screen — <candidate> for <capability>
-- Already in project: <the package or API covering this | nothing found>
+- Already in project: <package or API covering this | nothing found>
 | Hard gate | Verdict | Evidence |
 |---|---|---|
 | Licence for commercial shipping | PASSED / BLOCKED / UNKNOWN | <SPDX id, LICENSE URL> |
@@ -58,36 +31,12 @@ Act as the adoption gate for the research track — the screen every external ca
 | Scripting backend and platforms | PASSED / BLOCKED / UNKNOWN | <IL2CPP AOT, per-ABI natives> |
 | Game.Core.* determinism boundary | PASSED / BLOCKED / NOT APPLICABLE | <UnityEngine, clock or RNG dependency> |
 | Mobile size and hot-path cost | PASSED / BLOCKED / UNKNOWN | <added size, allocation behaviour> |
-- Soft criteria: <maintenance and bus factor, adoption, integration effort, documentation>
-- Exit cost: <Low behind an interface / Medium / High — how far its types would spread>
-- Decision: ADOPTABLE / BLOCKED — <the gate that decided it>
+- Soft criteria: <maintenance, adoption, integration effort, documentation>
+- Exit cost: <Low / Medium / High — why>
+- Decision: ADOPTABLE / BLOCKED — <deciding gate>
 - Routed to: <solution-comparison-report / rd-engineer / technology-scouting-sweep>
 ```
+On request only, add `Known limitations`, `Latent concerns` and `Future remediation`, each with its re-screen trigger.
 
-**Extended report — emit ONLY when the requester asks for it.** It adds all three fields below the decision:
-```
-- Known limitations: <gates left UNKNOWN and why — for example no device available to confirm IL2CPP behaviour>
-- Latent concerns: <a single-maintainer repository, a licence that changed once already, a platform not yet in scope>
-- Future remediation: <the re-screen trigger for each concern — the engine upgrade, platform addition or licence change>
-```
-
-## 7. Examples
-**Example 1**
-- Input: a high-star mesh-processing package for a PC-and-mobile feature.
-- Output: licence PASSED as MIT from its LICENSE file; engine version PASSED; scripting backend BLOCKED — it relies on `System.Reflection.Emit`, which IL2CPP cannot AOT compile, so it works in the Editor and fails on device. Decision BLOCKED, and the sweep is re-entered rather than the candidate ranked.
-
-**Example 2**
-- Input: "it is GPL but we are only using it internally in the Editor, that is fine."
-- Output: declined as an assumption. Editor-only use is a real distinction, but whether the tool ships inside the build decides it, and that is a licence question with commercial consequences. The gate stays BLOCKED pending the GD's explicit acceptance, per §4.
-
-**Example 3**
-- Input: a deterministic maths library proposed for `Game.Core.*`.
-- Output: licence and version gates PASSED; determinism gate BLOCKED for Core because the library depends on `UnityEngine` types, per the Shared Core integrity rule. Re-screened for `Game.Client.*`, where it passes every gate, and routed on with that boundary stated.
-
-## 8. Edge cases & guardrails
-- Never rank a candidate that failed a hard gate; its presence makes the winner's margin look earned when it was not.
-- Never accept a licence claim from anywhere but the repository's own LICENSE file — that is the one gate whose error is legally expensive.
-- Never treat "works in the Editor" as platform support; the scripting backend, not the Editor, decides what runs on device.
-- Never let a candidate into `Game.Core.*` that drags `UnityEngine`, wall-clock time or unseeded randomness with it, per the Shared Core integrity rule.
-- Never record a silent pass — a gate with no stated verdict is a gate nobody ran.
-- If a gate needs a build, a device or a licence decision the GD owns, mark it `UNKNOWN` with the exact question — do not guess a pass to keep the candidate alive.
+## Example
+- "It is GPL but only used internally in the Editor" → declined as an assumption: whether the tool ships in the build decides it; gate stays BLOCKED pending the GD's explicit acceptance.

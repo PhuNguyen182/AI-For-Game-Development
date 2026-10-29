@@ -1,117 +1,39 @@
-# Adapters — how `SizeType.Component` is measured and how scale is applied
+# Adapters
 
-Sources: [Adapters](https://www.flexalon.com/docs/adapters), [Interface Adapter](https://www.flexalon.com/docs/api/Flexalon.Adapter.html), [Class FlexalonAspectRatioAdapter](https://www.flexalon.com/docs/api/Flexalon.FlexalonAspectRatioAdapter.html), [Class FlexalonColliderAdapter](https://www.flexalon.com/docs/api/Flexalon.FlexalonColliderAdapter.html).
-Covers: SKILL.md §4 — **"Confirm which adapter measures an object before fighting its size"**.
+Pages: `/docs/adapters`, API `Adapter`, `FlexalonAspectRatioAdapter`, `FlexalonColliderAdapter`.
 
-An adapter decides two things: what size a `SizeType.Component` axis
-resolves to from the attached Unity components, and what the pipeline does to
-the gameObject's `localScale` and components once layout is known. Almost
-every "the object is the wrong size" or "why is my scale being overwritten"
-question is an adapter question, not a layout one. Size *intent* lives in
-[flexalon-object-sizing.md](flexalon-object-sizing.md).
+An adapter decides what a `SizeType.Component` axis measures and what happens to `localScale`/components after layout. "Wrong size" and "scale overwritten" are adapter questions.
 
-## Built-in default adapters
-
-Used whenever `FlexalonObject.UseDefaultAdapter` is set (v4.3).
-
-| Component | Measured size | What happens to scale | Source |
-|---|---|---|---|
-| `TMP_Text` | The size of the text; **the `RectTransform` is resized to fit it** | Scale set to the `FlexalonObject.Scale` value | [Adapters](https://www.flexalon.com/docs/adapters) |
-| `RectTransform` | The rect transform's size | Scale set to the `FlexalonObject.Scale` value | [Adapters](https://www.flexalon.com/docs/adapters) |
-| `MeshRenderer` | The renderer's local bounds | **Scaled uniformly where possible** — this is why a mesh does not stretch to a non-uniform box | [Adapters](https://www.flexalon.com/docs/adapters) |
-| `SpriteRenderer` | The sprite's size | Scaled uniformly; depth scale is 1 | [Adapters](https://www.flexalon.com/docs/adapters) |
-| `Collider` | The collider's local bounds, per collider type | Scaled uniformly where possible | [Adapters](https://www.flexalon.com/docs/adapters) |
-| `Collider2D` | The collider's local bounds | Scaled uniformly where possible; depth scale is 1 | [Adapters](https://www.flexalon.com/docs/adapters) |
-| `Canvas` (uGUI) | Non-root canvases and World Space canvases are adapted as `RectTransform`s | **Root canvas sizes are never modified** — Unity owns them | [Adapters](https://www.flexalon.com/docs/adapters) |
-| `Image` (uGUI) | If **only one** axis is `Component`, it is set from the sprite's aspect ratio | Scale set to the `FlexalonObject.Scale` value | [Adapters](https://www.flexalon.com/docs/adapters) |
-| Empty GameObject | Size 1 per axis | — | [Enum SizeType](https://www.flexalon.com/docs/api/Flexalon.SizeType.html) |
-
-**Critical caveat**: the default adapter for a `MeshRenderer`, sprite, or
-collider **writes `localScale`**. Any other system that also writes
-`localScale` — a tween, an animation clip, a script — is in a fight with the
-pipeline for the same value. Route scale through `FlexalonObject.Scale`, or
-uncheck `UseDefaultAdapter` and take over sizing yourself.
-
-## Adapter components you can add
-
-| Component | What it changes | Use when | Source |
-|---|---|---|---|
-| `FlexalonAspectRatioAdapter` | Maintains an explicit `Width`:`Height` ratio when only one or two size axes are set | The object has no component to measure but must keep a ratio — a placeholder frame, a video surface | [Class FlexalonAspectRatioAdapter](https://www.flexalon.com/docs/api/Flexalon.FlexalonAspectRatioAdapter.html) |
-| `FlexalonColliderAdapter` | **Resizes the collider itself** to match the Flexalon size, instead of scaling the gameObject | Scaling the object would distort its visuals or its physics material, but the collider must still match the layout box | [Adapters](https://www.flexalon.com/docs/adapters) |
-| `UseDefaultAdapter = false` | Measures the object as if empty, ignoring every attached component | A renderer's bounds (a particle system, an oversized mesh, a bounding helper) is the wrong sizing authority | [Class FlexalonObject](https://www.flexalon.com/docs/api/Flexalon.FlexalonObject.html) |
-
-Both built-in adapter components derive from `FlexalonComponent`, so adding
-one to a gameObject replaces the default adapter for that node — there is no
-stacking, one adapter wins.
-
-## The `Adapter` interface
-
-| Member | Contract | Source |
+## Default adapters (when `UseDefaultAdapter`, v4.3)
+| Component | Measured | Scale |
 |---|---|---|
-| `Measure(FlexalonNode node, Vector3 size, Vector3 min, Vector3 max)` | Update **only** the axes reported as `SizeType.Component` by `node.GetSizeType()`, return bounds that include the passed-in size and the auto size, and **ensure the result fits within `min`/`max`** | [Interface Adapter](https://www.flexalon.com/docs/api/Flexalon.Adapter.html) |
-| `TryGetScale(FlexalonNode node, out Vector3 scale)` | Return `true` plus the desired **local** scale if the gameObject's scale should be modified | [Interface Adapter](https://www.flexalon.com/docs/api/Flexalon.Adapter.html) |
-| `TryGetRectSize(FlexalonNode node, out Vector2 rectSize)` | Return `true` plus the desired rect size if a `RectTransform` should be resized | [Interface Adapter](https://www.flexalon.com/docs/api/Flexalon.Adapter.html) |
-| `FlexalonNode.SetAdapter(Adapter)` | Installs a custom adapter on a node — `Flexalon.GetOrCreateNode(gameObject).SetAdapter(yourObject)` | [Adapters](https://www.flexalon.com/docs/adapters) |
-| `FlexalonNode.Adapter` | The adapter currently active for a node — the read to make when diagnosing a size | [Interface FlexalonNode](https://www.flexalon.com/docs/api/Flexalon.FlexalonNode.html) |
+| `TMP_Text` | Text size; `RectTransform` resized to fit | `FlexalonObject.Scale` |
+| `RectTransform` | Rect size | `FlexalonObject.Scale` |
+| `MeshRenderer` | Local bounds | Uniform where possible (mesh does not stretch to a non-uniform box) |
+| `SpriteRenderer` | Sprite size | Uniform; depth scale 1 |
+| `Collider` / `Collider2D` | Local bounds | Uniform where possible; 2D depth scale 1 |
+| `Canvas` | Non-root and World Space adapted as `RectTransform`s | Root canvas size never modified (Unity owns it): put the layout on a child |
+| `Image` | Only when exactly one axis is `Component`, from the sprite aspect | `FlexalonObject.Scale` |
+| Empty GameObject | 1 per axis | none |
 
-```csharp
-using UnityEngine;
-using Flexalon;
+The mesh, sprite and collider adapters write `localScale`; a tween, clip or script writing it fights the pipeline. Route scale through `FlexalonObject.Scale`, or uncheck `UseDefaultAdapter` and size it yourself.
 
-namespace Game.Client.Layout
-{
-    // Sizes an object from a runtime-generated mesh instead of renderer bounds.
-    public class ProceduralMeshAdapter : MonoBehaviour, Adapter
-    {
-        [SerializeField] private MeshFilter source;
+## Adapter components (one adapter wins per node, no stacking)
+- `FlexalonAspectRatioAdapter`: keeps an explicit width:height ratio when one or two axes are set (placeholder frame, video surface).
+- `FlexalonColliderAdapter`: resizes the collider to the Flexalon size instead of scaling the gameObject.
+- `UseDefaultAdapter = false`: measures as empty, ignoring components (particle system, oversized mesh).
 
-        public Bounds Measure(FlexalonNode node, Vector3 size, Vector3 min, Vector3 max)
-        {
-            Vector3 measured = size;
-            Bounds meshBounds = this.source.sharedMesh.bounds;
+## `Adapter` interface
+- `Measure(node, size, min, max)`: update only axes where `node.GetSizeType()` is `Component`, return bounds including the passed size and auto size, and clamp to `min`/`max` yourself; no later step corrects it.
+- `TryGetScale(node, out scale)`: true plus desired local scale to modify scale.
+- `TryGetRectSize(node, out rectSize)`: true plus desired rect size.
+- Install: `Flexalon.GetOrCreateNode(go).SetAdapter(obj)`; read `FlexalonNode.Adapter` when diagnosing.
+- Docs prose mentions `UpdateSize`; in the current API it is the `TryGetScale`/`TryGetRectSize` pair. Never touch the `Transform` inside an adapter.
 
-            for (int i = 0; i < 3; i++)
-            {
-                if (node.GetSizeType(i) == SizeType.Component)
-                {
-                    measured[i] = meshBounds.size[i];
-                }
-
-                measured[i] = Mathf.Clamp(measured[i], min[i], max[i]);
-            }
-
-            return new Bounds(Vector3.zero, measured);
-        }
-
-        public bool TryGetScale(FlexalonNode node, out Vector3 scale)
-        {
-            scale = Vector3.one;
-            return false;
-        }
-
-        public bool TryGetRectSize(FlexalonNode node, out Vector2 rectSize)
-        {
-            rectSize = Vector2.zero;
-            return false;
-        }
-    }
-}
-```
-
-**Critical caveat**: `Measure` must respect `min`/`max` itself — the
-interface states it as the adapter's obligation, not something the pipeline
-applies afterwards. Returning bounds outside them produces a size that no
-later step corrects. `UpdateSize` in the docs' prose corresponds to the
-`TryGetScale`/`TryGetRectSize` pair in the current API; implement those, and
-never touch the `Transform` from inside an adapter.
-
-## Diagnosing a wrong size
-
-| Symptom | First check | Source |
-|---|---|---|
-| Object is size 1 for no reason | It has no measurable component, or `UseDefaultAdapter` is unchecked | [Enum SizeType](https://www.flexalon.com/docs/api/Flexalon.SizeType.html) |
-| Mesh looks squashed or refuses to fill a non-uniform box | The mesh adapter scales **uniformly where possible** by design — use a `Fixed` size or a different adapter | [Adapters](https://www.flexalon.com/docs/adapters) |
-| An image stretches instead of keeping its ratio | More than one axis is set to `Component`; the `Image` adapter derives the ratio only when exactly one is | [Adapters](https://www.flexalon.com/docs/adapters) |
-| A canvas ignores its Flexalon size | It is a root canvas — Unity owns those; put the layout on a child | [Adapters](https://www.flexalon.com/docs/adapters) |
-| `localScale` keeps being overwritten | The default adapter is writing it every update — see the caveat above | [Adapters](https://www.flexalon.com/docs/adapters) |
-| The number is wrong but the source is unclear | Read `FlexalonResult.AdapterBounds` vs `LayoutBounds` on the object, per [core-concepts-and-pipeline.md](core-concepts-and-pipeline.md) | [Class FlexalonResult](https://www.flexalon.com/docs/api/Flexalon.FlexalonResult.html) |
+## Wrong-size checks
+| Symptom | Check |
+|---|---|
+| Size 1 for no reason | No measurable component, or `UseDefaultAdapter` unchecked |
+| Image stretches | More than one axis `Component` |
+| Canvas ignores its size | Root canvas |
+| Number wrong, source unclear | `FlexalonResult.AdapterBounds` vs `LayoutBounds` |

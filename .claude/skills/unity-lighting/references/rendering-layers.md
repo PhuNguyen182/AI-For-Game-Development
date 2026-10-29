@@ -1,26 +1,14 @@
-# Rendering Layers — Scoping Lights to Renderers
+# Rendering Layers (light side)
 
-Sources: [Rendering Layers in URP](https://docs.unity3d.com/Manual/urp/features/rendering-layers.html), [Enable Rendering Layers for Lights](https://docs.unity3d.com/Manual/urp/features/rendering-layers-lights.html), [RenderingLayerMask API](https://docs.unity3d.com/ScriptReference/RenderingLayerMask.html).
-Covers: SKILL.md §4 — **"Scope lights with Rendering Layers rather than culling masks under an SRP"**.
+Docs: Manual `urp/rendering-layers` ("Enable Rendering Layers for Lights"); API `RenderingLayerMask`. `unity-urp-rendering` owns the Decal/Renderer Feature side.
 
-Rendering Layers are the SRP-era answer to "this light should not touch that
-object". They replace the culling mask for this purpose because the culling
-mask does not scope the shadow pass — an object excluded from a light by
-culling mask can still cast a shadow from it, which is the giveaway symptom.
-`unity-urp-rendering` owns the same feature from the Decal and Renderer
-Feature side; this file is strictly the light-to-renderer masking use.
+The culling mask does not scope the shadow pass: an object excluded by culling mask can still cast a shadow from that light (the giveaway symptom). Rendering Layers do.
 
-| Piece | What it decides | Source |
-|---|---|---|
-| The Asset toggle | Rendering Layers must be enabled on the pipeline Asset before any mask is honoured. Until then the fields are editable and inert | [Enable Rendering Layers for Lights](https://docs.unity3d.com/Manual/urp/features/rendering-layers-lights.html) |
-| `RenderingLayerMask` | A 32-bit mask; the names come from project settings, so a mask set by index in code and a mask set by name in the Inspector must be kept in step | [RenderingLayerMask](https://docs.unity3d.com/ScriptReference/RenderingLayerMask.html) |
-| `Light.renderingLayerMask` | Which renderers this light affects, and — under an SRP — which ones it renders into its shadow pass | [Light.renderingLayerMask](https://docs.unity3d.com/ScriptReference/Light-renderingLayerMask.html) |
-| `Renderer.renderingLayerMask` | The other half of the match. A renderer left on the default layer is affected by every light regardless of how carefully the lights were masked | [Renderer.renderingLayerMask](https://docs.unity3d.com/ScriptReference/Renderer-renderingLayerMask.html) |
-| `customShadowLayers` on `UniversalAdditionalLightData` | Lets shadow casters differ from lit objects for one light — an object can be lit without casting, or cast without being lit | [UniversalAdditionalLightData](https://docs.unity3d.com/Packages/com.unity.render-pipelines.universal@17.6/api/UnityEngine.Rendering.Universal.UniversalAdditionalLightData.html) |
-| APV leak prevention | The same masks separate which lights an Adaptive Probe Volume region samples — see [probe-volumes.md](probe-volumes.md) | [Prevent light leaks with rendering layer masks](https://docs.unity3d.com/Manual/urp/features/rendering-layer-masks-apv-landing.html) |
+- Asset toggle: must be enabled on the pipeline Asset first; until then the fields are editable and inert.
+- `RenderingLayerMask`: 32-bit; names come from project settings, so keep masks set by index in code in step with masks set by name in the Inspector.
+- `Light.renderingLayerMask`: which renderers the light affects and, under an SRP, renders into its shadow pass.
+- `Renderer.renderingLayerMask`: the other half. A renderer left on the default layer is affected by every light.
+- `customShadowLayers` on `UniversalAdditionalLightData`: an object can be lit without casting, or cast without being lit.
+- APV: the same masks separate which lights a probe region samples ([probe-volumes.md](probe-volumes.md)).
 
-Reach for this when a scene genuinely needs per-light exclusion — an interior
-light that must not reach the street, an exterior sun that must not enter a
-room's probe data. A scene-layout fix or a simpler light placement is usually
-cheaper to maintain than a mask scheme spread across lights and renderers,
-per KISS in `csharp-standards` → `coding-principles.md`.
+Use only for genuine per-light exclusion (interior light must not reach the street). A layout or placement fix is usually cheaper than a mask scheme (KISS).

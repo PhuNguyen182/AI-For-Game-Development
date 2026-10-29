@@ -1,59 +1,31 @@
 ---
 name: crash-anr-symbolication
-description: "Confirm a crash/ANR trace is fully symbolicated and that uploaded symbols match the crashing build id — IL2CPP symbols, NDK, dSYM, mapping files. Use as stage 2 of a production crash investigation."
+description: "Confirm a crash/ANR trace is fully symbolicated and uploaded symbols match the crashing build id: IL2CPP native symbols, obfuscation mapping, dSYM, Crashlytics. Use as stage 2 of a production crash investigation."
 user-invocable: false
 ---
 
-# Crash and ANR Symbolication — is this trace readable at all
+# Crash and ANR Symbolication
 
-**Not for:** confirming the report source, owned by `crash-anr-reporting-gate`; attributing the fault, owned by `crash-anr-fault-domain-triage`; producing the build or wiring the upload, owned by `build-release-engineer` and `sdk-platform-engineer`; Editor stack traces, owned by `qa-automation-engineer`; or faults in a pre-release player build, owned by `build-fault-triage`.
+Not for: confirming the report source (`crash-anr-reporting-gate`), attributing the fault (`crash-anr-fault-domain-triage`), producing the build or wiring the upload (`build-release-engineer`, `sdk-platform-engineer`), Editor stack traces (`qa-automation-engineer`), pre-release player-build faults (`build-fault-triage`).
+Docs: https://developer.android.com/games/optimize/crash-diagnose · https://docs.unity3d.com/Manual/android-symbols.html · https://docs.unity3d.com/Manual/IL2CPP.html · https://firebase.google.com/docs/crashlytics/get-deobfuscated-reports · https://developer.apple.com/documentation/xcode/adding-identifiable-symbol-names-to-a-crash-report — all unversioned. Console upload paths and artefact filenames vary by Editor/toolchain: read the real build output, not a remembered path.
 
-## Bundled resources
+| Reference | Read when |
+|---|---|
+| [symbol-artefacts-by-platform.md](references/symbol-artefacts-by-platform.md) | Deciding which artefact is missing, or whether the symbols on file belong to this build |
 
-### References
-Read-only context, loaded on demand so SKILL.md itself stays short.
+## Steps
+1. **Check the faulting (top) frame before counting resolved frames** — it decides the fault domain, so an unresolved top frame makes the trace as unusable as a fully stripped one.
+2. **Compare build and symbol identifiers, never version strings** — equal marketing versions can share no binary ([symbol-artefacts-by-platform.md](references/symbol-artefacts-by-platform.md)).
+3. **Name the missing artefact and platform** — native debug symbols, obfuscation mapping or dSYM resolve different frames; "symbols are missing" is not actionable.
+4. **On a Unity IL2CPP title treat managed-derived and native frames separately** — one kind resolving says nothing about the other.
+5. **Identifiers match → attach the existing artefact**, then re-check from step 1; a wrong file attaches quietly, so attaching is not resolving.
+6. **Identifiers differ → request a new build with symbol generation** (`build-release-engineer`) and the upload step (`sdk-platform-engineer`), then wait for a fresh matching report. The crashed binary cannot be fixed retroactively and a rebuild of the same source gets a different id.
+7. **Unresolvable and no new build or other resolving sample → report a block**, never reason past it; a domain guessed from offsets routes work to an owner who cannot act. If the access needed to attach symbols sits outside this pipeline, name who has it. If samples may be past service retention, say so (`crash-anr-reporting-gate`) rather than waiting.
 
-| File | Contents | Read when |
-|---|---|---|
-| [root-links.md](references/root-links.md) | Platform and service documentation roots, and what this skill deliberately does not pin | Starting a check, or a vendor page has moved |
-| [symbol-artefacts-by-platform.md](references/symbol-artefacts-by-platform.md) | Which artefact resolves which frames on Android, iOS and IL2CPP, and how build identity is established | Deciding what is missing, or whether the symbols on file belong to this build |
+## Never
+- Build, upload or edit anything here — diagnose the gap and route it.
 
-## 1. Objective
-Stop fault attribution from running on a trace that is functionally unreadable. A stripped trace is a list of offsets, and a conclusion drawn from one is a guess in an engineering format — which is worse than no conclusion, because it routes work to the wrong owner. The subtler failure this catches is the partially resolved trace: most frames readable, the faulting frame not, which reads as a usable report right up to the point it names the wrong domain.
-
-## 2. Role
-Act as the build and symbol hygiene checkpoint of the crash pipeline, on behalf of `crash-anr-investigator`. You do not yet ask what the crash means — only whether the trace in front of you is in a state where that question can be answered.
-
-## 3. When to invoke this skill
-- `crash-anr-reporting-gate` has passed and a trace or tombstone is now in hand.
-- A trace shows raw addresses, offsets, or unknown frames where function names should be.
-- Some frames resolve and others do not, particularly around the top of the stack.
-- It is unclear whether symbols for the exact crashing build were ever uploaded.
-- A Unity title's trace mixes managed and native frames and only one kind resolves.
-- Negative trigger: the trace already resolves completely, including the faulting frame — go to `crash-anr-fault-domain-triage` rather than re-checking.
-- Negative trigger: whether the report is a production signal at all — that was `crash-anr-reporting-gate`, and this skill assumes it passed.
-- Negative trigger: deciding which layer is at fault — that is `crash-anr-fault-domain-triage`; reading meaning into a trace here is exactly what this gate exists to defer.
-- Negative trigger: producing a build, or configuring the symbol upload step — those are `build-release-engineer` and `sdk-platform-engineer`; this skill states what is needed and routes it.
-- Negative trigger: an Editor or development-build stack trace, which resolves on its own because nothing stripped it — an Editor trace belongs to `qa-automation-engineer`'s pipeline and a pre-release player build's to `build-fault-triage`, and neither poses a symbolication question.
-
-## 4. How to use this skill
-1. **Check the faulting frame before counting resolved frames** — a trace can be mostly readable and still useless, because the frame that actually crashed is the one that decides the fault domain. Treat an unresolved top frame exactly as you would treat a fully unresolved trace.
-2. **Compare build and symbol identifiers rather than version strings** — the marketing version can match across builds that share no binary, per [symbol-artefacts-by-platform.md](references/symbol-artefacts-by-platform.md) and the roots in [root-links.md](references/root-links.md). Identity is the build identifier the platform records, not the number shown to players.
-3. **Name which artefact is missing for the platform in hand** — native debug symbols, the obfuscation mapping file, or a dSYM bundle resolve different frames, and "symbols are missing" without naming which one produces an unactionable request, per [symbol-artefacts-by-platform.md](references/symbol-artefacts-by-platform.md).
-4. **Treat managed and native frames as separate problems on a Unity title** — an IL2CPP build turns C# into native code, so a managed frame and an engine frame can require different artefacts and fail independently. One resolving is not evidence about the other.
-5. **Re-associate the existing symbols when the identifiers match** — the artefact exists and was simply never attached to this build in the service; upload it, then re-check the trace from step 1 rather than assuming the association worked.
-6. **Request a new build with symbol generation when the identifiers do not match** — this cannot be fixed retroactively, because the binary that crashed has no symbols anywhere. Route the build to `build-release-engineer` and the upload step to `sdk-platform-engineer`, and wait for a fresh matching report.
-7. **Report an unresolvable trace as a limit rather than reasoning past it** — if no new build is available and no other sample resolves, say so explicitly in the handoff. An honest block is a finding; a domain guessed from offsets is not, and it sends work to an owner who cannot act on it.
-
-## 5. Specific goals / tasks this skill performs
-- Confirming every frame, and specifically the faulting frame, resolves to a function, file and line.
-- Diagnosing why a trace does not resolve: a missing upload against a build identity mismatch.
-- Naming the specific artefact required for the platform and build type in hand.
-- Separating managed from native symbolication on an IL2CPP title.
-- Routing the next action: attach existing symbols, or request a new symboled build.
-- Out of scope: confirming the report's source (`crash-anr-reporting-gate`); attributing the fault (`crash-anr-fault-domain-triage`); producing builds (`build-release-engineer`); wiring the upload pipeline (`sdk-platform-engineer`); Editor stack traces (`qa-automation-engineer`); pre-release player-build faults (`build-fault-triage`).
-
-## 6. Output format
+## Output
 ```
 ## Symbolication Check — <RESOLVED / BLOCKED>
 - Trace source: <Play Console vitals / Crashlytics / App Store Connect>
@@ -65,33 +37,7 @@ Act as the build and symbol hygiene checkpoint of the crash pipeline, on behalf 
 - Action requested: <attach existing symbols / new build with symbol generation and upload / none needed>
 - Routed to: <crash-anr-fault-domain-triage / build-release-engineer / sdk-platform-engineer>
 ```
+On request only, add `Known limitations`, `Latent concerns` and `Future remediation`, each with its trigger.
 
-**Extended report — emit ONLY when the requester asks for it.** It adds all three fields below the decision:
-```
-- Known limitations: <what remains unresolved — for example native frames readable while managed frames are not>
-- Latent concerns: <failure modes not yet triggered: symbol upload absent from the build pipeline, retention about to drop the samples, one platform unverified>
-- Future remediation: <the concrete fix for each concern above, each with the condition that should trigger it>
-```
-
-## 7. Examples
-**Example 1**
-- Input: a Crashlytics report in which every frame is a bare hexadecimal address.
-- Output: BLOCKED. No symbols on file share a build identifier with the crashing binary, so the trace cannot be resolved retroactively at all. Requested a new build with symbol generation enabled from `build-release-engineer` and the upload step from `sdk-platform-engineer`, and stated plainly that no domain can be named until a fresh matching report arrives.
-
-**Example 2**
-- Input: an ANR report whose native frames are unresolved, while the correct symbol artefact exists in the build output for that exact build.
-- Output: identifiers matched, so the artefact was simply never attached in the service. Attached it, re-checked from the top, confirmed the faulting frame now names a function, and proceeded to `crash-anr-fault-domain-triage`.
-
-**Example 3**
-- Input: "Most of the stack is readable, just root-cause it from the frames we can see."
-- Output: declined — the unresolved frames are the top of the stack, which is where the fault domain is decided, so the readable remainder describes how the code got there rather than what went wrong. Reading a domain off the highest resolved frame would have attributed an engine or SDK fault to the game code that called into it. Held the gate and requested the missing artefact.
-
-## 8. Edge cases & guardrails
-- Never attribute a fault from a partially symbolicated trace when the faulting frame is one of the unresolved ones — that is the frame the whole decision rests on.
-- Never accept matching version strings as matching builds — the recorded build identifier is the only identity that means anything.
-- Never say "symbols are missing" without naming the artefact and the platform — the request cannot be acted on otherwise.
-- Never assume that resolving native frames also resolved managed ones on an IL2CPP title, or the reverse.
-- Never treat an attached artefact as a resolved trace — re-read the trace and confirm, since attaching the wrong file succeeds quietly.
-- Never build, upload, or edit anything from this skill — it diagnoses the gap and routes it to `build-release-engineer` and `sdk-platform-engineer`.
-- Never let a block stall silently — if the tooling access needed to attach symbols sits outside this pipeline, state that and name who has it.
-- If a signature's samples are old enough that the service's retention may have dropped their detail, say so rather than waiting on traces that will not arrive, per `crash-anr-reporting-gate`.
+## Example
+- "Most of the stack reads, just root-cause it from what we can see" → declined: the unresolved frames are the top, where the domain is decided; the readable rest only shows how code got there, and the nearest resolved frame would blame the game code that called an engine or SDK fault. Held the gate and requested the missing artefact.
