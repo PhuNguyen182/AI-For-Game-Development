@@ -23,14 +23,14 @@ Docs: https://annulusgames.github.io/LitMotion/articles/en/ and https://github.c
 | [migration-and-rx-integration.md](references/migration-and-rx-integration.md) | Porting DOTween/LeanTween/PrimeTween/v1 code, or bridging to R3/UniRx |
 
 ## Steps
-1. **Check which tween engine the module uses** — DOTween vs LitMotion is a standing per-module choice; if neither is established, ask rather than default (see `dotween-tweening` `coexistence-and-migration.md`).
+1. **Check which tween engine the module uses** — DOTween vs LitMotion is a standing per-module choice; if neither is established, `Needs-decision`, `Next: technical-architect` rather than default (see `dotween-tweening` `coexistence-and-migration.md`).
 2. **Pick the `LMotion.Create` overload for the built-in value type**; no matching type means a custom adapter (step 9), never a lossy float proxy.
 3. **Bind with a `BindTo*` extension before a manual `Bind` lambda.** String, numeric readout and per-character TMP use the text surface. Write a custom binding extension only once the same property is bound at 2+ call sites.
 4. **Pass captured state as `Bind(state, (x, s) => ...)`**, not a capturing lambda, which allocates.
 5. **Configure with the `With-` chain.** Choose `WithScheduler` for the needed cadence and `Time.timeScale` behaviour; the default `Update` follows time scale.
 6. **Give every handle a disposal path** — `AddTo(target, LinkBehavior)`, `CompositeMotionHandle`, or explicit `Cancel()`/`Complete()`. A `Preserve()`d handle runs until cancelled.
 7. **Use `LSequence` only for pure composition.** A mid-sequence callback, branch or side effect means procedural `async`/`await` instead (no `AppendCallback` by design).
-8. **Await with the mechanism for the call site** — see the async reference. If UniTask/R3/UniRx availability, Unity version or hot-path volume is unstated, ask first: the choice spreads to every call site.
+8. **Await with the mechanism for the call site** — see the async reference. UniTask/R3/UniRx availability, Unity version or hot-path volume unstated → read `docs/tech-stack.md` and the manifest; still unknown → `Blocked` naming it: the choice spreads to every call site.
 9. **Custom `IMotionAdapter`** only for an unsupported type: stateless, `RegisterGenericJobType` in the same change, `NoOptions` unless real state is needed.
 10. **`LitMotion.Animation` only for Inspector-authored animation**; a programmer-authored one-off stays in code.
 11. **Verify before shipping a hot-path or high-volume motion**: Burst/Collections present, `EnsureStorageCapacity` at startup, Profiler shows 0 GC alloc, and a custom adapter runs on an IL2CPP device build.

@@ -6,7 +6,7 @@ user-invocable: false
 
 # Backend Build-vs-Buy
 
-Not for: sync protocol, tick rate, prediction (`netcode-architecture-decision`, `netcode-engineer`), server-side gameplay validation (`netcode-engineer`), scoring rubric (`tco-reversibility-scoring`), remote-config cadence (`live-ops-content-pipeline`), event pipelines (`analytics-telemetry-platform`), virtual-currency ledger (`ad-mediation-monetization-platform`; this skill owns profile data and save sync only).
+Not for: sync protocol, tick rate, prediction (`netcode-architecture-decision`, `netcode-engineer`), server-side gameplay validation (`server-authoritative-validation`), scoring rubric (`tco-reversibility-scoring`), remote-config cadence (`live-ops-content-pipeline`), event pipelines (`analytics-telemetry-platform`), virtual-currency ledger (`ad-mediation-monetization-platform`; this skill owns profile data and save sync only).
 
 ## Steps
 1. **Split the need into components before shortlisting** — matchmaking, player data/save sync, dedicated server hosting/orchestration, leaderboards, party/social. They need not share a vendor; a bundled vendor demo must not set the boundaries.

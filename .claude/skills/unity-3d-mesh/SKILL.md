@@ -6,7 +6,7 @@ user-invocable: false
 
 # Unity 3D Mesh
 
-Not for: skinning, blend shapes, bones (`unity-animation`); `MeshCollider` cooking (`unity-3d-physics`); materials and shaders (`shader-authoring`); LOD, batching escalation, model import settings (`gameplay-engineer`); sprite meshes (`unity-2d-sprite`); GPU-only deformation never read back (`compute-shader-vfx`; this skill owns the CPU-readable `Mesh`); job scheduling and allocator lifetime (`unity-job-system-and-burst`); which mesh or material a game state shows (Shared Core, `csharp-engineer`).
+Not for: skinning, blend shapes, bones (`unity-animation`); `MeshCollider` cooking (`unity-3d-physics`); materials and shaders (`shader-authoring`); LOD, batching escalation, model import settings (`unity-performance-engineer`; no owning skill yet: flag the gap); sprite meshes (`unity-2d-sprite`); GPU-only deformation never read back (`compute-shader-vfx`; this skill owns the CPU-readable `Mesh`); job scheduling and allocator lifetime (`unity-job-system-and-burst`); which mesh or material a game state shows (Shared Core, `csharp-engineer`).
 Docs: https://docs.unity3d.com/Manual/mesh.html and /ScriptReference/Mesh.html — unversioned (current release; components page says 6.5), so check the project's Editor version.
 
 | Reference | Read when |
@@ -32,7 +32,7 @@ Docs: https://docs.unity3d.com/Manual/mesh.html and /ScriptReference/Mesh.html �
 ## Never
 - Call a `Mesh` getter or `AcquireReadOnlyMeshData` on a mesh with `isReadable` false at runtime — it throws `InvalidOperationException`.
 - Use `MeshDataArray` for a one-off or `Start()`-time mesh.
-- Decide which mesh or material to show in `Game.Client.*` — that is `Game.Core.*`.
+- Decide in `Game.Client.*` which state a mesh or material shows — `Game.Core.*` resolves the state; the client only maps state to asset.
 
 ## Output
 ```

@@ -19,7 +19,7 @@ Every UI element lives under a `Canvas` (the GameObject menu creates one). Child
 | Scale With Screen Size | Reference Resolution, Screen Match Mode, Match 0–1, Reference Pixels Per Unit | Standard for responsive PC + mobile |
 | Constant Physical Size | Physical Unit, Fallback Screen DPI, Default Sprite DPI | Print-like or accessibility UI |
 
-- **Match pitfall**: at 0 (Width), a screen much wider than the reference scales everything up. Use 0.5 for portrait + landscape or several aspect ratios.
+- **Match pitfall**: at 0 (Width), a screen much wider than the reference scales everything up. Single orientation: match the stable axis (SKILL step 3); 0.5 only when both orientations ship.
 - Screen Match Mode Expand grows the canvas (never crops); Shrink crops. Choose by whether edge loss or spare space is acceptable.
 - Responsive = anchors (where) + `CanvasScaler` (how big); neither alone suffices.
 

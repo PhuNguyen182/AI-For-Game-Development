@@ -6,7 +6,7 @@ user-invocable: false
 
 # Unity 3D Physics (PhysX)
 
-Not for: 2D physics (`unity-2d-physics`), DOTS physics (`unity-physics`), pathfinding agents (`unity-navmesh-navigation`), blending a ragdoll back into animation (`unity-animation`), cloth-looking effects without simulation (`technical-artist`), damage/knockback magnitude and state rules (`csharp-engineer`, Shared Core), a cost that survives every step below (`gameplay-engineer`).
+Not for: 2D physics (`unity-2d-physics`), DOTS physics (`unity-physics`), pathfinding agents (`unity-navmesh-navigation`), blending a ragdoll back into animation (`unity-animation`), cloth-looking effects without simulation (`technical-artist`), damage/knockback magnitude and state rules (`csharp-engineer`, Shared Core), a cost that survives every step below (`unity-performance-engineer`, measured per `unity-profiler-diagnostics`).
 Docs: https://docs.unity3d.com/Manual/PhysicsOverview.html and https://docs.unity3d.com/ScriptReference/Physics.html — unversioned, so they track the current release; re-check defaults in the project's Editor. `UnityEngine.Physics` is PhysX; `Physics2D` and `com.unity.physics` share type names but not behaviour, so confirm the engine first.
 
 | Reference | Read when |
@@ -21,12 +21,12 @@ Docs: https://docs.unity3d.com/Manual/PhysicsOverview.html and https://docs.unit
 
 ## Steps
 1. **Confirm the engine is built-in PhysX** before touching a component.
-2. **Choose locomotion by whether the character must be pushed**, per [character-controller.md](references/character-controller.md) — `CharacterController` pushes bodies but is never pushed; use a Rigidbody character only when dynamic bodies must move it. It is supported-but-legacy from Unity 6.5, not `[Obsolete]`, so it stays valid for new work.
+2. **Choose locomotion by whether the character must be pushed**, per [character-controller.md](references/character-controller.md) — `CharacterController` pushes bodies but is never pushed; use a Rigidbody character only when dynamic bodies must move it. It is not `[Obsolete]`, so it stays valid for new work.
 3. **Move simulated bodies through the physics API**, never the Transform: `MovePosition`/`MoveRotation` in `FixedUpdate`, `Move`/`SimpleMove` for a controller. A Transform write teleports past contact generation and desynchronises joints.
 4. **Configure the Rigidbody by how it is watched and how fast it moves**, per [rigidbody-physics.md](references/rigidbody-physics.md) — Interpolate under a following camera, a continuous mode for small fast bodies, sleep left on.
 5. **Pick the simplest collider; never reposition a static one** (use a Kinematic Rigidbody), per [collision.md](references/collision.md). Prune the layer matrix instead of filtering inside `OnCollisionEnter`.
 6. **Choose the joint by degrees of freedom**, per [joints.md](references/joints.md); `ConfigurableJoint` only when no named joint fits.
-7. **Prefer `ArticulationBody` for chains**, per [ragdoll-physics.md](references/ragdoll-physics.md).
+7. **Choose the chain body by what it must do**, per [ragdoll-physics.md](references/ragdoll-physics.md) — death/hit ragdoll: Ragdoll Wizard (Character Joints); deep, motor-driven or stretch-prone chains: `ArticulationBody`.
 8. **Fix ragdoll instability at mass ratio and limits before solver iterations** — the order is in [ragdoll-physics.md](references/ragdoll-physics.md).
 9. **`Cloth` only on a Skinned Mesh Renderer**, per [cloth.md](references/cloth.md); self- and inter-collision stay off until a visible problem needs them.
 10. **Keep the rule out of the callback** — PhysX results are not reproducible across platforms. Pass contact point, normal and relative velocity into `Game.Core.*` and let it decide any outcome the server must agree on (`csharp-standards`).

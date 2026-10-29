@@ -6,7 +6,7 @@ user-invocable: false
 
 # Odin Inspector
 
-Not for: gameplay rules (`Game.Core.*`, `csharp-engineer`), runtime UGUI/UI Toolkit UI (`gameplay-engineer`), Editor windows/drawers in UXML/USS (`ui-toolkit`; one window uses Odin or UI Toolkit, never both), ScriptableObject architecture patterns (`unity-scriptableobject-architecture`).
+Not for: gameplay rules (`Game.Core.*`, `csharp-engineer`), runtime UGUI/UI Toolkit UI (`ugui`, `ui-toolkit`), Editor windows/drawers in UXML/USS (`ui-toolkit`; one window uses Odin or UI Toolkit, never both), ScriptableObject architecture patterns (`unity-scriptableobject-architecture`).
 Docs: `https://odininspector.com/documentation/<lowercase.dotted.namespace.typename>` (generic arity as `-1`). Unversioned: tracks the current Asset Store release, so attribute overloads may differ from the installed Odin. Roots: `sirenix.odininspector` (attributes, serialization bases), `.editor` (drawers, windows, validators, resolvers), `sirenix.serialization`, `sirenix.utilities.editor` (`SirenixEditorGUI`).
 
 | Reference | Read when |

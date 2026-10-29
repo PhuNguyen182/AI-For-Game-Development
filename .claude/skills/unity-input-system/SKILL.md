@@ -6,7 +6,7 @@ user-invocable: false
 
 # Unity Input System
 
-Not for: what a press means as a game rule (`csharp-engineer`), UI layout (`gameplay-engineer`), Animator parameters (`unity-animation`), camera axis controllers (`unity-cinemachine-authoring`), click-to-move pathing (`unity-navmesh-navigation`), the per-tick command struct of a predicted netcode simulation (`netcode-for-entities`), XR Interaction Toolkit and XR rendering (no owning skill: flag the gap).
+Not for: what a press means as a game rule (`csharp-engineer`), UI layout (`ugui`, `ui-toolkit`), Animator parameters (`unity-animation`), camera axis controllers (`unity-cinemachine-authoring`), click-to-move pathing (`unity-navmesh-navigation`), the per-tick command struct of a predicted netcode simulation (`netcode-for-entities`), XR Interaction Toolkit and XR rendering (no owning skill: flag the gap).
 Docs: https://docs.unity3d.com/Packages/com.unity.inputsystem@1.20/manual/ — pinned 1.20; slugs are stable nearby, substitute the version in `Packages/manifest.json`.
 
 | Reference | Read when |

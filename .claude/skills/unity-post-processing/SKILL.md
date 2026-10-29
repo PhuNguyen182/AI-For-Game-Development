@@ -19,13 +19,13 @@ Docs: Manual https://docs.unity3d.com/6000.5/Documentation/Manual/post-processin
 
 ## Steps
 1. **Confirm the pipeline first.** Built-in RP uses PPv2 only; URP uses Volumes and is not compatible with PPv2 (installing it adds a stack that never renders); HDRP routes away. Built-in follows [postprocessing-v2-legacy.md](references/postprocessing-v2-legacy.md). Never mix `Volume` and `PostProcessVolume` API in one answer.
-2. **Check the two gates before any profile:** Camera Post Processing checkbox, and HDR on the URP Asset of the target tier (without HDR, Tonemapping has nothing above 1 and Bloom Threshold misbehaves).
+2. **Check the two gates before any profile:** Camera Post Processing checkbox, and HDR on the URP Asset of the target tier — an Asset change is requested from `unity-performance-engineer`, which owns tier Assets (without HDR, Tonemapping has nothing above 1 and Bloom Threshold misbehaves).
 3. **Put the Volume on a layer in the camera's Volume Mask, and keep one Global Volume as the scene floor**, per [volumes.md](references/volumes.md).
 4. **From code, write via `Override()`, not `.value`**: the blend skips parameters with `overrideState` false. Use `sharedProfile` for a change that must reach the asset; `profile` instantiates a per-instance copy.
 5. **Pick overrides by mechanism** ([effect-catalog.md](references/effect-catalog.md)): warmth is White Balance, not Color Filter; focus pull is Depth of Field, not Vignette; Bloom Threshold below sky luminance blooms the whole sky.
 6. **Verify the effect exists on the target pipeline** ([pipeline-availability.md](references/pipeline-availability.md)). Anti-aliasing and Ambient Occlusion are not in the URP Volume list: route to `unity-urp-rendering`.
 7. **Custom effect: pick the path by whether anything must blend**, then the injection point (before post-processing = tonemapped and graded; after = not), per [custom-effects.md](references/custom-effects.md).
-8. **Mobile: the cost is having a stack at all** (tile-memory resolve), not the effect count. Decide per tier whether it carries post-processing; a claim that removing an effect helped needs a Profiler GPU capture (`unity-profiler-diagnostics`).
+8. **Mobile: the stack has a fixed cost (tile-memory resolve) plus a per-pass cost for each multi-pass effect** (Bloom, DoF first to drop, per [effect-catalog.md](references/effect-catalog.md)). State per tier whether the look needs post-processing; the tier decision is `unity-performance-engineer`'s; a claim that removing an effect helped needs a Profiler GPU capture (`unity-profiler-diagnostics`).
 9. **Keep the trigger rule in `Game.Core.*`**; this skill wires only the visual it drives.
 
 ## Never

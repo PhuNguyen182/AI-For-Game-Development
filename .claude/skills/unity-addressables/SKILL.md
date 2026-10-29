@@ -19,7 +19,7 @@ Docs: https://docs.unity3d.com/Packages/com.unity.addressables@4.0/manual/index.
 ## Steps
 1. **Pick the content build system once per project** — Content Directory is simpler and dedupes shared plain assets but is local-only; AssetBundle is required for remote delivery and content updates. Mixing both builds shared dependencies twice.
 2. **Address Inspector-wired assets via `AssetReference`; use string keys only for runtime-resolved content** — GUID survives rename, typed subclasses reject wrong assets.
-3. **Await the handle; never `WaitForCompletion()` in gameplay code** (awaiting needs UniTask installed). Check `Status`: a failed load completes rather than throwing.
+3. **Await the handle; never `WaitForCompletion()` in gameplay code** (`await handle.Task` works without extra packages; UniTask's `ToUniTask()` is preferred in Client code). Check `Status`: a failed load completes rather than throwing.
 4. **Load scenes with `activateOnLoad` false and call `ActivateAsync()`** when the scene should go live, so a loading screen is not cut short.
 5. **Mirror every load with exactly one release on every path** (early return and exception included); `ReleaseInstance`, never `Object.Destroy`, for instances.
 6. **Decide each asset's lifetime scope first** (level, session, app) — releasing then reloading a bundle costs more than holding.

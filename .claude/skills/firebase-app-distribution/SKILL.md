@@ -6,7 +6,7 @@ user-invocable: false
 
 # Firebase App Distribution
 
-Not for: producing or signing the artifact (`fastlane-mobile-delivery`, `unity-batchmode-cli`), the job and its approval gate (`jenkins-pipeline-authoring`), Crashlytics/Analytics/Remote Config in the game, store submission and TestFlight (`sdk-platform-engineer`), runtime faults in the installed build (`build-release-engineer`). When the upload is a plugin action, the lane and `Pluginfile` stay with `fastlane-mobile-delivery`; this skill owns the action's parameters, auth and verification.
+Not for: producing or signing the artifact (`fastlane-mobile-delivery`, `unity-batchmode-cli`), the job and its approval gate (`jenkins-pipeline-authoring`), Crashlytics/Analytics/Remote Config in the game (`firebase-unity-sdk`), store submission and TestFlight (`sdk-platform-engineer`), runtime faults in the installed build (`build-release-engineer`). When the upload is a plugin action, the lane and `Pluginfile` stay with `fastlane-mobile-delivery`; this skill owns the action's parameters, auth and verification.
 Docs: https://firebase.google.com/docs/app-distribution — unversioned, describes the newest `firebase-tools`; pin the version the pipeline installs.
 
 | Reference | Read when |

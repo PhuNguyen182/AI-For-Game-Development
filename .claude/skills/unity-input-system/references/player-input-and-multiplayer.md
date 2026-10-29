@@ -1,6 +1,6 @@
 # PlayerInput and Local Multiplayer
 
-Docs (1.20 manual): `player-input-component`, `select-notification-behavior`, `device-assignments`, `player-input-manager-component`, `set-up-split-screen-local-multiplayer`. Camera half of split-screen: `unity-cinemachine-authoring` / `unity-camera-fundamentals`; UI layout: `gameplay-engineer`.
+Docs (1.20 manual): `player-input-component`, `select-notification-behavior`, `device-assignments`, `player-input-manager-component`, `set-up-split-screen-local-multiplayer`. Camera half of split-screen: `unity-cinemachine-authoring` / `unity-camera-fundamentals`; UI layout: `ui-engineer`.
 
 ## What the component owns
 - A private copy of the action asset: binding overrides on one player do not reach another.

@@ -6,7 +6,7 @@ user-invocable: false
 
 # Unity Transport
 
-Not for: `UnityTransport` component Inspector fields or NGO-level sync (`netcode-for-gameobjects`), Worlds and connections on the DOTS stack (`netcode-for-entities`), choosing a netcode foundation (`netcode-architecture-decision`), reconciliation, tick or message protocol and server-side validation (`netcode-engineer`).
+Not for: `UnityTransport` component Inspector fields or NGO-level sync (`netcode-for-gameobjects`), Worlds and connections on the DOTS stack (`netcode-for-entities`), choosing a netcode foundation (`netcode-architecture-decision`), reconciliation, tick or message protocol (`netcode-engineer`), server-side validation (`server-authoritative-validation`).
 Docs: https://docs.unity3d.com/Packages/com.unity.transport@6.6/manual/index.html (API: `.../api/index.html`), pinned to `com.unity.transport@6.6` (Unity 2022.3+). The API changed across majors: check the installed version first (migration table in `webgl-and-ngo-integration.md`).
 
 | Reference | Read when |
@@ -29,7 +29,7 @@ Docs: https://docs.unity3d.com/Packages/com.unity.transport@6.6/manual/index.htm
 7. **Use Relay (`RelayServerData`) when there is no public server IP and direct connect is confirmed unworkable.** Do not hand-roll hole-punching or NAT traversal (`relay-and-cross-play.md`).
 8. **Treat the `Unity.Netcode.NetworkTransport` contract as NGO's boundary.** A custom transport implements that class's send/poll/disconnect contract and nothing else.
 9. **Verify with a real multi-client connect, send and disconnect run.** A compile pass does not show the handshake or pipeline works (`diagnostics-and-testing.md`).
-10. **Encryption, reliability guarantees or relay-versus-direct topology not specified: ask `netcode-engineer` or the Technical Architect.** Each is costly to reverse after launch.
+10. **Encryption, reliability guarantees or relay-versus-direct topology not specified: return `Needs-decision`, `Next: cto` (foundation and topology) or `technical-architect` (feature spec).** Each is costly to reverse after launch.
 
 ## Never
 - Skip a frame's `ScheduleUpdate`/`Complete`: events queue and a timeout or disconnect can be missed.
@@ -44,7 +44,7 @@ Docs: https://docs.unity3d.com/Packages/com.unity.transport@6.6/manual/index.htm
 - Concurrency: main-thread / Concurrent-in-job — rationale
 - Security/topology: TLS? Relay or direct? — rationale
 - Verification: <multi-client connect/send/disconnect run, or how confirmed>
-- Layer: Game.Core.* / Game.Client.* / Editor-only
+- Layer: Game.Client.* / Game.Server.* / Editor-only
 - Known limitations: <...>
 ```
 On request only, add `Latent concerns` and `Future remediation`, each with its trigger.

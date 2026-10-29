@@ -31,7 +31,7 @@ Docs: https://docs.unity3d.com/Manual/AudioReference.html and Scripting API http
 8. **Ambisonic: confirm a decoder plugin is installed before promising playback** — Unity ships none; see [ambisonic-audio.md](references/ambisonic-audio.md).
 9. **Pool `AudioSource` objects for high-frequency sounds** (`csharp-standards` allocation rules); no `Instantiate`/`Destroy` per shot or footstep.
 10. **Diagnose silence or cost from the Audio Profiler before proposing a fix**, per [audio-profiler-and-settings.md](references/audio-profiler-and-settings.md).
-11. **Target platform, multiplayer audio-sync need or decoder presence unknown** — ask, or state the assumption. A gameplay threshold or condition stays in `Game.Core.*`; ask if the layer is unclear.
+11. **Target platform, multiplayer audio-sync need or decoder presence unknown** — state the assumption under `Assumptions:`, or `Blocked` when it changes the mixer design. A gameplay threshold or condition stays in `Game.Core.*`; layer unclear → `Needs-decision`, `Next: technical-architect`.
 
 ## Output
 ```

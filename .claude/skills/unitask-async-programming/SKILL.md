@@ -13,13 +13,13 @@ Client only: the assembly references `UnityEngine`, so never in `Game.Core.*`; e
 ## Steps
 1. **Replace coroutines for one-shot waits; bridge third-party awaitables with `.AsUniTask()`. Return type by who awaits** — `UniTask<T>` for a value, `UniTask` for completion only, `UniTaskVoid` when nothing awaits. Never `async void` (exceptions escape to the player loop).
 2. **Cancelable methods take a `CancellationToken` as the last parameter**, tied to `this.GetCancellationTokenOnDestroy()` for MonoBehaviour work — otherwise in-flight work touches a destroyed object.
-3. **Pool the `CancellationTokenSource` on repeatable paths** — `TimeoutController`, or a cached source with `.Reset()`; never a new one per call (`performance-and-algorithms.md` → Memory discipline).
+3. **Pool the `CancellationTokenSource` on repeatable paths** — `TimeoutController` for timeouts; a linked or manually cancelled source cannot be reset on Unity's API level (`TryReset` is .NET 6+), so create it once per lifetime and replace it only after it fires; never a new one per call (`performance-and-algorithms.md` → Memory discipline).
 4. **Set `PlayerLoopTiming` deliberately when resume order matters** (`Update`, `FixedUpdate`, `LastPostLateUpdate`...) — the default is invisible and the bug timing-dependent.
 5. **`UniTask` is single-consumption** — call `.Preserve()` (at the point it is stored, not each await site) or use `UniTask.Lazy` before a second awaiter; the second await throws at runtime. Don't reassign a preserved task per load.
 6. **Bare `.Forget()` swallows exceptions** — pass an exception handler unless the work is truly fire-and-forget.
 7. **Pull-based sequence of discrete async values → `Channel<T>` or async LINQ**, not a polling loop. Reacting to every occurrence is a reactive stream: `r3-reactive-extensions`.
 8. **Dispose every owned `CancellationTokenSource` and `UniTaskCompletionSource`** on the same `OnDisable`/`OnDestroy` path as coroutines and subscriptions (`coding-principles.md` → Correctness boundaries). Restore state in `finally` so destruction mid-operation cannot leave it broken (e.g. input disabled).
-9. **Cancellation scope or awaiter count unstated → ask before writing** — they decide steps 2, 3 and 5 and fail only at runtime.
+9. **Cancellation scope or awaiter count unstated → `Blocked` naming it, before writing** — they decide steps 2, 3 and 5 and fail only at runtime.
 
 ## Output
 ```

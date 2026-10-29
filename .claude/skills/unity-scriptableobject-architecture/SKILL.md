@@ -20,7 +20,7 @@ Docs: https://docs.unity3d.com/Manual/class-ScriptableObject.html and `script-Se
 
 ## Steps
 1. **An SO is `UnityEngine`-bound, so it never lives in `Game.Core.*`.** Rule logic (damage formula, drop table, score increment) stays in Core and the SO calls it; an SO method that reimplements a rule is the defect.
-2. **Pick the pattern from the requirement** using the Read-when column. If two fit equally (GameEvent vs Event Channel, Delegate Object vs Extendable Enum), ask: the wrong shape is costly to unwind once systems depend on it. Event Channel only when the asset-based, Inspector-referenceable shape is the reason; otherwise MessagePipe/R3.
+2. **Pick the pattern from the requirement** using the Read-when column. If two fit equally (GameEvent vs Event Channel, Delegate Object vs Extendable Enum) → `Needs-decision`, `Next: technical-architect`: the wrong shape is costly to unwind once systems depend on it. Event Channel only when the asset-based, Inspector-referenceable shape is the reason; otherwise MessagePipe/R3.
 3. **Apply [dual-serialization.md](references/dual-serialization.md) to every SO field written at runtime** (Variables, Runtime Sets).
 4. **Pair every registration with its removal**: Runtime Set `Add`/`Remove` and channel `+=`/`-=` in `OnEnable`/`OnDisable`.
 5. **Replace `FindObjectOfType` and singletons with a Runtime Set or Event Channel** where one fits (`csharp-standards`: no runtime `Find`).

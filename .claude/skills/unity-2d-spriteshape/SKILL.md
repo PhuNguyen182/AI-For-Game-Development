@@ -6,7 +6,7 @@ user-invocable: false
 
 # Unity 2D Sprite Shape
 
-Not for: sprite import and atlasing (`unity-2d-sprite`), body/joint/material setup on the generated collider (`unity-2d-physics`), grid-cell levels (`unity-tilemap`), `Light2D` (`unity-urp-rendering`), procedural shape rules (`csharp-engineer`), heavy job logic in a custom creator (`unity-job-system-and-burst`, `gameplay-engineer`).
+Not for: sprite import and atlasing (`unity-2d-sprite`), body/joint/material setup on the generated collider (`unity-2d-physics`), grid-cell levels (`unity-tilemap`), `Light2D` (`unity-urp-rendering`), procedural shape rules (`csharp-engineer`), heavy job logic in a custom creator (`unity-job-system-and-burst`).
 Docs: https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/ (`manual/`, `api/`; types in `UnityEngine.U2D`) — pinned 15.0; a different version's API may differ.
 
 | Reference | Read when |

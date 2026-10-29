@@ -36,10 +36,10 @@ Built-in RP reads Quality Settings and `RenderSettings`; URP reads its own Asset
 2. **Choose the light type by capability**, per [light-sources.md](references/light-sources.md): Area is bake-only, Directional ignores position, Point/Spot Range is a hard cutoff (raising intensity only blows out the near field).
 3. **Set each light's Mode before authoring around it** — Realtime/Baked/Mixed is bake-time, so changing it later invalidates the bake; the scene's single Lighting Mode applies to every Mixed light. See [global-illumination.md](references/global-illumination.md).
 4. **Flag geometry (Contribute GI) and give it lightmap UVs before blaming the lightmapper** — both failures report success.
-5. **Spend shadow budget on distance before resolution**, per [shadows.md](references/shadows.md); cascades subdivide the distance, they do not extend it.
+5. **Spend shadow budget on distance before resolution**, per [shadows.md](references/shadows.md); cascades subdivide the distance, they do not extend it. Per-tier values on the pipeline Asset are `unity-performance-engineer`'s: state the need, it sets them.
 6. **Fix acne with normal bias before depth bias** — depth bias detaches contact shadows (peter-panning).
 7. **Pick Reflection Probe mode by whether the reflected content changes**, per [reflections.md](references/reflections.md); fit box projection to the real room.
-8. **Use Adaptive Probe Volumes, not a legacy Light Probe Group**, per [probe-volumes.md](references/probe-volumes.md). Confirm APV is enabled on the pipeline Asset first (volumes bake and render nothing otherwise). Size to the traversable space, not the whole level.
+8. **Default to Adaptive Probe Volumes over a legacy Light Probe Group**, per [probe-volumes.md](references/probe-volumes.md); on the Android low-end tier keep APV only after a measured cost within budget, else Light Probe Groups. Confirm APV is enabled on the pipeline Asset first (volumes bake and render nothing otherwise). Size to the traversable space, not the whole level.
 9. **Treat an APV leak as placement before bias** — Probe Adjustment Volume or a rendering layer mask removes the cause; leak-reduction bias only trades artifacts.
 10. **Scope lights with Rendering Layers, not culling masks, under an SRP**, per [rendering-layers.md](references/rendering-layers.md); enable them on the Asset first.
 11. **Supply the lighting HLSL surface and hand the shader off**, per [custom-lighting-api.md](references/custom-lighting-api.md).

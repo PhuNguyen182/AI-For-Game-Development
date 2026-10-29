@@ -6,7 +6,7 @@ user-invocable: false
 
 # Unity 2D Physics
 
-Not for: 3D physics (`unity-3d-physics`), DOTS physics (`unity-physics`), sprite outline authoring (`unity-2d-sprite`), tile collision generation (`unity-tilemap`), Sprite Shape colliders (`unity-2d-spriteshape`), damage/state rules (`csharp-engineer`), profiling beyond shape/matrix/sleep tuning (`gameplay-engineer`).
+Not for: 3D physics (`unity-3d-physics`), DOTS physics (`unity-physics`), sprite outline authoring (`unity-2d-sprite`), tile collision generation (`unity-tilemap`), Sprite Shape colliders (`unity-2d-spriteshape`), damage/state rules (`csharp-engineer`), profiling beyond shape/matrix/sleep tuning (`unity-performance-engineer`).
 Docs: https://docs.unity3d.com/Manual/2d-physics/ — unversioned; defaults quoted here may differ in the project's Editor, so check there.
 
 | Reference | Read when |

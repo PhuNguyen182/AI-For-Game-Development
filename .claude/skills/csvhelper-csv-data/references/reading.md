@@ -21,7 +21,7 @@ using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
 
 ## Enumeration
 - `GetRecords<T>()` is deferred and forward-only; it never buffers the file. `.ToList()` holds every row.
-- The current row object is reused internally: keeping a reference past its iteration silently reads the next row's values.
+- `GetRecords<T>()` creates a new object per row. `EnumerateRecords(record)` refills the one instance you pass (zero-allocation): keeping a reference past its iteration silently reads the next row's values.
 
 ## Manual reading
 - `csv.ReadHeader()` consumes the header so `GetField` can address by name; `csv.Read()` advances and returns `false` at end of file; `GetField<T>(name)` converts, `GetField(name)` returns the raw string.

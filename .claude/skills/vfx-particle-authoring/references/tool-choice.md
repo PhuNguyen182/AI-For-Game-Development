@@ -6,7 +6,7 @@ Sources: [Particle Systems](https://docs.unity3d.com/Manual/ParticleSystems.html
 | Pipeline | ParticleSystem | VFX Graph |
 |---|---|---|
 | Built-in | Yes | No (SRP only) |
-| URP | Yes | Yes, if the device supports compute shaders |
+| URP | Yes | Desktop/console yes. Mobile: still preview, no OpenGL ES, needs compute and vertex-stage SSBOs (`SystemInfo.maxComputeBufferInputsVertex > 0`) |
 | HDRP | Yes | Yes, fullest output feature set |
 
 Pipeline choice belongs to `render-pipeline-urp-hdrp`; this table is an input to it.

@@ -50,4 +50,4 @@ Docs: https://docs.unity3d.com/Packages/com.unity.render-pipelines.high-definiti
 On request only, add `Latent concerns` and `Future remediation`, each with its trigger.
 
 ## Example
-- "Enable ray-traced reflections in the camera's Frame Settings, the Asset is fine" → declined: checked the Asset first, found ray tracing off and the minimum spec below the hardware requirement; reported it as a platform decision for `technical-architect`.
+- "Enable ray-traced reflections in the camera's Frame Settings, the Asset is fine" → declined: checked the Asset first, found ray tracing off and the minimum spec below the hardware requirement; reported it as a platform decision for `cto`.

@@ -25,7 +25,7 @@ Docs: https://docs.unity3d.com/Packages/com.unity.ugui@2.6/manual/ (TMP under `m
 ## Steps
 1. **Confirm uGUI fits.** It is Unity's primary recommendation for runtime game UI; route to `ui-toolkit` only for data binding, SVG or no-GameObject-per-element cost. Target aspect ratios/platforms or the system choice unstated: ask, and proceed only on a flagged assumption.
 2. **Pick the render mode from where the UI lives**: Overlay for a HUD, Camera only when perspective/post-processing must affect it, World Space for diegetic/VR, per [canvas-and-scaling.md](references/canvas-and-scaling.md).
-3. **Use Scale With Screen Size and set Match deliberately.** Default 0 oversizes a wider-than-reference screen; use 0.5 once portrait and landscape (or several aspect ratios) must both work. Responsive means anchors plus `CanvasScaler` together.
+3. **Use Scale With Screen Size and set Match deliberately.** Default 0 oversizes a wider-than-reference screen; single-orientation games match the stable axis (portrait: width, 0; landscape: height, 1); use 0.5 only when both orientations ship. Responsive means anchors plus `CanvasScaler` together.
 4. **Anchor before positioning**; stretch anchors carry responsive sizing, per [rect-transform-and-layout.md](references/rect-transform-and-layout.md).
 5. **One owner per `RectTransform` size.** A Layout Group, Content Size Fitter, Flexalon, a tween, a Spine `SkeletonGraphic` or hand-sizing fight silently. Try Layout Element overrides before a custom layout component.
 6. **Pick the Image Type deliberately** (Sliced panel, Tiled repeat, Filled progress, Simple fixed icon) and **`RectMask2D` before `Mask`**; `Mask` only for a non-rectangular clip, per [visual-components.md](references/visual-components.md).

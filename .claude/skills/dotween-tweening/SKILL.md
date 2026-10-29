@@ -18,7 +18,7 @@ Docs: `https://dotween.demigiant.com/documentation.php` (single page, no version
 | [coexistence-and-migration.md](references/coexistence-and-migration.md) | No established tween engine for the touched module, or a DOTween/LitMotion port |
 
 ## Steps
-1. **Confirm DOTween governs this module** — existing module convention, then project-wide choice, then ask. Never default to it because this skill was invoked ([coexistence-and-migration.md](references/coexistence-and-migration.md)).
+1. **Confirm DOTween governs this module** — existing module convention, then project-wide choice, then `Needs-decision`, `Next: technical-architect`. Never default to it because this skill was invoked ([coexistence-and-migration.md](references/coexistence-and-migration.md)).
 2. **Confirm Modules and tier cover the feature** — uGUI needs `DOTweenModuleUI`; TMP shortcuts and the visual Sequence editor need Pro ([getting-started.md](references/getting-started.md)).
 3. **Prefer a shortcut over `DOTween.To()`**; generic only for a private/static/uncovered value ([shortcuts.md](references/shortcuts.md)).
 4. **For a uGUI component, pick one owner per `RectTransform` property** — a `DOSizeDelta`/`DOFlexibleSize` tween against a Layout Group or Content Size Fitter fights silently ([shortcuts.md](references/shortcuts.md)).
@@ -29,7 +29,7 @@ Docs: `https://dotween.demigiant.com/documentation.php` (single page, no version
 9. **Await via UniTask `UNITASK_DOTWEEN_SUPPORT` when `unitask-async-programming` governs the project**, with `GetCancellationTokenOnDestroy()`; `AsyncWaitForCompletion()` only without UniTask and after the WebGL caveat check.
 10. **Use `DOPath` only for real multi-waypoint motion**, choosing `PathType`/`resolution` deliberately.
 11. **Claim an allocation advantage for either engine only after a Profiler measurement** (`unity-profiler-diagnostics`).
-12. **Ask when the engine convention, async ecosystem or WebGL target is unstated.**
+12. **Engine convention, async ecosystem or WebGL target unstated → `Blocked` naming it.**
 
 ## Never
 - Put DOTween in `Game.Core.*` — it depends on `UnityEngine`; drive Core state from `Game.Client.*`.

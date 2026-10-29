@@ -6,7 +6,7 @@ user-invocable: false
 
 # Netcode for GameObjects
 
-Not for: choosing NGO (`netcode-architecture-decision`), the DOTS ghost stack (`netcode-for-entities`), the game rule a synced value carries (`csharp-engineer`), reconciliation/tick-rate protocol design and server-side anti-cheat (`netcode-engineer`), `NetworkDriver`/pipelines/TLS/`RelayServerData`/a custom `NetworkTransport` (`unity-transport` — the `UnityTransport` component's own fields stay here), non-network performance (`gameplay-engineer`).
+Not for: choosing NGO (`netcode-architecture-decision`), the DOTS ghost stack (`netcode-for-entities`), the game rule a synced value carries (`csharp-engineer`), reconciliation/tick-rate protocol design (`netcode-engineer`), server-side validation of RPCs and inputs (`server-authoritative-validation`), `NetworkDriver`/pipelines/TLS/`RelayServerData`/a custom `NetworkTransport` (`unity-transport` — the `UnityTransport` component's own fields stay here), non-network performance (`gameplay-engineer`).
 Docs: https://docs.unity3d.com/Packages/com.unity.netcode.gameobjects@2.13/ (installed 2.13.1; reference source paths are below this base) — past 2.13, substitute the version in `Packages/manifest.json`; Distributed Authority changes fastest between releases.
 
 | Reference | Read when |
@@ -41,7 +41,7 @@ Docs: https://docs.unity3d.com/Packages/com.unity.netcode.gameobjects@2.13/ (ins
 - Sync: <NetworkVariable / Rpc / NetworkTransform / ... per value> — <reason>
 - Spawn/ownership: <who spawns/despawns, pooled or not, ownership model>
 - Shared Core boundary: <rule logic confirmed in Game.Core.*>
-- Layer: Game.Core.* / Game.Client.* / Editor-only
+- Layer: Game.Client.* / Game.Server.* / Editor-only
 - Verified: <multi-client run / network-condition test, or "not run">
 - Known limitations: <...>
 ```

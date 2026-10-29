@@ -11,10 +11,10 @@ Not for: code outside a hot path (plain `System.Linq`, `csharp-standards` → `c
 ## Steps
 Usable in `Game.Core.*` (no UnityEngine dependency).
 
-1. **Measure first** — convert only a chain the Profiler attributes an allocation to (`csharp-standards` → `performance-and-algorithms.md` Verification). No capture and the path is not plainly per-frame → ask for one.
+1. **Measure first** — convert only a chain the Profiler attributes an allocation to (`csharp-standards` → `performance-and-algorithms.md` Verification). No capture and the path is not plainly per-frame → `Blocked` naming the capture needed.
 2. **Check the collection type before the query** — a zero-allocation scan of the wrong structure is still wrong; fix the structure first (`performance-and-algorithms.md` Data structure selection).
 3. **Open with `.AsValueEnumerable()` on the concrete collection** (`List<T>`, array, `Span<T>`), never an `IEnumerable<T>`/`IList<T>`-typed reference — that loses the struct-enumerator path before the first operator.
-4. **Remove capturing lambdas** — `Where(e => e.IsAlive)` is cached once; `Where(e => e.Health < threshold)` allocates a closure per call. Use an operator overload that takes state, or restructure so the predicate captures nothing. This is the usual reason a converted chain still allocates.
+4. **Remove capturing lambdas** — `Where(e => e.IsAlive)` is cached once; `Where(e => e.Health < threshold)` allocates a closure per call. Hoist the value into a non-capturing form (a static predicate over precomputed data), or fall back to a plain `for` loop; ZLinq has no state-passing overloads. This is the usual reason a converted chain still allocates.
 5. **No `.ToArray()` / `.ToList()` in the hot path** — it moves the allocation to the last operator. End in `foreach`, an aggregate or a single-element operator.
 6. **Consume fully inside the synchronous method that created it** — `ValueEnumerable<T>` is stack-bound: no field, closure or `await`. Materialize deliberately at a boundary and accept the allocation there.
 7. **Long chain over a small collection → prefer a plain loop** — struct copying across many operators has a constant cost (`performance-and-algorithms.md` small-N reasoning; KISS in `coding-principles.md`).

@@ -19,7 +19,7 @@ Docs: https://docs.unity3d.com/Manual/ParticleSystems.html (unversioned); Visual
 ## Steps
 1. **Confirm the render pipeline first** — VFX Graph needs a Scriptable Render Pipeline (URP, HDRP) and compute shaders; the Built-in pipeline has only ParticleSystem ([tool-choice.md](references/tool-choice.md)).
 2. **Choose the tool by what the effect must do** — GPU simulation buys count but makes reading particle state back impractical, so an effect whose collisions drive a game rule uses ParticleSystem at any scale.
-3. **Check compute support on the weakest target tier before committing to a graph** — a tier without it renders nothing, not a degraded effect. A second authored version for that tier is a legitimate outcome: decide it up front.
+3. **Check VFX Graph support on the weakest target tier before committing to a graph** — on mobile it is preview, excludes OpenGL ES and needs compute plus `SystemInfo.maxComputeBufferInputsVertex > 0`; a tier without it renders nothing, not a degraded effect. Broad Android defaults to ParticleSystem. A second authored version for that tier is a legitimate outcome: decide it up front.
 4. **ParticleSystem: set Simulation Space first** — Local follows the emitter, World stays behind; most attached/detached complaints are this setting ([particle-system-modules.md](references/particle-system-modules.md)).
 5. **Treat Max Particles as a visible cliff** — at the cap emission stops, which reads as the effect cutting out.
 6. **VFX Graph: size Capacity to the real peak** (it pre-allocates GPU memory) and **set bounds to cover where particles travel** (default bounds cull the effect when its origin leaves the frustum) ([vfx-graph-contexts.md](references/vfx-graph-contexts.md)).

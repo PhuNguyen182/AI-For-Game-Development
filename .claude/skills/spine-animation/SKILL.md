@@ -21,7 +21,7 @@ Docs: `https://esotericsoftware.com/spine-unity-<page>` (installation, main-comp
 | [faq.md](references/faq.md) | Any Spine symptom (import error, dark borders, stripes, GC/draw-call spikes), before blaming generic Unity |
 
 ## Steps
-1. **Ask if the rendering surface, pipeline or alpha workflow is unstated** — they decide steps 2 and 7 and are invisible in code that compiles and renders wrongly only on device.
+1. **Rendering surface, pipeline or alpha workflow unstated → `Blocked` naming it** — they decide steps 2 and 7 and are invisible in code that compiles and renders wrongly only on device.
 2. **Pick the component**, per [main-components.md](references/main-components.md): `SkeletonRenderer` + `SkeletonAnimation` by default (world); `SkeletonGraphic` inside a Canvas (`CanvasRenderer`); `SkeletonMecanim` only when Mecanim authoring is wanted and its limits are accepted; `SkeletonRenderer` alone only for fully manual posing.
 3. **Call `SetAnimation` only on a change**, per [animation-state.md](references/animation-state.md) — each call restarts from frame 1, so per-frame calls freeze the pose. Hold a frame with `TrackEntry.trackTime`.
 4. **Call `Skeleton.SetupPoseSlots()` after every `SetSkin(...)`**, then `AnimationState.Apply(skeleton)` (`SkeletonMecanim.Update()` on Mecanim) — otherwise attachments from the previous skin keep affecting visibility. Per [skeleton-api.md](references/skeleton-api.md).

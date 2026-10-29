@@ -6,7 +6,7 @@ user-invocable: false
 
 # Unity Camera Fundamentals
 
-Not for: Cinemachine (`unity-cinemachine-authoring`; a Brain overwrites this skill's transform writes every frame, and a project that has it should not get a hand-rolled equivalent), camera stacking/renderer/per-pipeline data (`unity-urp-rendering`, `unity-hdrp-rendering`), post-process toggle, Volumes and anti-aliasing (`unity-post-processing`), pointer input (`unity-input-system`), UI safe area (`gameplay-engineer`), collider/layer setup and Rigidbody interpolation settings (`unity-3d-physics`, `unity-2d-physics`), gameplay meaning of a picked point (`Game.Core.*`, per `csharp-standards` → `coding-principles.md`).
+Not for: Cinemachine (`unity-cinemachine-authoring`; a Brain overwrites this skill's transform writes every frame, and a project that has it should not get a hand-rolled equivalent), camera stacking/renderer/per-pipeline data (`unity-urp-rendering`, `unity-hdrp-rendering`), post-process toggle, Volumes and anti-aliasing (`unity-post-processing`), pointer input (`unity-input-system`), UI safe area (`mobile-safe-area`), collider/layer setup and Rigidbody interpolation settings (`unity-3d-physics`, `unity-2d-physics`), gameplay meaning of a picked point (`Game.Core.*`, per `csharp-standards` → `coding-principles.md`).
 Docs: https://docs.unity3d.com/Manual/Cameras.html, https://docs.unity3d.com/ScriptReference/Camera.html — unversioned, current release; confirm any default against the installed Editor.
 
 | Reference | Read when |
@@ -31,7 +31,7 @@ Docs: https://docs.unity3d.com/Manual/Cameras.html, https://docs.unity3d.com/Scr
 12. **Apply shake as an offset after the follow resolves**, with distinct noise coordinates per axis.
 13. **Derive bounds from current view size**, not a fixed padding.
 14. **Keep the camera presentational**: it supplies world points and never mutates gameplay state.
-15. **Cache `Camera.main`** (`Awake`); never call it per frame (`csharp-standards` → `performance-and-algorithms.md`).
+15. **`Camera.main` is cached by Unity since 2020.2** — calling it per frame is cheap; still cache a camera reference when the code must survive the main camera changing tag or being swapped.
 
 ## Never
 - Use the legacy `Input` class to get a pointer position (`csharp-standards` → `coding-principles.md`, Obsolete APIs).

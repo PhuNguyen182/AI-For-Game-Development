@@ -1,6 +1,6 @@
 # Rebinding
 
-Docs (1.20 manual): `user-rebinding-runtime`, `rebind-action-runtime`, `save-load-rebinds`, `display-bindings`, `restore-original-bindings`. Menu layout: `gameplay-engineer`. The package ships a rebinding UI sample (listen, cancel, persist); start from it.
+Docs (1.20 manual): `user-rebinding-runtime`, `rebind-action-runtime`, `save-load-rebinds`, `display-bindings`, `restore-original-bindings`. Menu layout: `ui-engineer`. The package ships a rebinding UI sample (listen, cancel, persist); start from it.
 
 ## Interactive operation
 | Member | Note |

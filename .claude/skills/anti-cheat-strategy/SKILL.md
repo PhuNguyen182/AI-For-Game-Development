@@ -6,7 +6,7 @@ user-invocable: false
 
 # Anti-Cheat Strategy
 
-Not for: writing one server-side validation check or relevancy culling (`netcode-engineer`), sync model (`netcode-architecture-decision`), the scoring rubric (`tco-reversibility-scoring`), platform-expansion cost (`cross-platform-expansion-assessment`).
+Not for: writing one server-side validation check (`server-authoritative-validation`), relevancy culling (`netcode-engineer`), sync model (`netcode-architecture-decision`), the scoring rubric (`tco-reversibility-scoring`), platform-expansion cost (`cross-platform-expansion-assessment`).
 
 ## Steps
 1. **Establish what cheating costs this game** — casual PvE, ranked ladder, esports ambition and a real-money-adjacent economy are different stakes; stakes decide which tier is worth its price. Player-to-player item trading makes duplication an economy attack even without PvP, so stakes are at least medium; confirm server authority over item creation and transfer as the floor.

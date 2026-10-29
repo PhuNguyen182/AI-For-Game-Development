@@ -20,7 +20,7 @@ Docs: https://docs.unity3d.com/Packages/com.unity.mathematics@1.3/ (`manual/`, `
 2. **Match vector width to the data** (`float2` planar, `float3` 3D, `float4` only for a real 4-component value). Per [vector-and-matrix-types.md](references/vector-and-matrix-types.md).
 3. **Build every `quaternion` and matrix through its factory methods**, never field-by-field. Same file.
 4. **Use `math.*`, never `Mathf`/`System.Math`, for elementary functions in Core and Burst code**; swizzle for readable rearrangement, stopping where a named variable reads better. Per [math-functions-and-swizzling.md](references/math-functions-and-swizzling.md).
-5. **Shared Core RNG is `Unity.Mathematics.Random` with an explicit, injected, nonzero seed**, state threaded as a field or `ref`, never static. Per [random-numbers.md](references/random-numbers.md).
+5. **Burst, job and ECS code uses `Unity.Mathematics.Random` with an explicit, injected, nonzero seed**, state threaded as a field or `ref`, never static; Shared Core randomness is `nrandom-random-generation`'s. Per [random-numbers.md](references/random-numbers.md).
 6. **Choose `noise` by character, not habit** — smooth (`cnoise`/`snoise`) vs cell-like (`cellular`). Per [math-functions-and-swizzling.md](references/math-functions-and-swizzling.md).
 7. **State the determinism limit.** The type migration removes the `UnityEngine` dependency only; SIMD codegen, `FloatMode` and transcendental precision can still differ across platforms, owned by `unity-burst-compiler` (`FloatMode.Deterministic`, Burst Inspector).
 8. **Verify precision-sensitive comparisons** against `Mathf`/`System.Math`; they are not guaranteed bit-identical (`csharp-standards` → `performance-and-algorithms.md`, Verification).

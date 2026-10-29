@@ -12,7 +12,7 @@ Companion, if the Unity plugin is installed: `unity:shader-graph-create-custom-n
 ## Steps
 1. **Take the pipeline target and master stack as given; stop if missing** (`render-pipeline-urp-hdrp`) — includes and lighting functions differ per pipeline.
 2. **Default to Shader Graph; justify hand-written HLSL** — graphs are artist-editable and SRP Batcher compatible. HLSL only for what nodes cannot express: a custom lighting model, direct `StructuredBuffer` use.
-3. **Put every material-tunable property in one `UnityPerMaterial` CBUFFER** — a property outside it silently drops the shader out of SRP batching, with no warning.
+3. **Put every material-tunable property in one `UnityPerMaterial` CBUFFER** — a property outside it drops the shader out of SRP batching with no console warning; check the shader Inspector's SRP Batcher row reads compatible.
 4. **`MaterialPropertyBlock` breaks the SRP batch for that renderer**, while `csharp-standards` → `performance-and-algorithms.md` requires it over `renderer.material` (which instantiates and leaks a material). Both hold: where per-instance variation is wanted at scale, report the conflict and let a measurement choose between material variants (small fixed palette), GPU instancing (many instances of one mesh), or keeping the block (low count).
 5. **`shader_feature` unless a variant is selected at runtime** — `multi_compile` ships every combination; `shader_feature` strips unreferenced ones. State the variant count (multiplicative) when more than a couple of keywords exist.
 6. **`half` by default in mobile fragment work**; `float` for positions, depth reconstruction and where banding shows.

@@ -28,6 +28,6 @@ private static async IAsyncEnumerable<Row> ReadPagesAsync(
 
 ## ConfigureAwait (CA2007)
 - A bare `await` can resume on the captured context: deadlock risk on a UI/game-loop thread, overhead in library code.
-- `ConfigureAwait(false)` resumes on the thread pool; the default for `Game.Core.*` and SDK wrapper code.
+- `ConfigureAwait(false)` resumes on the thread pool; the default for `Game.Server.*` and IO wrappers. Never in code whose continuation touches Unity objects. `Game.Core.*` rules do not await.
 - Omitted or `true` is correct only at true UI/game-loop entry points.
 - `await` cannot appear in a `lock` body; use `SemaphoreSlim.WaitAsync` ([channels-and-parallel-multithreading.md](channels-and-parallel-multithreading.md)).

@@ -9,4 +9,4 @@ Both mechanisms are thread-safe; the question is whether indeterministic order i
 
 Recovering determinism: switch to `NativeStream`/`UnsafeStream`; divide work into predetermined index ranges so position encodes order; or accept indeterministic writes and sort afterward.
 
-Pre-size a list before handing out its `ParallelWriter`: exceeding capacity does not grow it and does not error, the append just does not fit.
+Pre-size a list before handing out its `ParallelWriter`: exceeding capacity never grows it: with safety checks on, `AddNoResize` throws `InvalidOperationException`; with them off (release players) it writes out of bounds. Pre-size to the worst case.

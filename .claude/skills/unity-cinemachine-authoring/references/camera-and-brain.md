@@ -7,7 +7,7 @@ The Brain is the only component that touches the real `Camera`; each `Cinemachin
 | Piece | Rule |
 |---|---|
 | Placement | One Brain on the rendering `Camera`. On a `CinemachineCamera` it does nothing; two on one camera fight |
-| Update Method | Fixed / Late / Smart. A target moved in `FixedUpdate` needs Fixed |
+| Update Method | Fixed / Late / Smart. Smart is the recommended default; an uninterpolated `FixedUpdate` target needs Fixed |
 | Blend Update Method | Evaluates blends separately, so a blend stays frame-rate smooth while the camera updates on the physics clock |
 | `ActiveVirtualCamera` / `IsBlending` | Gate gameplay that must wait for a cut to finish |
 | Priority | Highest enabled priority is live and blended into. Equal → most recently activated. Deactivating the live camera cuts |

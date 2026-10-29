@@ -35,7 +35,7 @@ Not for: SDK integration and IAP wiring (`sdk-platform-engineer`), economy/gacha
 - TCO / Reversibility: <score, save-data lock-in>
 - Store-policy check: pass / fail — <rules>
 - Decision: <option> — <reason>
-- Routed to: `sdk-platform-engineer`
+- Routed to: `backend-engineer` (server ledger, `iap-server-receipt-ledger`); mediation SDK and client IAP wiring `sdk-platform-engineer`
 ```
 On request only, add `Known limitations`, `Latent concerns`, `Future remediation` (each with its trigger: policy change, region launch, scale).
 

@@ -37,7 +37,7 @@ Docs: https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/index.html
 - Call `EntityManager` structural APIs inside a job or an iteration loop (sync point completes every job that could touch the data).
 - Use a component handle acquired before a structural change.
 - Leave a parallel ECB write without a deterministic sort key (breaks prediction and server reconciliation, reproduces intermittently).
-- Use managed `IComponentData` classes (deprecated; unusable in jobs/Burst) or `IAspect` (removed in the Entities 6.x line; use `SystemAPI.Query<T>`/`IJobEntity`/`IJobChunk`).
+- Use managed `IComponentData` classes (deprecated; unusable in jobs/Burst) or `IAspect` / `Entities.ForEach` (both deprecated since Entities 1.4; use `SystemAPI.Query<T>`/`IJobEntity`/`IJobChunk`).
 - Create extra Worlds or override default update order without a stated reason.
 
 ## Output

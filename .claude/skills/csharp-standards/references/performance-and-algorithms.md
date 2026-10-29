@@ -4,12 +4,12 @@ Synthesized from project decisions; adds to rule `csharp.md` hot paths. Deep, me
 
 ## Core principle — measured, practical performance over theoretical purity
 - Good, stable Big-O and hardware-friendly execution (sequential access, predictable branches, low constants); Big-O filters, the hardware breaks ties.
-- Built-ins over hand-rolled: `Array.Sort`/`List<T>.Sort`, `UnityEngine.Pool.ObjectPool<T>`.
-- Range checks compare `sqrMagnitude` against a pre-squared threshold, not `Vector3.Distance`.
+- Built-ins over hand-rolled: `Array.Sort`/`List<T>.Sort`; pools: `UnityEngine.Pool.ObjectPool<T>` in Client, a plain C# pool or `ArrayPool<T>` in `Game.Core.*`.
+- Range checks compare squared distance against a pre-squared threshold, not a square root (`sqrMagnitude` vs `Vector3.Distance` in Client; `LengthSquared()` or integer maths in Core).
 
 ## Data structure selection
 - `List<T>`/array for iteration; avoid `LinkedList<T>` in hot paths. Keyed lookup when N is unbounded; a small bounded set in a hot path → linear scan or array index — measure the threshold, never assume it.
-- `struct`/`readonly record struct` for small, short-lived values; pass large ones by `in` — copying can cost more than the GC it saves. `Span<T>` slices without copying.
+- `struct`/`readonly struct` for small, short-lived values (`record struct` needs C# 10); pass large ones by `in` — copying can cost more than the GC it saves. `Span<T>` slices without copying.
 
 ## Memory discipline
 - No unbounded growth: pool, cap, or clear at a lifecycle boundary.

@@ -21,7 +21,7 @@ Docs: Microsoft Learn; API pages pinned `?view=netstandard-2.1` (what Unity's de
 4. **`stackalloc` only small, bounded sizes**, with a length check and a pool fallback above the bound.
 5. **Pick the collection by the real sharing pattern** ([collections-selection.md](references/collections-selection.md)): single writer stays `List<T>`/`Dictionary`; concurrent types only for genuinely concurrent writers; immutable only for publish-once snapshots handed to several readers.
 6. **Confirm the API exists at the project's compatibility level.**
-7. **Ask when buffer size, or whether producer and consumer share a thread/frame, is unstated.**
+7. **Buffer size, or whether producer and consumer share a thread/frame, unstated → `Blocked` naming it.**
 
 ## Never
 - Store a `Span<T>` in a field, capture it, or hold it across `await`/`yield` — use `Memory<T>`.

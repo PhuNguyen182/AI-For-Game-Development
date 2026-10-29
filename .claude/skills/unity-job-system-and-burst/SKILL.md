@@ -26,7 +26,7 @@ Docs: https://docs.unity3d.com/6000.5/Documentation/Manual/job-system.html (Unit
 7. **Schedule when the input is ready, complete where the result is read**, per [creating-and-scheduling-jobs.md](references/creating-and-scheduling-jobs.md); `JobHandle.ScheduleBatchedJobs` when a long gap follows scheduling.
 8. **Size the batch against per-element cost**, per [dependencies-and-parallel-jobs.md](references/dependencies-and-parallel-jobs.md).
 9. **Chain every ordering relationship through a `JobHandle`** (`CombineDependencies` for several producers); two unchained jobs on the same data are a race.
-10. **Apply `[BurstCompile]` and verify it in the Burst Inspector** (`unity-burst-compiler`): needed on the job struct and on each static method it calls plus that method's class; one managed or reference type inside drops the job to Mono/IL2CPP with no error.
+10. **Apply `[BurstCompile]` and verify it in the Burst Inspector** (`unity-burst-compiler`): needed on the job struct only — Burst compiles everything the job calls; a static method and its class need it only when managed code calls them directly as a Burst entry point; one managed or reference type inside drops the job to Mono/IL2CPP with no error.
 11. **Dispose every native allocation on every path**, early returns and exceptions included (`csharp-standards` → `performance-and-algorithms.md` "Memory discipline"); `Dispose(JobHandle)` while a scheduled job still holds it.
 12. **Re-measure** — main-thread time must drop rather than move into a `WaitForJobGroup` stall (`csharp-standards` → `performance-and-algorithms.md` "Verification"); state the added discipline (allocator lifetimes, safety rules, Burst constraints) with the win.
 

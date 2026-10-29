@@ -7,7 +7,8 @@ Choose the confiner by the quantity to bound, not project dimensionality: Confin
 | Item | Rule |
 |---|---|
 | `CinemachineConfiner2D` | Bakes a reduced shape from the camera's view size; valid only for that size |
-| `InvalidateBoundingShapeCache()` | Call when the shape, orthographic size, FOV or aspect changes, else confinement uses a stale view |
+| `InvalidateBoundingShapeCache()` | Call when the bounding shape changes; it re-bakes, so never per frame |
+| `InvalidateLensCache()` | Call when orthographic size, FOV or aspect changes, else confinement uses a stale view |
 | Shape source | `PolygonCollider2D`, `BoxCollider2D` or `CompositeCollider2D`; a composite must generate filled geometry, not outlines (its setting is `unity-2d-physics`'s) |
 | Damping / slowing distance | Both zero → abrupt stop at the edge that reads as a bug |
 

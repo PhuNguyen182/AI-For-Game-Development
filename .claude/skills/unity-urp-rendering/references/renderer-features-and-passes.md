@@ -10,6 +10,6 @@ Sources (manual paths under the `Docs:` base): [p] `renderer-features/intro-to-s
 | `RenderPassEvent` | The injection point; it must satisfy the pass's data dependency, not its visual intent |
 | `RecordRenderGraph` | Current authoring path: the pass declares its resources and the graph schedules and culls [w] |
 | Resource declaration | Declare everything read and written; the graph can cull a pass whose output nothing consumes [w] |
-| Compatibility Mode | Keeps the old `Execute` path for migration only, not a destination for new work [w] |
+| Compatibility Mode | 6.0–6.2: a setting; 6.3: only behind the `URP_COMPATIBILITY_MODE` define; 6.4+: removed. Migration aid only, never a destination [w] |
 
-**Caveat:** both failures are silent. A feature on the wrong Renderer is never asked to run, and an `Execute`-only pass stops being invoked once Compatibility Mode is off; the console is clean and the effect is absent.
+**Caveat:** both failures are silent. A feature on the wrong Renderer is never asked to run, and an `Execute`-only pass stops being invoked once Compatibility Mode is off (always, on 6.4+); the console is clean and the effect is absent.
