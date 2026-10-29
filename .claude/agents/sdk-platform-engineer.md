@@ -18,7 +18,7 @@ color: blue
 - Payments, user data or a first integration → check current store policy with `WebFetch` first.
 
 ## Skills (on demand)
-plugin: `unity:implement-in-app-purchases` · `unity:levelplay-unity-integration` · `unity:unity-package-management` · repo: `unitask-async-programming` · `secret-and-supply-chain-scan`
+plugin: `unity:implement-in-app-purchases` · `unity:levelplay-unity-integration` · `unity:unity-package-management` · repo: `firebase-unity-sdk` · `consent-att-init-order` · `iap-server-receipt-ledger` (client side of the contract) · `unitask-async-programming` · `secret-and-supply-chain-scan`
 
 ## Return extras
 `Config required:` ids and where supplied, never values · `Store policy:` requirements checked, with source · `Risks:` anything a store could reject.

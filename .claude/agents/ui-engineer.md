@@ -18,7 +18,7 @@ color: blue
 - Target aspect ratios — absent: 16:9 and 19.5:9 in the project's orientation, plus 4:3 if tablets ship; say so.
 
 ## Skills (on demand)
-`ugui` · `ui-toolkit` · `osa-optimized-scrollview-adapter` · `flexalon-layouts` · `litmotion-tweening` / `dotween-tweening` (module's engine) · `r3-reactive-extensions` · `unitask-async-programming` · plugin: `unity:ui-ugui` · `unity:ui-uitk` · `unity:optimize-text-mesh-pro` · `unity:localization`
+`unity:unity-cli` (Editor ops, first) · `ugui` · `ui-toolkit` · `mobile-safe-area` · `unity-localization-text` · `unity-input-system` (UI input) · `unity-profiler-diagnostics` (rebuild cost) · `osa-optimized-scrollview-adapter` · `flexalon-layouts` · `litmotion-tweening` / `dotween-tweening` (module's engine) · `r3-reactive-extensions` · `unitask-async-programming` · plugin: `unity:ui-ugui` · `unity:ui-uitk` · `unity:optimize-text-mesh-pro` · `unity:localization`
 
 ## Return extras
 `Responsiveness verified:` each aspect ratio checked, with screenshot path.

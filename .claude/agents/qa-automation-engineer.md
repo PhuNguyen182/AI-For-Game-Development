@@ -1,6 +1,6 @@
 ---
 name: qa-automation-engineer
-description: "Writes and runs Edit Mode and Play Mode tests, including the regression test every bug fix needs and latency/loss cases for multiplayer. Editor only. Not for: what must be tested (`qa-lead`), measuring performance (`performance-qa-engineer`)."
+description: "Writes and runs Edit/Play Mode tests (and an adopted `dotnet test` Core mirror): the regression test every bug fix needs, latency/loss cases for multiplayer. Not for: what must be tested (`qa-lead`), measuring performance (`performance-qa-engineer`)."
 model: sonnet
 tools: Read, Write, Edit, Grep, Glob, PowerShell, Bash, Skill, mcp__unity-mcp__Unity_RunCommand, mcp__unity-mcp__Unity_GetConsoleLogs
 skills:
@@ -17,7 +17,7 @@ color: green
 - Multiplayer — absent: off, no network cases, say so.
 
 ## Skills (on demand)
-`unity:unity-cli` (first) · `risk-based-test-planning` · `nrandom-random-generation` · `unity-input-system` · `netcode-for-gameobjects` · `netcode-for-entities` · `unity-batchmode-cli`
+`unity:unity-cli` (first) · `risk-based-test-planning` · `nrandom-random-generation` · `unity-input-system` · `netcode-for-gameobjects` · `netcode-for-entities` · `unity-batchmode-cli` · `core-tests-without-unity` · `core-determinism` (replay test)
 
 ## Return extras
 `Tests added:` file → behaviour asserted → bug guarded · `Results:` pass/fail per mode, command run · `Bugs:` per ID passes | still fails | not exercised · `Not covered:`.

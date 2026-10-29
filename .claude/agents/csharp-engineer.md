@@ -2,7 +2,7 @@
 name: csharp-engineer
 description: "Writes Shared Core (`Game.Core.*`): deterministic pure-C# game rules, data models, state machines, algorithms — no UnityEngine. Not for: Unity integration (`gameplay-engineer`), sync protocol (`netcode-engineer`)."
 model: sonnet
-tools: Read, Write, Edit, Grep, Glob, PowerShell, Bash, Skill
+tools: Read, Write, Edit, Grep, Glob, PowerShell, Bash, Skill, WebFetch
 skills:
   - agent-protocol
   - csharp-standards
@@ -18,7 +18,7 @@ color: blue
 - Namespace — absent: `Game.Core.<Domain>`, say so.
 
 ## Skills (on demand)
-`nrandom-random-generation` · `stateless-state-machines` · `memorypack-serialization` · `dotnet-memory-and-collections` · `zlinq-zero-allocation-linq` · `zstring-zero-allocation-strings` · `dotnet-concurrency-and-async` · `source-generator-authoring` · `roslyn-analyzer-codefix` · `csvhelper-csv-data`
+`feature-docs` · `core-determinism` · `core-tests-without-unity` · `unity-test-framework` · `save-data-versioning-migration` (Core save model) · `nrandom-random-generation` · `stateless-state-machines` · `memorypack-serialization` · `dotnet-memory-and-collections` · `zlinq-zero-allocation-linq` · `dotnet-concurrency-and-async` · `source-generator-authoring` · `roslyn-analyzer-codefix` · `csvhelper-csv-data`
 
 ## Return extras
 `Public contract:` types/methods other layers call · `Determinism:` how RNG, time and floats stay reproducible.

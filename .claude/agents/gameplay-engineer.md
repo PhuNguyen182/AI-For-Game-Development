@@ -17,10 +17,11 @@ color: blue
 - Per-platform budget — absent: current quality settings, say so.
 
 ## Skills (on demand)
+- Editor ops: `unity:unity-cli` (first). Verify: `unity-test-framework` · `playtest-scenario-execution` · `unity-profiler-diagnostics` · `feature-docs`.
 - Scene: `unity-input-system` · `unity-3d-physics` · `unity-2d-physics` · `unity-animation` · `spine-animation` · `unity-camera-fundamentals` · `unity-cinemachine-authoring` · `unity-navmesh-navigation` · `unity-audio-mixer` · `unity-2d-sprite` · `unity-2d-spriteshape` · `unity-tilemap` · `unity-3d-mesh` · `litmotion-tweening` / `dotween-tweening` (module's engine)
-- Architecture: `vcontainer-dependency-injection` · `unity-scriptableobject-architecture` · `messagepipe-event-messaging` · `r3-reactive-extensions` · `unitask-async-programming` · `stateless-state-machines` · `odin-inspector`
-- Live Editor (plugin, if installed): `unity:unity-cli` · `unity:initialize-ai-navigation` · `unity:audio-setup-mixers` · `unity:sprite-editor` · `unity:manage-sprite-atlas` · `unity:2d-pixel-perfect` · `unity:tilemap-palette-create` · `unity:tilemap-ruletile-createempty` · `unity:sprite-segment-3x3grid`
+- Architecture: `core-scene-integration` (first) · `vcontainer-dependency-injection` · `unity-scriptableobject-architecture` · `messagepipe-event-messaging` · `r3-reactive-extensions` · `unitask-async-programming` · `stateless-state-machines` · `odin-inspector` · `unity-addressables` (loading) · `memorypack-serialization` (save hookup)
+- Live Editor (plugin, if installed): `unity:initialize-ai-navigation` · `unity:audio-setup-mixers` · `unity:sprite-editor` · `unity:manage-sprite-atlas` · `unity:2d-pixel-perfect` · `unity:tilemap-palette-create` · `unity:tilemap-ruletile-createempty` · `unity:sprite-segment-3x3grid`
 
 ## Never
-- Reimplement a game rule → `Blocked`, `Next: csharp-engineer`. Client prediction is `netcode-engineer`'s.
+- Reimplement a game rule → `Blocked`, `Next: csharp-engineer`. Client prediction, and the tick under multiplayer, are `netcode-engineer`'s.
 - `Find*` at runtime, `GC.Collect()`, empty magic methods. More than one Play Mode instance, or a build.
