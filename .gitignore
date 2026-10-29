@@ -118,3 +118,6 @@ __pycache__/
 # Zero-Mem: derived index and per-machine state (the files under .memory/ are the record)
 .memory/.index/
 .memory/.state/
+# Framework repo only (not copied into game projects): its sessions are framework development,
+# not project memory, so traces stay local here. mem.py still indexes them from disk.
+.memory/traces/
