@@ -1,45 +1,30 @@
-# Joints — Fixed, Hinge, Spring, Character & Configurable
+# Joints
 
-Sources: [Introduction to joints](https://docs.unity3d.com/Manual/Joints.html), [Hinge Joint](https://docs.unity3d.com/Manual/class-HingeJoint.html), [Character Joint](https://docs.unity3d.com/Manual/class-CharacterJoint.html), [Create a configurable joint](https://docs.unity3d.com/Manual/create-configurable-joint.html).
-Covers: SKILL.md §4 — **"Choose the joint by required degrees of freedom, not by generality"**.
+Sources: Manual `Joints`, `class-HingeJoint`, `class-CharacterJoint`, `class-SpringJoint`, `create-configurable-joint`, `RagdollStability`.
 
-A joint connects a `Rigidbody` to another body, an `ArticulationBody`, or a
-fixed world point, and constrains their relative motion by applying corrective
-forces around a shared anchor. Every joint can break above a force or torque
-threshold. Choosing a named joint over `ConfigurableJoint` is not a style
-preference: the named joints ship with the limits and drives their use case
-needs already wired, and a Configurable Joint must have all of them specified.
+A joint ties a `Rigidbody` to another body, an `ArticulationBody` or a fixed world point with corrective forces around a shared anchor. Named joints ship with the limits and drives their use case needs; `ConfigurableJoint` needs everything specified.
 
-## Choosing one
+## Choosing
 
-| Joint | What it decides | Source |
-|---|---|---|
-| `FixedJoint` | Removes all relative freedom — parenting resolved through physics rather than the hierarchy, and therefore breakable. Adds no properties beyond the shared base | [Fixed Joint](https://docs.unity3d.com/Manual/class-FixedJoint.html) |
-| `HingeJoint` | One rotation axis, with optional spring, motor, and angle limits — doors, levers, driven wheels | [Hinge Joint](https://docs.unity3d.com/Manual/class-HingeJoint.html) |
-| `SpringJoint` | Elastic distance constraint between two anchors, with min and max distance plus spring and damper — visibly stretches, which is the difference from Fixed | [Spring Joint](https://docs.unity3d.com/Manual/class-SpringJoint.html) |
-| `CharacterJoint` | Extended ball-and-socket with a twist axis and two swing axes — built for ragdoll limbs, and what the Ragdoll Wizard generates | [Character Joint](https://docs.unity3d.com/Manual/class-CharacterJoint.html) |
-| `ConfigurableJoint` | Per-axis linear and angular motion, limits, and drives — correct only when no named joint expresses the combination, since everything must be specified explicitly | [Create a configurable joint](https://docs.unity3d.com/Manual/create-configurable-joint.html) |
-| `ArticulationBody` | Not a joint but its alternative — a whole hierarchy solved together, see [ragdoll-physics.md](ragdoll-physics.md) | [Articulation Body](https://docs.unity3d.com/Manual/class-ArticulationBody.html) |
+| Joint | Use |
+|---|---|
+| `FixedJoint` | Weld; parenting through physics, breakable |
+| `HingeJoint` | One axis, optional spring, motor, limits: doors, levers, driven wheels |
+| `SpringJoint` | Elastic distance (min/max, spring, damper); visibly stretches |
+| `CharacterJoint` | Twist axis plus two swing axes; ragdoll limbs, what the Ragdoll Wizard generates |
+| `ConfigurableJoint` | Per-axis Free/Limited/Locked motion, limits, drives; only when no named joint fits |
+| `ArticulationBody` | Alternative, not a joint: whole hierarchy solved together ([ragdoll-physics.md](ragdoll-physics.md)) |
 
-## Shared base properties
-
-| Property | What it decides | Source |
-|---|---|---|
-| Connected Body | The other body, or empty to anchor to a fixed world point | [Introduction to joints](https://docs.unity3d.com/Manual/Joints.html) |
-| Anchor / Connected Anchor | The pivot in each body's local space; `autoConfigureConnectedAnchor` derives the second from the current pose, so moving a body afterwards changes the constraint | [Introduction to joints](https://docs.unity3d.com/Manual/Joints.html) |
-| Break Force / Break Torque | Thresholds past which the joint separates; infinite by default, so a joint never breaks until this is set deliberately | [Introduction to joints](https://docs.unity3d.com/Manual/Joints.html) |
-| Enable Collision | Whether the two connected bodies still collide with each other; off is what stops a jointed pair fighting itself | [Introduction to joints](https://docs.unity3d.com/Manual/Joints.html) |
-| Enable Preprocessing | Helps the solver in normal conditions but destabilises a joint whose constraints cannot be satisfied — turn it off for anything spawned overlapping geometry | [Joint and ragdoll stability](https://docs.unity3d.com/Manual/RagdollStability.html) |
-| Mass Scale / Connected Mass Scale | Scales each body's apparent mass *for the solver only* — the sanctioned way to make an extreme real mass ratio solvable without changing the physics elsewhere | [Introduction to joints](https://docs.unity3d.com/Manual/Joints.html) |
-| `OnJointBreak` | Raised when a joint breaks — required if breaking is part of the design rather than an accident | [Introduction to joints](https://docs.unity3d.com/Manual/Joints.html) |
+## Shared properties
+- Connected Body: empty anchors to a world point.
+- Anchor / Connected Anchor: local-space pivots. `autoConfigureConnectedAnchor` derives the second from the current pose, so moving a body afterwards changes the constraint.
+- Break Force / Break Torque: infinite by default; set deliberately, and handle `OnJointBreak` if breaking is designed.
+- Enable Collision off stops a jointed pair fighting itself.
+- Enable Preprocessing destabilises joints whose constraints cannot be met; turn it off for anything spawned overlapping geometry.
+- Mass Scale / Connected Mass Scale: scale apparent mass for the solver only, the sanctioned way to solve an extreme real mass ratio.
 
 ## Drives and limits
-
-| Structure | What it decides | Source |
-|---|---|---|
-| `JointMotor` | Target velocity and force cap; a motor drives *toward* a speed, so an underpowered one stalls silently instead of erroring | [Hinge Joint](https://docs.unity3d.com/Manual/class-HingeJoint.html) |
-| `JointSpring` | Spring force, damper, and target position — a hinge that settles at an angle rather than swinging freely | [Hinge Joint](https://docs.unity3d.com/Manual/class-HingeJoint.html) |
-| `JointLimits` | Min and max angle, plus bounciness and contact distance — the clamp that makes a door a door | [Hinge Joint](https://docs.unity3d.com/Manual/class-HingeJoint.html) |
-| `SoftJointLimit` and its spring | Character Joint twist and swing limits, each with an optional spring for a soft stop instead of a hard one | [Character Joint](https://docs.unity3d.com/Manual/class-CharacterJoint.html) |
-| Configurable Joint motion axes | Each axis set Free, Limited, or Locked, then given limits and drives — the reason this joint needs the most setup and gives the most control | [Create a configurable joint](https://docs.unity3d.com/Manual/create-configurable-joint.html) |
-| Projection (Character and Configurable) | Snaps a joint back into compliance when the solver cannot keep up — trades physical accuracy for visual stability, so it is a last resort for visible stretching | [Joint and ragdoll stability](https://docs.unity3d.com/Manual/RagdollStability.html) |
+- `JointMotor` drives toward a speed; an underpowered one stalls silently.
+- `JointSpring` settles a hinge at an angle; `JointLimits` clamps min/max angle (with bounciness, contact distance).
+- `SoftJointLimit` with spring gives a soft stop on Character Joint twist/swing.
+- Projection (Character, Configurable) snaps back into compliance, trading accuracy for visual stability; last resort for visible stretching.
