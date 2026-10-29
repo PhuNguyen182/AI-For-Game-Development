@@ -20,6 +20,13 @@ $Budget = @{ ClaudeMd = 30; AlwaysRules = 100; PathRule = 40; Desc = 250; AgentB
 $RetiredAgents = 'unity-engineer', 'assurance-evaluator', 'build-run-engineer', 'build-verification-tester'
 $RetiredPaths = '\.claude/(standards|workflows/[a-z-]+\.md|workflows/(references|state|tools)/|rules/(orchestration|task-classification|effort-allocation|execution-loop|security|feature-context-reading|implementation-note|commit-message|language-and-comments|shell-preference|unity-tooling-preference|standards-index)\.md)'
 $IdPattern = '\b(?:G[0-9]{1,2}|B[0-9]{1,2}|I[0-9]{1,2}|A[1-5]|V[1-5]|EV[0-4])\b'
+# Return strings hooks/round-cap.ps1 counts on: renaming one silently stops the count.
+$HookContracts = @{
+    '.claude/agents/code-reviewer.md'        = @('Verdict: Approve | Request changes')
+    '.claude/agents/security-reviewer.md'    = @('Verdict: Clear | Blocked')
+    '.claude/agents/qa-lead.md'              = @('Verdict: Signed off | Not signed off')
+    '.claude/skills/agent-protocol/SKILL.md' = @('Status: Done | Partial | Blocked | Needs-decision | Failed', 'Repro: BUG-#### reproduces | gone')
+}
 
 $agents = @(Get-ChildItem (Join-Path $claude 'agents') -Filter *.md | ForEach-Object BaseName)
 $skills = @(Get-ChildItem (Join-Path $claude 'skills') -Directory | ForEach-Object Name)
@@ -103,6 +110,9 @@ function Test-File([string]$path) {
     $lines = $text -split '\r?\n'
     Test-Tables $path $lines
     Test-Paths $path $text
+    foreach ($s in @($HookContracts[$rel])) {
+        if ($s -and -not $text.Contains($s)) { Fail "${rel}: lost '$s', which hooks/round-cap.ps1 counts on - update both together" }
+    }
 
     if ($rel -match '^\.claude/agents/([^/]+)\.md$') {
         $name = $Matches[1]
