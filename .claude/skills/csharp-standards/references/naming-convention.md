@@ -1,106 +1,43 @@
-# Client Track — Naming Convention
+# Naming convention
 
-Source: [Microsoft Learn — Identifier names: rules and conventions (C#)](https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/identifier-names), combined with the standard Unity convention for Inspector-serialized fields (see override below).
-
-## Mandatory naming quality requirement
-
-Every identifier — regardless of casing rule — must be:
-- **Concise** — no unnecessary words, no redundant type/context repetition (`Player.playerHealth` is wrong; `Player.health` is right).
-- **Meaningful** — the name alone should say what the thing is or does, without needing a comment.
-- **Natural language** — real words, not cryptic shorthand. Avoid abbreviations or acronyms unless they're widely known and unambiguous in a game-dev context (`Hp`, `Ui`, `Vfx`, `Ai` are fine; `plyrMgr`, `dmgCalc` are not).
-- Never a single letter, except a simple loop counter (`for (int i = 0; ...)`).
-- Never two consecutive underscores (`__`) — that pattern is reserved for compiler-generated identifiers.
+Synthesized from project decisions; adds to rule `csharp.md`.
 
 ## C# identifier casing
 
-| Element | Convention | Example |
-|---|---|---|
-| Namespace | PascalCase, meaningful/hierarchical | `Game.Core.Combat`, `Game.Client.UI` |
-| Class / Struct / Record / Delegate | PascalCase | `PlayerController`, `readonly record struct DamageInfo` |
-| Interface | PascalCase, `I` prefix | `IDamageable`, `IAbilityHandler` |
-| Public method / local function | PascalCase | `CalculateDamage()` |
-| Public property | PascalCase | `CurrentHealth` |
-| Public field (plain C# class, not Inspector-serialized) | PascalCase — but keep public fields rare; prefer properties | `IsValid` |
-| Record positional parameter | PascalCase (becomes a public property) | `public record PhysicalAddress(string Street, string City);` |
-| Private / internal non-constant field | `_camelCase` | `_currentHealth` |
-| Private / internal static field | `s_camelCase` | `s_instanceCount` |
-| Private / internal `[ThreadStatic]` field | `t_camelCase` | `t_scratchBuffer` |
-| Constant (field or local, any access modifier) | PascalCase | `MaxHealth` |
-| Local variable / method parameter | camelCase | `damageAmount` |
-| Primary constructor parameter — `class`/`struct` | camelCase (same as any parameter) | `public class DataService(IWorkerQueue workerQueue)` |
-| Primary constructor parameter — `record` | PascalCase (becomes a public property) | `public record Address(string Street, string City);` |
-| Generic type parameter | `T` alone if self-explanatory; otherwise `T`-prefixed descriptive name | `List<T>`, `ISessionChannel<TSession>` |
-| Enum type | PascalCase, singular noun (plural if `[Flags]`) | `enum AbilityState`, `[Flags] enum InputActions` |
-| Attribute type | PascalCase, `Attribute` suffix | `RequiresAuthorityAttribute` |
+Base casing: rule `csharp.md`; this table lists only the additions.
+
+| Element | Convention |
+|---|---|
+| Internal field / internal static field | `_camelCase` / `s_camelCase`, as private |
+| `[ThreadStatic]` field | `t_camelCase` |
+| Public field, not Inspector-serialized | PascalCase; rare, prefer a property |
+| Record positional / record primary-constructor parameter | PascalCase (`record Address(string Street)`) |
+| Class/struct primary-constructor parameter | camelCase |
+| Boolean | `Is`/`Has`/`Can`/`Should`: `isGrounded` serialized, `IsGrounded` property |
+| Enum | Singular; plural if `[Flags]` |
+| Event | PascalCase, what happened, no prefix: `PlayerDied`; its handler `OnPlayerDied` |
+
+- No context repetition (`Player.health`, not `Player.playerHealth`). Game-dev abbreviations only (`Hp`, `Ui`, `Vfx`, `Ai`; never `plyrMgr`). Single letters only for loop counters. Never `__`.
 
 ## Unity override — Inspector-serialized fields use camelCase
-
-Any field Unity's Inspector can see and edit is exposed as **design-time data**, not public API surface — so it follows Unity's own convention (camelCase) instead of the general C# public-field rule above:
-
-- A `public` field on a `[Serializable]` class/struct.
-- Any `private`/`protected` field marked `[SerializeField]`.
+- A `public` field on a `[Serializable]` type, or a `[SerializeField]` private/protected field: camelCase, no `_`. A public non-serialized member stays PascalCase.
 
 ```csharp
 [Serializable]
 public struct AbilityConfig
 {
-    public float cooldown;      // public, but Inspector-serialized → camelCase
-    public int maxCharges;
-}
-
-public class PlayerController : MonoBehaviour
-{
-    [SerializeField] private float moveSpeed;   // SerializeField → camelCase, keeps _ off since it's Inspector data, not internal state
-    [SerializeField] private AbilityConfig ability;
+    public float cooldown;
 }
 ```
 
-This is the only exception to the PascalCase-for-public rule. A `public` field or property that is **not** meant for the Inspector (i.e. real public API, not `[Serializable]`/`[SerializeField]`) still follows standard PascalCase.
-
-## Supplementary clarity conventions (beyond the MS doc, kept for consistency)
-
-| Case | Convention | Example |
-|---|---|---|
-| Boolean (any scope) | `Is` / `Has` / `Can` / `Should` prefix | `isGrounded` (serialized) / `IsGrounded` (property) |
-| Event field | PascalCase, describes what happened — no forced prefix | `public event Action PlayerDied;` |
-| Event handler / subscriber method | `On<Event>` prefix | `void OnPlayerDied()` |
-| Async method | `Async` suffix | `LoadLevelAsync()` |
-
-## Unity assets (not C# identifiers, but named the same disciplined way)
-
-| Asset type | Convention | Example |
-|---|---|---|
-| Prefab | PascalCase, `Category_Name` | `Enemy_Goblin`, `Weapon_Sword` |
-| Scene | `Scene_Name` | `Scene_MainMenu`, `Scene_Level01` |
-| ScriptableObject asset | `SO_Name` | `SO_PlayerStats` |
-| Material | `Mat_Name` | `Mat_WaterSurface` |
-| Texture | `Tex_Name` | `Tex_PlayerAlbedo` |
-| Animation clip | `Anim_Name` | `Anim_PlayerRun` |
-| Animator Controller | `AC_Name` | `AC_Player` |
-| Shader | `Shader_Name` | `Shader_ToonWater` |
-| VFX / Particle prefab | `VFX_Name` | `VFX_ExplosionSmall` |
-| Assembly Definition (.asmdef) | matches its root namespace | `Game.Core.asmdef` |
+## Unity assets
+- Prefab `Category_Name` (`Enemy_Goblin`) · Scene `Scene_Name` · ScriptableObject `SO_Name` · Material `Mat_` · Texture `Tex_` · Animation clip `Anim_` · Animator Controller `AC_` · Shader `Shader_` · VFX/particle prefab `VFX_` · `.asmdef` = its root namespace (`Game.Core.asmdef`).
 
 ## Namespace boundary (enforces the Shared Core rule)
+- `Game.Core.*` — Shared Core, no `UnityEngine`; `csharp-engineer`. A class needing `UnityEngine` belongs in Client.
+- `Game.Client.*` — Unity integration; `gameplay-engineer`, `ui-engineer`.
+- `Game.Server.*` — server-authoritative wrapper, only when the backend track is active; `netcode-engineer`.
 
-- `Game.Core.*` — Shared Core only. No `UnityEngine` dependency. Owned by C# Software Engineer.
-- `Game.Client.*` — Unity-side integration (MonoBehaviours, scenes, prefabs). Owned by Unity Engineer.
-- `Game.Server.*` — server-authoritative wrapper (only exists when the backend track is active). Owned by Netcode Engineer.
-
-If a class needs to live in `Game.Core.*`, it must not reference `UnityEngine` types. If it does, it belongs in `Game.Client.*` instead.
-
-## Namespace must mirror the folder path (mandatory)
-
-- Every namespace is derived mechanically from the file's own folder path: take every folder segment **below `Assets`**, PascalCase each segment that isn't already, and join them with `.`. The namespace is never freehand or "close enough" — it is a direct, literal reflection of where the file physically sits in the project.
-- The root segment is still the track prefix from the boundary above (`Game.Core`, `Game.Client`, `Game.Server`) — that prefix is the first folder(s) under `Assets` (e.g. `Assets/Game.Client/...` or `Assets/Scripts/Client/...`, whichever this project's actual folder layout uses), followed by every folder below it down to the file itself. The file's immediate folder is the last namespace segment; the file name itself is never part of the namespace.
-- Moving a file to a different folder means updating its namespace to match in the same change — a namespace that still reflects the file's old location is a defect, not a style nit.
-- A folder segment that is a plural/lowercase directory name (`abilities`, `ui`, `combat`) is PascalCased in the namespace (`Abilities`, `UI`, `Combat`) — the folder name on disk can stay lowercase/plural per the project's asset-organization convention, but the C# namespace segment always follows the PascalCase identifier rule from the casing table above.
-- Example: a file at `Assets/Game.Client/UI/Inventory/InventoryPanel.cs` declares `namespace Game.Client.UI.Inventory;`. A Shared Core file at `Assets/Game.Core/Combat/Abilities/FireballAbility.cs` declares `namespace Game.Core.Combat.Abilities;`.
-- This applies to every `.cs` file without exception — Shared Core, Client integration, editor tooling, and tests alike. An `.asmdef`'s own name is a separate concern (see the Unity assets table above) and does not by itself change what a file's namespace must be.
-
-## Rules
-
-- Follow the casing table exactly — it is not optional per file or per author.
-- Never use Hungarian-style type prefixes on variables (no `strName`, `bIsActive`).
-- Keep naming consistent even if a specific PR's context suggests a shortcut — consistency across the whole client track matters more than local convenience.
-- Every namespace matches its file's folder path below `Assets`, segment for segment — never approximate, never left stale after a file move.
+## Namespace must mirror the folder path
+- Every folder segment below `Assets/`, each PascalCased (`ui` → `UI`); the file name is never a segment. Every `.cs` file, tests and editor tooling included; the `.asmdef` name does not change it.
+- `Assets/Game.Client/UI/Inventory/InventoryPanel.cs` → `Game.Client.UI.Inventory`.
