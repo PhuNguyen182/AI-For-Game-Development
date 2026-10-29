@@ -1,6 +1,6 @@
 ---
 name: solution-comparison-report
-description: "Turn screened candidates into one dated, sourced recommendation: fixed axes, deciding axis, runner-up and its flip condition, staleness trigger. Use when 2+ candidates survive screening."
+description: "Turn screened candidates into one dated, sourced recommendation: fixed axes, deciding axis, runner-up and its flip condition, staleness trigger. Use to close every research-mode question, whatever survived screening."
 user-invocable: false
 ---
 
@@ -21,7 +21,9 @@ Not for: finding candidates (`technology-scouting-sweep`), grading sources (`sou
 ## Output
 ```
 ## Solution Comparison — <capability> (English)
+- Already in project: <package, plugin or API covering this — where found | nothing found>
 - Candidates compared: <screened survivors only>
+- Rejected: <candidate — deciding gate or source failure, one line each> | none
 - Axes fixed before comparison: <list>
 | Candidate | <must-have> | Maintenance | Integration cost | Performance | Exit cost |
 |---|---|---|---|---|---|
@@ -30,6 +32,7 @@ Not for: finding candidates (`technology-scouting-sweep`), grading sources (`sou
 - Recommendation: <name @version> — <deciding axis tied to choice>
 - Runner-up: <name @version> — flips if <condition>
 - Unverified: <claims, each with the spike that settles it>
+- Sources: <claim — URL, tier, retrieved <date>> one line each
 - Picture taken: <date> — restate if <release/version that invalidates it>
 - Decision: RECOMMENDED / TIE — LOWER RISK CHOSEN / NO VIABLE CANDIDATE
 - Routed to: <role>
