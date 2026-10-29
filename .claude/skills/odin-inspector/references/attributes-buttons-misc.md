@@ -1,76 +1,33 @@
-# Buttons & Misc Display Attributes — Sirenix.OdinInspector actions and raw-value display
+# Buttons & Misc Display Attributes
 
-Source: [ButtonAttribute](https://odininspector.com/documentation/sirenix.odininspector.buttonattribute), [ButtonGroupAttribute](https://odininspector.com/documentation/sirenix.odininspector.buttongroupattribute), [InlineButtonAttribute](https://odininspector.com/documentation/sirenix.odininspector.inlinebuttonattribute), [CustomContextMenuAttribute](https://odininspector.com/documentation/sirenix.odininspector.customcontextmenuattribute), [ShowInInspectorAttribute](https://odininspector.com/documentation/sirenix.odininspector.showininspectorattribute), [EnumToggleButtonsAttribute](https://odininspector.com/documentation/sirenix.odininspector.enumtogglebuttonsattribute), [EnumPagingAttribute](https://odininspector.com/documentation/sirenix.odininspector.enumpagingattribute), [ToggleAttribute](https://odininspector.com/documentation/sirenix.odininspector.toggleattribute), [ToggleLeftAttribute](https://odininspector.com/documentation/sirenix.odininspector.toggleleftattribute), [DisplayAsStringAttribute](https://odininspector.com/documentation/sirenix.odininspector.displayasstringattribute), [OptionalAttribute](https://odininspector.com/documentation/sirenix.odininspector.optionalattribute).
-Covers: SKILL.md §4 — **"Route to the narrowest reference file for the concern"**.
+## Button
+`[Button]` goes on a method of any accessibility; it derives from `ShowInInspector`, so it is always visible.
 
-Inspector-only actions (buttons, context-menu items) and attributes that
-change how a value's own type is rendered, as opposed to grouping
-([attributes-layout-display.md](attributes-layout-display.md)) or gating
-visibility ([attributes-conditional-validation.md](attributes-conditional-validation.md)).
+| Overload | Effect |
+|---|---|
+| `()` | Named after the method |
+| `(string name)` | Custom label |
+| `(ButtonSizes)`, `(int buttonSize)` | Pixel height |
+| `(SdfIconType icon, ...)` | Icon or icon+label |
+| `(ButtonStyle)` | How parameter fields draw: `Box`, `FoldoutButton`, `CompactBox` |
 
-## Table of contents
-- [Buttons](#buttons)
-- [Context menu & inspector-only display](#context-menu--inspector-only-display)
-- [Enum & toggle display](#enum--toggle-display)
-- [String display](#string-display)
+Fields: `DirtyOnClick` (true; also gates Undo registration), `DisplayParameters` (false resolves the call via `ActionResolver`/`ValueResolver`, giving access to context such as `InspectorProperty property`), `DrawResult` (draw the return value), `Stretch`, `ButtonAlignment`, `Expanded`.
 
-## Buttons
-
-`ButtonAttribute` goes on a method (any accessibility). It derives from
-`ShowInInspectorAttribute`, so a button is always inspector-visible
-regardless of the method's own serialization.
-
-| Constructor overload | What it decides | Source |
-|---|---|---|
-| `()` | Button named after the method | [ButtonAttribute](https://odininspector.com/documentation/sirenix.odininspector.buttonattribute) |
-| `(string name)` | Custom label | same |
-| `(ButtonSizes size)`, `(int buttonSize)` | Fixed pixel height | same |
-| `(SdfIconType icon, ...)` | Icon-only or icon+label button | same |
-| `(ButtonStyle parameterBtnStyle)` | How a method *with parameters* draws its argument fields (`Box`, `FoldoutButton`, `CompactBox`) | same |
-
-Key fields: `DirtyOnClick` (true by default — also gates Undo registration),
-`DisplayParameters` (false routes invocation through an `ActionResolver`/
-`ValueResolver` instead of drawing parameter fields, granting access to
-contextual values like `InspectorProperty property`), `DrawResult` (draw a
-method's return value below the button), `Stretch`, `ButtonAlignment`,
-`Expanded` (collapse the parameter foldout).
-
-`ButtonGroupAttribute(string group = "_DefaultGroup", float order = 0)` —
-same idea as the layout `*GroupAttribute` family, but specifically for
-laying multiple `[Button]` methods out horizontally in one row; shares
-`ButtonHeight`/`ButtonAlignment`/`Stretch`/`IconAlignment`.
-[Source](https://odininspector.com/documentation/sirenix.odininspector.buttongroupattribute)
-
-`InlineButtonAttribute(string action, string label = null)` — draws a small
-button to the right of a *property* (not a method) that invokes a resolved
-action; `ShowIf` lets it conditionally hide. Multiple inline buttons on the
-same member are not supported.
-[Source](https://odininspector.com/documentation/sirenix.odininspector.inlinebuttonattribute)
+- `ButtonGroup(group = "_DefaultGroup", order)`: lays several `[Button]`s in one row. `ButtonHeight`, `ButtonAlignment`, `Stretch`, `IconAlignment`.
+- `InlineButton(action, label)`: small button right of a property (not a method) invoking a resolved action. Only one per member.
 
 ## Context menu & inspector-only display
+| Attribute | Notes |
+|---|---|
+| `CustomContextMenu(menuItem, action)` | Right-click entry; static functions unsupported |
+| `ShowInInspector` | Shows a non-serialized member's current value; does not persist it. With `[ReadOnly]` for live debugging |
 
-| Attribute | Constructor | What it decides | Source |
-|---|---|---|---|
-| `CustomContextMenuAttribute` | `(string menuItem, string action)` | Adds a custom entry to a member's right-click context menu; static functions unsupported | [CustomContextMenuAttribute](https://odininspector.com/documentation/sirenix.odininspector.customcontextmenuattribute) |
-| `ShowInInspectorAttribute()` | — | Shows a non-serialized field/property/method's *current value* in the Inspector — display only, this does **not** make the value persist; combine with `[ReadOnly]` for live runtime debugging | [ShowInInspectorAttribute](https://odininspector.com/documentation/sirenix.odininspector.showininspectorattribute) |
-
-## Enum & toggle display
-
-| Attribute | What it decides | Source |
-|---|---|---|
-| `EnumToggleButtonsAttribute()` | Renders an enum as a horizontal button group instead of a dropdown; on a `[Flags]` enum, buttons act as independent toggles | [EnumToggleButtonsAttribute](https://odininspector.com/documentation/sirenix.odininspector.enumtogglebuttonsattribute) |
-| `EnumPagingAttribute()` | Renders an enum with next/previous cycle buttons instead of a dropdown | [EnumPagingAttribute](https://odininspector.com/documentation/sirenix.odininspector.enumpagingattribute) |
-| `ToggleAttribute(string toggleMemberName)` | Makes a whole nested object's fields collapse/grey out based on a `bool` member on *that nested object* — the object-level counterpart to `ToggleGroupAttribute` in [attributes-layout-display.md](attributes-layout-display.md); static members unsupported | [ToggleAttribute](https://odininspector.com/documentation/sirenix.odininspector.toggleattribute) |
-| `ToggleLeftAttribute()` | Draws a `bool`'s checkbox before its label instead of after | [ToggleLeftAttribute](https://odininspector.com/documentation/sirenix.odininspector.toggleleftattribute) |
-| `OptionalAttribute()` | Marks a field exempt from Odin Validator's "Reference Required by Default" rule — a no-op unless that Validator rule is active | [OptionalAttribute](https://odininspector.com/documentation/sirenix.odininspector.optionalattribute) |
-
-## String display
-
-`DisplayAsStringAttribute` renders a `string` (via its `ToString()`) as
-read-only text instead of an editable field.
-
-| Constructor overload | What it decides | Source |
-|---|---|---|
-| `()` | Default read-only text | [DisplayAsStringAttribute](https://odininspector.com/documentation/sirenix.odininspector.displayasstringattribute) |
-| `(bool overflow)` | `overflow = false` wraps to multiple lines instead of clipping long text | same |
-| `(bool overflow, int fontSize, ...)` | Font size, and optionally `TextAlignment` and rich-text support | same |
+## Enum, toggle, string
+| Attribute | Notes |
+|---|---|
+| `EnumToggleButtons` | Horizontal buttons; independent toggles on `[Flags]` |
+| `EnumPaging` | Next/previous cycling |
+| `Toggle(toggleMemberName)` | Collapses/greys a nested object by a `bool` on that object; object-level counterpart of `ToggleGroup`; static members unsupported |
+| `ToggleLeft` | Checkbox before the label |
+| `Optional` | Exempts a field from Odin Validator's "Reference Required by Default"; no-op unless that rule is active |
+| `DisplayAsString` `()`, `(bool overflow)`, `(bool overflow, int fontSize, ...)` | Read-only text via `ToString()`; `overflow = false` wraps; also alignment and rich text |
