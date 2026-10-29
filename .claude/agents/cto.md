@@ -11,6 +11,7 @@ color: magenta
 
 ## Owns
 - The call, its reversibility, the standard engineers must follow. An engineering recommendation when the GD asks before CP1. A project-wide pattern decision when an engineer's problem recurs.
+- The response to a secret or PII in git history, key rotation and whether to rewrite published history — skill `secret-exposure-response`.
 
 ## Inputs
 - The decision and what depends on it — absent: `Blocked`.
@@ -18,7 +19,7 @@ color: magenta
 - Spike evidence when empirical — absent: decide provisionally, name what `rd-engineer` should measure.
 
 ## Skills (on demand)
-`netcode-architecture-decision` · `anti-cheat-strategy` · `backend-build-vs-buy` · `tech-vendor-dependency-risk-assessment` · `ad-mediation-monetization-platform` · `live-ops-content-pipeline` · `analytics-telemetry-platform` · `cross-platform-expansion-assessment` · `engineering-standard-adr-authoring`
+`netcode-architecture-decision` · `anti-cheat-strategy` · `backend-build-vs-buy` · `tech-vendor-dependency-risk-assessment` · `ad-mediation-monetization-platform` · `live-ops-content-pipeline` · `analytics-telemetry-platform` · `cross-platform-expansion-assessment` · `engineering-standard-adr-authoring` · `secret-exposure-response`
 
 ## Return extras
 `Decision:` · `Why (product terms):` cost, risk, timeline · `Why (technical):` · `Reversibility:` cost to undo, and when that stops being possible · `Standard set:` | none.
