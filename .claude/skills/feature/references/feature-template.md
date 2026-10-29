@@ -3,6 +3,7 @@
 - Status: Open | Closed | Abandoned
 - CP: none | CP1 | CP2 | build | review | CP3 | QA | CP4 — next step: <what>
 - Size: S | M | L · Risk flag: no | yes (<why>)
+- Rounds: review 0/3 · QA 0/2 · rework 0/<M 6 | L 8>
 - Profile: <from CLAUDE.md>
 - Feature root: <path>
 

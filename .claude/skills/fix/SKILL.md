@@ -10,7 +10,8 @@ Main session is the only writer of `.workflow/bugs.md`. Finding format: skill `q
 
 ## 1. Record
 - New bug → next `BUG-####` in `.workflow/bugs.md` (create from `references/bugs-template.md`): title, severity, feature, repro, owner, `Open`.
-- Matches an existing bug → add evidence to it; a `Closed` one → `Reopened`.
+- Matches an existing bug → add evidence to it; a `Closed` one → `Reopened`, +1 `Fix rounds` (and the feature's `rework`).
+- Every brief names the bug id; hook `round-cap.ps1` blocks it past the cap.
 - On a feature with a file → also add it to that file's `Bugs` table. A closed feature stays `Closed`.
 
 ## 2. Reproduce
@@ -30,8 +31,8 @@ Main session is the only writer of `.workflow/bugs.md`. Finding format: skill `q
 - Risk flag on the touched code, or Core touched → offer `/review` on the diff (`routing.md` → Gates).
 
 ## 6. Verify
-- The regression test passes; the original repro no longer fails; nearby tests still pass. Ran → `Fixed`.
-- Offer a QA verification run (`AskUserQuestion`): yes → a QA agent re-runs the repro → `Closed`, or `Reopened` and the stop rule applies · no → stays `Fixed`, listed at CP4 or in the reply.
+- The regression test passes; the original repro no longer fails; nearby tests still pass. Ran → `Fixed`. Still failing → +1 `Fix rounds` (and the feature's `rework`), back to step 3; a cap reached → stop rule.
+- Offer a QA verification run (`AskUserQuestion`): yes → a QA agent re-runs the repro and returns its `Repro:` line (hook `round-cap.ps1` counts `reproduces`) → `Closed`, or `Reopened` and the stop rule applies · no → stays `Fixed`, listed at CP4 or in the reply.
 
 ## 7. Report
 Reply: cause, fix, test name, what was verified and what was not.

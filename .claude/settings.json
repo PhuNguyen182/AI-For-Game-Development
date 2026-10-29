@@ -289,6 +289,14 @@
             "timeout": 15,
             "statusMessage": "Checking the Unity Editor lock",
             "onFailure": "block"
+          },
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/round-cap.ps1\" -Mode dispatch; exit $LASTEXITCODE",
+            "timeout": 15,
+            "statusMessage": "Checking round caps",
+            "onFailure": "block"
           }
         ]
       }
@@ -304,6 +312,13 @@
             "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/verify-on-edit.ps1\"; exit $LASTEXITCODE",
             "timeout": 60,
             "statusMessage": "Verifying the .claude layer"
+          },
+          {
+            "type": "command",
+            "if": "Edit(.workflow/**)",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/round-cap.ps1\" -Mode edit; exit $LASTEXITCODE",
+            "timeout": 15
           }
         ]
       },
@@ -347,6 +362,12 @@
             "shell": "powershell",
             "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/editor-lock.ps1\" -Mode release; exit $LASTEXITCODE",
             "timeout": 30
+          },
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/round-cap.ps1\" -Mode count; exit $LASTEXITCODE",
+            "timeout": 15
           }
         ]
       }

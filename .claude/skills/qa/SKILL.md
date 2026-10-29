@@ -28,7 +28,7 @@ Order, only the agents the plan names:
 
 ## 4. Sign-off — `qa-lead` (Sign-off)
 - Brief: the plan verbatim, every report, review verdicts, bug list.
-- `Not signed off` → fix the gaps (`/fix`), re-run only the affected cases, sign off again. Stop rule applies.
+- `Not signed off` → +1 `QA` and `rework` on the feature's `Rounds:` line; fix the gaps (`/fix`), re-run only the affected cases, sign off again. A cap reached → stop rule (`routing.md`).
 
 ## 5. Report
 Per acceptance criterion: evidence | gap. Bugs by status. What did not run, and why.

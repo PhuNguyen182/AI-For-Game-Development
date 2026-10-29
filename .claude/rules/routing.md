@@ -46,15 +46,17 @@ Escalate the size the moment the work turns out bigger; never shrink it to skip 
 CP1 direction (L) · CP2 spec or acceptance criteria (M, L) · CP3 built vs spec (L) · CP4 closure (M, L).
 
 ## Dispatch
-- Brief = goal, acceptance criteria, size + flag, profile, feature file path, files in scope, earlier agents' outputs, `mem q` hits that bear on it (id + path). Agents see only the brief and the disk.
+- Brief = goal, acceptance criteria, size + flag, profile, feature file path or bug id, files in scope, earlier agents' outputs, `mem q` hits that bear on it (id + path). Agents see only the brief and the disk.
 - One Editor-holding agent at a time. Read-only agents may run in parallel. Never end your turn while a dispatch is still running — a headless session is not woken by it, and the agent dies holding the Editor.
 - An agent's `Next:` is a recommendation; you act on it.
 - `git-expert` runs on Sonnet; dispatch it with `model: opus` for forensics, recovery or a radius 3 operation.
 
 ## Stop rule
 - Attempts per dispatch: S 2, M 3, L 4; `/fix` sizes by what the fix touches; other unsized routes 2.
-- Same step fails twice for the same cause (repeated findings, same failing test, reopened bug), or a review reaches round 4 → `technical-architect` root-causes once → fails again → stop. Report to the GD: what was tried, last verified state, next best action.
-- The GD may order another round; state the cost first.
+- Round caps, failed rounds counted in the state file: review 3 · QA sign-off 2 · per bug 2 · feature rework M 6, L 8 (work sent back after any gate, CP3 drift or a reopened bug). Hook `round-cap.ps1` also counts failed gates and `Failed` returns itself (per session when no feature or bug is named) and blocks dispatches past a cap.
+- Same step fails twice for the same cause (repeated findings, same failing test, reopened bug), or a counter reaches its cap → `technical-architect` root-causes once → the owner gets one more dispatch → fails again → stop. Report to the GD: what was tried, last verified state, next best action.
+- `Infeasible:` in a return (a budget, platform, engine or spec limit no retry can change) → no retry; `technical-architect` confirms it → GD: drop, waive the constraint, or change direction.
+- The GD may order another round; state the cost first, record "extra round: <counter> +n" under `GD decisions` (or in the bug record), raise that cap.
 
 ## State (main session is the only writer)
 - `.workflow/features/<slug>.md` per M/L feature — template in `/feature`. `.workflow/bugs.md` — bug index.

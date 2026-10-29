@@ -114,6 +114,7 @@ __pycache__/
 .claude/settings.local.json
 .claude/worktrees/
 .workflow/editor.lock
+.workflow/rounds.json
 
 # Zero-Mem: derived index and per-machine state (the files under .memory/ are the record)
 .memory/.index/

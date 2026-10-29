@@ -11,4 +11,5 @@ Next ID: BUG-0001
 - Expected: <and its source> · Actual: <observed>
 - Evidence: <log, screenshot, failing test>
 - Root cause: <when known>
+- Fix rounds: 0/2
 - History: <date status — by whom, evidence>

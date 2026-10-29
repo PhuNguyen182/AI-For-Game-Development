@@ -284,6 +284,98 @@ try {
     Check 'probe: a non-loopback node counts as no XERJ' ((Invoke-Hook 'session-start.ps1' @{}).Out -match 'not loopback') $true
     Remove-Item Env:XERJ_URL
 
+    # round-cap ($proj is CLAUDE_PROJECT_DIR)
+    $feat = Join-Path $proj '.workflow/features/demo.md'
+    New-Item -ItemType Directory -Force (Split-Path $feat) | Out-Null
+    function Feature([string]$Rounds, [string]$Gd = '', [string]$Status = 'Open') {
+        Set-Content $feat "# Demo`n`n- Status: $Status`n- Size: M, Risk flag: no`n- Rounds: $Rounds`n`n## GD decisions`n$Gd`n`n## Spec`n" -Encoding UTF8
+    }
+    function Dispatch([string]$Brief) { (Invoke-Hook 'round-cap.ps1' @{ tool_name = 'Agent'; tool_input = @{ prompt = $Brief } } @('-Mode', 'dispatch')).Code }
+    function EditState([string]$Path) { (Invoke-Hook 'round-cap.ps1' @{ tool_name = 'Edit'; tool_input = @{ file_path = $Path } } @('-Mode', 'edit')).Code }
+    $brief = 'Fix the HUD. Feature file: .workflow/features/demo.md'
+    Feature 'review 1/3, QA 0/2, rework 1/6'
+    Check 'round-cap: under every cap dispatches' (Dispatch $brief) 0
+    Check 'round-cap: under every cap edits quietly' (EditState $feat) 0
+    Feature 'review 3/3, QA 0/2, rework 3/6'
+    Check 'round-cap: at a cap still dispatches (architect + one more)' (Dispatch $brief) 0
+    Check 'round-cap: at a cap the edit warns' (EditState $feat) 2
+    Feature 'review 4/3, QA 0/2, rework 4/6'
+    Check 'round-cap: past the review cap blocks' (Dispatch $brief) 2
+    Feature 'review 1/3, QA 0/2, rework 7/6'
+    Check 'round-cap: past the feature rework cap blocks' (Dispatch $brief) 2
+    Feature 'review 4/5, QA 0/2, rework 4/6'
+    Check 'round-cap: a raised cap without a GD record blocks' (Dispatch $brief) 2
+    Feature 'review 4/5, QA 0/2, rework 4/6' '- 2026-10-29 extra round: review +2'
+    Check 'round-cap: a raised cap with a GD record dispatches' (Dispatch $brief) 0
+    Feature 'review 9/3, QA 0/2, rework 9/6' '' 'Closed'
+    Check 'round-cap: a closed feature is not checked' (Dispatch $brief) 0
+    Check 'round-cap: a brief naming no state passes' (Dispatch 'Explain the HUD') 0
+    $bugs = Join-Path $proj '.workflow/bugs.md'
+    function Bugs([string]$Status, [string]$Rounds) {
+        Set-Content $bugs "# Bugs`n`n| ID | Title | Severity | Status | Feature | Owner | Regression test |`n|---|---|---|---|---|---|---|`n| BUG-0007 | HUD | Low | $Status | demo | ui | t |`n`n## BUG-0007 - HUD`n- Repro: x`n- Fix rounds: $Rounds`n" -Encoding UTF8
+    }
+    Bugs 'Reopened' '3/2'
+    Check 'round-cap: a bug past its cap blocks' (Dispatch 'Fix BUG-0007') 2
+    Check 'round-cap: bugs.md edit warns past the cap' (EditState $bugs) 2
+    Bugs 'Reopened' '1/2'
+    Check 'round-cap: a bug under its cap dispatches' (Dispatch 'Fix BUG-0007') 0
+    Bugs 'Closed' '3/2'
+    Check 'round-cap: a closed bug is not checked' (Dispatch 'Verify BUG-0007') 0
+    Check 'round-cap: edits outside .workflow are ignored' (EditState "$proj/Assets/A.cs") 0
+
+    # round-cap count: the ledger counts failed gates the state files missed
+    $ledger = Join-Path $proj '.workflow/rounds.json'
+    Remove-Item $ledger -ErrorAction SilentlyContinue
+    function SubStop([string]$Agent, [string]$Brief, [string]$Return, [string]$Id, [switch]$Handback) {
+        $t = Join-Path $tmp "agent-$Id.jsonl"
+        $first = @{ type = 'user'; message = @{ role = 'user'; content = $Brief } } | ConvertTo-Json -Depth 5 -Compress
+        $lines = @($first)
+        $last = ''
+        if ($Handback) { $lines += (@{ type = 'assistant'; message = @{ role = 'assistant'; content = @(@{ type = 'tool_use'; name = 'SubagentHandback'; input = @{ message = $Return } }) } } | ConvertTo-Json -Depth 6 -Compress) }
+        else { $last = $Return }
+        Set-Content $t $lines -Encoding UTF8
+        (Invoke-Hook 'round-cap.ps1' @{ session_id = 'sess-1'; agent_type = $Agent; agent_id = $Id; agent_transcript_path = $t; last_assistant_message = $last } @('-Mode', 'count')).Code
+    }
+    function Count([string]$Key, [string]$Counter) { $o = Get-Content $ledger -Raw | ConvertFrom-Json; @($o.$Key.$Counter).Count }
+    Feature 'review 0/3, QA 0/2, rework 0/6'
+    $rb = 'Review round 1. Feature file: .workflow/features/demo.md'
+    SubStop 'code-reviewer' $rb "Status: Done`nVerdict: Request changes" 'a1' | Out-Null
+    SubStop 'security-reviewer' $rb "Status: Done`nVerdict: Blocked" 'a2' | Out-Null
+    Check 'count: two gates blocking one round count once' (Count 'feature:demo' 'review') 1
+    Check 'count: a blocked review round adds one rework' (Count 'feature:demo' 'rework') 1
+    SubStop 'qa-lead' 'Sign-off. .workflow/features/demo.md' "Verdict: Not signed off" 'a3' -Handback | Out-Null
+    Check 'count: a handback report is read' (Count 'feature:demo' 'qa') 1
+    SubStop 'code-reviewer' $rb "Verdict: Approve" 'a4' | Out-Null
+    Check 'count: an approval adds nothing' (Count 'feature:demo' 'review') 1
+    SubStop 'code-reviewer' 'Audit Assets/. .workflow/features/demo.md' "Verdict: Request changes" 'a5' | Out-Null
+    Check 'count: an audit is not a review round' (Count 'feature:demo' 'review') 1
+    SubStop 'security-reviewer' $rb "Status: Blocked`nmissing diff" 'a6' | Out-Null
+    Check 'count: Status Blocked is not a verdict' (Count 'feature:demo' 'review') 1
+    foreach ($n in 2..4) { SubStop 'code-reviewer' "Review round $n. .workflow/features/demo.md" 'Verdict: Request changes' "r$n" | Out-Null }
+    Check 'count: the ledger blocks although the file says 0' (Dispatch $brief) 2
+    Remove-Item $ledger
+    Bugs 'Reopened' '0/2'
+    foreach ($n in 1..3) { SubStop 'gameplay-engineer' 'Fix BUG-0007' "Status: Failed`nAttempts: 3/3" "f$n" | Out-Null }
+    Check 'count: Failed returns count as bug rounds' (Dispatch 'Fix BUG-0007') 2
+    Remove-Item $ledger
+    SubStop 'playtest-tester' 'Re-run BUG-0007. .workflow/features/demo.md' "Status: Done`nRepro: BUG-0007 reproduces" 'p1' | Out-Null
+    SubStop 'playtest-tester' 'Re-run BUG-0007' "Status: Failed`nRepro: BUG-0007 reproduces" 'p2' | Out-Null
+    SubStop 'playtest-tester' 'Re-run BUG-0007' "Status: Done`nRepro: BUG-0007 gone" 'p3' | Out-Null
+    Check 'count: a repro that still fails counts once per run' (Count 'bug:BUG-0007' 'fix') 2
+    Check 'count: a repro that still fails adds feature rework' (Count 'feature:demo' 'rework') 1
+    Remove-Item $ledger
+    foreach ($n in 1..4) { SubStop 'code-reviewer' "Review round $n of the HUD diff" 'Verdict: Request changes' "s$n" | Out-Null }
+    $gate = @{ session_id = 'sess-1'; tool_name = 'Agent'; tool_input = @{ subagent_type = 'code-reviewer'; prompt = 'Review round 5 of the HUD diff' } }
+    Check 'count: session work past the cap blocks the gate' (Invoke-Hook 'round-cap.ps1' $gate @('-Mode', 'dispatch')).Code 2
+    $gate.tool_input.subagent_type = 'Explore'
+    Check 'count: session cap leaves non-gate agents alone' (Invoke-Hook 'round-cap.ps1' $gate @('-Mode', 'dispatch')).Code 0
+    $gate.tool_input.subagent_type = 'code-reviewer'; $gate.session_id = 'sess-2'
+    Check 'count: another session starts clean' (Invoke-Hook 'round-cap.ps1' $gate @('-Mode', 'dispatch')).Code 0
+    Remove-Item $ledger
+    Set-Content $feat "# Demo`n`n- Status: Open`n- Size: L, Risk flag: no`n`n## GD decisions`n" -Encoding UTF8
+    Check 'round-cap: an open feature without Rounds warns on edit' (EditState $feat) 2
+    Check 'round-cap: an open feature without Rounds still dispatches' (Dispatch $brief) 0
+
     # verify-on-edit
     Check 'verify-on-edit ignores files outside .claude' (Invoke-Hook 'verify-on-edit.ps1' @{ tool_input = @{ file_path = "$proj/Assets/A.cs" } }).Code 0
 }

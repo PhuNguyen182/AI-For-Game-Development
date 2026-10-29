@@ -42,7 +42,7 @@ Review? QA? Each: yes (Khuyến nghị) / no, with what skipping leaves unchecke
 - No → `Known limitations`: "not reviewed" / "not QA'd".
 
 ## 6. CP3 — L only
-`technical-architect` (CP3) → GD approves, or the named drift goes back to step 4.
+`technical-architect` (CP3) → GD approves, or the named drift goes back to step 4 (+1 `rework`).
 
 ## 7. QA — only if chosen at step 5
 `/qa <slug>`, the profile's recommended QA as its plan. Each defect → `/fix` with the bug id.

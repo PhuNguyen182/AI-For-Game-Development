@@ -33,5 +33,7 @@ Next: <agent or step you recommend> | none
 
 - `Verified` names commands and results. "Compiles" is not "tested". Unrunnable → say why.
 - `Partial` / `Failed` add: best result, last verified state, likely root cause, methods that did not work, safe resume point.
+- A brief that re-runs a bug's repro → add one line per bug: `Repro: BUG-#### reproduces | gone`.
+- Proven impossible within the brief (a budget, platform, engine or spec limit no retry can change) → `Failed` plus `Infeasible: <the limit and the evidence>`; stop spending attempts.
 - A design flaw (the spec itself is wrong) → `Needs-decision`, `Next: gd`.
 - The `Changed` … `Fixes` fields are the Implementation Note a reviewer reads; never argue the design in it.
