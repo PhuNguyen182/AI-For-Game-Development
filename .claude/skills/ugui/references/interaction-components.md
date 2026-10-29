@@ -1,91 +1,31 @@
-# Interaction Components — Selectable, Button, Toggle, Slider, Scrollbar, Dropdown, InputField, ScrollRect
+# Interaction Components
 
-Source: [Interaction Components](https://docs.unity3d.com/Packages/com.unity.ugui@2.6/manual/UIInteractionComponents.html), [Selectable](https://docs.unity3d.com/Packages/com.unity.ugui@2.6/manual/script-Selectable.html), [Scroll Rect](https://docs.unity3d.com/Packages/com.unity.ugui@2.6/manual/script-ScrollRect.html).
-Covers: SKILL.md §4 — "Compose from Selectable rather than hand-rolling pointer handling", "Configure ScrollRect's Movement Type deliberately".
+## Selectable (base of all below; pairs with a visual `Image` to render)
+- **Interactable**: one flag disables input and sets the Disabled state. Prefer it or a parent `CanvasGroup` over gating each handler.
+- **Transition**: None / Color Tint / Sprite Swap / Animation, over Normal/Highlighted/Pressed/Selected/Disabled.
+- **Navigation**: None / Horizontal / Vertical / Automatic / Explicit; the Inspector Visualize button shows the graph. Use Explicit when Automatic picks the wrong neighbour.
 
-## Selectable — the shared base
+### Animation transition
+- Needs an `Animator` on the same GameObject. "Auto Generate Animation" creates the `Animator` and a controller; save the controller asset for it to take effect.
+- **Incompatible with the legacy `Animation` component**; re-target any legacy clips onto an `Animator Controller`.
+- Four clip slots: Normal (usually empty, since Inspector values already represent it), Highlighted, Pressed, Disabled. Each is a single keyframe that may change any number of properties. Edit in Window > Animation: Record, change Inspector values, exit Record.
+- Use only when tint/sprite swap cannot express the feedback; it costs a controller asset per element.
 
-Every interaction component below is built on `Selectable`, which supplies:
+## Components
+- **Button**: `OnClick` `UnityEvent`.
+- **Toggle / Toggle Group**: `Is On` + `OnValueChanged`. One `Toggle Group` assigned on each Toggle gives radio behaviour; do not hand-wire exclusivity.
+- **Slider**: min/max, `OnValueChanged`. Read the value from the event/property, never the handle transform.
+- **Scrollbar**: 0–1 value, `Size` = handle proportion; pair with `ScrollRect` and a mask.
+- **Dropdown / InputField**: prefer `TMP_Dropdown` / `TMP_InputField`. InputField has separate content-changed and end-edit events, Content Type validation and a character limit. The new Input System does not deliver character entry into either field (`unity-input-system` limitation).
 
-- **Interactable** — a single flag that disables input handling and moves
-  the visual state to Disabled; prefer this (or a parent `CanvasGroup`,
-  per [canvas-and-scaling.md](canvas-and-scaling.md)) over manually gating
-  each event handler.
-- **Transition** (None / Color Tint / Sprite Swap / Animation) — the visual
-  feedback strategy for Normal/Highlighted/Pressed/Disabled (and Selected)
-  states. See [animation-and-transitions.md](animation-and-transitions.md)
-  for the Animation mode specifically.
-- **Navigation** (None / Horizontal / Vertical / Automatic / Explicit) —
-  keyboard/controller focus movement between selectables, with a Visualize
-  button in the Inspector to see the computed navigation graph. Explicit
-  mode is the escape hatch when Automatic's spatial guess picks the wrong
-  neighbor.
-
-Selectable components are invisible on their own — each pairs with a
-Visual Component (usually an `Image`) to actually render.
-
-## Button
-
-An `OnClick` `UnityEvent` fired on a completed click. The simplest
-interaction component — no additional state beyond `Selectable`'s own.
-
-## Toggle / Toggle Group
-
-`Toggle` carries an `Is On` boolean and an `OnValueChanged` `UnityEvent`,
-with a checkmark Graphic shown/hidden by its state. `Toggle Group` makes a
-set of Toggles mutually exclusive (radio-button behavior) — add the group
-component once and assign it on each Toggle, rather than wiring exclusivity
-by hand in each `OnValueChanged` handler.
-
-## Slider
-
-A draggable value between a min and max, horizontal or vertical, firing
-`OnValueChanged`. Read the current value from the event/property; never
-recompute it from the handle's transform.
-
-## Scrollbar
-
-A 0–1 value with a `Size` property controlling handle-to-track proportion.
-Almost always paired with a `ScrollRect` and a `Mask`/`RectMask2D` rather
-than used standalone.
-
-## Dropdown
-
-Presents a list of text/image options, firing `OnValueChanged` on
-selection. Prefer `TMP_Dropdown` (TextMeshPro's variant, see
-[textmeshpro-core-and-rich-text.md](textmeshpro-core-and-rich-text.md)) for
-new work over the legacy `Dropdown`.
-
-## Input Field
-
-Editable text entry with separate `UnityEvent`s for "content changed" and
-"editing ended," a Content Type (for validation — integer, decimal,
-alphanumeric, password, etc.), and a character limit. Prefer
-`TMP_InputField` for new work, same reasoning as Dropdown above. Recall
-from `unity-input-system`'s documented limitation: the new Input System
-package does not itself deliver character text entry into either
-`InputField` or `TMP_InputField` — that path still runs through the legacy
-input backend regardless of which Input Module drives navigation/clicks.
-
-## Scroll Rect
-
-Displays a large **Content** rect through a smaller viewport:
-
+## ScrollRect
 | Property | Effect |
 |---|---|
-| `Content` | The RectTransform being scrolled (e.g. a large image or a Layout-Group-driven item list) |
-| `Horizontal` / `Vertical` | Enable scrolling per axis |
-| `Movement Type` | **Unrestricted** (scrolls freely, no bounds), **Elastic** (bounces back past content edges by `Elasticity`), **Clamped** (hard-stops at content edges) |
-| `Inertia` / `Deceleration Rate` | Whether content keeps moving after release, and how fast it decelerates (`0` = instant stop, `1` = never stops) |
-| `Scroll Sensitivity` | Responsiveness to scroll-wheel/trackpad input |
-| `Viewport` | The parent RectTransform that defines the visible window — pair with `RectMask2D` on the same object, per [visual-components.md](visual-components.md) |
-| `Horizontal`/`Vertical Scrollbar` | Optional `Scrollbar` references, each with its own Visibility mode (e.g. auto-hide when content fits) |
+| `Content` | RectTransform scrolled |
+| `Movement Type` | Unrestricted / Elastic (bounces by `Elasticity`) / Clamped |
+| `Inertia` / `Deceleration Rate` | 0 = instant stop, 1 = never stops |
+| `Scroll Sensitivity` | Wheel/trackpad response |
+| `Viewport` | Visible window; put `RectMask2D` on it ([visual-components.md](visual-components.md)) |
+| `Horizontal`/`Vertical Scrollbar` | Optional, each with a Visibility mode (e.g. auto-hide) |
 
-Fires `OnValueChanged` with the current normalized scroll position. For a
-long or dynamically-sized item list, pair `Content` with a `Vertical`/`Grid`
-Layout Group plus a `Content Size Fitter` (per
-[rect-transform-and-layout.md](rect-transform-and-layout.md)) rather than
-sizing `Content` by hand — see also
-[HOWTO-UIFitContentSize](https://docs.unity3d.com/Packages/com.unity.ugui@2.6/manual/HOWTO-UIFitContentSize.html)
-(not independently fetched for this skill; confirm details on the live
-page before citing them precisely).
+Fires `OnValueChanged` with the normalized position. Drive `Content` size with a Vertical/Grid Layout Group plus Content Size Fitter ([rect-transform-and-layout.md](rect-transform-and-layout.md)), not by hand.
