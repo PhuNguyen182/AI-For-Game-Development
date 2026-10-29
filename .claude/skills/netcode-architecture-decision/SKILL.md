@@ -18,7 +18,7 @@ Not for: reconciliation protocol, message format, tick rate (`netcode-engineer`)
 7. **Judge team fit against the timeline** — custom wins only with in-house networking expertise and schedule slack; otherwise license, even at a higher sticker price.
 8. **Feasibility unknown (e.g. tick rate on real mobile networks) → `rd-engineer` spike**; withhold the decision until it reports.
 9. **Record the foundation via `engineering-standard-adr-authoring`** — an unrecorded decision is contradicted by the first inconvenient feature.
-10. **Ask when target CCU, cross-play commitment or session model is unstated** — each can flip the shortlist.
+10. **Target CCU, cross-play commitment or session model unstated → `Needs-decision` naming it** — each can flip the shortlist; any call made meanwhile is provisional.
 
 ## Never
 - Recommend custom netcode on ambition — back it with team fit, timeline and a scored comparison.

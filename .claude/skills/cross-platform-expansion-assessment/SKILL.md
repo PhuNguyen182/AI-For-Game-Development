@@ -18,7 +18,7 @@ Not for: work on an already-committed platform (`sdk-platform-engineer`), per-de
 7. **Include the recurring per-release cost** — every patch multiplies across build targets, QA device matrix, store submissions, and on console a certification pass. Most often omitted; often exceeds the one-time cost within a year of live operation.
 8. **Score with `tco-reversibility-scoring`** — usually Medium-to-High reversibility; Low whenever step 3 found a forced foundational change, since that outlives the platform.
 9. **Give the GD cost, timeline and risk in product terms and leave the decision to them** — committing a platform is a GDD-level commitment.
-10. **Ask when hardware baseline, storefront or launch window is unstated** — mark the affected bucket provisional, do not guess.
+10. **Hardware baseline, storefront or launch window unstated → `Needs-decision` naming it** — mark the affected bucket provisional, do not guess.
 
 ## Never
 - Present one blended number, or an unflagged forced reopening as an extra cost line.

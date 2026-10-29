@@ -9,7 +9,7 @@ user-invocable: false
 Not for: gathering the domain trade-off data (`backend-build-vs-buy`, `netcode-architecture-decision`, `anti-cheat-strategy`, `ad-mediation-monetization-platform`, `analytics-telemetry-platform`, `live-ops-content-pipeline`, `cross-platform-expansion-assessment`, `tech-vendor-dependency-risk-assessment`), recording the standard (`engineering-standard-adr-authoring`), routine estimates (`technical-architect`).
 
 ## Steps
-1. **Ask first when scale, team capacity or target regions are unknown and load-bearing** — they move every bucket; never score a guessed input.
+1. **Scale, team capacity or target regions unknown and load-bearing → `Needs-decision` naming the input** — they move every bucket; a provisional call may accompany it with each affected bucket marked provisional, never a guessed input scored as confirmed.
 2. **Enumerate only options genuinely on the table** (2–4); a strawman inflates the winner's margin. Options of incomparable scope: say so instead of forcing a score.
 3. **Score four buckets separately, never one blended figure** — upfront (licence, integration, migration), ongoing (subscription, revenue share, maintenance headcount), scaling curve (flat / linear / step per player, server or region), exit cost.
 4. **Rate reversibility by blast radius, not vendor marketing** — High: swappable behind an abstraction (ad SDK behind an interface). Medium: swap needs real migration (backend provider with data). Low: structurally locked once shipped (netcode foundation, kernel anti-cheat in store certification).

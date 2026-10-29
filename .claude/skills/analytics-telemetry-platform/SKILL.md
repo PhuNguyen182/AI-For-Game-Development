@@ -9,7 +9,7 @@ user-invocable: false
 Not for: event instrumentation (`sdk-platform-engineer`), choosing metrics or reading results (GD with `researcher`), production crash triage (`crash-anr-investigator`), scoring rubric (`tco-reversibility-scoring`), player-data persistence (`backend-build-vs-buy`), remote-config cadence (`live-ops-content-pipeline`).
 
 ## Steps
-1. **Ask when target jurisdictions or needed analysis depth are unknown** — they decide compliance and portability; do not assume the permissive answer.
+1. **Target jurisdictions or needed analysis depth unknown → `Needs-decision` naming them** — they decide compliance and portability; do not assume the permissive answer.
 2. **Establish the data need** — basic retention/funnel dashboards, or deep custom analysis for balance and monetization (needs raw export to a warehouse the team controls). Do not pay for the second when only the first is needed.
 3. **Shortlist all three shapes** — managed dashboards only, managed + raw export (Firebase + BigQuery), custom pipeline. The middle one buys most portability at a fraction of custom cost.
 4. **Portability is pass/fail** — can raw events be exported usably, or live only in the vendor dashboard? Export enabled later does not backfill earlier events, so decide export on/off now.

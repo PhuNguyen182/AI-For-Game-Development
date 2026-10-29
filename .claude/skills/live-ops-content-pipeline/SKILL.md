@@ -18,7 +18,7 @@ Not for: designing events or economy (GD), shipping new assets (`unity-addressab
 7. **Define schema versioning and old-client behaviour on an unknown or missing key** — live players run months-old builds against one payload.
 8. **Score survivors with `tco-reversibility-scoring`** — Medium reversibility when all reads go through one internal access module, Low when vendor SDK calls are scattered.
 9. **Set the standard: every config read through one access module**; record it via `engineering-standard-adr-authoring`.
-10. **Ask when cadence, segmentation needs or the config-console operator is unstated** — each moves the shortlist; an unowned publish path is not the CTO's to assume.
+10. **Cadence, segmentation needs or the config-console operator unstated → `Needs-decision` naming it** — each moves the shortlist; an unowned publish path is not the CTO's to assume.
 
 ## Never
 - Recommend a platform because it is industry standard — justify it against the stated cadence, or ship the config file.

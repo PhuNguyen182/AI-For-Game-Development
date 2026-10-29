@@ -19,7 +19,7 @@ Not for: writing one server-side validation check or relevancy culling (`netcode
 8. **Require an owner for bans and appeals before any detection tier** — a false ban with no appeal path costs more retention than the cheating; unowned means not shippable.
 9. **Score survivors with `tco-reversibility-scoring`** — kernel-level is Low reversibility (removal after a cheating wave reads as surrender).
 10. **Frame platform, vendor-cost and player-trust consequences for the GD**; record the posture via `engineering-standard-adr-authoring`.
-11. **Ask when platform commitments, competitive stakes or economy design are open** — mark the tier provisional on the missing input.
+11. **Platform commitments, competitive stakes or economy design open → `Needs-decision` naming them** — mark the tier provisional on the missing input.
 
 ## Never
 - Default to kernel-level, or buy a tier for a cheat class it cannot address (anti-tamper against ESP changes nothing).

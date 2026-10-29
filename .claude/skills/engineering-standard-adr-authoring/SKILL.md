@@ -12,7 +12,7 @@ Not for: feature Tech Specs (`technical-architect`), per-submission Implementati
 
 ## Steps
 1. **Confirm a decision was made** — a Technical Decision with a non-empty "Standard set", an amendment, a reversal, a retirement, or a repeated review/escalation showing an assumed but unwritten standard. Call still open → status `Proposed`, or do not write it; an Active ADR binds downstream roles.
-2. **Ask when the scope or triggering decision is unclear** — a standard bound to the wrong roles is worse than none.
+2. **Scope or triggering decision unclear → `Needs-decision` naming the gap** (the main session asks the GD) — a standard bound to the wrong roles is worse than none.
 3. **State the rule so a reviewer can fail a submission against it** — "gameplay code calls `IPhysicsProvider`, never the plugin" is checkable; "prefer clean abstractions" is not. An uncheckable principle is not an ADR (coding principles live in `csharp-standards`).
 4. **Number it sequentially; never reuse a retired number** — supersession chains reference the numbers.
 5. **Record the trigger and each rejected alternative with why it lost**, so a rediscovered option does not reopen the decision.
