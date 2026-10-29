@@ -24,4 +24,4 @@ user-invocable: false
 2. Stage only your paths (`git add <paths>`, never `-A` on a shared folder); `git status` first — files another session made stay out.
 3. Commit with both, never a placeholder to amend later. Bash: `git commit -F - <<'EOF' … EOF`. PowerShell: `$msg | git commit -F -` (a here-string after `-F -` becomes a pathspec).
 4. `git log -1 --stat` — confirm what was recorded.
-5. Report quoting it. Ask before any push.
+5. Report quoting it. Never push unless the GD ordered it; when ordered, push without asking.

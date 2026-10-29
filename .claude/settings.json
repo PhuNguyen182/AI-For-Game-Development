@@ -39,13 +39,17 @@
       "Bash(git lfs fsck:*)",
       "Bash(git clean -xdn:*)",
       "Bash(git clean -nd:*)",
-      "Bash(git clean --dry-run:*)"
+      "Bash(git clean --dry-run:*)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "PowerShell(git add *)",
+      "PowerShell(git commit *)",
+      "PowerShell(git push *)"
     ],
     "ask": [
       "Bash(git checkout *)",
-      "Bash(git push *)",
       "PowerShell(git checkout *)",
-      "PowerShell(git push *)",
       "Bash(unity build*)",
       "Bash(unity command build run*)",
       "Bash(unity command build.target switch*)",
@@ -193,6 +197,24 @@
             "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/pre-commit.ps1\"; exit $LASTEXITCODE",
             "timeout": 30,
             "statusMessage": "Checking staged secrets and .meta pairing",
+            "onFailure": "block"
+          },
+          {
+            "type": "command",
+            "if": "Bash(git *push*)",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/pre-push.ps1\"; exit $LASTEXITCODE",
+            "timeout": 30,
+            "statusMessage": "Scanning unpushed commits for secrets",
+            "onFailure": "block"
+          },
+          {
+            "type": "command",
+            "if": "PowerShell(git *push*)",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/pre-push.ps1\"; exit $LASTEXITCODE",
+            "timeout": 30,
+            "statusMessage": "Scanning unpushed commits for secrets",
             "onFailure": "block"
           },
           {
