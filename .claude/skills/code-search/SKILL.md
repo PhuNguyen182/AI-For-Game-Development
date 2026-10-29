@@ -1,6 +1,6 @@
 ---
 name: code-search
-description: "Search code and docs with XERJ (BM25 passages, go-to-definition) instead of a repo-wide Grep when the session-start line says XERJ is up. Use before any search across the project."
+description: "XERJ search (`xerj search`, `xerj def`: BM25 passages, go-to-definition) instead of a repo-wide Grep when the session-start line says XERJ is up. Use before any search across the project."
 user-invocable: false
 ---
 
@@ -17,9 +17,9 @@ Loopback only: a `XERJ_URL` on another machine counts as no XERJ — queries and
 | Then | `Read` the file:line it returns — only that range |
 
 - Ranking is lexical: use the words the code uses (identifiers, log text), not a description.
+- Index is refreshed incrementally at session start; recent edits may lag, so read the file before relying on a hit.
 - Hidden folders (`.claude/`, `.workflow/`, `.memory/`) are never indexed: Grep them, or use skill `mem` for memory and docs.
 - The `search-guard` hook denies a repo-wide content Grep while XERJ is up; Grep on a file, a folder two levels deep, or for file lists stays allowed.
-- Session start refreshes the index in the background (`xerj autoindex <root> --prefix <p> --plan code-and-docs-no-vectors --no-graph`, incremental, no model). `.xerjignore` keeps Unity caches out.
 - Never `xerj feedback`, `xerj share` or `xerj init`: they publish data or rewrite agent files. Ask the GD first.
 
 ## XERJ down or absent

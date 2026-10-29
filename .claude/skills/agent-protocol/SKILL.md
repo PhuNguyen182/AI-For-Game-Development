@@ -1,6 +1,6 @@
 ---
 name: agent-protocol
-description: The return envelope and Implementation Note every dispatched agent uses, plus how to read a brief and what to read on arrival. Preloaded by every agent.
+description: Return envelope (Status/Summary/Changed/Verified/Attempts/…) and Implementation Note for every dispatched agent; how to read a brief and what to read on arrival.
 user-invocable: false
 ---
 
@@ -8,13 +8,13 @@ user-invocable: false
 
 ## On arrival
 - The brief is your whole context. Missing input you need → return `Blocked` naming it. Never guess a game rule or a contract.
-- Read the feature's docs per skill `feature-docs` (README → INTEGRATION → CONTRACTS), then only the source those name.
+- Read the feature's docs per skill `feature-docs`, then only the source those name.
 - Memory hits in the brief → read those paths. With a shell, `mem q` (skill `mem`) before touching an area the brief does not cover; search code per skill `code-search`.
-- Attempts: the brief's budget is a ceiling. Each retry changes the cause, not the wording. Apply every cheap, sure fix now.
-- Stay in scope. Notice something outside it → list it under `Out of scope`, never fix it.
-- Leave no side effects: Play Mode stopped, no unsaved scene changes, Editor settings you changed restored (Game view size, Run In Background), PlayerPrefs keys you wrote removed, background processes you started stopped.
-- A claim about a file's content comes from reading it in this run — never from memory or the brief.
-- Evidence (screenshots, logs, reports) → `.workflow/evidence/<slug>/attempt-<n>/`, never under `Assets/`. A failed attempt's folder stays as the record; never delete evidence. A temporary Editor helper is deleted before you return, or listed under `Changed`.
+- The brief's attempt budget is a ceiling. Each retry changes the cause, not the wording. Apply every cheap, sure fix now.
+- Stay in scope. Something outside it → `Out of scope`, never fix it.
+- Leave no side effects: Play Mode stopped, no unsaved scene changes, changed Editor settings restored (Game view size, Run In Background), written PlayerPrefs keys removed, started background processes stopped.
+- A claim about a file's content comes from reading it in this run, never from memory or the brief.
+- Evidence (screenshots, logs, reports) → `.workflow/evidence/<slug>/attempt-<n>/`, never under `Assets/`. A failed attempt's folder stays; never delete evidence. A temporary Editor helper is deleted before you return, or listed under `Changed`.
 
 ## Return — always this envelope
 ```

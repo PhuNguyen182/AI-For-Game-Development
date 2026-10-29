@@ -1,6 +1,6 @@
 ---
 name: qa-standards
-description: When a QA claim counts as verified, how to state a finding (location, expected, actual, evidence, owner, severity), and the bug lifecycle. Preloaded by every QA and review agent.
+description: When a QA claim counts as verified, finding format (location, expected, actual, evidence, owner, severity), severity scale, bug lifecycle and statuses.
 user-invocable: false
 ---
 

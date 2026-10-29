@@ -1,23 +1,19 @@
 ---
 name: plan-test-coverage
-description: Derive a full test case list (normal + edge cases), a manual test flow, and a cross-feature impact analysis from docs/spec, the request itself, or the code — reports only, never writes or runs tests
+description: Derive a test case list (normal + edge), manual test flow and cross-feature impact analysis from a spec, the request, or the code — report only, never writes or runs tests
 argument-hint: "[file-or-directory-path...] [--spec path-to-doc]"
 allowed-tools: PowerShell, Read, Grep, Glob, Bash, Skill
 ---
 
 # Plan test coverage for a feature or change
 
-`$ARGUMENTS`: code paths, optionally `--spec <path>`. Docs/request/code may each be the only source available (below); ask if none resolves, never guess scope. Static test-design only — not `qa-lead`'s sign-off, `qa-automation-engineer`'s test code, `playtest-tester`'s play session, `code-reviewer`'s correctness pass, or `/review-code-risks`'s risk lens. Reason in English (`language-and-comments.md`); final report to the user is in Vietnamese, detailed but direct.
+`$ARGUMENTS`: code paths, optionally `--spec <path>`. Static test design only: not `qa-lead`'s sign-off, `qa-automation-engineer`'s test code, `playtest-tester`'s session, `code-reviewer`'s correctness pass or `/review-code-risks`. Final report to the GD in Vietnamese, excerpts and line numbers verbatim.
 
-**1 — Gather the source of truth**, in order, stating which were actually available: (1) docs/spec — `--spec` or a doc the request points at, read in full; (2) the request itself — a direct description counts as spec for a D1–D2 change; (3) the code — `$ARGUMENTS` paths, else `git diff --name-only HEAD -- '*.cs'` (+staged), always read even with a doc since a mismatch is itself a finding. None resolves → ask the user.
-
-**2 — Derive the test case list**: invoke `risk-based-test-planning` directly with the testable claims from Step 1 — it already covers equivalence partitions, boundary values, decision tables, state-transition coverage; don't re-derive by hand. Doc/code mismatch → record as its own finding, routed per `defect-reporting.md`, don't silently test around it. Carry the skill's severity ranking into the report, most-impactful first.
-
-**3 — Write the test flow**, per case: starting state, actions, expected result (unambiguous pass/fail), where to observe it (Editor Play Mode / automated assertion / build/device / log), and a recommended owner (`qa-automation-engineer`, `playtest-tester`, `performance-qa-engineer`, `build-release-engineer`) — a recommendation for the reader, not a dispatch this command performs.
-
-**4 — Cross-feature impact analysis**: name the changed public surface (class/method/event/Shared Core rule/asset/prefab/scene object), grep for other callers/subscribers/references — other call sites, a `Game.Core.*` rule used by more than one `Game.Client.*` caller, a static/singleton field, a shared prefab/scene/Addressables asset. Per dependent: `path:line`, how it's affected, dangerous yes/no per `defect-reporting.md`'s Severity table. Nothing found → say so, naming the limit (reflection, `Activator.CreateInstance`, event bus, service locator can hide a dependency from grep) rather than implying isolation was proven.
-
-**5 — Report**, only a section when it found something — no "none" placeholders except `Not covered`, always present. Most-impactful first:
+1. **Sources**, in order, stating which were available: (1) docs/spec (`--spec` or a doc the request points at), read in full; (2) the request itself (counts as spec for an S-size change); (3) the code (`$ARGUMENTS` paths, else `git diff --name-only HEAD -- '*.cs'` plus staged), always read even with a doc: a mismatch is a finding. None resolves → ask; never guess scope.
+2. **Cases** — invoke `risk-based-test-planning` with the testable claims; do not re-derive by hand. Doc/code mismatch → its own finding (`qa-standards` format), never silently tested around. Order by that skill's severity ranking.
+3. **Flow** — per case: starting state, actions, unambiguous expected result, where to observe (Play Mode / automated assertion / build or device / log), recommended owner (`qa-automation-engineer`, `playtest-tester`, `performance-qa-engineer`, `build-release-engineer`). A recommendation, not a dispatch.
+4. **Cross-feature impact** — name the changed public surface (class, method, event, `Game.Core.*` rule, asset, prefab, scene object); grep other callers, subscribers, references: other call sites, a Core rule used by several `Game.Client.*` callers, static/singleton fields, shared prefab/scene/Addressables assets. Per dependent: `path:line`, how affected, dangerous yes/no per the `qa-standards` severity scale. Nothing found → say so and name the limit (reflection, `Activator.CreateInstance`, event bus, service locator hide dependencies from grep); never imply isolation was proven.
+5. **Report** — a section only when it found something; `Not covered` always present; most impactful first.
 ```
 ## Test Coverage Plan — <scope>
 - Status: Done | Blocked  |  Sources used: docs (<path>) | request text | code (<paths>)
@@ -28,6 +24,8 @@ allowed-tools: PowerShell, Read, Grep, Glob, Bash, Skill
 - Surface / Affected (path:line) / How / Dangerous (yes/no + why)
 - Not covered: <unavailable sources, dependency paths static search can't see, needed measurements>
 ```
-Translate to Vietnamese for the user, excerpts and line numbers verbatim.
 
-**Guardrails**: never write test code or open the Unity Editor; never issue a QA sign-off or coverage assignment; never claim the impact search is exhaustive, or invent a case/dependent not grounded in a real source; always state which of the three sources were actually available.
+## Never
+- Write test code or open the Unity Editor.
+- Issue a QA sign-off or coverage assignment.
+- Claim the impact search is exhaustive, or invent a case or dependent without a real source.

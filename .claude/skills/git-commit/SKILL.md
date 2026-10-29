@@ -15,8 +15,7 @@ user-invocable: false
 ```
 
 - No `feat:`/`fix:` prefixes.
-- Body = what the diff cannot show: the reason, the approach chosen over another, what it deliberately does not do. Never restate the diff.
-- Body omitted only when the subject is the whole story (typo, version bump).
+- Body = what the diff cannot show: the reason, the approach chosen over another, what it deliberately does not do. Omit it only when the subject is the whole story (typo, version bump).
 - A body needing "and also" → two commits.
 - Never: filler ("update code", "wip"), a secret, a reviewer note, a TODO, an unrun verification claim.
 
