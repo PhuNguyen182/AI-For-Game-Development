@@ -52,7 +52,7 @@ Synthesized from project decisions; adds to rule `csharp.md` hot paths. Deep, me
 - Texture compression and max size set per platform; load and release content by need — an unreleased Addressables handle is a leak.
 
 ### Multithreading — escalation territory, not a routine default
-- Jobs, Burst and DOTS are an architecture decision: `technical-architect` decides, after a Profiler capture shows a CPU-bound, parallelizable bottleneck. Never a first-pass default.
+- Jobs, Burst and DOTS are an architecture decision, made only after a Profiler capture shows a CPU-bound, parallelizable bottleneck: Jobs/Burst for one system → `technical-architect`; adopting DOTS/ECS is a foundation → `cto`. Never a first-pass default.
 
 ## Verification
 - Every performance claim (review, handoff, Implementation Note) carries a measurement — Profiler frame time/GC Alloc or a micro-benchmark — never Big-O alone. How: skill `unity-profiler-diagnostics`.

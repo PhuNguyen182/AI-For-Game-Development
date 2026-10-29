@@ -20,7 +20,7 @@ Docs: https://developer.android.com/topic/performance/vitals (vitals, `/anr`), h
 2. **Walk the domains in fixed order, stop at the first match:** game code, Unity engine, third-party SDK, system library. Per [fault-domain-signals.md](references/fault-domain-signals.md).
 3. **Attribute to the frame that faulted, not the one nearest your code.** Game code into an SDK that faults → SDK; SDK calling back into game code that faults → game code.
 4. **Game code:** a defect (null dereference, self-caused main-thread block) is a fix, routed to `csharp-engineer` (Shared Core) or `gameplay-engineer` (client). A condition the game cannot prevent is a mitigation, designed with `gameplay-engineer`. Per [anr-classes-and-mitigation.md](references/anr-classes-and-mitigation.md).
-5. **Unity engine:** forums and issue tracker, then upgrade to the fixed version, then a bug report only if neither yields one. Every rung goes to `technical-architect` for the version decision. Per [third-party-and-engine-escalation.md](references/third-party-and-engine-escalation.md).
+5. **Unity engine:** forums and issue tracker, then upgrade to the fixed version, then a bug report only if neither yields one. Every rung goes to `cto` for the version decision (an upgrade is project-wide). Per [third-party-and-engine-escalation.md](references/third-party-and-engine-escalation.md).
 6. **Third-party SDK:** update to current, disable to confirm the signal disappears, check the SDK index, then contact the vendor with all three results. Route to `sdk-platform-engineer`. Same file.
 7. **System library:** device- or OS-segmented → segmentation plus vendor report; broad → vendor report alone. Route both to `sdk-platform-engineer`. Per [anr-classes-and-mitigation.md](references/anr-classes-and-mitigation.md).
 8. **Record "non-actionable" when no ownable domain fits**; it is a finding that more samples are needed, not a miss.
@@ -45,7 +45,7 @@ Docs: https://developer.android.com/topic/performance/vitals (vitals, `/anr`), h
 - Decision: <fix / mitigation / engine upgrade / SDK action / segmentation / non-actionable>
 - Recommended action: <concrete next step>
 - Verification: re-enter at crash-anr-symbolication once a new symbolicated build ships
-- Routed to: <csharp-engineer / gameplay-engineer / technical-architect / sdk-platform-engineer / none>
+- Routed to: <csharp-engineer / gameplay-engineer / cto / sdk-platform-engineer / none>
 - Known limitations: <what the samples do not establish>
 ```
 

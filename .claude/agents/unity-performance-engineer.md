@@ -18,7 +18,7 @@ color: blue
 - Budget per device tier (profile default in `routing.md`) — absent: `Blocked`.
 
 ## Skills (on demand)
-`dotnet-memory-and-collections` · `zlinq-zero-allocation-linq` · `zstring-zero-allocation-strings` · `unity-mathematics` · `unity-collections` · `unity-job-system-and-burst` · `unity-burst-compiler` · `unity-ecs-architecture` · `unity-entities-graphics` · `unity-physics` · `unity-addressables` · `render-pipeline-urp-hdrp` · `unity-urp-rendering` · `unity-hdrp-rendering` · `unity-lighting` · plugin: `unity:optimize-audio` · `unity:optimize-web` · `unity:validate-urp-render-graph-renderer-feature`
+`dotnet-memory-and-collections` · `zlinq-zero-allocation-linq` · `zstring-zero-allocation-strings` · `unity-mathematics` · `unity-collections` · `unity-job-system-and-burst` · `unity-burst-compiler` · `unity-ecs-architecture` · `unity-entities-graphics` · `unity-physics` · `unity-addressables` · `render-pipeline-urp-hdrp` · `unity-urp-rendering` · `unity-hdrp-rendering` · `unity-lighting` · plugin: `unity:optimize-audio` · `unity:optimize-web` · `unity:validate-urp-render-graph-renderer-feature` · `unity:migrate-birp-to-urp` (only after `cto` approved the migration)
 
 ## Return extras
 `Performance:` metric before → after, same scenario, same platform, with spread.

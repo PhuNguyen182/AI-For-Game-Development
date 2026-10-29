@@ -18,7 +18,7 @@ Docs: https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/index.html
 | [structural-changes-and-ecb.md](references/structural-changes-and-ecb.md) | Entities or components are created, added, removed or destroyed during iteration |
 
 ## Steps
-1. **Name the architecture decision that approved ECS for this feature.** None exists → stop and route to `technical-architect`; needing threads is not a reason to adopt ECS (Job System + Burst work without entities).
+1. **Name the architecture decision that approved ECS for this feature.** None exists → stop and route to `cto` (a foundation choice); needing threads is not a reason to adopt ECS (Job System + Burst work without entities).
 2. **Keep the game rule in `Game.Core.*`; the system only iterates**: read components, call the pure Core function, write back. A formula rewritten in `OnUpdate` is a second implementation (`Unity.Entities` cannot be referenced from Core).
 3. **Model entities and archetypes before naming a system** ([core-concepts.md](references/core-concepts.md)); component sets follow access pattern, not code structure.
 4. **Pick each component kind by how its value changes**: unmanaged `IComponentData` by default; `ISharedComponentData` only when many entities share a value; `IBufferElementData` for variable-length data; `IEnableableComponent` for state that toggles often ([component-types.md](references/component-types.md)).

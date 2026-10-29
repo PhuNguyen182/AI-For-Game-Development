@@ -20,7 +20,7 @@ Docs: https://docs.unity3d.com/Packages/com.unity.physics@6.6/ (`manual/`, `api/
 
 ## Steps
 1. **Confirm DOTS Physics, not PhysX** — it is deterministic and stateless (no cached contacts, so geometry flaws show), has a smaller feature set than PhysX, and shares no runtime code with it, only some authoring component names. A `Rigidbody` on a plain GameObject routes to `unity-3d-physics`.
-2. **Require an approved ECS adoption** — `PhysicsWorld` is rebuilt from ECS component data every step and needs a live Entities `World`. None → `technical-architect`.
+2. **Require an approved ECS adoption** — `PhysicsWorld` is rebuilt from ECS component data every step and needs a live Entities `World`. None → `cto`.
 3. **Keep game rules in `Game.Core.*`** — physics cannot live in Core; pass the resolved contact or query result into a pure Core function (`csharp-standards` → `coding-principles.md` → Shared Core integrity).
 4. **Choose the component set from the body type**, per [rigid-bodies-and-components.md](references/rigid-bodies-and-components.md). `PhysicsVelocity` + `PhysicsMass` make a body dynamic. Never add them to a body meant to stay static or kinematic. Body type unstated → model it static and flag the assumption.
 5. **Pick the cheapest collider the mechanic allows**, per [colliders.md](references/colliders.md): primitives, convex hull for arbitrary convex, mesh only for static/kinematic, compound over one coarse hull. Set bevel radius and Force Unique deliberately.

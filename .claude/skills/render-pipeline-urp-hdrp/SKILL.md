@@ -12,7 +12,7 @@ Companion, if the Unity plugin is installed: once a Built-in → URP migration i
 ## Steps
 1. **Read the pipeline off the project, never the request** — open Graphics Settings, name the assigned Render Pipeline Asset. A Tech Spec naming a pipeline is a claim to verify.
 2. **Check every quality level for an override** — Quality Settings can assign a different Render Pipeline Asset per level, taking precedence over the Graphics default. Confirming Graphics alone validates a whole tier against the wrong pipeline.
-3. **An existing project's pipeline is settled unless a migration is explicitly funded** — materials, shaders, lighting and post stacks are authored per pipeline and do not carry across; a switch is content re-authoring, not a settings change. If a request implies one, state that cost and route the decision to `technical-architect`; do not start it.
+3. **An existing project's pipeline is settled unless a migration is explicitly funded** — materials, shaders, lighting and post stacks are authored per pipeline and do not carry across; a switch is content re-authoring, not a settings change. If a request implies one, state that cost and route the decision to `cto`; do not start it.
 4. **Open choice: decide on platform scope first** — HDRP is PC/console class and does not target mobile; URP covers mobile through console. Fidelity is second and never overrides this: an unsupported platform is an exclusion, not a trade-off.
 5. **Name the master stack** — URP: Universal Lit, Unlit, Sprite-Lit. HDRP: Lit, Unlit, Decal, Fabric, Hair, StackLit. This is what `shader-authoring` needs.
 6. **Confirm each requested high-fidelity feature exists on the target before it enters a Tech Spec** — ray tracing, path tracing, volumetric fog/clouds and the Water System are HDRP-only (PC/console class); Forward+ is URP-only.
@@ -35,4 +35,4 @@ Companion, if the Unity plugin is installed: once a Built-in → URP migration i
 On request only, add `Known limitations`, `Latent concerns` and `Future remediation`, each with its trigger.
 
 ## Example
-- "Ray-traced reflections in the boss arena: switch to HDRP, it's just a settings change" → declined the framing: every material, shader and post profile is URP-authored, and the project ships mobile, which HDRP does not target. Reported both, routed to `technical-architect`, offered a URP screen-space reflection approximation.
+- "Ray-traced reflections in the boss arena: switch to HDRP, it's just a settings change" → declined the framing: every material, shader and post profile is URP-authored, and the project ships mobile, which HDRP does not target. Reported both, routed to `cto`, offered a URP screen-space reflection approximation.

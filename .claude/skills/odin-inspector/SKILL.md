@@ -26,7 +26,7 @@ Docs: `https://odininspector.com/documentation/<lowercase.dotted.namespace.typen
 4. Every resolved-string argument (`ShowIf`, `ValidateInput`, `OnValueChanged`, `ValueDropdown`, ...) is reflection-resolved with no compile check: a typo silently no-ops. Verify each names a real member, and again after any rename.
 5. Inspector-editable `public`/`[SerializeField]` fields stay camelCase (`csharp-standards` -> `naming-convention.md`).
 6. Attribute constructors are heavily overloaded: confirm the signature in the live docs when the reference does not list it. Check the project's C# version before using `nameof` in a string argument.
-7. Odin Validator project-wide scans (`Validator<T>`, `RegisterValidatorAttribute`, `GlobalValidator`): route to `technical-architect`; do not guess the API.
+7. Odin Validator project-wide scans (`Validator<T>`, `RegisterValidatorAttribute`, `GlobalValidator`): a project-wide standard, route to `cto`; do not guess the API.
 
 ## Never
 - Add Odin attributes to a `Game.Core.*` type without `technical-architect` sign-off: even attribute-only use pulls in `Sirenix.OdinInspector.Attributes` and blurs the Core/Client boundary.
