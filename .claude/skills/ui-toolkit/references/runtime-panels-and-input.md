@@ -1,85 +1,37 @@
-# Runtime Panels & Input — UIDocument, Panel Renderer, PanelSettings, World Space
+# Runtime panels and input
 
-Sources: [Support for runtime UI](https://docs.unity3d.com/Manual/UIE-support-for-runtime-ui.html), [Get started with runtime UI](https://docs.unity3d.com/Manual/UIE-get-started-with-runtime-ui.html), [UI Document component](https://docs.unity3d.com/Manual/UIE-create-ui-document-component.html), [`UIDocument` API](https://docs.unity3d.com/ScriptReference/UIElements.UIDocument.html), [Panel Renderer component](https://docs.unity3d.com/Manual/ui-systems/panel-renderer-component.html), [Runtime Panel Settings](https://docs.unity3d.com/Manual/UIE-Runtime-Panel-Settings.html), [World space UI](https://docs.unity3d.com/Manual/ui-systems/world-space-ui.html), [Create world space UI](https://docs.unity3d.com/Manual/ui-systems/create-world-space-ui.html), [World space panel input configuration](https://docs.unity3d.com/Manual/ui-systems/world-space-panel-input-configuration.html), [Runtime event system](https://docs.unity3d.com/Manual/UIE-Runtime-Event-System.html).
-Covers: SKILL.md §4 — **"Pick Panel Renderer or `UIDocument` by the installed Editor version, and set the Scale Mode from the target platform"**, **"Add an `EventSystem` only when uGUI shares the scene"**.
-
-Hosting a visual tree at runtime: which component creates the panel, how
-`PanelSettings` scales and atlases it, how world-space UI differs from
-uGUI's World Space Canvas, and whether the scene needs an `EventSystem` at
-all.
-
-## Table of contents
-- [UIDocument vs Panel Renderer](#uidocument-vs-panel-renderer)
-- [PanelSettings — scale modes](#panelsettings--scale-modes)
-- [PanelSettings — atlas and budget](#panelsettings--atlas-and-budget)
-- [World space UI](#world-space-ui)
-- [Runtime input — does UI Toolkit need an EventSystem](#runtime-input--does-ui-toolkit-need-an-eventsystem)
+Sources: [Runtime UI](https://docs.unity3d.com/Manual/UIE-support-for-runtime-ui.html), [Get started](https://docs.unity3d.com/Manual/UIE-get-started-with-runtime-ui.html), [UI Document](https://docs.unity3d.com/Manual/UIE-create-ui-document-component.html), [UIDocument API](https://docs.unity3d.com/ScriptReference/UIElements.UIDocument.html), [Panel Renderer](https://docs.unity3d.com/Manual/ui-systems/panel-renderer-component.html), [Panel Settings](https://docs.unity3d.com/Manual/UIE-Runtime-Panel-Settings.html), [World space](https://docs.unity3d.com/Manual/ui-systems/world-space-ui.html), [Create world space](https://docs.unity3d.com/Manual/ui-systems/create-world-space-ui.html), [World input](https://docs.unity3d.com/Manual/ui-systems/world-space-panel-input-configuration.html), [Event system](https://docs.unity3d.com/Manual/UIE-Runtime-Event-System.html).
 
 ## UIDocument vs Panel Renderer
+As of Unity 6.5 the Manual says "UI Document component is obsolete and superseded by the Panel Renderer component", yet the `UIDocument` class has no `[Obsolete]` attribute and existing components keep working. Treat it as a version-gated choice.
 
-**Critical caveat**: as of **Unity 6.5**, the Manual states "UI Document
-component is obsolete and superseded by the Panel Renderer component" — but
-the `UIDocument` C# class itself carries no compiler `[Obsolete]` attribute,
-and existing `UIDocument` components keep working unchanged. Treat this as
-a version-gated authoring decision, not a hard ban: confirm the installed
-Editor version (per [root-links.md](root-links.md)) before choosing.
+| Editor | Use |
+|---|---|
+| 6.5+ | Panel Renderer (`GameObject > UI Toolkit > Panel Renderer`) for new UI: same features plus reload behavior and performance gains; the menu no longer offers `UIDocument` |
+| Earlier | `UIDocument`; Panel Renderer does not exist |
 
-| Subject | What it decides | Source |
+- `UIDocument.panelSettings` / `.visualTreeAsset` link the `PanelSettings` asset and the UXML loaded into `rootVisualElement`. `parentUI` auto-populates when the parent GameObject also has a `UIDocument` (nesting for draw order and focus).
+- Draw order: `sortingOrder` among siblings sharing a host or `PanelSettings`, lower first. Panel Renderer: children above parents, siblings by ascending Sort Order; several can share one `PanelSettings`.
+- Panel Renderers on the same `PanelSettings` share one focus navigation context: tab order can cross apparently separate documents.
+- Query elements only in the `RegisterUIReloadCallback` callback (`CreateGUI()` for Editor), not `OnEnable`/`Awake`; unregister in `OnDestroy`.
+
+## PanelSettings
+| Scale Mode | Fields | Use for |
 |---|---|---|
-| Unity 6.5+ | Use **Panel Renderer** (`GameObject > UI Toolkit > Panel Renderer`) for new runtime UI — same functionality plus reload behavior and performance improvements, and the Editor no longer offers `UIDocument` from that menu | [UI Document component](https://docs.unity3d.com/Manual/UIE-create-ui-document-component.html) |
-| Earlier Unity versions | `UIDocument` remains the current, correct API — Panel Renderer does not exist yet | [Get started with runtime UI](https://docs.unity3d.com/Manual/UIE-get-started-with-runtime-ui.html) |
-| `UIDocument.panelSettings` / `.visualTreeAsset` | Links the `PanelSettings` asset and the UXML auto-loaded into `rootVisualElement` | [`UIDocument` API](https://docs.unity3d.com/ScriptReference/UIElements.UIDocument.html) |
-| `UIDocument.parentUI` | Auto-populated when the GameObject's parent also carries a `UIDocument`, establishing nesting for draw order and focus | [`UIDocument` API](https://docs.unity3d.com/ScriptReference/UIElements.UIDocument.html) |
-| `sortingOrder` | Draw order among siblings sharing the same host or `PanelSettings`; lower renders first | [`UIDocument` API](https://docs.unity3d.com/ScriptReference/UIElements.UIDocument.html) |
-| Panel Renderer draw order | Child components render above parents; siblings render by ascending Sort Order. Multiple Panel Renderers can share one `PanelSettings` | [Panel Renderer component](https://docs.unity3d.com/Manual/ui-systems/panel-renderer-component.html) |
-| Shared focus gotcha | Multiple Panel Renderers on the same `PanelSettings` share **one** focus navigation context — tab order can cross what look like separate documents | [Panel Renderer component](https://docs.unity3d.com/Manual/ui-systems/panel-renderer-component.html) |
-| Lifecycle hook | Query elements only inside `RegisterUIReloadCallback`'s callback (or `CreateGUI()` for Editor windows) — never `OnEnable`/`Awake`, since the tree is not guaranteed loaded there. Unregister in `OnDestroy` | [Panel Renderer component](https://docs.unity3d.com/Manual/ui-systems/panel-renderer-component.html) |
+| Constant Pixel Size | `Scale` (> 0), Reference Sprite PPU | Pixel-exact UI at any resolution |
+| Scale With Screen Size | Reference Resolution, Screen Match Mode (`Match Width or Height` 0-1 slider, `Shrink`, `Expand`) | Responsive PC + mobile HUD (uGUI `CanvasScaler` analog) |
+| Constant Physical Size | Reference DPI, Fallback DPI, Reference Sprite PPU | Constant real-world size across devices |
 
-## PanelSettings — scale modes
+- Dynamic Atlas Settings (Min/Max Atlas Size, Max Sub Texture Size, Active Filters): wrong filters exclude textures and fragment draw calls ([rendering-and-performance.md](rendering-and-performance.md)).
+- Vertex Budget default `0` = automatic. An unset Text Settings asset is auto-created, not an error.
 
-| Mode | Fields | Use for | Source |
-|---|---|---|---|
-| Constant Pixel Size | `Scale` multiplier (must be > 0), Reference Sprite Pixels Per Unit | A UI that must stay pixel-exact regardless of resolution | [Runtime Panel Settings](https://docs.unity3d.com/Manual/UIE-Runtime-Panel-Settings.html) |
-| Scale With Screen Size | Reference Resolution, Screen Match Mode (`Match Width or Height` with a 0–1 slider, `Shrink`, `Expand`) | A responsive PC + mobile HUD — the direct analog of uGUI's `CanvasScaler`, per `csharp-standards` → `coding-principles.md`'s responsive-UI expectation | [Runtime Panel Settings](https://docs.unity3d.com/Manual/UIE-Runtime-Panel-Settings.html) |
-| Constant Physical Size | Reference DPI, Fallback DPI, Reference Sprite Pixels Per Unit | A UI that must keep a constant real-world size across devices | [Runtime Panel Settings](https://docs.unity3d.com/Manual/UIE-Runtime-Panel-Settings.html) |
+## World space
+- `PanelSettings` Render Mode = World Space is the single switch. Sizing: Size Mode (Dynamic/Fixed), Pivot Reference Size (Bounding Box/Layout), Pivot (9 positions). Pixels Per Unit default 100.
+- Input needs a **World Document Raycaster** (ray through Physics layers to a Collider); a plain `GraphicRaycaster` as on uGUI's World Space Canvas does not work. Fields: Interaction Layers, Event Cameras (tried in order until a Collider is hit), Max Interaction Distance.
+- "Auto Create Panel Components" adds World Document Raycaster + Panel Raycaster + Panel Event Handler; disabling it means wiring all three by hand.
+- Unverified: the exact mesh/`RenderTexture` mechanics. Older tutorials wire a `RenderTexture` onto a quad; the current Manual describes World Space mode plus the raycaster instead. Check the live page before asserting a mechanism.
 
-## PanelSettings — atlas and budget
-
-| Field | Effect | Source |
-|---|---|---|
-| Dynamic Atlas Settings (Min/Max Atlas Size, Max Sub Texture Size, Active Filters) | Governs which textures batch into the runtime atlas — misconfigured filters exclude textures and fragment draw calls, per [rendering-and-performance.md](rendering-and-performance.md) | [Runtime Panel Settings](https://docs.unity3d.com/Manual/UIE-Runtime-Panel-Settings.html) |
-| Vertex Budget | Default `0` = automatic sizing | [Runtime Panel Settings](https://docs.unity3d.com/Manual/UIE-Runtime-Panel-Settings.html) |
-| Text Settings asset | If left unset, Unity **auto-creates a default** rather than failing | [Runtime Panel Settings](https://docs.unity3d.com/Manual/UIE-Runtime-Panel-Settings.html) |
-
-## World space UI
-
-| Subject | What it decides | Source |
-|---|---|---|
-| Enabling | Set the `PanelSettings` **Render Mode to World Space** — the single switch that repositions the panel alongside 2D/3D scene content instead of on screen | [World space UI](https://docs.unity3d.com/Manual/ui-systems/world-space-ui.html) |
-| Sizing fields | Size Mode (Dynamic/Fixed), Pivot Reference Size (Bounding Box/Layout), Pivot (one of 9 anchor positions) | [Create world space UI](https://docs.unity3d.com/Manual/ui-systems/create-world-space-ui.html) |
-| Pixels Per Unit | Default **100** — panel-space pixels per one World Space unit | [Create world space UI](https://docs.unity3d.com/Manual/ui-systems/create-world-space-ui.html) |
-| Input — **World Document Raycaster** | Required component that casts a world-space ray through Physics layers to hit a Collider and resolve the pointer target — a UI Toolkit World Space panel does **not** get input the way uGUI's World Space Canvas does with a plain `GraphicRaycaster` | [World space panel input configuration](https://docs.unity3d.com/Manual/ui-systems/world-space-panel-input-configuration.html) |
-| Raycaster fields | Interaction Layers, Event Cameras (tried sequentially until one hits a Collider), Max Interaction Distance | [World space panel input configuration](https://docs.unity3d.com/Manual/ui-systems/world-space-panel-input-configuration.html) |
-| Auto-setup | "Auto Create Panel Components" creates World Document Raycaster + Panel Raycaster + Panel Event Handler together; disabling it means wiring all three manually | [World space panel input configuration](https://docs.unity3d.com/Manual/ui-systems/world-space-panel-input-configuration.html) |
-
-**Critical caveat**: do not assume UI Toolkit World Space needs a manually
-wired `RenderTexture` on a quad the way older tutorials describe — the
-current pipeline is PanelSettings World Space mode plus the Panel Renderer's
-sizing fields and the World Document Raycaster. The exact mesh mechanics
-were not confirmed on the pages fetched for this skill; verify on the live
-Manual before asserting the mechanism to someone else.
-
-## Runtime input — does UI Toolkit need an EventSystem?
-
-| Subject | What it decides | Source |
-|---|---|---|
-| Default behavior | On entering Play mode, UI Toolkit creates its **own default event system that is not part of any scene** and supports most input devices automatically — **no `EventSystem` GameObject is required**, unlike uGUI | [Runtime event system](https://docs.unity3d.com/Manual/UIE-Runtime-Event-System.html) |
-| Input backend | The default event system auto-detects whether the legacy Input Manager or the Input System package is active | [Runtime event system](https://docs.unity3d.com/Manual/UIE-Runtime-Event-System.html) |
-| Mixing with uGUI | An `EventSystem` is only needed when the scene **also** contains uGUI. If the Input System package is active, Unity substitutes an Input System UI Input Module for the Standalone one, and that module dispatches to both uGUI and UI Toolkit elements | [Runtime event system](https://docs.unity3d.com/Manual/UIE-Runtime-Event-System.html) |
-| Effect of adding an EventSystem | UI Toolkit detects it and auto-creates `PanelRaycaster` + `PanelEventHandler` per panel so both systems interoperate under one input pipeline | [Runtime event system](https://docs.unity3d.com/Manual/UIE-Runtime-Event-System.html) |
-
-**Critical caveat**: a scene that is pure UI Toolkit needs no `EventSystem`
-at all. Add one, or route through `unity-input-system`'s
-`InputSystemUIInputModule`, only once uGUI is genuinely present in the same
-scene — adding it unconditionally is not "safer," it just changes which
-input pipeline UI Toolkit runs under.
+## EventSystem
+- On entering Play mode UI Toolkit creates its own scene-less default event system supporting most devices, auto-detecting legacy Input Manager vs Input System: no `EventSystem` GameObject is needed.
+- Needed only when the scene also contains uGUI. With the Input System package active, Unity substitutes an Input System UI Input Module that dispatches to both uGUI and UI Toolkit.
+- Adding an `EventSystem` makes UI Toolkit auto-create `PanelRaycaster` + `PanelEventHandler` per panel so both run under one pipeline. In a pure UI Toolkit scene that only changes the input pipeline, for no gain.
