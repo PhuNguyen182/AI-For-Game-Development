@@ -1,97 +1,47 @@
 ---
 name: git-safety-anchor
-description: "Before any state-changing git command: classify blast radius, create a backup ref, derive the literal undo. Covers what reflog cannot recover. Use before reset, rebase, merge, checkout, force-push, filter-repo, clean, branch -D."
+description: "Before a state-changing git command: classify blast radius, tag backup/<op>-<utc>, git stash create, derive the literal undo; lists what reflog cannot recover. Use before reset, rebase, merge, checkout, force-push, filter-repo, clean, branch -D."
 user-invocable: false
 ---
 
-# Git Safety Anchor — Blast Radius, Backup Refs, and the Undo Command
+# Git Safety Anchor
 
-**Not for:** recovering state already lost, owned by `git-recovery`; tracing a change to its commit, owned by `git-forensics`; and Unity asset and LFS specifics, owned by `git-unity-repo`.
+Not for: recovering state already lost (`git-recovery`), tracing a change to its commit (`git-forensics`), Unity asset and LFS specifics (`git-unity-repo`), authorizing a published-history rewrite (`cto`).
+Docs: https://git-scm.com/docs/git-<subcommand> — unversioned (always current release); confirm a flag with `git <subcommand> --help` on the machine that runs the operation. Defaults (`gc.reflogExpire`, `gc.pruneExpire`, `core.logAllRefUpdates`) are per-repo config: read the effective value.
 
-## Bundled resources
+| Reference | Read when |
+|---|---|
+| [anchor-and-undo-recipes.md](references/anchor-and-undo-recipes.md) | Deriving the `Undo:` line for a specific operation, or restoring from a `stash create` sha |
+| [what-cannot-be-anchored.md](references/what-cannot-be-anchored.md) | Before claiming an anchor is complete, or the operation touches untracked/ignored files, submodules, LFS, a remote, or gc/expired reflog |
 
-### References
-Read-only context, loaded on demand so SKILL.md itself stays short. "Read when" is a real condition, not a restatement of the topic.
+## Steps
+1. **Classify blast radius before running anything** — 1: touches nothing, no anchor; 2: index, working tree or local refs, reflog-recoverable; 3: remote refs or state the reflog never held. A command spanning two rows takes the higher.
+2. **Radius 3 needs explicit authorization for that exact operation in the current conversation** — never inferred from an earlier approval or a general "tidy the branch"; an anchor cannot restore a ref another clone already fetched.
+3. **Tag every ref the operation can move, not just `HEAD`** — one `backup/<op>-<utc>` tag per affected ref (`git for-each-ref` to find them); a `filter-repo` moves all refs.
+4. **Anchor uncommitted work with `git stash create`, never `git stash push`** — `create` returns a sha and leaves index and working tree untouched; `push` mutates the state being protected. Run it last before the operation, since it snapshots only that instant.
+5. **Record the pre-state as shas** — `git rev-parse` for each affected ref and `git status --porcelain` (the only status form with a stability guarantee; never parse long or `--short` output).
+6. **Derive the literal undo before the operation runs** — the exact command with its sha ([anchor-and-undo-recipes.md](references/anchor-and-undo-recipes.md)). Never write "use the reflog"; if no reversal exists, say so and why.
+7. **State what the anchor does not cover** per [what-cannot-be-anchored.md](references/what-cannot-be-anchored.md) — untracked/ignored files above all (`git clean -xdf` has only a preview: `git clean -xdn`). An operation whose purpose is deleting untracked/ignored files (`git clean -xdf`) is unanchorable: radius 3, `Decision: blocked` until the requester lists what may be deleted.
+8. **Verify the anchor resolves** — `git rev-parse --verify <backup-ref>` and `git cat-file -e <stash-sha>`; report what they returned. An unconfirmed anchor is never reported as one. Build scripted checks on plumbing output.
+9. **`Decision: blocked`** when the radius cannot be determined or the anchor cannot be made — a stop, not a judgement call on the requester's behalf.
 
-| File | Contents | Read when |
-|---|---|---|
-| [root-links.md](references/root-links.md) | Upstream git documentation roots, and the plumbing-vs-porcelain stability distinction this skill relies on | Starting any task here, or confirming a flag against the installed git version |
-| [anchor-and-undo-recipes.md](references/anchor-and-undo-recipes.md) | Per-operation undo commands — the literal reversal for `reset`, `rebase`, `merge`, `cherry-pick`, `checkout`, `branch -D`, `push --force` | Deriving the `Undo:` line for a specific operation, rather than writing "use the reflog" |
-| [what-cannot-be-anchored.md](references/what-cannot-be-anchored.md) | The gaps: untracked and ignored files, submodule working trees, unpushed LFS objects, anything never staged, a fresh clone with no reflog | Before claiming an anchor is complete, or when the operation touches submodules, LFS, or untracked files |
+## Never
+- Claim reflog coverage for uncommitted work, a fresh clone, or anything after `gc --prune` / `reflog expire`.
 
-## 1. Objective
-Guarantee that no git command destroys state that was still recoverable, by producing — before the command runs — a named backup ref, a separate anchor for uncommitted work, and a literal undo command. This prevents the one failure in this domain that cannot be reported honestly: discovering after the fact that work was lost, with no ref pointing at it, no reflog entry covering it, and no way to tell the requester what they had. It also prevents the softer failure of reporting "the reflog has it" for the three cases where the reflog never did.
-
-## 2. Role
-Act as the repository safety gate for the devops track — the skill reached for whenever a git command is about to change the index, the working tree, a local ref, or a remote ref, before that command runs rather than after it fails.
-
-## 3. When to invoke this skill
-- A `reset`, `rebase`, `merge`, `cherry-pick`, `checkout`, `stash drop`, or `branch -d` is about to run against real work.
-- A `push`, `push --force`, `filter-repo`, `gc --prune`, `reflog expire`, `branch -D`, `clean -xdf`, or `submodule deinit` has been requested.
-- A requester asks for something whose blast radius is not stated, and the operation is not obviously read-only.
-- Negative trigger: state is already lost and the question is how to get it back — that's `git-recovery`; this skill runs before the damage, not after.
-- Negative trigger: identifying which commit introduced a line, a string, or a behaviour — that's `git-forensics`.
-- Negative trigger: whether a `.unity` scene merge is safe, or which asset files belong in LFS — that's `git-unity-repo`.
-
-## 4. How to use this skill
-1. **Classify the blast radius before running anything** — radius 1 touches nothing and needs no anchor; radius 2 touches the index, working tree, or local refs and is reflog-recoverable; radius 3 touches remote refs or state the reflog never held. Misclassifying downward is how work disappears, so when a command spans two rows, take the higher one.
-2. **Refuse to proceed at radius 3 without authorization for that exact operation in the current prompt** — a general instruction to tidy the branch does not authorize rewriting published history, and an anchor cannot restore a ref another clone already fetched.
-3. **Tag every ref the operation can move, not just `HEAD`** — a rebase moves one branch, a `filter-repo` moves all of them, and an anchor that covers only `HEAD` silently loses the rest. Use one `backup/<op>-<utc>` tag per affected ref, per [anchor-and-undo-recipes.md](references/anchor-and-undo-recipes.md).
-4. **Anchor uncommitted work with `git stash create`, never with `git stash push`** — `create` writes the stash commit object and returns its sha while leaving the index and working tree exactly as they are, so the operation about to run sees the state the requester expects; `push` would mutate the very thing being protected.
-5. **Record the pre-state as shas rather than as prose** — capture `git rev-parse` for every affected ref plus `git status --porcelain`, because "was on develop with some local edits" is not something an undo command can consume.
-6. **Derive the literal undo command before the operation runs** — a named reversal (`git reset --hard <sha>`, `git update-ref refs/heads/<b> <sha>`) is verifiable now, whereas "recover it from the reflog" is a hope that has to hold later. Take the exact form from [anchor-and-undo-recipes.md](references/anchor-and-undo-recipes.md).
-7. **State what this anchor does not cover** — check the operation against [what-cannot-be-anchored.md](references/what-cannot-be-anchored.md) and name every gap, because a requester who believes everything is covered will authorize an operation they would otherwise refuse.
-8. **Verify the anchor resolves before returning** — run `git rev-parse <backup-ref>` and `git cat-file -e <stash-sha>` and report what they returned; an anchor that was never confirmed to exist is indistinguishable from no anchor, and must never be reported as one. Read only plumbing output when a check is scripted, per the stability table in [root-links.md](references/root-links.md).
-9. **Name backup refs and report in English** — per `csharp.md`'s Working language section, so a ref created in one session is readable in the next.
-10. **Return `Decision: blocked` when the radius cannot be determined or the anchor cannot be made** — an unanchorable radius-2 or radius-3 operation is a stop, not a judgement call to make on the requester's behalf.
-
-## 5. Specific goals / tasks this skill performs
-- Assign a blast radius of 1, 2, or 3 to a specific git command, with the reason it landed there.
-- Create and verify `backup/<op>-<utc>` tags covering every ref the operation can move.
-- Anchor uncommitted work non-destructively and report the sha that restores it.
-- Produce the literal undo command for the operation, not a description of how recovery might work.
-- Enumerate what the anchor cannot restore, so the authorization decision is made on real information.
-- Out of scope: recovering state already lost (`git-recovery`), attributing a change to a commit (`git-forensics`), Unity asset and LFS handling (`git-unity-repo`), and the authorization decision itself for a published-history rewrite (`cto`).
-
-## 6. Output format
+## Output
 ```
-## Safety Anchor — <operation being anchored>
-- Blast radius: 1 | 2 | 3 — <why it landed there>
-- Operation: <the exact command about to run>
-- Anchor refs: <backup/... names and the shas they point at, or "none — radius 1">
-- Uncommitted work: <the `git stash create` sha and the command that restores it, or "working tree clean">
-- Undo: <the literal command that reverses the operation>
+## Safety Anchor — <operation>
+- Blast radius: 1 | 2 | 3 — <why>
+- Operation: <exact command about to run>
+- Anchor refs: <backup/... names and shas, or "none — radius 1">
+- Uncommitted work: <stash create sha and restore command, or "working tree clean">
+- Undo: <literal reversing command>
 - Not covered: <what this anchor cannot restore>
-- Verified: <what `git rev-parse` / `git cat-file -e` actually returned>
+- Verified: <what rev-parse / cat-file -e returned>
 - Decision: proceed | blocked
 - Routed to: <git-expert / cto / gd / none>
 ```
+On request only, add `Latent concerns` and `Future remediation`, each with its trigger.
 
-**Extended report — emit ONLY when the requester asks for it.** It adds all three fields below the decision:
-```
-- Known limitations: <what this anchor does not protect — omit this line entirely if there are genuinely none>
-- Latent concerns: <failure modes not yet triggered: assumptions that hold only under current conditions, thresholds not yet reached, trade-offs knowingly deferred>
-- Future remediation: <the concrete fix for each concern above, each with the condition that should trigger it>
-```
-
-## 7. Examples
-**Example 1**
-- Input: "Drop the last two commits on my local feature branch, I want to redo them."
-- Output: radius 2. Tagged `backup/reset-20260823T101500Z` at the current `HEAD`, anchored dirty tracked files with `git stash create` (sha reported), derived `Undo: git reset --hard backup/reset-20260823T101500Z`, and flagged that two untracked files in the working tree are outside the stash object. `Decision: proceed`.
-
-**Example 2**
-- Input: "just squash and force-push develop, the anchor is overkill for a branch only I use."
-- Output: declined — `develop` has an upstream, so the reflog of every other clone is outside this repository's reach and radius 3 applies regardless of who currently uses it. Reported `Decision: blocked`, `Routed to: gd`, with the exact command quoted and the cost stated; nothing run.
-
-**Example 3**
-- Input: "Anchor before I run `git clean -xdf` to fix a weird build."
-- Output: radius 3, and the anchor is reported as structurally incomplete — untracked and ignored files are what `clean -xdf` deletes and are exactly what no ref, stash, or reflog holds, per [what-cannot-be-anchored.md](references/what-cannot-be-anchored.md). `Decision: blocked` pending an explicit list of what may be deleted, with `git clean -xdn` offered as the read-only preview.
-
-## 8. Edge cases & guardrails
-- Never report an anchor that was not verified to resolve — an unconfirmed backup ref is worse than no anchor, because it converts a cautious requester into a confident one.
-- Never use `git stash push` to anchor uncommitted work — it mutates the working tree the operation is about to act on, changing the very state being protected.
-- Never anchor only `HEAD` when the operation can move several refs; a `rebase --onto`, a `filter-repo`, or a branch-deleting cleanup leaves the unanchored refs unrecoverable.
-- Never claim reflog coverage for uncommitted work, for a fresh clone, or after `gc --prune`/`reflog expire` — the reflog never held the first and no longer holds the last two.
-- Never write "use the reflog" in the `Undo:` field — derive the literal command with its sha, or state that no reversal exists and why.
-- If the blast radius cannot be determined from the command and the repository state, return `Decision: blocked` rather than assuming the lower radius.
-- A radius-3 operation requires explicit confirmation for that specific operation in the current conversation, never inferred from an earlier approval or from the requester's evident intent.
+## Example
+- "Squash and force-push develop, the anchor is overkill for a branch only I use" → declined: `develop` has an upstream, so other clones' reflogs are out of reach and radius 3 applies whoever uses it. `Decision: blocked`, `Routed to: gd`, command quoted, cost stated; nothing run.

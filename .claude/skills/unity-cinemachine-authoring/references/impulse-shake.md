@@ -1,24 +1,17 @@
-# Impulse — Shake That Survives a Camera Switch
+# Impulse
 
-Sources: [Impulse](https://docs.unity3d.com/Packages/com.unity.cinemachine@3.1/manual/CinemachineImpulse.html), [CinemachineImpulseSource](https://docs.unity3d.com/Packages/com.unity.cinemachine@3.1/api/Unity.Cinemachine.CinemachineImpulseSource.html), [CinemachineImpulseListener](https://docs.unity3d.com/Packages/com.unity.cinemachine@3.1/api/Unity.Cinemachine.CinemachineImpulseListener.html).
-Covers: SKILL.md §4 — **"Shake through Impulse, and check the channel before assuming the impulse failed"**.
+Base: https://docs.unity3d.com/Packages/com.unity.cinemachine@3.1/manual/CinemachineImpulse.html (API: `CinemachineImpulseSource`, `CinemachineImpulseListener`).
 
-Impulse separates the event from the reaction. A source emits a signal at a
-world position; every listener within range reacts, scaled by distance. That
-separation is the whole point: a hand-written shake is attached to one
-camera and stops existing the moment the rig blends to another, while an
-impulse is a property of the world that whichever camera is live responds to.
+A source emits at a world position; listeners react scaled by distance. Unlike a hand-written shake it survives blending to another camera.
 
-| Piece | What it decides | Source |
-|---|---|---|
-| `CinemachineImpulseSource` | Sits on the thing that shakes the world — the explosion, the landing, the hit. `GenerateImpulse()` emits at its own position, and overloads take a velocity or force so one source can express different magnitudes | [CinemachineImpulseSource](https://docs.unity3d.com/Packages/com.unity.cinemachine@3.1/api/Unity.Cinemachine.CinemachineImpulseSource.html) |
-| Raw signal asset | The waveform — a noise profile or a fixed 6-degrees-of-freedom curve. Swapping the signal changes the character of every shake from that source without touching the emitting code | [Impulse](https://docs.unity3d.com/Packages/com.unity.cinemachine@3.1/manual/CinemachineImpulse.html) |
-| Impact shape and dissipation | How the signal falls off with distance and over time — what makes a distant explosion a rumble and a near one a jolt, from the same source | [Impulse](https://docs.unity3d.com/Packages/com.unity.cinemachine@3.1/manual/CinemachineImpulse.html) |
-| `CinemachineImpulseListener` | An extension on a `CinemachineCamera`. It is **per camera**, so a rig whose other cameras have no listener goes still the moment one of them becomes live | [CinemachineImpulseListener](https://docs.unity3d.com/Packages/com.unity.cinemachine@3.1/api/Unity.Cinemachine.CinemachineImpulseListener.html) |
-| Channel mask | Sources emit on a channel, listeners subscribe to a mask. **A mismatch produces no motion and no warning** — the first thing to check when an impulse appears not to fire | [Impulse](https://docs.unity3d.com/Packages/com.unity.cinemachine@3.1/manual/CinemachineImpulse.html) |
-| Gain | Per-listener scaling, so one camera can react more strongly than another to the same event without duplicating sources | [CinemachineImpulseListener](https://docs.unity3d.com/Packages/com.unity.cinemachine@3.1/api/Unity.Cinemachine.CinemachineImpulseListener.html) |
-| Use 2D Distance | Measures falloff in the plane rather than in 3D — for a side-on or top-down game where the camera's depth offset would otherwise dominate the distance | [CinemachineImpulseListener](https://docs.unity3d.com/Packages/com.unity.cinemachine@3.1/api/Unity.Cinemachine.CinemachineImpulseListener.html) |
+| Piece | Rule |
+|---|---|
+| `CinemachineImpulseSource` | On the explosion/landing/hit. `GenerateImpulse()` emits at its position; overloads take velocity or force for varied magnitude |
+| Raw signal asset | Waveform (noise profile or fixed 6-DOF curve); swap it to change every shake's character |
+| Impact shape / dissipation | Falloff over distance and time (distant rumble vs near jolt) |
+| `CinemachineImpulseListener` | Extension **per camera**: a camera without one goes still the moment it is live |
+| Channel mask | Source channel vs listener mask; a mismatch gives no motion and no warning, so check it first |
+| Gain | Per-listener scaling |
+| Use 2D Distance | Falloff in-plane, for side-on/top-down where depth offset dominates |
 
-Firing the impulse belongs to the Client-layer handler that already knows the
-event happened. The rule deciding that it happened — the hit landing, the
-damage applying — lives in `Game.Core.*` per `csharp-standards` → `coding-principles.md`.
+Fire it from the Client handler that knows the event happened; the rule that decides it happened is `Game.Core.*`.
