@@ -1,31 +1,23 @@
-# Job Dependencies & Parallel Batching
+# Job Dependencies and Parallel Batching
 
-Sources: [Job dependencies](https://docs.unity3d.com/6000.5/Documentation/Manual/job-system-job-dependencies.html), [Parallel jobs](https://docs.unity3d.com/6000.1/Documentation/Manual/job-system-parallel-for-jobs.html).
-Covers: SKILL.md §4 — **"Chain every ordering relationship through an explicit `JobHandle`"**, **"Size the parallel batch against per-element cost"**.
-
-How ordering between jobs is expressed, and how a parallel workload is split.
-Both are correctness concerns before they are performance ones: an unexpressed
-dependency is a race, and a batch size is what decides whether workers stay fed.
+Sources: [d] `6000.5/Documentation/Manual/job-system-job-dependencies.html`, [p] `6000.1/Documentation/Manual/job-system-parallel-for-jobs.html`, [h] `ScriptReference/Unity.Jobs.JobHandle.CombineDependencies.html`, under `https://docs.unity3d.com/`.
 
 ## Dependencies
 
-| Subject | What it decides | Source |
-|---|---|---|
-| Passing a `JobHandle` into `Schedule` | The only sanctioned ordering between two jobs — the consumer cannot start before the producer finishes | [Job dependencies](https://docs.unity3d.com/6000.5/Documentation/Manual/job-system-job-dependencies.html) |
-| `JobHandle.CombineDependencies` | Merges several handles into one, because a schedule call accepts a single dependency | [CombineDependencies](https://docs.unity3d.com/ScriptReference/Unity.Jobs.JobHandle.CombineDependencies.html) |
-| Two jobs scheduled with no dependency | Free to run concurrently — if they touch the same container that is a race, whatever the call order in the source suggests | [Job dependencies](https://docs.unity3d.com/6000.5/Documentation/Manual/job-system-job-dependencies.html) |
-| Over-chaining | A dependency added "to be safe" between genuinely independent jobs serializes them and removes the parallelism being bought | [Job dependencies](https://docs.unity3d.com/6000.5/Documentation/Manual/job-system-job-dependencies.html) |
+| Subject | Fact that decides |
+|---|---|
+| `JobHandle` passed into `Schedule` | The only sanctioned ordering: the consumer cannot start before the producer finishes [d] |
+| `JobHandle.CombineDependencies` | Merges several handles, since a schedule call takes one dependency [h] |
+| Two jobs, no dependency | Free to run concurrently; on the same container that is a race whatever the call order in source [d] |
+| Over-chaining | A "to be safe" dependency between independent jobs serializes them and removes the parallelism [d] |
 
-## Parallel batching
+## Batching [p]
 
-| Subject | What it decides | Source |
-|---|---|---|
-| Batch (inner loop) count | Elements handed to a worker per grab — roughly 32–128 for cheap arithmetic, down towards 1 as per-element cost rises | [Parallel jobs](https://docs.unity3d.com/6000.1/Documentation/Manual/job-system-parallel-for-jobs.html) |
-| Batch too small | Scheduling and stealing overhead dominates the actual work | [Parallel jobs](https://docs.unity3d.com/6000.1/Documentation/Manual/job-system-parallel-for-jobs.html) |
-| Batch too large | Uneven element costs strand workers idle while one long batch finishes | [Parallel jobs](https://docs.unity3d.com/6000.1/Documentation/Manual/job-system-parallel-for-jobs.html) |
-| Work stealing | Idle workers take queued batches, so smaller batches are what makes recovery from uneven cost possible | [Parallel jobs](https://docs.unity3d.com/6000.1/Documentation/Manual/job-system-parallel-for-jobs.html) |
+| Subject | Fact that decides |
+|---|---|
+| Batch (inner loop) count | Elements per grab: about 32-128 for cheap arithmetic, down towards 1 as per-element cost rises |
+| Too small | Scheduling and stealing overhead dominates |
+| Too large | Uneven element costs strand idle workers behind one long batch |
+| Work stealing | Smaller batches are what let idle workers recover from uneven cost |
 
-**Critical caveat**: parallel index order is unspecified. Any result built by
-accumulating across indices is run-dependent even when it is race-free — write
-per-index outputs and reduce them serially when the value has to be
-reproducible.
+**Caveat:** parallel index order is unspecified. A result built by accumulating across indices is run-dependent even when race-free; write per-index outputs and reduce serially when the value must be reproducible.
