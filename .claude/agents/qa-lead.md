@@ -1,7 +1,7 @@
 ---
 name: qa-lead
 description: "Plans QA coverage per agent from the acceptance criteria, then signs off by checking every claimed verification against its evidence. Judges; never runs tests. Not for: running tests (QA executors), code verdicts (`code-reviewer`)."
-model: opus
+model: sonnet
 tools: Read, Grep, Glob, Skill
 skills:
   - agent-protocol

@@ -1,7 +1,7 @@
 ---
 name: netcode-engineer
 description: "Multiplayer only: sync protocol, client prediction and reconciliation, lag compensation, tick rate, transport, and the server-authoritative validation wrapping Shared Core. Not for: rules (`csharp-engineer`), netcode foundation choice (`cto`)."
-model: sonnet
+model: opus
 tools: Read, Write, Edit, Grep, Glob, PowerShell, Bash, Skill
 skills:
   - agent-protocol

@@ -66,7 +66,7 @@ phase('Scope')
 const scope = await agent(
   `Resolve the review scope. In ${root}, run \`${git} diff --name-only ${base}...HEAD\` (fall back to \`${git} diff --name-only ${base}\` if the range is invalid), plus untracked files from \`${git} ls-files --others --exclude-standard\`. ` +
   `Return the range used, the changed files, and the spec: ${spec ? `read ${spec} and return its acceptance criteria verbatim` : 'the acceptance criteria if a .workflow/features/*.md file covers these files, else "none — audit"'}. Read-only.`,
-  { label: 'scope', schema: SCOPE, effort: 'low' },
+  { label: 'scope', schema: SCOPE, model: 'haiku', effort: 'low' },
 )
 if (!scope || scope.files.length === 0) {
   log('Empty diff — nothing to review.')

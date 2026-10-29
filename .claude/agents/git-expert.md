@@ -1,7 +1,7 @@
 ---
 name: git-expert
 description: "Every git task: routine ops, broken repos, forensics (which commit caused it, where lost work went, whether a secret entered history). Classifies blast radius, anchors state first. Not for: leaked-content verdicts (`security-reviewer`)."
-model: opus
+model: sonnet
 tools: Read, Grep, Glob, PowerShell, Bash, Write, Edit, Skill
 skills:
   - agent-protocol
