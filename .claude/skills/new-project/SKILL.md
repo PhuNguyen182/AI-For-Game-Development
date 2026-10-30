@@ -29,6 +29,7 @@ One passing placeholder test per test assembly proves the test command; write th
 ## 5. Git — `git-expert` with skill `git-unity-repo`
 Unity `.gitignore`, `.gitattributes` (UnityYAMLMerge, LFS for binaries), `git lfs install`. Never commit `Library/`, `Temp/`, `Logs/`, `UserSettings/`.
 Memory and search (skills `mem`, `code-search`): `.gitignore` += `.memory/.index/`, `.memory/.state/`; `.gitattributes` += `.memory/traces/** text eol=lf linguist-generated` (never `-diff`: the pre-commit secret scan reads diffs); copy `.xerjignore` and `.memory/sources.txt` from the framework root; `.memory/notes/` starts empty.
+Delete the copied `.gitignore`'s `Framework repo only` block, down to its end marker: the project commits its traces and its framework backlog. `.workflow/framework-backlog.md` comes from `.claude/templates/framework-backlog.md` (the session-start hook creates it; copy the template if absent) and is committed with the project.
 
 ## 6. Perf budget — `AskUserQuestion`, recommended first
 | Profile | Recommended default |

@@ -344,6 +344,16 @@ try {
     Check 'session-start skips closed features' ($r.Out -match 'done-one') $false
     Check 'session-start reports Grep without XERJ' ($r.Out -match 'Search: Grep') $true
 
+    # session-start: the framework backlog comes from its template when missing, and an existing one is kept
+    New-Item -ItemType Directory -Force (Join-Path $proj '.claude/templates') | Out-Null
+    Copy-Item (Join-Path $hooks '../templates/framework-backlog.md') (Join-Path $proj '.claude/templates/framework-backlog.md')
+    $fb = Join-Path $proj '.workflow/framework-backlog.md'
+    $r = Invoke-Hook 'session-start.ps1' @{}
+    Check 'session-start creates the framework backlog from its template' ((Test-Path $fb) -and ($r.Out -match 'Framework backlog: created')) $true
+    Add-Content $fb '| A row this repo found | Open |'
+    $r = Invoke-Hook 'session-start.ps1' @{}
+    Check 'session-start keeps an existing framework backlog' (((Get-Content $fb -Raw) -match 'A row this repo found') -and ($r.Out -notmatch 'Framework backlog')) $true
+
     # memory: capture (Stop hook) and the session-start status line, against a copy of mem.py
     $memDir = Join-Path $proj '.claude/skills/mem/scripts'
     New-Item -ItemType Directory -Force $memDir, (Join-Path $proj '.claude/hooks') | Out-Null

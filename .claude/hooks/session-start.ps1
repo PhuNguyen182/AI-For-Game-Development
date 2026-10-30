@@ -1,7 +1,19 @@
-# SessionStart: in-flight features, then one status line each for memory and code search.
+# SessionStart: the framework backlog from its template when missing, in-flight features, then one status line each
+# for memory and code search.
 # Zero-Mem: no memory content is preloaded; the agent queries mem.py when it needs something.
 . "$PSScriptRoot/common.ps1"
 $root = if ($env:CLAUDE_PROJECT_DIR) { $env:CLAUDE_PROJECT_DIR } else { (Get-Location).Path }
+
+# Each repo keeps its own framework backlog outside .claude/: a fresh clone or install gets an empty one.
+$backlog = Join-Path $root '.workflow/framework-backlog.md'
+$template = Join-Path $root '.claude/templates/framework-backlog.md'
+if (-not (Test-Path $backlog) -and (Test-Path $template)) {
+    try {
+        New-Item -ItemType Directory -Force (Split-Path $backlog) | Out-Null
+        Copy-Item $template $backlog -ErrorAction Stop
+        'Framework backlog: created .workflow/framework-backlog.md from .claude/templates/framework-backlog.md.'
+    } catch { 'Framework backlog: .workflow/framework-backlog.md is missing and could not be created from the template.' }
+}
 
 $dir = Join-Path $root '.workflow/features'
 if (Test-Path $dir) {

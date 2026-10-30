@@ -40,3 +40,4 @@
 ## Memory — Zero-Mem, skill `mem`
 - Nothing is preloaded: `mem q` before work in an unfamiliar area; a hit is a lead — read its source. Never use an LLM to organise, summarise or rewrite memory.
 - When the GD confirms a mistake: fix it, re-verify, then `mem add lesson`. A stated preference → `mem add feedback`. Never secrets or PII.
+- A gap in the framework itself (`.claude/`) → a row in `.workflow/framework-backlog.md` (from `.claude/templates/framework-backlog.md`), never in a tracked framework file; game work → `.workflow/backlog.md`.

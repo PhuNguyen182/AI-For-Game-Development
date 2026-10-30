@@ -119,6 +119,11 @@ __pycache__/
 # Zero-Mem: derived index and per-machine state (the files under .memory/ are the record)
 .memory/.index/
 .memory/.state/
-# Framework repo only (not copied into game projects): its sessions are framework development,
-# not project memory, so traces stay local here. mem.py still indexes them from disk.
+# --- Framework repo only: /new-project deletes this block, down to its end marker, in a game project. ---
+# The framework repo's sessions are framework development, not project memory, so traces stay local here.
+# mem.py still indexes them from disk.
 .memory/traces/
+# Each clone keeps its own framework backlog, created from .claude/templates/framework-backlog.md by the
+# session-start hook; a game project commits its copy.
+/.workflow/framework-backlog.md
+# --- end framework repo only ---
