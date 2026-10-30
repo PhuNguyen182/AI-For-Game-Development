@@ -264,10 +264,12 @@ try {
     Check 'pre-push still reads -o values as values' (Push 'git push -o ci.skip origin main' $tg) 0
 
     # git-guard: the auto-allowed `git tag backup/*` creates anchors only
-    foreach ($bad in @('git tag backup/x -d v1.0', 'git tag -f backup/x', 'git tag backup/x -f HEAD', 'git tag -d backup/x v1.0')) {
+    foreach ($bad in @('git tag backup/x -d v1.0', 'git tag -f backup/x', 'git tag backup/x -f HEAD', 'git tag -d backup/x v1.0',
+            'git tag --sort=refname -f backup/x HEAD', 'git tag --format=x -f backup/x', 'git tag -i -f backup/x')) {
         Check "git-guard blocks: $bad" (Guarded $bad) 2
     }
-    foreach ($ok in @('git tag backup/merge-20261030T000000Z', 'git tag backup/x abc1234', 'git tag -d backup/x', 'git tag -a v1.2.0 -m release')) {
+    foreach ($ok in @('git tag backup/merge-20261030T000000Z', 'git tag backup/x abc1234', 'git tag -d backup/x', 'git tag -a v1.2.0 -m release',
+            "git tag -l 'backup/*'", 'git tag --list backup/* --sort=-creatordate')) {
         Check "git-guard allows: $ok" (Guarded $ok) 0
     }
 

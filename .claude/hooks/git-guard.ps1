@@ -49,7 +49,10 @@ foreach ($g in (Get-GitCalls ([string]$in.tool_input.command) $cwd)) {
             'tag' {
                 $opts = @($words | Where-Object { $_ -like '-*' }); $names = @($words | Where-Object { $_ -notlike '-*' })
                 $cleanup = $opts.Count -gt 0 -and -not ($opts | Where-Object { $_ -notin '-d', '--delete' }) -and -not ($names | Where-Object { $_ -notlike 'backup/*' })
-                if (($names | Where-Object { $_ -like 'backup/*' }) -and $opts.Count -gt 0 -and -not $cleanup) {
+                # List mode reads tags; a backup/* pattern there is a filter, not a name. Only these options switch
+                # git into list mode (with them `-f` fails); --sort, --format, -i stay in create mode, where -f moves a tag.
+                $listing = [bool]($opts | Where-Object { $_ -match '^(?:-l|--list|-n\d*|--(?:no-)?contains|--points-at|--(?:no-)?merged)(?:=|$)' })
+                if (($names | Where-Object { $_ -like 'backup/*' }) -and $opts.Count -gt 0 -and -not $cleanup -and -not $listing) {
                     $why = 'git tag backup/... with an option (create an anchor bare: git tag backup/<op>-<utc> [<sha>]; delete with git tag -d backup/... only)'
                 }
             }
