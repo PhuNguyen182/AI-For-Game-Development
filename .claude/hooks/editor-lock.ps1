@@ -77,7 +77,8 @@ switch ($Mode) {
         if ($foreign) { Refuse }
         $holds = if ($lock -and $lock.session -eq $session) { @($lock.holds) } else { @() }
         if ($lock -and $lock.session -ne $session) { $lock = $null }
-        Save ($holds + $agent)
+        # @() again: an `if` expression unrolls a one-item array to a string, and string + string concatenates.
+        Save (@($holds) + $agent)
     }
     'check' {
         if ([string]$in.tool_input.command -notmatch '(^|[;&|]\s*|\bcd\b.*?&&\s*)unity\s') { exit 0 }
