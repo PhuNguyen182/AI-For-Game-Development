@@ -5,22 +5,31 @@ Two questions, kept apart: did the pattern ever enter history, and is it still r
 ## Instruments
 | Instrument | Searches | Misses |
 |---|---|---|
-| `git log -p --all -S/-G` | Diff text of every commit reachable from any ref | A value in a tree never introduced by a diff the walk visited (pruned merge side) unless `--full-history` |
+| `git log --all -S/-G` | Diff text of every commit reachable from any ref | A value in a tree never introduced by a diff the walk visited (pruned merge side) unless `--full-history` |
 | `git rev-list --all` piped to `git grep` | Full tree content of every listed commit; reports every commit still containing the value, not just the introducer; far costlier | Nothing within the listed revisions |
 
-Together: introduction point (pickaxe) plus current extent (grep); both miss objects outside the ref set (reflog-only, stash-only, other clones).
+Together: introduction point (pickaxe) plus current extent (grep); both miss objects outside the ref set (reflog-only, stash-only, other clones), and neither reads commit or tag messages (sweep below).
+
+## Message sweep
+```sh
+git log --all --format=%H -E --grep='AKIA[0-9A-Z]{16}'
+git for-each-ref refs/tags --format='%(objecttype) %(refname)' | while read -r ty t; do [ "$ty" = tag ] && git cat-file -p "$t" | grep -qE 'AKIA[0-9A-Z]{16}' && echo "$t"; done
+```
+Both print only the sha or annotated-tag name (a lightweight tag has no message of its own). A token pasted into a message is untouched by a tree or diff purge.
 
 ## Pickaxe sweep
 ```sh
-git log -p --all --full-history -S'AKIA[0-9A-Z]{16}' --pickaxe-regex
-git log -p --all --full-history -G'AKIA[0-9A-Z]{16}'
+git log --all --full-history --format='%H %ad' --name-only -S'AKIA[0-9A-Z]{16}' --pickaxe-regex
+git log --all --full-history --format='%H %ad' --name-only -G'AKIA[0-9A-Z]{16}'
 ```
+No `-p`: the patch prints the value. Sha and path are the evidence; a line number comes from `git grep -n -e <pattern> <sha> -- <path> | cut -d: -f1-3`, which drops the matched text.
 A key swapped for another leaves the occurrence count unchanged: invisible to `-S`, so the `-G` pass is required. `-i` for case-insensitive config key names.
 
 ## Grep sweep
 ```sh
-git rev-list --all | xargs git grep -n -e 'AKIA[0-9A-Z]\{16\}'
+git rev-list --all | xargs git grep -l -E -e 'AKIA[0-9A-Z]{16}'
 ```
+- `-l` prints `<sha>:<path>` only, never the line. `-E` makes the pattern the same ERE the pickaxe lines use; without it `git grep` reads BRE and `{16}` is literal. `git grep` is not auto-allowed (its `-O` runs a program); expect a permission prompt, and never pass `-O`.
 - Several tree-ish arguments are searched at once. `-e` is required when the pattern starts with `-` and is safe for assembled patterns.
 - `--all-match` with `--or` patterns: files with both a key name and a key-shaped value.
 - `--cached` finds staged secrets; `--untracked` finds an ignored `.env` on disk (not in history); `-I` skips binaries; `--no-index` ignores git entirely and cannot combine with `--cached`/`--untracked`.

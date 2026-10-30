@@ -7,7 +7,7 @@ Locates and reads content; restoring it is `git-recovery`'s job.
 |---|---|
 | Path in an older commit, absent at `HEAD`; removing commit still reachable | `git log --all --full-history --diff-filter=D` |
 | Known sha resolves on no branch (rebase, squash, amend, force-push) | `git reflog --all`, then `git fsck` |
-| Committed work, branch gone | `git fsck --lost-found --unreachable --dangling` |
+| Committed work, branch gone | `git fsck --unreachable --no-reflogs` (read-only; `--lost-found` only to extract blob contents, since it writes under the git dir) |
 | Stashed work, stash gone | `git fsck --unreachable` filtered to commits (below) |
 | Never committed or staged | Never written to the object database: unrecoverable, report it |
 
