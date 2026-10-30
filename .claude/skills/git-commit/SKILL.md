@@ -21,7 +21,7 @@ user-invocable: false
 
 ## Order
 1. Compose subject + body in full.
-2. Stage only your paths (`git add <paths>`, never `-A` on a shared folder); `git status` first — files another session made stay out.
+2. Stage only your paths with `git add <paths>` in its own call (never `-A` or `.`; the commit hook refuses `add && commit`, `commit -a` and a commit pathspec, because it scans the index before the command runs); `git status` first — files another session made stay out. Record `git rev-parse HEAD`: it is the commit's anchor, undo `git reset --soft <sha>`.
 3. Commit with both, never a placeholder to amend later. Bash: `git commit -F - <<'EOF' … EOF`. PowerShell: `$msg | git commit -F -` (a here-string after `-F -` becomes a pathspec).
 4. `git log -1 --stat` — confirm what was recorded.
 5. Report quoting it. Never push unless the GD ordered it; when ordered, push without asking.
