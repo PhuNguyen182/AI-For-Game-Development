@@ -19,6 +19,98 @@ $script:SecretScanExempt = '[\\/]\.claude[\\/](?:hooks[\\/]|skills[\\/]secret-an
 # First non-empty argument. Stands in for ?? so the hooks also run on Windows PowerShell 5.1.
 function First { foreach ($v in $args) { if ($null -ne $v -and [string]$v -ne '') { return $v } }; return $null }
 
+# A command with heredoc / here-string bodies removed and multi-word quoted text blanked to Q, so a commit message
+# that mentions `git push --force` is not read as one. A one-word quoted value ('+main', "--force") keeps its text;
+# a quoted path to git itself ("C:/Program Files/Git/cmd/git.exe") reads as git.
+function Remove-QuotedText([string]$Command) {
+    $c = [regex]::Replace($Command, '<<-?\s*([''"]?)(\w+)\1[^\n]*\n[\s\S]*?\n\s*\2[ \t]*(?=\r?\n|$)', ' ')
+    $c = [regex]::Replace($c, '@([''"])\r?\n[\s\S]*?\r?\n\1@', ' ')
+    return [regex]::Replace($c, '"([^"]*)"|''([^'']*)''', { param($m) $v = $m.Groups[1].Value + $m.Groups[2].Value
+            if ($v -match '(?i)(?:^|[\\/])git(?:\.exe)?$') { 'git' } elseif ($v -match '^\S+$') { $v } else { 'Q' } })
+}
+
+# `-c <key>=<value>` keys that run a program, rewire a transport or drop a safety check: refused on the command line.
+$script:GitUnsafeConfig = '(?i)^(?:core\.(?:sshcommand|fsmonitor|pager|editor|hookspath|askpass|gitproxy)|sequence\.editor|diff\.external|' +
+    '[\w.-]*\.textconv|credential\.[\w.-]*helper|uploadpack\.[\w.-]+|protocol\.[\w.-]*allow|gpg\.[\w.-]*program|filter\.[\w.-]+|' +
+    'merge\.[\w.-]+\.driver|clean\.requireforce|alias\.[\w.-]+|remote\.[\w.-]+\.(?:mirror|push|uploadpack|receivepack))$'
+
+# Git's global options before the verb (-C dir, -c k=v, --no-pager, --git-dir x, ...).
+$script:GitArg = '(?:"[^"]*"|''[^'']*''|\S+)'
+$script:GitOpt = "(?:-[Cc]\s+$script:GitArg|--(?:git-dir|work-tree|namespace|config-env|exec-path)(?:=|\s+)$script:GitArg|--[\w-]+(?:=$script:GitArg)?|-[A-Za-z]+)"
+
+# Every `git <verb> <args>` a shell command runs, as { Globals, Verb, Rest, Alias, Why }. Reads through commit-message
+# text (blanked), the quoted script of an sh/bash/pwsh/cmd -c wrapper, and an alias configured in $Cwd's repo or
+# the user's config. Why is set, and the call refused, for config nothing on disk shows: `-c alias.*`, GIT_CONFIG_*.
+function Get-GitCalls([string]$Command, [string]$Cwd, [int]$Depth = 0) {
+    $texts = @(Remove-QuotedText $Command)
+    if ($Command -match '(?i)\b(?:sh|bash|zsh|dash|pwsh|powershell|cmd)(?:\.exe)?\s+(?:-[A-Za-z]*c\b|-Command\b|/c\b)') {
+        $texts += ($Command -replace '[\x22\x27]', ' ')
+    }
+    # Read on the raw command: a quoted `-c "core.sshCommand=..."` is blanked in $texts.
+    foreach ($m in [regex]::Matches($Command, '(?:^|\s)(?:-c\s*|--config-env[=\s])[\x22\x27]?([A-Za-z][\w.-]*)=')) {
+        if ($m.Groups[1].Value -match $script:GitUnsafeConfig -or $m.Value -match 'config-env') {
+            [pscustomobject]@{ Globals = ''; Verb = ''; Rest = ''; Alias = $false; Why = "git -c $($m.Groups[1].Value) (config that runs a program or drops a check)" }
+        }
+    }
+    foreach ($text in $texts) {
+        if ($text -match '\bGIT_CONFIG_(?:COUNT|PARAMETERS|KEY_\d+)\b') {
+            [pscustomobject]@{ Globals = ''; Verb = ''; Rest = ''; Alias = $false; Why = 'git config set through GIT_CONFIG_* environment variables' }
+        }
+        foreach ($m in [regex]::Matches($text, "\bgit(?:\.exe)?\b((?:\s+$script:GitOpt)*)\s+([\w-]+)([^;&|\r\n]*)", 'IgnoreCase')) {
+            $globals = $m.Groups[1].Value; $verb = $m.Groups[2].Value.ToLowerInvariant(); $rest = $m.Groups[3].Value
+            if ($globals -match '(?i)\balias\.') {
+                [pscustomobject]@{ Globals = $globals; Verb = $verb; Rest = $rest; Alias = $true; Why = 'an alias defined on the command line (-c alias.*)' }
+                continue
+            }
+            $alias = $null
+            if ($Depth -lt 3 -and $Cwd -and (Test-Path $Cwd)) { $alias = [string](git -C $Cwd config --get "alias.$verb" 2>$null) }
+            if (-not $alias) { [pscustomobject]@{ Globals = $globals; Verb = $verb; Rest = $rest; Alias = $false; Why = $null }; continue }
+            if ($alias.StartsWith('!')) {
+                foreach ($c in (Get-GitCalls $alias.Substring(1) $Cwd ($Depth + 1))) { $c.Alias = $true; $c }
+                continue
+            }
+            $parts = @($alias.Trim() -split '\s+', 2)
+            [pscustomobject]@{ Globals = $globals; Verb = $parts[0].ToLowerInvariant(); Rest = ' ' + (@($parts[1], $rest) -join ' '); Alias = $true; Why = $null }
+        }
+    }
+}
+
+# Words of a git call's arguments up to `--` (after it come paths, never options).
+function Get-GitWords([string]$Rest) {
+    $words = @()
+    foreach ($m in [regex]::Matches($Rest, '"[^"]*"|''[^'']*''|\S+')) {
+        $t = $m.Value.Trim('"', "'")
+        if ($t -eq '--') { break }
+        $words += $t
+    }
+    return $words
+}
+
+# Force, delete, mirror, prune, all-tags and anchor-tag pushes are blast radius 3: the GD runs them. A glob deny
+# misses combined short flags (-uf), unique long-option prefixes (--mirr) and +/: refspecs, so read the arguments.
+$script:PushRadius3 = 'force', 'force-with-lease', 'force-if-includes', 'mirror', 'delete', 'prune', 'tags', 'receive-pack', 'exec'
+function Find-PushRadius3([string]$Globals, [string]$Rest) {
+    if ($Globals -match '(?i)remote\.\S+\.(?:mirror|push)\b|--config-env') { return 'a remote mirror/push refspec set on the command line' }
+    $skip = $false
+    foreach ($m in [regex]::Matches($Rest, '"[^"]*"|''[^'']*''|\S+')) {
+        $t = $m.Value.Trim('"', "'")
+        if ($skip) { $skip = $false; continue }
+        if ($t -match '^--(?!no-)([\w-]+)') {
+            $name = $Matches[1]
+            if ($script:PushRadius3 | Where-Object { $_.StartsWith($name) }) { return $m.Value }
+            if ('push-option', 'repo', 'recurse-submodules' -contains $name -and $t -notmatch '=') { $skip = $true }
+        } elseif ($t -match '^-([A-Za-z0-9]+)$') {
+            $cluster = $Matches[1]
+            $flags = ($cluster -csplit 'o', 2)[0]  # -o takes the rest of the cluster, or the next word, as its value
+            if ($flags -cmatch '[fd]') { return $m.Value }
+            if ($cluster -cmatch '^[^o]*o$') { $skip = $true }
+        } elseif ($t -match '^[+:]') { return "$($m.Value) (a + refspec forces, a : refspec deletes)" }
+        elseif ($t -match '(?:^|:)(?:refs/tags/)?backup/') { return "$($m.Value) (a backup/* anchor tag stays local)" }
+        elseif ($t -match '\*') { return "$($m.Value) (a pattern refspec pushes every matching ref, backup/* anchors included)" }
+    }
+    return $null
+}
+
 function Read-HookInput {
     $raw = [Console]::In.ReadToEnd()
     if ([string]::IsNullOrWhiteSpace($raw)) { return $null }
@@ -41,6 +133,35 @@ function Find-Secrets([string]$Text) {
         }
     }
     return $hits
+}
+
+# "secret in <file>: <kind>" for each file whose added lines in a unified diff (`git diff`, `git log -p`) match a
+# pattern. One regex pass per file and pattern: a per-line loop takes minutes on a multi-megabyte scene and outruns
+# the hook timeout.
+function Find-AddedSecrets([string]$Diff) {
+    $problems = @()
+    foreach ($section in [regex]::Split($Diff, '(?m)^\+\+\+ b/')) {
+        $nl = $section.IndexOf("`n")
+        if ($nl -lt 0) { continue }
+        $file = $section.Substring(0, $nl).TrimEnd("`r")
+        if ("/$file" -match $script:SecretScanExempt) { continue }
+        $added = [regex]::Replace($section.Substring($nl + 1), '(?m)^(?:[^+\n].*)?(?:\n|$)', '')
+        $added = [regex]::Replace($added, '(?m)^\+', '')
+        # JSON escapes quotes (\"), which hides quoted-value patterns in .jsonl traces.
+        if ($file -like '*.jsonl') { $added = $added.Replace('\"', '"') }
+        foreach ($h in (Find-Secrets $added)) { $problems += "secret in ${file}: $h" }
+    }
+    return $problems
+}
+
+# A git diff/log command's whole output as one string. git writes it to a temp file (--output): PowerShell reads
+# native output one line at a time, which alone takes seconds on a multi-megabyte scene.
+function Get-GitDiffText([string]$Root, [string[]]$GitArgs) {
+    $tmp = [IO.Path]::GetTempFileName()
+    try {
+        git -C $Root @GitArgs "--output=$tmp" 2>$null | Out-Null
+        return [IO.File]::ReadAllText($tmp)
+    } finally { Remove-Item $tmp -ErrorAction SilentlyContinue }
 }
 
 function Block([string]$Message) {

@@ -143,6 +143,149 @@ try {
     git -C $guid add Assets/G.cs.meta 2>&1 | Out-Null
     Check 'pre-commit allows other .meta edits' (Invoke-Hook 'pre-commit.ps1' $guidCommit).Code 0
 
+    # pre-commit: the commit an in-progress operation's --continue makes is scanned too
+    Set-Content (Join-Path $guid 'Assets/G.cs.meta') "fileFormatVersion: 2`nguid: fedcba9876543210fedcba9876543210"
+    git -C $guid add Assets/G.cs.meta 2>&1 | Out-Null
+    foreach ($verb in 'merge', 'rebase', 'cherry-pick', 'revert') {
+        Check "pre-commit runs on git $verb --continue" (Invoke-Hook 'pre-commit.ps1' @{ tool_name = 'Bash'; cwd = $guid; tool_input = @{ command = "git $verb --continue" } }).Code 2
+    }
+    Check 'pre-commit ignores git rebase --abort' (Invoke-Hook 'pre-commit.ps1' @{ tool_name = 'Bash'; cwd = $guid; tool_input = @{ command = 'git rebase --abort' } }).Code 0
+    git -C $guid reset -q 2>&1 | Out-Null
+
+    # pre-commit: large text Unity YAML stays out of LFS (merge=lfs would replace UnityYAMLMerge); a large binary .asset does not
+    git -C $lfs rm -q --cached big.txt 2>&1 | Out-Null
+    [IO.File]::WriteAllText((Join-Path $lfs 'Assets/Big.unity'), "%YAML 1.1`n" + ("a: 1`n" * 1300000))
+    Set-Content (Join-Path $lfs 'Assets/Big.unity.meta') 'guid: 5'
+    git -C $lfs add Assets/Big.unity Assets/Big.unity.meta 2>&1 | Out-Null
+    Check 'pre-commit allows a large text scene outside LFS' (Invoke-Hook 'pre-commit.ps1' $lfsCommit).Code 0
+    [IO.File]::WriteAllBytes((Join-Path $lfs 'Assets/LightingData.asset'), (New-Object byte[] (6MB)))
+    Set-Content (Join-Path $lfs 'Assets/LightingData.asset.meta') 'guid: 6'
+    git -C $lfs add Assets/LightingData.asset Assets/LightingData.asset.meta 2>&1 | Out-Null
+    Check 'pre-commit blocks a large binary .asset outside LFS' (Invoke-Hook 'pre-commit.ps1' $lfsCommit).Code 2
+
+    # pre-push: radius-3 forms are blocked however they are spelled
+    function Push([string]$Command, [string]$Cwd = $tmp) { (Invoke-Hook 'pre-push.ps1' @{ tool_name = 'Bash'; cwd = $Cwd; tool_input = @{ command = $Command } }).Code }
+    foreach ($bad in @('git push --force origin main', 'git push -f', 'git push -uf origin main', 'git push --mirr origin',
+            'git push --del origin x', 'git push -d origin x', 'git push origin +main', 'git push origin "+main"', 'git push origin :old',
+            'git push --tags', 'git push --tag origin', 'git push --pru origin', 'git -C . push --force-with-lease',
+            'git push --receive-pack=x .', 'git -c remote.origin.mirror=true push', 'cd x && git push -f', 'git status; git push --force origin main')) {
+        Check "pre-push blocks: $bad" (Push $bad) 2
+    }
+    foreach ($ok in @('git push origin main', 'git push -u origin feature', 'git push --follow-tags origin main', 'git push origin main:main',
+            'git push --no-force origin x', 'git push -o ci.skip origin main', 'git commit -m "never git push --force here"',
+            "git commit -F - <<'EOF'`nNever git push --force or git push origin +main.`nEOF")) {
+        Check "pre-push allows: $($ok -replace "`n", ' ')" (Push $ok) 0
+    }
+    $mir = Join-Path $tmp 'MirrorRepo'
+    git init -q $mir 2>&1 | Out-Null
+    git -C $mir config remote.origin.mirror true
+    Check 'pre-push blocks a plain push from a mirror clone' (Push 'git push' $mir) 2
+
+    # pre-push: a secret added only by a merge commit, or only on another local branch, is found
+    $pp = Join-Path $tmp 'PushRepo'
+    git init -q -b main $pp 2>&1 | Out-Null
+    function G { git -C $pp -c user.name=t -c user.email=t@t @args 2>&1 | Out-Null }
+    Set-Content (Join-Path $pp 'a.txt') 'a'; G add a.txt; G commit -q -m base
+    G checkout -q -b side; Set-Content (Join-Path $pp 'b.txt') 'b'; G add b.txt; G commit -q -m side
+    G checkout -q main; G merge -q --no-ff --no-commit side
+    Set-Content (Join-Path $pp 'k.txt') "var k = `"$fakeKey`";"; G add k.txt; G commit -q -m merge
+    Check 'pre-push sees a secret added by a merge commit' (Push 'git push origin main' $pp) 2
+    G reset -q --hard HEAD~1
+    G checkout -q side; Set-Content (Join-Path $pp 'k.txt') "var k = `"$fakeKey`";"; G add k.txt; G commit -q -m key; G checkout -q main
+    Check 'pre-push sees a secret on another local branch' (Push 'git push origin side' $pp) 2
+
+    # git-guard
+    function Guarded([string]$Command, [string]$Tool = 'Bash') { (Invoke-Hook 'git-guard.ps1' @{ tool_name = $Tool; cwd = $tmp; tool_input = @{ command = $Command } }).Code }
+    foreach ($bad in @('git reset --hard', 'git reset HEAD~3 --hard', 'git -C . reset --hard', 'git reset --ha', 'cd x && git reset --hard origin/main',
+            'git clean -fdx', 'git clean -xdf', 'git clean --force', 'git grep -O vim foo', 'git grep -nOvim foo', 'git grep --open-files-in-pager foo',
+            'git diff --output=x.txt', 'git log --outp=x.txt')) {
+        Check "git-guard blocks: $bad" (Guarded $bad) 2
+    }
+    foreach ($ok in @('git reset --soft HEAD~1', 'git reset --keep backup/x', 'git clean -xdn', 'git grep -n foo', 'git diff --output-indicator-new=+',
+            'git log --oneline', 'git commit -m "use git reset --hard sparingly"', "git commit -F - <<'EOF'`nWhy git clean -fdx is denied.`nEOF")) {
+        Check "git-guard allows: $($ok -replace "`n", ' ')" (Guarded $ok) 0
+    }
+    Check 'git-guard reads a PowerShell here-string as text' (Guarded "`$msg = @'`nNever git reset --hard.`n'@; `$msg | git commit -F -" 'PowerShell') 0
+
+    # git-guard: discarding checkouts, wrappers, aliases, injected config, pushes through it
+    foreach ($bad in @('git checkout -f other', 'git checkout --force other', 'git switch -f other', 'git switch --discard-changes other',
+            'git read-tree -u --reset HEAD', 'sh -c "git reset --hard"', "bash -c 'git push --force origin main'",
+            'pwsh -Command "git clean -fdx"', 'git -c alias.r="reset --hard" r', 'git -c alias.p="push --force" p origin main',
+            'GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=remote.origin.mirror GIT_CONFIG_VALUE_0=true git push',
+            'git push origin refs/tags/backup/merge-20261030T000000Z', 'git push origin backup/merge-20261030T000000Z', 'git push -uf origin main')) {
+        Check "git-guard blocks: $bad" (Guarded $bad) 2
+    }
+    foreach ($ok in @('git checkout -b feature', 'git checkout -- file-f', 'git switch -c feature', 'git read-tree -m -u HEAD',
+            'git push origin feature', 'sh -c "git status"')) {
+        Check "git-guard allows: $ok" (Guarded $ok) 0
+    }
+    $al = Join-Path $tmp 'AliasRepo'
+    git init -q $al 2>&1 | Out-Null
+    git -C $al config alias.nuke 'reset --hard'
+    git -C $al config alias.wipe '!git clean -fdx'
+    git -C $al config alias.pp 'push'
+    git -C $al config alias.st 'status'
+    function GuardedIn([string]$Command) { (Invoke-Hook 'git-guard.ps1' @{ tool_name = 'Bash'; cwd = $al; tool_input = @{ command = $Command } }).Code }
+    Check 'git-guard expands a configured alias' (GuardedIn 'git nuke') 2
+    Check 'git-guard expands a configured shell alias' (GuardedIn 'git wipe') 2
+    Check 'git-guard refuses a push through an alias' (GuardedIn 'git pp origin main') 2
+    Check 'git-guard allows a harmless alias' (GuardedIn 'git st') 0
+    git -C $al config clean.requireForce false
+    Check 'git-guard treats clean as clean -f when clean.requireForce is false' (GuardedIn 'git clean -xd') 2
+    Check 'git-guard still allows a clean dry run then' (GuardedIn 'git clean -xdn') 0
+
+    # git-guard: spellings of git, transport programs, config that runs a program
+    foreach ($bad in @('git.exe reset --hard', '"C:/Program Files/Git/cmd/git.exe" reset --hard', 'git ls-remote --upload-pack=x .',
+            'git ls-remote -u x .', 'git fetch --upload-pack=x origin', 'git clone -u x src dst', 'git -c core.sshCommand=x fetch',
+            'git -c "core.sshCommand=ssh -i k" fetch', 'git -c clean.requireForce=false clean -xd', 'git -c core.fsmonitor=x status',
+            "git ls-remote --upload-pack='touch x; git reset --hard' .")) {
+        Check "git-guard blocks: $bad" (Guarded $bad) 2
+    }
+    foreach ($ok in @('git ls-remote origin', 'git fetch -u origin', 'git -c rerere.enabled=true rebase --continue', 'git -c gc.auto=0 fetch',
+            'git -c user.name=t commit -m x')) {
+        Check "git-guard allows: $ok" (Guarded $ok) 0
+    }
+
+    # pre-push: pattern refspecs, and a secret reachable only from a tag
+    Check 'pre-push blocks a pattern refspec' (Push 'git push origin "refs/tags/*"') 2
+    Check 'pre-push blocks refs/*:refs/*' (Push "git push origin 'refs/*:refs/*'") 2
+    $tg = Join-Path $tmp 'TagRepo'
+    git init -q -b main $tg 2>&1 | Out-Null
+    function T { git -C $tg -c user.name=t -c user.email=t@t @args 2>&1 | Out-Null }
+    Set-Content (Join-Path $tg 'a.txt') 'a'; T add a.txt; T commit -q -m base; T checkout -q --detach
+    Set-Content (Join-Path $tg 'k.txt') "var k = `"$fakeKey`";"; T add k.txt; T commit -q -m key; T tag v1; T checkout -q main
+    Check 'pre-push sees a secret reachable only from a tag' (Push 'git push origin v1' $tg) 2
+    $keySha = [string](git -C $tg rev-parse v1)
+    T tag -d v1; T tag backup/x $keySha
+    Check 'pre-push leaves backup/* anchors out of the scan' (Push 'git push origin main' $tg) 0
+    Check 'pre-push blocks a push to a URL that is not a remote' (Push 'git push https://elsewhere.example/x.git HEAD:main' $tg) 2
+    Check 'pre-push blocks --repo <url>' (Push 'git push --repo https://elsewhere.example/x.git main' $tg) 2
+    Check 'pre-push blocks a push to a local path' (Push 'git push ../copy main' $tg) 2
+    Check 'pre-push still reads -o values as values' (Push 'git push -o ci.skip origin main' $tg) 0
+
+    # git-guard: the auto-allowed `git tag backup/*` creates anchors only
+    foreach ($bad in @('git tag backup/x -d v1.0', 'git tag -f backup/x', 'git tag backup/x -f HEAD', 'git tag -d backup/x v1.0')) {
+        Check "git-guard blocks: $bad" (Guarded $bad) 2
+    }
+    foreach ($ok in @('git tag backup/merge-20261030T000000Z', 'git tag backup/x abc1234', 'git tag -d backup/x', 'git tag -a v1.2.0 -m release')) {
+        Check "git-guard allows: $ok" (Guarded $ok) 0
+    }
+
+    # pre-commit: forms that stage as they commit
+    $guidPlain = @{ tool_name = 'Bash'; cwd = $guid; tool_input = @{ command = '' } }
+    foreach ($bad in @('git commit -am x', 'git commit -a -m x', 'git commit --all -m x', 'git commit -m x -- Assets/G.cs', 'git commit -m x Assets/G.cs',
+            'git commit -o -m x', 'git add Assets/G.cs && git commit -m x', 'git add -A; git commit -m x')) {
+        $guidPlain.tool_input.command = $bad
+        Check "pre-commit blocks: $bad" (Invoke-Hook 'pre-commit.ps1' $guidPlain).Code 2
+    }
+    foreach ($ok in @('git commit -m x', 'git commit -qm x', 'git commit -m "two words" 2>&1', 'git commit -F - -v', "git commit -F - <<'EOF'`nWhy git add -A is wrong.`nEOF",
+            'git commit --author "A B <a@b>" -m x', 'git commit -C HEAD')) {
+        $guidPlain.tool_input.command = $ok
+        Check "pre-commit allows: $($ok -replace "`n", ' ')" (Invoke-Hook 'pre-commit.ps1' $guidPlain).Code 0
+    }
+    Check 'pre-push blocks a force push in a shell wrapper' (Push "bash -c 'git push --force origin main'") 2
+    Check 'pre-push blocks pushing an anchor tag' (Push 'git push origin refs/tags/backup/merge-20261030T000000Z') 2
+
     # package-changed
     $r = Invoke-Hook 'package-changed.ps1' @{ tool_name = 'Edit'; tool_input = @{ file_path = "$tmp/Packages/manifest.json" } }
     Check 'package-changed reminds on a manifest edit' ($r.Out -match 'additionalContext') $true

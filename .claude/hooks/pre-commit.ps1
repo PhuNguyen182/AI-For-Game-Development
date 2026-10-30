@@ -1,4 +1,5 @@
-# PreToolUse Bash|PowerShell on `git commit`: block staged secrets and broken Unity .meta pairing.
+# PreToolUse Bash|PowerShell on `git commit` (and the commit `merge/rebase/cherry-pick/revert --continue` makes):
+# block staged secrets and broken Unity .meta pairing.
 . "$PSScriptRoot/common.ps1"
 
 $in = Read-HookInput
@@ -8,8 +9,39 @@ $cmd = [string]$in.tool_input.command
 $arg = '(?:"[^"]*"|''[^'']*''|\S+)'
 $opt = "(?:-[Cc]\s+$arg|--(?:git-dir|work-tree|namespace|config-env|exec-path)(?:=|\s+)$arg|--[\w-]+(?:=$arg)?|-[A-Za-z]+)"
 # commit(?![\w.-]): not commit-tree, commit-graph or a config key such as commit.gpgsign.
-$git = [regex]::Match($cmd, "\bgit\b((?:\s+$opt)*)\s+commit(?![\w.-])", 'IgnoreCase')
+$git = [regex]::Match($cmd, "\bgit(?:\.exe)?\b((?:\s+$opt)*)\s+(?:commit(?![\w.-])|(?:merge|rebase|cherry-pick|revert)\s+--continue\b)", 'IgnoreCase')
 if (-not $git.Success) { exit 0 }
+
+# The scan below reads the index as it stands before the command runs. A commit that stages as it commits
+# (-a, -i, -o, -p, a pathspec) or a `git add` chained before it would record content the scan never saw.
+function Find-UnscannedCommit([string]$Rest) {
+    $skip = $false
+    foreach ($t in @([regex]::Matches($Rest, '\S+') | ForEach-Object { $_.Value })) {
+        if ($skip) { $skip = $false; continue }
+        if ($t -eq '--') { return '-- <pathspec>' }
+        if ($t -match '^\d*[<>]' -or $t -eq '-') { continue }  # a redirection, or stdin for -F
+        if ($t -match '^--(?:all|inc(?:l(?:u(?:de?)?)?)?|onl(?:y)?|pathspec-from-file|interactive|patch)(?:=|$)') { return $t }
+        if ($t -match '^--(?:message|file|reuse-message|reedit-message|template|author|date|fixup|squash|trailer|cleanup)$') { $skip = $true; continue }
+        if ($t -match '^--') { continue }
+        if ($t -cmatch '^-([A-Za-z]+)$') {
+            $cluster = $Matches[1]
+            for ($i = 0; $i -lt $cluster.Length; $i++) {
+                if ('aiop'.Contains([string]$cluster[$i])) { return $t }
+                if ('mFCct'.Contains([string]$cluster[$i])) { if ($i -eq $cluster.Length - 1) { $skip = $true }; break }  # takes a value
+            }
+            continue
+        }
+        return "$t (a pathspec)"
+    }
+    return $null
+}
+$seenAdd = $false
+foreach ($c in [regex]::Matches((Remove-QuotedText $cmd), "\bgit(?:\.exe)?\b(?:\s+$opt)*\s+(add|stage|commit)(?![\w.-])([^;&|\r\n]*)", 'IgnoreCase')) {
+    if ($c.Groups[1].Value -in 'add', 'stage') { $seenAdd = $true; continue }
+    if ($seenAdd) { Block 'Commit blocked: `git add` and `git commit` in one call - this scan runs before the add. Stage in its own call, then commit (skill git-commit).' }
+    $u = Find-UnscannedCommit $c.Groups[2].Value
+    if ($u) { Block "Commit blocked: ``git commit $u`` stages as it commits, so the secret and .meta scan cannot see it. ``git add <paths>`` in its own call, then a plain ``git commit`` (skill git-commit)." }
+}
 
 # Resolve the repository the commit runs in: `cd <dir> &&`, `git -C <dir>`, else the session cwd.
 $cwd = [string](First $in.cwd (Get-Location).Path)
@@ -33,15 +65,7 @@ if (-not $root) { exit 0 }  # no repository at all: the commit itself cannot run
 $problems = @()
 
 # 1. Secrets in added lines, per file.
-$file = $null
-foreach ($line in (git -C $root diff --cached --text --unified=0 --no-color 2>$null)) {
-    if ($line -match '^\+\+\+ b/(.+)$') { $file = $Matches[1]; continue }
-    if (-not $file -or $line -notmatch '^\+' -or ("/$file" -match $script:SecretScanExempt)) { continue }
-    $added = $line.Substring(1)
-    # JSON escapes quotes (\"), which hides quoted-value patterns in .jsonl traces.
-    if ($file -like '*.jsonl') { $added = $added.Replace('\"', '"') }
-    foreach ($h in (Find-Secrets $added)) { $problems += "secret in ${file}: $h" }
-}
+$problems += @(Find-AddedSecrets (Get-GitDiffText $root @('diff', '--cached', '--text', '--unified=0', '--no-color')))
 
 $staged = @{}
 foreach ($row in (git -C $root diff --cached --name-status --no-renames 2>$null)) {
@@ -79,12 +103,16 @@ $BinaryExt = 'png', 'jpg', 'jpeg', 'tga', 'psd', 'psb', 'tif', 'tiff', 'exr', 'h
     'max', 'ma', 'mb', 'wav', 'mp3', 'ogg', 'aif', 'aiff', 'flac', 'mp4', 'mov', 'webm', 'ttf', 'otf', 'zip', '7z',
     'unitypackage', 'dll', 'so', 'a', 'aar', 'jar', 'bundle', 'apk', 'aab', 'ipa'
 $MaxPlainBytes = 5MB
+# Text Unity YAML stays out of LFS at any size: merge=lfs would replace the UnityYAMLMerge driver.
+# A binary .asset (LightingData, NavMesh) has no %YAML header and still needs LFS when large.
+$UnityYamlExt = 'unity', 'prefab', 'asset', 'mat', 'anim', 'controller', 'overridecontroller', 'physicmaterial', 'meta'
 if ((git -C $root config --get claude.lfs 2>$null) -ne 'off') {
     foreach ($p in $staged.Keys) {
         if ($staged[$p] -notin 'A', 'M') { continue }
         $ext = [IO.Path]::GetExtension($p).TrimStart('.').ToLowerInvariant()
         $size = [long](First (git -C $root cat-file -s ":$p" 2>$null) 0)
         if ($BinaryExt -notcontains $ext -and $size -le $MaxPlainBytes) { continue }
+        if ($UnityYamlExt -contains $ext -and [string](git -C $root show ":$p" 2>$null | Select-Object -First 1) -like '%YAML*') { continue }
         if ((git -C $root check-attr filter -- $p 2>$null) -match 'filter: lfs$') { continue }
         $problems += "not in Git LFS: $p ($([math]::Round($size / 1KB)) KB) - add a .gitattributes rule (skill git-unity-repo), or git config claude.lfs off"
     }
