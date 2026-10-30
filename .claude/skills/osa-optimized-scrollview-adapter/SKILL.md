@@ -33,7 +33,7 @@ Namespace: `Com.ForbiddenByte.OSA.*` since 7.0.0. 6.x and earlier use `Com.TheFa
 9. **Scroll only through the adapter** (`ScrollTo`/`SmoothScrollTo`), per [scrolling-navigation-and-snapping.md](references/scrolling-navigation-and-snapping.md).
 10. **Non-item chrome hangs off `OSAContentDecorator` under the Viewport**, not Content (its children are the recycled pool).
 11. **Size the recycle pool deliberately**, per [pooling-and-performance.md](references/pooling-and-performance.md); default is visible count + 1.
-12. **Keep OSA types in `Game.Client.*`**; the adapter reads Core models and decides no rule (`csharp-standards` → `coding-principles.md`). Serialized params fields follow the Inspector camelCase override in `csharp-standards` → `naming-convention.md`.
+12. **Keep OSA types in Client code**; the adapter reads Core models and decides no rule (`csharp-standards` → `coding-principles.md`). Serialized params fields follow the Inspector camelCase override in `csharp-standards` → `naming-convention.md`.
 13. **Verify with the Profiler** (instantiated count, GC during a sustained fling, frame time on the lowest target device) per `unity-profiler-diagnostics`; otherwise report "not measured".
 
 ## Never

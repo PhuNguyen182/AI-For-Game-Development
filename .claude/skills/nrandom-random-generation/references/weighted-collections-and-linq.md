@@ -14,7 +14,7 @@ Sources: files under `src/NRandom/` at `v2.0.2`: [a] Collections/WeightedList.cs
 | `IEnumerable<T>.ToWeightedList(Func<T,double>)` (`NRandom.Linq`) | Builds a table from existing definitions [d] |
 | `WeightedValue<T>` | `record struct` with public fields `Value`/`Weight` (fields so Unity can serialize) [c] |
 
-**Caveat:** every overload without an `IRandom` argument defaults to `RandomEx.Shared`, the non-deterministic instance (see [rng-algorithms-and-determinism.md](rng-algorithms-and-determinism.md)). Pass the injected `IRandom` explicitly in `Game.Core.*`.
+**Caveat:** every overload without an `IRandom` argument defaults to `RandomEx.Shared`, the non-deterministic instance (see [rng-algorithms-and-determinism.md](rng-algorithms-and-determinism.md)). Pass the injected `IRandom` explicitly in Core.
 
 ```csharp
 WeightedList<ItemId> table = new();

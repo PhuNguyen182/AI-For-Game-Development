@@ -6,10 +6,10 @@ Synthesized from `release` step 8 (owner `qa-automation-engineer`: "Previous rel
 
 | Subject | Fact that decides |
 |---|---|
-| One generated C# constant per shipped schema version | `SaveFixtureV<N>.Bytes` (`static readonly byte[]`) in `Assets/Game.Core/Tests/SaveFixtures/SaveFixtureV<N>.cs`, namespace `Game.Core.Tests.SaveFixtures`: the full envelope + payload exactly as the shipped build writes it. No data files: the test reads no disk and runs unchanged in a dotnet mirror |
+| One generated C# constant per shipped schema version | `SaveFixtureV<N>.Bytes` (`static readonly byte[]`) in `Assets/_Project/Scripts/Save/Tests/EditMode/SaveFixtures/SaveFixtureV<N>.cs`, namespace `_Project.Scripts.Save.Tests.EditMode.SaveFixtures`: the full envelope + payload exactly as the shipped build writes it. No data files: the test reads no disk and runs unchanged in a dotnet mirror |
 | Written by version N code | Generate it while `CurrentSchemaVersion == N` — at the release that ships N, at the latest in the commit before `SaveV{N+1}` lands. Missed one for an already-shipped version → check out that release tag and run the writer there; never hand-build bytes with newer code |
 | Frozen once committed | A hand-written pin table in the test file (`version → SHA-256 hex`) holds each fixture's hash. It lives outside the generated file, so regenerating bytes without editing the pin fails the run on purpose |
-| Writer | An `[Explicit]` NUnit test in `Game.Core.Tests` that serializes one canonical `SaveV{N}` instance through the production envelope writer (not a copy of it) and prints the generated `SaveFixtureV<N>.cs` source plus its hash to `TestContext.Out`. A writer that saves the file through `UnityEditor` lives in an Editor-only assembly outside `Game.Core.Tests` |
+| Writer | An `[Explicit]` NUnit test in `_Project.Scripts.Save.Tests.EditMode` that serializes one canonical `SaveV{N}` instance through the production envelope writer (not a copy of it) and prints the generated `SaveFixtureV<N>.cs` source plus its hash to `TestContext.Out`. A writer that saves the file through `UnityEditor` lives in an Editor-only assembly outside `_Project.Scripts.Save.Tests.EditMode` |
 | Use in tests | Clone before patching (`(byte[])SaveFixtureV<N>.Bytes.Clone()`); the constant is shared across tests |
 | Size | A few KB per version; a source file, so it diffs and reviews like code |
 
@@ -23,7 +23,7 @@ Synthesized from `release` step 8 (owner `qa-automation-engineer`: "Previous rel
 | Identity and store data synthetic | Player id `"fixture-player-0001"`, transaction ids `"fixture-txn-0001"`; never a real account id, email, device id, advertising id, IP, purchase token or receipt (`core.md` Security: no player PII) |
 | No production export | A save pulled from a player or a QA device never becomes a fixture: it carries PII and is not reproducible from code |
 
-## Test matrix (`Game.Core.Tests`, Edit Mode)
+## Test matrix (`_Project.Scripts.Save.Tests.EditMode`)
 
 | Test | Pass criterion |
 |---|---|
@@ -31,7 +31,7 @@ Synthesized from `release` step 8 (owner `qa-automation-engineer`: "Previous rel
 | Fixture hash pinned | SHA-256 of each `Bytes` equals its pin-table entry |
 | Each fixture migrates to current | Classify → `NeedsMigration` (or `Current` for the newest), chain runs, boundary validation passes, every field asserted against the expected value written when the fixture was made, plus the default each later step introduced |
 | Current round-trip | Serialize → classify → deserialize the canonical current instance; equal field by field |
-| Too new is refused | Cloned fixture with schema patched to `CurrentSchemaVersion + 1` (hash recomputed) → `TooNew`. The file-store check (bytes unchanged, no temp left, no backup restore) is a `Game.Client.Tests` test, since it touches disk |
+| Too new is refused | Cloned fixture with schema patched to `CurrentSchemaVersion + 1` (hash recomputed) → `TooNew`. The file-store check (bytes unchanged, no temp left, no backup restore) is a `_Project.Scripts.Save.Tests.PlayMode` test, since it touches disk |
 | Corrupt is refused | One flipped payload byte → `Corrupt`; one flipped schema byte → `Corrupt`; truncated → `Corrupt`; none throws |
 | Chain contiguity | Building the production chain does not throw |
 

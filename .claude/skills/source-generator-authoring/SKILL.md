@@ -37,7 +37,7 @@ Docs: https://github.com/dotnet/roslyn/blob/main/docs/features/incremental-gener
 - Chaining check: consumes no other generator's output — confirmed
 - Emitted: <members/types; hint-name scheme>
 - Determinism: <no UnityEngine, declaration order>
-- Layer: emitted Game.Core.*; generator is Editor/build-time only
+- Layer: emitted into Core; generator is Editor/build-time only
 - Unity integration: <RoslynAnalyzer label, platforms unchecked — how confirmed>
 - Diagnostics: <list | none>
 - Tests: <snapshot tests; emitted output inspected>

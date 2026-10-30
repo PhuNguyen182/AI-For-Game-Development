@@ -4,7 +4,7 @@ Synthesized from project decisions; adds to rule `csharp.md` hot paths. Deep, me
 
 ## Core principle — measured, practical performance over theoretical purity
 - Good, stable Big-O and hardware-friendly execution (sequential access, predictable branches, low constants); Big-O filters, the hardware breaks ties.
-- Built-ins over hand-rolled: `Array.Sort`/`List<T>.Sort`; pools: `UnityEngine.Pool.ObjectPool<T>` in Client, a plain C# pool or `ArrayPool<T>` in `Game.Core.*`.
+- Built-ins over hand-rolled: `Array.Sort`/`List<T>.Sort`; pools: `UnityEngine.Pool.ObjectPool<T>` in Client, a plain C# pool or `ArrayPool<T>` in Core.
 - Range checks compare squared distance against a pre-squared threshold, not a square root (`sqrMagnitude` vs `Vector3.Distance` in Client; `LengthSquared()` or integer maths in Core).
 
 ## Data structure selection

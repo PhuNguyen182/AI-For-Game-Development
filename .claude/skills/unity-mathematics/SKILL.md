@@ -1,6 +1,6 @@
 ---
 name: unity-mathematics
-description: "Unity.Mathematics: float3/float4x4, quaternion, swizzles, math functions, noise, struct Random. Use for Game.Core.*, Burst, jobs and ECS math instead of UnityEngine Vector3/Mathf/Random."
+description: "Unity.Mathematics: float3/float4x4, quaternion, swizzles, math functions, noise, struct Random. Use for Core, Burst, jobs and ECS math instead of UnityEngine Vector3/Mathf/Random."
 user-invocable: false
 ---
 
@@ -13,10 +13,10 @@ Docs: https://docs.unity3d.com/Packages/com.unity.mathematics@1.3/ (`manual/`, `
 |---|---|
 | [vector-and-matrix-types.md](references/vector-and-matrix-types.md) | Choosing a vector width, rotation type or matrix, or building a quaternion/matrix |
 | [math-functions-and-swizzling.md](references/math-functions-and-swizzling.md) | Replacing a `Mathf`/`System.Math` call, rearranging components, or picking a `noise` function |
-| [random-numbers.md](references/random-numbers.md) | Any RNG inside `Game.Core.*` or a parallel context |
+| [random-numbers.md](references/random-numbers.md) | Any RNG inside Core or a parallel context |
 
 ## Steps
-1. **Establish the layer first.** `Game.Core.*` must use these types: no `UnityEngine` dependency (`csharp-standards` → `coding-principles.md`, Shared Core integrity). Burst jobs and ECS components need them in practice (`Mathf` is not what Burst optimizes; component fields must be blittable). `Game.Client.*` MonoBehaviours may keep `UnityEngine` types where a `Transform` is read or written directly.
+1. **Establish the layer first.** Core must use these types: no `UnityEngine` dependency (`csharp-standards` → `coding-principles.md`, Shared Core integrity). Burst jobs and ECS components need them in practice (`Mathf` is not what Burst optimizes; component fields must be blittable). Client MonoBehaviours may keep `UnityEngine` types where a `Transform` is read or written directly.
 2. **Match vector width to the data** (`float2` planar, `float3` 3D, `float4` only for a real 4-component value). Per [vector-and-matrix-types.md](references/vector-and-matrix-types.md).
 3. **Build every `quaternion` and matrix through its factory methods**, never field-by-field. Same file.
 4. **Use `math.*`, never `Mathf`/`System.Math`, for elementary functions in Core and Burst code**; swizzle for readable rearrangement, stopping where a named variable reads better. Per [math-functions-and-swizzling.md](references/math-functions-and-swizzling.md).
@@ -28,22 +28,22 @@ Docs: https://docs.unity3d.com/Packages/com.unity.mathematics@1.3/ (`manual/`, `
 
 ## Never
 - Present a type migration as fixing determinism.
-- Use `UnityEngine.Random` in `Game.Core.*`, or leave a `Random` seed zero/default or wall-clock derived.
+- Use `UnityEngine.Random` in Core, or leave a `Random` seed zero/default or wall-clock derived.
 - Rename `float3`/`quaternion` to PascalCase: Unity's shader-parity convention, not a `naming-convention.md` violation.
 
 ## Output
 ```
 ## Mathematics Work — <system/calculation>
-- Context: <Game.Core.* / Burst job / ECS component / other>
+- Context: <Core / Burst job / ECS component / other>
 - Types chosen: <type — rationale>
 - UnityEngine types replaced: <Vector3 / Quaternion / Mathf / Random, or none>
 - Random: <seed source and how state is threaded, or n/a>
 - noise: <function, or n/a>
 - Verification: <precision check, or n/a>
 - Determinism caveat: <residual FloatMode/SIMD risk stated, or n/a>
-- Layer: <Game.Core.* / Game.Client.* / Editor-only>
+- Layer: <Core / Client / Editor-only>
 - Known limitations: <...>
 ```
 
 ## Example
-- "Add cooldown jitter in `Game.Core.Abilities` with `UnityEngine.Random.Range`" → declined: used `Unity.Mathematics.Random` seeded once from an injected `uint`, stored in the ability's state so client prediction and server replay identically; where the seed originates stays the caller's responsibility.
+- "Add cooldown jitter in `_Project.Scripts.Abilities.Core` with `UnityEngine.Random.Range`" → declined: used `Unity.Mathematics.Random` seeded once from an injected `uint`, stored in the ability's state so client prediction and server replay identically; where the seed originates stays the caller's responsibility.

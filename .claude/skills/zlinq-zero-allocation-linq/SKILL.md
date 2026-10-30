@@ -9,7 +9,7 @@ user-invocable: false
 Not for: code outside a hot path (plain `System.Linq`, `csharp-standards` → `coding-principles.md` `var` and LINQ), container choice (`unity-collections`), `[BurstCompile]` job bodies (`unity-job-system-and-burst`), string building (`zstring-zero-allocation-strings`).
 
 ## Steps
-Usable in `Game.Core.*` (no UnityEngine dependency).
+Usable in a Core assembly (no UnityEngine dependency).
 
 1. **Measure first** — convert only a chain the Profiler attributes an allocation to (`csharp-standards` → `performance-and-algorithms.md` Verification). No capture and the path is not plainly per-frame → `Blocked` naming the capture needed.
 2. **Check the collection type before the query** — a zero-allocation scan of the wrong structure is still wrong; fix the structure first (`performance-and-algorithms.md` Data structure selection).
@@ -35,7 +35,7 @@ Usable in `Game.Core.*` (no UnityEngine dependency).
 - Termination: foreach / aggregate / single-element — no in-path .ToArray()/.ToList()
 - Consumption: fully consumed in <method>
 - Measured result: <GC Alloc before vs after>
-- Layer: Game.Core.* / Game.Client.*
+- Layer: Core / Client
 - Known limitations: <...>
 ```
 On request only, add `Latent concerns` and `Future remediation`, each with its trigger.

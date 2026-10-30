@@ -334,6 +334,44 @@ try {
     $env:HOOK_TEST_EDITOR_STATE = 'clean'
     Check 'stop: clean Editor releases' (& $stop $false) 0
     Check 'stop: lock gone after a clean stop' (Test-Path $lock) $false
+
+    # editor-lock: lane A worktree agents never hold or drive the Editor
+    $wt = Join-Path $proj 'wt'
+    New-Item -ItemType Directory -Force $wt | Out-Null
+    Set-Content (Join-Path $wt '.git') 'gitdir: C:/repo/.git/worktrees/wt'
+    $iso = (Invoke-Hook 'editor-lock.ps1' @{ session_id = 'F'; tool_input = @{ subagent_type = 'csharp-engineer'; isolation = 'worktree' } } @('-Mode', 'acquire')).Code
+    Check 'lane: worktree dispatch passes' $iso 0
+    Check 'lane: worktree dispatch takes no hold' (Test-Path $lock) $false
+    Check 'lane: unity CLI from a worktree blocked' (Invoke-Hook 'editor-lock.ps1' @{ session_id = 'F'; cwd = $wt; tool_input = @{ command = 'unity command script recompile' } } @('-Mode', 'check')).Code 2
+    Check 'lane: unity MCP from a worktree blocked' (Invoke-Hook 'editor-lock.ps1' @{ session_id = 'F'; cwd = $wt; tool_name = 'mcp__unity-mcp__Unity_RunCommand'; tool_input = @{} } @('-Mode', 'check')).Code 2
+    Check 'lane: unity MCP from the main checkout passes' (Invoke-Hook 'editor-lock.ps1' @{ session_id = 'F'; cwd = $proj; tool_name = 'mcp__unity-mcp__Unity_RunCommand'; tool_input = @{} } @('-Mode', 'check')).Code 0
+    Lock 'G' 'gameplay-engineer' 'acquire' | Out-Null
+    $env:HOOK_TEST_EDITOR_STATE = 'playing'
+    $laneStop = (Invoke-Hook 'editor-lock.ps1' @{ session_id = 'G'; agent_type = 'csharp-engineer'; cwd = $wt; stop_hook_active = $false } @('-Mode', 'release')).Code
+    Check 'lane: worktree agent stop ignores lane B Play Mode' $laneStop 0
+    Check 'lane: lane B hold kept' (Test-Path $lock) $true
+    Lock 'G' 'backend-engineer' 'acquire' | Out-Null
+    $env:HOOK_TEST_EDITOR_STATE = 'clean'
+    $laneSame = (Invoke-Hook 'editor-lock.ps1' @{ session_id = 'G'; agent_type = 'backend-engineer'; cwd = $wt; stop_hook_active = $false } @('-Mode', 'release')).Code
+    Check 'lane: lane A stop of a same-type agent passes' $laneSame 0
+    Check 'lane: lane A stop keeps a same-type lane B hold' (@((Get-Content $lock -Raw | ConvertFrom-Json).holds) -contains 'backend-engineer') $true
+    $env:HOOK_TEST_EDITOR_STATE = 'playing'
+    Lock 'G' 'x' 'clear' | Out-Null
+    # The project itself checked out as a linked worktree is the main checkout, not a lane
+    Set-Content (Join-Path $proj '.git') 'gitdir: C:/repo/.git/worktrees/proj'
+    Check 'lane: project in a linked worktree may call unity' (Invoke-Hook 'editor-lock.ps1' @{ session_id = 'H'; cwd = $proj; tool_input = @{ command = 'unity command script recompile' } } @('-Mode', 'check')).Code 0
+    Lock 'H' 'playtest-tester' 'acquire' | Out-Null
+    Check 'lane: project-worktree holder still sent back from Play Mode' (Invoke-Hook 'editor-lock.ps1' @{ session_id = 'H'; agent_type = 'playtest-tester'; cwd = $proj; stop_hook_active = $false } @('-Mode', 'release')).Code 2
+    Check 'lane: a lane worktree under that project is still blocked' (Invoke-Hook 'editor-lock.ps1' @{ session_id = 'H'; cwd = $wt; tool_input = @{ command = 'unity command script recompile' } } @('-Mode', 'check')).Code 2
+    Lock 'H' 'x' 'clear' | Out-Null
+    Remove-Item (Join-Path $proj '.git')
+    # A Unity project in a subfolder of a repo that is a linked worktree is still the main checkout
+    $sub = Join-Path $tmp 'Repo/Game'
+    New-Item -ItemType Directory -Force (Join-Path $sub 'Assets') | Out-Null
+    Set-Content (Join-Path $tmp 'Repo/.git') 'gitdir: C:/repo/.git/worktrees/repo'
+    $env:CLAUDE_PROJECT_DIR = $sub
+    Check 'lane: project in a worktree subfolder may call unity' (Invoke-Hook 'editor-lock.ps1' @{ session_id = 'I'; cwd = $sub; tool_input = @{ command = 'unity command script recompile' } } @('-Mode', 'check')).Code 0
+    $env:CLAUDE_PROJECT_DIR = $proj
     Remove-Item Env:HOOK_TEST_EDITOR_STATE
 
     # session-start

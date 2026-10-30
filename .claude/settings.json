@@ -438,6 +438,18 @@
             "onFailure": "block"
           }
         ]
+      },
+      {
+        "matcher": "mcp__unity.*",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/editor-lock.ps1\" -Mode check; exit $LASTEXITCODE",
+            "timeout": 15,
+            "onFailure": "block"
+          }
+        ]
       }
     ],
     "PostToolUse": [

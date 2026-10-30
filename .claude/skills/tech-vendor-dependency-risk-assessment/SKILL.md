@@ -6,7 +6,7 @@ user-invocable: false
 
 # Tech Vendor / Dependency Risk Assessment
 
-Not for: whether a new candidate is adoptable here — IL2CPP, engine version, `Game.Core.*` determinism, manifest duplication (`practical-fit-screening`), this project's own code (`code-reviewer`), trivial swappable utilities (say so and stop), SDK integration (`sdk-platform-engineer`), the exit-cost rubric (`tco-reversibility-scoring`), recording a standard (`engineering-standard-adr-authoring`).
+Not for: whether a new candidate is adoptable here — IL2CPP, engine version, Core determinism, manifest duplication (`practical-fit-screening`), this project's own code (`code-reviewer`), trivial swappable utilities (say so and stop), SDK integration (`sdk-platform-engineer`), the exit-cost rubric (`tco-reversibility-scoring`), recording a standard (`engineering-standard-adr-authoring`).
 
 ## Steps
 1. **Maintenance from activity and succession, not stars or downloads** — commit/release cadence, response time on breaking issues, single maintainer vs company/community. No readable repository (closed-source SDK) → record the signal as `unavailable`, score lock-in and exit cost higher; never infer health from vendor marketing.

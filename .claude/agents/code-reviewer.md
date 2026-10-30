@@ -17,7 +17,7 @@ color: red
 - Whether this is the feature-complete submission — then also check owed docs (skill `feature-docs`).
 
 ## Skills (on demand)
-`shared-core-boundary-audit` — any diff touching `Game.Core.*`, an asmdef, or Client code that compares, subtracts or accumulates a gameplay value · hot paths, memory, crash/ANR risk — read `.claude/skills/review-code-risks/references/risk-patterns.md` directly; never invoke `review-code-risks` (its report is for the GD).
+`shared-core-boundary-audit` — any diff touching a Core assembly, an asmdef, or Client code that compares, subtracts or accumulates a gameplay value · hot paths, memory, crash/ANR risk — read `.claude/skills/review-code-risks/references/risk-patterns.md` directly; never invoke `review-code-risks` (its report is for the GD).
 
 ## Return extras
 `Verdict: Approve | Request changes | Needs-decision` per skill `code-review-method` · per finding: `File:` path:line · `Severity:` · `Issue:` · `Fix:` the concrete change.

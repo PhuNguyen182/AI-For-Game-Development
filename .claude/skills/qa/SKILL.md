@@ -14,7 +14,7 @@ argument-hint: "<feature slug, or what to test>"
 
 ## 2. Execute — serial on the Editor, serial on the device
 Order, only the agents the plan names:
-1. `qa-automation-engineer` — Edit/Play Mode suites; netcode cases when multiplayer.
+1. `qa-automation-engineer` — extends the feature's `Tests/EditMode` and `Tests/PlayMode` suites with edge cases, never rewrites them; netcode cases when multiplayer.
 2. `playtest-tester` — GDD scenarios in Play Mode.
 3. `performance-qa-engineer` — budget per device tier (profile's lowest device first).
 4. `build-release-engineer` — device cases on a real build.

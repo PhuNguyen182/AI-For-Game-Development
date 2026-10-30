@@ -6,7 +6,7 @@ user-invocable: false
 
 # Unity Post-Processing
 
-Not for: pipeline choice (`render-pipeline-urp-hdrp`), HDRP Volumes (`unity-hdrp-rendering`), Renderer Features generally and camera anti-aliasing (`unity-urp-rendering`), Adaptive Probe Volumes (`unity-lighting`), shader content (`shader-authoring`), the gameplay rule that triggers an effect (`Game.Core.*`, per `csharp-standards`).
+Not for: pipeline choice (`render-pipeline-urp-hdrp`), HDRP Volumes (`unity-hdrp-rendering`), Renderer Features generally and camera anti-aliasing (`unity-urp-rendering`), Adaptive Probe Volumes (`unity-lighting`), shader content (`shader-authoring`), the gameplay rule that triggers an effect (Core, per `csharp-standards`).
 Docs: Manual https://docs.unity3d.com/6000.5/Documentation/Manual/post-processing-and-full-screen-effects.html · URP/core API `@17.6` · PPv2 `com.unity.postprocessing@3.5`. Swap the version segments for the installed ones; Render Graph changed pass authoring across majors, so confirm the URP version first. If `unity:urp-postprocessing` is installed it covers live-Editor URP Volume debugging; this skill wins on conflict (reading `VolumeManager.instance.stack` is right inside a renderer feature).
 
 | Reference | Read when |
@@ -26,7 +26,7 @@ Docs: Manual https://docs.unity3d.com/6000.5/Documentation/Manual/post-processin
 6. **Verify the effect exists on the target pipeline** ([pipeline-availability.md](references/pipeline-availability.md)). Anti-aliasing and Ambient Occlusion are not in the URP Volume list: route to `unity-urp-rendering`.
 7. **Custom effect: pick the path by whether anything must blend**, then the injection point (before post-processing = tonemapped and graded; after = not), per [custom-effects.md](references/custom-effects.md).
 8. **Mobile: the stack has a fixed cost (tile-memory resolve) plus a per-pass cost for each multi-pass effect** (Bloom, DoF first to drop, per [effect-catalog.md](references/effect-catalog.md)). State per tier whether the look needs post-processing; the tier decision is `unity-performance-engineer`'s; a claim that removing an effect helped needs a Profiler GPU capture (`unity-profiler-diagnostics`).
-9. **Keep the trigger rule in `Game.Core.*`**; this skill wires only the visual it drives.
+9. **Keep the trigger rule in Core**; this skill wires only the visual it drives.
 
 ## Never
 - Use `RenderPipelineManager.beginCameraRendering` for a reusable effect: the Manual recommends a Renderer Feature. The callback is fine only for a one-off single-camera pass; anything reusable across cameras, scenes or projects is a Renderer Feature.

@@ -31,7 +31,7 @@ Docs: `https://docs.unity3d.com/Manual/` and `/ScriptReference/` — unversioned
 9. **Cache parameter hashes** (`Animator.StringToHash` in a static readonly field) — string overloads hash per call (`csharp-standards` → `performance-and-algorithms.md`).
 10. **Share a graph through an Override Controller, not a duplicate**; apply overrides as one batch on a deliberate event, per [animator-override-controller.md](references/animator-override-controller.md).
 11. **Use the Playables API only when the state machine cannot express the need** (`csharp-standards` → `coding-principles.md`, YAGNI), and pair every created graph with an explicit destroy — per [playables-api.md](references/playables-api.md).
-12. **Keep gameplay decisions in `Game.Core.*`** — a `StateMachineBehaviour`, movement callback or Animation Event handler only carries out or reports what Core decided; an event never resolves a hit (`csharp-standards` → `coding-principles.md`, Shared Core integrity).
+12. **Keep gameplay decisions in Core** — a `StateMachineBehaviour`, movement callback or Animation Event handler only carries out or reports what Core decided; an event never resolves a hit (`csharp-standards` → `coding-principles.md`, Shared Core integrity).
 13. **Back any animation performance claim with a Profiler capture on the target device**, per [performance-and-faq.md](references/performance-and-faq.md) and `csharp-standards` → `performance-and-algorithms.md` (Verification).
 
 ## Never

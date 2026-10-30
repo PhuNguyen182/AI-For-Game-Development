@@ -1,20 +1,20 @@
 ---
 name: shared-core-boundary-audit
-description: "Audit Game.Core vs Game.Client: UnityEngine/asmdef leaks into Core, determinism violations (Random, Time, DateTime), rules reimplemented in MonoBehaviours, reversed dependencies. Use when reviewing rule or boundary changes."
+description: "Audit Shared Core vs Client: UnityEngine/asmdef leaks into Core, determinism violations (Random, Time, DateTime), rules reimplemented in MonoBehaviours, reversed dependencies. Use when reviewing rule or boundary changes."
 user-invocable: false
 ---
 
 # Shared Core Boundary Audit
 
 Not for: authoring the rule (`csharp-engineer`), asserting it in tests (`unity-test-framework`), a standing compile-time diagnostic for a recurring violation (`roslyn-analyzer-codefix`), secrets (`secret-and-supply-chain-scan`), performance (`unity-profiler-diagnostics`). This skill reports and routes; it never rewrites code.
-Rules: `csharp.md` Boundaries; `csharp-standards` → `coding-principles.md` Shared Core integrity, `naming-convention.md` Namespace boundary.
+Rules: `csharp.md` Boundaries; `csharp-standards` → `coding-principles.md` Shared Core integrity, `naming-convention.md` Folders.
 
 ## Steps
-1. **Classify each changed file's layer by namespace and asmdef, not folder** — a `Game.Core` namespace whose asmdef references a `UnityEngine` module is already a finding.
-2. **Grep Core for `UnityEngine` leaks** — `using UnityEngine`, `MonoBehaviour`, `ScriptableObject`, `GameObject`, `Transform`, `Vector3`. A Core class using a `UnityEngine` type belongs in `Game.Client.*`; report file and type.
+1. **Classify each changed file's layer by its asmdef, not namespace or folder** — Core = an assembly with `noEngineReferences: true` (`<Feature>/Core`, `<Feature>/DataModels`). A Core-layer asmdef with the flag off, or referencing a `UnityEngine` module or a feature root, is already a finding.
+2. **Grep Core for `UnityEngine` leaks** — `using UnityEngine`, `MonoBehaviour`, `ScriptableObject`, `GameObject`, `Transform`, `Vector3`. A Core class using a `UnityEngine` type belongs in the feature root (`DataControllers/` or `Views/`); report file and type.
 3. **Grep Core for non-determinism the compiler cannot catch** — `UnityEngine.Random`, `Random.Range`, `Time.time`, `Time.deltaTime`, `Time.realtimeSinceStartup`, `DateTime.Now`, `DateTime.UtcNow`, `Stopwatch`, `Guid.NewGuid`, `Environment.TickCount`, `new System.Random()` without a seed. Each must arrive via an injected seed or clock. Also: `Dictionary`/`HashSet` iteration order that decides an outcome or is serialized; `string.GetHashCode()` persisted, sent or used as a seed (Mono and .NET differ); `float`/`double` results client and server must agree on → question for `technical-architect` (fixed-point or tolerance). Highest-value step: none fail a build, all break client/server agreement.
 4. **Find rules restated in the Client** — MonoBehaviour arithmetic that decides an outcome (health subtraction, threshold compare, cost accumulation, state advance). If Core has the decision, the MonoBehaviour must call it; if only the MonoBehaviour has it, the rule is in the wrong layer. If the diff cannot show whether Core has it, read the Core module; do not assume.
-5. **Check dependency direction** — Client may depend on Core; Core never on Client or Server.
+5. **Check dependency direction in the asmdef references** — Client may depend on Core; Core never on Client or Server; features one-way, never a cycle.
 6. **Report reach-through chains** (`a.GetB().GetC().Value`, Law of Demeter) with the single method the owner should expose.
 7. **Open every hit and cite `path:line`** — a match in a comment, string or editor-only assembly is not a violation; dismiss it by name. An `#if UNITY_EDITOR` `UnityEngine` symbol in a Core assembly is still an asmdef question for `technical-architect`, not a determinism finding.
 8. **Ambiguous placement: report a question** routed to `technical-architect`; the Tech Spec decides where a decision lives.

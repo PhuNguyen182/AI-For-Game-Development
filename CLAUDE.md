@@ -27,4 +27,5 @@
 | Override | Default | Value |
 |---|---|---|
 | State root | `.workflow/` | |
-| Namespaces | `Game.Core.*` / `Game.Client.*` / `Game.Server.*` | |
+| Feature root | `Assets/_Project/Scripts/` | |
+| Namespaces | asmdef `rootNamespace` + path relative to its folder | |

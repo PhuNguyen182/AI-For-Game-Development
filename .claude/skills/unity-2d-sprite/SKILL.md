@@ -27,7 +27,7 @@ Docs: https://docs.unity3d.com/Manual/sprite/sprite-landing.html — unversioned
 6. **Set Sorting Layer and Order in Layer for every stated depth relationship**; add a `SortingGroup` when a multi-part object must stay uninterleaved; use Transparency Sort Mode Custom Axis for isometric/top-down cameras.
 7. **Use 9-slicing or `SpriteMask` only when the design resizes or reveals**: Sliced for smooth frames, Tiled for patterns. A mask that does nothing: check Depth/Stencil Buffer on the active 2D Renderer Data first, then Mask Interaction on the target.
 8. **Group an atlas by what is on screen together** — an atlas is resident as a unit. Turn Allow Rotation and Tight Packing off for sprites that Sprite Shape or UI `Image` re-mesh; ship a lower-scale Variant, not a duplicate Master.
-9. **Keep decisions out of the sprite layer** — `Game.Core.*` resolves the state; client code only assigns the resolved `sprite`/`color`/sorting value, and only on change.
+9. **Keep decisions out of the sprite layer** — Core resolves the state; client code only assigns the resolved `sprite`/`color`/sorting value, and only on change.
 10. **Read sprite data through members valid under packing** (`rect`, `bounds`, not `textureRect`). When real art replaces a placeholder, redo steps 1-2.
 11. **Confirm any draw-call or overdraw claim in the Profiler 2D module** before reporting it; Usage % per atlas is the evidence.
 12. **Symptom ambiguous between import, material and lighting ("too dark")** → say which layer is assumed and confirm before editing shared assets.

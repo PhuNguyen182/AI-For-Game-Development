@@ -6,7 +6,7 @@ user-invocable: false
 
 # Unity Camera Fundamentals
 
-Not for: Cinemachine (`unity-cinemachine-authoring`; a Brain overwrites this skill's transform writes every frame, and a project that has it should not get a hand-rolled equivalent), camera stacking/renderer/per-pipeline data (`unity-urp-rendering`, `unity-hdrp-rendering`), post-process toggle, Volumes and anti-aliasing (`unity-post-processing`), pointer input (`unity-input-system`), UI safe area (`mobile-safe-area`), collider/layer setup and Rigidbody interpolation settings (`unity-3d-physics`, `unity-2d-physics`), gameplay meaning of a picked point (`Game.Core.*`, per `csharp-standards` → `coding-principles.md`).
+Not for: Cinemachine (`unity-cinemachine-authoring`; a Brain overwrites this skill's transform writes every frame, and a project that has it should not get a hand-rolled equivalent), camera stacking/renderer/per-pipeline data (`unity-urp-rendering`, `unity-hdrp-rendering`), post-process toggle, Volumes and anti-aliasing (`unity-post-processing`), pointer input (`unity-input-system`), UI safe area (`mobile-safe-area`), collider/layer setup and Rigidbody interpolation settings (`unity-3d-physics`, `unity-2d-physics`), gameplay meaning of a picked point (Core, per `csharp-standards` → `coding-principles.md`).
 Docs: https://docs.unity3d.com/Manual/Cameras.html, https://docs.unity3d.com/ScriptReference/Camera.html — unversioned, current release; confirm any default against the installed Editor.
 
 | Reference | Read when |
@@ -49,7 +49,7 @@ Docs: https://docs.unity3d.com/Manual/Cameras.html, https://docs.unity3d.com/Scr
 - Conversions: <APIs used, depth argument and behind-camera handling>
 - Motion: <follow / clamp / shake — update phase, smoothing, target interpolation state>
 - Verified on: <aspect ratios and device classes actually run>
-- Layer: <Game.Client.*>
+- Layer: <Client code>
 - Known limitations: <...>
 ```
 

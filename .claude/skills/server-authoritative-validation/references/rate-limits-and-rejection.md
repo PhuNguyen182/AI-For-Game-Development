@@ -11,7 +11,7 @@ Synthesized from the stack pages listed in [sender-identity-per-stack.md](sender
 | NfE commands | Each packet resends older ticks redundantly (`netcode-for-entities` → `rpcs-and-commands.md`): count distinct ticks, never packets |
 | Discrete actions | GDD maximum rate of the action (fire rate, cast rate); the Core cooldown still decides legality, the bucket only bounds cost |
 | Burst | ≥ rate × worst expected jitter (s) + 1: evenly sent messages arrive clumped after a stall |
-| Clock | Server tick count, not wall time: deterministic and testable; the limiter lives in `Game.Server.*` |
+| Clock | Server tick count, not wall time: deterministic and testable; the limiter lives in `<Feature>/Server` code |
 | Lifetime | Bucket created on connect, removed on disconnect; a missing bucket rejects (fail closed) |
 | MagicOnion | Hub instance is per connection: keep the bucket in a hub field and no shared dictionary or lock is needed |
 | Placement | First line of the handler, before the Core call and before any read the handler controls; a reject must cost O(1). NGO typed `[Rpc]` parameters are decoded by codegen before the body, so only fixed-size parameters keep that decode bounded; variable-length data uses a named custom message read after the limiter |
@@ -21,7 +21,7 @@ Synthesized from the stack pages listed in [sender-identity-per-stack.md](sender
 using System;
 using System.Collections.Generic;
 
-namespace Game.Server.Networking
+namespace _Project.Scripts.Networking.Server
 {
     // Integer token bucket on server ticks: one message costs tickRate units, each tick refills ratePerSecond.
     public sealed class ConnectionRateLimiter<TKey> where TKey : IEquatable<TKey>

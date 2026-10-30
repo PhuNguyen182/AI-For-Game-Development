@@ -42,7 +42,8 @@ user-invocable: false
 ## Unity assets in the diff
 - Prefab, scene, SO: a required slot now `{fileID: 0}`, a missing script (`m_Script: {fileID: 0}`), an override that reverts a prefab change.
 - `.meta`: a changed GUID, or an asset added without its `.meta` — every reference to it breaks.
-- asmdef: a reference that makes Core depend on Client or on a `UnityEngine` module.
+- asmdef: a reference that makes Core depend on Client, a feature root or a `UnityEngine` module; a reference cycle; a Core-layer asmdef without `noEngineReferences`; `name` or `rootNamespace` not equal to its folder path.
+- Layout (new features, `csharp-standards` → naming-convention.md → Folders): code outside `<Feature>/`'s folders, a `.` in a folder name, a namespace not equal to asmdef `rootNamespace` + relative path.
 - Names per `csharp-standards` → Asset names.
 
 ## Test code

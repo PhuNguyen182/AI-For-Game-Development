@@ -22,7 +22,7 @@ Companion, if the Unity plugin is installed: `unity:shader-graph-create-custom-n
 10. **Visual intent given only as an adjective** — ask for a reference image, a named comparable or a concrete parameter before authoring.
 
 ## Never
-- Encode a gameplay decision in shader logic — the rule lives in `Game.Core.*` where the server evaluates it; pass resolved values as properties (e.g. `_HitFlashColor`, `_HitFlashIntensity`).
+- Encode a gameplay decision in shader logic — the rule lives in a Core assembly where the server evaluates it; pass resolved values as properties (e.g. `_HitFlashColor`, `_HitFlashIntensity`).
 - Assign `renderer.material` in a hot path.
 - Add parameters or techniques nobody asked for.
 
@@ -42,4 +42,4 @@ Companion, if the Unity plugin is installed: `unity:shader-graph-create-custom-n
 On request only, add `Latent concerns` and `Future remediation`, each with its trigger.
 
 ## Example
-- "Flash red when the hit is a critical, the shader already knows the damage" → declined: criticality is a `Game.Core.*` rule; exposed `_HitFlashColor`/`_HitFlashIntensity` driven from the client layer.
+- "Flash red when the hit is a critical, the shader already knows the damage" → declined: criticality is a Core rule; exposed `_HitFlashColor`/`_HitFlashIntensity` driven from the client layer.

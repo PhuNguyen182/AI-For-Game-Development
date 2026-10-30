@@ -37,7 +37,7 @@ Docs: https://docs.unity3d.com/Packages/com.unity.ugui@2.6/manual/ (TMP under `m
 12. **Diagnose batching from Self/Cumulative Batch Count first**; split a frequently-updating element onto its own Canvas, per [profiling-performance-and-howtos.md](references/profiling-performance-and-howtos.md). Label UI Profiler readings Editor-only (`qa-standards`) until measured in a build.
 
 ## Never
-- Decide what a bound value means for gameplay: display and react only; `Game.Core.*` decides.
+- Decide what a bound value means for gameplay: display and react only; Core decides.
 - Add a second `EventSystem` "just in case"; for `InputSystemUIInputModule` setup defer to `unity-input-system`.
 
 ## Output

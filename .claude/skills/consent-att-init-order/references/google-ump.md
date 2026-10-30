@@ -17,7 +17,7 @@ Sources: [a] `/admob/unity/privacy`, [b] `/admob/unity/privacy/gdpr`, [c] `/admo
 **Caveat:** both `CanRequestAds()` checks can return `true` in one launch; without a guard flag the ad SDK initializes and requests twice [a].
 
 ```csharp
-// Game.Client startup: Firebase signals after the Available gate; ads start once, after UMP and, on iOS, an ATT answer.
+// Client startup: Firebase signals after the Available gate; ads start once, after UMP and, on iOS, an ATT answer.
 private bool _isAdsStarted;
 
 // True on Android, or when the ATT status is no longer not-determined.

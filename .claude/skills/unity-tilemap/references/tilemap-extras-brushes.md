@@ -49,4 +49,4 @@ Per-cell metadata without inventing a tile type.
 | `GetAllPositions(name)` | Every cell with a key, no map scan |
 | `Reset()` | Clears all |
 
-A store, not a decision-maker: interpreting its metadata as a game rule belongs in `Game.Core.*`.
+A store, not a decision-maker: interpreting its metadata as a game rule belongs in Core.

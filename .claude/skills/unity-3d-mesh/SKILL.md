@@ -32,7 +32,7 @@ Docs: https://docs.unity3d.com/Manual/mesh.html and /ScriptReference/Mesh.html �
 ## Never
 - Call a `Mesh` getter or `AcquireReadOnlyMeshData` on a mesh with `isReadable` false at runtime — it throws `InvalidOperationException`.
 - Use `MeshDataArray` for a one-off or `Start()`-time mesh.
-- Decide in `Game.Client.*` which state a mesh or material shows — `Game.Core.*` resolves the state; the client only maps state to asset.
+- Decide in Client code which state a mesh or material shows — Core resolves the state; the client only maps state to asset.
 
 ## Output
 ```

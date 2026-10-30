@@ -34,7 +34,7 @@ Sources: [a] `/auth/unity/start` (below the SKILL.md `Docs:` base), [b] https://
 **Caveat:** verification failure fails closed — reject the request, never fall back to a uid in the body (`core.md` → Security).
 
 ```csharp
-// Game.Client: identity travels only as a verifiable token.
+// Client: identity travels only as a verifiable token.
 string idToken = await user.TokenAsync(false).AsUniTask();
 request.SetRequestHeader("Authorization", "Bearer " + idToken);
 ```

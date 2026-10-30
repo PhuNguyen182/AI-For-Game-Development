@@ -29,7 +29,7 @@ Docs: https://docs.unity3d.com/Manual/PhysicsOverview.html and https://docs.unit
 7. **Choose the chain body by what it must do**, per [ragdoll-physics.md](references/ragdoll-physics.md) — death/hit ragdoll: Ragdoll Wizard (Character Joints); deep, motor-driven or stretch-prone chains: `ArticulationBody`.
 8. **Fix ragdoll instability at mass ratio and limits before solver iterations** — the order is in [ragdoll-physics.md](references/ragdoll-physics.md).
 9. **`Cloth` only on a Skinned Mesh Renderer**, per [cloth.md](references/cloth.md); self- and inter-collision stay off until a visible problem needs them.
-10. **Keep the rule out of the callback** — PhysX results are not reproducible across platforms. Pass contact point, normal and relative velocity into `Game.Core.*` and let it decide any outcome the server must agree on (`csharp-standards`).
+10. **Keep the rule out of the callback** — PhysX results are not reproducible across platforms. Pass contact point, normal and relative velocity into Core and let it decide any outcome the server must agree on (`csharp-standards`).
 11. **Diagnose with the tool matching the symptom before tuning**, per [physics-optimization.md](references/physics-optimization.md): Profiler for solver cost, Memory Profiler for callback/query allocation, Physics Debug window for bodies that never sleep. Never claim an optimisation without that measurement. `Physics.Simulate Calls` climbing toward 10 is timestep catch-up: fix the preceding heavy frame, not physics settings.
 12. **A symptom with several causes** ("falls through the floor": detection mode, layer matrix, Transform-driven move, missing collider) — state the assumed cause before changing settings.
 

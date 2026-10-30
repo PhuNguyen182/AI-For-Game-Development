@@ -6,7 +6,7 @@ user-invocable: false
 
 # Feature docs
 
-Live at the feature root (the folder holding its code). Core and Client roots each get their own set and link each other.
+Live at the feature root (`<feature root>/<Feature>/`, `CLAUDE.md`, default `Assets/_Project/Scripts/`), one set per feature, covering every assembly under it. Code from before the layout: the folder holding it.
 
 | File | Holds |
 |---|---|
@@ -32,7 +32,7 @@ Live at the feature root (the folder holding its code). Core and Client roots ea
 - Doc vs code disagree → report both anchors; never pick silently. Spec in hand outranks the docset; source outranks any claim about behaviour.
 
 ## Write (size M/L, or any size with the risk flag)
-- `README.md` at feature completion: overview, entry points, map, consumers. Keep everything else inline there until it outgrows the README, then promote it and leave a pointer.
+- `README.md` at feature completion: overview, entry points, map (each assembly, what it references, its test fixtures), consumers. Keep everything else inline there until it outgrows the README, then promote it and leave a pointer.
 - `CONTRACTS.md` when code outside the root calls in, or client and server must agree.
 - `DECISIONS.md` / `DEBT.md` appended in the same change that made the decision or left the limitation — any size.
 - Never an empty or placeholder file. One fact, one home. A change that makes a doc stale updates it in the same change.

@@ -22,11 +22,11 @@ Docs: https://github.com/nuskey8/NRandom/tree/v2.0.2/src/NRandom (README: https:
 4. **Derive values with the `RandomEx` extensions**, not hand-rolled range math on `NextUInt()`/`NextULong()`.
 5. **`RandomEx.Shared` only for client-only, non-gameplay randomness** (VFX variance, idle flavor, UI shuffle).
 6. **Weighted rolls use `WeightedList<T>`/`IWeightedCollection<T>.GetRandom(IRandom)`, sequence randomness the `NRandom.Linq` extensions, always with the injected `IRandom` argument.** `WeightedList<T>` picks with `NextDouble() * totalWeight` over a double running sum: a roll two machines must agree on goes through `core-determinism` step 2, or uses integer weights with `NextInt`. Per [weighted-collections-and-linq.md](references/weighted-collections-and-linq.md).
-7. **`NRandom.Numerics` in `Game.Core.*`; `NRandom.Unity` only in `Game.Client.*`.** Per [numerics-and-unity-integration.md](references/numerics-and-unity-integration.md).
+7. **`NRandom.Numerics` in Core; `NRandom.Unity` only in Client code.** Per [numerics-and-unity-integration.md](references/numerics-and-unity-integration.md).
 8. **Capture the seed**; no public mid-stream get/set state exists. If the Tech Spec does not say how rollback/replay rebuilds RNG state, or which layer owns the instance's lifetime (per-match, session, call) → `Needs-decision`, `Next: technical-architect`.
 
 ## Never
-- Call `RandomEx.Create()`/`RandomEx.Shared`, or a parameterless `GetRandom`/`RemoveRandom`/`RandomElement`/`Shuffle`, in `Game.Core.*` gameplay code: silent client-server divergence, no compile-time signal.
+- Call `RandomEx.Create()`/`RandomEx.Shared`, or a parameterless `GetRandom`/`RemoveRandom`/`RandomElement`/`Shuffle`, in Core gameplay code: silent client-server divergence, no compile-time signal.
 - Use any NRandom algorithm, `ChaChaRandom` included, for security: the README disclaims it. Use `RandomNumberGenerator` and route token design to `security-reviewer`.
 - Assume an `IRandom` can be snapshotted and restored.
 
@@ -35,11 +35,11 @@ Docs: https://github.com/nuskey8/NRandom/tree/v2.0.2/src/NRandom (README: https:
 ## NRandom RNG Work — <feature/module>
 - Algorithm: <IRandom implementation — rationale>
 - Seeding: <seed source and where captured for replay, or n/a>
-- Determinism: <injected instance in Game.Core.* / RandomEx.Shared client-only>
+- Determinism: <injected instance in Core / RandomEx.Shared client-only>
 - Weighted/sequence API: <WeightedList<T> / NRandom.Linq, or n/a>
-- Layer: <Game.Core.* / Game.Client.*>
+- Layer: <Core / Client>
 - Known limitations: <...>
 ```
 
 ## Example
-- "Use `RandomEx.Shared.NextInt` for the crit roll in `Game.Core`, simpler" → declined: it is seeded per thread from `RandomNumberGenerator`, so client and server diverge on the first roll. Injected a `Xoshiro256StarStarRandom` initialised with the match seed; the server rebuilds the same instance to validate.
+- "Use `RandomEx.Shared.NextInt` for the crit roll in Core, simpler" → declined: it is seeded per thread from `RandomNumberGenerator`, so client and server diverge on the first roll. Injected a `Xoshiro256StarStarRandom` initialised with the match seed; the server rebuilds the same instance to validate.

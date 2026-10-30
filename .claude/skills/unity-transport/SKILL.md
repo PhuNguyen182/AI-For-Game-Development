@@ -44,7 +44,7 @@ Docs: https://docs.unity3d.com/Packages/com.unity.transport@6.6/manual/index.htm
 - Concurrency: main-thread / Concurrent-in-job — rationale
 - Security/topology: TLS? Relay or direct? — rationale
 - Verification: <multi-client connect/send/disconnect run, or how confirmed>
-- Layer: Game.Client.* / Game.Server.* / Editor-only
+- Layer: Client / <Feature>/Server / Editor-only
 - Known limitations: <...>
 ```
 On request only, add `Latent concerns` and `Future remediation`, each with its trigger.

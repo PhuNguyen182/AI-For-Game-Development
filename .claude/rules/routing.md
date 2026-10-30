@@ -20,7 +20,7 @@
 | Size | When | Do |
 |---|---|---|
 | S | One role; judgeable by looking or one test; no new contract | Directly, or one agent. The reply closes it |
-| M | 2+ roles, a new contract or screen, or touches `Game.Core.*` | `/feature` |
+| M | 2+ roles, a new contract or screen, or touches a Core assembly | `/feature` |
 | L | New Core system, netcode, architecture, project-wide migration, or a direction the GD has not decided | `/feature` with CP1 |
 
 **Risk flag** — credential/signing, real-money IAP, store submission, player PII, save-data migration, published git history, released build, shipped perf budget, server authority/anti-cheat. Flag set: verification means running, never reading, and the gate offer recommends yes. `/release` has its own gate.
@@ -28,10 +28,10 @@
 Escalate the size the moment the work turns out bigger; never shrink it to skip a step.
 
 ## Gates — offered, never imposed
-- Review and QA are the GD's choice: one `AskUserQuestion` when the code is built — recommendation first, the concrete cost of skipping stated. Recommend yes for M/L, the risk flag or `Game.Core.*`.
+- Review and QA are the GD's choice: one `AskUserQuestion` when the code is built — recommendation first, the concrete cost of skipping stated. Recommend yes for M/L, the risk flag or a Core assembly.
 - S work that changed code: offer `/review` only with the risk flag.
 - Declined → `Known limitations` ("not reviewed" / "not QA'd"), shown again at CP4. Never re-ask at the same point.
-- Always on, not a gate: the supply-chain check before a third-party package lands, and the secret hooks.
+- Always on, not a gate: the supply-chain check before a third-party package lands, the secret hooks, and the per-criterion UTF tests (`/feature` step 4).
 
 ## Profile defaults (`CLAUDE.md` → Profile; unset → ask once, write it there)
 | | hyper-casual | mid-core | hard-core |
@@ -47,7 +47,7 @@ CP1 direction (L) · CP2 spec or acceptance criteria (M, L) · CP3 built vs spec
 
 ## Dispatch
 - Brief = goal, acceptance criteria, size + flag, profile, feature file path or bug id, files in scope, earlier agents' outputs, `mem q` hits that bear on it (id + path). Agents see only the brief and the disk.
-- One Editor-holding agent at a time. Read-only agents may run in parallel. Never end your turn while a dispatch is still running — a headless session is not woken by it, and the agent dies holding the Editor.
+- One Editor-holding agent at a time. Read-only agents may run in parallel, and so may lane A agents (worktree, no Editor; `/feature` step 4). Never end your turn while a dispatch is still running — a headless session is not woken by it, and the agent dies holding the Editor.
 - An agent's `Next:` is a recommendation; you act on it.
 - `git-expert` runs on Sonnet; dispatch it with `model: opus` for forensics, recovery or a radius 3 operation.
 

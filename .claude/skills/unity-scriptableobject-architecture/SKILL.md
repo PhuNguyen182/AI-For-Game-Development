@@ -19,7 +19,7 @@ Docs: https://docs.unity3d.com/Manual/class-ScriptableObject.html and `script-Se
 | [dual-serialization.md](references/dual-serialization.md) | Any SO field is written at runtime |
 
 ## Steps
-1. **An SO is `UnityEngine`-bound, so it never lives in `Game.Core.*`.** Rule logic (damage formula, drop table, score increment) stays in Core and the SO calls it; an SO method that reimplements a rule is the defect.
+1. **An SO is `UnityEngine`-bound, so it never lives in a Core assembly.** Rule logic (damage formula, drop table, score increment) stays in Core and the SO calls it; an SO method that reimplements a rule is the defect.
 2. **Pick the pattern from the requirement** using the Read-when column. If two fit equally (GameEvent vs Event Channel, Delegate Object vs Extendable Enum) → `Needs-decision`, `Next: technical-architect`: the wrong shape is costly to unwind once systems depend on it. Event Channel only when the asset-based, Inspector-referenceable shape is the reason; otherwise MessagePipe/R3.
 3. **Apply [dual-serialization.md](references/dual-serialization.md) to every SO field written at runtime** (Variables, Runtime Sets).
 4. **Pair every registration with its removal**: Runtime Set `Add`/`Remove` and channel `+=`/`-=` in `OnEnable`/`OnDisable`.
@@ -31,11 +31,11 @@ Docs: https://docs.unity3d.com/Manual/class-ScriptableObject.html and `script-Se
 ## ScriptableObject Architecture — <feature>
 - Pattern(s): <...>
 - Assets: <SO_Name assets, CreateAssetMenu path>
-- Core boundary: <SO delegates to Game.Core.*, rule not reimplemented>
+- Core boundary: <SO delegates to Core, rule not reimplemented>
 - Lifecycle: <registration pairing, dual-serialization reset, growth check>
 - Known limitations: <...>
 ```
 On request only, add `Latent concerns` and `Future remediation`, each with its trigger.
 
 ## Example
-- "Put the score increment straight in the GameEvent listener's UnityEvent" → declined the placement: built the `GameEvent`/`GameEventListener`, but the response calls the `Game.Core.*` scoring API instead of computing the increment.
+- "Put the score increment straight in the GameEvent listener's UnityEvent" → declined the placement: built the `GameEvent`/`GameEventListener`, but the response calls the Core scoring API instead of computing the increment.

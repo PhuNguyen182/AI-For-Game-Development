@@ -1,6 +1,6 @@
 ---
 name: unitask-async-programming
-description: "UniTask allocation-free async on the PlayerLoop: UniTask/UniTaskVoid, timing, cancellation on destroy, Forget, completion sources, async LINQ. Use for one-shot async in Game.Client, never in Game.Core."
+description: "UniTask allocation-free async on the PlayerLoop: UniTask/UniTaskVoid, timing, cancellation on destroy, Forget, completion sources, async LINQ. Use for one-shot async in Client code, never in Core."
 user-invocable: false
 ---
 
@@ -8,7 +8,7 @@ user-invocable: false
 
 Not for: continuous event streams (`r3-reactive-extensions`), startup sequencing / `IAsyncStartable` (`vcontainer-dependency-injection`), pub/sub dispatch (`messagepipe-event-messaging`), transition graphs (`stateless-state-machines` — this skill writes only the `OnEntryAsync`/`FireAsync` bodies), RPC contracts (`magiconion-rpc-networking` — this skill awaits the `UnaryResult<T>`), Addressables call choice and release (`unity-addressables`), DOTween await extension methods (`dotween-tweening`; this skill supplies the cancellation and `PlayerLoopTiming` rules under `UNITASK_DOTWEEN_SUPPORT`).
 Docs: https://github.com/Cysharp/UniTask
-Client only: the assembly references `UnityEngine`, so never in `Game.Core.*`; express a Core-side wait as a plain interface or callback and let `Game.Client.*` drive it.
+Client only: the assembly references `UnityEngine`, so never in a Core assembly; express a Core-side wait as a plain interface or callback and let Client code drive it.
 
 ## Steps
 1. **Replace coroutines for one-shot waits; bridge third-party awaitables with `.AsUniTask()`. Return type by who awaits** — `UniTask<T>` for a value, `UniTask` for completion only, `UniTaskVoid` when nothing awaits. Never `async void` (exceptions escape to the player loop).

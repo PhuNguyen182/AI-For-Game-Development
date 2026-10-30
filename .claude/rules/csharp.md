@@ -8,9 +8,9 @@ paths:
 Full detail: skill `csharp-standards`. Feature docs: skill `feature-docs`.
 
 ## Boundaries
-- Game rules (damage, cooldowns, economy, state machines) live only in `Game.Core.*`. Client code calls them, never reimplements them.
-- `Game.Core.*`: no `UnityEngine`, deterministic — no `UnityEngine.Random` (inject a seeded RNG), no wall-clock time. Client resolves Unity data (raycasts) and passes it in.
-- Namespace = folder path below `Assets/`, PascalCased. Moving a file updates its namespace in the same change.
+- Game rules (damage, cooldowns, economy, state machines) live only in a Core assembly (`<Feature>/Core`, `noEngineReferences`). Client code calls them, never reimplements them.
+- Core assemblies (`Core/`, `DataModels/`): no `UnityEngine`, deterministic — no `UnityEngine.Random` (inject a seeded RNG), no wall-clock time. Client resolves Unity data (raycasts) and passes it in.
+- New feature → `<feature root>/<Feature>/` layout (`CLAUDE.md`, default `Assets/_Project/Scripts/`); folder names PascalCase, no `.`. Namespace = asmdef `rootNamespace` + path relative to its folder; asmdef `name` = `rootNamespace` = folder path. Moving a file updates its namespace in the same change.
 - Validate only at real boundaries: user input, save data, network messages, SDK callbacks, Inspector slots, Unity API returns.
 
 ## Style

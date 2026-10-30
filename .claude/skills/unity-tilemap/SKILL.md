@@ -31,7 +31,7 @@ Docs: https://docs.unity3d.com/Manual/tilemaps/tilemaps.html — core Manual unv
 8. **Check Tilemap Extras before writing custom code**: Rule Tile, Auto Tile, Animated Tile and the extra brushes cover most needs. Rule Tile when neighbour conditions are explicit; Auto Tile when art arrives as a masked layout sheet. Order Rule Tile rules most common first (first match wins). Confirm `com.unity.2d.tilemap.extras` is installed first.
 9. **Write a custom `TileBase` or `GridBrushBase` only when nothing built-in or Extras fits**; they become dropdown-selectable assets, so name them clearly.
 10. **Batch runtime tile edits and keep them out of `Update`** — `SetTiles`/`BoxFill`/`FloodFill` on an event. Exceeding Maximum Tile Change Count turns an incremental collider update into a full rebuild.
-11. **Keep layout meaning out of this layer** — `Game.Core.*` decides which tile a generator or destruction rule produces; components here only paint, render and collide it. `GridInformation` carries authoring metadata but never interprets it; `GetTileData` and brushes must not decide gameplay state (they run at edit time too).
+11. **Keep layout meaning out of this layer** — Core decides which tile a generator or destruction rule produces; components here only paint, render and collide it. `GridInformation` carries authoring metadata but never interprets it; `GetTileData` and brushes must not decide gameplay state (they run at edit time too).
 12. **Misalignment that could be Cell Size, Grid type or pivot** → name the assumed cause before editing shared palette assets (every scene painted from it is affected).
 
 ## Never

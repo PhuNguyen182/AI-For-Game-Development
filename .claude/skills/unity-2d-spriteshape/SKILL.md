@@ -26,7 +26,7 @@ Docs: https://docs.unity3d.com/Packages/com.unity.2d.spriteshape@15.0/ (`manual/
 6. **Attach only `EdgeCollider2D` or `PolygonCollider2D`**, per [spriteshape-collision.md](references/spriteshape-collision.md), and keep `colliderDetail` independent of render Detail.
 7. **Disable Update Collider before any manual collider edit**; otherwise the next spline change overwrites it. Leave it on while the art iterates.
 8. **Place props with `SpriteShapeObjectPlacement`**, per [spriteshape-object-placement.md](references/spriteshape-object-placement.md). Re-check every placement after inserting or removing a point.
-9. **Keep outline content out of this layer** — when a rule decides the shape (procedural terrain, destroyed ground), `Game.Core.*` resolves the control-point layout and these components only render and collide it (`csharp-standards` → `coding-principles.md` → Shared Core integrity).
+9. **Keep outline content out of this layer** — when a rule decides the shape (procedural terrain, destroyed ground), Core resolves the control-point layout and these components only render and collide it (`csharp-standards` → `coding-principles.md` → Shared Core integrity).
 10. **Use custom geometry only when the Profile model cannot express the shape**, per [custom-geometry-scripting.md](references/custom-geometry-scripting.md). It is Job System code with the safety rules that implies.
 11. **Drive spline changes from events** and keep `BakeMesh`/`BakeCollider` out of `Update` (`csharp-standards` → `performance-and-algorithms.md`).
 12. **Symptom could be Profile coverage, import mode or Corner Threshold** → say which is assumed before editing; a Profile is shared by every shape that references it.

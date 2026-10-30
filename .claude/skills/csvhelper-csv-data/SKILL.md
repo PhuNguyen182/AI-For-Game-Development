@@ -20,7 +20,7 @@ Docs: https://joshclose.github.io/CsvHelper/ — references written against 33.x
 1. **Pass an explicit `CultureInfo` to every `CsvReader`/`CsvWriter`** — `InvariantCulture` for machine-authored data. 33.x constructors require a `CultureInfo` or `CsvConfiguration`; passing `CurrentCulture` makes parsing vary per machine (breaks Shared Core determinism).
 2. **Culture, header shape or target layer unstated → `Blocked` naming it, before writing** — each is invisible in the code and wrong only on another machine.
 3. **Default to `GetRecords<T>()`/`WriteRecords()` with by-name headers** (writing and appending: [writing.md](references/writing.md)). Write a `ClassMap<T>` only when names diverge, the header is absent or duplicated, or a property needs ignore/constant/optional/validate/convert ([class-maps.md](references/class-maps.md)).
-4. **Attributes for one simple stable mapping; `ClassMap<T>` when the type needs two mapping shapes or lives in `Game.Core.*`** (no CsvHelper reference on Core types).
+4. **Attributes for one simple stable mapping; `ClassMap<T>` when the type needs two mapping shapes or lives in a Core assembly** (no CsvHelper reference on Core types).
 5. **Open in this order, each declared inline in `using`**: `Stream` > `StreamReader`/`StreamWriter` (CsvHelper takes a `TextReader`/`TextWriter`, never a raw `Stream`) > `CsvReader`/`CsvWriter`. Disposal runs in reverse: `CsvReader`/`CsvWriter` first, stream last. Use `using` declarations or nested blocks, not manual `try/finally`. Never return the `GetRecords<T>()` sequence out of the `using` — it is deferred and enumerates a disposed reader.
 6. **`foreach` over `GetRecords<T>()` for large files**; `.ToList()` only for small files or random access ([reading.md](references/reading.md)).
 7. **Manual `ReadHeader()`/`Read()`/`GetField<T>()` when no class-per-row model fits** — also the AOT-safe path.
@@ -44,7 +44,7 @@ Docs: https://joshclose.github.io/CsvHelper/ — references written against 33.x
 - Custom conversion: <converter + scope, or built-ins sufficient>
 - Boundary validation: <where parsed values are checked>
 - AOT/IL2CPP: <confirmed on device, or "Editor/build-time only">
-- Layer: <Game.Core.* / Game.Client.* / Editor-only>
+- Layer: <Core / Client / Editor-only>
 - Known limitations: <...>
 ```
 On request only, add `Latent concerns` and `Future remediation`, each with its trigger.

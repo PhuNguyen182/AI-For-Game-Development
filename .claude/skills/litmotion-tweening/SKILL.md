@@ -6,7 +6,7 @@ user-invocable: false
 
 # LitMotion
 
-Not for: DOTween (`dotween-tweening`); reactive stream composition (`r3-reactive-extensions`); unrelated async orchestration (`unitask-async-programming`); shader/particle VFX (`vfx-particle-authoring`); force/collision movement (`unity-3d-physics`, `unity-2d-physics`); building or wiring the uGUI component being animated (`ugui`); any `Game.Core.*` code (LitMotion depends on `UnityEngine`; drive Core state from `Game.Client.*` motions).
+Not for: DOTween (`dotween-tweening`); reactive stream composition (`r3-reactive-extensions`); unrelated async orchestration (`unitask-async-programming`); shader/particle VFX (`vfx-particle-authoring`); force/collision movement (`unity-3d-physics`, `unity-2d-physics`); building or wiring the uGUI component being animated (`ugui`); any Core code (LitMotion depends on `UnityEngine`; drive Core state from Client code motions).
 Docs: https://annulusgames.github.io/LitMotion/articles/en/ and https://github.com/annulusgames/LitMotion — LitMotion v2 (v2.0.2); doc URLs are unversioned and track `main`, so a newer API may be missing from an installed copy.
 
 | Reference | Read when |

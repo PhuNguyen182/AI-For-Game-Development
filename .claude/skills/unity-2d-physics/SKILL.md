@@ -27,7 +27,7 @@ Docs: https://docs.unity3d.com/Manual/2d-physics/ — unversioned; defaults quot
 7. **Shared `PhysicsMaterial2D` asset**, per [physics-material-2d.md](references/physics-material-2d.md); reason about the pair, not one asset.
 8. **Effector only for behaviour physics does not give**, per [effectors-2d.md](references/effectors-2d.md). "Just push it" is an `AddForce`. Enable Used By Effector on the acting collider or the effector silently does nothing.
 9. **Joint by the constraint stated**, per [joints-2d.md](references/joints-2d.md). Set break force deliberately and handle `OnJointBreak2D` if it can break.
-10. **Hand contact data to `Game.Core.*`, do not decide in the callback** — Box2D is not bit-identical across platforms, which breaks prediction against server authority (`csharp-standards` → `coding-principles.md`). Pass contact point, normal and relative velocity.
+10. **Hand contact data to Core, do not decide in the callback** — Box2D is not bit-identical across platforms, which breaks prediction against server authority (`csharp-standards` → `coding-principles.md`). Pass contact point, normal and relative velocity.
 11. **Verify a physics fix by measurement** — Profiler Physics2D markers and the Physics Debug window, per `unity-profiler-diagnostics`; otherwise report "not measured".
 
 ## Never

@@ -6,7 +6,7 @@ user-invocable: false
 
 # Flexalon
 
-Not for: uGUI Layout Group/RectTransform authoring (`ugui`), UI Toolkit USS layout (`ui-toolkit`), general tweening (`dotween-tweening`, `litmotion-tweening`), recycling scroll lists (`osa-optimized-scrollview-adapter`), Inspector attributes (`odin-inspector`), any `Game.Core.*` code.
+Not for: uGUI Layout Group/RectTransform authoring (`ugui`), UI Toolkit USS layout (`ui-toolkit`), general tweening (`dotween-tweening`, `litmotion-tweening`), recycling scroll lists (`osa-optimized-scrollview-adapter`), Inspector attributes (`odin-inspector`), any Core code.
 Docs: https://www.flexalon.com/docs (API: https://www.flexalon.com/docs/api/Flexalon.html) — unversioned, serves the newest release; features carry inline `(v3.x/v4.x)` tags, so check any tagged feature against the installed package version. Docs give no default values and no version banner: read both from the Inspector or the installed package. Pages are cited below by URL slug (`/docs/<slug>`).
 
 | Reference | Read when |
@@ -41,7 +41,7 @@ Docs: https://www.flexalon.com/docs (API: https://www.flexalon.com/docs/api/Flex
 - Let a `Rigidbody`/`Rigidbody2D` and the pipeline write one transform without `FlexalonRigidBodyAnimator`: the object jitters.
 - Set a child axis to `Fill` under a parent axis of `Layout`: the parent sizes itself from its children, so there is nothing to take a fraction of.
 - Delete the `Flexalon` singleton in edit mode to reset layout (Unity may need reopening): use `ForceUpdate()`.
-- Put Flexalon types in `Game.Core.*`: the package depends on `UnityEngine`; layout intent lives in `Game.Client.*` and reads Core state, never the reverse.
+- Put Flexalon types in a Core assembly: the package depends on `UnityEngine`; layout intent lives in Client code and reads Core state, never the reverse.
 - Upgrade without the user's explicit confirmation in this conversation: it requires deleting the project's existing `Flexalon` directory before importing the new package.
 
 ## Output

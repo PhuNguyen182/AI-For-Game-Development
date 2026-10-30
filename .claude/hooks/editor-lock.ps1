@@ -1,6 +1,8 @@
 # Cross-session Unity Editor lock in <project>/.workflow/editor.lock.
 #   acquire  PreToolUse Agent: an Editor-holding agent takes the lock; blocked if another session holds it.
-#   check    PreToolUse Bash/PowerShell `unity ...`: blocked if another session holds it.
+#            A worktree dispatch (/feature lane A) never touches the Editor and takes no hold.
+#   check    PreToolUse Bash/PowerShell `unity ...` and mcp__unity*: blocked if another session holds it,
+#            or if the call comes from a linked worktree (lane A must not drive the main checkout's Editor).
 #   release  SubagentStop: an Editor holder left in Play Mode or with compile errors is sent back once; else its hold drops.
 #   clear    Stop / SessionEnd: drops every hold this session owns.
 param([Parameter(Mandatory)][ValidateSet('acquire', 'check', 'release', 'clear')][string]$Mode)
@@ -34,6 +36,27 @@ function Refuse {
     Block ("Unity Editor is held by another Claude session ($($lock.session), agents: $($lock.holds -join ', '), since $($lock.since)). " +
         'One Editor, one holder (rule core.md). Wait for it to finish. If that session is gone: confirm with ' +
         '"unity command editor status", then ask the GD before deleting .workflow/editor.lock.')
+}
+
+# True when $path sits in a linked git worktree other than the project's own checkout (a /feature lane A agent).
+# The project may itself be a linked worktree; only a different checkout counts.
+function Get-GitHolder([string]$path) {
+    $dir = $path
+    while ($dir) {
+        if (Test-Path (Join-Path $dir '.git')) { return [IO.Path]::GetFullPath($dir).TrimEnd('\', '/') }
+        $parent = Split-Path $dir
+        if ($parent -eq $dir) { break }
+        $dir = $parent
+    }
+    return $null
+}
+
+function Test-LaneWorktree([string]$path) {
+    if (-not $path) { return $false }
+    $holder = Get-GitHolder $path
+    if (-not $holder -or $holder -ieq (Get-GitHolder $root)) { return $false }
+    $git = Join-Path $holder '.git'
+    return ((Test-Path $git -PathType Leaf) -and ((Get-Content $git -Raw) -match 'gitdir:.*[\\/]worktrees[\\/]'))
 }
 
 # First value of a property anywhere in parsed JSON (the CLI nests results differently per output format).
@@ -73,7 +96,7 @@ function Get-EditorProblem {
 switch ($Mode) {
     'acquire' {
         $agent = [string]$in.tool_input.subagent_type
-        if ($Holders -notcontains $agent) { exit 0 }
+        if ($Holders -notcontains $agent -or [string]$in.tool_input.isolation -eq 'worktree') { exit 0 }
         if ($foreign) { Refuse }
         $holds = if ($lock -and $lock.session -eq $session) { @($lock.holds) } else { @() }
         if ($lock -and $lock.session -ne $session) { $lock = $null }
@@ -81,13 +104,21 @@ switch ($Mode) {
         Save (@($holds) + $agent)
     }
     'check' {
-        if ([string]$in.tool_input.command -notmatch '(^|[;&|]\s*|\bcd\b.*?&&\s*)unity\s') { exit 0 }
+        $unityCall = ([string]$in.tool_name -match '^mcp__unity') -or
+            ([string]$in.tool_input.command -match '(^|[;&|]\s*|\bcd\b.*?&&\s*)unity\s')
+        if (-not $unityCall) { exit 0 }
+        if (Test-LaneWorktree ([string]$in.cwd)) {
+            Block ('No Unity CLI or MCP call from a worktree: it would drive the main checkout''s Editor while lane B holds it. ' +
+                'Verify with dotnet build / dotnet test on the mirror (/feature step 4, Lanes).')
+        }
         if ($foreign) { Refuse }
     }
     'release' {
         if (-not $lock -or $lock.session -ne $session) { exit 0 }
+        # A lane A agent took no hold; its stop must neither check lane B's Editor nor drop a same-type lane B hold.
+        if (Test-LaneWorktree ([string]$in.cwd)) { exit 0 }
         # Exit 2 keeps the agent running so it cleans up; stop_hook_active means it was already told once.
-        if ($Holders -contains [string]$in.agent_type -and -not $in.stop_hook_active) {
+        if (@($lock.holds) -contains [string]$in.agent_type -and -not $in.stop_hook_active) {
             $problem = Get-EditorProblem
             if ($problem) { Block "Before you return: $problem. Leave the Editor clean (skill agent-protocol)." }
         }

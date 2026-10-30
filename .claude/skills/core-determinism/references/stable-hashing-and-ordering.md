@@ -22,7 +22,7 @@ FNV-1a 64 over a canonical byte sequence: fixed field order, integers little-end
 ```csharp
 using System;
 
-namespace Game.Core.Determinism
+namespace _Project.Scripts.Shared.Core
 {
     public static class StableHash
     {

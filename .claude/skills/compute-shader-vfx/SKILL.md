@@ -15,7 +15,7 @@ Not for: non-visual compute throughput (`gameplay-engineer`), CPU parallel work 
 4. **Derive the dispatch from the live element count and bounds-check in the kernel** — `Mathf.CeilToInt(count / (float)groupSize)` rounds up, so the last group runs threads with no element; add `if (id.x >= count) return;`. Never hardcode a group count.
 5. **Choose `[numthreads]` against the target** and state it: 64 suits AMD wavefronts, 32 NVIDIA warps, 64-256 is usual on mobile.
 6. **Ping-pong any buffer a pass both reads and writes in one dispatch** — parallel threads are unordered, so in-place read-modify-write is a race. Read one, write the other, swap after.
-7. **Keep GPU results out of gameplay decisions** — rules live in `Game.Core.*` and the server evaluates them independently (`csharp-standards` → `coding-principles.md` "Shared Core integrity"). If a rule needs the same data, compute it on the CPU too and treat the GPU copy as presentation.
+7. **Keep GPU results out of gameplay decisions** — rules live in a Core assembly and the server evaluates them independently (`csharp-standards` → `coding-principles.md` "Shared Core integrity"). If a rule needs the same data, compute it on the CPU too and treat the GPU copy as presentation.
 8. **Read back with `AsyncGPUReadback`, never a blocking `GetData` in a frame path** — `GetData` stalls the CPU on the GPU queue; the async result arrives a frame or more late, so the consumer must tolerate delay by design.
 9. **Feed rendering through an indirect draw** (`Graphics.RenderPrimitivesIndirect` or `Graphics.RenderMeshIndirect` with a `GraphicsBuffer`; `DrawMeshInstancedIndirect` is obsolete) with an args buffer filled from a GPU counter, so the CPU never reads back just to count.
 10. **Release every `ComputeBuffer` on every path** (`OnDisable`/`OnDestroy`, early returns) — it is native memory the GC never reclaims and it outlives the scene (`csharp-standards` → `performance-and-algorithms.md` "Memory discipline").
@@ -42,4 +42,4 @@ Not for: non-visual compute throughput (`gameplay-engineer`), CPU parallel work 
 On request only, add `Latent concerns` and `Future remediation`, each with its trigger.
 
 ## Example
-- "Read particle positions back each frame so gameplay can detect projectile hits" → declined: blocking `GetData` stalls the CPU and `AsyncGPUReadback` is at least a frame late, and a hit is a game rule that lives in `Game.Core.*` where the server evaluates it. Kept the hit test on the CPU against authoritative projectile state; the compute pass drives only the visual trail.
+- "Read particle positions back each frame so gameplay can detect projectile hits" → declined: blocking `GetData` stalls the CPU and `AsyncGPUReadback` is at least a frame late, and a hit is a game rule that lives in a Core assembly where the server evaluates it. Kept the hit test on the CPU against authoritative projectile state; the compute pass drives only the visual trail.

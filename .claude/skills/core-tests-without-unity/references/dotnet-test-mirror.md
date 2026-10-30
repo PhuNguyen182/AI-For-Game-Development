@@ -17,46 +17,51 @@ Sources: [a] C# compiler `https://docs.unity.com/en-us/engine/6000.0/manual/prog
 
 | Path | Fact that decides |
 |---|---|
-| `Tests.Dotnet/` at the repo root, outside `Assets/` | Unity never imports it; the root itself holds Unity-generated `.csproj`/`.sln` files that get overwritten |
-| `Tests.Dotnet/Game.Core.Mirror/Game.Core.Mirror.csproj` | Library over linked Core sources; `AssemblyName` `Game.Core` so `InternalsVisibleTo` and type names match the editor build |
-| `Tests.Dotnet/Game.Core.Mirror.Tests/Game.Core.Mirror.Tests.csproj` | Test project over linked test sources; `AssemblyName` `Game.Core.Tests` for the same reason |
-| `.gitignore` | `Tests.Dotnet/**/bin/`, `Tests.Dotnet/**/obj/` |
+| `TestsDotnet/` at the repo root, outside `Assets/` | Unity never imports it; the root itself holds Unity-generated `.csproj`/`.sln` files that get overwritten. No `.` in folder names (`naming-convention.md` → Folders) |
+| One `.csproj` per engine-free asmdef: `TestsDotnet/<Feature>/Core/<Feature>.Core.Mirror.csproj`, `…/DataModels/…` | Library over that asmdef's linked sources only; `AssemblyName` = the asmdef name (`_Project.Scripts.<Feature>.Core`) so `InternalsVisibleTo` and type names match the editor build |
+| Each asmdef reference → a `ProjectReference` | One glob over every feature would compile a cross-feature reference Unity rejects; the asmdef graph is the mirror's graph |
+| `TestsDotnet/<Feature>/Tests/<Feature>.Tests.Mirror.csproj` | Test project over the feature's `Tests/EditMode/` sources; `AssemblyName` = `_Project.Scripts.<Feature>.Tests.EditMode` for the same reason |
+| `.gitignore` | `TestsDotnet/**/bin/`, `TestsDotnet/**/obj/` |
 
 ```xml
-<!-- Tests.Dotnet/Game.Core.Mirror/Game.Core.Mirror.csproj -->
+<!-- TestsDotnet/Combat/Core/Combat.Core.Mirror.csproj -->
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
     <LangVersion>9.0</LangVersion>
-    <AssemblyName>Game.Core</AssemblyName>
-    <RootNamespace>Game.Core</RootNamespace>
+    <AssemblyName>_Project.Scripts.Combat.Core</AssemblyName>
+    <RootNamespace>_Project.Scripts.Combat.Core</RootNamespace>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Nullable>disable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\..\Assets\Game.Core\**\*.cs"
-             Exclude="..\..\Assets\Game.Core\Tests\**"
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Combat\Core\**\*.cs"
              Link="%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- One per asmdef reference of _Project.Scripts.Combat.Core. -->
+    <ProjectReference Include="..\DataModels\Combat.DataModels.Mirror.csproj" />
   </ItemGroup>
 </Project>
 ```
 
 ```xml
-<!-- Tests.Dotnet/Game.Core.Mirror.Tests/Game.Core.Mirror.Tests.csproj -->
+<!-- TestsDotnet/Combat/Tests/Combat.Tests.Mirror.csproj -->
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <LangVersion>9.0</LangVersion>
-    <AssemblyName>Game.Core.Tests</AssemblyName>
+    <AssemblyName>_Project.Scripts.Combat.Tests.EditMode</AssemblyName>
     <IsPackable>false</IsPackable>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\..\Assets\Game.Core\Tests\**\*.cs"
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Combat\Tests\EditMode\**\*.cs"
              Link="Tests\%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Game.Core.Mirror\Game.Core.Mirror.csproj" />
+    <ProjectReference Include="..\Core\Combat.Core.Mirror.csproj" />
+    <ProjectReference Include="..\DataModels\Combat.DataModels.Mirror.csproj" />
     <!-- Exact versions, recorded in docs/tech-stack.md; NUnit stays on 3.x. -->
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="$(TestSdkVersion)" />
     <PackageReference Include="NUnit" Version="$(NUnitVersion)" />
@@ -65,7 +70,7 @@ Sources: [a] C# compiler `https://docs.unity.com/en-us/engine/6000.0/manual/prog
 </Project>
 ```
 
-The three version properties live in `Tests.Dotnet/Directory.Build.props`, so nothing outside `Tests.Dotnet/` is affected.
+The three version properties live in `TestsDotnet/Directory.Build.props`, so nothing outside `TestsDotnet/` is affected.
 
 ## Settings that decide whether the mirror is honest
 
@@ -75,8 +80,8 @@ The three version properties live in `Tests.Dotnet/Directory.Build.props`, so no
 | Core `TargetFramework` | `netstandard2.1` to match the default compat level [b]: an API missing in Unity fails here too. Project on the .NET Framework level → the mirror cannot match exactly; `Needs-decision` |
 | Test `TargetFramework` | Needs a runnable TFM; an LTS the CI agent's SDK has. A newer `LangVersion` than the TFM's default "isn't supported" [e]; an older one (9.0) is allowed |
 | `Link` metadata | "The notational path to be displayed when the file is physically located outside the influence of the project file" [f]: display only, the file on disk stays the single source |
-| `EnableDefaultCompileItems` false | Stops the SDK globbing stray `.cs` under `Tests.Dotnet/` into the build |
-| Exclude `Tests\**` from Core | Otherwise test sources compile into `Game.Core` and NUnit becomes a Core dependency |
+| `EnableDefaultCompileItems` false | Stops the SDK globbing stray `.cs` under `TestsDotnet/` into the build |
+| Glob only the asmdef's own folder | Test sources live in `Tests/EditMode/`, outside `Core/`; globbing the feature root would pull them, and the Unity code, into Core |
 | NUnit major version | Unity's runner is 3.5-based [g]; NUnit 4 moves classic asserts (`Assert.AreEqual`) to `NUnit.Framework.Legacy.ClassicAssert` and is not source-compatible with 3.x [h], so shared files stop compiling in one runner |
 | Packages the Core asmdef references (NRandom, MemoryPack, …) | Same package at the same version from NuGet, including any source generator; a version gap is a runner disagreement waiting to happen |
 
@@ -84,8 +89,8 @@ The three version properties live in `Tests.Dotnet/Directory.Build.props`, so no
 
 | Command | Fact that decides |
 |---|---|
-| `dotnet test Tests.Dotnet/Game.Core.Mirror.Tests/Game.Core.Mirror.Tests.csproj --logger "trx;LogFileName=core-mirror.trx"` | Always pass the project path; a bare `dotnet test` at the root meets Unity's generated `.sln` and `.csproj` files instead of the mirror |
-| Executed count | Compare with the Edit Mode count for `Game.Core.Tests`; a filtered or uncompiled file shows only as a lower count |
+| `dotnet test TestsDotnet/Combat/Tests/Combat.Tests.Mirror.csproj --logger "trx;LogFileName=combat-mirror.trx"` | Always pass the project path; a bare `dotnet test` at the root meets Unity's generated `.sln` and `.csproj` files instead of the mirror |
+| Executed count | Compare with the Edit Mode count for `_Project.Scripts.<Feature>.Tests.EditMode`; a filtered or uncompiled file shows only as a lower count |
 
 ## Disagreement triage (SKILL.md step 7)
 

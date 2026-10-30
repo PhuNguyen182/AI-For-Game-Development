@@ -14,7 +14,7 @@ Not for: finding candidates (`technology-scouting-sweep`), source trust (`source
 3. **Licence** — read the repository's own LICENSE file only (identifier: https://spdx.org/licenses); Asset Store: the licence named on the package page. MIT, Apache-2.0, BSD, Unlicense pass; GPL/AGPL block shipped game code; Asset Store EULA, source-available or any non-commercial clause need the GD's explicit acceptance.
 4. **Scripting backend, not just platform** — IL2CPP AOT-compiles and strips, so `System.Reflection.Emit`, runtime code generation and unconstrained generic virtual calls pass in the Editor and fail on device. Mono-only means PC-only.
 5. **Engine and C# version** — the project's configured compiler decides what compiles, not the README (`csharp-standards` → `coding-principles.md` Modern C# syntax).
-6. **`Game.Core.*` determinism** — a candidate pulling `UnityEngine` types, wall-clock time or unseeded randomness is blocked for Core (`coding-principles.md` Shared Core integrity) but may still pass for `Game.Client.*`.
+6. **Core determinism** — a candidate pulling `UnityEngine` types, wall-clock time or unseeded randomness is blocked for Core (`coding-principles.md` Shared Core integrity) but may still pass for Client code.
 7. **Mobile cost as a gate** — added binary size, per-ABI natives, hot-path allocation (`performance-and-algorithms.md` Memory discipline). PC-only fit fails a cross-platform feature.
 8. **Hosted service only** — pricing at the project's projected scale, read from the vendor's current pricing page (free tier limits included); data compliance against `CLAUDE.md` → Compliance (COPPA/GDPR, data residency, player-data deletion) and whether player data can be exported on exit. Long-term vendor health is `tech-vendor-dependency-risk-assessment`, not this gate.
 9. **Soft criteria for survivors only** — maintenance and bus factor, adoption, integration effort, documentation, removal path. Exit cost: Low (hidden behind an interface) / Medium / High (its types appear in gameplay signatures).
@@ -31,7 +31,7 @@ Not for: finding candidates (`technology-scouting-sweep`), source trust (`source
 | Licence for commercial shipping | PASSED / BLOCKED / UNKNOWN / NOT APPLICABLE | <SPDX id, LICENSE URL> |
 | Engine and C# language version | PASSED / BLOCKED / UNKNOWN | <required vs project's> |
 | Scripting backend and platforms | PASSED / BLOCKED / UNKNOWN | <IL2CPP AOT, per-ABI natives> |
-| Game.Core.* determinism boundary | PASSED / BLOCKED / NOT APPLICABLE | <UnityEngine, clock or RNG dependency> |
+| Core determinism boundary | PASSED / BLOCKED / NOT APPLICABLE | <UnityEngine, clock or RNG dependency> |
 | Mobile size and hot-path cost | PASSED / BLOCKED / UNKNOWN | <added size, allocation behaviour> |
 | Service pricing at projected scale | PASSED / BLOCKED / UNKNOWN / NOT APPLICABLE | <pricing URL, retrieved date, cost at scale> |
 | Data compliance and export | PASSED / BLOCKED / UNKNOWN / NOT APPLICABLE | <COPPA/GDPR, residency, export path> |

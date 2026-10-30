@@ -3,7 +3,7 @@
 Synthesized from project decisions; adds to rule `csharp.md`.
 
 ## Shared Core integrity
-- Outcome-deciding logic (damage, state machines, cooldowns, economy) lives only in `Game.Core.*`; Client calls it, never reimplements it.
+- Outcome-deciding logic (damage, state machines, cooldowns, economy) lives only in a Core assembly; Client calls it, never reimplements it.
 - Core is deterministic so client prediction and server authority agree: seeded injectable RNG, no wall-clock time, no float math that diverges across platforms.
 - A rule needing Unity (raycast): Client resolves the data, Core makes the decision.
 

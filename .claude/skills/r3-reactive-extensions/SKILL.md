@@ -8,7 +8,7 @@ user-invocable: false
 
 Not for: one-shot awaits (`unitask-async-programming`; R3's `SubscribeAwait`/`SelectAwait` take a `Func<T, CancellationToken, ValueTask>`; await a UniTask inside that lambda), single addressed messages (`messagepipe-event-messaging`), where a subscription's lifetime is scoped in DI (`vcontainer-dependency-injection`), building the sink's text (`zstring-zero-allocation-strings`), named states with legal transitions (`stateless-state-machines` — a `ReactiveProperty<GameState>` enforces nothing about transitions).
 Docs: https://github.com/Cysharp/R3
-Client only, by project policy: core R3 is plain .NET (only `R3.Unity` needs `UnityEngine`), but a reactive dependency in Core couples rule code to a push library and its scheduling, so never in `Game.Core.*`; expose Core state as a plain C# event and adapt to `Observable<T>` in `Game.Client.*`.
+Client only, by project policy: core R3 is plain .NET (only `R3.Unity` needs `UnityEngine`), but a reactive dependency in Core couples rule code to a push library and its scheduling, so never in a Core assembly; expose Core state as a plain C# event and adapt to `Observable<T>` in Client code.
 
 ## Steps
 1. **Choose the source by whether late subscribers need the current value** — `Subject<T>` for a pushed event with no state, `ReactiveProperty<T>` when they must get the latest, `SerializableReactiveProperty<T>` to bind in the Inspector.

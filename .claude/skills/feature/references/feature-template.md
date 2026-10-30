@@ -5,7 +5,9 @@
 - Size: S | M | L · Risk flag: no | yes (<why>)
 - Rounds: review 0/3 · QA 0/2 · rework 0/<M 6 | L 8>
 - Profile: <from CLAUDE.md>
-- Feature root: <path>
+- Feature root: <feature root from CLAUDE.md>/<Feature>/
+- Assemblies: <asmdef names, from the spec>
+- Build mode: serial | lanes
 
 ## Request (verbatim)
 > <the GD's words>
@@ -17,8 +19,12 @@
 <acceptance criteria, then the spec — or a link to SPEC.md beside this file when long>
 
 ## Log
-| # | Agent | Changed | Verified | Attempts | Limitations / Needs GD |
-|---|---|---|---|---|---|
+| # | Agent | Lane | Changed | Verified | Attempts | Limitations / Needs GD |
+|---|---|---|---|---|---|---|
+
+## Tests
+| Criterion | Test id | Mode | Owner | Last result |
+|---|---|---|---|---|
 
 ## Bugs
 | ID | Title | Severity | Status |

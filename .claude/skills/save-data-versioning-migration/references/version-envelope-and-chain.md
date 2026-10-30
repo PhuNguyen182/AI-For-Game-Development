@@ -20,7 +20,7 @@ Fixed, little-endian, written with `BinaryPrimitives` [e] — never by the paylo
 
 ## Load classification
 
-Run in this order; the first match decides. File presence (first two rows) is checked in `Game.Client.*`; the rest is the classifier in `Game.Core.Save`, which takes bytes, never a path.
+Run in this order; the first match decides. File presence (first two rows) is checked in Client code; the rest is the classifier in `_Project.Scripts.Save.Core`, which takes bytes, never a path.
 
 | # | Condition | Status | Action |
 |---|---|---|---|
@@ -44,7 +44,7 @@ Run in this order; the first match decides. File presence (first two rows) is ch
 using System;
 using System.Collections.Generic;
 
-namespace Game.Core.Save
+namespace _Project.Scripts.Save.Core
 {
     public interface ISaveMigration
     {
@@ -108,12 +108,12 @@ namespace Game.Core.Save
 
 | Rule | Fact that decides |
 |---|---|
-| One frozen DTO per schema version | `SaveV1` … `SaveV{N}` in `Game.Core.Save.Versions`; the runtime model maps from the newest DTO only. A DTO is never a gameplay class (`memorypack-serialization` Never) |
+| One frozen DTO per schema version | `SaveV1` … `SaveV{N}` in `_Project.Scripts.Save.DataModels.Versions`; the runtime model maps from the newest DTO only. A DTO is never a gameplay class (`memorypack-serialization` Never) |
 | Deserialize once, serialize once | Bytes → `SaveV{stored}` → steps in memory → `SaveV{current}` → bytes; no intermediate bytes between steps |
-| Steps are pure | Same input, same output; a default that depends on game rules calls the `Game.Core.*` rule, never re-implements it |
+| Steps are pure | Same input, same output; a default that depends on game rules calls the Core rule, never re-implements it |
 | Chain built at startup and in a test | The constructor throws on a gap or duplicate, so a missing step fails the Edit Mode run, not a player's load |
 
-## Atomic write (`Game.Client.*`)
+## Atomic write (Client)
 
 | Subject | Fact that decides |
 |---|---|

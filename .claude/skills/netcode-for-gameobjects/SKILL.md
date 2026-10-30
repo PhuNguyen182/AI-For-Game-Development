@@ -23,7 +23,7 @@ Docs: https://docs.unity3d.com/Packages/com.unity.netcode.gameobjects@2.13/ (ins
 ## Steps
 1. **Confirm the topology before writing any `NetworkObject` code** — Client-Server and Distributed Authority put ownership, `NetworkVariable` write permission and spawn authority in different hands, per [core-architecture.md](references/core-architecture.md) and [distributed-authority.md](references/distributed-authority.md). Tech Spec silent on topology, ownership model or reconciliation → ask `technical-architect`; never pick silently.
 2. **Wire `NetworkManager` before anything spawns** — `NetworkConfig`, prefab list, connection approval and player prefab gate everything after, per [core-architecture.md](references/core-architecture.md). `UnityTransport` for real networking; add Relay only when a non-LAN, no-dedicated-server path is needed, per [transports-testing.md](references/transports-testing.md).
-3. **Put networked state on `NetworkObject` + `NetworkBehaviour`, never a plain `MonoBehaviour`** — lifecycle in `OnNetworkSpawn`/`OnNetworkDespawn`. The rule deciding the value stays in `Game.Core.*` (`csharp-standards` → `coding-principles.md`, Shared Core integrity); the behaviour carries only the resolved value.
+3. **Put networked state on `NetworkObject` + `NetworkBehaviour`, never a plain `MonoBehaviour`** — lifecycle in `OnNetworkSpawn`/`OnNetworkDespawn`. The rule deciding the value stays in a Core assembly (`csharp-standards` → `coding-principles.md`, Shared Core integrity); the behaviour carries only the resolved value.
 4. **Spawn and despawn through `NetworkObject.Spawn`/`Despawn`, pooled for anything frequent** — raw `Instantiate`/`Destroy` never registers with `NetworkSpawnManager`, so the object exists on one peer only. Projectiles and frequent enemies → a registered `INetworkPrefabInstanceHandler`, per [spawning-objects.md](references/spawning-objects.md).
 5. **Pick `NetworkVariable` or Rpc by data shape** — continuous state → `NetworkVariable<T>`/`NetworkList<T>` with explicit permissions, reacted to in `OnValueChanged`, never polled; one-shot event → Rpc, per [state-sync.md](references/state-sync.md).
 6. **Sync transforms with NetworkTransform, not hand-rolled position Rpcs** — it already does delta compression, interpolation and authority modes for both topologies, per [transform-latency.md](references/transform-latency.md). `AnticipatedNetworkTransform`/`AnticipatedNetworkVariable<T>` only once measured latency causes visible correction.
@@ -40,8 +40,8 @@ Docs: https://docs.unity3d.com/Packages/com.unity.netcode.gameobjects@2.13/ (ins
 - Topology: Client-Server / Distributed Authority — <reason>
 - Sync: <NetworkVariable / Rpc / NetworkTransform / ... per value> — <reason>
 - Spawn/ownership: <who spawns/despawns, pooled or not, ownership model>
-- Shared Core boundary: <rule logic confirmed in Game.Core.*>
-- Layer: Game.Client.* / Game.Server.* / Editor-only
+- Shared Core boundary: <rule logic confirmed in a Core assembly>
+- Layer: Client / <Feature>/Server / Editor-only
 - Verified: <multi-client run / network-condition test, or "not run">
 - Known limitations: <...>
 ```

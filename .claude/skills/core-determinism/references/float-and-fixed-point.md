@@ -28,7 +28,7 @@ Sources: below the SKILL.md `Docs:` base: [a] `api/system.math.sin` (same remark
 ```csharp
 using System;
 
-namespace Game.Core.Combat
+namespace _Project.Scripts.Combat.Core
 {
     /// <summary>
     /// Boundary conversion: Client hands a float distance, Core keeps millimetres.

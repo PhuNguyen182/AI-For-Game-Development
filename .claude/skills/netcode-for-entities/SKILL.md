@@ -30,7 +30,7 @@ Docs: https://docs.unity3d.com/Packages/com.unity.netcode@6.6/manual/index.html 
 3. **Add `NetworkStreamInGame` by hand once a connection is approved**, per [transport-and-connection.md](references/transport-and-connection.md); without it a connection gets no snapshots and shows no error. Relay needs its own driver wiring.
 4. **Model networked state as ghosts, not ad hoc RPCs**, per [ghost-authoring.md](references/ghost-authoring.md). Owner predicts, everyone else interpolates (`OwnerPredicted`). Open the spawning, groups and templates references only when plain `[GhostField]` cannot express the case.
 5. **RPC for a reliable one-off event, command stream for continuous per-tick input**, per [rpcs-and-commands.md](references/rpcs-and-commands.md). Only a `GhostInputSystemGroup` system may read `UnityEngine.Input`; a predicted tick replays many times per frame and live input differs each replay.
-6. **Keep game rules in `Game.Core.*`, called from the networked `ISystem`**, per `csharp-standards` → `coding-principles.md` Shared Core integrity; a rule reimplemented in `OnUpdate` is a second, divergent copy of server authority.
+6. **Keep game rules in a Core assembly, called from the networked `ISystem`**, per `csharp-standards` → `coding-principles.md` Shared Core integrity; a rule reimplemented in `OnUpdate` is a second, divergent copy of server authority.
 7. **Query predicted ghosts with the `Simulate` tag**, never a raw tick comparison, per [prediction-core.md](references/prediction-core.md); `ShouldPredict()` is legacy.
 8. **Budget prediction corrections, do not try to eliminate them**, per [prediction-caveats.md](references/prediction-caveats.md). NfE does not guarantee determinism even with quantized values, so client/server agreement comes from the project's own Core determinism discipline.
 9. **Route predicted physics through `PredictedFixedStepSimulationSystemGroup`**, per [physics-integration.md](references/physics-integration.md); a second world is only for client-only VFX.
@@ -51,7 +51,7 @@ Docs: https://docs.unity3d.com/Packages/com.unity.netcode@6.6/manual/index.html 
 - Worlds/transport: <Worlds, drivers, Relay or not>
 - Ghosts: <prefabs, SupportedGhostMode/DefaultGhostMode, key GhostField choices>
 - RPC/Command: <choice and why>
-- Core boundary: <rule logic kept in Game.Core.*>
+- Core boundary: <rule logic kept in Core>
 - Prediction: <Simulate query pattern, physics group, edge cases addressed>
 - Tuning: <importance/relevancy/MaxSendRate/preserialization, or "default, not tuned">
 - Host migration: <enabled with limits flagged / n/a>

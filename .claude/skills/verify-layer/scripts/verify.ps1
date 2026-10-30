@@ -20,6 +20,8 @@ $Budget = @{ ClaudeMd = 30; AlwaysRules = 100; PathRule = 40; Desc = 250; AgentB
 $RetiredAgents = 'unity-engineer', 'assurance-evaluator', 'build-run-engineer', 'build-verification-tester'
 $RetiredPaths = '\.claude/(standards|workflows/[a-z-]+\.md|workflows/(references|state|tools)/|rules/(orchestration|task-classification|effort-allocation|execution-loop|security|feature-context-reading|implementation-note|commit-message|language-and-comments|shell-preference|unity-tooling-preference|standards-index)\.md)'
 $IdPattern = '\b(?:G[0-9]{1,2}|B[0-9]{1,2}|I[0-9]{1,2}|A[1-5]|V[1-5]|EV[0-4])\b'
+# Retired namespace scheme: features use path-derived namespaces (naming-convention.md).
+$RetiredNamespace = '\bGame\.(?:Core|Client|Server)\b'
 # Return strings hooks/round-cap.ps1 counts on: renaming one silently stops the count.
 $HookContracts = @{
     '.claude/agents/code-reviewer.md'        = @('Verdict: Approve | Request changes')
@@ -92,6 +94,7 @@ function Test-Paths([string]$path, [string]$text) {
 function Test-File([string]$path) {
     if (-not (Test-Path $path -PathType Leaf)) { return }
     $rel = Rel $path
+    if ([IO.File]::ReadAllText($path) -cmatch $RetiredNamespace) { Fail "${rel}: references retired namespace '$($Matches[0])'" }
     if ($rel -match '^\.claude/workflows/') {
         if ($path -notlike '*.js') { Fail "${rel}: .claude/workflows/ holds only .js workflow scripts" }
         elseif ((Get-Content $path -Raw -Encoding UTF8) -notmatch '^\s*export const meta\s*=') { Fail "${rel}: must start with 'export const meta = {...}'" }
@@ -158,7 +161,7 @@ if ($File) {
     $p = if ([IO.Path]::IsPathRooted($File)) { $File } else { Join-Path $root $File }
     Test-File $p
 } else {
-    $files = @(Get-ChildItem $claude -Recurse -File | Where-Object { $_.FullName -notmatch '[\\/](scripts|assets)[\\/]' -and $_.Extension -in '.md', '.js' -or $_.FullName -match '[\\/]workflows[\\/]' -or $_.Extension -eq '.ps1' })
+    $files = @(Get-ChildItem $claude -Recurse -File | Where-Object { $_.FullName -notmatch '[\\/](scripts|assets)[\\/]' -and $_.Extension -in '.md', '.js' -or $_.FullName -match '[\\/]workflows[\\/]' -or $_.Extension -in '.ps1', '.py' })
     $files += Get-Item (Join-Path $root 'CLAUDE.md'), (Join-Path $root 'README.md') -ErrorAction SilentlyContinue
     foreach ($f in $files) { Test-File $f.FullName }
 

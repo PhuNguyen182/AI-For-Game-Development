@@ -55,4 +55,4 @@ public class HelixStackLayout : LayoutBase
 ## Rules
 - No allocation in `Measure`/`Arrange`: hot path for every dirty node.
 - No `UnityEngine.Random` or wall-clock time; use a seed field as `FlexalonRandomLayout` does.
-- A game rule that decides the arrangement belongs in `Game.Core.*`; the `LayoutBase` stays in `Game.Client.*`.
+- A game rule that decides the arrangement belongs in a Core assembly; the `LayoutBase` stays in Client code.

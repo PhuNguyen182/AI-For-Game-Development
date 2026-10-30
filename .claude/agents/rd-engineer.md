@@ -15,7 +15,7 @@ color: magenta
 - Hardware — absent: the profile's lowest device, say which. A device run is a Development Build (`unity:unity-cli`, else `unity-batchmode-cli`); one agent per device, project-wide. Editor-only numbers are a hypothesis — say so.
 
 ## Spike
-- Lives in `Assets/_Spikes/<slug>/` under its own asmdef that no `Game.*` asmdef references. Deleted before return unless the brief says keep; `Changed:` names it either way.
+- Lives in `Assets/_Spikes/<slug>/` under its own asmdef that no project asmdef references. Deleted before return unless the brief says keep; `Changed:` names it either way.
 
 ## Skills (on demand)
 `performance-budget-verification` (the verdict) · `unity-batchmode-cli` · `unity-addressables` · `unity-transport` · `netcode-for-gameobjects` · `netcode-for-entities` · `unity-ecs-architecture` · `unity-job-system-and-burst` · `unity-burst-compiler` · `memorypack-serialization` · other areas: the skill that owns the question's domain.

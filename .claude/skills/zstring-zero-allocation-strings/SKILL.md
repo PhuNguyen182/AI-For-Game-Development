@@ -9,7 +9,7 @@ user-invocable: false
 Not for: one-off formatting outside a hot path (plain interpolation, `csharp-standards` → `coding-principles.md`), whether the UI should update at all (`r3-reactive-extensions`), binary serialization (`memorypack-serialization`), allocating query chains (`zlinq-zero-allocation-linq`).
 
 ## Steps
-Usable in `Game.Core.*` (no UnityEngine dependency); `TextMeshProExtensions` is `Game.Client.*` only.
+Usable in Core (no UnityEngine dependency); `TextMeshProExtensions` is Client code only.
 
 1. **Measure first** — convert only a site the Profiler attributes an allocation to (`csharp-standards` → `performance-and-algorithms.md` Verification). No capture and the site is not plainly per-frame → ask for one.
 2. **Cut frequency before cost** — a label rebuilt 60×/s for a value that changes a few times a minute is fixed by gating on value change (`performance-and-algorithms.md` Scripting & GC); the survivors may need no conversion.
@@ -33,7 +33,7 @@ Usable in `Game.Core.*` (no UnityEngine dependency); `TextMeshProExtensions` is 
 - Builder disposal: `using` declaration — confirmed | no builder used
 - Encoding: Utf16ValueStringBuilder / Utf8ValueStringBuilder — <why>
 - Measured result: <GC Alloc before vs after>
-- Layer: Game.Core.* / Game.Client.*
+- Layer: Core / Client
 - Known limitations: <...>
 ```
 On request only, add `Latent concerns` and `Future remediation`, each with its trigger.

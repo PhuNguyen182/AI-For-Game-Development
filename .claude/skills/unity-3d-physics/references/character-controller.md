@@ -2,7 +2,7 @@
 
 Sources: Manual `CharacterControllers`, `class-CharacterController`; API `CharacterController`.
 
-A kinematic capsule: collides, pushes Rigidbodies, immune to forces, gravity and impacts. That gives instant acceleration and a pose that reconciles cleanly against `Game.Core.*` input state. Weigh a Rigidbody character when real physical interaction matters.
+A kinematic capsule: collides, pushes Rigidbodies, immune to forces, gravity and impacts. That gives instant acceleration and a pose that reconciles cleanly against Core input state. Weigh a Rigidbody character when real physical interaction matters.
 
 ## Tuning
 

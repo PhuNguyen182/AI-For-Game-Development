@@ -10,7 +10,9 @@ color: blue
 ---
 
 ## Owns
-- Scenes, prefabs, MonoBehaviours calling the Core; the client feature root's docs (skill `feature-docs`).
+- Scenes, prefabs, MonoBehaviours calling the Core (`<Feature>/DataControllers`, `Views`); the feature's `README.md` at completion (skill `feature-docs`; without gameplay work, the last implementer in step 4 order owns it).
+- The UTF tests the spec's `Tests:` assigns you: Play Mode, in `Tests/PlayMode/`.
+- Creating the feature-root, `Editor/` and `Tests/PlayMode/` asmdefs when the spec's `Assemblies:` lists them and they do not exist.
 
 ## Inputs
 - Core API to integrate, scene/prefab — absent: `Blocked`. Never guess a Core API.

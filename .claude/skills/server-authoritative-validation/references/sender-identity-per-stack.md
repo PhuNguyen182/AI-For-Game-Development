@@ -33,7 +33,7 @@ public void UseItemRpc(int slot, RpcParams rpcParams = default)
         return;
     }
 
-    // Game.Core decides; the handler only applies an accepted result.
+    // Core decides; the handler only applies an accepted result.
     UseItemResult result = this._inventoryRules.TryUse(this._inventory, slot, this._clock.Tick);
     if (!result.IsAccepted)
     {
@@ -53,7 +53,7 @@ public void UseItemRpc(int slot, RpcParams rpcParams = default)
 | `NetworkId` on the connection entity | Read it from `SourceConnection` to get the sender's id (`netcode-for-entities` → `transport-and-connection.md`) |
 | `GhostOwner.NetworkId` | The server sets it to the owning client's `NetworkId.Value` [cmd]; compare it with the sender's for any ghost an RPC names |
 | Command data (`IInputComponentData`/`ICommandData`) | Dispatched by `CommandReceiveSystem` to the entity the command belongs to [cmd]; the server sets `CommandTarget` (or `AutoCommandTarget` on an owned ghost), never the client |
-| Command values | "Never overwrite or change the input received by the client" [cmd]: validate the effect inside the simulation via `Game.Core.*`, not by editing the buffer |
+| Command values | "Never overwrite or change the input received by the client" [cmd]: validate the effect inside the simulation via Core, not by editing the buffer |
 | `NetworkStreamRequestDisconnect { Reason }` | Add to the connection entity to close it [disc] |
 
 **Caveat:** an RPC broadcast target (`TargetConnection = Entity.Null`) is server-only; a client-built `SendRpcCommandRequest` always goes to the server, so `SourceConnection` is never spoofable from the payload.

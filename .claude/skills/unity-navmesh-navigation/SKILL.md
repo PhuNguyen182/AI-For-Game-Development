@@ -38,7 +38,7 @@ Docs: package manual `https://docs.unity3d.com/Packages/com.unity.ai.navigation@
 - Author the deprecated `OffMeshLink` component (members stripped, removed from the component menu); a tutorial using it describes an API that no longer exists.
 - Leave an agent and an obstacle both enabled on one object; toggle between them.
 - Relocate an agent by writing its transform; use `Warp`.
-- Choose a target or abandon a chase in navigation-layer code; it moves to a point `Game.Core.*` decided.
+- Choose a target or abandon a chase in navigation-layer code; it moves to a point Core decided.
 - Carve by default.
 - Call static `NavMesh.SetAreaCost` for a per-agent preference; use the agent or filter scope ([navmesh-queries-and-pathfinding-api.md](references/navmesh-queries-and-pathfinding-api.md)).
 

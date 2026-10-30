@@ -34,10 +34,10 @@ Synthesized from the rules in [stable-hashing-and-ordering.md](stable-hashing-an
 
 ```csharp
 using System.Collections.Generic;
-using Game.Core.Match;
+using _Project.Scripts.Match.Core;
 using NUnit.Framework;
 
-namespace Game.Core.Tests.Match
+namespace _Project.Scripts.Match.Tests.EditMode
 {
     public sealed class MatchReplayTests
     {

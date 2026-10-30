@@ -32,7 +32,7 @@ Docs: `https://dotween.demigiant.com/documentation.php` (single page, no version
 12. **Engine convention, async ecosystem or WebGL target unstated → `Blocked` naming it.**
 
 ## Never
-- Put DOTween in `Game.Core.*` — it depends on `UnityEngine`; drive Core state from `Game.Client.*`.
+- Put DOTween in a Core assembly — it depends on `UnityEngine`; drive Core state from Client code.
 
 ## Output
 ```

@@ -6,7 +6,7 @@ user-invocable: false
 
 # Unity Audio & Audio Mixer
 
-Not for: non-audio Profiler modules (`unity-profiler-diagnostics`), Wwise/FMOD or platform audio SDKs (`sdk-platform-engineer`), netcode audio timing (`netcode-engineer`), the gameplay rule that triggers a sound (`csharp-engineer`; it lives in `Game.Core.*`, this skill wires only the playback call), audio-reactive VFX (`technical-artist`).
+Not for: non-audio Profiler modules (`unity-profiler-diagnostics`), Wwise/FMOD or platform audio SDKs (`sdk-platform-engineer`), netcode audio timing (`netcode-engineer`), the gameplay rule that triggers a sound (`csharp-engineer`; it lives in Core, this skill wires only the playback call), audio-reactive VFX (`technical-artist`).
 Docs: https://docs.unity3d.com/Manual/AudioReference.html and Scripting API https://docs.unity3d.com/6000.5/Documentation/ScriptReference/ — pinned to Unity 6000.5; the mixer UI has changed across majors, so confirm UI paths if the project is on another version. The Manual publishes no Duck Volume parameter table and states several Editor slider bounds only by convention; never invent those numbers, read them in the Inspector.
 
 | Reference | Read when |
@@ -31,7 +31,7 @@ Docs: https://docs.unity3d.com/Manual/AudioReference.html and Scripting API http
 8. **Ambisonic: confirm a decoder plugin is installed before promising playback** — Unity ships none; see [ambisonic-audio.md](references/ambisonic-audio.md).
 9. **Pool `AudioSource` objects for high-frequency sounds** (`csharp-standards` allocation rules); no `Instantiate`/`Destroy` per shot or footstep.
 10. **Diagnose silence or cost from the Audio Profiler before proposing a fix**, per [audio-profiler-and-settings.md](references/audio-profiler-and-settings.md).
-11. **Target platform, multiplayer audio-sync need or decoder presence unknown** — state the assumption under `Assumptions:`, or `Blocked` when it changes the mixer design. A gameplay threshold or condition stays in `Game.Core.*`; layer unclear → `Needs-decision`, `Next: technical-architect`.
+11. **Target platform, multiplayer audio-sync need or decoder presence unknown** — state the assumption under `Assumptions:`, or `Blocked` when it changes the mixer design. A gameplay threshold or condition stays in Core; layer unclear → `Needs-decision`, `Next: technical-architect`.
 
 ## Output
 ```

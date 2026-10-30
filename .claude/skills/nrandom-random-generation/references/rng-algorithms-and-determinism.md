@@ -37,7 +37,7 @@ Sources: files under `src/NRandom/` at `v2.0.2` (SKILL.md `Docs:` base): [a] IRa
 | `GetItems<T>(ReadOnlySpan<T> choices, int length)` [e] | random picks with replacement |
 
 ```csharp
-// Game.Core: deterministic per-match RNG, injected, never RandomEx.Shared.
+// Core: deterministic per-match RNG, injected, never RandomEx.Shared.
 public sealed class LootRoller
 {
     private readonly IRandom _random;

@@ -47,7 +47,7 @@ Docs: https://docs.unity3d.com/Packages/com.unity.burst@1.8/manual/index.html â€
 - AOT settings: <platforms and CPU architectures touched, or "untouched">
 - FunctionPointer/SharedStatic/[NoAlias]: <used and why, or "none">
 - Measurement: <before/after, or assembly diff>
-- Layer: <Game.Core.* / Game.Client.*>
+- Layer: <Core / Client>
 - Known limitations: <...>
 ```
 

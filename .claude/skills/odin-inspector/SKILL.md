@@ -6,7 +6,7 @@ user-invocable: false
 
 # Odin Inspector
 
-Not for: gameplay rules (`Game.Core.*`, `csharp-engineer`), runtime UGUI/UI Toolkit UI (`ugui`, `ui-toolkit`), Editor windows/drawers in UXML/USS (`ui-toolkit`; one window uses Odin or UI Toolkit, never both), ScriptableObject architecture patterns (`unity-scriptableobject-architecture`).
+Not for: gameplay rules (Core, `csharp-engineer`), runtime UGUI/UI Toolkit UI (`ugui`, `ui-toolkit`), Editor windows/drawers in UXML/USS (`ui-toolkit`; one window uses Odin or UI Toolkit, never both), ScriptableObject architecture patterns (`unity-scriptableobject-architecture`).
 Docs: `https://odininspector.com/documentation/<lowercase.dotted.namespace.typename>` (generic arity as `-1`). Unversioned: tracks the current Asset Store release, so attribute overloads may differ from the installed Odin. Roots: `sirenix.odininspector` (attributes, serialization bases), `.editor` (drawers, windows, validators, resolvers), `sirenix.serialization`, `sirenix.utilities.editor` (`SirenixEditorGUI`).
 
 | Reference | Read when |
@@ -20,7 +20,7 @@ Docs: `https://odininspector.com/documentation/<lowercase.dotted.namespace.typen
 | [editor-extensibility.md](references/editor-extensibility.md) | No attribute combination fits: `OdinEditor`, windows, drawers, attribute processors, self-validation |
 
 ## Steps
-1. Confirm the work is Inspector tooling. Odin attributes outside the serialization bases carry `[Conditional("UNITY_EDITOR")]`, so `ValidateInput`/`OnValueChanged` callbacks never run in a build. A rule that must hold at runtime goes in `Game.Core.*` (`csharp-standards` -> `coding-principles.md`, Shared Core integrity).
+1. Confirm the work is Inspector tooling. Odin attributes outside the serialization bases carry `[Conditional("UNITY_EDITOR")]`, so `ValidateInput`/`OnValueChanged` callbacks never run in a build. A rule that must hold at runtime goes in a Core assembly (`csharp-standards` -> `coding-principles.md`, Shared Core integrity).
 2. Compose built-in attributes via the matching reference. Escalate to a custom drawer only when none fits.
 3. Type Unity cannot serialize: inherit `SerializedMonoBehaviour`/`SerializedScriptableObject`; `[OdinSerialize]` only marks members inside a type Odin already serializes.
 4. Every resolved-string argument (`ShowIf`, `ValidateInput`, `OnValueChanged`, `ValueDropdown`, ...) is reflection-resolved with no compile check: a typo silently no-ops. Verify each names a real member, and again after any rename.
@@ -29,17 +29,17 @@ Docs: `https://odininspector.com/documentation/<lowercase.dotted.namespace.typen
 7. Odin Validator project-wide scans (`Validator<T>`, `RegisterValidatorAttribute`, `GlobalValidator`): a project-wide standard, route to `cto`; do not guess the API.
 
 ## Never
-- Add Odin attributes to a `Game.Core.*` type without `technical-architect` sign-off: even attribute-only use pulls in `Sirenix.OdinInspector.Attributes` and blurs the Core/Client boundary.
+- Add Odin attributes to a Core type without `technical-architect` sign-off: even attribute-only use pulls in `Sirenix.OdinInspector.Attributes` and blurs the Core/Client boundary.
 
 ## Output
 ```
 ## Odin Inspector Work — <field/type/window>
 - Concern: <layout | conditional-validation | selection | collection | button-misc | serialization | editor-extensibility>
 - Attributes/APIs used: <names with key constructor args>
-- Layer: Game.Client.* (Editor-only where noted)
+- Layer: Client (Editor-only where noted)
 - Known limitations: <...>
 ```
 On request only, add `Latent concerns` and `Future remediation`, each with its trigger.
 
 ## Example
-- "Clamp the value inside `[OnValueChanged]` so it holds at runtime too" -> declined: the callback is stripped from builds; the clamp lives in `Game.Core.*`.
+- "Clamp the value inside `[OnValueChanged]` so it holds at runtime too" -> declined: the callback is stripped from builds; the clamp lives in a Core assembly.

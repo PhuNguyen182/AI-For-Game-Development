@@ -33,7 +33,7 @@
 - Shell: newest PowerShell → Bash → cmd. Drop a rung only on real failure.
 - Unity: Unity CLI (`unity:unity-cli`) → any configured MCP server → classic batchmode. Drop a rung only on failure or a missing capability.
 - Search: XERJ when session start says up (skill `code-search`) → Grep. Never `xerj feedback`, `share` or `init`.
-- One Unity Editor and one physical device, project-wide: never two agents on either at once. Writing into `Assets/`, `Packages/` or `ProjectSettings/` holds the Editor.
+- One Unity Editor and one physical device, project-wide: never two agents on either at once. Writing into the main checkout's `Assets/`, `Packages/` or `ProjectSettings/` holds the Editor.
 - Commits: English imperative subject, blank line, body saying why; no `feat:`-style prefixes; one change per commit. Never commit or push unasked — not after finishing work. When the GD orders a commit or push, run it at once, no confirmation; only the secret hooks may block it.
 - After any change under `.claude/`, run `/verify-layer`.
 

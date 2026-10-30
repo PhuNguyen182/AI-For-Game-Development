@@ -1,6 +1,6 @@
 ---
 name: new-project
-description: "Bootstrap a Unity project for this framework: CLAUDE.md, packages, Game.Core/Game.Client asmdefs and test assemblies, git + LFS, per-device-tier perf budget from the profile, .workflow/ state, optional CI. Use for a new or adopted project."
+description: "Bootstrap a Unity project for this framework: CLAUDE.md, packages, the Shared feature's asmdefs and test assemblies, git + LFS, per-device-tier perf budget from the profile, .workflow/ state, optional CI. Use for a new or adopted project."
 argument-hint: "<project path, or 'new'>"
 ---
 
@@ -17,14 +17,16 @@ Profile · platforms · multiplayer · render pipeline. Write them into `CLAUDE.
 Always: Input System, Test Framework, the chosen render pipeline. Multiplayer → the foundation `/decide` picks — never preinstalled. Anything third-party → `security-reviewer` first.
 
 ## 4. Structure — `gameplay-engineer`
+The `Shared` feature, in the feature layout (`csharp-standards` → naming-convention.md → Folders); asmdef `name` = `rootNamespace` = folder path:
 ```
-Assets/Game.Core/Game.Core.asmdef                 noEngineReferences: true
-Assets/Game.Core/Tests/Game.Core.Tests.asmdef     Editor only, refs Game.Core + NUnit
-Assets/Game.Client/Game.Client.asmdef             refs Game.Core
-Assets/Game.Client/Tests/Game.Client.Tests.asmdef Play Mode, refs Game.Client + Game.Core
-Assets/Game.Server/…                              only when multiplayer
+Assets/_Project/Scripts/Shared/                 _Project.Scripts.Shared                  refs Shared.Core, Shared.DataModels
+Assets/_Project/Scripts/Shared/DataModels/      _Project.Scripts.Shared.DataModels       noEngineReferences: true
+Assets/_Project/Scripts/Shared/Core/            _Project.Scripts.Shared.Core             noEngineReferences: true, refs DataModels
+Assets/_Project/Scripts/Shared/Tests/EditMode/  _Project.Scripts.Shared.Tests.EditMode   Editor only, refs Core + DataModels + NUnit
+Assets/_Project/Scripts/Shared/Tests/PlayMode/  _Project.Scripts.Shared.Tests.PlayMode   Play Mode, refs Shared + Core + DataModels + NUnit
+Assets/_Project/Scripts/Shared/Server/          _Project.Scripts.Shared.Server           only when multiplayer
 ```
-One passing placeholder test per test assembly proves the test command; write that command into `CLAUDE.md`.
+This skeleton is the one place empty assemblies are allowed: the placeholder tests below need them. Every later M/L feature gets the same layout, only the folders it uses, under `Assets/_Project/Scripts/<Feature>/` (`/feature` step 4). An adopted project keeps its existing code where it is. One passing placeholder test per test assembly proves the test command; write that command into `CLAUDE.md`.
 
 ## 5. Git — `git-expert` with skill `git-unity-repo`
 Unity `.gitignore`, `.gitattributes` (UnityYAMLMerge, LFS for binaries), `git lfs install`. Never commit `Library/`, `Temp/`, `Logs/`, `UserSettings/`.

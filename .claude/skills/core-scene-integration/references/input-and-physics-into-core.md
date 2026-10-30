@@ -6,7 +6,7 @@ Sources (below the SKILL.md `Docs:` base): [fu] `script-reference/unityengine/mo
 
 | Subject | Fact that decides |
 |---|---|
-| Command struct | A plain `Game.Core.*` struct: axes as numbers, buttons as a flags enum; no `InputAction`, no `Vector2`. The same struct is what a replay records and what netcode later sends |
+| Command struct | A plain `DataModels` struct: axes as numbers, buttons as a flags enum; no `InputAction`, no `Vector2`. The same struct is what a replay records and what netcode later sends |
 | Dynamic Update Mode (default) + tick in `FixedUpdate` | Reading `WasPressedThisFrame()` inside the tick fires twice in a frame with two fixed steps and never in a frame with zero [fu]: latch instead |
 | Latch | Frame loop ORs press edges into the pending command and overwrites held axes with the latest value; the tick takes the command and clears the edges |
 | Latency | VContainer runs `IFixedTickable` before `ITickable` in a frame (`vcontainer-dependency-injection` step 8), so a press latched in frame N reaches the tick of frame N+1 or later: one frame, accepted |
@@ -15,11 +15,11 @@ Sources (below the SKILL.md `Docs:` base): [fu] `script-reference/unityengine/mo
 | Camera look | Stays per-frame on the view side unless it decides an outcome; an aim direction that decides a hit enters the command at the fire tick |
 
 ```csharp
-using Game.Core.Match;
+using _Project.Scripts.Match.DataModels;
 using UnityEngine;
 using VContainer.Unity;
 
-namespace Game.Client.Match
+namespace _Project.Scripts.Match.DataControllers
 {
     // Latches per frame; MatchTickDriver consumes once per tick.
     public sealed class CommandSampler : ITickable
@@ -61,7 +61,7 @@ namespace Game.Client.Match
 | Contacts | `OnCollision*`/`OnTrigger*` fire during the physics step after `FixedUpdate` [eo], or inside `Physics.Simulate` in Script mode [sim]: append to a preallocated buffer, Core reads it on the next tick, then it is cleared |
 | `Collision` instance | With `Physics.reuseCollisionCallbacks` on, one `Collision` object is reused for every callback [rcc]: copy the needed values inside the callback, never store the reference |
 | Entity identity | A client component or map holds the Core entity id per collider; Core never sees `Collider` or `GameObject` |
-| Vector type | Core uses its own struct or `System.Numerics`; conversions live in `Game.Client.*`. Whether Core math must agree across machines: `core-determinism` |
+| Vector type | Core uses its own struct or `System.Numerics`; conversions live in Client code. Whether Core math must agree across machines: `core-determinism` |
 
 **Caveat:** a contact buffer cleared anywhere except right after the tick that read it either drops contacts (cleared before) or double-applies them (two ticks in one frame read the same buffer).
 

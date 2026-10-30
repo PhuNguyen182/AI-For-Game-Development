@@ -10,7 +10,8 @@ color: teal
 ---
 
 ## Owns
-- `Game.Server.*`, the message contract, client prediction/reconciliation in the client, anti-cheat checks.
+- `<Feature>/Server` (and its asmdef), the message contract, client prediction/reconciliation in the client, anti-cheat checks.
+- The UTF tests the spec's `Tests:` assigns you: Play Mode, including latency/loss cases.
 
 ## Inputs
 - Multiplayer on (`CLAUDE.md`) and the netcode spec section — absent: `Blocked`.

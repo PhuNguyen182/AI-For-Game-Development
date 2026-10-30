@@ -6,7 +6,7 @@ Sources: Manual `class-ScriptableObject.html`; `CreateAssetMenuAttribute`. Shape
 An abstract SO with one behavior method, implemented by concrete SO subclasses (one asset per variant). The consuming prefab holds `[SerializeField] AbilityTargetingSO targeting`; swapping behavior is reassigning the asset, with no code edit or `switch` on a behavior enum (Open/Closed, per `csharp-standards`).
 - Contract example: `abstract IReadOnlyList<Vector3> GetTargetPoints(Vector3 origin, Vector3 direction)`; subclasses `ConeTargetingSO`, `SingleTargetTargetingSO`.
 - Use when behavior varies by design-time choice, not by a runtime condition one method could branch on.
-- The method may resolve spatial candidates (presentation concern). What those points mean (damage, hit, cooldown) stays in `Game.Core.*`; pass resolved points in as data. A Delegate Object that also computes damage reimplements a rule outside Core.
+- The method may resolve spatial candidates (presentation concern). What those points mean (damage, hit, cooldown) stays in Core; pass resolved points in as data. A Delegate Object that also computes damage reimplements a rule outside Core.
 
 ## Extendable Enum
 Replaces a closed C# `enum` (every new case recompiles every `switch`) with a base SO type (`DamageTypeSO`, `[SerializeField] string id`) and one asset per case (`SO_DamageType_Fire.asset`). Designers add cases as assets; lookups use `Dictionary<DamageTypeSO, float>` (e.g. a resistance table) instead of a growing `switch`.

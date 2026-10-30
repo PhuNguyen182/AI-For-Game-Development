@@ -16,19 +16,19 @@ Docs: https://learn.microsoft.com/en-us/dotnet/csharp/asynchronous-programming/ 
 | [channels-and-parallel-multithreading.md](references/channels-and-parallel-multithreading.md) | A producer/consumer pipeline, a CPU-bound loop, or shared mutable state |
 
 ## Steps
-1. **Confirm the code has no UnityEngine dependency and is not PlayerLoop-driven** — `Game.Server.*` and IO/service wrappers outside the PlayerLoop use the BCL; Unity-side SDK wrappers and PlayerLoop work go to `unitask-async-programming`. `Game.Core.*` rules stay synchronous and tick-driven: async resumption order is not deterministic.
+1. **Confirm the code has no UnityEngine dependency and is not PlayerLoop-driven** — `<Feature>/Server` code and IO/service wrappers outside the PlayerLoop use the BCL; Unity-side SDK wrappers and PlayerLoop work go to `unitask-async-programming`. Core rules stay synchronous and tick-driven: async resumption order is not deterministic.
 2. **Default to `Task`/`Task<TResult>`**; `ValueTask<TResult>` only after profiling shows allocation pressure on a hot, often-synchronous call ([task-types-and-combinators.md](references/task-types-and-combinators.md)).
 3. **Accept a `CancellationToken` on any method long enough to need cancelling**; combine a timeout with the caller's token via `CancellationTokenSource.CreateLinkedTokenSource`, not a bespoke flag ([cancellation-and-async-streams.md](references/cancellation-and-async-streams.md)).
 4. **`ConfigureAwait(false)` on every `await` in library-style code** (CA2007); omit it only in entry-point/UI-affinity code that must resume on its context.
 5. **Stream paged or unbounded sequences with `IAsyncEnumerable<T>`/`await foreach`**, not a buffered `List<T>`.
 6. **Hand off producer to consumer with `Channel<T>`** (bounded unless the producer cannot outrun the consumer), not a hand-rolled queue plus lock. `Parallel.For`/`ForEach` only for CPU-bound work where a measurement beats the sequential loop ([channels-and-parallel-multithreading.md](references/channels-and-parallel-multithreading.md)).
 7. **Protect shared state with the lightest primitive** — `Interlocked` for one counter/flag, `lock` for a short section, `SemaphoreSlim.WaitAsync` when the section awaits.
-8. **Cross into `Game.Client.*` with UniTask interop** — `.AsUniTask()` on the service/server `Task`, `.AsTask()` for the reverse; `unitask-async-programming` owns `PlayerLoopTiming` placement.
+8. **Cross into Client code with UniTask interop** — `.AsUniTask()` on the service/server `Task`, `.AsTask()` for the reverse; `unitask-async-programming` owns `PlayerLoopTiming` placement.
 9. **No required timeout, cancellation or concurrency bound in the Tech Spec** → `Needs-decision`, `Next: technical-architect`, rather than guess one.
 
 ## Never
 - Block on async code with `.Result`/`.Wait()` in Core or SDK wrapper code — deadlocks under a synchronization context; await end-to-end or bridge with `TaskCompletionSource<TResult>`.
-- Put UniTask or any UnityEngine-adjacent type inside `Game.Core.*` — breaks Shared Core; interop lives at the `Game.Client.*` boundary.
+- Put UniTask or any UnityEngine-adjacent type inside a Core assembly — breaks Shared Core; interop lives at the Client code boundary.
 - Add `Parallel`, `Channel<T>` or a lock "just in case" — unmeasured concurrency is speculative complexity.
 
 ## Output

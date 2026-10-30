@@ -2,7 +2,7 @@
 
 Sources: [a] `src/NRandom.Numerics/NumericsRandomExtensions.cs`, [b] `src/NRandom.Unity/Assets/NRandom.Unity/Runtime/UnityRandomExtensions.cs`, [c] same folder `SerializableWeightedList.cs`, [d] README `#installation`, `#unity` — all at `v2.0.2` (SKILL.md `Docs:` base).
 
-## NRandom.Numerics: `System.Numerics`, no UnityEngine, safe for `Game.Core.*` [a]
+## NRandom.Numerics: `System.Numerics`, no UnityEngine, safe for Core [a]
 
 | Method | Returns |
 |---|---|
@@ -13,7 +13,7 @@ Sources: [a] `src/NRandom.Numerics/NumericsRandomExtensions.cs`, [b] `src/NRando
 
 Separate NuGet package `NRandom.Numerics`, installed alongside `NRandom`.
 
-## NRandom.Unity: UnityEngine, `Game.Client.*` only [b][c]
+## NRandom.Unity: UnityEngine, Client code only [b][c]
 
 | Member | Fact |
 |---|---|
@@ -23,7 +23,7 @@ Separate NuGet package `NRandom.Numerics`, installed alongside `NRandom`.
 | `NextColorHSV(hueMin, hueMax, satMin, satMax, valMin, valMax[, alphaMin, alphaMax])` | Independently ranged HSV(A) |
 | `SerializableWeightedList<T>` | `WeightedList<T>` + `ISerializationCallbackReceiver`, backed by `[SerializeField] WeightedValue<T>[]`: Inspector-editable, survives domain reload |
 
-**Caveat:** all of this references `UnityEngine` and stays out of `Game.Core.*` (`csharp-standards` → `naming-convention.md`, namespace boundary). Author tables in `Game.Client.*` via `SerializableWeightedList<T>`, but resolve the gameplay-affecting roll through the same injected `IRandom` that `Game.Core.*` uses.
+**Caveat:** all of this references `UnityEngine` and stays out of Core (`csharp-standards` → `naming-convention.md`, Folders). Author tables in Client code via `SerializableWeightedList<T>`, but resolve the gameplay-affecting roll through the same injected `IRandom` that Core uses.
 
 ## Installation [d]
 

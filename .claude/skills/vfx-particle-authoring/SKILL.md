@@ -6,7 +6,7 @@ user-invocable: false
 
 # VFX and Particle Authoring
 
-Not for: the shader an output renders with (`shader-authoring`), custom simulation kernels (`compute-shader-vfx`), pipeline choice (`render-pipeline-urp-hdrp`), the bloom that makes an effect glow (`unity-post-processing`), gameplay rules triggered by a collision (`Game.Core.*`; this skill delivers the signal only).
+Not for: the shader an output renders with (`shader-authoring`), custom simulation kernels (`compute-shader-vfx`), pipeline choice (`render-pipeline-urp-hdrp`), the bloom that makes an effect glow (`unity-post-processing`), gameplay rules triggered by a collision (Core; this skill delivers the signal only).
 Docs: https://docs.unity3d.com/Manual/ParticleSystems.html (unversioned); Visual Effect Graph `com.unity.visualeffectgraph@17.6` tracks the installed SRP version, so swap the segment to the project's SRP packages.
 
 | Reference | Read when |
@@ -53,4 +53,4 @@ Docs: https://docs.unity3d.com/Manual/ParticleSystems.html (unversioned); Visual
 On request only, add `Latent concerns` and `Future remediation`, each with its trigger.
 
 ## Example
-- "Flamethrower that sets enemies on fire where flames touch them" → ParticleSystem despite the count: it must report contact. World space, collision messages on, callback handed to the Client layer, which asks `Game.Core.*` whether it is a burn; collision quality set deliberately (High tests every particle against real colliders).
+- "Flamethrower that sets enemies on fire where flames touch them" → ParticleSystem despite the count: it must report contact. World space, collision messages on, callback handed to the Client layer, which asks Core whether it is a burn; collision quality set deliberately (High tests every particle against real colliders).

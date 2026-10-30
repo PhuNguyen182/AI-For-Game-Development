@@ -42,7 +42,7 @@ Docs: https://docs.unity3d.com/Packages/com.unity.collections@6.6/manual/index.h
 - Allocator: <Temp / TempJob / Persistent / rewindable / custom> — rationale
 - Concurrent-write pattern: <ParallelWriter / NativeStream / UnsafeStream / none>
 - Disposal: <confirmed on every code path>
-- Layer: <Game.Core.* / Game.Client.* / Editor-only>
+- Layer: <Core / Client / Editor-only>
 - Known limitations: <...>
 ```
 

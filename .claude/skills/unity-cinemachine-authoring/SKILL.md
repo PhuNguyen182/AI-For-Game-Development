@@ -31,7 +31,7 @@ Cinemachine 2 → 3: namespace `Cinemachine` → `Unity.Cinemachine` (mismatch s
 8. **Shake via Impulse**; check channel match and that the live camera has a listener before assuming failure ([impulse-shake.md](references/impulse-shake.md)).
 9. **Multi-target**: `CinemachineTargetGroup` only recentres; add a group framing extension to widen. ClearShot children need a Deoccluder each or it falls back to priority ([multi-target-and-multi-shot.md](references/multi-target-and-multi-shot.md)).
 10. **Cutscenes via Timeline shot clips; split-screen via Channels** with one Brain mask per player ([timeline-and-channels.md](references/timeline-and-channels.md)). Never also script priority during a Timeline.
-11. **Keep the camera presentational** — targets are read-only Client references; the rule that triggers a shot change lives in `Game.Core.*` (`csharp-standards`), and Cinemachine never reads or drives it.
+11. **Keep the camera presentational** — targets are read-only Client references; the rule that triggers a shot change lives in Core (`csharp-standards`), and Cinemachine never reads or drives it.
 12. **Verify in Play Mode**: transitions, impulse across a camera switch, bounds at each target aspect ratio.
 
 ## Never

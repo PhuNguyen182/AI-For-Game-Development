@@ -7,7 +7,7 @@ user-invocable: false
 # MemoryPack
 
 Not for: RPC contract and transport (`magiconion-rpc-networking`), generators around the DTOs (`source-generator-authoring`), human-readable or designer-authored data (`csvhelper-csv-data`), text building (`zstring-zero-allocation-strings`), the save header, migration chain and old-save fixtures (`save-data-versioning-migration`).
-Docs: https://github.com/Cysharp/MemoryPack — confirm the version-tolerant mode and attribute names against the README for the installed version. Generated code has no `UnityEngine` reference, so it is usable in `Game.Core.*`.
+Docs: https://github.com/Cysharp/MemoryPack — confirm the version-tolerant mode and attribute names against the README for the installed version. Generated code has no `UnityEngine` reference, so it is usable in a Core assembly.
 Rules: csharp.md Boundaries (validate at real boundaries); csharp-standards → coding-principles.md Correctness boundaries; performance-and-algorithms.md Memory discipline.
 
 ## Steps
@@ -18,7 +18,7 @@ Rules: csharp.md Boundaries (validate at real boundaries); csharp-standards → 
 5. **Model polymorphism with `[MemoryPackUnion]` and never-reused tags** — a reused retired tag decodes old data as the wrong type and looks valid.
 6. **Non-default constructor: `[MemoryPackConstructor]`; post-load fixup: `[MemoryPackOnDeserialized]`**, not a property setter (order-dependent during deserialization).
 7. **Serialize into a pooled `IBufferWriter<byte>` and deserialize from `ReadOnlySpan<byte>`**, not an intermediate `byte[]`, in per-frame or per-tick paths — `Serialize` has no `Span<byte>` overload.
-8. **Unity/IL2CPP setup** — Unity 2022.3.12f1 or later, core from NuGet (NuGetForUnity); the optional `MemoryPack.Unity` package adds Unity-type formatters and belongs to `Game.Client.*` only. Unity has no `ModuleInitializer`, so call each union's generated `<Name>Initializer.RegisterFormatter()` at startup before the first deserialize. Custom formatter attributes are unsupported on Unity.
+8. **Unity/IL2CPP setup** — Unity 2022.3.12f1 or later, core from NuGet (NuGetForUnity); the optional `MemoryPack.Unity` package adds Unity-type formatters and belongs to Client code only. Unity has no `ModuleInitializer`, so call each union's generated `<Name>Initializer.RegisterFormatter()` at startup before the first deserialize. Custom formatter attributes are unsupported on Unity.
 9. **Validate the payload at the call site that owns the trust decision** — a successful `Deserialize<T>()` proves the bytes parsed, not that values are in range; saves can be corrupt and messages hostile.
 10. **Keep the type a pure data carrier with no `UnityEngine` type** (`Vector3` breaks the Core boundary even though MemoryPack does not). Gameplay rules on a DTO add a second reason to change to a frozen format.
 11. **Changing a shipped type: whether live saves or in-flight messages exist unstated → `Blocked` naming it** — if so it is a migration (versioned successor type plus upgrade path), not an edit; a wrong guess corrupts player data irreversibly.

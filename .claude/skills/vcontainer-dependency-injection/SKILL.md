@@ -6,11 +6,11 @@ user-invocable: false
 
 # VContainer
 
-Not for: the async body of `IAsyncStartable` (`unitask-async-programming`), pub/sub logic behind a registered publisher (`messagepipe-event-messaging`; the `RegisterMessagePipe` call stays here), the pipeline a scoped subscription observes (`r3-reactive-extensions`), Inspector-wired asset decoupling such as Runtime Sets or Event Channels (`unity-scriptableobject-architecture`: the test is whether the consumer should get the dependency by constructor or reference an asset other systems share), any `Game.Core.*` type (plain interfaces and constructor parameters, never a container: `csharp-standards` → `coding-principles.md` Shared Core integrity).
+Not for: the async body of `IAsyncStartable` (`unitask-async-programming`), pub/sub logic behind a registered publisher (`messagepipe-event-messaging`; the `RegisterMessagePipe` call stays here), the pipeline a scoped subscription observes (`r3-reactive-extensions`), Inspector-wired asset decoupling such as Runtime Sets or Event Channels (`unity-scriptableobject-architecture`: the test is whether the consumer should get the dependency by constructor or reference an asset other systems share), any Core type (plain interfaces and constructor parameters, never a container: `csharp-standards` → `coding-principles.md` Shared Core integrity).
 Docs: https://vcontainer.hadashikick.jp/ (scoping: `/scoping/lifetime-overview`) — unversioned. Source Generator needs VContainer 1.13.0+ on Unity 2021.3+.
 
 ## Steps
-1. **Settle the layer first** — a container reference in `Game.Core.*` breaks the Shared Core boundary and cannot be removed later without touching every constructor it hid.
+1. **Settle the layer first** — a container reference in a Core assembly breaks the Shared Core boundary and cannot be removed later without touching every constructor it hid.
 2. **Register against the interface** — `builder.Register<IAudioService, AudioService>(Lifetime.Singleton)`; registering the concrete type gives a consumer nothing it could not `new`, and blocks fakes for `qa-automation-engineer`.
 3. **Derive the lifetime from the object's real lifespan, then audit for captive dependencies** — a `Scoped` or `Transient` service held in a `Singleton` field outlives its scope. VContainer does not reject this at build time; read each registration for it.
 4. **Never register an `IDisposable` as `Transient` in a long-lived scope** — the container retains every disposable until its scope is disposed. Use `Scoped` in a scope that ends, or own it manually outside the container.

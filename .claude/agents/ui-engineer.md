@@ -10,7 +10,8 @@ color: blue
 ---
 
 ## Owns
-- Screens, HUD, menus, popups and their bindings; UI prefabs, UXML/USS; localization tables.
+- Screens, HUD, menus, popups and their bindings (`<Feature>/Views`); UI prefabs, UXML/USS; localization tables.
+- The UTF tests the spec's `Tests:` assigns you: Play Mode, in `Tests/PlayMode/`.
 
 ## Inputs
 - Screen flow / mock / acceptance criteria — absent: `Blocked`. Never invent a screen, flow or copy.

@@ -6,7 +6,7 @@ user-invocable: false
 
 # Unity Lighting
 
-Not for: pipeline choice (`render-pipeline-urp-hdrp`), HDRP pipeline settings and the APV enable toggle on HDRP (`unity-hdrp-rendering`), rendering path, Renderer Features and `Light2D` (`unity-urp-rendering`), post-process Volumes (`unity-post-processing`), shader content (`shader-authoring`), entity subscene rendering and its lighting limits (`unity-entities-graphics`), gameplay rules that read light state such as stealth (`Game.Core.*`, `csharp-engineer`).
+Not for: pipeline choice (`render-pipeline-urp-hdrp`), HDRP pipeline settings and the APV enable toggle on HDRP (`unity-hdrp-rendering`), rendering path, Renderer Features and `Light2D` (`unity-urp-rendering`), post-process Volumes (`unity-post-processing`), shader content (`shader-authoring`), entity subscene rendering and its lighting limits (`unity-entities-graphics`), gameplay rules that read light state such as stealth (Core, `csharp-engineer`).
 Docs: https://docs.unity3d.com/Manual/ (`LightingOverview`, `lighting-reference`, `urp/lighting-landing`) and `ScriptReference/Light`, `RenderSettings`; SRP package pages pinned `@17.6`. Unversioned Manual links resolve to current docs: confirm any quoted default against the installed Editor.
 
 | Reference | Read when |

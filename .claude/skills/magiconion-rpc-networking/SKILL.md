@@ -6,13 +6,13 @@ user-invocable: false
 
 # MagicOnion — Unity RPC Client
 
-Not for: choosing the transport or designing tick rate, prediction, reconciliation or message semantics (`netcode-architecture-decision`, `netcode-engineer`), DTO design and versioning (`memorypack-serialization`), the async body, cancellation or retry around a call (`unitask-async-programming`), fanning a received call out in-process (`messagepipe-event-messaging`), the server `ServiceBase<T>`/`StreamingHubBase<THub,TReceiver>` implementation (`netcode-engineer`, `Game.Server.*`).
+Not for: choosing the transport or designing tick rate, prediction, reconciliation or message semantics (`netcode-architecture-decision`, `netcode-engineer`), DTO design and versioning (`memorypack-serialization`), the async body, cancellation or retry around a call (`unitask-async-programming`), fanning a received call out in-process (`messagepipe-event-messaging`), the server `ServiceBase<T>`/`StreamingHubBase<THub,TReceiver>` implementation (`netcode-engineer`, `<Feature>/Server`).
 Docs: https://github.com/Cysharp/MagicOnion
 Works against a contract `netcode-engineer` defined; this skill wires the client and handles wire failures, never designs the protocol.
 
 ## Steps
 1. **Confirm the transport decision exists** — if MagicOnion was not chosen, stop and route to `netcode-architecture-decision`; reversing it later rewrites every call site.
-2. **Contract lives in an assembly both client and server compile, with no `UnityEngine` reference** — a `Vector3` in a signature breaks the server build (same constraint as `Game.Core.*`, `naming-convention.md`). Use plain C# types; convert at each edge.
+2. **Contract lives in an assembly both client and server compile, with no `UnityEngine` reference** — a `Vector3` in a signature breaks the server build (same constraint as a Core assembly, `naming-convention.md`). Use plain C# types; convert at each edge.
 3. **Never redefine the interface client-side** — `MagicOnionClient.Create<T>()` must target the server's exact interface; a copy drifts silently until a call deserializes into the wrong shape.
 4. **`GrpcChannelx` over `YetAnotherHttpHandler`, not retired `Grpc.Core`** — Unity's stock HTTP stack lacks HTTP/2; `Grpc.Core` is end-of-life (`coding-principles.md` → Obsolete APIs). Confirm which packages the project has before writing connection code.
 5. **By who initiates**: `IService<T>` when the client asks, `StreamingHub` when the server pushes. No hub for a one-off request; no polling a unary call for what a receiver would deliver.

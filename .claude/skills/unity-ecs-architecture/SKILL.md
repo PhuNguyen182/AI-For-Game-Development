@@ -19,7 +19,7 @@ Docs: https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/index.html
 
 ## Steps
 1. **Name the architecture decision that approved ECS for this feature.** None exists → stop and route to `cto` (a foundation choice); needing threads is not a reason to adopt ECS (Job System + Burst work without entities).
-2. **Keep the game rule in `Game.Core.*`; the system only iterates**: read components, call the pure Core function, write back. A formula rewritten in `OnUpdate` is a second implementation (`Unity.Entities` cannot be referenced from Core).
+2. **Keep the game rule in Core; the system only iterates**: read components, call the pure Core function, write back. A formula rewritten in `OnUpdate` is a second implementation (`Unity.Entities` cannot be referenced from Core).
 3. **Model entities and archetypes before naming a system** ([core-concepts.md](references/core-concepts.md)); component sets follow access pattern, not code structure.
 4. **Pick each component kind by how its value changes**: unmanaged `IComponentData` by default; `ISharedComponentData` only when many entities share a value; `IBufferElementData` for variable-length data; `IEnableableComponent` for state that toggles often ([component-types.md](references/component-types.md)).
 5. **Budget the archetype against the 16 KiB chunk**: every field on a hot archetype means fewer entities per chunk. Split rarely-read data into its own component.
@@ -44,7 +44,7 @@ Docs: https://docs.unity3d.com/Packages/com.unity.entities@6.6/manual/index.html
 ```
 ## ECS Architecture Work — <feature/system>
 - Approved by: <architecture decision and who made it>
-- Core boundary: <rule logic kept in Game.Core.*, what the system calls>
+- Core boundary: <rule logic kept in Core, what the system calls>
 - Components: <kind per value, chunk-density consequence>
 - Authoring/baking: <authoring + Baker<T>, or "none">
 - System(s): <ISystem/SystemBase, group, ordering and its data reason>

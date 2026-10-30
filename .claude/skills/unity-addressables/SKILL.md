@@ -6,7 +6,7 @@ user-invocable: false
 
 # Unity Addressables
 
-Not for: await/cancellation mechanics (`unitask-async-programming`), pool design (`unity-performance-engineer`), import/compression settings (`unity-2d-sprite`, `unity-audio-mixer`, else `unity-performance-engineer`), remote-config cadence (`live-ops-content-pipeline`), CDN vendor choice (`sdk-platform-engineer`), the CI command that runs the content build (`unity-batchmode-cli`). Addressables calls stay in `Game.Client.*`; `Game.Core.*` takes resolved data (`csharp-standards`).
+Not for: await/cancellation mechanics (`unitask-async-programming`), pool design (`unity-performance-engineer`), import/compression settings (`unity-2d-sprite`, `unity-audio-mixer`, else `unity-performance-engineer`), remote-config cadence (`live-ops-content-pipeline`), CDN vendor choice (`sdk-platform-engineer`), the CI command that runs the content build (`unity-batchmode-cli`). Addressables calls stay in Client code; Core takes resolved data (`csharp-standards`).
 Docs: https://docs.unity3d.com/Packages/com.unity.addressables@4.0/manual/index.html (API: same root, `/api/index.html`). Keep `@4.0`; earlier versions have no Content Directory system. Read the installed version from `Packages/manifest.json` and swap the segment if it differs.
 
 | Reference | Read when |

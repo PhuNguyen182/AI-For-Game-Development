@@ -25,12 +25,13 @@ Sources (below the SKILL.md `Docs:` base unless a full URL): [eo] `manual/script
 | Render-rate test | `Time.captureDeltaTime` advances `Time.time` by a fixed amount per frame regardless of real time [cd] |
 
 ```csharp
-using Game.Core.Match;
+using _Project.Scripts.Match.Core;
+using _Project.Scripts.Match.DataModels;
 using VContainer.Unity;
 
-namespace Game.Client.Match
+namespace _Project.Scripts.Match.DataControllers
 {
-    // The only call site that advances MatchSimulation (Game.Core.Match).
+    // The only call site that advances MatchSimulation (_Project.Scripts.Match.Core).
     public sealed class MatchTickDriver : IFixedTickable
     {
         private readonly MatchSimulation _simulation;

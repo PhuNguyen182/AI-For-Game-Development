@@ -49,13 +49,13 @@ Sources (below the SKILL.md `Docs:` base unless a full URL): [a] `/setup`, [b] `
 ## Init gate
 
 ```csharp
-// Assets/Game/Client/Platform/FirebaseBootstrap.cs — the only caller of CheckAndFixDependenciesAsync.
+// Assets/_Project/Scripts/Platform/DataControllers/FirebaseBootstrap.cs — the only caller of CheckAndFixDependenciesAsync.
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Firebase;
 using UnityEngine;
 
-namespace Game.Client.Platform
+namespace _Project.Scripts.Platform.DataControllers
 {
     public sealed class FirebaseBootstrap
     {

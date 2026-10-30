@@ -35,7 +35,7 @@ Docs: `https://esotericsoftware.com/spine-unity-<page>` (installation, main-comp
 12. **Timeline**, per [timeline.md](references/timeline.md): base animation on the top track, overlays below, distinct `Track Index` per track, verify mixing in Play Mode.
 13. **Adopt on-demand loading only after a measurement**, per [on-demand-loading.md](references/on-demand-loading.md) and `csharp-standards` → `performance-and-algorithms.md` (Verification).
 14. **Diagnose symptoms against [faq.md](references/faq.md) first.** Ship binary `.skel.bytes`; pool skeletons (pre-warm; on despawn `ClearTracks()` and disable, not `Destroy`).
-15. **Keep all Spine code in `Game.Client.*`** — never `Spine.Unity` in `Game.Core.*`.
+15. **Keep all Spine code in the feature's Unity assembly** — never `Spine.Unity` in a Core assembly.
 
 ## Never
 - Mix Built-in and URP/LWRP Spine shader families, or use any Spine shader with Deferred.

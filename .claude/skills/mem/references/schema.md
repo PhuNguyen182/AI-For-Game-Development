@@ -23,7 +23,7 @@ status: active | superseded   superseded_by: <type>/<slug>  updated: YYYY-MM-DD
 - K docs are chunked by `#`-`###` headings (outside code fences), max 6000 chars. A doc whose header says `Status: Superseded` is indexed as superseded.
 
 ## Entities (regex, no model)
-File paths (generic names like `SKILL.md` keep the parent folder) · PascalCase and `Game.*` types · `BUG-####`, `ADR-n`, `CP1-4` · `com.*` packages · agent, skill and feature names (one-word names only as `/name` or `` `name` ``).
+File paths (generic names like `SKILL.md` keep the parent folder) · PascalCase types and `_Project.*` namespaces · `BUG-####`, `ADR-n`, `CP1-4` · `com.*` packages · agent, skill and feature names (one-word names only as `/name` or `` `name` ``).
 
 ## Ranking
 1. FTS5 BM25 (title 8, tags 4, body 1), terms OR-ed with prefix match.

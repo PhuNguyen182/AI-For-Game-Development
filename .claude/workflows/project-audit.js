@@ -9,7 +9,7 @@ export const meta = {
   ],
 }
 
-// args: { root?: '<project path>', modules?: ['Assets/Game.Core', ...] } — omit modules to discover. At most MAX are audited per run.
+// args: { root?: '<project path>', modules?: ['Assets/_Project/Scripts/Combat', ...] } — omit modules to discover. At most MAX are audited per run.
 const MAX = 4
 const root = (args && args.root) || '.'
 const at = p => (root === '.' ? p : `${root}/${p}`)
@@ -70,7 +70,7 @@ let modules = (args && args.modules) ? args.modules.map(p => ({ path: p, asmdef:
 if (!modules) {
   const found = await agent(
     `List the code modules of the Unity project at ${root}: every folder under Assets/ (excluding Plugins, ThirdParty, ` +
-    'Packages and Library) that holds an .asmdef, with its .cs file count. Sort by Game.Core first, then by .cs count descending. Read-only.',
+    'Packages and Library) that holds an .asmdef, with its .cs file count. Sort engine-free assemblies (noEngineReferences: true) first, then by .cs count descending. Read-only.',
     { label: 'discover', schema: MODULES, model: 'haiku', effort: 'low' },
   )
   modules = (found && found.modules) || []
@@ -83,7 +83,7 @@ if (modules.length > MAX) {
 const audits = parallel([
   ...modules.map(m => () => agent(
     `Audit ${at(m.path)} (read-only). Lenses: (1) runtime perf, memory and crash/ANR risk in hot paths — the ` +
-    `review-code-risks lens; (2) the Game.Core / Game.Client boundary — skill shared-core-boundary-audit. ` +
+    `review-code-risks lens; (2) the Shared Core / Client boundary — skill shared-core-boundary-audit. ` +
     `Only findings confirmed in the file, each with path:line and the concrete fix.`,
     { label: `audit:${m.path}`, phase: 'Audit', agentType: 'code-reviewer', model: 'sonnet', schema: FINDINGS },
   ).then(r => r && { scope: m.path, ...r })),
