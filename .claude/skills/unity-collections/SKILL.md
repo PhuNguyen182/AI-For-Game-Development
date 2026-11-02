@@ -1,6 +1,6 @@
 ---
 name: unity-collections
-description: "Unity.Collections unmanaged containers: NativeArray/List/HashMap/Queue/Stream, allocators (Temp/TempJob/Persistent/rewindable), Dispose, Unsafe- aliasing, FixedString/FixedList, ParallelWriter. Use for Job/Burst-compatible data."
+description: "Unity.Collections: NativeArray/List/HashMap, allocators, Dispose, FixedString, ParallelWriter. Use for Job/Burst data."
 user-invocable: false
 ---
 

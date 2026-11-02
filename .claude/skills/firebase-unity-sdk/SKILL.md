@@ -1,6 +1,6 @@
 ---
 name: firebase-unity-sdk
-description: "Firebase Unity SDK: EDM, CheckAndFixDependenciesAsync, google-services.json, Analytics SetConsent/SetAnalyticsCollectionEnabled, Remote Config SetDefaultsAsync/FetchAndActivateAsync, Crashlytics, Auth TokenAsync. Use when integrating Firebase."
+description: "Firebase Unity SDK: EDM, google-services.json, Remote Config, Crashlytics, Auth, SetConsent. Use to integrate Firebase."
 user-invocable: false
 ---
 

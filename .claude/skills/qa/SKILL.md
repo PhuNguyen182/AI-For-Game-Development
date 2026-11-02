@@ -1,6 +1,6 @@
 ---
 name: qa
-description: "QA a feature or existing work: qa-lead plans coverage, then automation, playtest, performance and device runs in order, bugs filed, qa-lead signs off. Use after review on M/L work, or when the GD asks for tests or evidence."
+description: "QA pipeline ending in qa-lead sign-off. Use after review on M/L work, or for tests or evidence on existing work."
 argument-hint: "<feature slug, or what to test>"
 ---
 

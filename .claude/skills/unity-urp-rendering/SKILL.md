@@ -1,6 +1,6 @@
 ---
 name: unity-urp-rendering
-description: "URP configuration: ScriptableRendererFeature/RenderPass (Render Graph), Forward/Forward+/Deferred, URP Asset tiers, shadows, SRP Batcher, MSAA, 2D Renderer, camera stacking. Use once URP is the confirmed pipeline."
+description: "URP: ScriptableRendererFeature, Render Graph, Forward+, URP Asset tiers, SRP Batcher. Use once URP is confirmed."
 user-invocable: false
 ---
 

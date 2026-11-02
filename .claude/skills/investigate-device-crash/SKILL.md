@@ -1,6 +1,6 @@
 ---
 name: investigate-device-crash
-description: Investigate a crash or ANR on the connected Android/iOS device (adb logcat, idevicecrashreport) and report fault domain, root cause and fix direction
+description: "Device crash/ANR via adb logcat, idevicecrashreport: fault domain, root cause. Use when a test device crashes."
 argument-hint: "[android|ios] [package-or-bundle-id]"
 allowed-tools: PowerShell, Bash, Read, Grep, Glob, Skill
 ---

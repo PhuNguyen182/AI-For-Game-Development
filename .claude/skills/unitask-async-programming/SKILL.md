@@ -1,6 +1,6 @@
 ---
 name: unitask-async-programming
-description: "UniTask allocation-free async on the PlayerLoop: UniTask/UniTaskVoid, timing, cancellation on destroy, Forget, completion sources, async LINQ. Use for one-shot async in Client code, never in Core."
+description: "UniTask/UniTaskVoid, PlayerLoop timing, destroy cancellation, Forget. Use for one-shot async in Client code, never Core."
 user-invocable: false
 ---
 

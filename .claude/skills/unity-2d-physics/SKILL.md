@@ -1,6 +1,6 @@
 ---
 name: unity-2d-physics
-description: "Unity 2D physics (Box2D): Rigidbody2D, Collider2D, CompositeCollider2D, PhysicsMaterial2D, Effector2D, Joint2D, ConstantForce2D, layer matrix, tunnelling. Use for 2D physics behaviour on ordinary GameObjects."
+description: "Box2D: Rigidbody2D, Collider2D, CompositeCollider2D, Effector2D, Joint2D, layer matrix. Use for 2D physics."
 user-invocable: false
 ---
 

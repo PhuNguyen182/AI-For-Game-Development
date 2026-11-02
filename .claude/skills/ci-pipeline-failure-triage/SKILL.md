@@ -1,6 +1,6 @@
 ---
 name: ci-pipeline-failure-triage
-description: "Triage a red Unity CI run from its log: agent/workspace faults, licence activation, editor version mismatch, Library/package damage, compile errors, real test failures, signing, flakes. Use when a CI run fails."
+description: "Red Unity CI run triage: licence, editor version, Library damage, flakes, signing. Use when a CI run fails."
 user-invocable: false
 ---
 

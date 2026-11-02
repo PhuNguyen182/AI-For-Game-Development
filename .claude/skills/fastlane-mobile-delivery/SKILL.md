@@ -1,6 +1,6 @@
 ---
 name: fastlane-mobile-delivery
-description: "Package and sign Unity mobile builds with Fastlane: Fastfile lanes, gradle for APK/AAB, gym over the Xcode project, match, build numbers, CI keychain. Use when automating mobile packaging or signing."
+description: "Fastlane: Fastfile lanes, gradle APK/AAB, gym, match, CI keychain. Use when automating mobile packaging or signing."
 user-invocable: false
 ---
 

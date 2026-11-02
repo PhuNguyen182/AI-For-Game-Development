@@ -1,6 +1,6 @@
 ---
 name: backend-build-vs-buy
-description: "Per-component build-vs-buy for backend: matchmaking, cloud save, server hosting, leaderboards, social — managed (UGS, PlayFab, Nakama, Firebase) vs custom, with exit cost. Use when choosing backend services."
+description: "Backend build-vs-buy: matchmaking, cloud save, hosting, leaderboards; UGS, PlayFab, Nakama, Firebase. Use to pick one."
 user-invocable: false
 ---
 

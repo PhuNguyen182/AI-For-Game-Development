@@ -1,6 +1,6 @@
 ---
 name: practical-fit-screening
-description: "Hard-gate whether the project can adopt a candidate package, technique or service: duplication, engine and C# version, scripting backend, platforms, licence, Core boundary, pricing, data compliance. Use before ranking research candidates."
+description: "Hard-gate a candidate: duplication, C# version, backend, platforms, licence. Use before ranking research candidates."
 user-invocable: false
 ---
 

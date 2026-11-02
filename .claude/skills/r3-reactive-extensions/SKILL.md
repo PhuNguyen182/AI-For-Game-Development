@@ -1,6 +1,6 @@
 ---
 name: r3-reactive-extensions
-description: "R3 reactive streams: Observable, Subject, ReactiveProperty, operators, Unity frame providers, AddTo disposal, UI binding. Use for continuous event streams; one-shot async is UniTask."
+description: "R3: Observable, Subject, ReactiveProperty, frame providers, AddTo. Use for event streams; one-shot async is UniTask."
 user-invocable: false
 ---
 

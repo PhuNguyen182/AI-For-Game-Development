@@ -1,6 +1,6 @@
 ---
 name: mobile-safe-area
-description: "Screen.safeArea, Screen.cutouts, uGUI 2.6 Safe Area component, anchor-inset content root, UI Toolkit RuntimePanelUtils.ScreenToPanel padding, UnityEngine.Device.Screen, Device Simulator. Use when mobile UI must clear notches and home indicators."
+description: "Screen.safeArea, cutouts, uGUI Safe Area, RuntimePanelUtils.ScreenToPanel. Use when mobile UI must clear notches."
 user-invocable: false
 ---
 

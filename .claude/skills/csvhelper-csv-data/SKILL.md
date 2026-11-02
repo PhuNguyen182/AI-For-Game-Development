@@ -1,6 +1,6 @@
 ---
 name: csvhelper-csv-data
-description: "CsvHelper for reading and writing delimited text: CsvReader/CsvWriter, GetRecords/WriteRecords, ClassMap, type converters, culture, IL2CPP/AOT caveats. Use when config or balance data lives in CSV/TSV."
+description: "CsvHelper: CsvReader/CsvWriter, GetRecords, ClassMap, converters, IL2CPP. Use when config or balance data is CSV/TSV."
 user-invocable: false
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: messagepipe-event-messaging
-description: "MessagePipe in-process messaging: keyed/keyless publishers and subscribers, async handlers, request/response, filters, VContainer setup, disposal. Use when features must talk without direct references."
+description: "MessagePipe: keyed publishers/subscribers, async handlers, filters, VContainer. Use when features talk decoupled."
 user-invocable: false
 ---
 

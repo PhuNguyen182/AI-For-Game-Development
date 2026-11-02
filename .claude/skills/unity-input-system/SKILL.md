@@ -1,6 +1,6 @@
 ---
 name: unity-input-system
-description: "Input System: .inputactions assets, action types, composites, Interactions, Processors, control schemes, PlayerInput/PlayerInputManager, InputSystemUIInputModule, rebinding, on-screen touch. Use for any player input."
+description: "Input System: .inputactions, Interactions, Processors, PlayerInput, rebinding, touch. Use for any player input."
 user-invocable: false
 ---
 

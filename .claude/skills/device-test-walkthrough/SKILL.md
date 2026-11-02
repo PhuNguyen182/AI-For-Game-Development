@@ -1,6 +1,6 @@
 ---
 name: device-test-walkthrough
-description: "Walk a test-case list on an installed build on a real Android/iOS device: install, launch, tap/swipe/type via bundled primitives, screenshot, logcat, per-case verdict. Use when cases must run on a physical device."
+description: "Test cases on a real Android/iOS device: install, input, screenshot, logcat. Use when cases need a physical device."
 user-invocable: false
 ---
 

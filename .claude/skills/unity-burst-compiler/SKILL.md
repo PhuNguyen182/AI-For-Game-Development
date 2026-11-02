@@ -1,6 +1,6 @@
 ---
 name: unity-burst-compiler
-description: "Burst itself: HPC# limits, [BurstCompile] FloatMode/CompileSynchronously, FunctionPointer, SharedStatic, [NoAlias], Unity.Burst.Intrinsics, Burst Inspector, AOT settings. Use when Burst output, errors or settings need work."
+description: "Burst itself: HPC# limits, [BurstCompile] FloatMode, FunctionPointer, [NoAlias]. Use when Burst output or settings fail."
 user-invocable: false
 ---
 

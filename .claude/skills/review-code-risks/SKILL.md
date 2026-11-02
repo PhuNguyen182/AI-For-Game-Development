@@ -1,6 +1,6 @@
 ---
 name: review-code-risks
-description: Static review of C#/Unity code for runtime performance, memory and hidden crash/ANR risk — report with fix direction only, never edits code
+description: "Static C#/Unity review for performance, memory, crash/ANR risk; report only. Use when auditing code for runtime risk."
 argument-hint: "[file-or-directory-path...]"
 allowed-tools: PowerShell, Read, Grep, Glob, Bash, Skill
 ---

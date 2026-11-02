@@ -1,6 +1,6 @@
 ---
 name: unity-2d-sprite
-description: "2D sprites: import settings, Pixels Per Unit, Mesh Type, Sprite Editor slicing, SpriteRenderer, SpriteMask, sorting, SortingGroup, Sprite Atlas late binding, 9-slice. Use for sprite setup and 2D draw order."
+description: "Sprites: Pixels Per Unit, Mesh Type, slicing, SpriteMask, SortingGroup, Sprite Atlas, 9-slice. Use for sprite setup."
 user-invocable: false
 ---
 

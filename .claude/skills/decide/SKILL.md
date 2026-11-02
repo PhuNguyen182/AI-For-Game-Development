@@ -1,6 +1,6 @@
 ---
 name: decide
-description: "Make a technology decision: researcher sweeps sourced candidates, an optional rd-engineer spike measures the blocker, cto decides, an ADR records any standard. Use for vendors, packages, netcode/backend foundations, or what exists for X."
+description: "Technology decision by cto on sourced candidates. Use for vendors, packages, netcode/backend, or what exists for X."
 argument-hint: "<the capability or decision, as concrete behaviour>"
 ---
 

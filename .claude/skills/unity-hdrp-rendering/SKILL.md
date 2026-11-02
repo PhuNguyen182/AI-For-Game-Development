@@ -1,6 +1,6 @@
 ---
 name: unity-hdrp-rendering
-description: "HDRP config: HD Render Pipeline Asset vs Frame Settings, HDAdditionalCameraData, Volumes (exposure, fog, sky), CustomPassVolume, Diffusion Profiles, APV enablement, Water, ray/path tracing. Use once HDRP is the confirmed pipeline."
+description: "HDRP: Frame Settings, HDAdditionalCameraData, Volumes, CustomPassVolume, ray tracing. Use once HDRP is confirmed."
 user-invocable: false
 ---
 

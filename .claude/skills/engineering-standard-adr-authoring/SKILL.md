@@ -1,6 +1,6 @@
 ---
 name: engineering-standard-adr-authoring
-description: "Write a lightweight ADR for an engineering standard the CTO sets: number, status, context, decision, scope, consequences, supersession. Use when a decision becomes a project or cross-project standard."
+description: "Lightweight ADR for a CTO engineering standard: status, scope, supersession. Use when a decision becomes a standard."
 user-invocable: false
 ---
 

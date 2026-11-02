@@ -1,13 +1,13 @@
 ---
 name: ui-toolkit
-description: "UI Toolkit (UnityEngine.UIElements): UXML/UI Builder, UxmlElement, USS flexbox, RegisterCallback and Manipulators, runtime data binding, ListView, PanelSettings, Panel Renderer/UIDocument, CreateGUI. Use for UI Toolkit screens or Editor UI."
+description: "UI Toolkit: UXML, USS, UxmlElement, ListView, PanelSettings, UIDocument, CreateGUI. Use for UI Toolkit or Editor UI."
 user-invocable: false
 ---
 
 # Unity UI Toolkit
 
 Not for: uGUI/Canvas (`ugui`), Odin inspectors and drawers (`odin-inspector`), Animator-driven UI (`unity-animation`), input devices and `.inputactions` (`unity-input-system`), the NUnit harness around a UI test (`unity-test-framework`), gameplay rules behind the UI (`csharp-engineer`; this layer displays and reacts, Core decides).
-Docs: https://docs.unity3d.com/Manual/ (unversioned, read at Unity 6.5 / 6000.5; best-practice guide validated on 6.0; UI Test Framework `com.unity.ui.test-framework@1.0`). Defaults quoted in references were read at that version: re-check on the installed Editor.
+Docs: https://docs.unity3d.com/Manual/ (`UnityEngine.UIElements`; unversioned, read at Unity 6.5 / 6000.5; best-practice guide validated on 6.0; UI Test Framework `com.unity.ui.test-framework@1.0`). Defaults quoted in references were read at that version: re-check on the installed Editor.
 If `unity:ui-uitk` disagrees on binding mode or Panel Renderer availability, this skill's version-pinned facts win.
 
 | Reference | Read when |

@@ -1,6 +1,6 @@
 ---
 name: unity-batchmode-cli
-description: "Classic headless Editor: -batchmode -executeMethod, EditorApplication.Exit codes, BuildPipeline.BuildPlayer/BuildReport, -returnlicense, Hub CLI install, Library cache, log reading. Use when the Unity CLI cannot run the operation."
+description: "-batchmode -executeMethod, BuildPipeline.BuildPlayer, -returnlicense, Hub CLI. Use when Unity CLI cannot run it."
 user-invocable: false
 ---
 

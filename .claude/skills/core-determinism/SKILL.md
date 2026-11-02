@@ -1,6 +1,6 @@
 ---
 name: core-determinism
-description: "Core determinism: agreement gate, float vs fixed-point routing, MathF/Math and IL2CPP/Mono float drift, string.GetHashCode, Dictionary/HashSet order, stable hash, per-tick replay test. Use when Core results must reproduce across machines."
+description: "Core determinism: fixed-point, MathF drift, GetHashCode, Dictionary order. Use when Core must reproduce across machines."
 user-invocable: false
 ---
 

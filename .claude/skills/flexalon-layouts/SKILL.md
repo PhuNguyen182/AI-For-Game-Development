@@ -1,6 +1,6 @@
 ---
 name: flexalon-layouts
-description: "Flexalon 3D/uGUI layouts: FlexalonObject SizeType, Flexible/Grid/Circle/Curve layouts, FlexalonConstraint, Cloner/DataSource, animators, Interactable/DragTarget, adapters, MarkDirty. Use when a layout needs Flexalon, not uGUI Layout Groups."
+description: "Flexalon: FlexalonObject, Flexible/Grid/Circle/Curve layouts, Constraint, Cloner, MarkDirty. Use for Flexalon layouts."
 user-invocable: false
 ---
 

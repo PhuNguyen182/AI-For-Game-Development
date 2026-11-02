@@ -1,6 +1,6 @@
 ---
 name: source-credibility-grading
-description: "Grade external sources T1 official docs, T2 maintained repo, T3 forum consensus, T4 unverified, plus tiers for shipped-game precedents; date every claim; resolve conflicts by tier. Use before any claim enters a research report."
+description: "Grade sources T1 docs to T4 unverified, date claims, resolve by tier. Use before any claim enters a research report."
 user-invocable: false
 ---
 

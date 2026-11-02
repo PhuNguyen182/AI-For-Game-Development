@@ -1,6 +1,6 @@
 ---
 name: risk-based-test-planning
-description: "Derive coverage from acceptance criteria: equivalence partitions, boundaries, decision tables, state transitions, risk ranking; outputs cases per QA agent and exit criteria. Use when scoping QA or choosing suite cases."
+description: "Equivalence partitions, boundaries, decision tables, state transitions, risk ranking. Use to scope QA cases."
 user-invocable: false
 ---
 

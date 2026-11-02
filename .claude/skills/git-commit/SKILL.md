@@ -1,6 +1,6 @@
 ---
 name: git-commit
-description: Write and record a commit message — English imperative subject, why-body, one change per commit, verified with `git log -1` before reporting. Use for every commit.
+description: "Commit message: English imperative subject, why-body, one change per commit. Use for every commit."
 user-invocable: false
 ---
 

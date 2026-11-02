@@ -1,6 +1,6 @@
 ---
 name: shader-authoring
-description: "Author Shader Graph and HLSL/ShaderLab: toon, custom lighting, dissolve, outline, distortion, keywords and variants, SRP Batcher compatibility, mobile precision. Use for any shader work."
+description: "Shader Graph and HLSL/ShaderLab: toon, outline, dissolve, keywords, SRP Batcher. Use for any shader work."
 user-invocable: false
 ---
 

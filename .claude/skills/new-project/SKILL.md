@@ -1,6 +1,6 @@
 ---
 name: new-project
-description: "Bootstrap a Unity project for this framework: CLAUDE.md, packages, the Shared feature's asmdefs and test assemblies, git + LFS, per-device-tier perf budget from the profile, .workflow/ state, optional CI. Use for a new or adopted project."
+description: "Bootstrap a Unity project: CLAUDE.md, asmdefs, git + LFS, perf budget, .workflow/. Use for a new or adopted project."
 argument-hint: "<project path, or 'new'>"
 ---
 

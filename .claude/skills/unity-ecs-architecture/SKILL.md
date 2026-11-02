@@ -1,6 +1,6 @@
 ---
 name: unity-ecs-architecture
-description: "Entities/ECS 6.6: IComponentData, archetypes and chunks, Baker<T> baking, ISystem/SystemBase, SystemAPI.Query, IJobEntity, IJobChunk, EntityCommandBuffer, BlobAssetReference. Use when designing or writing ECS code."
+description: "Entities/ECS 6.6: IComponentData, Baker<T>, ISystem, SystemAPI.Query, IJobEntity, ECB. Use when writing ECS code."
 user-invocable: false
 ---
 

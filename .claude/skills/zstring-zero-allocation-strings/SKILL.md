@@ -1,6 +1,6 @@
 ---
 name: zstring-zero-allocation-strings
-description: "ZString allocation-free strings: Format, Concat, Utf16/Utf8 builders, TextMeshPro SetText integration. Use when building strings per frame or per tick."
+description: "ZString: Format, Concat, Utf16/Utf8 builders, TMP SetText. Use when building strings per frame or tick."
 user-invocable: false
 ---
 

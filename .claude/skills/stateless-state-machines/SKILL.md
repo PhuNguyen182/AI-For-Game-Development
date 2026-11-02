@@ -1,6 +1,6 @@
 ---
 name: stateless-state-machines
-description: "Explicit state machines with Stateless: Configure/Permit/PermitIf, entry/exit, substates, guards, parameterized triggers, DOT export. Use when behaviour is states and transitions rather than a formula."
+description: "Stateless: Configure/Permit/PermitIf, guards, substates, DOT export. Use when behaviour is states and transitions."
 user-invocable: false
 ---
 

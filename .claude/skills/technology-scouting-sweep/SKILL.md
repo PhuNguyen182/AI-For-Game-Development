@@ -1,6 +1,6 @@
 ---
 name: technology-scouting-sweep
-description: "Tiered search for a package, technique or service the project lacks: official docs, then maintained repos and the Asset Store, then forums, version-pinned, with a stop rule and query cap. Use for every research-mode question."
+description: "Tiered search for a missing package or service: docs, repos, Asset Store, forums. Use for every research-mode question."
 user-invocable: false
 ---
 

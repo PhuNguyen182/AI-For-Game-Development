@@ -1,6 +1,6 @@
 ---
 name: secret-exposure-response
-description: "Respond to a secret or player PII found in git history: treat it as compromised, set the rotate-then-verify order, name the owner per credential type, decide purge or not, frame the GD actions. Use when a leak reaches cto."
+description: "Secret or PII in git history: rotate-then-verify, owner per credential, purge decision. Use when a leak reaches cto."
 user-invocable: false
 ---
 

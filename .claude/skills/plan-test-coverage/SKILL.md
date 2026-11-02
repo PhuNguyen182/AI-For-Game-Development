@@ -1,6 +1,6 @@
 ---
 name: plan-test-coverage
-description: Derive a test case list (normal + edge), manual test flow and cross-feature impact analysis from a spec, the request, or the code — report only, never writes or runs tests
+description: "Test case list (normal + edge), manual flow, impact analysis from a spec; report only. Use when planning tests."
 argument-hint: "[file-or-directory-path...] [--spec path-to-doc]"
 allowed-tools: PowerShell, Read, Grep, Glob, Bash, Skill
 ---

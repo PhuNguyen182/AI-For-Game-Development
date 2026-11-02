@@ -1,6 +1,6 @@
 ---
 name: unity-scriptableobject-architecture
-description: "ScriptableObject architecture: Variable/Reference SOs, GameEvent and EventChannelSO, RuntimeSetSO, Delegate Object strategy, Extendable Enum, CommandSO, ISerializationCallbackReceiver reset. Use for designer-wired asset-based decoupling."
+description: "ScriptableObject architecture: Variable SOs, GameEvent, EventChannelSO, RuntimeSetSO. Use for designer-wired decoupling."
 user-invocable: false
 ---
 

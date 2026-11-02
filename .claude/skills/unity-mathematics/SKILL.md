@@ -1,6 +1,6 @@
 ---
 name: unity-mathematics
-description: "Unity.Mathematics: float3/float4x4, quaternion, swizzles, math functions, noise, struct Random. Use for Core, Burst, jobs and ECS math instead of UnityEngine Vector3/Mathf/Random."
+description: "Unity.Mathematics: float3, quaternion, math, noise, Random. Use for Core, Burst, jobs and ECS math instead of Mathf."
 user-invocable: false
 ---
 

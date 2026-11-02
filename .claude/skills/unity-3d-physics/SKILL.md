@@ -1,6 +1,6 @@
 ---
 name: unity-3d-physics
-description: "Unity 3D physics (PhysX): Rigidbody, colliders, CharacterController, joints, ArticulationBody, ragdoll, Cloth, NonAlloc casts, layer matrix, fixedDeltaTime, interpolation. Use for 3D physics behaviour on GameObjects."
+description: "PhysX: Rigidbody, CharacterController, joints, ArticulationBody, Cloth, NonAlloc casts. Use for 3D physics."
 user-invocable: false
 ---
 

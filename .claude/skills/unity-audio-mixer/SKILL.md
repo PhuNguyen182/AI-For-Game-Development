@@ -1,6 +1,6 @@
 ---
 name: unity-audio-mixer
-description: "Unity audio: AudioSource, AudioListener, clip import (Load Type, compression), AudioMixer groups, snapshots, SetFloat exposed parameters, Duck Volume, Audio Random Container, Max Real Voices, Audio Profiler. Use for audio setup and mixing."
+description: "AudioSource, AudioMixer groups, snapshots, SetFloat, clip import, Duck Volume. Use for audio setup and mixing."
 user-invocable: false
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: unity-entities-graphics
-description: "Entities Graphics: rendering ECS entities via BatchRendererGroup, RenderMeshArray, MaterialMeshInfo, material overrides, LODs, culling. Use when ECS entities must render."
+description: "Entities Graphics: BatchRendererGroup, RenderMeshArray, MaterialMeshInfo, LODs. Use when ECS entities must render."
 user-invocable: false
 ---
 

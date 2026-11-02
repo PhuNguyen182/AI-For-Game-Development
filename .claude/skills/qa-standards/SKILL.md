@@ -1,6 +1,6 @@
 ---
 name: qa-standards
-description: When a QA claim counts as verified, finding format (location, expected, actual, evidence, owner, severity), severity scale, bug lifecycle and statuses.
+description: "QA verified claims, finding format, severity scale, bug lifecycle. Use when filing or judging QA findings."
 user-invocable: false
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: nrandom-random-generation
-description: "Seeded, injectable RNG with NRandom: IRandom, Xoshiro/PCG generators, RandomEx, weighted selection, shuffle, distributions. Use for any randomness in Shared Core or tests that must be reproducible."
+description: "NRandom: IRandom, Xoshiro/PCG, RandomEx, weighted selection, shuffle. Use for reproducible randomness in Core or tests."
 user-invocable: false
 ---
 

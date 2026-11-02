@@ -1,6 +1,6 @@
 ---
 name: vfx-particle-authoring
-description: "Particle effects: VFX Graph vs ParticleSystem, contexts, Capacity, bounds, SendEvent, GPU Events, Simulation Space, Max Particles, sub-emitters, blend/sorting, overdraw, pooling. Use for particle visuals and their budget."
+description: "VFX Graph vs ParticleSystem, Capacity, bounds, SendEvent, sub-emitters, overdraw. Use for particle visuals and budget."
 user-invocable: false
 ---
 

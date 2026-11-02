@@ -1,6 +1,6 @@
 ---
 name: git-forensics
-description: "Trace a change to the commit that caused it: blame with ignore-revs, log -L, pickaxe -S/-G, bisect run, where deleted work went, whether a secret entered history. Use when attributing a defect or a leak."
+description: "Blame with ignore-revs, log -L, pickaxe -S/-G, bisect run, secret in history. Use when attributing a defect or a leak."
 user-invocable: false
 ---
 

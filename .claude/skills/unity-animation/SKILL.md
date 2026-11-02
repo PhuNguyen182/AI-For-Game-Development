@@ -1,13 +1,13 @@
 ---
 name: unity-animation
-description: "Mecanim: Animator, AnimatorController, Blend Tree, AnimatorOverrideController, Humanoid Avatar, AvatarMask, root motion, OnAnimatorIK, StateMachineBehaviour, Animation Events, PlayableGraph, Culling Mode. Use for clips, rigs and Animator graphs."
+description: "Mecanim: Animator, Blend Tree, Humanoid Avatar, AvatarMask, root motion, PlayableGraph. Use for clips, Animator graphs."
 user-invocable: false
 ---
 
 # Unity Animation
 
 Not for: Timeline, the Animation Rigging package, the 2D Animation package (skeletal sprite rig) and skinning/bind poses/blend shapes (`SkinnedMeshRenderer`) — no owning skill: flag the gap, do not improvise; cameras reacting to Animator state (`unity-cinemachine-authoring`), sprite art/slicing (`unity-2d-sprite`), spline geometry (`unity-2d-spriteshape`), Spine rigs (`spine-animation`), the input/agent velocity behind a parameter (`unity-input-system`, `unity-navmesh-navigation`), ragdoll bodies/joints (`unity-3d-physics`), the logical state graph a parameter reflects (`stateless-state-machines`), Canvas/UI Toolkit transition wiring (`ugui`, `ui-toolkit`; UI Toolkit has no Animation Clip integration), the rule behind a state change (`csharp-engineer`).
-Docs: `https://docs.unity3d.com/Manual/` and `/ScriptReference/` — unversioned (current docs); Mecanim = `animation-mecanim.html`, Playables = `Playables.html`.
+Docs: `https://docs.unity3d.com/Manual/` and `/ScriptReference/` — unversioned (current docs); Mecanim (Animator, AnimatorController) = `animation-mecanim.html`, Playables = `Playables.html`.
 
 | Reference | Read when |
 |---|---|

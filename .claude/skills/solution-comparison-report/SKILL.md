@@ -1,6 +1,6 @@
 ---
 name: solution-comparison-report
-description: "Turn screened candidates into one dated, sourced recommendation: fixed axes, deciding axis, runner-up and its flip condition, staleness trigger. Use to close every research-mode question, whatever survived screening."
+description: "Dated sourced recommendation: fixed axes, deciding axis, runner-up flip condition. Use to close research-mode questions."
 user-invocable: false
 ---
 

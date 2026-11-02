@@ -1,6 +1,6 @@
 ---
 name: review
-description: "Review a diff, feature or path: code-reviewer and security-reviewer in parallel, findings merged and sent back to the author until both clear. Use for every M/L or risk-flagged submission, or an audit of existing code."
+description: "Review gate by code-reviewer and security-reviewer. Use for M/L or risk-flagged work, or audits of existing code."
 argument-hint: "<diff range, feature slug or path>"
 ---
 

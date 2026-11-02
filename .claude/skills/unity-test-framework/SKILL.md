@@ -1,6 +1,6 @@
 ---
 name: unity-test-framework
-description: "Unity Test Framework 2.0: Edit/Play Mode test assemblies, UnityTest, UnitySetUp, LogAssert, Is.Not.AllocatingGCMemory, comparers, PrebuildSetup, -runTests/-testFilter, TestRunnerApi. Use when tests must be written or run."
+description: "Unity Test Framework 2.0: UnityTest, UnitySetUp, LogAssert, -runTests, TestRunnerApi. Use to write or run tests."
 user-invocable: false
 ---
 

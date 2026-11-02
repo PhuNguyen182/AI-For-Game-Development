@@ -1,6 +1,6 @@
 ---
 name: unity-post-processing
-description: "URP Volume/VolumeProfile/VolumeComponent overrides (Bloom, Tonemapping, DoF), overrideState, Volume Mask, FullScreenPassRendererFeature custom passes, PPv2 on Built-in RP, mobile cost. Use for full-screen looks."
+description: "URP Volume overrides (Bloom, Tonemapping, DoF), FullScreenPassRendererFeature, PPv2. Use for full-screen looks."
 user-invocable: false
 ---
 

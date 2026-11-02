@@ -1,6 +1,6 @@
 ---
 name: tech-vendor-dependency-risk-assessment
-description: "Judge whether a plugin, SDK or engine dependency is safe to build on: maintenance, release cadence, backing, licence, lock-in, exit path — keep, mitigate or replace. Use when a dependency's future is in doubt."
+description: "Dependency safety: maintenance, cadence, licence, lock-in, exit path. Use when a dependency's future is in doubt."
 user-invocable: false
 ---
 

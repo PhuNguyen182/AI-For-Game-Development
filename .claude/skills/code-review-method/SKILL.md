@@ -1,6 +1,6 @@
 ---
 name: code-review-method
-description: "How code-reviewer reviews a diff: mode, reading the diff, spec mapping, bug checklist, Unity assets, test code, severity and verdict, re-review rounds. Preloaded by code-reviewer."
+description: "How code-reviewer reviews a diff: spec mapping, bug checklist, severity, verdict, re-review rounds."
 user-invocable: false
 ---
 

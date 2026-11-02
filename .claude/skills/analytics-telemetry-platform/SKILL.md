@@ -1,6 +1,6 @@
 ---
 name: analytics-telemetry-platform
-description: "Build-vs-buy for analytics and telemetry: Firebase, Firebase + BigQuery export, or a custom pipeline — data portability, COPPA/GDPR exposure, crash telemetry coupling. Use when choosing the analytics stack."
+description: "Analytics build-vs-buy: Firebase, BigQuery export, custom pipeline. Use when choosing the analytics stack."
 user-invocable: false
 ---
 

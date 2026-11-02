@@ -1,6 +1,6 @@
 ---
 name: git-recovery
-description: "Recover a repo from an unintended state: lost commits, half-done rebase/merge/cherry-pick, force-push overwrite, broken index or objects, reflog and fsck. Use when work looks lost or git is stuck."
+description: "Recover lost commits, stuck rebase/merge, force-push overwrite, reflog, fsck. Use when work looks lost or git is stuck."
 user-invocable: false
 ---
 

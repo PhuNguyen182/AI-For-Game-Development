@@ -1,6 +1,6 @@
 ---
 name: live-ops-content-pipeline
-description: "Decide whether live content and economy tuning need a remote-config platform (Firebase/Unity Remote Config, PlayFab Title Data, versioned file) — cadence, rollback window, targeting. Use when planning live-ops tuning."
+description: "Remote config for live tuning: Firebase/Unity Remote Config, PlayFab Title Data, rollback. Use to plan live-ops tuning."
 user-invocable: false
 ---
 

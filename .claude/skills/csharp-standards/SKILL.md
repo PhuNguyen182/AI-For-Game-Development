@@ -1,6 +1,6 @@
 ---
 name: csharp-standards
-description: "Detail behind rule `csharp.md`: Shared Core boundary, naming, Unity fake-null, layout, hot-path and memory rules, Jobs/Burst escalation. Use when writing or reviewing C# and the rule leaves a question open."
+description: "Detail behind rule `csharp.md`: Core boundary, naming, fake-null, hot-path, Jobs/Burst. Use when the rule leaves a gap."
 user-invocable: false
 ---
 

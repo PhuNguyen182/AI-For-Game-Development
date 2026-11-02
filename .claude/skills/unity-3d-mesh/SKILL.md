@@ -1,6 +1,6 @@
 ---
 name: unity-3d-mesh
-description: "Runtime and procedural meshes: Mesh API, SetVertices/SetIndices, MeshData, 32-bit indices, bounds, normals, MeshFilter/MeshRenderer, Read/Write, CombineMeshes, MarkDynamic. Use when generating or modifying meshes in code."
+description: "Procedural meshes: Mesh API, SetVertices, MeshData, 32-bit indices, CombineMeshes. Use when generating meshes in code."
 user-invocable: false
 ---
 

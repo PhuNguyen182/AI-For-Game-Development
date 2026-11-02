@@ -1,6 +1,6 @@
 ---
 name: unity-lighting
-description: "Lighting on Built-in and URP: light types, baked/mixed/realtime GI, lightmapping, Light Probes, Reflection Probes, shadows and cascades, mobile cost. Use for lighting setup or bake issues."
+description: "Built-in/URP lighting: baked/mixed/realtime GI, Light Probes, Reflection Probes, cascades. Use for lighting, bakes."
 user-invocable: false
 ---
 

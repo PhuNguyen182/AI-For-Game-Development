@@ -1,6 +1,6 @@
 ---
 name: unity-profiler-diagnostics
-description: "Measure Unity performance before claiming it: Profiler CPU/GPU/Memory modules, GC Alloc, Deep Profiling, Frame Debugger, Profile Analyzer, Memory Profiler, ProfilerMarker/ProfilerRecorder, device profiling over adb. Use when a number is needed."
+description: "Profiler CPU/GPU/Memory, GC Alloc, Frame Debugger, Memory Profiler, ProfilerMarker. Use when a perf number is needed."
 user-invocable: false
 ---
 

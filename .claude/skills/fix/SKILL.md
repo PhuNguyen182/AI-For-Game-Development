@@ -1,6 +1,6 @@
 ---
 name: fix
-description: "Fix a bug end to end: record it, reproduce, root-cause, fix with the owning agent, add a regression test that fails before and passes after, verify, update the bug. Use for any defect, from QA, the GD or production telemetry."
+description: "Bug fix pipeline with a mandatory regression test. Use for any defect, from QA, the GD or production telemetry."
 argument-hint: "<bug id, or the symptom in the GD's words>"
 ---
 

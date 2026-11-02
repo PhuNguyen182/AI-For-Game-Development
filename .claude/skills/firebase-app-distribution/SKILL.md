@@ -1,6 +1,6 @@
 ---
 name: firebase-app-distribution
-description: "Firebase App Distribution: `firebase appdistribution:distribute`, fastlane `firebase_app_distribution`, app id, group aliases, release notes, service-account auth, iOS ad-hoc UDIDs. Use when shipping signed builds to internal testers."
+description: "`appdistribution:distribute`, `firebase_app_distribution`, groups, UDIDs. Use when shipping builds to internal testers."
 user-invocable: false
 ---
 

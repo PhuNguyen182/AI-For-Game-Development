@@ -1,6 +1,6 @@
 ---
 name: dotween-tweening
-description: "DOTween (Demigiant): DOTween.To, DOMove/DOFade shortcuts, Sequence Append/Join/Insert, SetEase/SetLoops/SetUpdate, OnKill, KillAll, Safe Mode, SetRecyclable, DOPath, DOTweenTMPAnimator. Use for code tweens in a module on DOTween."
+description: "DOTween: DOTween.To, DOMove, Sequence, SetEase, OnKill, KillAll, SetRecyclable, DOPath. Use for code tweens on DOTween."
 user-invocable: false
 ---
 

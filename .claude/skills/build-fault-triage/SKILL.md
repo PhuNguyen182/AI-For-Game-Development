@@ -1,6 +1,6 @@
 ---
 name: build-fault-triage
-description: "Diagnose faults only in a real player build: IL2CPP/AOT, code stripping and link.xml, reflection, native library/ABI faults, signing and permissions, player logs/logcat. Use when a build fails at runtime but the Editor works."
+description: "Player-build-only faults: IL2CPP/AOT, link.xml stripping, ABI, logcat. Use when a build fails but the Editor works."
 user-invocable: false
 ---
 

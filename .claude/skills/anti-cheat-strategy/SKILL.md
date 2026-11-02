@@ -1,6 +1,6 @@
 ---
 name: anti-cheat-strategy
-description: "Choose a game's anti-cheat posture: server authority, server-side detection, client anti-tamper, kernel drivers (EAC, BattlEye) — stakes vs Steam Deck/console and player trust. Use when sizing anti-cheat or a recurring exploit is a posture gap."
+description: "Anti-cheat posture: server authority, detection, anti-tamper, EAC/BattlEye. Use when sizing anti-cheat or exploits."
 user-invocable: false
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: roslyn-analyzer-codefix
-description: "Custom Roslyn analyzers and code fixes enforcing project rules at compile time — Core/UnityEngine boundary, determinism, banned APIs — packaged for Unity. Use when a violation recurs and should fail the build."
+description: "Roslyn analyzers and code fixes enforcing rules: Core boundary, determinism, banned APIs. Use when a violation recurs."
 user-invocable: false
 ---
 

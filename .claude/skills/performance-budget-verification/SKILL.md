@@ -1,6 +1,6 @@
 ---
 name: performance-budget-verification
-description: "Turn profiler numbers into pass/fail per device tier: frame-time, GC/frame, memory, draw calls; warm-up, repeated runs, spread, noise vs regression, thermal throttling. Use when a measurement needs a verdict."
+description: "Profiler numbers to pass/fail per device tier: frame-time, GC, memory, draw calls. Use when a number needs a verdict."
 user-invocable: false
 ---
 

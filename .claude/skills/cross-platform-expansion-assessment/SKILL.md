@@ -1,6 +1,6 @@
 ---
 name: cross-platform-expansion-assessment
-description: "Estimate cost, timeline and risk of adding a platform — console SKU, another mobile OS, Steam Deck, cross-play: certification lead time, porting, per-platform QA, ongoing cost. Use before committing a new platform."
+description: "Cost, timeline, risk of a new platform: console SKU, Steam Deck, cross-play. Use before committing a new platform."
 user-invocable: false
 ---
 

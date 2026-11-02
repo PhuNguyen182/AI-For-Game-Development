@@ -1,6 +1,6 @@
 ---
 name: dotnet-concurrency-and-async
-description: ".NET concurrency: Task, ValueTask, async/await, CancellationToken, TaskCompletionSource, IAsyncEnumerable, Channel<T>, Parallel.ForEach, lock, SemaphoreSlim, Interlocked, ConfigureAwait. Use for async or cross-thread code outside Unity's PlayerLoop."
+description: ".NET Task, ValueTask, CancellationToken, Channel<T>, SemaphoreSlim, Interlocked. Use for async outside PlayerLoop."
 user-invocable: false
 ---
 

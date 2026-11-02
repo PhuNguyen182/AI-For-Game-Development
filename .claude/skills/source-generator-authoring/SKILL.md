@@ -1,6 +1,6 @@
 ---
 name: source-generator-authoring
-description: "C# IIncrementalGenerator replacing repetitive Shared Core code: snapshot codecs, equality/hashing, registries; netstandard2.0, Unity RoslynAnalyzer packaging, caching. Use when the same boilerplate repeats across 3+ types."
+description: "IIncrementalGenerator for Core boilerplate: codecs, equality, registries; netstandard2.0. Use when boilerplate repeats."
 user-invocable: false
 ---
 

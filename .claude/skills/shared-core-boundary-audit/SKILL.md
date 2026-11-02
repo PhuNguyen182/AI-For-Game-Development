@@ -1,6 +1,6 @@
 ---
 name: shared-core-boundary-audit
-description: "Audit Shared Core vs Client: UnityEngine/asmdef leaks into Core, determinism violations (Random, Time, DateTime), rules reimplemented in MonoBehaviours, reversed dependencies. Use when reviewing rule or boundary changes."
+description: "Core vs Client audit: UnityEngine leaks, Random/Time/DateTime, rules in MonoBehaviours. Use when reviewing boundaries."
 user-invocable: false
 ---
 

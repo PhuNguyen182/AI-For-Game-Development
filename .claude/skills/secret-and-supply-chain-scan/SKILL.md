@@ -1,6 +1,6 @@
 ---
 name: secret-and-supply-chain-scan
-description: "Scan for secrets (keys, keystores, .env, service JSON, tokens) and Unity supply-chain risk (InitializeOnLoad, Editor scripts in packages, source-less DLLs) without flagging public SDK ids. Use before commit, import or release."
+description: "Secrets (keys, keystores, .env) and supply-chain risk (InitializeOnLoad, DLLs). Use before commit, import or release."
 user-invocable: false
 ---
 

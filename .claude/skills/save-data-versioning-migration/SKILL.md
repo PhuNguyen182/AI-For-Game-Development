@@ -1,6 +1,6 @@
 ---
 name: save-data-versioning-migration
-description: "Save versioning: header (magic, schema version, SHA-256), frozen SaveVN DTOs, sequential vN→vN+1 migration chain, too-new refusal, temp + File.Replace atomic write, pre-migration backup, golden fixtures. Use when a save format changes or ships."
+description: "Save header (magic, SHA-256), SaveVN DTOs, vN→vN+1 chain, File.Replace, golden fixtures. Use when a save format changes."
 user-invocable: false
 ---
 

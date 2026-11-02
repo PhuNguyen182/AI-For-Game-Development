@@ -1,6 +1,6 @@
 ---
 name: zlinq-zero-allocation-linq
-description: "ZLinq allocation-free LINQ: AsValueEnumerable, struct operators, span sources, tree traversal. Use when LINQ readability is wanted in hot paths."
+description: "ZLinq: AsValueEnumerable, struct operators, span sources, tree traversal. Use when LINQ is wanted in hot paths."
 user-invocable: false
 ---
 

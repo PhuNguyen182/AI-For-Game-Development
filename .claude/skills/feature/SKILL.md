@@ -1,6 +1,6 @@
 ---
 name: feature
-description: "Run an M/L feature from request to closure: size, CP1 (per profile), spec + CP2, a feature branch, serial build (optional lanes) with compile check and UTF tests per agent, optional review and QA, CP4. Also handles change requests and abandonment."
+description: "M/L feature pipeline, request to closure, with CP gates and change requests. Use for any M/L feature."
 argument-hint: "<the request, in the GD's words>"
 ---
 

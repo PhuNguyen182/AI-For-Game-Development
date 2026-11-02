@@ -1,6 +1,6 @@
 ---
 name: tco-reversibility-scoring
-description: "CTO scoring rubric: total cost of ownership (upfront, ongoing, scaling, exit) plus Low/Medium/High reversibility, outweighing upfront cost on gameplay-critical systems. Use as the frame for every strategic tech call."
+description: "CTO rubric: TCO (upfront, ongoing, scaling, exit) and Low/Medium/High reversibility. Use for strategic tech calls."
 user-invocable: false
 ---
 

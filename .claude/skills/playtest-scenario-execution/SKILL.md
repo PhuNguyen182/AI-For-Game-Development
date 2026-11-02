@@ -1,6 +1,6 @@
 ---
 name: playtest-scenario-execution
-description: "Run a GDD scenario in one Editor Play Mode session with proof: observable checkpoints, screenshots at the claim, console reading, defect vs design flaw vs as-designed. Use for every hand-played scenario."
+description: "GDD scenario in one Play Mode session: checkpoints, screenshots, console, design flaw. Use for hand-played scenarios."
 user-invocable: false
 ---
 

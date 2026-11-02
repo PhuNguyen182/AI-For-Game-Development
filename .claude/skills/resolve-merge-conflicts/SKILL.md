@@ -1,6 +1,6 @@
 ---
 name: resolve-merge-conflicts
-description: "Resolve an in-progress merge, rebase, cherry-pick, revert or stash conflict across C#, Unity YAML, Addressables and text: keep both sides' features on a major conflict, pick the standards-compliant side on a cosmetic one, rewire references."
+description: "Merge, rebase, cherry-pick, stash conflicts in C#, Unity YAML, Addressables. Use when a conflict is in progress."
 argument-hint: "[optional notes on which feature areas to prioritize]"
 allowed-tools: Read, Grep, Glob, Edit
 ---

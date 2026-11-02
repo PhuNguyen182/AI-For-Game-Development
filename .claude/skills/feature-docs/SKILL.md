@@ -1,6 +1,6 @@
 ---
 name: feature-docs
-description: Which feature-root docs to read per task and in what order, and which to write at feature completion (README, CONTRACTS, INTEGRATION, ARCHITECTURE, DECISIONS, DEBT, NOTES). Use before changing, using, debugging or reviewing a feature.
+description: "Feature-root docs: README, CONTRACTS, INTEGRATION, ARCHITECTURE, DECISIONS, DEBT, NOTES. Use before work on a feature."
 user-invocable: false
 ---
 

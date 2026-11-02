@@ -1,6 +1,6 @@
 ---
 name: render-pipeline-urp-hdrp
-description: "Confirm which render pipeline is active (URP, HDRP, Built-in) per quality level and what it limits, before any rendering, shader or post work. Use first in any rendering task."
+description: "Active render pipeline (URP, HDRP, Built-in) per quality level. Use first in any rendering, shader or post task."
 user-invocable: false
 ---
 

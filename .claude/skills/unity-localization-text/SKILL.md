@@ -1,6 +1,6 @@
 ---
 name: unity-localization-text
-description: "Localization 1.5: String Tables, Smart Strings plurals, LocalizeStringEvent, LocalizedString, InitializationOperation, SelectedLocaleChanged, pseudo-locale Expander, TMP fallback per script. Use when player-facing text ships in several languages."
+description: "Localization 1.5: String Tables, Smart Strings, LocalizedString, TMP fallback. Use when text ships in several languages."
 user-invocable: false
 ---
 

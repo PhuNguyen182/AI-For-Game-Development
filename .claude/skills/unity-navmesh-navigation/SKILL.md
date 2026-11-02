@@ -1,6 +1,6 @@
 ---
 name: unity-navmesh-navigation
-description: "AI Navigation 2.0: NavMeshSurface/Modifier bake, NavMeshAgent pathStatus, NavMeshObstacle carving, NavMeshLink, area masks and costs, NavMeshBuilder runtime rebuild, NavMesh.Raycast. Use for AI pathfinding."
+description: "AI Navigation 2.0: NavMeshSurface, NavMeshAgent, NavMeshObstacle, NavMeshLink, area costs. Use for AI pathfinding."
 user-invocable: false
 ---
 

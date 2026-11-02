@@ -1,6 +1,6 @@
 ---
 name: git-unity-repo
-description: "Git for Unity: YAML scene/prefab conflicts with UnityYAMLMerge, .meta and GUID integrity, Git LFS pointer vs content, .gitignore/.gitattributes for Unity. Use for Unity-specific git setup or asset conflicts."
+description: "UnityYAMLMerge, .meta/GUID integrity, Git LFS, .gitattributes. Use for Unity git setup or asset conflicts."
 user-invocable: false
 ---
 

@@ -1,13 +1,13 @@
 ---
 name: netcode-for-entities
-description: "Netcode for Entities (DOTS): ghosts, GhostField, IRpcCommand, ICommandData/IInputComponentData, Simulate tag prediction, ClientServerBootstrap, relevancy, thin clients, host migration. Use on an NfE project."
+description: "Netcode for Entities: ghosts, GhostField, IRpcCommand, ICommandData, ClientServerBootstrap. Use on an NfE project."
 user-invocable: false
 ---
 
 # Netcode for Entities
 
 Not for: choosing NfE or the sync model (`netcode-architecture-decision`), the GameObject stack (`netcode-for-gameobjects`), general ECS modeling (`unity-ecs-architecture`), jobs and Burst (`unity-job-system-and-burst`, `unity-burst-compiler`), non-predicted physics (`unity-physics`), ghost rendering (`unity-entities-graphics`), input actions and bindings behind a command (`unity-input-system`), the UTP driver and Relay allocation (`unity-transport`), UGS dashboard/account setup (`sdk-platform-engineer`).
-Docs: https://docs.unity3d.com/Packages/com.unity.netcode@6.6/manual/index.html (API: same path, `api/`) — pinned 6.6; older 0.x/1.x lines differ, so read `Packages/manifest.json` and swap the segment. Package `com.unity.netcode`, not `.gameobjects`. Needs ECS, Editor 2022.3.0f1+ or Unity 6 LTS.
+Docs: https://docs.unity3d.com/Packages/com.unity.netcode@6.6/manual/index.html (API: same path, `api/`) — pinned 6.6; older 0.x/1.x lines differ, so read `Packages/manifest.json` and swap the segment. Package `com.unity.netcode`, not `.gameobjects`. Needs ECS (DOTS), Editor 2022.3.0f1+ or Unity 6 LTS.
 
 | Reference | Read when |
 |---|---|

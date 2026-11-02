@@ -1,6 +1,6 @@
 ---
 name: unity-cinemachine-authoring
-description: "Cinemachine 3 (Unity.Cinemachine): CinemachineBrain, CinemachineCamera, Follow/OrbitalFollow/PositionComposer, Confiner2D/3D, Deoccluder, Impulse, TargetGroup, StateDriven/ClearShot, Channels. Use for authored camera behaviour."
+description: "Cinemachine 3: CinemachineBrain, CinemachineCamera, OrbitalFollow, Confiner, Impulse. Use for authored camera behaviour."
 user-invocable: false
 ---
 

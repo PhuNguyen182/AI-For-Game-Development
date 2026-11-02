@@ -1,6 +1,6 @@
 ---
 name: dotnet-memory-and-collections
-description: "Allocation-conscious .NET memory and collections: Span, Memory, ArrayPool, stackalloc, immutable collections, collection choice by access pattern. Use when per-frame or per-tick code allocates."
+description: "Span, Memory, ArrayPool, stackalloc, immutable collections, collection choice. Use when per-frame code allocates."
 user-invocable: false
 ---
 

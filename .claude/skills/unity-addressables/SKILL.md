@@ -1,6 +1,6 @@
 ---
 name: unity-addressables
-description: "Addressables 4.0: AssetReference, LoadAssetAsync/InstantiateAsync/LoadSceneAsync, Release/ReleaseInstance ref counting, groups/labels, remote catalogs, content updates, Content Directory vs AssetBundle. Use for runtime asset delivery or asset leaks."
+description: "Addressables 4.0: AssetReference, LoadAssetAsync, Release ref counting, remote catalogs. Use for asset delivery, leaks."
 user-invocable: false
 ---
 

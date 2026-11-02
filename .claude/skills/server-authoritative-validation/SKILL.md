@@ -1,6 +1,6 @@
 ---
 name: server-authoritative-validation
-description: "Server checks on client RPCs, commands, hub calls: sender identity (NGO SenderClientId, NfE SourceConnection, MagicOnion ConnectionId), ownership, Core validation, per-connection rate limit, rejection. Use when a server applies client input."
+description: "Server checks on client RPCs: SenderClientId, SourceConnection, ConnectionId, rate limit. Use when server takes input."
 user-invocable: false
 ---
 

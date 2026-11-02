@@ -1,6 +1,6 @@
 ---
 name: crash-anr-fault-domain-triage
-description: "Attribute a symbolicated crash or ANR to one fault domain — game code, Unity engine, third-party SDK, system library — in fixed order, then route the fix to one owner. Use as stage 3 of a production crash investigation."
+description: "Crash/ANR fault domain: game, engine, SDK or system library; routes the fix. Use as stage 3 of a crash investigation."
 user-invocable: false
 ---
 

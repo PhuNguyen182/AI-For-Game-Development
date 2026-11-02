@@ -1,6 +1,6 @@
 ---
 name: plan-game
-description: "Turn a GDD into a production backlog: milestones, then features per milestone sized S/M/L with risk flags and dependencies, written to .workflow/backlog.md for GD approval. Use when starting production or re-planning from a changed GDD."
+description: "GDD to production backlog: milestones, S/M/L features, risk flags, .workflow/backlog.md. Use to plan production."
 argument-hint: "<GDD path or text>"
 ---
 

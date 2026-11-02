@@ -1,6 +1,6 @@
 ---
 name: iap-server-receipt-ledger
-description: "Server-side IAP grants: Play purchases.products get/consume/acknowledge, voided purchases, App Store signed transactions, REFUND notifications, ledger keyed by store transaction id, Firestore or UGS Economy. Use when crediting a real-money purchase."
+description: "Server IAP grants: Play purchases.products, App Store transactions, REFUND, ledger. Use when crediting a purchase."
 user-invocable: false
 ---
 

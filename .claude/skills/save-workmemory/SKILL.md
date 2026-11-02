@@ -1,6 +1,6 @@
 ---
 name: save-workmemory
-description: Summarize the current session's work into WORKMEMORY.md at the feature root — create if missing, update if present
+description: "Summarize the session into WORKMEMORY.md at the feature root. Use when ending a session."
 argument-hint: "[feature-root-path]"
 allowed-tools: PowerShell, Read, Write, Edit, Glob, Grep, Bash
 ---

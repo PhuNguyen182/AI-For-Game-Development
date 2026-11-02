@@ -1,6 +1,6 @@
 ---
 name: release
-description: "Prepare a release candidate per platform: version bump, builds, smoke test, perf on the profile's lowest device, build size, analytics/IAP sandbox check, save migration test, store checklist, signing, changelog — then ask before tag, push or submit."
+description: "Release candidate per platform: gate table, store checklist, signing. Use when preparing a release."
 argument-hint: "<platforms> [--dry-run]"
 ---
 

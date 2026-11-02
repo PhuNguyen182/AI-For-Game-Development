@@ -1,6 +1,6 @@
 ---
 name: litmotion-tweening
-description: "LitMotion zero-allocation tweening: LMotion.Create, MotionBuilder With- options, MotionHandle, Bind/BindTo*, LSequence, Punch/Shake, awaiting, custom IMotionAdapter, LitMotionAnimation. Use for code-driven interpolation in a module on LitMotion."
+description: "LitMotion: LMotion.Create, MotionHandle, Bind, LSequence, IMotionAdapter. Use for code-driven tweens on LitMotion."
 user-invocable: false
 ---
 

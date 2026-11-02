@@ -1,6 +1,6 @@
 ---
 name: osa-optimized-scrollview-adapter
-description: "OSA recycling list/grid/table views replacing ScrollRect: OSA<TParams,TItemViewsHolder>, ResetItems/InsertItems, GridAdapter, ScrollTo, Snapper8, ContentSizeFitter twin pass. Use when a scrolling list is too long for one GameObject per row."
+description: "OSA<TParams,TItemViewsHolder>, ResetItems, GridAdapter, ScrollTo, Snapper8. Use for long scroll lists."
 user-invocable: false
 ---
 

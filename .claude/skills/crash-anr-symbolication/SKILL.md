@@ -1,6 +1,6 @@
 ---
 name: crash-anr-symbolication
-description: "Confirm a crash/ANR trace is fully symbolicated and uploaded symbols match the crashing build id: IL2CPP native symbols, obfuscation mapping, dSYM, Crashlytics. Use as stage 2 of a production crash investigation."
+description: "Crash/ANR symbolication: IL2CPP symbols, mapping, dSYM, build id match. Use as stage 2 of a crash investigation."
 user-invocable: false
 ---
 

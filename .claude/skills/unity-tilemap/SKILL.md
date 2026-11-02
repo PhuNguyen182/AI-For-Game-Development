@@ -1,6 +1,6 @@
 ---
 name: unity-tilemap
-description: "Tilemaps: Grid layouts (rect, hex, isometric Z as Y), Tile Palette, Rule/Auto/Animated Tile, brushes, TilemapRenderer chunk mode, TilemapCollider2D + CompositeCollider2D, Tilemap API. Use for tile-based 2D levels."
+description: "Tilemaps: Grid layouts, Tile Palette, Rule Tile, TilemapRenderer, TilemapCollider2D. Use for tile-based 2D levels."
 user-invocable: false
 ---
 

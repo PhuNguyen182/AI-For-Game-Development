@@ -1,6 +1,6 @@
 ---
 name: spine-animation
-description: "spine-unity runtime: SkeletonAnimation/SkeletonGraphic/SkeletonMecanim, AnimationState tracks, SetSkin/SetupPoseSlots, events, BoneFollower, SkeletonUtility, Spine shaders, PMA, Timeline. Use on Spine-animated characters or UI."
+description: "spine-unity: SkeletonAnimation, SkeletonGraphic, AnimationState, BoneFollower, PMA. Use on Spine characters or UI."
 user-invocable: false
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: compute-shader-vfx
-description: "Compute shaders whose output is a visual: GPU particles, procedural mesh/vertex deformation, flow fields, buffers feeding Shader/VFX Graph — dispatch sizing, buffer lifetime, mobile limits. Use when a visual effect needs GPU simulation."
+description: "Compute shaders for visuals: GPU particles, mesh deformation, flow fields, Shader/VFX Graph buffers. Use for GPU sim."
 user-invocable: false
 ---
 

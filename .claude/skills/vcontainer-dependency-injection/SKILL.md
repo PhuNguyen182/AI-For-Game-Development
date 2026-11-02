@@ -1,6 +1,6 @@
 ---
 name: vcontainer-dependency-injection
-description: "VContainer DI: LifetimeScope, Register with lifetimes, component registration, factories, entry points (IStartable, ITickable), scope parenting, source generator for IL2CPP. Use instead of singletons or Find lookups."
+description: "VContainer: LifetimeScope, Register, factories, IStartable/ITickable, scope parenting. Use instead of singletons."
 user-invocable: false
 ---
 

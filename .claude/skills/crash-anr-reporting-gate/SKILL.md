@@ -1,6 +1,6 @@
 ---
 name: crash-anr-reporting-gate
-description: "Confirm a real production crash/ANR reporting service (Play Console vitals, Crashlytics, App Store Connect) is integrated and reporting before reading any trace. Use as stage 1 of a production crash investigation."
+description: "Crash/ANR reporting service check: Play vitals, Crashlytics, App Store Connect. Use as stage 1 of a crash investigation."
 user-invocable: false
 ---
 

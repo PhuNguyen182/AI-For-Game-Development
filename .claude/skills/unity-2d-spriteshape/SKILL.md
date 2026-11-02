@@ -1,6 +1,6 @@
 ---
 name: unity-2d-spriteshape
-description: "Sprite Shape spline-based 2D terrain: SpriteShapeController, profiles, corners, fill, colliders, runtime spline edits. Use for spline-built 2D levels."
+description: "SpriteShapeController, profiles, corners, fill, colliders, runtime spline edits. Use for spline-built 2D levels."
 user-invocable: false
 ---
 

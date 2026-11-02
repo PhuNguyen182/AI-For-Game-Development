@@ -1,6 +1,6 @@
 ---
 name: netcode-for-gameobjects
-description: "Netcode for GameObjects: NetworkObject/Behaviour/Manager, NetworkVariable, RPCs, ownership, spawning, NetworkTransform, scene management, client-side prediction patterns. Use on an NGO project."
+description: "NGO: NetworkObject, NetworkBehaviour, NetworkVariable, RPCs, ownership, NetworkTransform. Use on an NGO project."
 user-invocable: false
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: core-scene-integration
-description: "Core to scene wiring: one tick owner (VContainer IFixedTickable or one MonoBehaviour), injected tick time, per-tick input command, physics results as plain data, read-only views, render-only interpolation. Use when hooking Core into a scene."
+description: "Core-to-scene wiring: one tick owner, IFixedTickable, per-tick input, read-only views. Use to hook Core into a scene."
 user-invocable: false
 ---
 

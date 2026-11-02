@@ -1,6 +1,6 @@
 ---
 name: unity-camera-fundamentals
-description: "Native Camera: vertical FOV/orthographicSize, Gate Fit, clip planes, cullingMask, depth and clearFlags, viewport rect, ScreenToWorldPoint, hand-written follow/shake. Use for camera setup without Cinemachine."
+description: "Native Camera: FOV, orthographicSize, Gate Fit, cullingMask, viewport, ScreenToWorldPoint. Use for non-Cinemachine cam."
 user-invocable: false
 ---
 

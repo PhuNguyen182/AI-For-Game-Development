@@ -1,6 +1,6 @@
 ---
 name: git-safety-anchor
-description: "Before a state-changing git command: classify blast radius, tag backup/<op>-<utc>, git stash create, derive the literal undo; lists what reflog cannot recover. Use before reset, rebase, merge, checkout, force-push, filter-repo, clean, branch -D."
+description: "Blast radius, backup/<op>-<utc> tag, stash create, undo. Use before reset, rebase, force-push, filter-repo, clean."
 user-invocable: false
 ---
 

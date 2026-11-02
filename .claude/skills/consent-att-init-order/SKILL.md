@@ -1,6 +1,6 @@
 ---
 name: consent-att-init-order
-description: "Consent → ATT → SDK init order: UMP ConsentInformation.Update, LoadAndShowConsentFormIfRequired, CanRequestAds, privacy options, ATTrackingManager, PrivacyInfo.xcprivacy, AgeRestrictedTreatment. Use when ads or analytics must wait for consent."
+description: "UMP ConsentInformation, CanRequestAds, ATTrackingManager, PrivacyInfo.xcprivacy. Use when ads/analytics await consent."
 user-invocable: false
 ---
 

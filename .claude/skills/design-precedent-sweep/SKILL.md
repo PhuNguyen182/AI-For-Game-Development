@@ -1,6 +1,6 @@
 ---
 name: design-precedent-sweep
-description: "Find how shipped games solved a design or architecture problem: shipping team's own account first, 2-4 distinct mechanisms, each with trade-off and assumptions, unranked. Use for every options-mode question."
+description: "How shipped games solved a design or architecture problem: 2-4 mechanisms, unranked. Use for any options-mode question."
 user-invocable: false
 ---
 

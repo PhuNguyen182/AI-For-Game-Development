@@ -1,6 +1,6 @@
 ---
 name: jenkins-pipeline-authoring
-description: "Write a Unity project's declarative Jenkinsfile: agent labels, stages, withCredentials, parameters, lock, stash, junit/NUnit reports, input gate, shared libraries. Use when authoring Jenkins CI."
+description: "Declarative Jenkinsfile: agent labels, withCredentials, lock, stash, NUnit reports, input. Use to author Jenkins CI."
 user-invocable: false
 ---
 

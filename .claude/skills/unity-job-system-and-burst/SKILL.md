@@ -1,6 +1,6 @@
 ---
 name: unity-job-system-and-burst
-description: "Move measured CPU-bound work to worker threads: IJob/IJobFor/ScheduleParallel, JobHandle dependencies, NativeContainer lifetimes and safety, [BurstCompile] on jobs. Use only after profiling shows a parallel CPU bottleneck."
+description: "Worker-thread jobs: IJob/IJobFor, ScheduleParallel, JobHandle, [BurstCompile] jobs. Use after profiling shows CPU bound."
 user-invocable: false
 ---
 

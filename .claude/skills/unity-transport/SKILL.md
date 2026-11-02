@@ -1,6 +1,6 @@
 ---
 name: unity-transport
-description: "Unity Transport 6.6: NetworkDriver, NetworkConnection, NetworkEndpoint, NetworkPipeline stages (reliable, fragmentation, simulator), Relay, TLS/DTLS, WebSocket, NetworkDriver.Concurrent, custom NGO NetworkTransport. Use for low-level networking."
+description: "Unity Transport 6.6: NetworkDriver, NetworkConnection, NetworkPipeline, Relay, DTLS. Use for low-level networking."
 user-invocable: false
 ---
 

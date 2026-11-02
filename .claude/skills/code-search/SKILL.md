@@ -1,6 +1,6 @@
 ---
 name: code-search
-description: "XERJ search (`xerj search`, `xerj def`: BM25 passages, go-to-definition) instead of a repo-wide Grep when the session-start line says XERJ is up. Use before any search across the project."
+description: "`xerj search`, `xerj def` BM25 passages instead of repo-wide Grep. Use before any search across the project."
 user-invocable: false
 ---
 

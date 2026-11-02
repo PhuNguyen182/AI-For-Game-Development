@@ -1,6 +1,6 @@
 ---
 name: agent-protocol
-description: Return envelope (Status/Summary/Changed/Verified/…), Implementation Note, on-arrival rules for dispatched agents.
+description: "Return envelope (Status/Summary/Changed/Verified/…), Implementation Note, on-arrival rules for dispatched agents."
 user-invocable: false
 ---
 

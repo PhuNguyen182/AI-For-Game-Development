@@ -1,6 +1,6 @@
 ---
 name: memorypack-serialization
-description: "MemoryPack binary serialization: [MemoryPackable] partial types, [MemoryPackOrder], version-tolerant mode, [MemoryPackUnion], formatters, IL2CPP setup. Use for saves, snapshots or network messages needing fast compact serialization."
+description: "MemoryPack: [MemoryPackable], MemoryPackOrder, MemoryPackUnion, version-tolerant, IL2CPP. Use for compact serialization."
 user-invocable: false
 ---
 

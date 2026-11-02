@@ -1,6 +1,6 @@
 ---
 name: netcode-architecture-decision
-description: "Choose the multiplayer foundation (Mirror, FishNet, Photon Fusion/Quantum, NGO, custom on Transport/LiteNetLib) and sync model (state sync, lockstep, rollback). Use before any netcode is written."
+description: "Multiplayer foundation (Mirror, FishNet, Fusion/Quantum, NGO) and sync model. Use before any netcode is written."
 user-invocable: false
 ---
 
@@ -11,7 +11,7 @@ Not for: reconciliation protocol, message format, tick rate (`netcode-engineer`)
 ## Steps
 1. **Classify the genre's latency and determinism need before naming a framework** — fighting/1v1 twitch: rollback or deterministic lockstep. FPS/MOBA/action PvP: client-server authoritative with prediction and reconciliation. Co-op, turn-based, async: plain server-authoritative RPC.
 2. **Do not buy prediction the genre cannot perceive** — reconciliation adds desync bugs and a permanent debugging tax.
-3. **Shortlist by sync model, not popularity** — Mirror, FishNet: self-hosted client-server authoritative. Photon Fusion: hosted, prediction built in. Photon Quantum: hosted deterministic lockstep with rollback. NGO: client-server over Unity Transport. Custom: you own the stack above a bare transport.
+3. **Shortlist by sync model, not popularity** — Mirror, FishNet: self-hosted client-server authoritative. Photon Fusion: hosted, prediction built in. Photon Quantum: hosted deterministic lockstep with rollback. NGO: client-server over Unity Transport. Custom: you own the stack above a bare transport (Unity Transport, LiteNetLib).
 4. **Test every determinism claim against the gameplay simulation, not the transport** — lockstep/rollback need a bit-deterministic simulation; floats and Unity physics are not deterministic across platforms. A deterministic framework presupposes it (`csharp-standards` → `coding-principles.md` Shared Core integrity).
 5. **A committed platform the framework misses disqualifies it before price** — check console, mobile and cross-play against the GDD.
 6. **Price the ongoing bucket on CCU and bandwidth** — hosted netcode bills per CCU or message. Fetch the vendor rate card with `WebFetch`; state the crossover point where it overtakes the alternative, not launch-day cost. Score with `tco-reversibility-scoring`, which weights reversibility above upfront cost here (foundation is usually Low reversibility once gameplay is built on it).

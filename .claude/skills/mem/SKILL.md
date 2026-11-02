@@ -1,6 +1,6 @@
 ---
 name: mem
-description: "Zero-Mem store: query past sessions (T), curated notes (M) and indexed docs (K) with a deterministic CLI — no LLM, nothing preloaded. Use before work in an unfamiliar area, and to save a confirmed lesson or GD preference."
+description: "Zero-Mem CLI: query sessions (T), notes (M), docs (K); save lessons. Use before work in an unfamiliar area."
 user-invocable: false
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: unity-physics
-description: "Unity Physics (DOTS, deterministic): PhysicsCollider/Velocity/Mass, simulation groups, queries, collision filters, events, stateless stepping. Use for ECS physics."
+description: "Unity Physics (DOTS, deterministic): PhysicsCollider, PhysicsVelocity, collision filters, events. Use for ECS physics."
 user-invocable: false
 ---
 

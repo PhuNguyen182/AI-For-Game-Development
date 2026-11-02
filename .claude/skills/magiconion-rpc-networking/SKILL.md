@@ -1,6 +1,6 @@
 ---
 name: magiconion-rpc-networking
-description: "MagicOnion client in Unity: code-first gRPC services, StreamingHub, shared interfaces, YetAnotherHttpHandler transport, receivers, lifecycle, heartbeats. Use when a project talks to a MagicOnion server."
+description: "MagicOnion client: gRPC services, StreamingHub, YetAnotherHttpHandler, heartbeats. Use with a MagicOnion server."
 user-invocable: false
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: odin-inspector
-description: "Odin Inspector: conditional/grouping/button attributes, validation, SerializedMonoBehaviour and its serializer caveats, custom drawers. Use when building Inspector tooling with Odin."
+description: "Odin Inspector: attributes, validation, SerializedMonoBehaviour, custom drawers. Use for Inspector tooling with Odin."
 user-invocable: false
 ---
 

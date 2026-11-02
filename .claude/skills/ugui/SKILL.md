@@ -1,6 +1,6 @@
 ---
 name: ugui
-description: "uGUI and TextMeshPro: Canvas, CanvasScaler Match, RectTransform anchors, Layout Groups, Mask vs RectMask2D, Selectable, EventSystem, TMP_Text, UI Profiler batching, canvas splitting. Use for Canvas-based runtime UI."
+description: "uGUI and TextMeshPro: Canvas, CanvasScaler, RectTransform, Layout Groups, RectMask2D, TMP_Text. Use for Canvas UI."
 user-invocable: false
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: core-tests-without-unity
-description: "Core asmdefs noEngineReferences, Tests/EditMode in Edit Mode, optional dotnet test mirror: csproj linking Assets/ sources, LangVersion 9.0, netstandard2.1, NUnit-only tests. Use when Core tests must run without scenes or outside the Editor."
+description: "noEngineReferences, Tests/EditMode, dotnet test mirror, LangVersion 9.0. Use when Core tests run outside the Editor."
 user-invocable: false
 ---
 
