@@ -51,17 +51,22 @@ When a part is genuinely hard (architecture, determinism, netcode, threading, sh
 
 ## Limits and follow-ups (required)
 
-End any reply that completed a task with a short **Limits** section when anything was not fully solved. Skip it only when there is truly nothing to report.
+End a reply that completed a task with a short **Limits** section, but list only limits that matter. Rank each by severity and report only L and M:
 
-- **Known limits:** what is incomplete, approximated, unverified, or deliberately deferred, and the practical impact.
-- **Why:** one line on the cause (time, missing info, risk, out of scope).
-- **Future fix:** the concrete next step to close it properly, and roughly what it costs.
+- **L:** can cause wrong results, data loss, a crash, a security hole, or a missed requirement or budget. Also an unverified claim the next step depends on.
+- **M:** degrades behaviour, performance or maintainability, or needs a follow-up task, but the work still functions.
+- **S:** cosmetic or negligible. Leave it out.
+
+Rules:
+
+- No L or M limit left: omit the section. Do not write "none" and do not list S items.
+- Order L before M. One line each; keep the cause to a few words.
+- A limit you resolved later in the session is dropped from the report. Do not repeat it.
+- If a workaround replaced a root-cause fix, list it as a limit and name the root cause.
 
 Format:
 
 ```
 Limits
-- <limit> — impact: <what it affects>. Fix later: <specific next step>.
+- [L|M] <limit> — impact: <what it affects>. Fix later: <specific next step>.
 ```
-
-If a workaround was used instead of a root-cause fix, say so here and name the root cause.

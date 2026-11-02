@@ -115,16 +115,16 @@ What it does:
 | Length | Short, result first, one idea per line. |
 | Hard topics | Architecture, determinism, netcode, shaders and similar get a plain explanation: what it is, how it works, what breaks if done wrong. Everything else stays short. |
 | Truthfulness | Never claims a test, build or review that did not run. No silent scope cuts. |
-| Limits | Ends a finished task with a `Limits` list: what is incomplete, the impact, and the concrete fix for later. |
+| Limits | Ends a finished task with a `Limits` list of only the L (serious) and M (moderate) limits, each with its impact and the fix for later. Minor (S) limits are left out, and the list is omitted when none remain. |
 
 It sets `keep-coding-instructions: true`, so Claude Code's built-in coding behaviour stays on.
 
 Turn it on:
 
 1. In Claude Code, run `/output-style Game Engineer` (needs v2.1.269 or later). Without an argument it lists the styles. In the terminal you can also use `/config` → **Output style**.
-2. Or set it in a settings file: `{ "outputStyle": "Game Engineer" }`. The value is case-sensitive; a wrong spelling falls back to Default. Use `.claude/settings.local.json` for yourself only, or `~/.claude/settings.json` as your default for all projects.
+2. Or set it in a settings file: `{ "outputStyle": "Game Engineer" }`. The value is case-sensitive; a wrong spelling falls back to Default. Use the project's local settings file (settings.local.json in .claude/) for yourself only, or `~/.claude/settings.json` as your default for all projects.
 
-The command and the `/config` menu save your choice to `.claude/settings.local.json`. A switch applies from your next message. To go back, pick **Default**.
+The command and the `/config` menu save your choice to that local settings file. A switch applies from your next message. To go back, pick **Default**.
 
 Style files are read at startup: after you create or edit one, restart Claude Code. Claude Code loads `.claude/output-styles/` from the working directory up to the repo root. A style only guides Claude; nothing enforces it, so use hooks for hard rules. It does not change subagents, and `CLAUDE.md` stays loaded whichever style is active.
 
@@ -151,7 +151,7 @@ To change it, edit the file and run `/verify-layer`. Install and update copy it 
 
 Notes:
 
-- A project that sets its own `outputStyle` (in `.claude/settings.json` or `.claude/settings.local.json`) overrides this default. Running `/output-style <name>` in a project writes to its `.claude/settings.local.json`.
+- A project that sets its own `outputStyle` (in the project's settings.json or settings.local.json) overrides this default. Running `/output-style <name>` in a project writes to its local settings file.
 - A project style with the same name wins over the copy in `~/.claude/output-styles/`.
 - The two copies do not sync. After you edit the file in this repo, copy it again, or link it with a symlink.
 
