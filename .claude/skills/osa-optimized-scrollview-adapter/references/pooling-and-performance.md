@@ -22,7 +22,7 @@ Sources: M = manual https://forbiddenbyte.com/blog/osa-complete-manual/ (FAQ 2, 
 OSA calls `CreateViewsHolder(-1)` for buffered items; with several prefab types use a distinct negative index per type.
 
 - **Sample:** [PreMadeRowsAdapterMembers.cs](../scripts/PreMadeRowsAdapterMembers.cs) — two members of an adapter class, not a standalone file. `OnInitialized` calls `CreateBufferredRecycleableItems(_PreMadeViews.Count)` and `AddBufferredRecycleableItems(vhs)`, then sets `KeepItemsPoolOnEmptyList` and `KeepItemsPoolOnLayoutRebuild` to `true` so buffered items survive count changes and rebuilds. `CreateViewsHolder` takes the last entry of `_PreMadeViews`, removes it and calls `InitWithExistingRoot(root, _Params.Content, itemIndex)` for a negative `itemIndex`, else `Init(_Params.ItemPrefab, _Params.Content, itemIndex)`.
-  - **Adapt into:** the project's OSA adapter class (derives `OSA<TParams, TItemViewsHolder>`), or `Assets/_Project/Scripts/<Feature>/Views/<Name>Adapter.cs` when none exists; the file holds class members only, and `_PreMadeViews` and `MyItemViewsHolder` are project code; the file keeps a 4-line header marking it unverified.
+  - **Adapt into:** the project's OSA adapter class (derives `OSA<TParams, TItemViewsHolder>`), or `Assets/_Project/Scripts/<Feature>/Views/<Name>Adapter.cs` when none exists; the sample holds class members only, and `_PreMadeViews` and `MyItemViewsHolder` are project code; the sample keeps a 4-line header marking it unverified.
 
 Throwing in the `else` surfaces an under-sized pre-made set in development; falling back hides it and brings back the runtime allocation.
 

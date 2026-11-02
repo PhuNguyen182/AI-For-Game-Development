@@ -1,6 +1,6 @@
 ---
 name: feature
-description: "M/L feature pipeline, request to closure, with CP gates and change requests. Use for any M/L feature."
+description: "M/L feature pipeline, request to closure, with CP gates, change requests and abandonment. Use for any M/L feature."
 argument-hint: "<the request, in the GD's words>"
 ---
 

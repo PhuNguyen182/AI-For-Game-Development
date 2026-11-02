@@ -66,7 +66,7 @@ user-invocable: false
    - **Name:** the secret id in the backend's secret store, never a value, in code, repo, client or logs; list ids under `Config required:`; run `secret-and-supply-chain-scan` on the diff.
 10. **Verify by running, never by reading:** risk flag set (`routing.md`).
     - **Runs:** sandbox purchase per store, the same proof replayed twice (one grant), a tampered JWS or wrong-package token rejected, a test refund reversed.
-    - **Not run:** `Verified: not run` and a `Known limitations` line.
+    - **Not run:** `Verified: not run` and a `Limitations` line.
     - **Release candidate:** `release` step 7 owns its sandbox check.
 
 ## Never

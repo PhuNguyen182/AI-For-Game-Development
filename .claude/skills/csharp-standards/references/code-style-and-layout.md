@@ -7,7 +7,7 @@ Synthesized from project decisions; adds to rule `csharp.md`.
 
 - **Sample:** [AbilityRunner.cs](../scripts/AbilityRunner.cs).
   - **Shows:** `public sealed class`, `private const`, `[SerializeField] private`, a `private` field, a `public` expression-bodied property, a `private` method.
-  - **Adapt into:** `Assets/_Project/Scripts/<Feature>/Views/AbilityRunner.cs`; the file keeps a 3-line header marking it unverified.
+  - **Adapt into:** `Assets/_Project/Scripts/<Feature>/Views/AbilityRunner.cs`; the sample keeps a 3-line header marking it unverified.
 
 ## Layout
 - A one-statement `if`/`else`/`for`/`foreach`/`while` body may skip braces, on its own line; a second statement brings Allman braces around both.

@@ -24,7 +24,7 @@ animation.Restart();
 Inherit `LitMotionAnimationComponent` (full control) or `PropertyAnimationComponent<TObject,TValue,TOptions,TAdapter>` (typed shortcuts such as `FloatPropertyAnimationComponent<TObject>`, `Vector3PropertyAnimationComponent<TObject>`), which handles motion creation and restoration; override only `GetValue`/`SetValue`.
 
 - **Sample:** [CustomAnimationComponents.cs](../scripts/CustomAnimationComponents.cs) — two `[Serializable]` classes. `CustomAnimation : LitMotionAnimationComponent` is a skeleton under `[LitMotionAnimationComponentMenu("Custom/Custom Animation")]`: its `Play()` body is a placeholder comment (create and return the `MotionHandle`) and does not compile until filled; `OnPause` and `OnResume` are empty, `OnStop` must restore the original value. `SliderValueAnimation : FloatPropertyAnimationComponent<Slider>` under `"UI/Slider/Value"` overrides `GetValue` (`target.value`) and `SetValue` (`target.value = value`) and is complete.
-  - **Adapt into:** `Assets/_Project/Scripts/<Feature>/Views/CustomAnimationComponents.cs`; fill the `Play()` placeholder first; the file keeps a 3-line header marking it unverified.
+  - **Adapt into:** `Assets/_Project/Scripts/<Feature>/Views/CustomAnimationComponents.cs`; fill the `Play()` placeholder first; the sample keeps a 3-line header marking it unverified.
 
 `[LitMotionAnimationComponentMenu("Path/Name")]` sets the **Add...** menu label.
 

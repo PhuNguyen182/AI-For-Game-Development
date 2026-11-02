@@ -1,6 +1,6 @@
 ---
 name: backend-build-vs-buy
-description: "Backend build-vs-buy: matchmaking, cloud save, hosting, leaderboards; UGS, PlayFab, Nakama, Firebase. Use to pick one."
+description: "Backend build-vs-buy: matchmaking, cloud save, hosting, leaderboards; UGS, PlayFab, Nakama, Firebase. Use when choosing."
 user-invocable: false
 ---
 

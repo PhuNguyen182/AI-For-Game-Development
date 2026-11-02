@@ -17,7 +17,7 @@ Neither world nor local space. You may rely on: node centre at `(0,0,0)`; each c
 - `child.GetArrangeSize()` (not `GetMeasureSize`), then `SetPositionResult(Vector3)` and `SetRotationResult(Quaternion)` in Layout Space.
 
 - **Sample:** [HelixStackLayout.cs](../scripts/HelixStackLayout.cs) — a complete `LayoutBase` subclass with serialized `step` and `degrees` fields. `Measure` sets the Y size to `(Children.Count - 1) * step` only when Y is `SizeType.Layout`, clamps to `min`/`max`, calls `SetChildrenFillShrinkSize(node, size, size)` and returns `new Bounds(Vector3.zero, size)`. `Arrange` sets child i to `(0, -layoutSize.y * 0.5 + i * step, 0)` and `Quaternion.Euler(0, i * degrees, 0)`.
-  - **Adapt into:** `Assets/_Project/Scripts/<Feature>/Views/HelixStackLayout.cs`; the file keeps a 3-line header marking it unverified.
+  - **Adapt into:** `Assets/_Project/Scripts/<Feature>/Views/HelixStackLayout.cs`; the sample keeps a 3-line header marking it unverified.
 
 ## `FlexalonNode` members
 | Member | Use |
