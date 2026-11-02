@@ -890,7 +890,6 @@ try {
     Check 'verify: a CRLF copy of it passes per file with no output line' ($r.Code -eq 0 -and $r.Out -cnotmatch 'WARN|FAIL') $true
     $r = Verify
     Check 'verify: ... and on a whole-layer run' ($r.Code -eq 0 -and $r.Out -cnotmatch 'WARN|FAIL' -and $r.Out -match 'verify-layer: OK \(0 warning\(s\)\)') $true
-    Check 'verify: ... the CRLF copy too' ($r.Code -eq 0 -and $r.Out -notmatch 'crlf-skill') $true
     VSkill 'trigger-field' @() 'Foo.Bar and Baz.Qux only.'
     $f = Join-Path $vlSkills 'trigger-field/SKILL.md'
     Set-Content $f ((Get-Content $f -Raw) -replace 'user-invocable: false', "when_to_use: `"checking the fixture`"`nuser-invocable: false")
@@ -916,6 +915,10 @@ try {
     $vlLong = '- **Long:** ' + ('x' * 200)
     $fenceNested = @('````', '```', '- an untitled bullet in the inner fence', $vlLong, '```', '- an untitled bullet after the inner fence', '````')
     $fenceTilde = @('~~~', $vlLong, '```', '- an untitled bullet under a lone backtick line', $vlLong, '~~~')
+    # A same-character mark with text after it does not close: closing there reads the bullet as body and hides the plant.
+    $fenceTrailing = @('```', '``` not a closer', '- an untitled bullet in the fence', '```')
+    # A longer mark closes too: demanding the exact length leaves this open and hides the plant.
+    $fenceLonger = @('```', '- an untitled bullet in the fence', '````')
     VSkill 'fence-nested' $fenceNested
     $r = Verify (VRel 'fence-nested')
     Check 'verify: a 4-backtick fence holding a 3-backtick fence passes with no output line' ($r.Code -eq 0 -and $r.Out -cnotmatch 'WARN|FAIL') $true
@@ -926,6 +929,11 @@ try {
     # verify-layer: a backticked star in a title, and script folders that are not the skill's own scripts
     VSkill 'title-backtick' @('- **`*.meta` files:** text.')
     Check 'verify: a title may hold a backticked star' (Verify (VRel 'title-backtick')).Code 0
+    VSkill 'title-odd-backtick' @('- **A ``` mark:** the fence `code`.', '- **The ` key:** press `Tab` next.')
+    Check 'verify: a title may hold an odd backtick run, with a backticked pair after the title' (Verify (VRel 'title-odd-backtick')).Code 0
+    VSkill 'checklist-backtick'
+    Set-Content (Join-Path $vlSkills 'checklist-backtick/checklist.md') @('# Checklist', '', '- [ ] **`*.meta` files:** present.', '- [ ] **The ` key:** press `Tab` next.')
+    Check 'verify: a checklist title takes what a skill title takes' (Verify '.claude/skills/checklist-backtick/checklist.md').Code 0
     VSkill 'ignored-scripts'
     New-Item -ItemType Directory -Force (Join-Path $vlSkills 'ignored-scripts/scripts/__pycache__'), (Join-Path $vlSkills 'ignored-scripts/scripts/.venv/lib') | Out-Null
     Set-Content (Join-Path $vlSkills 'ignored-scripts/scripts/__pycache__/x.cpython-312.pyc') '# Bytecode.'
@@ -976,18 +984,40 @@ try {
         @('numbered-step', $okDesc, @('3. A plain step.'), 'untitled list item or prose line'),
         @('fence-nested-plant', $okDesc, ($fenceNested + '- A plain bullet after the fence.'), 'untitled list item or prose line'),
         @('fence-tilde-plant', $okDesc, ($fenceTilde + '- A plain bullet after the fence.'), 'untitled list item or prose line'),
-        # Hangs the run if the title pattern backtracks exponentially again.
-        @('backtick-run', $okDesc, @('- **x ' + ('`a` ' * 30) + 'end'), 'untitled list item or prose line')
+        @('fence-trailing-plant', $okDesc, ($fenceTrailing + '- A plain bullet after the fence.'), 'untitled list item or prose line'),
+        @('fence-longer-plant', $okDesc, ($fenceLonger + '- A plain bullet after the fence.'), 'untitled list item or prose line')
     )
     foreach ($p in $plants) {
         VSkill $p[0] $p[2] $p[1]
         $r = Verify (VRel $p[0])
         Check "verify fails per file: $($p[0])" ($r.Code -eq 1 -and $r.Out -match "$(VFail $p[0])$($p[3])") $true
     }
+    # In a job, so a title pattern that backtracks exponentially fails here instead of hanging the run. Its process runs the
+    # check itself and reports its id first: a regex stuck in .NET ignores Stop-Job, so a timeout kills that process.
+    function VerifyInJob([string]$File, [int]$Seconds) {
+        $job = Start-Job -ArgumentList (Join-Path $vlSkills 'verify-layer/scripts/verify.ps1'), $File -ScriptBlock {
+            param($Script, $Target)
+            $PID
+            $out = & $Script -File $Target 2>&1
+            $LASTEXITCODE
+            $out -join "`n"
+        }
+        $finished = [bool](Wait-Job $job -Timeout $Seconds)
+        $got = @(Receive-Job $job)
+        if (-not $finished -and $got.Count) { Stop-Process -Id $got[0] -Force -ErrorAction SilentlyContinue }
+        Remove-Job $job -Force
+        @{ TimedOut = -not $finished; Code = $(if ($finished) { $got[1] }); Out = $(if ($finished) { $got[2] }) }
+    }
+    # Out of $plants and deleted after, so no whole-layer run below reads it.
+    VSkill 'backtick-run' @('- **x ' + ('`a` ' * 30) + 'end')
+    $r = VerifyInJob (VRel 'backtick-run') 30
+    Check 'verify: 30 backticked pairs with no title end finish within 30 s' $r.TimedOut $false
+    Check 'verify fails per file: backtick-run' ($r.Code -eq 1 -and $r.Out -match "$(VFail 'backtick-run')untitled list item or prose line") $true
+    Remove-Item -Recurse -Force (Join-Path $vlSkills 'backtick-run')
     $r = Verify (VRel 'prose-line')
     $at = (Select-String -LiteralPath (Join-Path $vlSkills 'prose-line/SKILL.md') -SimpleMatch 'A prose paragraph.').LineNumber
     Check 'verify: the untitled FAIL gives the file line number' ($r.Out -match "lines $at\)") $true
-    foreach ($vn in 'fence-nested-plant', 'fence-tilde-plant') {
+    foreach ($vn in 'fence-nested-plant', 'fence-tilde-plant', 'fence-trailing-plant', 'fence-longer-plant') {
         $r = Verify (VRel $vn)
         $at = (Select-String -LiteralPath (Join-Path $vlSkills "$vn/SKILL.md") -SimpleMatch 'A plain bullet after the fence.').LineNumber
         Check "verify: the fence closed, and only the plant after it fails: $vn" ($r.Out -match "lines $at\)") $true
@@ -1010,10 +1040,16 @@ try {
     Set-Content (Join-Path $vlSkills 'long-fence/references/long.md') (@('# Long', '```') + (1..15 | ForEach-Object { "line $_" }) + '```')
     $r = Verify '.claude/skills/long-fence/references/long.md'
     Check 'verify fails per file: a 15-line reference fence' ($r.Code -eq 1 -and $r.Out -match 'FAIL  \.claude/skills/long-fence/references/long\.md: reference has a fenced block of 15\+ lines') $true
+    VSkill 'checklist-plain'
+    Set-Content (Join-Path $vlSkills 'checklist-plain/checklist.md') @('# Checklist', '', '- [ ] A plain item.')
+    $r = Verify '.claude/skills/checklist-plain/checklist.md'
+    Check 'verify fails per file: a checklist item with no title' ($r.Code -eq 1 -and $r.Out -match 'FAIL  \.claude/skills/checklist-plain/checklist\.md:3: not a heading') $true
     $longRefs = @(
         @('long-tilde', (@('# Long', '~~~') + (1..15 | ForEach-Object { "line $_" }) + '~~~')),
         # Toggling pairs the outer mark with the inner one and sees two 8-line blocks.
-        @('long-nested', (@('# Long', '````') + $ref8 + '```' + $ref8 + '````'))
+        @('long-nested', (@('# Long', '````') + $ref8 + '```' + $ref8 + '````')),
+        # An unclosed fence runs to the end of the file, so its lines count.
+        @('long-unclosed', (@('# Long', '```') + (1..15 | ForEach-Object { "line $_" })))
     )
     foreach ($p in $longRefs) {
         VSkill $p[0]
@@ -1029,8 +1065,9 @@ try {
     Check 'verify fails whole-layer: a nested script not named' ($r.Out -match "$(VFail 'unnamed-nested-script')script 'deep\.ps1' not named") $true
     Check 'verify fails whole-layer: a 15-line reference fence' ($r.Out -match 'FAIL  \.claude/skills/long-fence/references/long\.md: reference has a fenced block') $true
     foreach ($p in $longRefs) { Check "verify fails whole-layer: $($p[0]) reference fence" ($r.Out -match "FAIL  \.claude/skills/$($p[0])/references/long\.md: reference has a fenced block") $true }
-    Check 'verify: the whole-layer failure count is the plants and nothing else' ($r.Out -match "$($plants.Count + 6) failure\(s\)") $true
-    foreach ($ok in 'clean-skill', 'crlf-skill', 'crlf-size', 'trigger-field', 'preloaded-skill', 'named-in-ref', 'short-fence', 'ref-fences-ok', 'fence-nested', 'fence-tilde', 'title-backtick', 'ignored-scripts', 'soft-one') {
+    Check 'verify fails whole-layer: a checklist item with no title' ($r.Out -match 'FAIL  \.claude/skills/checklist-plain/checklist\.md:3: not a heading') $true
+    Check 'verify: the whole-layer failure count is the plants and nothing else' ($r.Out -match "$($plants.Count + $longRefs.Count + 5) failure\(s\)") $true
+    foreach ($ok in 'clean-skill', 'crlf-skill', 'crlf-size', 'trigger-field', 'preloaded-skill', 'named-in-ref', 'short-fence', 'ref-fences-ok', 'fence-nested', 'fence-tilde', 'title-backtick', 'title-odd-backtick', 'checklist-backtick', 'ignored-scripts', 'soft-one') {
         Check "verify: no FAIL for $ok among the plants" ($r.Out -match "FAIL  [^\n]*/$ok/") $false
     }
     foreach ($s in $softChecks) { Check "soft: still only a count among the plants: $s" ($r.Out -match "WARN  2 file\(s\): $s") $true }
@@ -1050,6 +1087,16 @@ try {
         $r = Verify (VRel $p[0])
         Check "soft: a long item after the fence warns: $($p[0])" ($r.Code -eq 0 -and $r.Out -match 'list item > 200 chars') $true
     }
+
+    # verify-layer: line endings change nothing in the output. An item of exactly the budget warns only if a CR counts; the
+    # prose line gives both runs an output to compare, line number included.
+    $eolBody = @(('- **Edge:** ' + ('x' * 188)), 'A prose paragraph.')
+    VSkill 'eol-lf' $eolBody
+    VSkill 'eol-cr' $eolBody
+    ToCrlf 'eol-cr'
+    $lfRun = Verify (VRel 'eol-lf')
+    $crRun = Verify (VRel 'eol-cr')
+    Check 'verify: a CRLF copy gives the output of its LF original, name aside' ($lfRun.Out -match 'lines \d+\)' -and $crRun.Code -eq $lfRun.Code -and ($crRun.Out -replace 'eol-cr', 'eol-lf') -ceq $lfRun.Out) $true
 }
 finally {
     Remove-Item Env:CLAUDE_PROJECT_DIR, Env:HOOK_TEST_XERJ, Env:MEM_CAPTURE, Env:XERJ_URL -ErrorAction SilentlyContinue

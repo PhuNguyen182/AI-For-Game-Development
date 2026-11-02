@@ -32,6 +32,10 @@ $RetiredPaths = '\.claude/(standards|workflows/[a-z-]+\.md|workflows/(references
 $IdPattern = '\b(?:G[0-9]{1,2}|B[0-9]{1,2}|I[0-9]{1,2}|A[1-5]|V[1-5]|EV[0-4])\b'
 # Retired namespace scheme: features use path-derived namespaces (naming-convention.md).
 $RetiredNamespace = '\bGame\.(?:Core|Client|Server)\b'
+# '**Title:**' in a skill or checklist line. The first branch takes a title with no '*', whatever its backticks: the second
+# would swallow ':**' into a pair opened by an odd backtick. The second lets '*' sit in backticks. Its group is atomic: with
+# both alternatives open to backtracking, 20 backticked pairs on a line with no title end take 45 s.
+$TitlePattern = '\*\*(?:[^*]+|(?>`[^`]*`|[^*])+):\*\*'
 # Return strings hooks/round-cap.ps1 counts on: renaming one silently stops the count.
 $HookContracts = @{
     '.claude/agents/code-reviewer.md'        = @('Verdict: Approve | Request changes')
@@ -106,14 +110,12 @@ function Get-FenceMap([string[]]$lines) {
 # Outside fences each line is blank, a column-0 heading, a table row or a titled list item ('- **Title:** text', '1. **Title:** text').
 # Prose by that rule: wrapped or indented continuation lines, blockquotes, text right after a fence, HTML comments, rules, '*' bullets.
 # Nested items are titled too. Fence content is never read. Returns the file line numbers that fail.
-# A title may hold backticked '*'. The group is atomic: with both alternatives open to backtracking, 20 backticked pairs
-# on a line with no title end take 45 s.
 function Get-UntitledLines([string]$body, [int]$lineOffset) {
     $lines = @($body -split '\r?\n'); $map = Get-FenceMap $lines
     for ($i = 0; $i -lt $lines.Count; $i++) {
         $l = $lines[$i]
         if ($map[$i] -or $l -match '^\s*$|^#{1,6}\s|^\s*\|') { continue }
-        if ($l -notmatch '^\s*(?:-|\d+\.)\s+\*\*(?>`[^`]*`|[^*])+:\*\*') { $lineOffset + $i + 1 }
+        if ($l -notmatch ('^\s*(?:-|\d+\.)\s+' + $TitlePattern)) { $lineOffset + $i + 1 }
     }
 }
 
@@ -167,7 +169,7 @@ function Test-SkillFormat([string]$path, [string]$rel, [string]$name, [string]$t
 
 function Test-Checklist([string]$path, [string]$rel, [string[]]$lines) {
     for ($i = 0; $i -lt $lines.Count; $i++) {
-        if ($lines[$i] -notmatch '^(?:\s*|#{1,6} .+|- \[ \] \*\*[^*]+:\*\* \S.*)$') { Fail "${rel}:$($i + 1): not a heading or '- [ ] **<title>:** <text>' line" }
+        if ($lines[$i] -notmatch ('^(?:\s*|#{1,6} .+|- \[ \] ' + $TitlePattern + ' \S.*)$')) { Fail "${rel}:$($i + 1): not a heading or '- [ ] **<title>:** <text>' line" }
     }
     # The whole-layer run reaches this through the skill's SKILL.md.
     if ($File) { Test-ChecklistLink (Split-Path $path) }
