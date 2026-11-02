@@ -831,6 +831,132 @@ try {
     # verify-on-edit
     Check 'verify-on-edit ignores files outside .claude' (Invoke-Hook 'verify-on-edit.ps1' @{ tool_input = @{ file_path = "$proj/Assets/A.cs" } }).Code 0
     Check 'verify-on-edit ignores writes inside an agent worktree' (Invoke-Hook 'verify-on-edit.ps1' @{ tool_input = @{ file_path = "$proj/.claude/worktrees/agent-x/.workflow/evidence/r.md" } }).Code 0
+
+    # verify-layer skill format: a copy runs on a planted layer, because the script takes its root from its own path
+    $vl = Join-Path $tmp 'VerifyLayer'
+    $vlSkills = Join-Path $vl '.claude/skills'
+    New-Item -ItemType Directory -Force (Join-Path $vl '.claude/agents'), (Join-Path $vl '.claude/rules'), (Join-Path $vl '.claude/hooks'), (Join-Path $vlSkills 'verify-layer/scripts') | Out-Null
+    Copy-Item (Join-Path $hooks '../skills/verify-layer/scripts/verify.ps1') (Join-Path $vlSkills 'verify-layer/scripts')
+    Copy-Item (Join-Path $hooks 'common.ps1'), (Join-Path $hooks 'verify-on-edit.ps1') (Join-Path $vl '.claude/hooks')
+    Set-Content (Join-Path $vl 'CLAUDE.md') '# Layer'
+    Set-Content (Join-Path $vl 'README.md') '# Layer'
+    function Verify([string]$File = '') {
+        $verifyArgs = if ($File) { @('-File', $File) } else { @() }
+        $out = & $shell -NoProfile -NonInteractive -File (Join-Path $vlSkills 'verify-layer/scripts/verify.ps1') @verifyArgs 2>&1
+        return @{ Code = $LASTEXITCODE; Out = ($out -join "`n") }
+    }
+    function VerifyEdit([string]$Path) {
+        $json = @{ tool_input = @{ file_path = $Path } } | ConvertTo-Json -Depth 5 -Compress
+        $json | & $shell -NoProfile -NonInteractive -File (Join-Path $vl '.claude/hooks/verify-on-edit.ps1') 2>&1 | Out-Null
+        $LASTEXITCODE
+    }
+    $okDesc = 'Clean.Symbol, Other.Member. Use when checking the fixture.'
+    # A template-shaped skill. Each plant changes $Desc or appends $Extra, so the planted line is the only violation.
+    function VSkill([string]$Name, [string[]]$Extra = @(), [string]$Desc = $okDesc) {
+        $dir = Join-Path $vlSkills $Name
+        New-Item -ItemType Directory -Force (Join-Path $dir 'references'), (Join-Path $dir 'scripts') | Out-Null
+        Set-Content (Join-Path $dir 'references/topic.md') "# Topic`n`n- A fact."
+        Set-Content (Join-Path $dir 'scripts/x.ps1') '# Prints x.'
+        Set-Content (Join-Path $dir 'scripts/test_x.py') '# The test of x.'
+        Set-Content (Join-Path $dir 'checklist.md') "# Checklist`n`n- [ ] **Done:** it ran."
+        $text = @('---', "name: $Name", "description: `"$Desc`"", 'user-invocable: false', '---', '', '# Subject', '',
+            '- **Not for:** the layer check (`verify-layer`).', '- **Docs:** https://example.com/docs/ - one caveat.', '',
+            '## References', '- **[topic.md](references/topic.md):** on a symptom.', '',
+            '## Scripts', '- **[x.ps1](scripts/x.ps1):** run `pwsh -NoProfile -File "${CLAUDE_SKILL_DIR}/scripts/x.ps1"` -> prints x.', '',
+            '## Steps', '1. **First:** do it.', '   - **Nested:** titled too.', '2. **Final check:** walk [checklist.md](checklist.md) before returning.', '',
+            '## Data', '| Axis | Choice |', '|---|---|', '| a | b |', '',
+            '## Never', '- **`Verified` evidence:** a backticked title, as in agent-protocol.', '- **Verified before shipping:** no colon after the word.', '',
+            '## Output', '```', '## Subject', 'Status: Done', 'Free text a fence may hold.', '- an untitled bullet in a fence', '```', '',
+            '## Example', '- **"Wrong request":** declined - why; did this instead.', '') + $Extra
+        Set-Content (Join-Path $dir 'SKILL.md') ($text -join "`n")
+    }
+    function VRel([string]$Name) { ".claude/skills/$Name/SKILL.md" }
+    function VFail([string]$Name) { "FAIL  \.claude/skills/$Name/SKILL\.md: " }
+
+    # verify-layer: a clean template-shaped skill passes, and its exceptions stay exceptions
+    VSkill 'clean-skill'
+    $r = Verify (VRel 'clean-skill')
+    Check 'verify: a clean template-shaped skill passes per file with no output line' ($r.Code -eq 0 -and $r.Out -cnotmatch 'WARN|FAIL') $true
+    $r = Verify
+    Check 'verify: ... and on a whole-layer run' ($r.Code -eq 0 -and $r.Out -cnotmatch 'WARN|FAIL' -and $r.Out -match 'verify-layer: OK \(0 warning\(s\)\)') $true
+    VSkill 'trigger-field' @() 'Foo.Bar and Baz.Qux only.'
+    $f = Join-Path $vlSkills 'trigger-field/SKILL.md'
+    Set-Content $f ((Get-Content $f -Raw) -replace 'user-invocable: false', "when_to_use: `"checking the fixture`"`nuser-invocable: false")
+    Check 'verify: when_to_use counts as the Use trigger' (Verify (VRel 'trigger-field')).Code 0
+    VSkill 'preloaded-skill' @() 'Foo.Bar and Baz.Qux only.'
+    Set-Content (Join-Path $vl '.claude/agents/fixture-agent.md') "---`nname: fixture-agent`ndescription: A fixture.`ntools: Read`nskills:`n  - preloaded-skill`n---`n`n# Fixture"
+    Check 'verify: a skill an agent preloads needs no Use trigger' (Verify (VRel 'preloaded-skill')).Code 0
+    VSkill 'named-in-ref'
+    Set-Content (Join-Path $vlSkills 'named-in-ref/scripts/y.ps1') '# Prints y.'
+    Set-Content (Join-Path $vlSkills 'named-in-ref/references/topic.md') "# Topic`n`n- Adapt ../scripts/y.ps1."
+    Check 'verify: a script named only in a reference passes' (Verify (VRel 'named-in-ref')).Code 0
+    VSkill 'short-fence'
+    Set-Content (Join-Path $vlSkills 'short-fence/references/short.md') (@('# Short', '```') + (1..14 | ForEach-Object { "line $_" }) + '```')
+    Check 'verify: a 14-line reference fence passes' (Verify '.claude/skills/short-fence/references/short.md').Code 0
+
+    # verify-layer: soft checks only warn, per file and as one count per check on a whole-layer run
+    $softDesc = 'Soft.Symbol ' + ('x' * 110) + ' Use when checking.'
+    $softBody = @(1..60 | ForEach-Object { "- **Bulk ${_}:** " + ('x' * 140) }) + ('- **Long:** ' + ('x' * 200))
+    VSkill 'soft-one' $softBody $softDesc
+    VSkill 'soft-two' $softBody $softDesc
+    $softChecks = 'description \+ when_to_use > 120 chars', 'list item > 200 chars', 'body > 8000 chars'
+    $r = Verify (VRel 'soft-one')
+    Check 'soft: exit 0 per file, no FAIL, no count form' ($r.Code -eq 0 -and $r.Out -notmatch 'FAIL|file\(s\):') $true
+    foreach ($s in $softChecks) { Check "soft: per-file form: $s" ($r.Out -match "WARN  \.claude/skills/soft-one/SKILL\.md: $s") $true }
+    $r = Verify
+    Check 'soft: exit 0 on a whole-layer run, no FAIL, no per-file form' ($r.Code -eq 0 -and $r.Out -notmatch 'FAIL|soft-one|soft-two') $true
+    foreach ($s in $softChecks) { Check "soft: count form: $s" ($r.Out -match "WARN  2 file\(s\): $s") $true }
+
+    # verify-layer: each promoted check fails on a planted violation, per file and on a whole-layer run
+    $vlFence = @('```', '- Known limitations: none', '```')
+    $plants = @(
+        @('banned-this-skill', 'This skill checks Foo.Bar. Use when checking.', @(), 'description uses a banned phrase'),
+        @('banned-comprehensive', 'Comprehensive Foo.Bar. Use when checking.', @(), 'description uses a banned phrase'),
+        @('banned-preloaded', 'Foo.Bar. Preloaded by an agent. Use when checking.', @(), 'description uses a banned phrase'),
+        @('no-trigger', 'Foo.Bar and Baz.Qux only.', @(), 'description has no Use trigger'),
+        @('lowercase-trigger', 'Foo.Bar. use when checking.', @(), 'description has no Use trigger'),
+        @('over-250', ('Foo.Bar ' + ('x' * 250) + ' Use when checking.'), @(), 'description \+ when_to_use \d+ > 250 chars'),
+        @('latent-concerns', $okDesc, @('- **Latent concerns:** none.'), 'Latent concerns line'),
+        @('verified-title', $okDesc, @('- **Verified:** it ran.'), 'Verified or Known limitations bullet'),
+        @('limitations-title', $okDesc, @('- **Known limitations:** none.'), 'Verified or Known limitations bullet'),
+        @('limitations-in-fence', $okDesc, $vlFence, 'Verified or Known limitations bullet'),
+        @('reference-table', $okDesc, @('| Reference | When |', '|---|---|', '| a.md | b |'), 'reference or script table'),
+        @('script-table', $okDesc, @('| Script | Run |', '|---|---|', '| a.ps1 | b |'), 'reference or script table'),
+        @('hardcoded-path', $okDesc, @('- **Run:** `.claude/skills/hardcoded-path/scripts/x.ps1`.'), 'hardcoded script path'),
+        @('prose-line', $okDesc, @('A prose paragraph.'), 'untitled list item or prose line'),
+        @('plain-bullet', $okDesc, @('- A plain bullet.'), 'untitled list item or prose line'),
+        @('star-bullet', $okDesc, @('* **Star:** a star bullet.'), 'untitled list item or prose line'),
+        @('nested-bullet', $okDesc, @('- **Parent:** titled.', '  - A plain nested bullet.'), 'untitled list item or prose line'),
+        @('numbered-step', $okDesc, @('3. A plain step.'), 'untitled list item or prose line')
+    )
+    foreach ($p in $plants) {
+        VSkill $p[0] $p[2] $p[1]
+        $r = Verify (VRel $p[0])
+        Check "verify fails per file: $($p[0])" ($r.Code -eq 1 -and $r.Out -match "$(VFail $p[0])$($p[3])") $true
+    }
+    $r = Verify (VRel 'prose-line')
+    $at = (Select-String -LiteralPath (Join-Path $vlSkills 'prose-line/SKILL.md') -SimpleMatch 'A prose paragraph.').LineNumber
+    Check 'verify: the untitled FAIL gives the file line number' ($r.Out -match "lines $at\)") $true
+    VSkill 'unnamed-script'
+    Set-Content (Join-Path $vlSkills 'unnamed-script/scripts/orphan.ps1') '# Named nowhere.'
+    $r = Verify (VRel 'unnamed-script')
+    Check 'verify fails per file: script not named' ($r.Code -eq 1 -and $r.Out -match "$(VFail 'unnamed-script')script 'orphan\.ps1' not named") $true
+    VSkill 'long-fence'
+    Set-Content (Join-Path $vlSkills 'long-fence/references/long.md') (@('# Long', '```') + (1..15 | ForEach-Object { "line $_" }) + '```')
+    $r = Verify '.claude/skills/long-fence/references/long.md'
+    Check 'verify fails per file: a 15-line reference fence' ($r.Code -eq 1 -and $r.Out -match 'FAIL  \.claude/skills/long-fence/references/long\.md: reference has a fenced block of 15\+ lines') $true
+    $r = Verify
+    Check 'verify: a whole-layer run exits 1 on the plants' $r.Code 1
+    foreach ($p in $plants) { Check "verify fails whole-layer: $($p[0])" ($r.Out -match "$(VFail $p[0])$($p[3])") $true }
+    Check 'verify fails whole-layer: script not named' ($r.Out -match "$(VFail 'unnamed-script')script 'orphan\.ps1' not named") $true
+    Check 'verify fails whole-layer: a 15-line reference fence' ($r.Out -match 'FAIL  \.claude/skills/long-fence/references/long\.md: reference has a fenced block') $true
+    Check 'verify: the whole-layer failure count is the plants and nothing else' ($r.Out -match "$($plants.Count + 2) failure\(s\)") $true
+    foreach ($ok in 'clean-skill', 'trigger-field', 'preloaded-skill', 'named-in-ref', 'short-fence', 'soft-one') {
+        Check "verify: no FAIL for $ok among the plants" ($r.Out -match "FAIL  [^\n]*/$ok/") $false
+    }
+    foreach ($s in $softChecks) { Check "soft: still only a count among the plants: $s" ($r.Out -match "WARN  2 file\(s\): $s") $true }
+    Check 'verify-on-edit passes an edit of a clean skill' (VerifyEdit (Join-Path $vlSkills 'clean-skill/SKILL.md')) 0
+    Check 'verify-on-edit blocks an edit that plants a violation' (VerifyEdit (Join-Path $vlSkills 'plain-bullet/SKILL.md')) 2
 }
 finally {
     Remove-Item Env:CLAUDE_PROJECT_DIR, Env:HOOK_TEST_XERJ, Env:MEM_CAPTURE, Env:XERJ_URL -ErrorAction SilentlyContinue
