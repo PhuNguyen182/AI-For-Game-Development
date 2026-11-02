@@ -5,23 +5,9 @@ Synthesized from project decisions; adds to rule `csharp.md`.
 ## Explicit access modifiers
 - Access modifier first, then `static`/`sealed`/`abstract`/`virtual`/`override`/`readonly`/`partial`/`async`. Core, Client, editor tooling and tests alike.
 
-```csharp
-public sealed class AbilityRunner : MonoBehaviour
-{
-    private const float DefaultCooldown = 1.5f;
-
-    [SerializeField] private float cooldown = DefaultCooldown;
-
-    private float _remainingCooldown;
-
-    public bool IsReady => this._remainingCooldown <= 0f;
-
-    private void ResetCooldown()
-    {
-        this._remainingCooldown = this.cooldown;
-    }
-}
-```
+- **Sample:** [AbilityRunner.cs](../scripts/AbilityRunner.cs).
+  - **Shows:** `public sealed class`, `private const`, `[SerializeField] private`, a `private` field, a `public` expression-bodied property, a `private` method.
+  - **Adapt into:** `Assets/_Project/Scripts/<Feature>/Views/AbilityRunner.cs`; the file keeps a 3-line header marking it unverified.
 
 ## Layout
 - A one-statement `if`/`else`/`for`/`foreach`/`while` body may skip braces, on its own line; a second statement brings Allman braces around both.
