@@ -21,7 +21,7 @@ function Rel($p) {
     $(if ($n.StartsWith($r, [StringComparison]::OrdinalIgnoreCase)) { $n.Substring($r.Length).TrimStart('/') } else { $n })
 }
 
-$Budget = @{ ClaudeMd = 30; AlwaysRules = 100; PathRule = 40; Desc = 250; AgentBody = 25; Pipeline = 120; Skill = 500 }
+$Budget = @{ ClaudeMd = 30; AlwaysRules = 100; PathRule = 40; Desc = 250; AgentFile = 50; Pipeline = 120; Skill = 500 }
 $RetiredAgents = 'unity-engineer', 'assurance-evaluator', 'build-run-engineer', 'build-verification-tester'
 $RetiredPaths = '\.claude/(standards|workflows/[a-z-]+\.md|workflows/(references|state|tools)/|rules/(orchestration|task-classification|effort-allocation|execution-loop|security|feature-context-reading|implementation-note|commit-message|language-and-comments|shell-preference|unity-tooling-preference|standards-index)\.md)'
 $IdPattern = '\b(?:G[0-9]{1,2}|B[0-9]{1,2}|I[0-9]{1,2}|A[1-5]|V[1-5]|EV[0-4])\b'
@@ -145,8 +145,8 @@ function Test-File([string]$path) {
         elseif ($fm.description.Length -gt $Budget.Desc) { Fail "${rel}: description $($fm.description.Length) > $($Budget.Desc) chars" }
         if (-not $fm.tools) { Fail "${rel}: no tools" }
         foreach ($s in @($fm.skills)) { if ($s) { Test-SkillRef $s $rel } }
-        $body = ($text.Substring($fm._end).Trim() -split '\r?\n').Count
-        if ($body -gt $Budget.AgentBody) { Warn "${rel}: body $body lines > $($Budget.AgentBody) recommended" }
+        $fileLines = ($text.Trim() -split '\r?\n').Count
+        if ($fileLines -gt $Budget.AgentFile) { Warn "${rel}: $fileLines lines > $($Budget.AgentFile) recommended (soft)" }
         foreach ($m in [regex]::Matches($text.Substring($fm._end), '`((?:unity:)?[a-z0-9]+(?:-[a-z0-9]+)+)`')) {
             $n = $m.Groups[1].Value
             if ($n -match ':' -or $skills -contains $n -or $agents -contains $n) { if ($n -match ':') { Test-SkillRef $n $rel }; continue }

@@ -35,7 +35,7 @@ color: blue
 - **`skill-b`:** <when to invoke>.
 
 ## Checklist
-- **<item>:** <action> — evidence: <what `Verified` cites>.
+- [ ] **<item>:** <action> — evidence: <what `Verified` cites>.
 
 ## Return extras
 - **`<Field>:`** <content and format>.
@@ -46,7 +46,7 @@ color: blue
 ```
 
 ## Format
-- **Bullets only:** every item is `- **<label>:** <one short line>`. No prose paragraphs.
+- **Bullets only:** every item is `- **<label>:** <one short line>`; a `Checklist` item is `- [ ] **<label>:** ...`. No prose paragraphs.
 - **One fact per bullet:** split a bullet that needs "and" twice.
 - **Subsections:** a section past ~8 bullets, or mixing concerns, splits into `###` titles, each with full bullets.
 - **Length:** aim for ≤50 lines per file. A soft limit: when the role's content genuinely needs more, go past it; never cut a required item to fit.

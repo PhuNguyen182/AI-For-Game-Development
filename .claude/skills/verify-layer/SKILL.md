@@ -16,7 +16,7 @@ Exit 0 = pass (warnings allowed). 1 = a `FAIL` line names each file and problem.
 |---|---|
 | `CLAUDE.md` | ≤ 30 lines |
 | Always-loaded rules | ≤ 100 lines total; path-scoped rule ≤ 40 |
-| Agent | `name` = filename, description ≤ 250 chars, `tools`, body ≤ 25 lines, `skills:` exist |
+| Agent | `name` = filename, description ≤ 250 chars, `tools`, file ≤ 50 lines (soft), `skills:` exist |
 | Skill | description ≤ 250 chars; pipeline (user-invocable) ≤ 120 lines, others ≤ 500 |
 | References | backticked .claude paths and relative links exist; agents named exist; no retired agents or paths |
 | IDs | rules, agents, pipelines: no G/B/I/A/V/EV ids (CP1–CP4 only) |
