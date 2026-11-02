@@ -102,6 +102,32 @@ For anything else, just ask in plain words. It does not have to be in English.
 
 The framework sizes each request and runs the right agents. It asks before it makes a decision that is yours, and it never commits or pushes unless you ask. Progress is saved in `.workflow/`, so a new session picks up where the last one stopped.
 
+## Output style: Game Engineer
+
+The file [.claude/output-styles/game-engineer.md](.claude/output-styles/game-engineer.md) sets how Claude writes its replies. It is an [output style](https://code.claude.com/docs/en/output-styles): a Markdown file with frontmatter whose body is added to the system prompt.
+
+What it does:
+
+| Area | Behaviour |
+|---|---|
+| Voice | Direct and professional, like a senior game developer, software engineer and game designer. No pleasantries, no hedging. |
+| Address | Replies in your language. In Vietnamese: "Bạn" for you, "Tôi" for Claude. |
+| Length | Short, result first, one idea per line. |
+| Hard topics | Architecture, determinism, netcode, shaders and similar get a plain explanation: what it is, how it works, what breaks if done wrong. Everything else stays short. |
+| Truthfulness | Never claims a test, build or review that did not run. No silent scope cuts. |
+| Limits | Ends a finished task with a `Limits` list: what is incomplete, the impact, and the concrete fix for later. |
+
+It sets `keep-coding-instructions: true`, so Claude Code's built-in coding behaviour stays on.
+
+Turn it on:
+
+1. In Claude Code, run `/output-style` and pick **Game Engineer**.
+2. Or set it in `.claude/settings.local.json` (per user, not committed): `{ "outputStyle": "Game Engineer" }`.
+
+The choice applies to new sessions. To go back, run `/output-style` and pick **default**.
+
+To use it in every project, copy the file to `~/.claude/output-styles/`. To change it, edit the file and run `/verify-layer`. Install and update copy it into your project with the rest of `.claude/`.
+
 ## License
 
 None yet. Add one before you distribute this.
