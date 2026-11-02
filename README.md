@@ -121,12 +121,41 @@ It sets `keep-coding-instructions: true`, so Claude Code's built-in coding behav
 
 Turn it on:
 
-1. In Claude Code, run `/output-style` and pick **Game Engineer**.
-2. Or set it in `.claude/settings.local.json` (per user, not committed): `{ "outputStyle": "Game Engineer" }`.
+1. In Claude Code, run `/output-style Game Engineer` (needs v2.1.269 or later). Without an argument it lists the styles. In the terminal you can also use `/config` → **Output style**.
+2. Or set it in a settings file: `{ "outputStyle": "Game Engineer" }`. The value is case-sensitive; a wrong spelling falls back to Default. Use `.claude/settings.local.json` for yourself only, or `~/.claude/settings.json` as your default for all projects.
 
-The choice applies to new sessions. To go back, run `/output-style` and pick **default**.
+The command and the `/config` menu save your choice to `.claude/settings.local.json`. A switch applies from your next message. To go back, pick **Default**.
 
-To use it in every project, copy the file to `~/.claude/output-styles/`. To change it, edit the file and run `/verify-layer`. Install and update copy it into your project with the rest of `.claude/`.
+Style files are read at startup: after you create or edit one, restart Claude Code. Claude Code loads `.claude/output-styles/` from the working directory up to the repo root. A style only guides Claude; nothing enforces it, so use hooks for hard rules. It does not change subagents, and `CLAUDE.md` stays loaded whichever style is active.
+
+To change it, edit the file and run `/verify-layer`. Install and update copy it into your project with the rest of `.claude/`.
+
+### Use it in every session
+
+1. Copy the file to your user folder:
+
+   ```powershell
+   New-Item -ItemType Directory -Force "$HOME\.claude\output-styles"
+   Copy-Item .claude\output-styles\game-engineer.md "$HOME\.claude\output-styles\"
+   ```
+
+   On macOS or Linux: `mkdir -p ~/.claude/output-styles && cp .claude/output-styles/game-engineer.md ~/.claude/output-styles/`.
+
+2. Add the default to `~/.claude/settings.json`. Merge the key into the existing file; do not overwrite it:
+
+   ```json
+   { "outputStyle": "Game Engineer" }
+   ```
+
+3. Restart Claude Code. Run `/output-style` with no argument: **Game Engineer** should be listed and marked as current.
+
+Notes:
+
+- A project that sets its own `outputStyle` (in `.claude/settings.json` or `.claude/settings.local.json`) overrides this default. Running `/output-style <name>` in a project writes to its `.claude/settings.local.json`.
+- A project style with the same name wins over the copy in `~/.claude/output-styles/`.
+- The two copies do not sync. After you edit the file in this repo, copy it again, or link it with a symlink.
+
+Source: [Output styles](https://code.claude.com/docs/en/output-styles).
 
 ## License
 
