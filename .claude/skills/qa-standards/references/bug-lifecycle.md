@@ -5,6 +5,6 @@ Part of skill `qa-standards`. Read before filing, matching, verifying or closing
 - Main session is the only writer of `.workflow/bugs.md` and bug records. Agents propose; never invent an ID.
 - Check existing bugs first: a match is evidence on that ID; a match on a closed bug reopens it.
 - A defect seen out of scope, with evidence but no repro yet → record it `Open`, repro "not yet"; never drop it.
-- Status: **Open** → **Fixed** (owner names the ID in `Fixes:`) → **Closed** (only a QA run with evidence) or **Reopened**. **Won't fix** / **Accepted** — only the GD; mirrored into `DEBT.md`. **As designed**, **Duplicate of BUG-####**.
-- Settled: Closed, Won't fix, Accepted, As designed, Duplicate. QA sign-off needs zero unsettled. When QA was declined, CP4 lists each `Fixed` bug for the GD to accept unverified (→ Accepted) or send to QA.
+- Status: **Open** → **Fixed** (owner names the ID in `Fixes:`) → **Closed** (only an executor's `Repro: BUG-#### gone` from a `Verify:` brief, cited in History; a written-repro bug: its written steps re-run; qa-lead never sets Closed) or **Reopened**. **Won't fix** / **Accepted** — only the GD; mirrored into `DEBT.md`. **As designed**, **Duplicate of BUG-####**.
+- Settled: Closed, Won't fix, Accepted, As designed, Duplicate (hook `round-cap.ps1` never caps a settled bug). QA sign-off needs zero unsettled bugs of that feature. When QA was declined, CP4 lists each `Fixed` bug for the GD to accept unverified (→ Accepted) or send to QA.
 - Verifying bugs by ID → one verdict per ID with evidence; unexercised → "unverified".

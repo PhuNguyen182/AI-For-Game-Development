@@ -14,7 +14,7 @@ Profile · platforms · multiplayer · render pipeline. Write them into `CLAUDE.
 - Editor settings: Force Text serialization, Visible Meta Files. Unity CLI alias, build targets, MCP servers → `CLAUDE.md`.
 
 ## 3. Packages (`unity:unity-package-management`)
-Always: Input System, Test Framework, the chosen render pipeline. Multiplayer → the foundation `/decide` picks — never preinstalled. Anything third-party → `security-reviewer` first.
+Always: Input System, Test Framework, the chosen render pipeline. Multiplayer → the foundation `/decide` picks at the first multiplayer feature's CP1 — never preinstalled. Anything third-party → `security-reviewer` first.
 
 ## 4. Structure — `gameplay-engineer`
 The `Shared` feature, in the feature layout (`csharp-standards` → naming-convention.md → Folders); asmdef `name` = `rootNamespace` = folder path:
@@ -28,8 +28,8 @@ Assets/_Project/Scripts/Shared/Server/          _Project.Scripts.Shared.Server  
 ```
 This skeleton is the one place empty assemblies are allowed: the placeholder tests below need them. Every later M/L feature gets the same layout, only the folders it uses, under `Assets/_Project/Scripts/<Feature>/` (`/feature` step 4). An adopted project keeps its existing code where it is. One passing placeholder test per test assembly proves the test command; write that command into `CLAUDE.md`.
 
-## 5. Git — `git-expert` with skill `git-unity-repo`
-Unity `.gitignore`, `.gitattributes` (UnityYAMLMerge, LFS for binaries), `git lfs install`. Never commit `Library/`, `Temp/`, `Logs/`, `UserSettings/`.
+## 5. Git — `git-expert` with skill `git-unity-repo`, before the Editor opens (or with it closed)
+Unity `.gitignore`, `.gitattributes` (UnityYAMLMerge, LFS for binaries), `git lfs install`. Never commit `Library/`, `Temp/`, `Logs/`, `UserSettings/`. Keep the framework `.gitignore`'s signing/credential globs (`*.keystore`, `*.jks`, `*.p12`, `.env*`, service-account JSON, ...) and `.workflow/evidence/**` raw-dump globs (`logcat_*.txt`, `syslog*.txt`, `*.ips`, `*.crash`): they sit outside the `Framework repo only` block and must stay in every game project.
 Memory and search (skills `mem`, `code-search`): `.gitignore` += `.memory/.index/`, `.memory/.state/`; `.gitattributes` += `.memory/traces/** text eol=lf linguist-generated` (never `-diff`: the pre-commit secret scan reads diffs); copy `.xerjignore` and `.memory/sources.txt` from the framework root; `.memory/notes/` starts empty.
 Delete the copied `.gitignore`'s `Framework repo only` block, down to its end marker: the project commits its traces and its framework backlog. `.workflow/framework-backlog.md` comes from `.claude/templates/framework-backlog.md` (the session-start hook creates it; copy the template if absent) and is committed with the project.
 
@@ -42,7 +42,7 @@ Delete the copied `.gitignore`'s `Framework repo only` block, down to its end ma
 Write the answer into `CLAUDE.md` → Perf budget, every metric with its unit and tier; a metric left out gets no verdict from `performance-qa-engineer`.
 
 ## 7. State
-Create `.workflow/bugs.md` from `/fix`'s template and `.workflow/features/`. Commit `.workflow/` and `.memory/`.
+Create `.workflow/bugs.md` from `/fix`'s template and `.workflow/features/`. Stage nothing yet: step 9 asks once for the bootstrap commit (`.workflow/`, `.memory/`, the setup).
 `CLAUDE.md` → Code search: `xerj prefix <kebab project name>` when `xerj` is installed, else `Grep`.
 Create `docs/tech-stack.md` from `references/tech-stack-template.md`, filled from `Packages/manifest.json`, `ProjectSettings/` and the answers above.
 
@@ -50,4 +50,4 @@ Create `docs/tech-stack.md` from `references/tech-stack-template.md`, filled fro
 `ci-cd-engineer`: build + test pipeline for the build targets, manual trigger.
 
 ## 9. Report
-What was set up, what was asked and answered, what is still empty in `CLAUDE.md`. Ask before the first commit.
+What was set up, what was asked and answered, what is still empty in `CLAUDE.md`. One `AskUserQuestion` for the bootstrap commit: commit now (Khuyến nghị) / not yet.

@@ -16,7 +16,7 @@ color: teal
 ## Inputs
 - Multiplayer on (`CLAUDE.md`) and the netcode spec section — absent: `Blocked`.
 - The Core state/rules to sync — absent: `Blocked`, `Next: csharp-engineer`.
-- Netcode foundation (NGO, NfE, MagicOnion, transport, custom) — unset: `Needs-decision`, `Next: cto`.
+- Netcode foundation (NGO, NfE, MagicOnion, transport, custom) — unset: `Needs-decision`, `Next: /decide`.
 
 ## Skills (on demand)
 `server-authoritative-validation` · `core-scene-integration` (owns the tick under multiplayer) · `core-determinism` · `unity-test-framework` · `unity-transport` · `netcode-for-gameobjects` · `netcode-for-entities` · `magiconion-rpc-networking` · `memorypack-serialization` · `dotnet-concurrency-and-async` · `anti-cheat-strategy` (the posture `cto` set) · plugin: `unity:setup-multiplayer-services` · `unity:setup-vivox-voice-chat`

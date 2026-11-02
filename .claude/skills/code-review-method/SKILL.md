@@ -11,11 +11,11 @@ user-invocable: false
 |---|---|---|
 | Spec or acceptance criteria | Submission | Every step below |
 | No spec | Audit | Every step but spec drift; say so under `Not verified` |
-| Previous findings (round 2+) | Re-review | Previous findings + lines changed since; a new finding on unchanged code blocks only at Critical/High |
+| Previous findings (round 2+) | Re-review | Previous findings + lines changed since `Previous tree:`; a new finding on unchanged code blocks only at Critical/High |
 
 ## Read the diff
-- `git diff <range>` for the change, `git diff --stat <range>` for its spread, `git log <range>` for intent. Untracked files: read in full.
-- Re-review: `git diff <previous head>..HEAD`. No previous head in the brief → re-read the lines the previous findings cite.
+- The working tree, not `HEAD`: `git diff --merge-base <base>` for the change, `--stat` for its spread, `git log <base>..HEAD` for intent. Untracked files (`git ls-files --others --exclude-standard`): read in full.
+- Re-review: `git diff <sha>` from the brief's `Previous tree: <sha>` (working tree vs the previously reviewed snapshot), plus untracked files. No `Previous tree:` in the brief → re-read the lines the previous findings cite and the whole current diff.
 - Read each hunk with enough surrounding code to know its caller and lifecycle; never judge a hunk alone.
 
 ## Order
@@ -53,7 +53,7 @@ user-invocable: false
 
 ## Severity and verdict
 - Severity per `qa-standards` → "A finding has": impact if shipped. A style, layout, naming or comment violation (`code-style-and-layout.md`, `naming-convention.md`, rule `csharp.md` Style and Comments) is **Low**. A standards violation with runtime impact (leak, hot-path allocation, Core leak, non-determinism) takes that impact's severity.
-- `Request changes` — any Critical, High or Medium finding.
+- `Request changes` — any Critical, High or Medium finding. Re-review: a Medium/Low on unchanged code is listed for `DEBT.md`, verdict unaffected.
 - `Approve` — no finding, or Low only. Low findings are listed; the author fixes them without another review round.
 - `Needs-decision` — a placement question (`shared-core-boundary-audit` "needs placement decision", `Next: technical-architect`) or a spec flaw (`Next: gd`); list any findings alongside.
 - A doubt the files cannot settle is not a finding: drop it, or state it under `Assumptions`.

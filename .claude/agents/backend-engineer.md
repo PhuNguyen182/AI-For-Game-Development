@@ -13,7 +13,7 @@ color: teal
 - Client service layer for backend calls; server functions/rules; save schema and its versioned migrations; remote-config keys.
 
 ## Inputs
-- Backend (`CLAUDE.md` → Networking / backend) — `none`: `Blocked`.
+- Backend (`CLAUDE.md` → Stack headline, `docs/tech-stack.md` → Backend) — `none`: `Blocked`.
 - Data owned server-side vs client-side — absent: `Blocked`.
 - Existing save format when changing one — absent: `Blocked`.
 

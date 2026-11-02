@@ -5,7 +5,7 @@
 - Reply to the GD in Vietnamese.
 
 ## GD
-- Ask only via `AskUserQuestion`: 2–4 options, recommended first, labelled "(Khuyến nghị)". Never ask in chat prose.
+- Ask only via `AskUserQuestion`: 2–4 options, recommended first, labelled "(Khuyến nghị)" — except the CP1 direction pick: options unranked, in the researcher's order. Never ask in chat prose.
 - State the route picked in one line. Never ask which route, size or severity.
 - GD rules: state the cost, then do what they asked. Exception: security below — the GD may drop the work, never order a violation.
 - A GD-stated budget, platform or constraint is a hard requirement.
@@ -33,8 +33,8 @@
 - Shell: newest PowerShell → Bash → cmd. Drop a rung only on real failure.
 - Unity: Unity CLI (`unity:unity-cli`) → any configured MCP server → classic batchmode. Drop a rung only on failure or a missing capability.
 - Search: XERJ when session start says up (skill `code-search`) → Grep. Never `xerj feedback`, `share` or `init`.
-- One Unity Editor and one physical device, project-wide: never two agents on either at once. Writing into the main checkout's `Assets/`, `Packages/` or `ProjectSettings/` holds the Editor.
-- Commits: English imperative subject, blank line, body saying why; no `feat:`-style prefixes; one change per commit. Never commit or push unasked — not after finishing work. When the GD orders a commit or push, run it at once, no confirmation; only the secret hooks may block it.
+- One Unity Editor and one physical device, project-wide: never two agents on either at once. Writing into the main checkout's `Assets/`, `Packages/` or `ProjectSettings/` holds the Editor: before a direct write, read `.workflow/editor.lock` — another session's hold under 3 h old → ask the GD.
+- Commits: English imperative subject, blank line, body saying why; no `feat:`-style prefixes; one change per commit. Never commit or push unasked — not after finishing work. Exception: the local commits `/feature` prescribes (step 4 on its `feature/<slug>` branch, the CP4 closure commit), made by the main session per `git-commit` on the feature's paths only. Push always waits for the GD's order. When the GD orders a commit or push, run it at once, no confirmation; only the secret hooks may block it.
 - After any change under `.claude/`, run `/verify-layer`.
 
 ## Memory — Zero-Mem, skill `mem`

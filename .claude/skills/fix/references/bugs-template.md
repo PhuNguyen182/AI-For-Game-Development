@@ -12,4 +12,6 @@ Next ID: BUG-0001
 - Evidence: <log, screenshot, failing test>
 - Root cause: <when known>
 - Fix rounds: 0/2
+- Review rounds: 0/3
+- Stop rule: <counter> root-caused <date> - extra dispatch: unused|used (only when it fires)
 - History: <date status — by whom, evidence>

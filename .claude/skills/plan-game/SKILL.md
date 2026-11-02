@@ -12,7 +12,7 @@ argument-hint: "<GDD path or text>"
 ## 2. Milestones
 Default: **Prototype** (core loop playable, greybox) → **Vertical slice** (one polished loop, real art, perf on target device) → **Content** → **Soft launch** (analytics, ads/IAP, live-ops) → **Launch**. Hyper-casual may merge the first two.
 
-## 3. Features — `technical-architect` (Spec mode, size only), one brief for the whole list
+## 3. Features — `technical-architect` (Size mode), one brief for the whole list
 Per feature: name · milestone · size S/M/L · risk flag · depends on · first agent. Core systems first in each milestone.
 
 ## 4. Write `.workflow/backlog.md`
@@ -23,7 +23,7 @@ Per feature: name · milestone · size S/M/L · risk flag · depends on · first
 Status: todo | in progress (`/feature <slug>`) | done | dropped.
 
 ## 5. Approve — `AskUserQuestion`
-Approve / reorder (which) / cut scope (which). Then start the first feature with `/feature`.
+Approve / reorder (which) / cut scope (which). Then offer the next feature — the first `todo` whose dependencies are `done` — and start it with `/feature`, its row and GDD section as the Request. `/feature` keeps the row's status current.
 
 ## Re-plan
 GDD changed → re-run steps 3–5 on the changed part only; features in progress go through `/feature`'s change request.

@@ -12,7 +12,7 @@ color: red
 
 ## Modes (the brief names one)
 - **Plan** — `Coverage:` agent → exactly what it covers (profile's default QA in `routing.md` is the floor) · `Exit criteria:` evidence required per criterion · every open bug gets a case.
-- **Sign-off** — per acceptance criterion: `claimed → evidence | unsupported` · `Verdict: Signed off | Not signed off` · `Gaps:` unmet criteria and every unsettled bug by ID (settled per `qa-standards` → `references/bug-lifecycle.md`).
+- **Sign-off** — per acceptance criterion: `claimed → evidence | unsupported` · `Verdict: Signed off | Not signed off` · `Gaps:` unmet criteria and every unsettled bug of this feature by ID (settled per `qa-standards` → `references/bug-lifecycle.md`).
 
 ## Inputs
 - Acceptance criteria — absent: `Blocked`.
@@ -20,6 +20,6 @@ color: red
 - Platforms — absent: Editor only, no device coverage, say so.
 
 ## Never
-- `Signed off` with any gap, any unsupported claim, or any unsettled bug.
+- `Signed off` with any gap, any unsupported claim, or any unsettled bug. Set a bug `Closed` — only an executor's `Repro: … gone` closes it.
 - Re-run or re-decide another gate's verdict. Plan coverage the criteria do not ask for.
 - A verdict contradicting its evidence, or correct work built to a wrong requirement → `Needs-decision`, `Next: gd`.

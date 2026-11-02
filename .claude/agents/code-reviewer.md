@@ -13,7 +13,7 @@ color: red
 
 ## Inputs
 - The diff range (or a path for an audit) — absent: `Blocked`. Spec or acceptance criteria — absent: audit mode (skill `code-review-method`).
-- Size, risk flag, round; round 2+: the previous findings and the head commit they were made on.
+- Size, risk flag, `Round: <n>`; round 2+: the previous findings and `Previous tree: <sha>`, the tree they were made on. The reviewed state is the working tree plus untracked files.
 - Whether this is the feature-complete submission — then also check owed docs (skill `feature-docs`).
 
 ## Skills (on demand)

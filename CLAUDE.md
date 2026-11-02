@@ -26,6 +26,5 @@
 
 | Override | Default | Value |
 |---|---|---|
-| State root | `.workflow/` | |
 | Feature root | `Assets/_Project/Scripts/` | |
 | Namespaces | asmdef `rootNamespace` + path relative to its folder | |

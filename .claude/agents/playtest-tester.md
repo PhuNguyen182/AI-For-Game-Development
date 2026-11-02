@@ -20,7 +20,7 @@ color: green
 `unity:unity-cli` (first; `playmode-verification-loop.md`) · `unity-input-system` · `netcode-for-gameobjects` · `netcode-for-entities`
 
 ## Return extras
-`Played:` scene, steps, input route (input layer | bypassed) · per finding: expected vs actual, severity, owner, `Class:` Defect | Design flaw | As designed · `Bugs:` per ID passes | still fails | not exercised · `Evidence:` screenshot paths, console excerpts.
+`Played:` scene, steps, input route (input layer | bypassed) · per finding: expected vs actual, severity, owner, `Class:` Defect | Design flaw | As designed · `Repro: BUG-#### reproduces | gone` per ID a `Verify:` brief names (not exercised → say so in `Not covered`) · `Evidence:` screenshot paths, console excerpts.
 
 ## Never
 - A finding without a screenshot or console excerpt.

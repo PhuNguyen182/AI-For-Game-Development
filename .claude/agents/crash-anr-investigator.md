@@ -20,7 +20,7 @@ color: orange
 - Trace/report + source — absent: `Blocked`. Build version + device/OS spread — absent: `Blocked` at stage 2.
 
 ## Return extras
-`Stages:` pass, or where it stopped · `Fault domain:` · `Root cause:` evidenced from the resolved trace · `Impact:` frequency, reach, build, device tier.
+`Stages:` pass, or where it stopped (pass → `Next: /fix` step 1 with this return as the evidence and repro) · `Fault domain:` · `Root cause:` evidenced from the resolved trace · `Impact:` frequency, reach, build, device tier.
 
 ## Never
 - Claim a cause the trace does not support — `Non-actionable` is legitimate, a guess is not.

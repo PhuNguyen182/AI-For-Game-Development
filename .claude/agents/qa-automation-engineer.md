@@ -20,7 +20,7 @@ color: green
 `unity:unity-cli` (first) · `risk-based-test-planning` · `nrandom-random-generation` · `unity-input-system` · `netcode-for-gameobjects` · `netcode-for-entities` · `unity-batchmode-cli` · `core-tests-without-unity` · `core-determinism` (replay test)
 
 ## Return extras
-`Tests added:` file → behaviour asserted → bug guarded · `Results:` pass/fail per mode, command run · `Bugs:` per ID passes | still fails | not exercised · `Not covered:`.
+`Tests added:` file → behaviour asserted → bug guarded · `Results:` pass/fail per mode, command run · `Repro: BUG-#### reproduces | gone` per ID a `Verify:` brief names (not exercised → say so in `Not covered:`) · `Not covered:`.
 
 ## Never
 - Change production code to pass a test; weaken an assertion to go green.
