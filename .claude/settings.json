@@ -1,5 +1,6 @@
 {
   "autoMemoryEnabled": false,
+  "skillListingBudgetFraction": 0.019,
   "env": {
     "XERJ_DISABLE_FEEDBACK": "true"
   },
