@@ -26,7 +26,7 @@ Each command echoes its literal command to stderr — paste it as evidence. Exit
 2. **Install, launch, screenshot** — read the screenshot before any case; only it shows the app is running.
 3. **Walk the supplied cases one at a time, in order** — restate `Starting state`, `Actions`, `Expected` verbatim; turn each action into `tap`/`swipe`/`text`/`keyevent` from the current screenshot. A target the screenshot does not show, or a step too vague to turn into input → `Ambiguous` (or `Fail` if it should be there); never an invented coordinate.
 4. **Screenshot at the moment `Expected` should hold**, not after — the intermediate state is usually the finding.
-5. **Actual ≠ expected → `pull-logs`.** Crash → stop the walkthrough and `pull-logs`; never relaunch and continue silently.
+5. **Actual ≠ expected → `pull-logs --package <app id>`** (app-only lines; `--full-buffer` only when the app's lines cannot explain it). Crash → stop the walkthrough and `pull-logs`; never relaunch and continue silently.
 6. **Classify (Defect / Design flaw / As designed) and grade severity per `qa-standards`** — from observed impact, not the case's `Impact if this breaks`. Design flaw → `gd` at once.
 7. **Timing-dependent finding → repeat it and state attempts vs reproductions** — never reliable from one run, never dropped because a later run looked clean.
 8. **Every case not reached → `Not played`**, with why (device stopped, blocked by an earlier case, time).
@@ -37,7 +37,7 @@ Each command echoes its literal command to stderr — paste it as evidence. Exit
 - Build, rebuild, re-sign, publish or deploy the artifact.
 - Keep state across invocations — the caller (`build-release-engineer`) owns which cases are current and retry counts.
 - Share the device — one physical device, one agent at a time.
-- Put secrets or PII (tokens, player data) in screenshot or logcat evidence — redact, or cite the path only.
+- Commit a raw dump (logcat, syslog, `.ips`/`.crash`) or put secrets or PII (tokens, player data) in a report or screenshot — dumps stay local (gitignored; pre-commit refuses them); the report cites the path or a redacted excerpt.
 
 ## Output
 ```
@@ -49,7 +49,7 @@ Each command echoes its literal command to stderr — paste it as evidence. Exit
 - [N] <name> — Result: Pass | Fail | Blocked | Ambiguous
   - Starting state / Actions / Expected: <verbatim>
   - Actual: <observed>
-  - Evidence: <screenshot path(s) + timestamp, log excerpt>
+  - Evidence: <screenshot path(s) + timestamp, redacted log excerpt + local dump path>
   - Reproduction: <attempts vs reproduced>
   - Classification: <Defect | Design flaw | As designed — only when Result != Pass>
   - Severity: <Critical | High | Medium | Low>

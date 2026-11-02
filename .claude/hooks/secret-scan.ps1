@@ -1,11 +1,13 @@
 # PreToolUse Edit|Write|MultiEdit|NotebookEdit: block content that carries a secret shape.
 . "$PSScriptRoot/common.ps1"
+# Fail closed: an unexpected error must block the write, not let it through unscanned.
+trap { Block "Blocked: secret scan failed ($_) - the write was not scanned." }
 
 $in = Read-HookInput
-if (-not $in) { exit 0 }
+if (-not $in) { Block 'Blocked: secret scan received no readable hook input - the write was not scanned.' }
 $t = $in.tool_input
 $path = [string](First $t.file_path $t.notebook_path '')
-if ($path -match $script:SecretScanExempt) { exit 0 }
+if (Test-SecretScanExempt $path (Get-ProjectRoot $in)) { exit 0 }
 
 $parts = @($t.content, $t.new_string, $t.new_source)
 if ($t.edits) { $parts += $t.edits | ForEach-Object { $_.new_string } }

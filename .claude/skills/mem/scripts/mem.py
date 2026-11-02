@@ -88,6 +88,18 @@ def load_secret_patterns(root: Path) -> list[tuple[str, re.Pattern]]:
 # The pattern list detects a key by its header; redaction must remove the whole block, body included.
 RX_PEM_BLOCK = re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?(?:-----END [A-Z ]*PRIVATE KEY-----|$)")
 RX_EMAIL = re.compile(r"\b[\w.+-]+@[\w-]+(?:\.[\w-]+)*\.[A-Za-z]{2,}\b")  # not package@1.2.3
+# Player PII that device logs carry into agent returns: an advertising/device id after its label, an IPv4 address
+# (loopback and 0.0.0.0 kept), an international phone number.
+RX_DEVICE_ID = re.compile(r"(?i)(\b(?:adid|idfa|idfv|gaid|aaid|advertising[ _-]?id|device[ _-]?id|android[ _-]?id|installation[ _-]?id)\b[^0-9A-Za-z\n]{0,20})[0-9A-Fa-f][0-9A-Fa-f-]{15,35}\b")
+RX_IPV4 = re.compile(r"(?<![\d.])(?!127\.|0\.0\.0\.0)(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)(?![\d.])")
+RX_PHONE = re.compile(r"(?<![\w+])\+\d[\d ()-]{8,}\d\b")
+
+
+def redact_pii(text: str) -> str:
+    text = RX_EMAIL.sub("[REDACTED:email]", text)
+    text = RX_DEVICE_ID.sub(lambda m: m.group(1) + "[REDACTED:device id]", text)
+    text = RX_IPV4.sub("[REDACTED:ip]", text)
+    return RX_PHONE.sub("[REDACTED:phone]", text)
 
 
 def redact(text: str, patterns) -> str:
@@ -922,7 +934,7 @@ def trace_record(root: Path, t: dict, pats, n: int = 0) -> dict:
         if slug_leaf:
             text = re.sub(r"(?i)(?<![A-Za-z0-9])([A-Za-z]--)?users-" + slug_leaf + r"(?![A-Za-z0-9])",
                           lambda m: (m.group(1) or "") + "Users-<user>", text)
-    text = RX_EMAIL.sub("[REDACTED:email]", redact(text, pats))
+    text = redact_pii(redact(text, pats))
     if len(text) > MAX_TURN_CHARS:
         text = text[:MAX_TURN_CHARS] + "\n...[truncated %d chars]" % (len(text) - MAX_TURN_CHARS)
     rec = {"n": n, "ts": t.get("ts", ""), "role": t["role"]}  # n: transcript turn index, the append mark

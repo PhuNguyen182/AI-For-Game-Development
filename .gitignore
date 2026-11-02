@@ -115,6 +115,36 @@ __pycache__/
 .claude/worktrees/
 .workflow/editor.lock
 .workflow/rounds.json
+.workflow/rounds.pending-*.json
+.workflow/rounds.corrupt-*.json
+
+# Signing material and credentials never enter git; the pre-commit and pre-push hooks refuse them too
+# (rule core.md -> Security). Reference a credential id or a secret store instead.
+*.keystore
+*.jks
+*.p12
+*.pfx
+*.p8
+*.pem
+*.mobileprovision
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+id_rsa*
+!id_rsa*.pub
+.upmconfig.toml
+*[Ss]ervice[Aa]ccount*.json
+*[Ss]ervice-[Aa]ccount*.json
+*[Ss]ervice_[Aa]ccount*.json
+
+# Raw device dumps stay local: other apps' data, tokens, player PII. Under .workflow/evidence/ only .md reports and
+# .png screenshots are committed; a report cites a dump's path or a redacted excerpt.
+.workflow/evidence/**/logcat_*.txt
+.workflow/evidence/**/syslog*.txt
+.workflow/evidence/**/*.ips
+.workflow/evidence/**/*.crash
 
 # Zero-Mem: derived index and per-machine state (the files under .memory/ are the record)
 .memory/.index/

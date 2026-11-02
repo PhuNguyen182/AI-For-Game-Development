@@ -1,14 +1,16 @@
 # PreToolUse Bash|PowerShell on `git push`: block a radius-3 push form, and block when a commit not yet on any
-# remote adds a secret.
+# remote adds a secret, a secret-bearing file (keystore, .env, service-account JSON) or a raw evidence dump.
 . "$PSScriptRoot/common.ps1"
+# Fail closed: an unexpected error must block the push, not let it through unscanned.
+trap { Block "Blocked: pre-push scan failed ($_) - the push was not scanned." }
 
 $in = Read-HookInput
-if (-not $in) { exit 0 }
+if (-not $in) { Block 'Blocked: pre-push received no readable hook input - the push was not scanned.' }
 $cmd = [string]$in.tool_input.command
 # Any run of git global options may precede `push` (-C dir, -c k=v, --no-pager, --git-dir x, ...).
 $arg = '(?:"[^"]*"|''[^'']*''|\S+)'
 $opt = "(?:-[Cc]\s+$arg|--(?:git-dir|work-tree|namespace|config-env|exec-path)(?:=|\s+)$arg|--[\w-]+(?:=$arg)?|-[A-Za-z]+)"
-$git = [regex]::Match($cmd, "\bgit\b((?:\s+$opt)*)\s+push(?![\w.-])", 'IgnoreCase')
+$git = [regex]::Match($cmd, "\bgit(?:\.exe)?\b[`"']?((?:\s+$opt)*)\s+push(?![\w.-])", 'IgnoreCase')
 if (-not $git.Success) { exit 0 }
 
 # Radius-3 push forms (Find-PushRadius3 in common.ps1), read through quoting, shell wrappers and aliases.
@@ -62,10 +64,12 @@ foreach ($row in (git -C $root config --get-regexp '^remote\..+\.(mirror|push)$'
 # Every commit on HEAD, a local branch or a tag and on no remote-tracking ref: whatever this push names is among
 # them. backup/* anchors are left out: pushing one is refused above, and they may hold pre-rewrite history.
 # --diff-merges=first-parent: a merge commit's own changes (a hand-resolved conflict) are scanned too.
-$problems = @(Find-AddedSecrets (Get-GitDiffText $root @('log', 'HEAD', '--branches', '--exclude=backup/*', '--tags', '--not', '--remotes',
-            '-p', '--diff-merges=first-parent', '--unified=0', '--no-color', '--text', '--format=')))
+$range = @('log', 'HEAD', '--branches', '--exclude=backup/*', '--tags', '--not', '--remotes', '--diff-merges=first-parent', '--format=')
+$problems = @(Find-AddedSecrets (Get-GitDiffText $root ($range + @('-p', '--unified=0', '--no-color', '--text'))))
+# The same file rules as pre-commit (keystore, .env, service-account JSON, raw evidence) on every file those commits add.
+$problems += @(Find-ForbiddenFiles $root @(Get-GitRawChanges $root $range))
 
 if ($problems.Count -gt 0) {
-    Block ("Push blocked: unpushed commits add secrets:`n  " + (($problems | Select-Object -Unique) -join "`n  ") + "`nA secret already committed is in git history: stop and route to cto (rule core.md -> Security).")
+    Block ("Push blocked: unpushed commits add secrets or secret-bearing files:`n  " + (($problems | Select-Object -Unique) -join "`n  ") + "`nA secret already committed is in git history: stop and route to cto (rule core.md -> Security).")
 }
 exit 0

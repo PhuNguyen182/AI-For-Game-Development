@@ -9,9 +9,11 @@
 #   -c alias.*, -c core.sshCommand ..., GIT_CONFIG_*  config the hooks cannot read, or that runs a program
 # Best effort: a command that hides git behind a variable or $(...) is not seen. The rule in the agent still holds.
 . "$PSScriptRoot/common.ps1"
+# Fail closed: an unexpected error must block the git call, not let it through unchecked.
+trap { Block "Blocked: git-guard failed ($_) - the git call was not checked." }
 
 $in = Read-HookInput
-if (-not $in) { exit 0 }
+if (-not $in) { Block 'Blocked: git-guard received no readable hook input - the git call was not checked.' }
 $cwd = [string](First $in.cwd (Get-Location).Path)
 
 # True when a long option the call carries is $Name or a prefix of it at least $Min characters long.
@@ -43,7 +45,9 @@ foreach ($g in (Get-GitCalls ([string]$in.tool_input.command) $cwd)) {
             'switch' { if ($shorts -cmatch 'f' -or (Test-Long $longs 'force' 2) -or (Test-Long $longs 'discard-changes' 2)) { $why = 'git switch -f / --discard-changes (radius 3: overwrites uncommitted and untracked files)' } }
             'read-tree' { if ($shorts -cmatch 'u' -and (Test-Long $longs 'reset' 3)) { $why = 'git read-tree -u --reset (radius 3: overwrites the working tree)' } }
             'push' { $why = if ($g.Alias) { 'a push through an alias (spell out git push so the secret scan sees it)' } else { Find-PushRadius3 $g.Globals $g.Rest } }
-            'grep' { if ($shorts -cmatch 'O' -or (Test-Long $longs 'open-files-in-pager' 2)) { $why = 'git grep -O (runs a program)' } }
+            # -O takes its program attached (-O/usr/bin/x, -nO<prog>, -1O<prog> after a numeric context option),
+            # which the $shorts letters-only filter misses.
+            'grep' { if ($shorts -cmatch 'O' -or @($words | Where-Object { $_ -cmatch '^-[A-Za-z0-9]*O' }).Count -or (Test-Long $longs 'open-files-in-pager' 2)) { $why = 'git grep -O (runs a program)' } }
             # `git tag backup/*` is auto-allowed to create an anchor; git also reads options after the name, so
             # `git tag backup/x -d v1.0` would delete another tag without a prompt.
             'tag' {

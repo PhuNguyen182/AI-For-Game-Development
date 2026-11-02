@@ -248,6 +248,15 @@ class MemTest(unittest.TestCase):
         self.assertIn("~/x.txt", text)
         self.assertIn("[REDACTED:email]", text)
 
+    def test_redaction_device_ids_ip_phone(self):
+        f = self.capture_lines([self.user("logcat: adid=38400000-8cf0-11bd-b23e-10b96e40000d from 203.0.113.42, "
+                                          "call +84 912 345 678; local 127.0.0.1, version 1.2.3")])
+        text = f.read_text(encoding="utf-8")
+        for absent in ("38400000-8cf0", "203.0.113.42", "912 345 678"):
+            self.assertNotIn(absent, text)
+        for kept in ("[REDACTED:device id]", "[REDACTED:ip]", "[REDACTED:phone]", "127.0.0.1", "version 1.2.3"):
+            self.assertIn(kept, text)
+
     def test_missing_patterns_fail_closed(self):
         (self.root / ".claude/hooks/secret-patterns.txt").write_text("# only comments\n", encoding="utf-8")
         self.assertIsNone(self.capture_lines([self.user("key %s" % FAKE_KEY)]))

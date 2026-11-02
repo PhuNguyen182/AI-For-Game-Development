@@ -13,8 +13,19 @@ try {
     }
 } catch { $script:SecretPatterns = [ordered]@{} }
 
-# Files that legitimately contain the patterns above: the hooks themselves and the scan skill's docs.
-$script:SecretScanExempt = '[\\/]\.claude[\\/](?:hooks[\\/]|skills[\\/]secret-and-supply-chain-scan[\\/])'
+# Files that legitimately contain the patterns above, by repo-relative path anchored at the root: the hook scripts,
+# the pattern list, the hook tests and the scan skill's docs. A same-named folder deeper in the tree is scanned.
+$script:SecretScanExempt = '(?i)^\.claude/(?:hooks/(?:[^/]+\.ps1|secret-patterns\.txt|tests/run\.ps1)|skills/secret-and-supply-chain-scan/(?:[^/]+/)*[^/]+\.md)$'
+
+# True when $Path (absolute, or relative to $Root) is one of the exempt files above.
+function Test-SecretScanExempt([string]$Path, [string]$Root) {
+    $rel = $Path -replace '\\', '/'
+    if ($Root) {
+        $r = (([IO.Path]::GetFullPath($Root)) -replace '\\', '/').TrimEnd('/') + '/'
+        if ($rel.StartsWith($r, [StringComparison]::OrdinalIgnoreCase)) { $rel = $rel.Substring($r.Length) }
+    }
+    return $rel -match $script:SecretScanExempt
+}
 
 # First non-empty argument. Stands in for ?? so the hooks also run on Windows PowerShell 5.1.
 function First { foreach ($v in $args) { if ($null -ne $v -and [string]$v -ne '') { return $v } }; return $null }
@@ -144,7 +155,7 @@ function Find-AddedSecrets([string]$Diff) {
         $nl = $section.IndexOf("`n")
         if ($nl -lt 0) { continue }
         $file = $section.Substring(0, $nl).TrimEnd("`r")
-        if ("/$file" -match $script:SecretScanExempt) { continue }
+        if ($file -match $script:SecretScanExempt) { continue }
         $added = [regex]::Replace($section.Substring($nl + 1), '(?m)^(?:[^+\n].*)?(?:\n|$)', '')
         $added = [regex]::Replace($added, '(?m)^\+', '')
         # JSON escapes quotes (\"), which hides quoted-value patterns in .jsonl traces.
@@ -156,12 +167,102 @@ function Find-AddedSecrets([string]$Diff) {
 
 # A git diff/log command's whole output as one string. git writes it to a temp file (--output): PowerShell reads
 # native output one line at a time, which alone takes seconds on a multi-megabyte scene.
+# core.quotepath=off: a non-ASCII name stays `+++ b/<name>`, not a quoted header the per-file split would miss.
 function Get-GitDiffText([string]$Root, [string[]]$GitArgs) {
     $tmp = [IO.Path]::GetTempFileName()
     try {
-        git -C $Root @GitArgs "--output=$tmp" 2>$null | Out-Null
+        git -C $Root -c core.quotepath=off @GitArgs "--output=$tmp" 2>$null | Out-Null
+        # A failed git call leaves an empty file, which would read as "nothing to scan": fail closed instead.
+        if ($LASTEXITCODE -ne 0) { Block "Blocked: git $($GitArgs -join ' ') failed (exit $LASTEXITCODE) - the change cannot be scanned for secrets." }
         return [IO.File]::ReadAllText($tmp)
     } finally { Remove-Item $tmp -ErrorAction SilentlyContinue }
+}
+
+# Files that never enter git whatever their content: keystores, certificates and provisioning profiles, .env files,
+# SSH keys, the UPM registry auth file, service-account JSON (rule core.md -> Security). Case-insensitive.
+# Templates are allowed (GD decision): .env.example / .env.sample / .env.template and public keys (*.pub); their content
+# is still secret-scanned like any file.
+$script:SecretPathRegex = '(?i)\.(?:keystore|jks|p12|pfx|p8|pem|mobileprovision)$|(?:^|/)\.env(?:$|\.(?!(?:example|sample|template)$))|(?:^|/)id_rsa(?![^/]*\.pub$)|\.upmconfig\.toml$|service[-_]?account[^/]*\.json$'
+# Under .workflow/evidence/ only reports and screenshots are committed: raw logcat, syslog and crash dumps carry
+# other apps' data, tokens and player PII. They stay local (.gitignore) and a report cites a path or a redacted excerpt.
+$script:EvidenceExt = '.md', '.png'
+# Unity Editor session data (rule core.md -> Security): the cache folders at a project root, and the files that hold
+# session tokens wherever they are copied.
+$script:EditorCacheRegex = '(?i)^(?:(?!Assets/|Packages/)[^/]+/)?(?:Library|Temp|Logs|UserSettings)/|(?:^|/)(?:UnityConnectCache\.json|EditorUserSettings\.asset|\.unity-pipeline-port)$'
+
+# Every change in `git diff --raw -z` / `git log --raw -z` output as { Path, Status, Mode, Blob } (the new side).
+# Pass --no-renames so each record names one path.
+function Get-GitRawChanges([string]$Root, [string[]]$GitArgs) {
+    $tokens = (Get-GitDiffText $Root (@($GitArgs) + @('--raw', '-z', '--no-abbrev', '--no-renames'))) -split "`0"
+    for ($i = 0; $i -lt $tokens.Count - 1; $i++) {
+        $m = [regex]::Match($tokens[$i].Trim(), '^:\d+ (\d+) [0-9a-f]+ ([0-9a-f]+) ([A-Z])\d*$')
+        if (-not $m.Success) { continue }
+        $i++
+        [pscustomobject]@{ Path = $tokens[$i]; Status = $m.Groups[3].Value; Mode = $m.Groups[1].Value; Blob = $m.Groups[2].Value }
+    }
+}
+
+# One problem line per added or modified file that must not be committed: a secret-bearing path, raw evidence, or a
+# .json whose content is a service-account key. A deletion is never a problem: it is how such a file leaves the tree.
+function Find-ForbiddenFiles([string]$Root, [object[]]$Changes) {
+    $problems = @()
+    foreach ($c in $Changes) {
+        if (-not $c -or $c.Status -eq 'D') { continue }
+        $p = $c.Path
+        if ($p -match $script:SecretPathRegex) { $problems += "secret file: $p (keystore, certificate, .env, key or service-account file)"; continue }
+        if ($p -match $script:EditorCacheRegex) { $problems += "Editor session data: $p (Library/, Temp/, Logs/, UserSettings/ and their token files never enter git)"; continue }
+        if ($p -match '(?i)^\.workflow/evidence/' -and $script:EvidenceExt -notcontains [IO.Path]::GetExtension($p).ToLowerInvariant()) {
+            $problems += "raw evidence: $p (only .md reports and .png screenshots are committed under .workflow/evidence/; the dump stays local, a report cites its path or a redacted excerpt)"
+            continue
+        }
+        if ($p -notmatch '(?i)\.json$' -or $c.Mode -notmatch '^100') { continue }
+        # A service-account key is about 2 KB; a JSON over 1 MB is data, not a credential.
+        if ([long](First (git -C $Root cat-file -s $c.Blob 2>$null) 0) -gt 1MB) { continue }
+        if (((git -C $Root cat-file blob $c.Blob 2>$null) -join "`n") -match '"type"\s*:\s*"service_account"') {
+            $problems += "service-account key: $p (a Google service-account JSON never enters git; reference it from a secret store)"
+        }
+    }
+    return $problems
+}
+
+# The main checkout for a project root: Claude Code creates agent worktrees at <project>/.claude/worktrees/<name>, and a
+# hook running for such an agent may get that worktree as its project root. Lane detection and the Editor lock must
+# still resolve to the main checkout.
+function Get-MainCheckout([string]$Root) {
+    if (-not $Root) { return $Root }
+    # Only a real agent worktree: the prefix is a checkout (holds .git), so a project whose own path merely contains
+    # .claude/worktrees/ keeps its root.
+    # The outermost prefix whose .git is a directory (a main checkout; a worktree's .git is a file) wins, so both a project
+    # that itself sits under .claude/worktrees/ and a worktree nested in a worktree resolve to their real main checkout.
+    $p = $Root -replace '\\', '/'
+    foreach ($m in [regex]::Matches($p, '/\.claude/worktrees/[^/]+(?=/|$)')) {
+        $prefix = $p.Substring(0, $m.Index)
+        if (Test-Path (Join-Path $prefix '.git') -PathType Container) { return $prefix }
+    }
+    return $Root
+}
+
+# The folder above $Path that holds a .git entry (directory or file), or $null.
+function Get-GitCheckout([string]$Path) {
+    $dir = $Path
+    while ($dir) {
+        if (Test-Path (Join-Path $dir '.git')) { return [IO.Path]::GetFullPath($dir).TrimEnd('\', '/') }
+        $parent = Split-Path $dir
+        if ($parent -eq $dir) { break }
+        $dir = $parent
+    }
+    return $null
+}
+
+# True when $Path sits in a linked git worktree other than $Root's own checkout: a /feature lane A worktree. The
+# project may itself be a linked worktree; only a different checkout counts. Mirrors editor-lock.ps1.
+function Test-LaneWorktree([string]$Path, [string]$Root) {
+    if (-not $Path -or -not $Root) { return $false }
+    $Root = Get-MainCheckout $Root
+    $holder = Get-GitCheckout $Path
+    if (-not $holder -or $holder -ieq (Get-GitCheckout $Root)) { return $false }
+    $git = Join-Path $holder '.git'
+    return ((Test-Path $git -PathType Leaf) -and ((Get-Content $git -Raw) -match 'gitdir:.*[\\/]worktrees[\\/]'))
 }
 
 function Block([string]$Message) {

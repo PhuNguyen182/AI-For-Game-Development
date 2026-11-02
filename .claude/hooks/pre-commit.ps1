@@ -1,15 +1,18 @@
 # PreToolUse Bash|PowerShell on `git commit` (and the commit `merge/rebase/cherry-pick/revert --continue` makes):
-# block staged secrets and broken Unity .meta pairing.
+# block staged secrets, secret-bearing files (keystore, .env, service-account JSON), raw evidence dumps and broken
+# Unity .meta pairing.
 . "$PSScriptRoot/common.ps1"
+# Fail closed: an unexpected error must block the commit, not let it through unscanned.
+trap { Block "Blocked: pre-commit scan failed ($_) - the commit was not scanned." }
 
 $in = Read-HookInput
-if (-not $in) { exit 0 }
+if (-not $in) { Block 'Blocked: pre-commit received no readable hook input - the commit was not scanned.' }
 $cmd = [string]$in.tool_input.command
 # Any run of git global options may precede `commit` (-C dir, -c k=v, --no-pager, --git-dir x, ...).
 $arg = '(?:"[^"]*"|''[^'']*''|\S+)'
 $opt = "(?:-[Cc]\s+$arg|--(?:git-dir|work-tree|namespace|config-env|exec-path)(?:=|\s+)$arg|--[\w-]+(?:=$arg)?|-[A-Za-z]+)"
 # commit(?![\w.-]): not commit-tree, commit-graph or a config key such as commit.gpgsign.
-$git = [regex]::Match($cmd, "\bgit(?:\.exe)?\b((?:\s+$opt)*)\s+(?:commit(?![\w.-])|(?:merge|rebase|cherry-pick|revert)\s+--continue\b)", 'IgnoreCase')
+$git = [regex]::Match($cmd, "\bgit(?:\.exe)?\b[`"']?((?:\s+$opt)*)\s+(?:commit(?![\w.-])|(?:merge|rebase|cherry-pick|revert)\s+--continue\b)", 'IgnoreCase')
 if (-not $git.Success) { exit 0 }
 
 # The scan below reads the index as it stands before the command runs. A commit that stages as it commits
@@ -67,13 +70,17 @@ $problems = @()
 # 1. Secrets in added lines, per file.
 $problems += @(Find-AddedSecrets (Get-GitDiffText $root @('diff', '--cached', '--text', '--unified=0', '--no-color')))
 
+# -z: a path git would quote (non-ASCII, a quote character) is read as itself.
+$changes = @(Get-GitRawChanges $root @('diff', '--cached'))
 $staged = @{}
-foreach ($row in (git -C $root diff --cached --name-status --no-renames 2>$null)) {
-    $s, $p = $row -split "`t", 2
-    $staged[$p] = $s
-}
+foreach ($c in $changes) { $staged[$c.Path] = $c.Status }
 
-# 2. Unity .meta pairing, only in a Unity project.
+# 2. Files that never enter git by path or content (keystore, .env, service-account JSON), and raw evidence dumps.
+$problems += @(Find-ForbiddenFiles $root $changes)
+
+# 3. Unity .meta pairing, only in a Unity project. A /feature lane A worktree has no Editor, so its new assets have no
+# .meta until the merge (the main session commits them after the post-merge import): that one check is skipped there.
+$lane = Test-LaneWorktree $root ([string](First $env:CLAUDE_PROJECT_DIR (Split-Path (Split-Path $PSScriptRoot))))
 if (Test-Path (Join-Path $root 'Assets')) {
     foreach ($p in $staged.Keys) {
         if ($p -notmatch '^Assets/') { continue }
@@ -85,11 +92,11 @@ if (Test-Path (Join-Path $root 'Assets')) {
         }
         $meta = "$p.meta"
         $metaTracked = git -C $root ls-files --error-unmatch -- $meta 2>$null
-        if ($s -eq 'A' -and -not $staged.ContainsKey($meta) -and -not $metaTracked) { $problems += "asset without .meta: $p" }
+        if ($s -eq 'A' -and -not $lane -and -not $staged.ContainsKey($meta) -and -not $metaTracked) { $problems += "asset without .meta: $p" }
         if ($s -eq 'D' -and $metaTracked -and -not $staged.ContainsKey($meta)) { $problems += ".meta left behind for deleted asset: $meta" }
     }
 
-    # 3. A .meta GUID never changes: every scene and prefab reference to the asset would break.
+    # 4. A .meta GUID never changes: every scene and prefab reference to the asset would break.
     foreach ($p in $staged.Keys) {
         if ($staged[$p] -ne 'M' -or -not $p.EndsWith('.meta')) { continue }
         $old = [regex]::Match(((git -C $root show "HEAD:$p" 2>$null) -join "`n"), '(?m)^guid:\s*(\w+)').Groups[1].Value
@@ -98,7 +105,7 @@ if (Test-Path (Join-Path $root 'Assets')) {
     }
 }
 
-# 4. Binaries and large files go through Git LFS. Opt out per repo: git config claude.lfs off
+# 5. Binaries and large files go through Git LFS. Opt out per repo: git config claude.lfs off
 $BinaryExt = 'png', 'jpg', 'jpeg', 'tga', 'psd', 'psb', 'tif', 'tiff', 'exr', 'hdr', 'gif', 'bmp', 'fbx', 'obj', 'blend',
     'max', 'ma', 'mb', 'wav', 'mp3', 'ogg', 'aif', 'aiff', 'flac', 'mp4', 'mov', 'webm', 'ttf', 'otf', 'zip', '7z',
     'unitypackage', 'dll', 'so', 'a', 'aar', 'jar', 'bundle', 'apk', 'aab', 'ipa'

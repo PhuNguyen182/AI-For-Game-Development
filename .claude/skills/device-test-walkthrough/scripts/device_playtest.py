@@ -6,9 +6,11 @@ behaviour or retries; exits 1 only on a missing binary or a failed tool call.
 """
 
 import argparse
+import re
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 # devices/doctor and the pull-logs logcat greps mirror `investigate-device-crash`
@@ -116,20 +118,61 @@ def android_keyevent(a):
     return echo_run(adb(a, "shell", "input", "keyevent", a.code)).returncode
 
 
+RX_THREADTIME_PID = re.compile(r"^\S+\s+\S+\s+(\d+)\s+\d+\s")  # `-v threadtime`: date time PID TID level tag
+
+
+def app_pids(lines, package, live_pid):
+    """Every pid the buffer shows for `package`: the live one, and earlier runs named by ActivityManager/AndroidRuntime."""
+    pids = {live_pid} if live_pid else set()
+    pkg = re.escape(package)
+    for rx in (rf"Start proc (\d+):{pkg}(?:[/:\s]|$)", rf"Process: {pkg}, PID: (\d+)", rf"Process {pkg} \(pid (\d+)\)",
+               rf"Killing (\d+):{pkg}(?:[/:\s]|$)"):
+        for line in lines:
+            m = re.search(rx, line)
+            if m:
+                pids.add(m.group(1))
+    return pids
+
+
+def app_lines(lines, package, pids):
+    """Lines logged by the app's processes, or naming the app; never other apps' own output."""
+    out = []
+    for line in lines:
+        m = RX_THREADTIME_PID.match(line)
+        if (m and m.group(1) in pids) or package in line:
+            out.append(line)
+    return out
+
+
 def android_pull_logs(a):
+    # Raw logcat holds other apps' output, tokens and player PII. Default: only the app's lines. Every file name is
+    # logcat_*.txt, which .gitignore keeps out of git under .workflow/evidence/; a report cites a redacted excerpt.
+    if not a.package and not a.full_buffer:
+        print("ERROR: pull-logs needs --package <app id> (app-only logs), or --full-buffer for the whole device buffer",
+              file=sys.stderr)
+        return 1
     out_dir = Path(a.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    crash = echo_run(adb(a, "logcat", "-d", "-b", "crash"), capture=True)
-    (out_dir / "logcat_crash.txt").write_text(crash.stdout)
-    full = echo_run(adb(a, "logcat", "-d"), capture=True)
-    (out_dir / "logcat_full.txt").write_text(full.stdout)
-    lines = full.stdout.splitlines()
-    fatal = grep_context(lines, "FATAL EXCEPTION", before=0, after=50)
-    (out_dir / "logcat_fatal_exception.txt").write_text("\n".join(fatal))
+    crash = echo_run(adb(a, "logcat", "-d", "-v", "threadtime", "-b", "crash"), capture=True)
+    full = echo_run(adb(a, "logcat", "-d", "-v", "threadtime"), capture=True)
+    crash_lines, lines = crash.stdout.splitlines(), full.stdout.splitlines()
+    anr = grep_context(lines, f"ANR in {a.package}", before=5, after=30) if a.package else []
     if a.package:
-        anr = grep_context(lines, f"ANR in {a.package}", before=5, after=30)
-        (out_dir / "logcat_anr.txt").write_text("\n".join(anr))
-    print(f"Logs written to {out_dir}")
+        pidof = echo_run(adb(a, "shell", "pidof", a.package), capture=True)
+        pids = app_pids(crash_lines + lines, a.package, pidof.stdout.strip().split(" ")[0] if pidof.returncode == 0 else "")
+        crash_lines, lines = app_lines(crash_lines, a.package, pids), app_lines(lines, a.package, pids)
+        (out_dir / "logcat_app.txt").write_text("\n".join(lines), encoding="utf-8")
+        (out_dir / "logcat_anr.txt").write_text("\n".join(anr), encoding="utf-8")
+        print(f"App pids: {', '.join(sorted(pids)) or 'none found'}")
+    if a.full_buffer:
+        (out_dir / "logcat_full.txt").write_text(full.stdout, encoding="utf-8")
+        (out_dir / "logcat_crash_full.txt").write_text(crash.stdout, encoding="utf-8")
+    (out_dir / "logcat_crash.txt").write_text("\n".join(crash_lines), encoding="utf-8")
+    fatal = grep_context(lines, "FATAL EXCEPTION", before=0, after=50)
+    (out_dir / "logcat_fatal_exception.txt").write_text("\n".join(fatal), encoding="utf-8")
+    scope = "full device buffer" if a.full_buffer and not a.package else f"lines of {a.package} only" + (
+        ", plus the full buffer (logcat_full.txt)" if a.full_buffer else "")
+    print(f"Logs written to {out_dir} ({scope}); keep them local, cite a redacted excerpt")
     return 1 if crash.returncode or full.returncode else 0
 
 
@@ -217,31 +260,53 @@ def ios_keyevent(a):
 
 
 def ios_pull_logs(a):
+    # Crash reports and syslog cover every app on the device. Default: only reports naming the app's bundle id (or
+    # --process) and only its syslog lines. Copied reports keep their .ips/.crash name and syslog is syslog*.txt,
+    # which .gitignore keeps out of git under .workflow/evidence/; a report cites a redacted excerpt.
     require("idevicecrashreport")
+    if not a.package and not a.full_buffer:
+        print("ERROR: pull-logs needs --package <bundle id> (app-only logs), or --full-buffer for every app's",
+              file=sys.stderr)
+        return 1
     out_dir = Path(a.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    before = set(out_dir.rglob("*"))
-    # -k keeps the reports on the device; -e also extracts raw .crash files.
-    result = echo_run(["idevicecrashreport", "-k", "-e"] + udid(a) + [str(out_dir)], capture=True)
-    if result.returncode != 0:
-        tail = (result.stderr or result.stdout).strip().splitlines()
-        print(f"ERROR: idevicecrashreport exit {result.returncode}: {tail[-1] if tail else ''}",
-              file=sys.stderr)
-    out = result.stdout.splitlines()  # filenames name the crashed process
-    if out:
-        print("\n".join(out[:50]) + (f"\n(+{len(out) - 50} more)" if len(out) > 50 else ""))
-    new = sum(1 for p in set(out_dir.rglob("*")) - before if p.is_file())
-    print(f"{new} new file(s) copied to {out_dir} (all apps, may include earlier crashes)")
+    needles = [n for n in (a.package, a.process) if n]
+    with tempfile.TemporaryDirectory() as staging:
+        # -k keeps the reports on the device; -e also extracts raw .crash files.
+        result = echo_run(["idevicecrashreport", "-k", "-e"] + udid(a) + [staging], capture=True)
+        if result.returncode != 0:
+            tail = (result.stderr or result.stdout).strip().splitlines()
+            print(f"ERROR: idevicecrashreport exit {result.returncode}: {tail[-1] if tail else ''}",
+                  file=sys.stderr)
+        copied = []
+        for src in sorted(p for p in Path(staging).rglob("*") if p.is_file()):
+            if not a.full_buffer:
+                head = src.read_text(encoding="utf-8", errors="replace")[:20000]  # header names the app
+                if not any(n in head or n in src.name for n in needles):
+                    continue
+            dest = out_dir / src.relative_to(staging)
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, dest)
+            copied.append(dest.name)
+    if copied:
+        print("\n".join(copied[:50]) + (f"\n(+{len(copied) - 50} more)" if len(copied) > 50 else ""))
+    scope = "all apps" if a.full_buffer else ", ".join(needles)
+    print(f"{len(copied)} crash file(s) copied to {out_dir} ({scope}; may include earlier crashes)")
     if shutil.which("idevicesyslog"):
-        syslog_path = out_dir / "syslog.txt"
+        syslog_path = out_dir / ("syslog_full.txt" if a.full_buffer else "syslog_app.txt")
         cmd = ["idevicesyslog"] + udid(a)
         print(f"$ {' '.join(cmd)} (5s) > {syslog_path}", file=sys.stderr)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, errors="replace")
         try:
-            with open(syslog_path, "w") as handle:
-                subprocess.run(cmd, stdout=handle, timeout=5)
+            out, _ = proc.communicate(timeout=5)
         except subprocess.TimeoutExpired:
-            pass
-        print(f"syslog: {syslog_path}")
+            proc.kill()
+            out, _ = proc.communicate()
+        lines = (out or "").splitlines()
+        if not a.full_buffer:
+            lines = [line for line in lines if any(n in line for n in needles)]
+        syslog_path.write_text("\n".join(lines), encoding="utf-8")
+        print(f"syslog: {syslog_path} ({len(lines)} line(s))")
     return 1 if result.returncode else 0
 
 
@@ -294,8 +359,12 @@ def build_parser():
     swipe.add_argument("--duration-ms", type=int, default=0)
     add("text", "Type a text string into the focused field.", "value")
     add("keyevent", "Send a key/button event (Android: numeric keycode; iOS: named button).", "code")
-    pull_logs = add("pull-logs", "Pull crash/ANR-relevant logs to a local directory.", "out_dir")
-    pull_logs.add_argument("--package", help="Android only: app id, used to grep ANR entries")
+    pull_logs = add("pull-logs", "Pull the app's crash/ANR-relevant logs to a local directory (raw dumps stay out of git).",
+                    "out_dir")
+    pull_logs.add_argument("--package", help="Android package name or iOS bundle id: keep only this app's logs and reports")
+    pull_logs.add_argument("--process", help="iOS only: the app's executable name, also matched in syslog lines and reports")
+    pull_logs.add_argument("--full-buffer", action="store_true",
+                           help="Opt in: also write every app's logs (logcat_full.txt / syslog_full.txt / all crash reports)")
     return parser
 
 
