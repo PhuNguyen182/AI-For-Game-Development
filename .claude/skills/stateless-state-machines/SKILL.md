@@ -17,7 +17,7 @@ user-invocable: false
 1. **Use a machine when any of the signs below appears:** per `csharp-standards` → `coding-principles.md` "SOLID", Open/Closed.
    - **Switch:** a `switch` grows a branch per feature.
    - **Bools:** bools like `isCharging`/`isOnCooldown`/`isActive` cross-check each other.
-   - **Bug:** a bug reduces to "in two states at once".
+   - **Bug shape:** a bug reduces to "in two states at once".
 2. **Settle the layer before the first `Configure`:** per `csharp-standards` → `coding-principles.md` "Shared Core integrity".
    - **Graph the server validates:** belongs in a Core assembly and may use only the synchronous surface.
    - **Why synchronous only:** async continuation order is not deterministic, and a UniTask-based Unity fork would also pull `UnityEngine` into Core.
