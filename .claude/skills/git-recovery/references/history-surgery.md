@@ -23,7 +23,7 @@ GIT_SEQUENCE_EDITOR="cp '<todo-file>'" git rebase -i <base>
 ## Secret or PII purge
 Runs only on a `cto` plan from `secret-exposure-response` (rotated and verified dead wherever rotation exists; a value that cannot be invalidated, or PII, is why the purge runs at all) plus the GD's authorisation quoted verbatim in the brief. `filter-repo` is not bundled and is a third-party install: `security-reviewer` clears it first. The rewrite runs here; the force-push is GD-run.
 
-1. Record the remote's refs outside every repo: `git ls-remote --heads --tags <url> > <dir>/pre-refs.txt`. Ask the GD to freeze pushes until step 5.
+1. Record the remote's refs outside every repo: `git ls-remote --heads --tags <url> > <dir>/pre-refs.txt`. `Needs GD`: freeze pushes until step 5.
 2. `git clone --mirror <url> <dir>/purge.git`, plus a second untouched `--mirror` clone as the anchor. Never purge the working clone: its stashes, reflogs and unpushed branches still hold the value.
 3. In `purge.git`: a whole file → `git filter-repo --invert-paths --path <path>`; a value inside a kept file → `git filter-repo --replace-text <expr-file>`, one `regex:<pattern>==>REDACTED` line per value, never the literal; a value in a commit or tag message → add `--replace-message <expr-file>` (same format; confirm both options with `git filter-repo -h`). The expressions file lives outside every repo and is deleted after.
 4. Verify in `purge.git` before anything leaves it: `git log --all --format=%H -- <path>` (file) or `git log --all --format=%H -G'<pattern>'` (value) prints nothing, `git rev-list --all | xargs git grep -l -E -e '<pattern>'` prints nothing, and the message sweep in `git-forensics` → `references/secret-history-archaeology.md` prints nothing. Report the sweep, never the value.

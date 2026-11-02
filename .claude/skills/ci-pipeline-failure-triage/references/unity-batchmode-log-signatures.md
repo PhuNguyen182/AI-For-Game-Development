@@ -38,6 +38,6 @@ Nothing below the failure point is evidence; the first failure is almost always 
 |---|---|---|
 | Compile error | Build error | `error CS` appears before any build step line; a build error appears after `Build completed` began or inside IL2CPP/Gradle/Xcode output |
 | Build failure | Hang | A failure writes a result line; a hang writes nothing and the job timeout kills it. Retrying a hang wastes the same time again |
-| Cache damage | Real regression | Cache damage names assets or packages the diff never touched and reproduces on a warm agent but not a clean one; ask for the clean-run comparison |
+| Cache damage | Real regression | Cache damage names assets or packages the diff never touched and reproduces on a warm agent but not a clean one; `Next:` the clean-run comparison |
 
 When routing, quote the failing line with the ten lines before it: Unity's error line is often a consequence (abort, nested exception, summary) and the cause is above it.

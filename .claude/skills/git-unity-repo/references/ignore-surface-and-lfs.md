@@ -51,50 +51,11 @@ These lines open `.gitattributes`; the UnityYAMLMerge block and the LFS block fo
 
 The list matches what `.claude/hooks/pre-commit.ps1` (`$BinaryExt`) blocks outside LFS; keep the two in step. `*.unitypackage`, `*.apk`, `*.aab`, `*.ipa` are ignored, not tracked.
 
-```gitattributes
-*.png    filter=lfs diff=lfs merge=lfs -text
-*.jpg    filter=lfs diff=lfs merge=lfs -text
-*.jpeg   filter=lfs diff=lfs merge=lfs -text
-*.tga    filter=lfs diff=lfs merge=lfs -text
-*.psd    filter=lfs diff=lfs merge=lfs -text
-*.psb    filter=lfs diff=lfs merge=lfs -text
-*.tif    filter=lfs diff=lfs merge=lfs -text
-*.tiff   filter=lfs diff=lfs merge=lfs -text
-*.exr    filter=lfs diff=lfs merge=lfs -text
-*.hdr    filter=lfs diff=lfs merge=lfs -text
-*.gif    filter=lfs diff=lfs merge=lfs -text
-*.bmp    filter=lfs diff=lfs merge=lfs -text
-*.fbx    filter=lfs diff=lfs merge=lfs -text
-*.obj    filter=lfs diff=lfs merge=lfs -text
-*.blend  filter=lfs diff=lfs merge=lfs -text
-*.max    filter=lfs diff=lfs merge=lfs -text
-*.ma     filter=lfs diff=lfs merge=lfs -text
-*.mb     filter=lfs diff=lfs merge=lfs -text
-*.wav    filter=lfs diff=lfs merge=lfs -text
-*.mp3    filter=lfs diff=lfs merge=lfs -text
-*.ogg    filter=lfs diff=lfs merge=lfs -text
-*.aif    filter=lfs diff=lfs merge=lfs -text
-*.aiff   filter=lfs diff=lfs merge=lfs -text
-*.flac   filter=lfs diff=lfs merge=lfs -text
-*.mp4    filter=lfs diff=lfs merge=lfs -text
-*.mov    filter=lfs diff=lfs merge=lfs -text
-*.webm   filter=lfs diff=lfs merge=lfs -text
-*.ttf    filter=lfs diff=lfs merge=lfs -text
-*.otf    filter=lfs diff=lfs merge=lfs -text
-*.zip    filter=lfs diff=lfs merge=lfs -text
-*.7z     filter=lfs diff=lfs merge=lfs -text
-*.dll    filter=lfs diff=lfs merge=lfs -text
-*.so     filter=lfs diff=lfs merge=lfs -text
-*.a      filter=lfs diff=lfs merge=lfs -text
-*.aar    filter=lfs diff=lfs merge=lfs -text
-*.jar    filter=lfs diff=lfs merge=lfs -text
-*.bundle filter=lfs diff=lfs merge=lfs -text
-LightingData.asset filter=lfs diff=lfs merge=lfs -text
-```
+Sample LFS lines: [unity.gitattributes](../scripts/unity.gitattributes) (binary extensions plus `LightingData.asset`).
 
 `git lfs track "<pattern>"` writes such a line; `git add .gitattributes` is required. `-text` blocks end-of-line conversion on binaries. Do not list `*.meta`: it is small text holding GUID identity.
 
-Size: the hook also sends any other file over 5 MB to LFS, except text Unity YAML (`%YAML` header), which stays in git at any size so UnityYAMLMerge keeps working (`merge=lfs` would replace it). A large binary `.asset` (baked lighting, NavMesh) needs its own LFS line, as `LightingData.asset` above; place LFS lines after the UnityYAMLMerge block, since the later line wins for the same attribute.
+Size: the hook also sends any other file over 5 MB to LFS, except text Unity YAML (`%YAML` header), which stays in git at any size so UnityYAMLMerge keeps working (`merge=lfs` would replace it). A large binary `.asset` (baked lighting, NavMesh) needs its own LFS line, as `LightingData.asset` in the sample; place LFS lines after the UnityYAMLMerge block, since the later line wins for the same attribute.
 
 **Caveat:** a new pattern converts nothing already committed; history keeps the full binaries. `git lfs migrate` rewrites commits, which is a history rewrite.
 

@@ -11,7 +11,7 @@ Each state change below is anchored first (`git-safety-anchor`) and runs with th
 | `git log --oneline HEAD..@{upstream}` / `@{upstream}..HEAD` | Incoming vs local-only commits: decides the next row |
 | No local-only commits → `git pull --ff-only` | Fast-forward or abort; never an unasked merge commit |
 | Local-only, unpublished commits → `git pull --rebase` | Replays them on the upstream; conflicts per `resolve-merge-conflicts` (stages invert, step 1) |
-| Local commits already published (`git for-each-ref --contains <c> refs/remotes` lists a ref) | Never rebase them: merge, or ask (rewriting them is radius 3) |
+| Local commits already published (`git for-each-ref --contains <c> refs/remotes` lists a ref) | Never rebase them: merge, or `AskUserQuestion` / `Needs-decision` (rewriting them is radius 3) |
 | Dirty tree | Commit or anchor first; `--autostash` hides a pop conflict behind a successful pull |
 | Credentials needed | Run network commands with `GIT_TERMINAL_PROMPT=0` and, where Git Credential Manager is the helper (`git config --get credential.helper` = `manager`), `GCM_INTERACTIVE=never`: the first stops the terminal prompt, the second the GCM sign-in window. Over SSH, `GIT_SSH_COMMAND='ssh -o BatchMode=yes'` makes a passphrase or host-key prompt fail instead of wait. A failure is `Needs GD: credentials`; never write one into a URL or config |
 
@@ -23,7 +23,7 @@ Each state change below is anchored first (`git-safety-anchor`) and runs with th
 | Fix to a release branch | `git switch <release>` then `git cherry-pick -x <sha>` | `-x` records the source sha in the message |
 
 ## Worktrees
-`git worktree add <path> <branch>` gives a second checkout sharing one object store. A Unity worktree has no `Library/`: opening it is a full reimport, and it is a second Editor (`core.md`: ask first). `git worktree remove` refuses on uncommitted changes; `--force` deletes them (radius 3).
+`git worktree add <path> <branch>` gives a second checkout sharing one object store. A Unity worktree has no `Library/`: opening it is a full reimport, and it is a second Editor (`core.md`: `AskUserQuestion` / `Needs-decision` first). `git worktree remove` refuses on uncommitted changes; `--force` deletes them (radius 3).
 
 ## UPM packages from git [upm]
 `Packages/manifest.json`: `"com.vendor.pkg": "https://<host>/<org>/<repo>.git?path=/<subfolder>#<tag-or-sha>"`. Pin a tag or sha, never a branch: a branch is held only by the hash in `packages-lock.json`, so anyone who regenerates the lock gets a different commit. A third-party package goes through `security-reviewer` before it lands (`core.md` Security).
@@ -53,5 +53,5 @@ Each state change below is anchored first (`git-safety-anchor`) and runs with th
 | Shallow clone (CI, `--depth`) | `blame`, `bisect`, `log -S` see only the fetched depth and answer wrongly without error: `git rev-parse --is-shallow-repository`, then `git fetch --unshallow` before forensics |
 
 ## Release tags
-`git tag -a v<x.y.z> -m "<subject>" <sha>` (annotated: carries tagger and date), then `git push origin v<x.y.z>`, one tag by name; `--tags` is refused because it publishes `backup/*` anchors. A release tag is asked for first (`core.md`) and runs from `/release`.
+`git tag -a v<x.y.z> -m "<subject>" <sha>` (annotated: carries tagger and date), then `git push origin v<x.y.z>`, one tag by name; `--tags` is refused because it publishes `backup/*` anchors. A release tag needs `AskUserQuestion` / `Needs-decision` first (`core.md`) and runs from `/release`.
 
