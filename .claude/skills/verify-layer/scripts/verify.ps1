@@ -85,6 +85,24 @@ function Test-ChecklistLink([string]$skillDir) {
     if (-not (Get-Content $skillMd -Raw -Encoding UTF8).Contains('(checklist.md)')) { Fail "$(Rel $skillMd): does not link its checklist.md" }
 }
 
+# Outside fences each line is blank, a column-0 heading, a table row or a titled list item ('- **Title:** text', '1. **Title:** text').
+# Prose by that rule: wrapped or indented continuation lines, blockquotes, text right after a fence, HTML comments, rules, '*' bullets.
+# Nested items are titled too. Fence content is never read. Returns the file line numbers that fail.
+function Get-UntitledLines([string]$body, [int]$lineOffset) {
+    $fence = ''; $no = $lineOffset
+    foreach ($l in $body -split '\r?\n') {
+        $no++
+        if ($l -match '^\s*(`{3,}|~{3,})(.*)$') {
+            $mark, $rest = $Matches[1], $Matches[2]
+            if (-not $fence) { $fence = $mark }
+            elseif ($mark[0] -eq $fence[0] -and $mark.Length -ge $fence.Length -and -not $rest.Trim()) { $fence = '' }
+            continue
+        }
+        if ($fence -or $l -match '^\s*$|^#{1,6}\s|^\s*\|') { continue }
+        if ($l -notmatch '^\s*(?:-|\d+\.)\s+\*\*[^*]+:\*\*') { $no }
+    }
+}
+
 function Test-SkillFormat([string]$path, [string]$rel, [string]$name, [string]$text, $fm) {
     $trigger = "$($fm.description)$($fm.when_to_use)"
     if ($trigger.Length -gt $Budget.Desc) { Fail "${rel}: description + when_to_use $($trigger.Length) > $($Budget.Desc) chars" }
@@ -110,6 +128,12 @@ function Test-SkillFormat([string]$path, [string]$rel, [string]$name, [string]$t
     if ($body -match '(?m)^\s*- (?:\*\*)?(?:Verified|Known limitations):') { Legacy $rel 'Verified or Known limitations bullet (agent-protocol envelope owns them)' }
     if ($body -match '(?m)^\|\s*(?:Reference|Script)\s*\|') { Legacy $rel 'reference or script table' }
     if ($body.Contains(".claude/skills/$name/scripts/")) { Legacy $rel 'hardcoded script path' }
+    $untitled = @(Get-UntitledLines $body (($text.Substring(0, $fm._end) -split '\n').Count - 1))
+    if ($untitled) {
+        # Line numbers only per file: the whole-layer count groups by this exact text.
+        $at = if ($File) { " (lines $(@($untitled | Select-Object -First 10) -join ', ')$(if ($untitled.Count -gt 10) { ", ... $($untitled.Count) in all" }))" }
+        Legacy $rel "untitled list item or prose line$at"
+    }
 
     $dir = Split-Path $path
     $scripts = Join-Path $dir 'scripts'
