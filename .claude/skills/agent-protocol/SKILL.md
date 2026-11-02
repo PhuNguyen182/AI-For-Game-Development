@@ -32,6 +32,7 @@ Next: <agent or step you recommend> | none
 ```
 
 - `Verified` names commands and results. "Compiles" is not "tested". Unrunnable → say why.
+- `Verified` reports every `## Checklist` item of your agent file: `<label>: pass | fail | n/a — why`. A fail or an unreported item → `Partial`, never `Done`.
 - `Partial` / `Failed` add: best result, last verified state, likely root cause, methods that did not work, safe resume point.
 - A brief with a `Verify: BUG-####` line → add one line per bug: `Repro: BUG-#### reproduces | gone` (the hook counts `reproduces` as a failed fix round). Reproducing a bug, or a regression test that must fail first, never uses this line.
 - Proven impossible within the brief (a budget, platform, engine or spec limit no retry can change) → `Failed` plus `Infeasible: <the limit and the evidence>`; stop spending attempts.
