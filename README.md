@@ -5,7 +5,8 @@ A Claude Code setup for making Unity games. You direct as the Game Designer; age
 ## Requirements
 
 - [Claude Code](https://claude.com/claude-code) and a Unity project
-- PowerShell 7 (`pwsh`). Without it, edits and commits are blocked.
+- Git
+- PowerShell 7 (`pwsh`). Without it, edits and commits are blocked, and the install and update commands do not run.
   - Windows: `winget install Microsoft.PowerShell`
   - macOS: `brew install --cask powershell`
   - Linux: `sudo snap install powershell --classic`
@@ -15,13 +16,69 @@ A Claude Code setup for making Unity games. You direct as the Game Designer; age
 
 ## Install
 
-```bash
-git clone <this repo> /tmp/aigd
-git -C /tmp/aigd archive HEAD .claude CLAUDE.md .gitignore .xerjignore .memory/sources.txt | tar -x -C <your-unity-project>
-cd <your-unity-project> && claude
+Clone this repo once, then run one command per Unity project. The project must be a git repo, and the target is its root. It works the same for a project with no `.claude/` and for one that already has it.
+
+**Step 0: PowerShell 7 must be installed.** Check with `pwsh --version`. If the command is not found, install it first (Requirements above). The commands below fail without it on Windows, macOS and Linux.
+
+**Install** (once per project). Template:
+
+```powershell
+pwsh -File <framework-clone>/.claude/tools/install-framework.ps1 -Target <unity-project>
 ```
 
-Open Claude Code in the project once and accept the trust dialog. Until you do, the project's permissions and hooks are ignored. Then run:
+Example with full paths, from anywhere:
+
+```powershell
+pwsh -File C:\Projects\AI-For-Game-Development\.claude\tools\install-framework.ps1 -Target C:\Projects\MyUnityGame
+```
+
+Example after `cd` into the project (`-Target` defaults to the current folder):
+
+```powershell
+cd C:\Projects\MyUnityGame
+pwsh -File C:\Projects\AI-For-Game-Development\.claude\tools\install-framework.ps1
+```
+
+On macOS or Linux the same commands use `/` paths:
+
+```bash
+cd ~/Projects/MyUnityGame
+pwsh -File ~/Projects/AI-For-Game-Development/.claude/tools/install-framework.ps1
+```
+
+**Update** (any time later). It needs no path to this repo: the install records where the framework came from. Template:
+
+```powershell
+pwsh -File <unity-project>/.claude/tools/update-framework.ps1
+```
+
+Example with full path, from anywhere:
+
+```powershell
+pwsh -File C:\Projects\MyUnityGame\.claude\tools\update-framework.ps1
+```
+
+Example after `cd` into the project (same on macOS and Linux):
+
+```powershell
+cd C:\Projects\MyUnityGame
+pwsh -File .claude/tools/update-framework.ps1
+```
+
+Both commands accept `-DryRun` (print the report, write nothing) and `-Force` (take the framework's version on a conflict). Update also accepts `-Source <git url>` and `-Ref <branch or tag>`. Neither command commits or pushes: review the changes with `git status` and commit them yourself.
+
+| Part of your project | Install and update do |
+|---|---|
+| `.claude/agents`, `skills`, `hooks`, `rules`, `workflows`, `templates`, `tools` | Add what is missing, update what the framework changed, remove what it retired |
+| Your own agents and skills (names the framework does not have) | Leave alone |
+| A framework file you edited | Keep yours and write the framework's version beside it as `<file>.framework-new`. Merge it, delete it, or rerun with `-Force`. Old versions are backed up under .claude/.framework-backup/ |
+| `.claude/settings.json` | Merge: add the framework's permissions, env keys and hooks. Your other settings stay |
+| `.gitignore` | Append the framework's missing lines |
+| `CLAUDE.md`, `.xerjignore`, `.memory/sources.txt`, `.workflow/` | Create at install if missing, never overwrite |
+
+The state of the last sync is in the file .claude/.framework-manifest.json. Commit it.
+
+Open Claude Code in the project once and accept the trust dialog. Until you do, the project's permissions and hooks are ignored. Then run `/verify-layer` after an update, or after an install:
 
 ```
 /new-project
