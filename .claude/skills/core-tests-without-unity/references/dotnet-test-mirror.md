@@ -23,54 +23,11 @@ Sources: [a] C# compiler `https://docs.unity.com/en-us/engine/6000.0/manual/prog
 | `TestsDotnet/<Feature>/Tests/<Feature>.Tests.Mirror.csproj` | Test project over the feature's `Tests/EditMode/` sources; `AssemblyName` = `_Project.Scripts.<Feature>.Tests.EditMode` for the same reason |
 | `.gitignore` | `TestsDotnet/**/bin/`, `TestsDotnet/**/obj/` |
 
-```xml
-<!-- TestsDotnet/Combat/Core/Combat.Core.Mirror.csproj -->
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>netstandard2.1</TargetFramework>
-    <LangVersion>9.0</LangVersion>
-    <AssemblyName>_Project.Scripts.Combat.Core</AssemblyName>
-    <RootNamespace>_Project.Scripts.Combat.Core</RootNamespace>
-    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <Nullable>disable</Nullable>
-  </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="..\..\..\Assets\_Project\Scripts\Combat\Core\**\*.cs"
-             Link="%(RecursiveDir)%(Filename)%(Extension)" />
-  </ItemGroup>
-  <ItemGroup>
-    <!-- One per asmdef reference of _Project.Scripts.Combat.Core. -->
-    <ProjectReference Include="..\DataModels\Combat.DataModels.Mirror.csproj" />
-  </ItemGroup>
-</Project>
-```
+Sample: [Combat.Core.Mirror.xml](../scripts/Combat.Core.Mirror.xml) (library over one engine-free asmdef, linked sources). Adapt it into `TestsDotnet/<Feature>/Core/<Feature>.Core.Mirror.csproj`; it is stored as `.xml` only because `*.csproj` is gitignored here.
 
-```xml
-<!-- TestsDotnet/Combat/Tests/Combat.Tests.Mirror.csproj -->
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <LangVersion>9.0</LangVersion>
-    <AssemblyName>_Project.Scripts.Combat.Tests.EditMode</AssemblyName>
-    <IsPackable>false</IsPackable>
-    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-  </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="..\..\..\Assets\_Project\Scripts\Combat\Tests\EditMode\**\*.cs"
-             Link="Tests\%(RecursiveDir)%(Filename)%(Extension)" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Core\Combat.Core.Mirror.csproj" />
-    <ProjectReference Include="..\DataModels\Combat.DataModels.Mirror.csproj" />
-    <!-- Exact versions, recorded in docs/tech-stack.md; NUnit stays on 3.x. -->
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="$(TestSdkVersion)" />
-    <PackageReference Include="NUnit" Version="$(NUnitVersion)" />
-    <PackageReference Include="NUnit3TestAdapter" Version="$(NUnitAdapterVersion)" />
-  </ItemGroup>
-</Project>
-```
+Sample: [Combat.Tests.Mirror.xml](../scripts/Combat.Tests.Mirror.xml) (test project over `Tests/EditMode/`). Adapt it into `TestsDotnet/<Feature>/Tests/<Feature>.Tests.Mirror.csproj`; it is stored as `.xml` only because `*.csproj` is gitignored here.
 
-The three version properties live in `TestsDotnet/Directory.Build.props`, so nothing outside `TestsDotnet/` is affected.
+The three version properties (`TestSdkVersion`, `NUnitVersion`, `NUnitAdapterVersion`) live in `TestsDotnet/Directory.Build.props`, so nothing outside `TestsDotnet/` is affected. Exact versions are recorded in `docs/tech-stack.md`; NUnit stays on 3.x.
 
 ## Settings that decide whether the mirror is honest
 

@@ -17,27 +17,7 @@ A `ValueTask<TResult>` must not be awaited twice, have `AsTask()` called twice, 
 - `Task.WhenAll`: completes when every task has; aggregates exceptions from all.
 - `Task.WhenAny`: completes when the first does; returns that task.
 
-```csharp
-private static async Task<int> BridgeCallbackAsync(ThirdPartySdk sdk)
-{
-    // RunContinuationsAsynchronously: the SDK's callback thread must not run our continuation inline.
-    var tcs = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
-    void OnComplete(int result) => tcs.TrySetResult(result);
-    void OnError(Exception ex) => tcs.TrySetException(ex);
-    sdk.OnComplete += OnComplete;
-    sdk.OnError += OnError;
-    try
-    {
-        sdk.Start();
-        return await tcs.Task;
-    }
-    finally
-    {
-        sdk.OnComplete -= OnComplete;
-        sdk.OnError -= OnError;
-    }
-}
-```
+Sample: [BridgeCallbackAsync.cs](../scripts/BridgeCallbackAsync.cs) (callback API to `Task`; `RunContinuationsAsynchronously` keeps the SDK callback thread from running the continuation inline).
 
 ## TAP conventions
 Suffix awaitable methods `Async`, keep the sync counterpart's parameter order. Usage errors (null argument) throw synchronously; every other failure surfaces on the returned `Task`, never both.

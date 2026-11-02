@@ -24,54 +24,7 @@ Sources (below the SKILL.md `Docs:` base unless a full URL): [eo] `manual/script
 | Timestamps | Prefer `Time.fixedTimeAsDouble` over `Time.fixedTime` [ft] |
 | Render-rate test | `Time.captureDeltaTime` advances `Time.time` by a fixed amount per frame regardless of real time [cd] |
 
-```csharp
-using _Project.Scripts.Match.Core;
-using _Project.Scripts.Match.DataModels;
-using VContainer.Unity;
-
-namespace _Project.Scripts.Match.DataControllers
-{
-    // The only call site that advances MatchSimulation (_Project.Scripts.Match.Core).
-    public sealed class MatchTickDriver : IFixedTickable
-    {
-        private readonly MatchSimulation _simulation;
-        private readonly CommandSampler _sampler;
-        private readonly ContactBuffer _contacts;
-        private readonly BodyApplier _bodies;
-        private readonly MatchSnapshots _snapshots;
-        private readonly float _stepSeconds;
-        private int _tick;
-
-        public MatchTickDriver(
-            MatchSimulation simulation,
-            CommandSampler sampler,
-            ContactBuffer contacts,
-            BodyApplier bodies,
-            MatchSnapshots snapshots,
-            TickSettings settings)
-        {
-            this._simulation = simulation;
-            this._sampler = sampler;
-            this._contacts = contacts;
-            this._bodies = bodies;
-            this._snapshots = snapshots;
-            this._stepSeconds = settings.StepSeconds;
-        }
-
-        public void FixedTick()
-        {
-            PlayerCommand command = this._sampler.Consume();
-            this._snapshots.ShiftCurrentToPrevious();
-            this._simulation.Tick(this._tick, this._stepSeconds, command, this._contacts.Pending);
-            this._contacts.Clear();
-            // Core-owned quantities reach kinematic bodies before the physics step that follows.
-            this._bodies.Apply(this._simulation.State);
-            this._snapshots.CaptureCurrent(this._simulation.State);
-            this._tick++;
-        }
-    }
-}
-```
+Sample: [MatchTickDriver.cs](../scripts/MatchTickDriver.cs) (the `IFixedTickable` tick owner).
 
 Core seam: `public void Tick(int tick, float stepSeconds, PlayerCommand command, ReadOnlySpan<HitData> contacts)` on `MatchSimulation`; `ContactBuffer.Pending` is a `ReadOnlySpan<HitData>` over a preallocated array, valid until `Clear()`.
 

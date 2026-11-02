@@ -6,7 +6,9 @@ user-invocable: false
 
 # Feature docs
 
-Live at the feature root (`<feature root>/<Feature>/`, `CLAUDE.md`, default `Assets/_Project/Scripts/`), one set per feature, covering every assembly under it. Code from before the layout: the folder holding it.
+- **Location:** the docs live at the feature root (`<feature root>/<Feature>/`, `CLAUDE.md`, default `Assets/_Project/Scripts/`).
+- **Scope:** one set per feature, covering every assembly under it.
+- **Code from before the layout:** the folder holding it.
 
 | File | Holds |
 |---|---|
@@ -26,13 +28,18 @@ Live at the feature root (`<feature root>/<Feature>/`, `CLAUDE.md`, default `Ass
 | Debug | README → CONTRACTS → bug record → source → ARCHITECTURE → DEBT → DECISIONS |
 | Review / test | spec → CONTRACTS → diff (tests: + DEBT, so known debt is not filed as new) |
 
-- DECISIONS before undoing a design that looks wrong; DEBT before filing a bug against code that looks wrong.
-- Missing file = never written, not "none". Fall back to source.
-- Stop once you know the entry point, the invariants, and who sees your change.
-- Doc vs code disagree → report both anchors; never pick silently. Spec in hand outranks the docset; source outranks any claim about behaviour.
+- **Before undoing a design that looks wrong:** read DECISIONS.
+- **Before filing a bug against code that looks wrong:** read DEBT.
+- **Missing file:** never written, not "none"; fall back to source.
+- **Stop:** once you know the entry point, the invariants, and who sees your change.
+- **Doc vs code disagree:** report both anchors; never pick silently.
+- **Precedence:** spec in hand outranks the docset; source outranks any claim about behaviour.
 
 ## Write (size M/L, or any size with the risk flag)
-- `README.md` at feature completion: overview, entry points, map (each assembly, what it references, its test fixtures), consumers. Keep everything else inline there until it outgrows the README, then promote it and leave a pointer.
-- `CONTRACTS.md` when code outside the root calls in, or client and server must agree.
-- `DECISIONS.md` / `DEBT.md` appended in the same change that made the decision or left the limitation — any size.
-- Never an empty or placeholder file. One fact, one home. A change that makes a doc stale updates it in the same change.
+- **`README.md`:** at feature completion: overview, entry points, map (each assembly, what it references, its test fixtures), consumers.
+  - **Everything else:** keep inline there until it outgrows the README, then promote it and leave a pointer.
+- **`CONTRACTS.md`:** when code outside the root calls in, or client and server must agree.
+- **`DECISIONS.md` / `DEBT.md`:** appended in the same change that made the decision or left the limitation — any size.
+- **Empty or placeholder files:** never.
+- **Placement:** one fact, one home.
+- **A change that makes a doc stale:** updates it in the same change.

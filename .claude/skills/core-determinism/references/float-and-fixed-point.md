@@ -25,32 +25,7 @@ Sources: below the SKILL.md `Docs:` base: [a] `api/system.math.sin` (same remark
 | Third-party fixed-point library | Project-wide standard, IL2CPP/AOT and licence check, supply-chain review before it lands (`core.md` Security) | `cto` via `/decide`, then `security-reviewer` |
 | Float with server authority | Clients may drift; the server's state overwrites theirs each snapshot, so only the server's result counts. Valid only under a state-sync model | `technical-architect`; sync model from `netcode-architecture-decision` |
 
-```csharp
-using System;
-
-namespace _Project.Scripts.Combat.Core
-{
-    /// <summary>
-    /// Boundary conversion: Client hands a float distance, Core keeps millimetres.
-    /// Rounding rule and range are stated so every machine lands on the same integer.
-    /// </summary>
-    public static class DistanceUnits
-    {
-        public const int MillimetresPerMetre = 1000;
-        public const float MaxMetres = 100000f;
-
-        public static int ToMillimetres(float metres)
-        {
-            if (float.IsNaN(metres) || metres < -MaxMetres || metres > MaxMetres)
-            {
-                throw new ArgumentOutOfRangeException(nameof(metres));
-            }
-
-            return (int)Math.Round((double)metres * MillimetresPerMetre, MidpointRounding.AwayFromZero);
-        }
-    }
-}
-```
+Sample: [DistanceUnits.cs](../scripts/DistanceUnits.cs) (float metres to integer millimetres with a stated rounding rule and range).
 
 **Caveat:** the conversion itself runs on each machine. It only removes divergence if the float handed in is already identical, e.g. read from a network message or a recorded input. Quantize at the authority, send the integer.
 

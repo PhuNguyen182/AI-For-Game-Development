@@ -14,42 +14,7 @@ Sources (below the SKILL.md `Docs:` base): [fu] `script-reference/unityengine/mo
 | Manual Update Mode | The owner calls `InputSystem.Update()` itself: replay or a test harness owning the clock |
 | Camera look | Stays per-frame on the view side unless it decides an outcome; an aim direction that decides a hit enters the command at the fire tick |
 
-```csharp
-using _Project.Scripts.Match.DataModels;
-using UnityEngine;
-using VContainer.Unity;
-
-namespace _Project.Scripts.Match.DataControllers
-{
-    // Latches per frame; MatchTickDriver consumes once per tick.
-    public sealed class CommandSampler : ITickable
-    {
-        private readonly PlayerControls _controls;
-        private PlayerCommand _pending;
-
-        public CommandSampler(PlayerControls controls)
-        {
-            this._controls = controls;
-        }
-
-        public void Tick()
-        {
-            Vector2 move = this._controls.Gameplay.Move.ReadValue<Vector2>();
-            this._pending.MoveX = move.x;
-            this._pending.MoveY = move.y;
-            if (this._controls.Gameplay.Jump.WasPressedThisFrame())
-                this._pending.Buttons |= CommandButtons.Jump;
-        }
-
-        public PlayerCommand Consume()
-        {
-            PlayerCommand command = this._pending;
-            this._pending.Buttons = CommandButtons.None;
-            return command;
-        }
-    }
-}
-```
+Sample: [CommandSampler.cs](../scripts/CommandSampler.cs) (latches per frame; `MatchTickDriver` consumes once per tick).
 
 ## Physics → Core as plain data
 
