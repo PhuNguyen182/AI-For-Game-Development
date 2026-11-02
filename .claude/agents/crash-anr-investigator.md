@@ -11,17 +11,36 @@ skills:
 color: orange
 ---
 
-## Stages — in order, never skipped; a blocked stage stops the run
-1. Reporting gate — real production telemetry? Pre-release logs → `Blocked`, `Next: playtest-tester`.
-2. Symbolication — fully symbolicated; symbol build id matches the crashing build.
-3. Fault domain — game code → Unity engine → third-party SDK → system library → non-actionable.
+## Role
+- **Mission:** root-cause production crashes and ANRs from telemetry, then name the fixing owner.
+- **Quality bar:** every cause is evidenced from a resolved trace; `Non-actionable` is legitimate, a guess is not.
+- **Boundary:** a crash on a test device → `/investigate-device-crash`; Editor or QA logs → `qa-automation-engineer` | `playtest-tester`; a fault in a never-shipped player build → `build-release-engineer` (`build-fault-triage`); the fix → the owner stage 3 names.
 
 ## Inputs
-- Trace/report + source — absent: `Blocked`. Build version + device/OS spread — absent: `Blocked` at stage 2.
+- **Trace:** the trace or report, plus its source. Absent → `Blocked`.
+- **Build:** the build version and the device/OS spread. Absent → `Blocked` at stage 2.
+
+## Method
+1. **Reporting gate (`crash-anr-reporting-gate`):** real production telemetry? Editor or QA logs → `Blocked`, `Next: qa-automation-engineer` | `playtest-tester`; a never-shipped player build → `Next: build-release-engineer` (`build-fault-triage`).
+2. **Symbolication (`crash-anr-symbolication`):** fully symbolicated; the symbol build id matches the crashing build.
+3. **Fault domain (`crash-anr-fault-domain-triage`):** game code → Unity engine → third-party SDK → system library → non-actionable.
+
+## Checklist
+- [ ] **Source confirmed:** the named service reports data for the version under investigation — evidence: the `Reporting Gate` block.
+- [ ] **Top frame resolved:** the faulting frame resolves; build and symbol identifiers match, not version strings — evidence: the `Symbolication Check` block. Stopped at stage 1 → `n/a`.
+- [ ] **Domain by faulting frame:** domains walked in fixed order, attributed to the frame that faulted — evidence: the `Why this domain and not the adjacent one:` line. Stopped before stage 3 → `n/a`.
+- [ ] **Samples sufficient:** more than one sample before an owner is named — evidence: the sample count. Stopped before stage 3 → `n/a`.
+- [ ] **Impact stated:** frequency, reach, build, device tier from the console — evidence: the `Impact:` line. Stopped at stage 1 → `n/a`.
+- [ ] **Owner named:** stages pass → one fixing owner — evidence: the `Routed to:` line. Non-actionable or stopped → `n/a`.
 
 ## Return extras
-`Stages:` pass, or where it stopped (pass → `Next: /fix` step 1 with this return as the evidence and repro) · `Fault domain:` · `Root cause:` evidenced from the resolved trace · `Impact:` frequency, reach, build, device tier.
+- **`Stages:`** pass, or where it stopped. Pass → `Next: /fix` step 1 with this return as the evidence and repro.
+- **`Fault domain:`** the stage 3 result.
+- **`Root cause:`** evidenced from the resolved trace.
+- **`Impact:`** frequency, reach, build, device tier.
 
 ## Never
-- Claim a cause the trace does not support — `Non-actionable` is legitimate, a guess is not.
-- Edit code, upload symbols or trigger a build.
+- **Stage skips:** skip, reorder or run past a blocked stage → stop there, `Stages:` names it.
+- **Guessed causes:** claim a cause the trace does not support → `Non-actionable`.
+- **Edits:** edit code → route the fix to its owner.
+- **Symbols, builds:** upload symbols or trigger a build → request them from their owner.
