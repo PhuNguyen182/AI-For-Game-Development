@@ -1,28 +1,45 @@
 ---
 name: netcode-architecture-decision
-description: "Choose the multiplayer foundation (Mirror, FishNet, Photon Fusion/Quantum, NGO, custom on Transport/LiteNetLib) and sync model (state sync, lockstep, rollback). Use before any netcode is written."
+description: "Multiplayer foundation (Mirror, FishNet, Fusion/Quantum, NGO) and sync model. Use before any netcode is written."
 user-invocable: false
 ---
 
 # Netcode Architecture Decision
 
-Not for: reconciliation protocol, message format, tick rate (`netcode-engineer`), server hosting (`backend-build-vs-buy`), cheat posture (`anti-cheat-strategy`), the scoring rubric (`tco-reversibility-scoring`), feasibility spikes (`rd-engineer`).
+- **Not for:** reconciliation protocol, message format, tick rate (`netcode-engineer`).
+- **Not for:** server hosting (`backend-build-vs-buy`).
+- **Not for:** cheat posture (`anti-cheat-strategy`).
+- **Not for:** the scoring rubric (`tco-reversibility-scoring`).
+- **Not for:** feasibility spikes (`rd-engineer`).
 
 ## Steps
-1. **Classify the genre's latency and determinism need before naming a framework** — fighting/1v1 twitch: rollback or deterministic lockstep. FPS/MOBA/action PvP: client-server authoritative with prediction and reconciliation. Co-op, turn-based, async: plain server-authoritative RPC.
-2. **Do not buy prediction the genre cannot perceive** — reconciliation adds desync bugs and a permanent debugging tax.
-3. **Shortlist by sync model, not popularity** — Mirror, FishNet: self-hosted client-server authoritative. Photon Fusion: hosted, prediction built in. Photon Quantum: hosted deterministic lockstep with rollback. NGO: client-server over Unity Transport. Custom: you own the stack above a bare transport.
-4. **Test every determinism claim against the gameplay simulation, not the transport** — lockstep/rollback need a bit-deterministic simulation; floats and Unity physics are not deterministic across platforms. A deterministic framework presupposes it (`csharp-standards` → `coding-principles.md` Shared Core integrity).
-5. **A committed platform the framework misses disqualifies it before price** — check console, mobile and cross-play against the GDD.
-6. **Price the ongoing bucket on CCU and bandwidth** — hosted netcode bills per CCU or message. Fetch the vendor rate card with `WebFetch`; state the crossover point where it overtakes the alternative, not launch-day cost. Score with `tco-reversibility-scoring`, which weights reversibility above upfront cost here (foundation is usually Low reversibility once gameplay is built on it).
-7. **Judge team fit against the timeline** — custom wins only with in-house networking expertise and schedule slack; otherwise license, even at a higher sticker price.
-8. **Feasibility unknown (e.g. tick rate on real mobile networks) → `rd-engineer` spike**; withhold the decision until it reports.
-9. **Record the foundation via `engineering-standard-adr-authoring`** — an unrecorded decision is contradicted by the first inconvenient feature.
-10. **Target CCU, cross-play commitment or session model unstated → `Needs-decision` naming it** — each can flip the shortlist; any call made meanwhile is provisional.
+1. **Classify the genre's latency and determinism need before naming a framework:** the genre sets the sync model.
+   - **Fighting/1v1 twitch:** rollback or deterministic lockstep.
+   - **FPS/MOBA/action PvP:** client-server authoritative with prediction and reconciliation.
+   - **Co-op, turn-based, async:** plain server-authoritative RPC.
+2. **Do not buy prediction the genre cannot perceive:** reconciliation adds desync bugs and a permanent debugging tax.
+3. **Shortlist by sync model, not popularity:** options by model.
+   - **Mirror, FishNet:** self-hosted client-server authoritative.
+   - **Photon Fusion:** hosted, prediction built in.
+   - **Photon Quantum:** hosted deterministic lockstep with rollback.
+   - **NGO:** client-server over Unity Transport.
+   - **Custom:** you own the stack above a bare transport (Unity Transport, LiteNetLib).
+4. **Test every determinism claim against the gameplay simulation, not the transport:** lockstep/rollback need a bit-deterministic simulation.
+   - **Not deterministic:** floats and Unity physics are not deterministic across platforms.
+   - **Presupposition:** a deterministic framework presupposes a bit-deterministic simulation (`csharp-standards` → `coding-principles.md` Shared Core integrity).
+5. **A committed platform the framework misses disqualifies it before price:** check console, mobile and cross-play against the GDD.
+6. **Price the ongoing bucket on CCU and bandwidth:** hosted netcode bills per CCU or message.
+   - **Rate card:** fetch the vendor rate card with `WebFetch`.
+   - **Crossover:** state the point where it overtakes the alternative, not launch-day cost.
+   - **Scoring:** score with `tco-reversibility-scoring`, which weights reversibility above upfront cost here (foundation is usually Low reversibility once gameplay is built on it).
+7. **Judge team fit against the timeline:** custom wins only with in-house networking expertise and schedule slack; otherwise license, even at a higher sticker price.
+8. **Feasibility unknown (e.g. tick rate on real mobile networks) → `rd-engineer` spike:** withhold the decision until it reports.
+9. **Record the foundation via `engineering-standard-adr-authoring`:** an unrecorded decision is contradicted by the first inconvenient feature.
+10. **Target CCU, cross-play commitment or session model unstated → `Needs-decision` naming it:** each can flip the shortlist; any call made meanwhile is provisional.
 
 ## Never
-- Recommend custom netcode on ambition — back it with team fit, timeline and a scored comparison.
-- Accept a framework's determinism guarantee unchecked — the most common expensive failure here.
+- **Ambition-led custom netcode:** recommending custom netcode on ambition — back it with team fit, timeline and a scored comparison.
+- **Unchecked determinism guarantee:** accepting a framework's determinism guarantee unchecked — the most common expensive failure here.
 
 ## Output
 ```
@@ -39,7 +56,8 @@ Not for: reconciliation protocol, message format, tick rate (`netcode-engineer`)
 - Decision: <foundation + sync model> — <score tie>
 - Routed to: <...>
 ```
-On request only, add `Known limitations`, `Latent concerns` and `Future remediation`, each with its re-open trigger.
 
 ## Example
-- "Photon Quantum does rollback, so determinism is free" → declined: Quantum requires the whole simulation on its fixed-point engine; this project leans on Unity physics, so adoption means reimplementing it. Re-scored with that migration as upfront cost; shortlist reopened.
+- **"Photon Quantum does rollback, so determinism is free":** declined.
+  - **Why:** Quantum requires the whole simulation on its fixed-point engine; this project leans on Unity physics, so adoption means reimplementing it.
+  - **Did instead:** re-scored with that migration as upfront cost; shortlist reopened.

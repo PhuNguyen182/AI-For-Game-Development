@@ -21,30 +21,10 @@ Escalation path only: move here once profiling shows the main-thread driver upda
 - `GetMaxSupportedMessageSize` reports the initial path MTU only and never refreshes.
 - Called from the main thread outside a job it runs, but forfeits the job dependency tracking that would catch a race with the driver's update job. Use the plain driver there.
 
-```csharp
-[BurstCompile]
-struct ServerUpdateJob : IJobParallelForDefer
-{
-    public NetworkDriver.Concurrent Driver;
-    [ReadOnly] public NativeArray<NetworkConnection> Connections;
-
-    public void Execute(int index)
-    {
-        var connection = Connections[index];
-        NetworkEvent.Type cmd;
-        while ((cmd = Driver.PopEventForConnection(connection, out var stream)) != NetworkEvent.Type.Empty)
-        {
-            if (cmd == NetworkEvent.Type.Data)
-            {
-                int value = stream.ReadInt();
-                Driver.BeginSend(connection, out var writer);
-                writer.WriteInt(value + 1);
-                Driver.EndSend(writer);
-            }
-        }
-    }
-}
-```
+- **Sample:** [ServerUpdateJob.cs](../scripts/ServerUpdateJob.cs) — `ServerUpdateJob : IJobParallelForDefer` with `[BurstCompile]`.
+  - **Adapt into:** `Assets/_Project/Scripts/Networking/Server/ServerUpdateJob.cs`.
+  - **Fields:** `NetworkDriver.Concurrent Driver` and `[ReadOnly] NativeArray<NetworkConnection> Connections`.
+  - **Behaviour:** per connection, pops events with `PopEventForConnection`; on `Data` reads an `int` and sends `value + 1` back.
 
 ## MultiNetworkDriver
 

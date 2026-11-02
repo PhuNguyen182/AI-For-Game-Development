@@ -1,7 +1,7 @@
 <#
 .SYNOPSIS
-Checks the .claude/ layer: paths resolve, agent and skill frontmatter, skill references, workflows are JS,
-size budgets (warn only, except a description past 250 chars, which fails), skill format, checklist files, no retired IDs or agents, table widths. Exit 0 = pass (warnings allowed), 1 = failure.
+Checks the .claude/ layer: paths resolve, agent and skill frontmatter, skill references, workflows are JS, skill format, reference fences, checklist files, hook contract strings, no retired IDs, agents, paths or namespaces, table widths.
+Warn only: size targets (skill description past 120 chars, list item past 200, body past 8,000, agent, rule and CLAUDE.md lengths), an unknown name in an agent, a unity:* plugin skill not installed. All else fails, including a description past 250 chars. Exit 0 = pass (warnings allowed), 1 = failure.
 .PARAMETER File
 Check only this file (used by the PostToolUse hook). Omit for the whole layer.
 #>
@@ -12,12 +12,12 @@ $root = (Resolve-Path (Join-Path $PSScriptRoot '../../../..')).Path
 $claude = Join-Path $root '.claude'
 $fails = [System.Collections.Generic.List[string]]::new()
 $warns = [System.Collections.Generic.List[string]]::new()
-$legacy = [ordered]@{}
+$soft = [ordered]@{}
 function Fail($m) { $fails.Add($m) }
 function Warn($m) { $warns.Add($m) }
-# Skills migrate to the format when next touched: per file from the edit hook, one count per check on a whole-layer run.
-function Legacy([string]$rel, [string]$check) {
-    if ($File) { Warn "${rel}: $check" } else { $legacy[$check] = 1 + [int]$legacy[$check] }
+# Size targets a skill may pass: per file from the edit hook, one count per check on a whole-layer run.
+function Soft([string]$rel, [string]$check) {
+    if ($File) { Warn "${rel}: $check" } else { $soft[$check] = 1 + [int]$soft[$check] }
 }
 # Case- and slash-insensitive: the edit hook passes the raw path Claude Code sends (c:\..., C:/...), and an unshortened
 # path would skip every agent, skill and rule check.
@@ -32,6 +32,10 @@ $RetiredPaths = '\.claude/(standards|workflows/[a-z-]+\.md|workflows/(references
 $IdPattern = '\b(?:G[0-9]{1,2}|B[0-9]{1,2}|I[0-9]{1,2}|A[1-5]|V[1-5]|EV[0-4])\b'
 # Retired namespace scheme: features use path-derived namespaces (naming-convention.md).
 $RetiredNamespace = '\bGame\.(?:Core|Client|Server)\b'
+# '**Title:**' in a skill or checklist line. The first branch takes a title with no '*', whatever its backticks: the second
+# would swallow ':**' into a pair opened by an odd backtick. The second lets '*' sit in backticks. Its group is atomic: with
+# both alternatives open to backtracking, 20 backticked pairs on a line with no title end take 45 s.
+$TitlePattern = '\*\*(?:[^*]+|(?>`[^`]*`|[^*])+):\*\*'
 # Return strings hooks/round-cap.ps1 counts on: renaming one silently stops the count.
 $HookContracts = @{
     '.claude/agents/code-reviewer.md'        = @('Verdict: Approve | Request changes')
@@ -85,31 +89,67 @@ function Test-ChecklistLink([string]$skillDir) {
     if (-not (Get-Content $skillMd -Raw -Encoding UTF8).Contains('(checklist.md)')) { Fail "$(Rel $skillMd): does not link its checklist.md" }
 }
 
+# The one fence walker. A fence opens on 3+ backticks or tildes; only the same character, at least as long, with nothing
+# after it closes one, so a fence can hold a shorter or other fence; an unclosed one runs to the end. One entry per line:
+# 0 outside a fence, n on a content line of fenced block n, -n on its fence lines.
+function Get-FenceMap([string[]]$lines) {
+    $map = [int[]]::new($lines.Count); $fence = ''; $block = 0
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+        $isMark = $lines[$i] -match '^\s*(`{3,}|~{3,})(.*)$'
+        if (-not $fence) {
+            if ($isMark) { $fence = $Matches[1]; $block++; $map[$i] = -$block }
+        }
+        elseif ($isMark -and $Matches[1][0] -eq $fence[0] -and $Matches[1].Length -ge $fence.Length -and -not $Matches[2].Trim()) {
+            $map[$i] = -$block; $fence = ''
+        }
+        else { $map[$i] = $block }
+    }
+    , $map
+}
+
+# Outside fences each line is blank, a column-0 heading, a table row or a titled list item ('- **Title:** text', '1. **Title:** text').
+# Prose by that rule: wrapped or indented continuation lines, blockquotes, text right after a fence, HTML comments, rules, '*' bullets.
+# Nested items are titled too. Fence content is never read. Returns the file line numbers that fail.
+function Get-UntitledLines([string]$body, [int]$lineOffset) {
+    $lines = @($body -split '\r?\n'); $map = Get-FenceMap $lines
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+        $l = $lines[$i]
+        if ($map[$i] -or $l -match '^\s*$|^#{1,6}\s|^\s*\|') { continue }
+        if ($l -notmatch ('^\s*(?:-|\d+\.)\s+' + $TitlePattern)) { $lineOffset + $i + 1 }
+    }
+}
+
 function Test-SkillFormat([string]$path, [string]$rel, [string]$name, [string]$text, $fm) {
     $trigger = "$($fm.description)$($fm.when_to_use)"
     if ($trigger.Length -gt $Budget.Desc) { Fail "${rel}: description + when_to_use $($trigger.Length) > $($Budget.Desc) chars" }
-    elseif ($trigger.Length -gt $Budget.DescTarget) { Legacy $rel "description + when_to_use > $($Budget.DescTarget) chars" }
-    if ($fm.description -match 'This skill|comprehensive|Preloaded by') { Legacy $rel 'description uses a banned phrase' }
-    if ($fm.description -cnotmatch '\bUse ' -and -not $fm.when_to_use -and $preloaded -notcontains $name) { Legacy $rel 'description has no Use trigger' }
+    elseif ($trigger.Length -gt $Budget.DescTarget) { Soft $rel "description + when_to_use > $($Budget.DescTarget) chars" }
+    if ($fm.description -match 'This skill|comprehensive|Preloaded by') { Fail "${rel}: description uses a banned phrase" }
+    if ($fm.description -cnotmatch '\bUse ' -and -not $fm.when_to_use -and $preloaded -notcontains $name) { Fail "${rel}: description has no Use trigger" }
 
     $body = $text.Substring($fm._end)
-    if ($body.Length -gt $Budget.SkillChars) { Legacy $rel "body > $($Budget.SkillChars) chars" }
+    # Counted without CR: a CRLF checkout must not change the result.
+    if (($body -replace '\r', '').Length -gt $Budget.SkillChars) { Soft $rel "body > $($Budget.SkillChars) chars" }
     foreach ($m in [regex]::Matches($body, '(?m)^(?:- \*\*)?Not for:.*$')) {
         foreach ($n in [regex]::Matches($m.Value, '`([a-z0-9]+(?:-[a-z0-9]+)+)`')) {
             $v = $n.Groups[1].Value
             if ($skills -notcontains $v -and $agents -notcontains $v) { Fail "${rel}: Not for names '$v', neither a skill nor an agent" }
         }
     }
-    $inFence = $false; $long = $false
-    foreach ($l in $body -split '\r?\n') {
-        if ($l.TrimStart().StartsWith('```')) { $inFence = -not $inFence; continue }
-        if (-not $inFence -and $l -match '^\s*(?:[-*]|\d+\.)\s' -and ($l -replace '\]\([^)]*\)', ']').Length -gt $Budget.BulletChars) { $long = $true }
+    $bodyLines = @($body -split '\r?\n'); $map = Get-FenceMap $bodyLines; $long = $false
+    for ($i = 0; $i -lt $bodyLines.Count; $i++) {
+        $l = $bodyLines[$i]
+        if (-not $map[$i] -and $l -match '^\s*(?:[-*]|\d+\.)\s' -and ($l -replace '\]\([^)]*\)', ']').Length -gt $Budget.BulletChars) { $long = $true }
     }
-    if ($long) { Legacy $rel "list item > $($Budget.BulletChars) chars" }
-    if ($body.Contains('Latent concerns')) { Legacy $rel 'Latent concerns line' }
-    if ($body -match '(?m)^\s*- (?:\*\*)?(?:Verified|Known limitations):') { Legacy $rel 'Verified or Known limitations bullet (agent-protocol envelope owns them)' }
-    if ($body -match '(?m)^\|\s*(?:Reference|Script)\s*\|') { Legacy $rel 'reference or script table' }
-    if ($body.Contains(".claude/skills/$name/scripts/")) { Legacy $rel 'hardcoded script path' }
+    if ($long) { Soft $rel "list item > $($Budget.BulletChars) chars" }
+    if ($body.Contains('Latent concerns')) { Fail "${rel}: Latent concerns line" }
+    if ($body -match '(?m)^\s*- (?:\*\*)?(?:Verified|Known limitations):') { Fail "${rel}: Verified or Known limitations bullet (agent-protocol envelope owns them)" }
+    if ($body -match '(?m)^\|\s*(?:Reference|Script)\s*\|') { Fail "${rel}: reference or script table" }
+    if ($body.Contains(".claude/skills/$name/scripts/")) { Fail "${rel}: hardcoded script path" }
+    $untitled = @(Get-UntitledLines $body (($text.Substring(0, $fm._end) -split '\n').Count - 1))
+    if ($untitled) {
+        $at = " (lines $(@($untitled | Select-Object -First 10) -join ', ')$(if ($untitled.Count -gt 10) { ", ... $($untitled.Count) in all" }))"
+        Fail "${rel}: untitled list item or prose line$at"
+    }
 
     $dir = Split-Path $path
     $scripts = Join-Path $dir 'scripts'
@@ -117,9 +157,11 @@ function Test-SkillFormat([string]$path, [string]$rel, [string]$name, [string]$t
         $named = $text
         $refs = Join-Path $dir 'references'
         if (Test-Path $refs) { Get-ChildItem $refs -Recurse -Filter *.md | ForEach-Object { $named += Get-Content $_.FullName -Raw -Encoding UTF8 } }
+        $scriptsRoot = (Resolve-Path $scripts).Path
         foreach ($s in Get-ChildItem $scripts -Recurse -File) {
-            if ($s.FullName -match '__pycache__' -or $s.Name -like 'test_*') { continue }
-            if (-not $named.Contains($s.Name)) { Legacy $rel 'script not named in SKILL.md or a reference' }
+            # Relative to scripts/: a dot-folder above it (.claude itself) must not skip the file.
+            if ($s.FullName.Substring($scriptsRoot.Length) -match '[\\/](?:__pycache__|\.[^\\/]+)[\\/]' -or $s.Name -like 'test_*') { continue }
+            if (-not $named.Contains($s.Name)) { Fail "${rel}: script '$($s.Name)' not named in SKILL.md or a reference" }
         }
     }
     Test-ChecklistLink $dir
@@ -127,20 +169,18 @@ function Test-SkillFormat([string]$path, [string]$rel, [string]$name, [string]$t
 
 function Test-Checklist([string]$path, [string]$rel, [string[]]$lines) {
     for ($i = 0; $i -lt $lines.Count; $i++) {
-        if ($lines[$i] -notmatch '^(?:\s*|#{1,6} .+|- \[ \] \*\*[^*]+:\*\* \S.*)$') { Fail "${rel}:$($i + 1): not a heading or '- [ ] **<title>:** <text>' line" }
+        if ($lines[$i] -notmatch ('^(?:\s*|#{1,6} .+|- \[ \] ' + $TitlePattern + ' \S.*)$')) { Fail "${rel}:$($i + 1): not a heading or '- [ ] **<title>:** <text>' line" }
     }
     # The whole-layer run reaches this through the skill's SKILL.md.
     if ($File) { Test-ChecklistLink (Split-Path $path) }
 }
 
 function Test-RefFences([string]$rel, [string[]]$lines) {
-    $start = -1
-    for ($i = 0; $i -lt $lines.Count; $i++) {
-        if (-not $lines[$i].TrimStart().StartsWith('```')) { continue }
-        if ($start -lt 0) { $start = $i; continue }
-        if ($i - $start - 1 -ge $Budget.RefFence) { Legacy $rel "reference has a fenced block of $($Budget.RefFence)+ lines (move it to scripts/)"; return }
-        $start = -1
-    }
+    # A final newline splits off one empty element. It is no line of the file, so an unclosed fence must not count it.
+    if ($lines.Count -gt 1 -and $lines[-1] -eq '') { $lines = $lines[0..($lines.Count - 2)] }
+    $size = @{}
+    foreach ($b in (Get-FenceMap $lines)) { if ($b -gt 0) { $size[$b] = 1 + [int]$size[$b] } }
+    if (@($size.Values | Where-Object { $_ -ge $Budget.RefFence }).Count) { Fail "${rel}: reference has a fenced block of $($Budget.RefFence)+ lines (move it to scripts/)" }
 }
 
 function Test-SkillRef([string]$name, [string]$where) {
@@ -275,7 +315,7 @@ if ($File) {
     if (Test-Path (Join-Path $claude 'commands')) { Fail ".claude/commands: convert commands to skills" }
 }
 
-$legacy.GetEnumerator() | ForEach-Object { Write-Output "WARN  $($_.Value) file(s): $($_.Key)" }
+$soft.GetEnumerator() | ForEach-Object { Write-Output "WARN  $($_.Value) file(s): $($_.Key)" }
 $warns | ForEach-Object { Write-Output "WARN  $_" }
 $fails | ForEach-Object { Write-Output "FAIL  $_" }
 if ($fails.Count) { Write-Output "$($fails.Count) failure(s)"; exit 1 }

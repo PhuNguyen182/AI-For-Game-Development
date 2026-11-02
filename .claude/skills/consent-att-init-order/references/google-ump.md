@@ -16,73 +16,10 @@ Sources: [a] `/admob/unity/privacy`, [b] `/admob/unity/privacy/gdpr`, [c] `/admo
 
 **Caveat:** both `CanRequestAds()` checks can return `true` in one launch; without a guard flag the ad SDK initializes and requests twice [a].
 
-```csharp
-// Client startup: Firebase signals after the Available gate; ads start once, after UMP and, on iOS, an ATT answer.
-private bool _isAdsStarted;
-
-// True on Android, or when the ATT status is no longer not-determined.
-private bool _isAttResolved;
-
-private void OnConsentInfoUpdated(FormError error)
-{
-    // Returning player: stored consent may already allow ads; ad config was set in step (a).
-    this.TryStartAds();
-    ConsentForm.LoadAndShowConsentFormIfRequired(this.OnConsentFormDone);
-}
-
-private void OnConsentFormDone(FormError error)
-{
-    // Form closed (or none was required): the app is active again, so ATT may be requested now.
-    this.RequestAttThen(this.OnAttResolved);
-}
-
-private void OnAttResolved()
-{
-    this._isAttResolved = true;
-    this.ContinueStartupAsync().Forget(this.OnStartupFailed);
-}
-
-private async UniTask ContinueStartupAsync()
-{
-    // Step (d): no Firebase static before the dependency gate (firebase-unity-sdk step 4).
-    bool isFirebaseAvailable = await this._firebaseBootstrap.InitializeAsync(this._lifetimeToken);
-    if (isFirebaseAvailable)
-    {
-        // Consent types from their own sources (firebase-unity-sdk → analytics.md), never CanRequestAds().
-        this.ApplyFirebaseConsent();
-    }
-
-    this.TryStartAds();
-}
-
-private void TryStartAds()
-{
-    if (this._isAdsStarted || !this._isAttResolved || !ConsentInformation.CanRequestAds())
-        return;
-
-    this._isAdsStarted = true;
-
-    // Step (e): ad-network consent signals before the first ad SDK call.
-    this.ApplyAdConsentSignals();
-    this.InitializeAds();
-}
-
-private void OnPrivacyOptionsClicked()
-{
-    ConsentForm.ShowPrivacyOptionsForm(this.OnPrivacyOptionsClosed);
-}
-
-private void OnPrivacyOptionsClosed(FormError error)
-{
-    // A withdrawal stops Analytics and reaches the ad networks in this session; Crashlytics stops next launch.
-    if (this._firebaseBootstrap.IsAvailable)
-    {
-        this.ApplyFirebaseConsent();
-    }
-
-    this.ApplyAdConsentSignals();
-}
-```
+- **Sample:** [StartupConsentFlow.cs](../scripts/StartupConsentFlow.cs) — the callbacks `OnConsentInfoUpdated`, `OnConsentFormDone`, `OnAttResolved`, `ContinueStartupAsync`, `TryStartAds`, `OnPrivacyOptionsClicked` and `OnPrivacyOptionsClosed`.
+  - **Adapt into:** the one bootstrap class that owns SKILL.md step 3's sequence, or `Assets/_Project/Scripts/Platform/StartupConsentFlow.cs` when the project has none; the sample holds class members only, and `_firebaseBootstrap`, `_lifetimeToken`, `RequestAttThen`, `ApplyFirebaseConsent`, `ApplyAdConsentSignals`, `InitializeAds` and `OnStartupFailed` are project code.
+  - **Guards:** `_isAdsStarted` makes ad start once; `_isAttResolved` is `true` on Android or once the ATT status is no longer not-determined.
+  - **Order:** the `Update` callback runs `TryStartAds`, then loads the form; the form callback requests ATT; ATT resolved continues to the Firebase gate (`firebase-unity-sdk` step 4), then `ApplyFirebaseConsent`, then `TryStartAds` (sub-steps (a), (d), (e) of SKILL.md step 3).
 
 **Caveat:** on a returning iOS player ATT is already answered, so `_isAttResolved` starts `true` and the post-`Update` check starts ads at once, before Firebase; on a first launch ads wait for the ATT answer, so the first ad request carries the IDFA decision.
 

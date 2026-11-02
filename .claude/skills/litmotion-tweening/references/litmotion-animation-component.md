@@ -23,25 +23,8 @@ animation.Restart();
 
 Inherit `LitMotionAnimationComponent` (full control) or `PropertyAnimationComponent<TObject,TValue,TOptions,TAdapter>` (typed shortcuts such as `FloatPropertyAnimationComponent<TObject>`, `Vector3PropertyAnimationComponent<TObject>`), which handles motion creation and restoration; override only `GetValue`/`SetValue`.
 
-```csharp
-[Serializable]
-[LitMotionAnimationComponentMenu("Custom/Custom Animation")]
-public class CustomAnimation : LitMotionAnimationComponent
-{
-    public override MotionHandle Play() { /* create and return the MotionHandle */ }
-    public override void OnPause() { }
-    public override void OnResume() { }
-    public override void OnStop() { /* restore the original value */ }
-}
-
-[Serializable]
-[LitMotionAnimationComponentMenu("UI/Slider/Value")]
-public sealed class SliderValueAnimation : FloatPropertyAnimationComponent<Slider>
-{
-    protected override float GetValue(Slider target) => target.value;
-    protected override void SetValue(Slider target, in float value) => target.value = value;
-}
-```
+- **Sample:** [CustomAnimationComponents.cs](../scripts/CustomAnimationComponents.cs) — two `[Serializable]` classes. `CustomAnimation : LitMotionAnimationComponent` is a skeleton under `[LitMotionAnimationComponentMenu("Custom/Custom Animation")]`: its `Play()` body is a placeholder comment (create and return the `MotionHandle`) and does not compile until filled; `OnPause` and `OnResume` are empty, `OnStop` must restore the original value. `SliderValueAnimation : FloatPropertyAnimationComponent<Slider>` under `"UI/Slider/Value"` overrides `GetValue` (`target.value`) and `SetValue` (`target.value = value`) and is complete.
+  - **Adapt into:** `Assets/_Project/Scripts/<Feature>/Views/CustomAnimationComponents.cs`; fill the `Play()` placeholder first; the sample keeps a 3-line header marking it unverified.
 
 `[LitMotionAnimationComponentMenu("Path/Name")]` sets the **Add...** menu label.
 

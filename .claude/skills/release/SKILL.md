@@ -1,12 +1,15 @@
 ---
 name: release
-description: "Prepare a release candidate per platform: version bump, builds, smoke test, perf on the profile's lowest device, build size, analytics/IAP sandbox check, save migration test, store checklist, signing, changelog — then ask before tag, push or submit."
+description: "Release candidate per platform: gate table, store checklist, signing. Use when preparing a release."
 argument-hint: "<platforms> [--dry-run]"
 ---
 
 # /release
 
-Invoking `/release` is the GD's build request for the platforms named. `--dry-run`: no tag, push or upload, and no writes — step 2 reports the next version instead of setting it. Unsized: 2 attempts per dispatch. Risk flag is always set.
+- **Invocation:** invoking `/release` is the GD's build request for the platforms named.
+- **`--dry-run`:** no tag, push or upload, and no writes — step 2 reports the next version instead of setting it.
+- **Attempts:** unsized: 2 attempts per dispatch.
+- **Risk flag:** risk flag is always set.
 
 ## Gate — all must pass, or the GD accepts the gap by name
 | # | Step | Owner | Pass |
@@ -26,13 +29,27 @@ Invoking `/release` is the GD's build request for the platforms named. `--dry-ru
 | 11 | Secrets | `security-reviewer` | `secret-and-supply-chain-scan` clear on the release diff |
 | 12 | Changelog | main session | From `git log <last tag>..HEAD` (first release: all history), player-facing wording |
 
-Steps 3–8 hold the Editor or the device: run them serially. 9, 10, 11 are read-only and run in parallel with anything. Review status comes from each feature file (row 0b), never assumed; the release diff gets the security scan (11, brief `Target: <last tag>..HEAD`), not a second `/review`. A `Fixed` crash bug awaiting a device build is verified by step 4's device run.
+- **Serial steps:** steps 3–8 hold the Editor or the device: run them serially.
+- **Parallel steps:** 9, 10, 11 are read-only and run in parallel with anything.
+- **Review status:** review status comes from each feature file (row 0b), never assumed.
+- **Release diff:** the release diff gets the security scan (11, brief `Target: <last tag>..HEAD`), not a second `/review`.
+- **Crash bugs:** a `Fixed` crash bug awaiting a device build is verified by step 4's device run.
 
 ## Store checklist
 - **Android:** target API level current, AAB, permissions justified, Data safety form matches SDKs, content rating, 64-bit.
 - **iOS:** privacy manifest + Nutrition Labels match SDKs, ATT prompt before tracking, export compliance, minimum iOS version.
-- **Both:** app identity (bundle id, product and company name are not template defaults), age rating, COPPA/GDPR consent path when `CLAUDE.md` says so, ads labelled, loot-box odds disclosed where required.
+- **Both:**
+  - **Identity:** app identity (bundle id, product and company name are not template defaults).
+  - **Age rating:** age rating.
+  - **Consent:** COPPA/GDPR consent path when `CLAUDE.md` says so.
+  - **Ads:** ads labelled.
+  - **Loot boxes:** loot-box odds disclosed where required.
 
 ## Finish — `AskUserQuestion`
-Show the gate table with results. Options: tag + push (recommended only when every row passes or the GD accepted each gap by name in this run; never in a dry run) / fix failures first / stop.
-- Fix failures first → each failed row goes to its route (`/fix`, `/review`, the owning agent), then re-run only the failed rows; +1 `release` round, cap 2, recorded as `- Release rounds: n/2` in `.workflow/release-<version>.md` (the gate table with results, written at every Finish; not in a dry run), then the stop rule. Store upload or submission is always a separate, explicit GD request.
+- **Tag, push, submit:** none of them runs before this `AskUserQuestion`.
+- **Show:** the gate table with results.
+- **Options:** tag + push (recommended only when every row passes or the GD accepted each gap by name in this run; never in a dry run) / fix failures first / stop.
+- **Fix failures first:** each failed row goes to its route (`/fix`, `/review`, the owning agent), then re-run only the failed rows.
+  - **Round count:** +1 `release` round, cap 2, recorded as `- Release rounds: n/2` in `.workflow/release-<version>.md`, then the stop rule.
+- **Release file:** `.workflow/release-<version>.md` is the gate table with results, written at every Finish; not in a dry run.
+- **Store upload:** store upload or submission is always a separate, explicit GD request.

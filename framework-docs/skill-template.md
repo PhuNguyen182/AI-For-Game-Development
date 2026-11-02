@@ -78,6 +78,7 @@ user-invocable: false                  # domain or method skill; omit for a /com
 - **`References`, `Scripts`, `Never`, `Example`:** only when non-empty.
 - **`Output`:** decision fields only.
 - **Envelope fields:** status, verification and limitations go in the `agent-protocol` envelope, never in `Output`.
+- **No envelope:** a report the main session gives the GD has no envelope; its `Output` may keep a `Status:` line.
 - **Examples:** only for a case the steps do not make obvious, usually a declined wrong suggestion; 0–2, one line each.
 
 ## Say each fact once
@@ -107,7 +108,8 @@ user-invocable: false                  # domain or method skill; omit for a /com
 - **Loaded content:** stays in context across later turns, so every line is a recurring cost.
 - **Compaction:** keeps only the first 5,000 tokens of a skill; critical instructions go near the top.
 - **Body size:** ≤8,000 chars, soft. Past it, move facts to references; never cut a criterion to fit.
-- **Listing:** all skills share one description budget, 1% of the context window; `/context` reports its size.
+- **Listing:** all skills share one description budget, 1% of the context window by default, raised through `skillListingBudgetFraction` in `.claude/settings.json`.
+- **Listing check:** a description added past the ≤120 target or a new skill can overflow the budget, so check `/context`, which reports its size, after adding skills.
 - **Overflow:** the listing drops descriptions of the least-invoked skills first.
 
 ## `checklist.md`
@@ -155,5 +157,10 @@ user-invocable: false                  # domain or method skill; omit for a /com
 
 ## Checks before shipping
 - **Layer:** `/verify-layer` passes.
+- **Checks that fail:**
+  - **`description`:** a banned phrase, no `Use` trigger, or `description` + `when_to_use` past 250 chars.
+  - **Body lines:** a `Latent concerns` line, a `Verified` or `Known limitations` bullet, or an untitled item or prose line.
+  - **References and scripts:** a reference or script table, a hardcoded script path, a script not named, or a reference fence of 15+ lines.
+- **Checks that warn:** `description` + `when_to_use` past 120 chars, a list item past 200 chars, a body past 8,000 chars.
 - **Cited headings:** headings other files cite by name still exist (grep the skill name).
 - **References and scripts:** each is named in the body and used in a step.

@@ -19,50 +19,7 @@ Sources below the SKILL.md `Docs:` base (`api/`, `?view=netstandard-2.1`): [a] `
 
 FNV-1a 64 over a canonical byte sequence: fixed field order, integers little-endian byte by byte, strings as UTF-16 code units ordinal with the length first, floats as raw bits. Pure, allocation-free, identical on every runtime.
 
-```csharp
-using System;
-
-namespace _Project.Scripts.Shared.Core
-{
-    public static class StableHash
-    {
-        public const ulong OffsetBasis = 14695981039346656037UL;
-        private const ulong Prime = 1099511628211UL;
-        private const int BitsPerByte = 8;
-        private const int BitsPerInt = 32;
-
-        public static ulong Add(ulong hash, int value)
-        {
-            unchecked
-            {
-                for (int shift = 0; shift < BitsPerInt; shift += BitsPerByte)
-                {
-                    hash ^= (byte)(value >> shift);
-                    hash *= Prime;
-                }
-            }
-
-            return hash;
-        }
-
-        public static ulong Add(ulong hash, float value)
-        {
-            return Add(hash, BitConverter.SingleToInt32Bits(value));
-        }
-
-        public static ulong Add(ulong hash, string value)
-        {
-            hash = Add(hash, value.Length);
-            for (int i = 0; i < value.Length; i++)
-            {
-                hash = Add(hash, (int)value[i]);
-            }
-
-            return hash;
-        }
-    }
-}
-```
+Sample: [StableHash.cs](../scripts/StableHash.cs) (FNV-1a 64 `Add` overloads for `int`, `float` and `string`).
 
 **Caveat:** `+0f` and `-0f` hash differently, and so do NaN payloads. That is correct for a replay hash (bit-exact), but a NaN in simulation state is already a defect to fix, not to normalize.
 

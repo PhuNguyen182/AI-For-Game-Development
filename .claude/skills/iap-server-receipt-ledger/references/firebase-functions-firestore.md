@@ -26,69 +26,13 @@ Sources (under https://firebase.google.com/docs/): [a] `functions/callable`, [b]
 | `tx.create(ref, data)` | Fails the transaction if the document already exists [h] — the idempotency guard on `<store>:<id>` |
 | Limits | Lock deadline 20 s, total 270 s, 60 s idle timeout, 10 MiB request [d] |
 
-```js
-// Shape only. verifyWithStore, finishWithStore, flagConflict and CATALOG are project code.
-const {onCall, HttpsError} = require("firebase-functions/https");
-const logger = require("firebase-functions/logger");
-const {defineSecret} = require("firebase-functions/params");
-const {initializeApp} = require("firebase-admin/app");
-const {getFirestore, FieldValue} = require("firebase-admin/firestore");
-
-initializeApp();
-// Secret id only; the value lives in Cloud Secret Manager.
-const appStoreKey = defineSecret("APP_STORE_SERVER_API_KEY");
-const REJECTED = "Purchase could not be verified.";
-
-exports.redeemPurchase = onCall({enforceAppCheck: true, secrets: [appStoreKey]}, async (request) => {
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Sign-in required.");
-  }
-  const uid = request.auth.uid;
-  // Store checks only (state, product id, package, signature); throws HttpsError("failed-precondition", REJECTED).
-  // Consumption state is returned in proof.consumed, not judged here.
-  const proof = await verifyWithStore(request.data, appStoreKey);
-  const db = getFirestore();
-  const ledgerRef = db.collection("iapLedger").doc(`${proof.store}:${proof.ledgerId}`);  // Play purchaseToken | Apple originalTransactionId
-  const walletRef = db.collection("wallets").doc(uid);
-
-  const outcome = await db.runTransaction(async (tx) => {
-    const existing = await tx.get(ledgerRef);
-    if (existing.exists) {
-      if (existing.get("status") !== "granted") {
-        return {result: "rejected"};                      // void tombstone
-      }
-      if (existing.get("uid") !== uid) {
-        return {result: "conflict", owner: existing.get("uid")};
-      }
-      return {result: "granted", grant: existing.get("grant")};
-    }
-    if (proof.consumed) {
-      return {result: "rejected"};                        // consumed, never granted here
-    }
-    const lines = CATALOG.grantFor(proof.productId, proof.quantity);
-    tx.create(ledgerRef, {uid, store: proof.store, productId: proof.productId, quantity: proof.quantity,
-      ownership: proof.ownership, reversedQuantity: 0, grant: lines, status: "granted", finished: false,
-      createdAt: FieldValue.serverTimestamp()});
-    tx.set(walletRef, {gems: FieldValue.increment(lines.gems)}, {merge: true});
-    return {result: "granted", grant: lines};
-  });
-
-  if (outcome.result === "conflict") {
-    await flagConflict(ledgerRef.id, outcome.owner, uid);  // both players, outside the transaction
-  }
-  if (outcome.result !== "granted") {
-    throw new HttpsError("failed-precondition", REJECTED); // same reason as an invalid proof
-  }
-  try {
-    await finishWithStore(proof);                          // consume/acknowledge on Play; no-op on Apple
-    await ledgerRef.update({finished: true});
-  } catch (err) {
-    // Grant is committed; the scheduled reconciler retries entries with finished == false.
-    logger.warn("store finish deferred", {ledgerId: ledgerRef.id});
-  }
-  return {status: "granted", grant: outcome.grant};
-});
-```
+- **Sample:** [redeemPurchase.js](../scripts/redeemPurchase.js) — shape only; `verifyWithStore`, `finishWithStore`, `flagConflict` and `CATALOG` are project code.
+  - **Adapt into:** the Cloud Functions source (`functions/index.js`).
+  - **Secret:** `defineSecret("APP_STORE_SERVER_API_KEY")` holds the id only; the value lives in Cloud Secret Manager.
+  - **Ledger doc id:** `<store>:<ledgerId>` (Play purchaseToken or Apple originalTransactionId), created with `tx.create`.
+  - **Inside the transaction:** existing entry not `granted` → `rejected`; entry of another `uid` → `conflict`; `proof.consumed` with no entry → `rejected`; otherwise create the entry and increment the wallet.
+  - **Outside the transaction:** `flagConflict` for both players; every non-`granted` outcome throws `failed-precondition` with the same message as an invalid proof.
+  - **Finish:** `finishWithStore` then `finished: true`; on failure the grant stays committed, a warning is logged and the scheduled reconciler retries entries with `finished == false`.
 
 ## Refund and void handlers
 

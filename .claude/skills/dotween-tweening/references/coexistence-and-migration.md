@@ -16,4 +16,4 @@ Both tweening skills exist; neither engine is the default. Which one governs a f
 - Established LitMotion integration: R3/UniRx `ToObservable()`, Burst/Job path.
 
 ## Porting
-`litmotion-tweening` has a DOTween to LitMotion mapping ([migration-and-rx-integration.md](../../litmotion-tweening/references/migration-and-rx-integration.md)), including what has no equivalent (`SetSpeedBased()`, `DoPath()`). No LitMotion to DOTween mapping exists: translate by hand using [shortcuts.md](shortcuts.md) and [sequences-config-control.md](sequences-config-control.md).
+`litmotion-tweening` has a DOTween to LitMotion mapping (`migration-and-rx-integration.md`), including what has no equivalent (`SetSpeedBased()`, `DoPath()`). No LitMotion to DOTween mapping exists: translate by hand using [shortcuts.md](shortcuts.md) and [sequences-config-control.md](sequences-config-control.md).

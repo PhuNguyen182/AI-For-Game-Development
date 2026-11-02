@@ -1,29 +1,38 @@
 ---
 name: plan-game
-description: "Turn a GDD into a production backlog: milestones, then features per milestone sized S/M/L with risk flags and dependencies, written to .workflow/backlog.md for GD approval. Use when starting production or re-planning from a changed GDD."
+description: "GDD to production backlog: milestones, S/M/L features, risk flags, .workflow/backlog.md. Use to plan production."
 argument-hint: "<GDD path or text>"
 ---
 
 # /plan-game
 
 ## 1. Read
-- The GDD and `CLAUDE.md` (profile, platforms, multiplayer). Unclear core loop, target session length or monetisation → one `AskUserQuestion` (≤4 questions).
+- **Sources:** the GDD and `CLAUDE.md` (profile, platforms, multiplayer).
+- **Unclear basics:** unclear core loop, target session length or monetisation → one `AskUserQuestion` (≤4 questions).
 
 ## 2. Milestones
-Default: **Prototype** (core loop playable, greybox) → **Vertical slice** (one polished loop, real art, perf on target device) → **Content** → **Soft launch** (analytics, ads/IAP, live-ops) → **Launch**. Hyper-casual may merge the first two.
+- **Default order:** **Prototype** → **Vertical slice** → **Content** → **Soft launch** → **Launch**.
+- **Prototype:** core loop playable, greybox.
+- **Vertical slice:** one polished loop, real art, perf on target device.
+- **Soft launch:** analytics, ads/IAP, live-ops.
+- **Hyper-casual:** may merge Prototype and Vertical slice.
 
 ## 3. Features — `technical-architect` (Size mode), one brief for the whole list
-Per feature: name · milestone · size S/M/L · risk flag · depends on · first agent. Core systems first in each milestone.
+- **Per feature:** name · milestone · size S/M/L · risk flag · depends on · first agent.
+- **Order:** core systems first in each milestone.
 
 ## 4. Write `.workflow/backlog.md`
 ```
 | # | Feature | Milestone | Size | Risk | Depends on | Status |
 |---|---|---|---|---|---|---|
 ```
-Status: todo | in progress (`/feature <slug>`) | done | dropped.
+- **Status values:** todo | in progress (`/feature <slug>`) | done | dropped.
 
 ## 5. Approve — `AskUserQuestion`
-Approve / reorder (which) / cut scope (which). Then offer the next feature — the first `todo` whose dependencies are `done` — and start it with `/feature`, its row and GDD section as the Request. `/feature` keeps the row's status current.
+- **Options:** Approve / reorder (which) / cut scope (which).
+- **Next feature:** then offer the next feature — the first `todo` whose dependencies are `done` — and start it with `/feature`, its row and GDD section as the Request.
+- **Row status:** `/feature` keeps the row's status current.
 
 ## Re-plan
-GDD changed → re-run steps 3–5 on the changed part only; features in progress go through `/feature`'s change request.
+- **GDD changed:** GDD changed → re-run steps 3–5 on the changed part only.
+- **Features in progress:** when the GDD changed, features in progress go through `/feature`'s change request.

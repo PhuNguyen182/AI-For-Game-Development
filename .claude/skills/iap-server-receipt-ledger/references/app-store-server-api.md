@@ -4,7 +4,7 @@ Sources (under https://developer.apple.com/documentation/): [a] `appstoreservera
 
 ## What the client sends
 
-Unity IAP on StoreKit 2 exposes the transaction's JWS (`unity:implement-in-app-purchases` → Receipt Validation). Send that string or its `transactionId`; never a decoded payload.
+Unity IAP on StoreKit 2 exposes the transaction's JWS (`unity:implement-in-app-purchases` → Receipt Validation). Send that string or its `transactionId`; never a decoded payload. Apple local validation (`CrossPlatformValidator`) is a no-op on StoreKit 2, so a local result proves nothing.
 
 ## Verify the signed transaction
 

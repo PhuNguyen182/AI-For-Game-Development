@@ -1,25 +1,50 @@
 ---
 name: practical-fit-screening
-description: "Hard-gate whether the project can adopt a candidate package, technique or service: duplication, engine and C# version, scripting backend, platforms, licence, Core boundary, pricing, data compliance. Use before ranking research candidates."
+description: "Hard-gate a candidate: duplication, C# version, backend, platforms, licence. Use before ranking research candidates."
 user-invocable: false
 ---
 
 # Practical Fit Screening
 
-Not for: finding candidates (`technology-scouting-sweep`), source trust (`source-credibility-grading`), ranking survivors (`solution-comparison-report`), device measurement (`rd-engineer`), integrating the winner (`sdk-platform-engineer`), keep/replace verdict on a dependency already in the project (`tech-vendor-dependency-risk-assessment`).
+- **Not for:** finding candidates (`technology-scouting-sweep`).
+- **Not for:** source trust (`source-credibility-grading`).
+- **Not for:** ranking survivors (`solution-comparison-report`).
+- **Not for:** device measurement (`rd-engineer`).
+- **Not for:** integrating the winner (`sdk-platform-engineer`).
+- **Not for:** keep/replace verdict on a dependency already in the project (`tech-vendor-dependency-risk-assessment`).
+- **Docs:** SPDX licence identifiers https://spdx.org/licenses.
 
 ## Steps
-1. **Check what the project already has first** — `docs/tech-stack.md`, `Packages/manifest.json`, asmdefs, `Assets/Plugins/` and any other vendor folder or DLL under `Assets/` (Asset Store and `.unitypackage` SDKs never reach the manifest), existing skills. A covered capability turns the question into "what does the existing one fail to do".
-2. **Run hard gates and drop failures immediately**; never score or rank a candidate that failed one. The subject type picks the gates — package/SDK: all but the two service rows; technique: engine and C#, backend, Core boundary, hot-path cost, plus licence only when a reference implementation's code is reused; hosted service: all rows, the package gates applied to its Unity SDK. A gate that does not apply is `NOT APPLICABLE`, never skipped.
-3. **Licence** — read the repository's own LICENSE file only (identifier: https://spdx.org/licenses); Asset Store: the licence named on the package page. MIT, Apache-2.0, BSD, Unlicense pass; GPL/AGPL block shipped game code; Asset Store EULA, source-available or any non-commercial clause need the GD's explicit acceptance.
-4. **Scripting backend, not just platform** — IL2CPP AOT-compiles and strips, so `System.Reflection.Emit`, runtime code generation and unconstrained generic virtual calls pass in the Editor and fail on device. Mono-only means PC-only.
-5. **Engine and C# version** — the project's configured compiler decides what compiles, not the README (`csharp-standards` → `coding-principles.md` Modern C# syntax).
-6. **Core determinism** — a candidate pulling `UnityEngine` types, wall-clock time or unseeded randomness is blocked for Core (`coding-principles.md` Shared Core integrity) but may still pass for Client code.
-7. **Mobile cost as a gate** — added binary size, per-ABI natives, hot-path allocation (`performance-and-algorithms.md` Memory discipline). PC-only fit fails a cross-platform feature.
-8. **Hosted service only** — pricing at the project's projected scale, read from the vendor's current pricing page (free tier limits included); data compliance against `CLAUDE.md` → Compliance (COPPA/GDPR, data residency, player-data deletion) and whether player data can be exported on exit. Long-term vendor health is `tech-vendor-dependency-risk-assessment`, not this gate.
-9. **Soft criteria for survivors only** — maintenance and bus factor, adoption, integration effort, documentation, removal path. Exit cost: Low (hidden behind an interface) / Medium / High (its types appear in gameplay signatures).
-10. **Gate needs a build, a device or a GD decision → `UNKNOWN`** with the exact question — build or device to `rd-engineer`, licence or pricing to the GD (`Needs GD`); never guess a pass.
-11. **State every gate's verdict, passes included.**
+1. **Check what the project already has first:** `docs/tech-stack.md`, `Packages/manifest.json`, asmdefs, `Assets/Plugins/`, existing skills.
+   - **Other vendor code:** any other vendor folder or DLL under `Assets/` (Asset Store and `.unitypackage` SDKs never reach the manifest).
+   - **Covered capability:** turns the question into "what does the existing one fail to do".
+2. **Run hard gates and drop failures immediately:** never score or rank a candidate that failed one.
+   - **Subject type:** it picks the gates.
+   - **Package/SDK:** all gates but the two service rows.
+   - **Technique:** engine and C#, backend, Core boundary, hot-path cost, plus licence only when a reference implementation's code is reused.
+   - **Hosted service:** all rows, the package gates applied to its Unity SDK.
+   - **Gate that does not apply:** `NOT APPLICABLE`, never skipped.
+3. **Licence:** read the repository's own LICENSE file only (identifier: https://spdx.org/licenses); Asset Store: the licence named on the package page.
+   - **Pass:** MIT, Apache-2.0, BSD, Unlicense.
+   - **Block:** GPL/AGPL block shipped game code.
+   - **GD acceptance:** Asset Store EULA, source-available or any non-commercial clause need the GD's explicit acceptance.
+4. **Scripting backend, not just platform:** IL2CPP AOT-compiles and strips.
+   - **Fails on device:** `System.Reflection.Emit`, runtime code generation and unconstrained generic virtual calls pass in the Editor and fail on device.
+   - **Mono-only:** means PC-only.
+5. **Engine and C# version:** the project's configured compiler decides what compiles, not the README (`csharp-standards` → `coding-principles.md` Modern C# syntax).
+6. **Core determinism:** a candidate pulling `UnityEngine` types, wall-clock time or unseeded randomness is blocked for Core (`coding-principles.md` Shared Core integrity).
+   - **Client code:** it may still pass for Client code.
+7. **Mobile cost as a gate:** added binary size, per-ABI natives, hot-path allocation (`performance-and-algorithms.md` Memory discipline).
+   - **PC-only fit:** fails a cross-platform feature.
+8. **Hosted service only:** pricing at the project's projected scale, read from the vendor's current pricing page (free tier limits included).
+   - **Data compliance:** against `CLAUDE.md` → Compliance (COPPA/GDPR, data residency, player-data deletion).
+   - **Exit:** whether player data can be exported on exit.
+   - **Vendor health:** long-term vendor health is `tech-vendor-dependency-risk-assessment`, not this gate.
+9. **Soft criteria for survivors only:** maintenance and bus factor, adoption, integration effort, documentation, removal path.
+   - **Exit cost:** Low (hidden behind an interface) / Medium / High (its types appear in gameplay signatures).
+10. **Gate needs a build, a device or a GD decision → `UNKNOWN` with the exact question:** build or device to `rd-engineer`, licence or pricing to the GD (`Needs GD`).
+    - **Guessing:** never guess a pass.
+11. **Verdict per gate:** state every gate's verdict, passes included.
 
 ## Output
 ```
@@ -40,7 +65,6 @@ Not for: finding candidates (`technology-scouting-sweep`), source trust (`source
 - Decision: ADOPTABLE / BLOCKED — <deciding gate>
 - Routed to: <solution-comparison-report / rd-engineer / technology-scouting-sweep>
 ```
-On request only, add `Known limitations`, `Latent concerns` and `Future remediation`, each with its re-screen trigger.
 
 ## Example
-- "It is GPL but only used internally in the Editor" → declined as an assumption: whether the tool ships in the build decides it; gate stays BLOCKED pending the GD's explicit acceptance.
+- **"It is GPL but only used internally in the Editor":** declined as an assumption — whether the tool ships in the build decides it; gate stays BLOCKED pending the GD's explicit acceptance.

@@ -21,31 +21,8 @@ Sources: M = manual https://forbiddenbyte.com/blog/osa-complete-manual/ (FAQ 2, 
 
 OSA calls `CreateViewsHolder(-1)` for buffered items; with several prefab types use a distinct negative index per type.
 
-```csharp
-protected override void OnInitialized()
-{
-    base.OnInitialized();
-    var vhs = CreateBufferredRecycleableItems(_PreMadeViews.Count);
-    AddBufferredRecycleableItems(vhs);
-    // Buffered items must survive count changes and rebuilds.
-    _Params.optimization.KeepItemsPoolOnEmptyList = true;
-    _Params.optimization.KeepItemsPoolOnLayoutRebuild = true;
-}
-
-protected override MyItemViewsHolder CreateViewsHolder(int itemIndex)
-{
-    var instance = new MyItemViewsHolder();
-    if (itemIndex < 0)
-    {
-        var root = _PreMadeViews[_PreMadeViews.Count - 1];
-        _PreMadeViews.RemoveAt(_PreMadeViews.Count - 1);
-        instance.InitWithExistingRoot(root, _Params.Content, itemIndex);
-    }
-    else
-        instance.Init(_Params.ItemPrefab, _Params.Content, itemIndex); // or throw
-    return instance;
-}
-```
+- **Sample:** [PreMadeRowsAdapterMembers.cs](../scripts/PreMadeRowsAdapterMembers.cs) — two members of an adapter class, not a standalone file. `OnInitialized` calls `CreateBufferredRecycleableItems(_PreMadeViews.Count)` and `AddBufferredRecycleableItems(vhs)`, then sets `KeepItemsPoolOnEmptyList` and `KeepItemsPoolOnLayoutRebuild` to `true` so buffered items survive count changes and rebuilds. `CreateViewsHolder` takes the last entry of `_PreMadeViews`, removes it and calls `InitWithExistingRoot(root, _Params.Content, itemIndex)` for a negative `itemIndex`, else `Init(_Params.ItemPrefab, _Params.Content, itemIndex)`.
+  - **Adapt into:** the project's OSA adapter class (derives `OSA<TParams, TItemViewsHolder>`), or `Assets/_Project/Scripts/<Feature>/Views/<Name>Adapter.cs` when none exists; the sample holds class members only, and `_PreMadeViews` and `MyItemViewsHolder` are project code; the sample keeps a 4-line header marking it unverified.
 
 Throwing in the `else` surfaces an under-sized pre-made set in development; falling back hides it and brings back the runtime allocation.
 

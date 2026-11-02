@@ -4,30 +4,7 @@ Sources: [a] book/pipeline/syntax/, [b] pipeline/steps/workflow-basic-steps/, [c
 
 Directives sit in a fixed order inside `pipeline { }`; a misplaced one is rejected in seconds, not forty minutes into a build.
 
-```groovy
-pipeline {
-    agent none                                     // every stage declares its own
-    options {
-        timeout(time: 90, unit: 'MINUTES')
-        disableConcurrentBuilds()
-        buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '10'))
-        timestamps()
-    }
-    parameters {
-        choice(name: 'PLATFORM', choices: ['android', 'ios', 'windows'], description: 'Target')
-        booleanParam(name: 'DEVELOPMENT_BUILD', defaultValue: true, description: 'Development configuration')
-    }
-    triggers { cron('H 2 * * 1-5') }               // omit for a manual-only job
-    stages {
-        stage('Test')  { agent { label 'linux && unity' } steps { /* ... */ } }
-        stage('Distribute') {
-            when { expression { params.PLATFORM != 'windows' } }
-            steps { /* ... */ }
-        }
-    }
-    post { always { /* logs, reports */ } success { /* artifacts */ } cleanup { /* workspace */ } }
-}
-```
+Skeleton: [Jenkinsfile](../scripts/Jenkinsfile) (directive order, `options`, `parameters`, `triggers`, per-stage agents, `post`).
 
 ## Directives [a]
 

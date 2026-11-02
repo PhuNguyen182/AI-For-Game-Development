@@ -48,35 +48,10 @@ Sources (below the SKILL.md `Docs:` base unless a full URL): [a] `/setup`, [b] `
 
 ## Init gate
 
-```csharp
-// Assets/_Project/Scripts/Platform/DataControllers/FirebaseBootstrap.cs — the only caller of CheckAndFixDependenciesAsync.
-using System.Threading;
-using Cysharp.Threading.Tasks;
-using Firebase;
-using UnityEngine;
-
-namespace _Project.Scripts.Platform.DataControllers
-{
-    public sealed class FirebaseBootstrap
-    {
-        public bool IsAvailable { get; private set; }
-
-        public async UniTask<bool> InitializeAsync(CancellationToken token)
-        {
-            DependencyStatus status = await FirebaseApp.CheckAndFixDependenciesAsync()
-                .AsUniTask()
-                .AttachExternalCancellation(token);
-            this.IsAvailable = status == DependencyStatus.Available;
-            if (!this.IsAvailable)
-            {
-                Debug.LogError($"Firebase unavailable: {status}");
-            }
-
-            return this.IsAvailable;
-        }
-    }
-}
-```
+- **Sample:** [FirebaseBootstrap.cs](../scripts/FirebaseBootstrap.cs) — `FirebaseBootstrap.InitializeAsync(CancellationToken)` returning `UniTask<bool>`.
+  - **Adapt into:** `Assets/_Project/Scripts/Platform/DataControllers/FirebaseBootstrap.cs`; it is the only caller of `CheckAndFixDependenciesAsync`.
+  - **Result:** `IsAvailable` is `true` only when the status is `DependencyStatus.Available`; any other status is logged with `Debug.LogError`.
+  - **Cancellation:** `.AsUniTask().AttachExternalCancellation(token)` on the dependency check.
 
 **Caveat:** never name the namespace `*.Firebase` — `Firebase.FirebaseApp` inside it then resolves against the project namespace and fails to compile.
 

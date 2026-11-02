@@ -36,21 +36,4 @@ Sources: files under `src/NRandom/` at `v2.0.2` (SKILL.md `Docs:` base): [a] IRa
 | `Shuffle<T>(T[] / Span<T>)` [d] | in-place Fisher-Yates |
 | `GetItems<T>(ReadOnlySpan<T> choices, int length)` [e] | random picks with replacement |
 
-```csharp
-// Core: deterministic per-match RNG, injected, never RandomEx.Shared.
-public sealed class LootRoller
-{
-    private readonly IRandom _random;
-
-    public LootRoller(uint matchSeed)
-    {
-        this._random = new Xoshiro256StarStarRandom();
-        this._random.InitState(matchSeed);
-    }
-
-    public int RollCriticalPercent()
-    {
-        return this._random.NextInt(0, 100);
-    }
-}
-```
+Sample: [LootRoller.cs](../scripts/LootRoller.cs) (Core roller with an injected `IRandom` seeded by `InitState`, never `RandomEx.Shared`).
