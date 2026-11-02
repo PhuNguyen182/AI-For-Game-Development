@@ -176,6 +176,8 @@ function Test-Checklist([string]$path, [string]$rel, [string[]]$lines) {
 }
 
 function Test-RefFences([string]$rel, [string[]]$lines) {
+    # A final newline splits off one empty element. It is no line of the file, so an unclosed fence must not count it.
+    if ($lines.Count -gt 1 -and $lines[-1] -eq '') { $lines = $lines[0..($lines.Count - 2)] }
     $size = @{}
     foreach ($b in (Get-FenceMap $lines)) { if ($b -gt 0) { $size[$b] = 1 + [int]$size[$b] } }
     if (@($size.Values | Where-Object { $_ -ge $Budget.RefFence }).Count) { Fail "${rel}: reference has a fenced block of $($Budget.RefFence)+ lines (move it to scripts/)" }

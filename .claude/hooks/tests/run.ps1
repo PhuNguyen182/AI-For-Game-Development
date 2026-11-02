@@ -904,6 +904,10 @@ try {
     VSkill 'short-fence'
     Set-Content (Join-Path $vlSkills 'short-fence/references/short.md') (@('# Short', '```') + (1..14 | ForEach-Object { "line $_" }) + '```')
     Check 'verify: a 14-line reference fence passes' (Verify '.claude/skills/short-fence/references/short.md').Code 0
+    # An unclosed fence runs to the end of the file; the final newline Set-Content adds is no line, so this is 14.
+    VSkill 'short-unclosed'
+    Set-Content (Join-Path $vlSkills 'short-unclosed/references/short.md') (@('# Short', '```') + (1..14 | ForEach-Object { "line $_" }))
+    Check 'verify: an unclosed 14-line reference fence with a final newline passes' (Verify '.claude/skills/short-unclosed/references/short.md').Code 0
     VSkill 'ref-fences-ok'
     $ref8 = @(1..8 | ForEach-Object { "line $_" })
     Set-Content (Join-Path $vlSkills 'ref-fences-ok/references/nested.md') (@('# Nested', '````', '```') + @(1..12 | ForEach-Object { "line $_" }) + @('```', '````'))
@@ -982,6 +986,7 @@ try {
         @('star-bullet', $okDesc, @('* **Star:** a star bullet.'), 'untitled list item or prose line'),
         @('nested-bullet', $okDesc, @('- **Parent:** titled.', '  - A plain nested bullet.'), 'untitled list item or prose line'),
         @('numbered-step', $okDesc, @('3. A plain step.'), 'untitled list item or prose line'),
+        @('title-bare-star', $okDesc, @('- **A*B:** text.'), 'untitled list item or prose line'),
         @('fence-nested-plant', $okDesc, ($fenceNested + '- A plain bullet after the fence.'), 'untitled list item or prose line'),
         @('fence-tilde-plant', $okDesc, ($fenceTilde + '- A plain bullet after the fence.'), 'untitled list item or prose line'),
         @('fence-trailing-plant', $okDesc, ($fenceTrailing + '- A plain bullet after the fence.'), 'untitled list item or prose line'),
@@ -1048,7 +1053,7 @@ try {
         @('long-tilde', (@('# Long', '~~~') + (1..15 | ForEach-Object { "line $_" }) + '~~~')),
         # Toggling pairs the outer mark with the inner one and sees two 8-line blocks.
         @('long-nested', (@('# Long', '````') + $ref8 + '```' + $ref8 + '````')),
-        # An unclosed fence runs to the end of the file, so its lines count.
+        # An unclosed fence runs to the end of the file, so its lines count: exactly 15 here, the final newline being no line.
         @('long-unclosed', (@('# Long', '```') + (1..15 | ForEach-Object { "line $_" })))
     )
     foreach ($p in $longRefs) {
@@ -1067,7 +1072,7 @@ try {
     foreach ($p in $longRefs) { Check "verify fails whole-layer: $($p[0]) reference fence" ($r.Out -match "FAIL  \.claude/skills/$($p[0])/references/long\.md: reference has a fenced block") $true }
     Check 'verify fails whole-layer: a checklist item with no title' ($r.Out -match 'FAIL  \.claude/skills/checklist-plain/checklist\.md:3: not a heading') $true
     Check 'verify: the whole-layer failure count is the plants and nothing else' ($r.Out -match "$($plants.Count + $longRefs.Count + 5) failure\(s\)") $true
-    foreach ($ok in 'clean-skill', 'crlf-skill', 'crlf-size', 'trigger-field', 'preloaded-skill', 'named-in-ref', 'short-fence', 'ref-fences-ok', 'fence-nested', 'fence-tilde', 'title-backtick', 'title-odd-backtick', 'checklist-backtick', 'ignored-scripts', 'soft-one') {
+    foreach ($ok in 'clean-skill', 'crlf-skill', 'crlf-size', 'trigger-field', 'preloaded-skill', 'named-in-ref', 'short-fence', 'short-unclosed', 'ref-fences-ok', 'fence-nested', 'fence-tilde', 'title-backtick', 'title-odd-backtick', 'checklist-backtick', 'ignored-scripts', 'soft-one') {
         Check "verify: no FAIL for $ok among the plants" ($r.Out -match "FAIL  [^\n]*/$ok/") $false
     }
     foreach ($s in $softChecks) { Check "soft: still only a count among the plants: $s" ($r.Out -match "WARN  2 file\(s\): $s") $true }
