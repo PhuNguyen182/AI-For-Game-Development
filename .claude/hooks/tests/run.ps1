@@ -37,8 +37,12 @@ try {
     Check 'secret-scan blocks a key shape' $r.Code 2
     $r = Invoke-Hook 'secret-scan.ps1' @{ tool_name = 'Write'; tool_input = @{ file_path = "$tmp/Assets/Cfg.cs"; content = 'var appId = "ca-app-pub-123";' } }
     Check 'secret-scan allows clean content' $r.Code 0
-    $r = Invoke-Hook 'secret-scan.ps1' @{ tool_name = 'Edit'; tool_input = @{ file_path = "$tmp/.claude/hooks/x.ps1"; new_string = $fakeKey } }
-    Check 'secret-scan exempts the hooks folder' $r.Code 0
+    $r = Invoke-Hook 'secret-scan.ps1' @{ cwd = $tmp; tool_name = 'Edit'; tool_input = @{ file_path = "$tmp/.claude/hooks/x.ps1"; new_string = $fakeKey } }
+    Check 'secret-scan exempts the hook scripts' $r.Code 0
+    $r = Invoke-Hook 'secret-scan.ps1' @{ cwd = $tmp; tool_name = 'Edit'; tool_input = @{ file_path = "$tmp/.claude/hooks/keys.json"; new_string = $fakeKey } }
+    Check 'secret-scan does not exempt other files in the hooks folder' $r.Code 2
+    $r = Invoke-Hook 'secret-scan.ps1' @{ cwd = $tmp; tool_name = 'Edit'; tool_input = @{ file_path = "$tmp/Assets/X/.claude/hooks/x.ps1"; new_string = $fakeKey } }
+    Check 'secret-scan does not exempt a hooks folder deeper in the tree' $r.Code 2
 
     # secret patterns: missing or empty file fails closed (run against a copy of the hooks)
     $hk = Join-Path $tmp 'hookcopy'
@@ -54,7 +58,7 @@ try {
     Copy-Item (Join-Path $hooks 'secret-patterns.txt') $hk -Force
     Check 'secret-scan passes clean content with the real file' (ScanCopy) 0
     $r = 'not json' | & $shell -NoProfile -NonInteractive -File (Join-Path $hooks 'secret-scan.ps1') 2>&1 | Out-String
-    Check 'malformed hook input exits quietly' ($LASTEXITCODE -eq 0 -and [string]::IsNullOrWhiteSpace($r)) $true
+    Check 'malformed hook input fails closed' ($LASTEXITCODE -eq 2 -and $r -match 'no readable hook input') $true
     . (Join-Path $hooks 'common.ps1')
     Check 'loopback: [::1] counts' (Test-LoopbackUrl 'http://[::1]:9200') $true
     Check 'loopback: localhost@evil.test does not' (Test-LoopbackUrl 'http://localhost@evil.test:9200') $false
@@ -163,6 +167,107 @@ try {
     git -C $lfs add Assets/LightingData.asset Assets/LightingData.asset.meta 2>&1 | Out-Null
     Check 'pre-commit blocks a large binary .asset outside LFS' (Invoke-Hook 'pre-commit.ps1' $lfsCommit).Code 2
 
+    # pre-commit: files refused by path or content, raw evidence dumps, token shapes and credential assignments
+    $sec = Join-Path $tmp 'SecretFiles'
+    New-Repo $sec
+    $secCommit = @{ tool_name = 'Bash'; cwd = $sec; tool_input = @{ command = 'git commit -m x' } }
+    function StagedCode([string]$Path, [string]$Content) {
+        $f = Join-Path $sec $Path
+        New-Item -ItemType Directory -Force (Split-Path $f) | Out-Null
+        Set-Content $f $Content
+        git -C $sec add -f -- $Path 2>&1 | Out-Null
+        $code = (Invoke-Hook 'pre-commit.ps1' $secCommit).Code
+        git -C $sec rm -q --cached -- $Path 2>&1 | Out-Null
+        return $code
+    }
+    foreach ($bad in @('release.keystore', 'Signing/upload.JKS', 'certs/dist.p12', 'AuthKey_ABC.p8', 'ios/Game.mobileprovision',
+            '.env', 'server/.env.production', 'keys/id_rsa', '.upmconfig.toml', 'Tools/my-service-account.json',
+            '.workflow/evidence/x/attempt-1/logcat_full.txt', '.workflow/evidence/x/attempt-1/syslog.txt', '.workflow/evidence/x/App.ips')) {
+        Check "pre-commit blocks the file: $bad" (StagedCode $bad 'x') 2
+    }
+    foreach ($bad in @('Library/ArtifactDB', 'Temp/UnityLockfile', 'UserSettings/EditorUserSettings.asset', 'Logs/x.log',
+            'Game/Library/x.asset', '.workflow/evidence/x/UnityConnectCache.json', 'docs/.unity-pipeline-port')) {
+        Check "pre-commit blocks Editor session data: $bad" (StagedCode $bad 'x') 2
+    }
+    New-Item -ItemType Directory -Force (Join-Path $sec 'Assets/Library') | Out-Null
+    Set-Content (Join-Path $sec 'Assets/Library/Notes.txt') 'x'
+    Set-Content (Join-Path $sec 'Assets/Library/Notes.txt.meta') "fileFormatVersion: 2`nguid: 0123456789abcdef0123456789abcdef"
+    git -C $sec add -f -- Assets/Library/Notes.txt Assets/Library/Notes.txt.meta 2>&1 | Out-Null
+    Check 'pre-commit allows a project folder named Library under Assets' (Invoke-Hook 'pre-commit.ps1' $secCommit).Code 0
+    git -C $sec rm -q --cached -- Assets/Library/Notes.txt Assets/Library/Notes.txt.meta 2>&1 | Out-Null
+    Check 'pre-commit scans a .claude/hooks folder deeper in the tree' (StagedCode 'Assets/X/.claude/hooks/key.txt' "k = `"$fakeKey`"") 2
+    Set-Content (Join-Path $sec 'release.keystore') 'x'
+    git -C $sec add -f release.keystore 2>&1 | Out-Null
+    foreach ($form in @('"C:/Program Files/Git/cmd/git.exe" commit -m x', 'git.exe commit -m x', '& "/c/Program Files/Git/cmd/git" commit -m x')) {
+        Check "pre-commit sees a quoted or .exe git: $form" (Invoke-Hook 'pre-commit.ps1' @{ tool_name = 'PowerShell'; cwd = $sec; tool_input = @{ command = $form } }).Code 2
+    }
+    git -C $sec rm -q --cached release.keystore 2>&1 | Out-Null
+    Remove-Item (Join-Path $sec 'release.keystore')
+    $raw = '' | & $shell -NoProfile -NonInteractive -File (Join-Path $hooks 'pre-commit.ps1') 2>&1; $rawCode = $LASTEXITCODE
+    Check 'pre-commit fails closed on unreadable hook input' $rawCode 2
+    Check 'pre-commit allows an evidence report' (StagedCode '.workflow/evidence/x/attempt-1/report.md' '# Report') 0
+    foreach ($ok in @('.env.example', 'server/.env.sample', '.env.template', 'keys/id_rsa.pub')) {
+        Check "pre-commit allows the template: $ok" (StagedCode $ok 'KEY=') 0
+    }
+    Check 'pre-commit still blocks .env.example.bak' (StagedCode '.env.example.bak' 'x') 2
+    Check 'pre-commit allows an ordinary JSON' (StagedCode 'Tools/settings.json' '{ "type": "config" }') 0
+    Check 'pre-commit blocks a service-account JSON by content' (StagedCode 'Tools/creds.json' "{`n  `"type`": `"service_account`",`n  `"project_id`": `"x`"`n}") 2
+    Set-Content (Join-Path $sec 'old.keystore') 'x'
+    git -C $sec add -f old.keystore 2>&1 | Out-Null
+    git -C $sec -c user.name=t -c user.email=t@t commit -q -m ks 2>&1 | Out-Null
+    git -C $sec rm -q --cached old.keystore 2>&1 | Out-Null
+    Check 'pre-commit allows removing a tracked keystore' (Invoke-Hook 'pre-commit.ps1' $secCommit).Code 0
+    git -C $sec reset -q 2>&1 | Out-Null
+    # Built at runtime so this file never holds a secret-shaped literal.
+    $shapes = [ordered]@{
+        'Google OAuth token' = 'ya' + '29.' + ('a' * 24); 'Google client secret' = 'GOC' + 'SPX-' + ('a' * 24)
+        'GitHub fine-grained token' = 'github' + '_pat_' + ('A' * 40); 'GitLab token' = 'gl' + 'pat-' + ('a' * 20)
+        'npm token' = 'np' + 'm_' + ('a' * 36); 'OpenAI key' = 's' + 'k-proj-' + ('a' * 24); 'Anthropic key' = 's' + 'k-ant-api03-' + ('a' * 24)
+        'Bearer token' = 'Authorization: Bear' + 'er ' + ('a' * 24); 'Azure storage key' = 'Account' + 'Key=' + ('a' * 24) + '=='
+        'Azure SAS' = 'SharedAccess' + 'Signature=sv=2020&sig=' + ('a' * 20); 'Slack webhook' = 'https://hooks.' + 'slack.com/services/T' + ('A' * 24)
+        'Discord webhook' = 'https://discord.com/api/' + 'webhooks/' + ('1' * 18) + '/' + ('a' * 40)
+    }
+    foreach ($k in $shapes.Keys) { Check "pre-commit blocks a new token shape: $k" (StagedCode 'notes.txt' $shapes[$k]) 2 }
+    $PW = 'PASS' + 'WORD'
+    foreach ($bad in @("DB_$PW=abcdefghijklmnop", "client_se$('cret'): abcdefghijkl12", "store$('Pass')word=android12345", "SECRET_KEY = abcdefghijklmnopqr")) {
+        Check "pre-commit blocks a credential assignment: $($bad.Substring(0, 6))..." (StagedCode 'app.env.txt' $bad) 2
+    }
+    foreach ($ok in @("$PW=`$$PW", "$PW=`${$PW}", "set $PW=%$PW%", 'var token = this.GetCancellationTokenOnDestroy();', 'token = destroyCancellationToken;',
+            'api_key: <your-api-key>')) {
+        Check "pre-commit allows a lookup or code: $ok" (StagedCode 'app.env.txt' $ok) 0
+    }
+
+    # pre-commit: a /feature lane A worktree commits new assets without .meta; every other check still runs there
+    $laneMain = Join-Path $tmp 'LaneMain'
+    New-Repo $laneMain
+    Set-Content (Join-Path $laneMain 'Assets/Base.cs') 'class Base {}'
+    Set-Content (Join-Path $laneMain 'Assets/Base.cs.meta') 'guid: 7'
+    git -C $laneMain add -A 2>&1 | Out-Null
+    git -C $laneMain -c user.name=t -c user.email=t@t commit -q -m base 2>&1 | Out-Null
+    $laneWt = Join-Path $laneMain '.claude/worktrees/lane-a'
+    git -C $laneMain worktree add -q -b lane-a $laneWt 2>&1 | Out-Null
+    $savedProject = $env:CLAUDE_PROJECT_DIR
+    $env:CLAUDE_PROJECT_DIR = $laneMain
+    $laneCommit = @{ tool_name = 'Bash'; cwd = $laneWt; tool_input = @{ command = 'git commit -m x' } }
+    Set-Content (Join-Path $laneWt 'Assets/A.cs') 'class A {}'
+    git -C $laneWt add Assets/A.cs 2>&1 | Out-Null
+    Check 'lane: worktree commit of an asset without .meta passes' (Invoke-Hook 'pre-commit.ps1' $laneCommit).Code 0
+    $env:CLAUDE_PROJECT_DIR = $laneWt
+    Check 'lane: ... also when the hook gets the agent worktree as its project dir' (Invoke-Hook 'pre-commit.ps1' $laneCommit).Code 0
+    $env:CLAUDE_PROJECT_DIR = $laneMain
+    Set-Content (Join-Path $laneWt 'Assets/K.cs') "var k = `"$fakeKey`";"
+    git -C $laneWt add Assets/K.cs 2>&1 | Out-Null
+    Check 'lane: worktree commit still blocks a staged secret' (Invoke-Hook 'pre-commit.ps1' $laneCommit).Code 2
+    git -C $laneWt rm -q --cached Assets/K.cs 2>&1 | Out-Null
+    Set-Content (Join-Path $laneWt 'lane.keystore') 'x'
+    git -C $laneWt add lane.keystore 2>&1 | Out-Null
+    Check 'lane: worktree commit still blocks a keystore' (Invoke-Hook 'pre-commit.ps1' $laneCommit).Code 2
+    git -C $laneWt rm -q --cached lane.keystore 2>&1 | Out-Null
+    Set-Content (Join-Path $laneMain 'Assets/A.cs') 'class A {}'
+    git -C $laneMain add Assets/A.cs 2>&1 | Out-Null
+    Check 'lane: the main checkout still blocks an asset without .meta' (Invoke-Hook 'pre-commit.ps1' @{ tool_name = 'Bash'; cwd = $laneMain; tool_input = @{ command = 'git commit -m x' } }).Code 2
+    if ($null -eq $savedProject) { Remove-Item Env:CLAUDE_PROJECT_DIR -ErrorAction SilentlyContinue } else { $env:CLAUDE_PROJECT_DIR = $savedProject }
+
     # pre-push: radius-3 forms are blocked however they are spelled
     function Push([string]$Command, [string]$Cwd = $tmp) { (Invoke-Hook 'pre-push.ps1' @{ tool_name = 'Bash'; cwd = $Cwd; tool_input = @{ command = $Command } }).Code }
     foreach ($bad in @('git push --force origin main', 'git push -f', 'git push -uf origin main', 'git push --mirr origin',
@@ -194,10 +299,27 @@ try {
     G checkout -q side; Set-Content (Join-Path $pp 'k.txt') "var k = `"$fakeKey`";"; G add k.txt; G commit -q -m key; G checkout -q main
     Check 'pre-push sees a secret on another local branch' (Push 'git push origin side' $pp) 2
 
+    # pre-push: the pre-commit file rules on every file an unpushed commit adds
+    $pf = Join-Path $tmp 'PushFiles'
+    git init -q -b main $pf 2>&1 | Out-Null
+    function PF { git -C $pf -c user.name=t -c user.email=t@t @args 2>&1 | Out-Null }
+    Set-Content (Join-Path $pf 'a.txt') 'a'; PF add a.txt; PF commit -q -m base
+    Check 'pre-push allows clean unpushed commits' (Push 'git push origin main' $pf) 0
+    foreach ($case in @(@('release.keystore', 'x'), @('.env', 'X=1'), @('.workflow/evidence/x/logcat_full.txt', 'log'),
+            @('cfg/creds.json', "{ `"type`": `"service_account`" }"))) {
+        $f = Join-Path $pf $case[0]
+        New-Item -ItemType Directory -Force (Split-Path $f) | Out-Null
+        Set-Content $f $case[1]; PF add -f -- $case[0]; PF commit -q -m add
+        Check "pre-push blocks an unpushed $($case[0])" (Push 'git push origin main' $pf) 2
+        PF reset -q --hard HEAD~1
+    }
+    Set-Content (Join-Path $pf '.workflow/evidence/x/report.md') '# Report'; PF add -f -- .workflow/evidence/x/report.md; PF commit -q -m report
+    Check 'pre-push allows an unpushed evidence report' (Push 'git push origin main' $pf) 0
+
     # git-guard
     function Guarded([string]$Command, [string]$Tool = 'Bash') { (Invoke-Hook 'git-guard.ps1' @{ tool_name = $Tool; cwd = $tmp; tool_input = @{ command = $Command } }).Code }
     foreach ($bad in @('git reset --hard', 'git reset HEAD~3 --hard', 'git -C . reset --hard', 'git reset --ha', 'cd x && git reset --hard origin/main',
-            'git clean -fdx', 'git clean -xdf', 'git clean --force', 'git grep -O vim foo', 'git grep -nOvim foo', 'git grep --open-files-in-pager foo',
+            'git clean -fdx', 'git clean -xdf', 'git clean --force', 'git grep -O vim foo', 'git grep -nOvim foo', 'git grep -O/usr/bin/true foo', 'git grep -1Oecho foo', 'git grep -i -n3Ovim foo', 'git grep --open-files-in-pager foo',
             'git diff --output=x.txt', 'git log --outp=x.txt')) {
         Check "git-guard blocks: $bad" (Guarded $bad) 2
     }
@@ -310,6 +432,8 @@ try {
     Check 'lock: B blocked from an Editor holder' (Lock 'B' 'gameplay-engineer' 'acquire') 2
     Check 'lock: B blocked from unity commands' (Lock 'B' 'x' 'check' 'cd /p && unity command script recompile') 2
     Check 'lock: B free for other commands' (Lock 'B' 'x' 'check' 'git status') 0
+    Check 'lock: B may read editor status to confirm a stale lock' (Lock 'B' 'x' 'check' 'unity command editor status') 0
+    Check 'lock: a status call chained to a mutation is still blocked' (Lock 'B' 'x' 'check' 'unity status && unity command script recompile') 2
     Lock 'A' 'code-reviewer' 'release' | Out-Null
     Check 'lock: read-only stop keeps it' (Test-Path $lock) $true
     Lock 'A' 'ui-engineer' 'release' | Out-Null
@@ -320,6 +444,22 @@ try {
     Set-Content $lock (@{ session = 'C'; holds = @('ui-engineer'); since = 'old'; updated = 'old'; updatedUnix = 0 } | ConvertTo-Json)
     Check 'lock: stale lock can be taken' (Lock 'D' 'ui-engineer' 'acquire') 0
     Remove-Item $lock
+
+    # editor-lock: the main session's own compile check / test run holds the Editor until its turn ends
+    Check 'main: own unity call passes' (Lock 'M' 'x' 'check' 'unity command script recompile') 0
+    Check 'main: it takes a main hold' (@((Get-Content $lock -Raw | ConvertFrom-Json).holds) -contains 'main') $true
+    Check 'main: another session is kept out meanwhile' (Lock 'N' 'gameplay-engineer' 'acquire') 2
+    Lock 'M' 'ui-engineer' 'acquire' | Out-Null
+    Lock 'M' 'ui-engineer' 'release' | Out-Null
+    Check 'main: an agent stop keeps the main hold' (Test-Path $lock) $true
+    Lock 'M' 'x' 'clear' | Out-Null
+    Check 'main: turn end releases it' (Test-Path $lock) $false
+    function WriteFile([string]$Session, [string]$Path) { (Invoke-Hook 'editor-lock.ps1' @{ session_id = $Session; tool_name = 'Write'; cwd = $proj; tool_input = @{ file_path = $Path } } @('-Mode', 'check')).Code }
+    Check 'write: a direct Assets write takes a main hold' (WriteFile 'W' (Join-Path $proj 'Assets/A.cs')) 0
+    Check 'write: ... recorded in the lock' (@((Get-Content $lock -Raw | ConvertFrom-Json).holds) -contains 'main') $true
+    Check 'write: another session writing into Assets is refused' (WriteFile 'X' (Join-Path $proj 'ProjectSettings/TagManager.asset')) 2
+    Check 'write: a write outside Assets/Packages/ProjectSettings passes' (WriteFile 'X' (Join-Path $proj '.workflow/features/x.md')) 0
+    Lock 'W' 'x' 'clear' | Out-Null
 
     # editor-lock: an Editor holder must leave the Editor clean before it stops
     $stop = { param($active) (Invoke-Hook 'editor-lock.ps1' @{ session_id = 'E'; agent_type = 'playtest-tester'; stop_hook_active = $active } @('-Mode', 'release')).Code }
@@ -345,6 +485,7 @@ try {
     Check 'lane: unity CLI from a worktree blocked' (Invoke-Hook 'editor-lock.ps1' @{ session_id = 'F'; cwd = $wt; tool_input = @{ command = 'unity command script recompile' } } @('-Mode', 'check')).Code 2
     Check 'lane: unity MCP from a worktree blocked' (Invoke-Hook 'editor-lock.ps1' @{ session_id = 'F'; cwd = $wt; tool_name = 'mcp__unity-mcp__Unity_RunCommand'; tool_input = @{} } @('-Mode', 'check')).Code 2
     Check 'lane: unity MCP from the main checkout passes' (Invoke-Hook 'editor-lock.ps1' @{ session_id = 'F'; cwd = $proj; tool_name = 'mcp__unity-mcp__Unity_RunCommand'; tool_input = @{} } @('-Mode', 'check')).Code 0
+    Lock 'F' 'x' 'clear' | Out-Null
     Lock 'G' 'gameplay-engineer' 'acquire' | Out-Null
     $env:HOOK_TEST_EDITOR_STATE = 'playing'
     $laneStop = (Invoke-Hook 'editor-lock.ps1' @{ session_id = 'G'; agent_type = 'csharp-engineer'; cwd = $wt; stop_hook_active = $false } @('-Mode', 'release')).Code
@@ -365,6 +506,34 @@ try {
     Check 'lane: a lane worktree under that project is still blocked' (Invoke-Hook 'editor-lock.ps1' @{ session_id = 'H'; cwd = $wt; tool_input = @{ command = 'unity command script recompile' } } @('-Mode', 'check')).Code 2
     Lock 'H' 'x' 'clear' | Out-Null
     Remove-Item (Join-Path $proj '.git')
+    # Claude Code agent worktrees live at <project>/.claude/worktrees/<name>; a hook may get that worktree as its project dir
+    New-Item -ItemType Directory -Force (Join-Path $proj '.git') | Out-Null
+    $cw = Join-Path $proj '.claude/worktrees/agent-x'
+    New-Item -ItemType Directory -Force (Join-Path $cw 'Assets') | Out-Null
+    Set-Content (Join-Path $cw '.git') 'gitdir: C:/repo/.git/worktrees/agent-x'
+    $env:CLAUDE_PROJECT_DIR = $cw
+    Check 'lane: agent worktree as project dir still blocks unity' (Invoke-Hook 'editor-lock.ps1' @{ session_id = 'J'; cwd = $cw; tool_input = @{ command = 'unity command script recompile' } } @('-Mode', 'check')).Code 2
+    Check 'lane: ... and takes no hold in the worktree' (Test-Path (Join-Path $cw '.workflow/editor.lock')) $false
+    $env:CLAUDE_PROJECT_DIR = $proj
+    Remove-Item -Recurse -Force (Join-Path $proj '.claude'), (Join-Path $proj '.git')
+    # A standalone project whose own path contains .claude/worktrees/ keeps its root (no checkout above it)
+    $odd = Join-Path $tmp 'Odd/.claude/worktrees/game'
+    New-Item -ItemType Directory -Force (Join-Path $odd 'Assets') | Out-Null
+    $env:CLAUDE_PROJECT_DIR = $odd
+    Lock 'K' 'ui-engineer' 'acquire' | Out-Null
+    Check 'lane: a project path merely containing .claude/worktrees keeps its own lock' (Test-Path (Join-Path $odd '.workflow/editor.lock')) $true
+    $env:CLAUDE_PROJECT_DIR = $proj
+    # Root resolution: main checkouts hold a .git directory, worktrees a .git file
+    New-Item -ItemType Directory -Force (Join-Path $odd '.git') | Out-Null
+    $oddWt = Join-Path $odd '.claude/worktrees/b'; New-Item -ItemType Directory -Force $oddWt | Out-Null; Set-Content (Join-Path $oddWt '.git') 'gitdir: x/.git/worktrees/b'
+    $mainR = Join-Path $tmp 'MainR'; New-Item -ItemType Directory -Force (Join-Path $mainR '.git') | Out-Null
+    $wtA = Join-Path $mainR '.claude/worktrees/a'; $wtC = Join-Path $wtA '.claude/worktrees/c'
+    New-Item -ItemType Directory -Force $wtC | Out-Null; Set-Content (Join-Path $wtA '.git') 'gitdir: x/.git/worktrees/a'; Set-Content (Join-Path $wtC '.git') 'gitdir: x/.git/worktrees/c'
+    . (Join-Path $hooks 'common.ps1')
+    $norm = { param($x) ($x -replace '\\', '/').TrimEnd('/') }
+    Check 'root: an agent worktree of a project under .claude/worktrees resolves to that project' (& $norm (Get-MainCheckout $oddWt)) (& $norm $odd)
+    Check 'root: a worktree nested in a worktree resolves to the main checkout' (& $norm (Get-MainCheckout $wtC)) (& $norm $mainR)
+    Check 'root: a plain agent worktree resolves to the main checkout' (& $norm (Get-MainCheckout $wtA)) (& $norm $mainR)
     # A Unity project in a subfolder of a repo that is a linked worktree is still the main checkout
     $sub = Join-Path $tmp 'Repo/Game'
     New-Item -ItemType Directory -Force (Join-Path $sub 'Assets') | Out-Null
@@ -514,6 +683,13 @@ try {
     Check 'round-cap: a bug under its cap dispatches' (Dispatch 'Fix BUG-0007') 0
     Bugs 'Closed' '3/2'
     Check 'round-cap: a closed bug is not checked' (Dispatch 'Verify BUG-0007') 0
+    Bugs 'Accepted' '3/2'
+    Check 'round-cap: an accepted bug is settled, not capped' (Dispatch 'Bug: BUG-0007') 0
+    Bugs 'Duplicate of BUG-0001' '3/2'
+    Check 'round-cap: a duplicate bug is settled' (Dispatch 'Bug: BUG-0007') 0
+    Bugs 'Reopened' '3/2'
+    Check 'round-cap: a QA brief listing a past-cap bug but charging the feature passes' (Dispatch "Feature: .workflow/features/demo.md`nOpen bugs: BUG-0007") 0
+    Feature 'review 1/3, QA 0/2, rework 1/6'
     Check 'round-cap: edits outside .workflow are ignored' (EditState "$proj/Assets/A.cs") 0
 
     # round-cap count: the ledger counts failed gates the state files missed
@@ -531,39 +707,122 @@ try {
     }
     function Count([string]$Key, [string]$Counter) { $o = Get-Content $ledger -Raw | ConvertFrom-Json; @($o.$Key.$Counter).Count }
     Feature 'review 0/3, QA 0/2, rework 0/6'
-    $rb = 'Review round 1. Feature file: .workflow/features/demo.md'
+    $fm = 'Feature: .workflow/features/demo.md'
+    $rb = "Round: 1`n$fm`nReview the HUD diff (skill shared-core-boundary-audit)."
     SubStop 'code-reviewer' $rb "Status: Done`nVerdict: Request changes" 'a1' | Out-Null
     SubStop 'security-reviewer' $rb "Status: Done`nVerdict: Blocked" 'a2' | Out-Null
     Check 'count: two gates blocking one round count once' (Count 'feature:demo' 'review') 1
     Check 'count: a blocked review round adds one rework' (Count 'feature:demo' 'rework') 1
-    SubStop 'qa-lead' 'Sign-off. .workflow/features/demo.md' "Verdict: Not signed off" 'a3' -Handback | Out-Null
+    SubStop 'qa-lead' "Sign-off.`n$fm" "Verdict: Not signed off" 'a3' -Handback | Out-Null
     Check 'count: a handback report is read' (Count 'feature:demo' 'qa') 1
     SubStop 'code-reviewer' $rb "Verdict: Approve" 'a4' | Out-Null
     Check 'count: an approval adds nothing' (Count 'feature:demo' 'review') 1
-    SubStop 'code-reviewer' 'Audit Assets/. .workflow/features/demo.md' "Verdict: Request changes" 'a5' | Out-Null
+    SubStop 'code-reviewer' "Mode: audit`n$fm`nAudit Assets/." "Verdict: Request changes" 'a5' | Out-Null
     Check 'count: an audit is not a review round' (Count 'feature:demo' 'review') 1
+    SubStop 'code-reviewer' "Mode: test-code`n$fm`nReview the new tests." "Verdict: Request changes" 'a5b' | Out-Null
+    Check 'count: a test-code review is not a review round' (Count 'feature:demo' 'review') 1
+    SubStop 'code-reviewer' "Round: 2`nMode: workflow`nTree: 4444444444444444`n$fm" "Verdict: Request changes" 'a5c' | Out-Null
+    Check 'count: a workflow gate is left to the main session' (Count 'feature:demo' 'review') 1
+    SubStop 'code-reviewer' "- **Mode:** audit`n$fm" "Verdict: Request changes" 'a5d' | Out-Null
+    Check 'count: a bulleted Mode marker is read' (Count 'feature:demo' 'review') 1
     SubStop 'security-reviewer' $rb "Status: Blocked`nmissing diff" 'a6' | Out-Null
     Check 'count: Status Blocked is not a verdict' (Count 'feature:demo' 'review') 1
-    foreach ($n in 2..4) { SubStop 'code-reviewer' "Review round $n. .workflow/features/demo.md" 'Verdict: Request changes' "r$n" | Out-Null }
+    SubStop 'code-reviewer' "Round: 2`n$fm" "Verdict: Needs-decision`nFile: A.cs:3 Severity: High Issue: x" 'a7' | Out-Null
+    Check 'count: Needs-decision with a High finding is a failed round' (Count 'feature:demo' 'review') 2
+    SubStop 'code-reviewer' "Round: 3`n$fm" "Verdict: Needs-decision`nFile: A.cs:3 Severity: Low Issue: x" 'a8' | Out-Null
+    Check 'count: Needs-decision with only Low findings is not' (Count 'feature:demo' 'review') 2
+    foreach ($n in 3..4) { SubStop 'code-reviewer' "Round: $n`n$fm`nPrevious: round 1 findings." 'Verdict: Request changes' "r$n" | Out-Null }
     Check 'count: the ledger blocks although the file says 0' (Dispatch $brief) 2
+    Feature 'review 1/3, QA 0/2, rework 1/6'
+    Remove-Item $ledger
+    SubStop 'code-reviewer' "Round: 1`n$fm" 'Verdict: Request changes' 'u1' | Out-Null
+    SubStop 'code-reviewer' "Round: 2`n$fm" 'Verdict: Request changes' 'u2' | Out-Null
+    SubStop 'code-reviewer' "Round: 3`n$fm" 'Verdict: Request changes' 'u3' | Out-Null
+    Check 'count: used = file + hook (1 + 3 > 3) blocks' (Dispatch "$fm`nNext attempt") 2
+    Feature 'review 0/3, QA 0/2, rework 0/6'
     Remove-Item $ledger
     Bugs 'Reopened' '0/2'
-    foreach ($n in 1..3) { SubStop 'gameplay-engineer' 'Fix BUG-0007' "Status: Failed`nAttempts: 3/3" "f$n" | Out-Null }
-    Check 'count: Failed returns count as bug rounds' (Dispatch 'Fix BUG-0007') 2
+    foreach ($n in 1..3) { SubStop 'gameplay-engineer' "Bug: BUG-0007`n$fm" "Status: Failed`nAttempts: 3/3" "f$n" | Out-Null }
+    Check 'count: Failed returns are attempts, not rounds' (Dispatch 'Bug: BUG-0007') 0
+    SubStop 'playtest-tester' "Bug: BUG-0007`nReproduce it." "Status: Done`nRepro: BUG-0007 reproduces" 'q1' | Out-Null
+    Check 'count: reproducing a bug without Verify is not a fix round' (Test-Path $ledger) $false
+    SubStop 'playtest-tester' "Verify: BUG-0007`n$fm" "Status: Done`nRepro: BUG-0007 reproduces" 'p1' | Out-Null
+    SubStop 'playtest-tester' "Verify: BUG-0007" "Status: Failed`nRepro: BUG-0007 reproduces" 'p2' | Out-Null
+    SubStop 'playtest-tester' "Verify: BUG-0007" "Status: Done`nRepro: BUG-0007 gone" 'p3' | Out-Null
+    Check 'count: a verify that still fails counts once per run' (Count 'bug:BUG-0007' 'fix') 2
+    Check 'count: a verify that still fails adds feature rework' (Count 'feature:demo' 'rework') 1
+    SubStop 'code-reviewer' "Round: 1`nBug: BUG-0007" 'Verdict: Request changes' 'b1' | Out-Null
+    Check 'count: a no-feature fix review counts on the bug review counter' (Count 'bug:BUG-0007' 'review') 1
+    Check 'count: ... and not on its fix counter' (Count 'bug:BUG-0007' 'fix') 2
     Remove-Item $ledger
-    SubStop 'playtest-tester' 'Re-run BUG-0007. .workflow/features/demo.md' "Status: Done`nRepro: BUG-0007 reproduces" 'p1' | Out-Null
-    SubStop 'playtest-tester' 'Re-run BUG-0007' "Status: Failed`nRepro: BUG-0007 reproduces" 'p2' | Out-Null
-    SubStop 'playtest-tester' 'Re-run BUG-0007' "Status: Done`nRepro: BUG-0007 gone" 'p3' | Out-Null
-    Check 'count: a repro that still fails counts once per run' (Count 'bug:BUG-0007' 'fix') 2
-    Check 'count: a repro that still fails adds feature rework' (Count 'feature:demo' 'rework') 1
+    foreach ($n in 1..4) { SubStop 'code-reviewer' "Round: $n`nTarget: Assets/Shop" 'Verdict: Request changes' "t$n" | Out-Null }
+    Check 'count: target work past the cap blocks the gate' (Dispatch "Round: 5`nTarget: Assets/Shop") 2
+    Check 'count: another target starts clean' (Dispatch "Round: 1`nTarget: Assets/Hud") 0
     Remove-Item $ledger
-    foreach ($n in 1..4) { SubStop 'code-reviewer' "Review round $n of the HUD diff" 'Verdict: Request changes' "s$n" | Out-Null }
-    $gate = @{ session_id = 'sess-1'; tool_name = 'Agent'; tool_input = @{ subagent_type = 'code-reviewer'; prompt = 'Review round 5 of the HUD diff' } }
+    # Ledger safety
+    New-Item -ItemType Directory -Force (Split-Path $ledger) | Out-Null
+    Set-Content $ledger '{ not json' -Encoding UTF8
+    Check 'ledger: an unparsable ledger blocks the dispatch' (Dispatch $brief) 2
+    Check 'ledger: ... and is moved aside, not overwritten' (@(Get-ChildItem (Split-Path $ledger) -Filter 'rounds.corrupt-*.json').Count) 1
+    Check 'ledger: dispatch stays blocked while the moved-aside ledger exists' (Dispatch $brief) 2
+    Get-ChildItem (Split-Path $ledger) -Filter 'rounds.corrupt-*.json' | Remove-Item
+    Check 'ledger: once the GD resolves it, dispatch runs again' (Dispatch $brief) 0
+    Set-Content $ledger '{ broken' -Encoding UTF8
+    SubStop 'code-reviewer' "Round: 1`n$fm" 'Verdict: Request changes' 'c1' | Out-Null
+    Check 'ledger: a count on a corrupt ledger keeps the old file' (@(Get-ChildItem (Split-Path $ledger) -Filter 'rounds.corrupt-*.json').Count) 1
+    Check 'ledger: ... and records the new event' (Count 'feature:demo' 'review') 1
+    Get-ChildItem (Split-Path $ledger) -Filter 'rounds.corrupt-*.json' | Remove-Item
+    Set-Content (Join-Path (Split-Path $ledger) 'rounds.pending-x.json') '[{"key":"feature:demo","counter":"review","id":"round-9"}]' -Encoding UTF8
+    Check 'ledger: parked events count before they are merged' ((Invoke-Hook 'round-cap.ps1' @{ tool_name = 'Edit'; tool_input = @{ file_path = $feat } } @('-Mode', 'edit')).Code) 0
+    SubStop 'code-reviewer' "Round: 2`n$fm" 'Verdict: Request changes' 'c2' | Out-Null
+    Check 'ledger: parked events merge on the next write' (Count 'feature:demo' 'review') 3
+    Check 'ledger: ... and the parked file is removed' (Test-Path (Join-Path (Split-Path $ledger) 'rounds.pending-x.json')) $false
+    Set-Content (Join-Path (Split-Path $ledger) 'rounds.pending-bad.json') '[{ broken' -Encoding UTF8
+    SubStop 'code-reviewer' "Round: 9`n$fm" 'Verdict: Approve' 'c9' | Out-Null
+    SubStop 'code-reviewer' "Round: 9`nTree: aaaaaaaaaaaa`n$fm" 'Verdict: Request changes' 'c9b' | Out-Null
+    Check 'ledger: an unparsable parked file is kept as corrupt, not deleted' (Test-Path (Join-Path (Split-Path $ledger) 'rounds.corrupt-pending-bad.json')) $true
+    Check 'ledger: ... and blocks dispatch until resolved' (Dispatch $brief) 2
+    Remove-Item (Join-Path (Split-Path $ledger) 'rounds.corrupt-pending-bad.json')
+    # A repeated Round number on new code (a resumed session restarting at 1) still counts.
+    Remove-Item $ledger
+    SubStop 'code-reviewer' "Round: 1`nTree: 1111111111111111`n$fm" 'Verdict: Request changes' 'rt1' | Out-Null
+    SubStop 'security-reviewer' "Round: 1`nTree: 1111111111111111`n$fm" 'Verdict: Blocked' 'rt2' | Out-Null
+    SubStop 'code-reviewer' "Round: 1`nTree: 2222222222222222`n$fm" 'Verdict: Request changes' 'rt3' | Out-Null
+    Check 'round: two gates on the same round and tree count once, a repeated number on a new tree counts again' (Count 'feature:demo' 'review') 2
+    SubStop 'code-reviewer' "Round: 2`nTree: 3333333333333333`nPrevious tree: 2222222222222222`n$fm" 'Verdict: Request changes' 'rt4' | Out-Null
+    Check 'round: the dedupe key is the current Tree, never the Previous tree line' (@((Get-Content $ledger -Raw | ConvertFrom-Json).'feature:demo'.review) -contains 'round-2-333333333333') $true
+    Check 'round: a short Tree sha does not break the count' (SubStop 'code-reviewer' "Round: 3`nTree: abcdef1`n$fm" 'Verdict: Request changes' 'rt5') 0
+    Check 'round: ... and keys on the whole short sha' (@((Get-Content $ledger -Raw | ConvertFrom-Json).'feature:demo'.review) -contains 'round-3-abcdef1') $true
+    SubStop 'code-reviewer' "Round: 4`nTree: $('a1' * 20)`n$fm" 'Verdict: Request changes' 'rt6' | Out-Null
+    SubStop 'code-reviewer' "Round: 5`nTree: $('b2' * 32)`n$fm" 'Verdict: Request changes' 'rt7' | Out-Null
+    $ids = @((Get-Content $ledger -Raw | ConvertFrom-Json).'feature:demo'.review)
+    Check 'round: a 40- and a 64-char sha both key on their first 12 chars' (($ids -contains 'round-4-a1a1a1a1a1a1') -and ($ids -contains 'round-5-b2b2b2b2b2b2')) $true
+    SubStop 'code-reviewer' "- Round: 6`n- Tree: cccccccccccc`n$fm" 'Verdict: Request changes' 'rt8' | Out-Null
+    SubStop 'security-reviewer' "- **Round:** 6`n- **Tree:** cccccccccccc`n$fm" 'Verdict: Blocked' 'rt9' | Out-Null
+    $ids = @((Get-Content $ledger -Raw | ConvertFrom-Json).'feature:demo'.review)
+    Check 'round: bulleted Round/Tree markers dedupe the two gates of one round' (@($ids | Where-Object { $_ -eq 'round-6-cccccccccccc' }).Count) 1
+    # Workflow launches and the stop-rule record (fresh ledger: 3 failed rounds is at the cap, 4 is past it)
+    Remove-Item $ledger
+    foreach ($n in 1..3) { SubStop 'code-reviewer' "Round: $n`n$fm" 'Verdict: Request changes' "w$n" | Out-Null }
+    Check 'workflow: a launch under the feature cap passes' (Invoke-Hook 'round-cap.ps1' @{ tool_name = 'Workflow'; tool_input = @{ name = 'review-gate'; args = @{ feature = '.workflow/features/demo.md'; round = 4 } } } @('-Mode', 'dispatch')).Code 0
+    SubStop 'code-reviewer' "Round: 4`n$fm" 'Verdict: Request changes' 'c4' | Out-Null
+    Check 'workflow: a launch past the feature cap blocks' (Invoke-Hook 'round-cap.ps1' @{ tool_name = 'Workflow'; tool_input = @{ name = 'review-gate'; args = @{ feature = '.workflow/features/demo.md'; round = 5 } } } @('-Mode', 'dispatch')).Code 2
+    Check 'workflow: a launch naming no target is not checked' (Invoke-Hook 'round-cap.ps1' @{ tool_name = 'Workflow'; tool_input = @{ name = 'project-audit'; args = @{ root = '.' } } } @('-Mode', 'dispatch')).Code 0
+    Remove-Item $ledger
+    Feature 'review 3/3, QA 0/2, rework 3/6'
+    Check 'stop rule: at the cap the edit warns' (EditState $feat) 2
+    Add-Content $feat "`n- Stop rule: review root-caused 2026-10-30 - extra dispatch: unused" -Encoding UTF8
+    Check 'stop rule: a recorded root cause silences the at-cap warning' (EditState $feat) 0
+    Feature 'review 0/3, QA 0/2, rework 0/6'
+    foreach ($n in 1..4) { SubStop 'code-reviewer' "Round: $n`nReview the HUD diff" 'Verdict: Request changes' "s$n" | Out-Null }
+    $gate = @{ session_id = 'sess-1'; tool_name = 'Agent'; tool_input = @{ subagent_type = 'code-reviewer'; prompt = "Round: 5`nReview the HUD diff" } }
     Check 'count: session work past the cap blocks the gate' (Invoke-Hook 'round-cap.ps1' $gate @('-Mode', 'dispatch')).Code 2
     $gate.tool_input.subagent_type = 'Explore'
     Check 'count: session cap leaves non-gate agents alone' (Invoke-Hook 'round-cap.ps1' $gate @('-Mode', 'dispatch')).Code 0
     $gate.tool_input.subagent_type = 'code-reviewer'; $gate.session_id = 'sess-2'
     Check 'count: another session starts clean' (Invoke-Hook 'round-cap.ps1' $gate @('-Mode', 'dispatch')).Code 0
+    $gate.session_id = 'sess-1'; $gate.tool_input.prompt = "Round: 5`nTarget: Assets/Other"
+    Check 'count: a named target is not charged with session rounds' (Invoke-Hook 'round-cap.ps1' $gate @('-Mode', 'dispatch')).Code 0
     Remove-Item $ledger
     Set-Content $feat "# Demo`n`n- Status: Open`n- Size: L, Risk flag: no`n`n## GD decisions`n" -Encoding UTF8
     Check 'round-cap: an open feature without Rounds warns on edit' (EditState $feat) 2
@@ -571,6 +830,7 @@ try {
 
     # verify-on-edit
     Check 'verify-on-edit ignores files outside .claude' (Invoke-Hook 'verify-on-edit.ps1' @{ tool_input = @{ file_path = "$proj/Assets/A.cs" } }).Code 0
+    Check 'verify-on-edit ignores writes inside an agent worktree' (Invoke-Hook 'verify-on-edit.ps1' @{ tool_input = @{ file_path = "$proj/.claude/worktrees/agent-x/.workflow/evidence/r.md" } }).Code 0
 }
 finally {
     Remove-Item Env:CLAUDE_PROJECT_DIR, Env:HOOK_TEST_XERJ, Env:MEM_CAPTURE, Env:XERJ_URL -ErrorAction SilentlyContinue

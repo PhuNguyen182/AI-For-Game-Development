@@ -14,7 +14,12 @@ $fails = [System.Collections.Generic.List[string]]::new()
 $warns = [System.Collections.Generic.List[string]]::new()
 function Fail($m) { $fails.Add($m) }
 function Warn($m) { $warns.Add($m) }
-function Rel($p) { $(if ($p.StartsWith($root)) { $p.Substring($root.Length).TrimStart('/', [char]92) } else { $p }) -replace '\\', '/' }
+# Case- and slash-insensitive: the edit hook passes the raw path Claude Code sends (c:\..., C:/...), and an unshortened
+# path would skip every agent, skill and rule check.
+function Rel($p) {
+    $n = ([string]$p) -replace '\\', '/'; $r = ([string]$root) -replace '\\', '/'
+    $(if ($n.StartsWith($r, [StringComparison]::OrdinalIgnoreCase)) { $n.Substring($r.Length).TrimStart('/') } else { $n })
+}
 
 $Budget = @{ ClaudeMd = 30; AlwaysRules = 100; PathRule = 40; Desc = 250; AgentBody = 25; Pipeline = 120; Skill = 500 }
 $RetiredAgents = 'unity-engineer', 'assurance-evaluator', 'build-run-engineer', 'build-verification-tester'
@@ -27,7 +32,17 @@ $HookContracts = @{
     '.claude/agents/code-reviewer.md'        = @('Verdict: Approve | Request changes')
     '.claude/agents/security-reviewer.md'    = @('Verdict: Clear | Blocked')
     '.claude/agents/qa-lead.md'              = @('Verdict: Signed off | Not signed off')
-    '.claude/skills/agent-protocol/SKILL.md' = @('Status: Done | Partial | Blocked | Needs-decision | Failed', 'Repro: BUG-#### reproduces | gone')
+    '.claude/skills/agent-protocol/SKILL.md' = @('Status: Done | Partial | Blocked | Needs-decision | Failed', 'Repro: BUG-#### reproduces | gone', '`Verify: BUG-####`')
+    # Brief marker lines and state lines the hook parses.
+    '.claude/skills/review/SKILL.md'                        = @('`Round: <n>`', '`Mode: audit`', '`Mode: workflow`', '`Tree: <sha>`', '`Previous tree: <sha>`', '`Target: <path or base>`', '`Bug: BUG-####`')
+    '.claude/skills/qa/SKILL.md'                            = @('`Mode: test-code`', '`Verify: BUG-####`', '`Feature: .workflow/features/<slug>.md`')
+    '.claude/skills/fix/SKILL.md'                           = @('`Bug: BUG-####`', '`Verify: BUG-####`', '`Feature: .workflow/features/<slug>.md`')
+    '.claude/skills/feature/references/feature-template.md' = @('- Status: Open', '- Size:', '- Rounds:', '## GD decisions', '- Stop rule:')
+    '.claude/skills/fix/references/bugs-template.md'        = @('- Fix rounds:', '- Review rounds:')
+    '.claude/rules/routing.md'                              = @('extra round')
+    # Marker literals the workflows emit and round-cap.ps1 reads.
+    '.claude/workflows/review-gate.js'                      = @("lines.push('Mode: workflow')", 'lines.push(`Round: ${round}`)', 'lines.push(`Tree: ${scope.tree}`)')
+    '.claude/workflows/project-audit.js'                    = @('const AUDIT = ''Mode: audit\n''', '`${AUDIT}Audit ${at(m.path)}', '`${AUDIT}Scan the repository')
 }
 
 $agents = @(Get-ChildItem (Join-Path $claude 'agents') -Filter *.md | ForEach-Object BaseName)
@@ -98,6 +113,10 @@ function Test-File([string]$path) {
     if ($rel -match '^\.claude/workflows/') {
         if ($path -notlike '*.js') { Fail "${rel}: .claude/workflows/ holds only .js workflow scripts" }
         elseif ((Get-Content $path -Raw -Encoding UTF8) -notmatch '^\s*export const meta\s*=') { Fail "${rel}: must start with 'export const meta = {...}'" }
+        $js = Get-Content $path -Raw -Encoding UTF8
+        foreach ($s in @($HookContracts[$rel])) {
+            if ($s -and -not $js.Contains($s)) { Fail "${rel}: lost '$s', which hooks/round-cap.ps1 counts on - update both together" }
+        }
         return
     }
     if ($rel -match '^\.claude/.*\.workflow') { Fail "${rel}: state belongs in <project>/.workflow/, never under .claude/" }
@@ -161,7 +180,10 @@ if ($File) {
     $p = if ([IO.Path]::IsPathRooted($File)) { $File } else { Join-Path $root $File }
     Test-File $p
 } else {
-    $files = @(Get-ChildItem $claude -Recurse -File | Where-Object { $_.FullName -notmatch '[\\/](scripts|assets)[\\/]' -and $_.Extension -in '.md', '.js' -or $_.FullName -match '[\\/]workflows[\\/]' -or $_.Extension -in '.ps1', '.py' })
+    $files = @(Get-ChildItem $claude -Recurse -File | Where-Object { $_.FullName -notmatch '[\\/](scripts|assets)[\\/]' -and $_.Extension -in '.md', '.js' -or $_.FullName -match '[\\/]workflows[\\/]' -or $_.Extension -in '.ps1', '.py' } |
+        # Agent worktrees (/feature lane A, isolation: "worktree") are checkouts of the layer, not part of it.
+        # Relative to this layer's root: a layer that itself sits in a worktree is still verified.
+        Where-Object { (Rel $_.FullName) -notmatch '^\.claude/worktrees/' })
     $files += Get-Item (Join-Path $root 'CLAUDE.md'), (Join-Path $root 'README.md') -ErrorAction SilentlyContinue
     foreach ($f in $files) { Test-File $f.FullName }
 
