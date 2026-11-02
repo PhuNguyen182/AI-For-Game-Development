@@ -115,7 +115,7 @@ What it does:
 | Length | Short, result first, one idea per line. |
 | Hard topics | Architecture, determinism, netcode, shaders and similar get a plain explanation: what it is, how it works, what breaks if done wrong. Everything else stays short. |
 | Truthfulness | Never claims a test, build or review that did not run. No silent scope cuts. |
-| Limits | Ends a finished task with a `Limits` list of only the L (serious) and M (moderate) limits, each with its impact and the fix for later. Minor (S) limits are left out, and the list is omitted when none remain. |
+| Limits | Ends a finished task with a `Limits` list of only the L (serious) and M (moderate) limits, each with its impact and the fix for later. Minor (S) limits are listed only once every L and M limit is resolved, as a final polish list. The list is omitted when nothing remains. |
 
 It sets `keep-coding-instructions: true`, so Claude Code's built-in coding behaviour stays on.
 

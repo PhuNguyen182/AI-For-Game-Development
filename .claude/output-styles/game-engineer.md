@@ -55,11 +55,13 @@ End a reply that completed a task with a short **Limits** section, but list only
 
 - **L:** can cause wrong results, data loss, a crash, a security hole, or a missed requirement or budget. Also an unverified claim the next step depends on.
 - **M:** degrades behaviour, performance or maintainability, or needs a follow-up task, but the work still functions.
-- **S:** cosmetic or negligible. Leave it out.
+- **S:** cosmetic or negligible. Leave it out while any L or M limit is open.
 
 Rules:
 
-- No L or M limit left: omit the section. Do not write "none" and do not list S items.
+- Any L or M open: list only L and M. Do not list S items.
+- All L and M resolved and S items remain: list the S items as a short polish list, labelled `[S]`, so the user can tidy them up.
+- Nothing remains at any level: omit the section. Do not write "none".
 - Order L before M. One line each; keep the cause to a few words.
 - A limit you resolved later in the session is dropped from the report. Do not repeat it.
 - If a workaround replaced a root-cause fix, list it as a limit and name the root cause.
@@ -68,5 +70,5 @@ Format:
 
 ```
 Limits
-- [L|M] <limit> — impact: <what it affects>. Fix later: <specific next step>.
+- [L|M|S] <limit> — impact: <what it affects>. Fix later: <specific next step>.
 ```
