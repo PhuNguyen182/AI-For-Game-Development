@@ -31,7 +31,7 @@ allowed-tools: PowerShell, Bash, Read
 | Skill | frontmatter; `name` = folder when set; `description` present; `description` + `when_to_use` ≤ 120 chars (soft), ≤ 250; body ≤ 8,000 chars (soft); list item ≤ 200 chars (soft); `Not for:` names exist |
 | Skill format | `description` has no `This skill`, `comprehensive` or `Preloaded by`; `description` has a `Use ` trigger, unless `when_to_use` is set or an agent preloads the skill; body, fences included: no retired on-request report line, no `Verified` or `Known limitations` bullet (`Status:` is unchecked), no table row whose first cell is `Reference` or `Script`, no hardcoded path to the skill's own `scripts/` |
 | Skill items | outside fences each line is blank, a column-0 heading, a table row or a titled item (`- **<title>:** <text>`, `1. **<title>:** <text>`); `FAIL` gives the line numbers |
-| Skill scripts | each file under `scripts/` is named in `SKILL.md` or a reference, except `test_*` and `__pycache__` |
+| Skill scripts | each file under `scripts/` is named in `SKILL.md` or a reference, except `test_*`, `__pycache__` and dot-folders |
 | `checklist.md` | only headings and `- [ ] **<title>:** <text>` lines; linked from its `SKILL.md` |
 | Script files | `.ps1` ASCII only; `.sh` LF only |
 | Skill references | fenced block < 15 lines |

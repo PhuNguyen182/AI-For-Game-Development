@@ -872,13 +872,25 @@ try {
     }
     function VRel([string]$Name) { ".claude/skills/$Name/SKILL.md" }
     function VFail([string]$Name) { "FAIL  \.claude/skills/$Name/SKILL\.md: " }
+    # What a fresh Windows checkout gives under core.autocrlf: the whole skill folder in CRLF.
+    function ToCrlf([string]$Name) {
+        foreach ($f in Get-ChildItem (Join-Path $vlSkills $Name) -Recurse -File) {
+            [IO.File]::WriteAllText($f.FullName, ([IO.File]::ReadAllText($f.FullName) -replace '\r?\n', "`r`n"))
+        }
+    }
 
     # verify-layer: a clean template-shaped skill passes, and its exceptions stay exceptions
     VSkill 'clean-skill'
+    VSkill 'crlf-skill'
+    ToCrlf 'crlf-skill'
+    Check 'verify: the CRLF fixture has no bare LF' ([IO.File]::ReadAllText((Join-Path $vlSkills 'crlf-skill/SKILL.md')) -notmatch '(?<!\r)\n') $true
     $r = Verify (VRel 'clean-skill')
     Check 'verify: a clean template-shaped skill passes per file with no output line' ($r.Code -eq 0 -and $r.Out -cnotmatch 'WARN|FAIL') $true
+    $r = Verify (VRel 'crlf-skill')
+    Check 'verify: a CRLF copy of it passes per file with no output line' ($r.Code -eq 0 -and $r.Out -cnotmatch 'WARN|FAIL') $true
     $r = Verify
     Check 'verify: ... and on a whole-layer run' ($r.Code -eq 0 -and $r.Out -cnotmatch 'WARN|FAIL' -and $r.Out -match 'verify-layer: OK \(0 warning\(s\)\)') $true
+    Check 'verify: ... the CRLF copy too' ($r.Code -eq 0 -and $r.Out -notmatch 'crlf-skill') $true
     VSkill 'trigger-field' @() 'Foo.Bar and Baz.Qux only.'
     $f = Join-Path $vlSkills 'trigger-field/SKILL.md'
     Set-Content $f ((Get-Content $f -Raw) -replace 'user-invocable: false', "when_to_use: `"checking the fixture`"`nuser-invocable: false")
@@ -893,6 +905,40 @@ try {
     VSkill 'short-fence'
     Set-Content (Join-Path $vlSkills 'short-fence/references/short.md') (@('# Short', '```') + (1..14 | ForEach-Object { "line $_" }) + '```')
     Check 'verify: a 14-line reference fence passes' (Verify '.claude/skills/short-fence/references/short.md').Code 0
+    VSkill 'ref-fences-ok'
+    $ref8 = @(1..8 | ForEach-Object { "line $_" })
+    Set-Content (Join-Path $vlSkills 'ref-fences-ok/references/nested.md') (@('# Nested', '````', '```') + @(1..12 | ForEach-Object { "line $_" }) + @('```', '````'))
+    Check 'verify: a nested reference fence of 14 lines passes' (Verify '.claude/skills/ref-fences-ok/references/nested.md').Code 0
+    Set-Content (Join-Path $vlSkills 'ref-fences-ok/references/adjacent.md') (@('# Adjacent', '```') + $ref8 + @('```', '```') + $ref8 + '```')
+    Check 'verify: two adjacent reference fences count apart' (Verify '.claude/skills/ref-fences-ok/references/adjacent.md').Code 0
+
+    # verify-layer: fences. Their content would fail if read as body; the plants after them are in $plants below.
+    $vlLong = '- **Long:** ' + ('x' * 200)
+    $fenceNested = @('````', '```', '- an untitled bullet in the inner fence', $vlLong, '```', '- an untitled bullet after the inner fence', '````')
+    $fenceTilde = @('~~~', $vlLong, '```', '- an untitled bullet under a lone backtick line', $vlLong, '~~~')
+    VSkill 'fence-nested' $fenceNested
+    $r = Verify (VRel 'fence-nested')
+    Check 'verify: a 4-backtick fence holding a 3-backtick fence passes with no output line' ($r.Code -eq 0 -and $r.Out -cnotmatch 'WARN|FAIL') $true
+    VSkill 'fence-tilde' $fenceTilde
+    $r = Verify (VRel 'fence-tilde')
+    Check 'verify: a tilde fence holding 3 backticks passes with no output line' ($r.Code -eq 0 -and $r.Out -cnotmatch 'WARN|FAIL') $true
+
+    # verify-layer: a backticked star in a title, and script folders that are not the skill's own scripts
+    VSkill 'title-backtick' @('- **`*.meta` files:** text.')
+    Check 'verify: a title may hold a backticked star' (Verify (VRel 'title-backtick')).Code 0
+    VSkill 'ignored-scripts'
+    New-Item -ItemType Directory -Force (Join-Path $vlSkills 'ignored-scripts/scripts/__pycache__'), (Join-Path $vlSkills 'ignored-scripts/scripts/.venv/lib') | Out-Null
+    Set-Content (Join-Path $vlSkills 'ignored-scripts/scripts/__pycache__/x.cpython-312.pyc') '# Bytecode.'
+    Set-Content (Join-Path $vlSkills 'ignored-scripts/scripts/.venv/lib/dep.py') '# A dependency.'
+    Check 'verify: __pycache__ and dot-folder files need no name' (Verify (VRel 'ignored-scripts')).Code 0
+
+    # verify-layer: body size does not depend on line endings. Under the budget in LF, over it only through its CRs.
+    VSkill 'crlf-size' @(1..310 | ForEach-Object { "- **Item ${_}:** xxxxxx" })
+    $sizeBody = [regex]::Match([IO.File]::ReadAllText((Join-Path $vlSkills 'crlf-size/SKILL.md')), '(?s)^---.*?\n---\r?\n(.*)$').Groups[1].Value
+    Check 'verify: the size fixture is over budget only with CRs' (($sizeBody -replace '\r', '').Length -le 8000 -and ($sizeBody -replace '\r?\n', "`r`n").Length -gt 8000) $true
+    ToCrlf 'crlf-size'
+    $r = Verify (VRel 'crlf-size')
+    Check 'verify: CRs do not count toward the body size' ($r.Code -eq 0 -and $r.Out -cnotmatch 'WARN|FAIL') $true
 
     # verify-layer: soft checks only warn, per file and as one count per check on a whole-layer run
     $softDesc = 'Soft.Symbol ' + ('x' * 110) + ' Use when checking.'
@@ -927,7 +973,11 @@ try {
         @('plain-bullet', $okDesc, @('- A plain bullet.'), 'untitled list item or prose line'),
         @('star-bullet', $okDesc, @('* **Star:** a star bullet.'), 'untitled list item or prose line'),
         @('nested-bullet', $okDesc, @('- **Parent:** titled.', '  - A plain nested bullet.'), 'untitled list item or prose line'),
-        @('numbered-step', $okDesc, @('3. A plain step.'), 'untitled list item or prose line')
+        @('numbered-step', $okDesc, @('3. A plain step.'), 'untitled list item or prose line'),
+        @('fence-nested-plant', $okDesc, ($fenceNested + '- A plain bullet after the fence.'), 'untitled list item or prose line'),
+        @('fence-tilde-plant', $okDesc, ($fenceTilde + '- A plain bullet after the fence.'), 'untitled list item or prose line'),
+        # Hangs the run if the title pattern backtracks exponentially again.
+        @('backtick-run', $okDesc, @('- **x ' + ('`a` ' * 30) + 'end'), 'untitled list item or prose line')
     )
     foreach ($p in $plants) {
         VSkill $p[0] $p[2] $p[1]
@@ -937,26 +987,69 @@ try {
     $r = Verify (VRel 'prose-line')
     $at = (Select-String -LiteralPath (Join-Path $vlSkills 'prose-line/SKILL.md') -SimpleMatch 'A prose paragraph.').LineNumber
     Check 'verify: the untitled FAIL gives the file line number' ($r.Out -match "lines $at\)") $true
+    foreach ($vn in 'fence-nested-plant', 'fence-tilde-plant') {
+        $r = Verify (VRel $vn)
+        $at = (Select-String -LiteralPath (Join-Path $vlSkills "$vn/SKILL.md") -SimpleMatch 'A plain bullet after the fence.').LineNumber
+        Check "verify: the fence closed, and only the plant after it fails: $vn" ($r.Out -match "lines $at\)") $true
+    }
+    VSkill 'crlf-prose-line' @('A prose paragraph.')
+    ToCrlf 'crlf-prose-line'
+    $r = Verify (VRel 'crlf-prose-line')
+    $at = (Select-String -LiteralPath (Join-Path $vlSkills 'crlf-prose-line/SKILL.md') -SimpleMatch 'A prose paragraph.').LineNumber
+    Check 'verify: a CRLF prose line fails with its file line number' ($r.Code -eq 1 -and $r.Out -match "$(VFail 'crlf-prose-line')untitled list item or prose line \(lines $at\)") $true
     VSkill 'unnamed-script'
     Set-Content (Join-Path $vlSkills 'unnamed-script/scripts/orphan.ps1') '# Named nowhere.'
     $r = Verify (VRel 'unnamed-script')
     Check 'verify fails per file: script not named' ($r.Code -eq 1 -and $r.Out -match "$(VFail 'unnamed-script')script 'orphan\.ps1' not named") $true
+    VSkill 'unnamed-nested-script'
+    New-Item -ItemType Directory -Force (Join-Path $vlSkills 'unnamed-nested-script/scripts/sub.dir') | Out-Null
+    Set-Content (Join-Path $vlSkills 'unnamed-nested-script/scripts/sub.dir/deep.ps1') '# Named nowhere.'
+    $r = Verify (VRel 'unnamed-nested-script')
+    Check 'verify fails per file: a folder with a dot inside its name is still read' ($r.Code -eq 1 -and $r.Out -match "$(VFail 'unnamed-nested-script')script 'deep\.ps1' not named") $true
     VSkill 'long-fence'
     Set-Content (Join-Path $vlSkills 'long-fence/references/long.md') (@('# Long', '```') + (1..15 | ForEach-Object { "line $_" }) + '```')
     $r = Verify '.claude/skills/long-fence/references/long.md'
     Check 'verify fails per file: a 15-line reference fence' ($r.Code -eq 1 -and $r.Out -match 'FAIL  \.claude/skills/long-fence/references/long\.md: reference has a fenced block of 15\+ lines') $true
+    $longRefs = @(
+        @('long-tilde', (@('# Long', '~~~') + (1..15 | ForEach-Object { "line $_" }) + '~~~')),
+        # Toggling pairs the outer mark with the inner one and sees two 8-line blocks.
+        @('long-nested', (@('# Long', '````') + $ref8 + '```' + $ref8 + '````'))
+    )
+    foreach ($p in $longRefs) {
+        VSkill $p[0]
+        Set-Content (Join-Path $vlSkills "$($p[0])/references/long.md") $p[1]
+        $r = Verify ".claude/skills/$($p[0])/references/long.md"
+        Check "verify fails per file: $($p[0]) reference fence" ($r.Code -eq 1 -and $r.Out -match "FAIL  \.claude/skills/$($p[0])/references/long\.md: reference has a fenced block of 15\+ lines") $true
+    }
     $r = Verify
     Check 'verify: a whole-layer run exits 1 on the plants' $r.Code 1
     foreach ($p in $plants) { Check "verify fails whole-layer: $($p[0])" ($r.Out -match "$(VFail $p[0])$($p[3])") $true }
+    Check 'verify fails whole-layer: a CRLF prose line' ($r.Out -match "$(VFail 'crlf-prose-line')untitled list item or prose line") $true
     Check 'verify fails whole-layer: script not named' ($r.Out -match "$(VFail 'unnamed-script')script 'orphan\.ps1' not named") $true
+    Check 'verify fails whole-layer: a nested script not named' ($r.Out -match "$(VFail 'unnamed-nested-script')script 'deep\.ps1' not named") $true
     Check 'verify fails whole-layer: a 15-line reference fence' ($r.Out -match 'FAIL  \.claude/skills/long-fence/references/long\.md: reference has a fenced block') $true
-    Check 'verify: the whole-layer failure count is the plants and nothing else' ($r.Out -match "$($plants.Count + 2) failure\(s\)") $true
-    foreach ($ok in 'clean-skill', 'trigger-field', 'preloaded-skill', 'named-in-ref', 'short-fence', 'soft-one') {
+    foreach ($p in $longRefs) { Check "verify fails whole-layer: $($p[0]) reference fence" ($r.Out -match "FAIL  \.claude/skills/$($p[0])/references/long\.md: reference has a fenced block") $true }
+    Check 'verify: the whole-layer failure count is the plants and nothing else' ($r.Out -match "$($plants.Count + 6) failure\(s\)") $true
+    foreach ($ok in 'clean-skill', 'crlf-skill', 'crlf-size', 'trigger-field', 'preloaded-skill', 'named-in-ref', 'short-fence', 'ref-fences-ok', 'fence-nested', 'fence-tilde', 'title-backtick', 'ignored-scripts', 'soft-one') {
         Check "verify: no FAIL for $ok among the plants" ($r.Out -match "FAIL  [^\n]*/$ok/") $false
     }
     foreach ($s in $softChecks) { Check "soft: still only a count among the plants: $s" ($r.Out -match "WARN  2 file\(s\): $s") $true }
     Check 'verify-on-edit passes an edit of a clean skill' (VerifyEdit (Join-Path $vlSkills 'clean-skill/SKILL.md')) 0
     Check 'verify-on-edit blocks an edit that plants a violation' (VerifyEdit (Join-Path $vlSkills 'plain-bullet/SKILL.md')) 2
+    # The raw path a Windows session can send: a lowercase drive letter and forward slashes. An unshortened path skips every check.
+    if ($env:OS -eq 'Windows_NT') {
+        $rawPath = (Join-Path $vlSkills 'plain-bullet/SKILL.md') -replace '\\', '/'
+        $rawPath = $rawPath.Substring(0, 1).ToLowerInvariant() + $rawPath.Substring(1)
+        Check 'verify-on-edit blocks an edit given as a lowercase drive and forward slashes' (VerifyEdit $rawPath) 2
+    }
+
+    # verify-layer: a long item after a fence still warns, so the fence closed for the size check too. Last: the whole-layer
+    # counts above hold only soft-one and soft-two.
+    foreach ($p in @(@('fence-nested-long', $fenceNested), @('fence-tilde-long', $fenceTilde))) {
+        VSkill $p[0] ($p[1] + $vlLong)
+        $r = Verify (VRel $p[0])
+        Check "soft: a long item after the fence warns: $($p[0])" ($r.Code -eq 0 -and $r.Out -match 'list item > 200 chars') $true
+    }
 }
 finally {
     Remove-Item Env:CLAUDE_PROJECT_DIR, Env:HOOK_TEST_XERJ, Env:MEM_CAPTURE, Env:XERJ_URL -ErrorAction SilentlyContinue

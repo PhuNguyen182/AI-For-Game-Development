@@ -85,21 +85,35 @@ function Test-ChecklistLink([string]$skillDir) {
     if (-not (Get-Content $skillMd -Raw -Encoding UTF8).Contains('(checklist.md)')) { Fail "$(Rel $skillMd): does not link its checklist.md" }
 }
 
+# The one fence walker. A fence opens on 3+ backticks or tildes; only the same character, at least as long, with nothing
+# after it closes one, so a fence can hold a shorter or other fence; an unclosed one runs to the end. One entry per line:
+# 0 outside a fence, n on a content line of fenced block n, -n on its fence lines.
+function Get-FenceMap([string[]]$lines) {
+    $map = [int[]]::new($lines.Count); $fence = ''; $block = 0
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+        $isMark = $lines[$i] -match '^\s*(`{3,}|~{3,})(.*)$'
+        if (-not $fence) {
+            if ($isMark) { $fence = $Matches[1]; $block++; $map[$i] = -$block }
+        }
+        elseif ($isMark -and $Matches[1][0] -eq $fence[0] -and $Matches[1].Length -ge $fence.Length -and -not $Matches[2].Trim()) {
+            $map[$i] = -$block; $fence = ''
+        }
+        else { $map[$i] = $block }
+    }
+    , $map
+}
+
 # Outside fences each line is blank, a column-0 heading, a table row or a titled list item ('- **Title:** text', '1. **Title:** text').
 # Prose by that rule: wrapped or indented continuation lines, blockquotes, text right after a fence, HTML comments, rules, '*' bullets.
 # Nested items are titled too. Fence content is never read. Returns the file line numbers that fail.
+# A title may hold backticked '*'. The group is atomic: with both alternatives open to backtracking, 20 backticked pairs
+# on a line with no title end take 45 s.
 function Get-UntitledLines([string]$body, [int]$lineOffset) {
-    $fence = ''; $no = $lineOffset
-    foreach ($l in $body -split '\r?\n') {
-        $no++
-        if ($l -match '^\s*(`{3,}|~{3,})(.*)$') {
-            $mark, $rest = $Matches[1], $Matches[2]
-            if (-not $fence) { $fence = $mark }
-            elseif ($mark[0] -eq $fence[0] -and $mark.Length -ge $fence.Length -and -not $rest.Trim()) { $fence = '' }
-            continue
-        }
-        if ($fence -or $l -match '^\s*$|^#{1,6}\s|^\s*\|') { continue }
-        if ($l -notmatch '^\s*(?:-|\d+\.)\s+\*\*[^*]+:\*\*') { $no }
+    $lines = @($body -split '\r?\n'); $map = Get-FenceMap $lines
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+        $l = $lines[$i]
+        if ($map[$i] -or $l -match '^\s*$|^#{1,6}\s|^\s*\|') { continue }
+        if ($l -notmatch '^\s*(?:-|\d+\.)\s+\*\*(?>`[^`]*`|[^*])+:\*\*') { $lineOffset + $i + 1 }
     }
 }
 
@@ -111,17 +125,18 @@ function Test-SkillFormat([string]$path, [string]$rel, [string]$name, [string]$t
     if ($fm.description -cnotmatch '\bUse ' -and -not $fm.when_to_use -and $preloaded -notcontains $name) { Fail "${rel}: description has no Use trigger" }
 
     $body = $text.Substring($fm._end)
-    if ($body.Length -gt $Budget.SkillChars) { Soft $rel "body > $($Budget.SkillChars) chars" }
+    # Counted without CR: a CRLF checkout must not change the result.
+    if (($body -replace '\r', '').Length -gt $Budget.SkillChars) { Soft $rel "body > $($Budget.SkillChars) chars" }
     foreach ($m in [regex]::Matches($body, '(?m)^(?:- \*\*)?Not for:.*$')) {
         foreach ($n in [regex]::Matches($m.Value, '`([a-z0-9]+(?:-[a-z0-9]+)+)`')) {
             $v = $n.Groups[1].Value
             if ($skills -notcontains $v -and $agents -notcontains $v) { Fail "${rel}: Not for names '$v', neither a skill nor an agent" }
         }
     }
-    $inFence = $false; $long = $false
-    foreach ($l in $body -split '\r?\n') {
-        if ($l.TrimStart().StartsWith('```')) { $inFence = -not $inFence; continue }
-        if (-not $inFence -and $l -match '^\s*(?:[-*]|\d+\.)\s' -and ($l -replace '\]\([^)]*\)', ']').Length -gt $Budget.BulletChars) { $long = $true }
+    $bodyLines = @($body -split '\r?\n'); $map = Get-FenceMap $bodyLines; $long = $false
+    for ($i = 0; $i -lt $bodyLines.Count; $i++) {
+        $l = $bodyLines[$i]
+        if (-not $map[$i] -and $l -match '^\s*(?:[-*]|\d+\.)\s' -and ($l -replace '\]\([^)]*\)', ']').Length -gt $Budget.BulletChars) { $long = $true }
     }
     if ($long) { Soft $rel "list item > $($Budget.BulletChars) chars" }
     if ($body.Contains('Latent concerns')) { Fail "${rel}: Latent concerns line" }
@@ -140,8 +155,10 @@ function Test-SkillFormat([string]$path, [string]$rel, [string]$name, [string]$t
         $named = $text
         $refs = Join-Path $dir 'references'
         if (Test-Path $refs) { Get-ChildItem $refs -Recurse -Filter *.md | ForEach-Object { $named += Get-Content $_.FullName -Raw -Encoding UTF8 } }
+        $scriptsRoot = (Resolve-Path $scripts).Path
         foreach ($s in Get-ChildItem $scripts -Recurse -File) {
-            if ($s.FullName -match '__pycache__' -or $s.Name -like 'test_*') { continue }
+            # Relative to scripts/: a dot-folder above it (.claude itself) must not skip the file.
+            if ($s.FullName.Substring($scriptsRoot.Length) -match '[\\/](?:__pycache__|\.[^\\/]+)[\\/]' -or $s.Name -like 'test_*') { continue }
             if (-not $named.Contains($s.Name)) { Fail "${rel}: script '$($s.Name)' not named in SKILL.md or a reference" }
         }
     }
@@ -157,13 +174,9 @@ function Test-Checklist([string]$path, [string]$rel, [string[]]$lines) {
 }
 
 function Test-RefFences([string]$rel, [string[]]$lines) {
-    $start = -1
-    for ($i = 0; $i -lt $lines.Count; $i++) {
-        if (-not $lines[$i].TrimStart().StartsWith('```')) { continue }
-        if ($start -lt 0) { $start = $i; continue }
-        if ($i - $start - 1 -ge $Budget.RefFence) { Fail "${rel}: reference has a fenced block of $($Budget.RefFence)+ lines (move it to scripts/)"; return }
-        $start = -1
-    }
+    $size = @{}
+    foreach ($b in (Get-FenceMap $lines)) { if ($b -gt 0) { $size[$b] = 1 + [int]$size[$b] } }
+    if (@($size.Values | Where-Object { $_ -ge $Budget.RefFence }).Count) { Fail "${rel}: reference has a fenced block of $($Budget.RefFence)+ lines (move it to scripts/)" }
 }
 
 function Test-SkillRef([string]$name, [string]$where) {
