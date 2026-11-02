@@ -1,6 +1,6 @@
 ---
 name: agent-protocol
-description: Return envelope (Status/Summary/Changed/Verified/Attempts/…) and Implementation Note for every dispatched agent; how to read a brief and what to read on arrival.
+description: Return envelope (Status/Summary/Changed/Verified/…), Implementation Note, on-arrival rules for dispatched agents.
 user-invocable: false
 ---
 
@@ -32,7 +32,7 @@ Next: <agent or step you recommend> | none
 ```
 
 - `Verified` names commands and results. "Compiles" is not "tested". Unrunnable → say why.
-- `Verified` reports every `## Checklist` item of your agent file: `<label>: pass | fail | n/a — why`. A fail or an unreported item → `Partial`, never `Done`.
+- `Verified` reports every `## Checklist` item of your agent file and every item of the `checklist.md` of any skill you followed: `<label>: pass | fail | n/a — why`. A fail or an unreported item → `Partial`, never `Done`.
 - `Partial` / `Failed` add: best result, last verified state, likely root cause, methods that did not work, safe resume point.
 - A brief with a `Verify: BUG-####` line → add one line per bug: `Repro: BUG-#### reproduces | gone` (the hook counts `reproduces` as a failed fix round). Reproducing a bug, or a regression test that must fail first, never uses this line.
 - Proven impossible within the brief (a budget, platform, engine or spec limit no retry can change) → `Failed` plus `Infeasible: <the limit and the evidence>`; stop spending attempts.

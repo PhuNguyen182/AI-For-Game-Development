@@ -1,7 +1,7 @@
 <#
 .SYNOPSIS
 Checks the .claude/ layer: paths resolve, agent and skill frontmatter, skill references, workflows are JS,
-size budgets (line counts warn only; description length fails), no retired IDs or agents, table widths. Exit 0 = pass (warnings allowed), 1 = failure.
+size budgets (warn only, except a description past 250 chars, which fails), skill format, checklist files, no retired IDs or agents, table widths. Exit 0 = pass (warnings allowed), 1 = failure.
 .PARAMETER File
 Check only this file (used by the PostToolUse hook). Omit for the whole layer.
 #>
@@ -12,8 +12,13 @@ $root = (Resolve-Path (Join-Path $PSScriptRoot '../../../..')).Path
 $claude = Join-Path $root '.claude'
 $fails = [System.Collections.Generic.List[string]]::new()
 $warns = [System.Collections.Generic.List[string]]::new()
+$legacy = [ordered]@{}
 function Fail($m) { $fails.Add($m) }
 function Warn($m) { $warns.Add($m) }
+# Skills migrate to the format when next touched: per file from the edit hook, one count per check on a whole-layer run.
+function Legacy([string]$rel, [string]$check) {
+    if ($File) { Warn "${rel}: $check" } else { $legacy[$check] = 1 + [int]$legacy[$check] }
+}
 # Case- and slash-insensitive: the edit hook passes the raw path Claude Code sends (c:\..., C:/...), and an unshortened
 # path would skip every agent, skill and rule check.
 function Rel($p) {
@@ -21,7 +26,7 @@ function Rel($p) {
     $(if ($n.StartsWith($r, [StringComparison]::OrdinalIgnoreCase)) { $n.Substring($r.Length).TrimStart('/') } else { $n })
 }
 
-$Budget = @{ ClaudeMd = 30; AlwaysRules = 100; PathRule = 40; Desc = 250; AgentFile = 50; Pipeline = 120; Skill = 500 }
+$Budget = @{ ClaudeMd = 30; AlwaysRules = 100; PathRule = 40; Desc = 250; DescTarget = 120; AgentFile = 50; SkillChars = 8000; BulletChars = 200; RefFence = 15 }
 $RetiredAgents = 'unity-engineer', 'assurance-evaluator', 'build-run-engineer', 'build-verification-tester'
 $RetiredPaths = '\.claude/(standards|workflows/[a-z-]+\.md|workflows/(references|state|tools)/|rules/(orchestration|task-classification|effort-allocation|execution-loop|security|feature-context-reading|implementation-note|commit-message|language-and-comments|shell-preference|unity-tooling-preference|standards-index)\.md)'
 $IdPattern = '\b(?:G[0-9]{1,2}|B[0-9]{1,2}|I[0-9]{1,2}|A[1-5]|V[1-5]|EV[0-4])\b'
@@ -66,6 +71,76 @@ function Get-Frontmatter([string]$text) {
         }
     }
     return $fm
+}
+
+# A preloaded skill is never picked from the listing, so it needs no trigger.
+$preloaded = @(Get-ChildItem (Join-Path $claude 'agents') -Filter *.md | ForEach-Object {
+    $fm = Get-Frontmatter (Get-Content $_.FullName -Raw -Encoding UTF8)
+    if ($fm) { @($fm.skills) }
+})
+
+function Test-ChecklistLink([string]$skillDir) {
+    $skillMd = Join-Path $skillDir 'SKILL.md'
+    if (-not (Test-Path (Join-Path $skillDir 'checklist.md')) -or -not (Test-Path $skillMd)) { return }
+    if (-not (Get-Content $skillMd -Raw -Encoding UTF8).Contains('(checklist.md)')) { Fail "$(Rel $skillMd): does not link its checklist.md" }
+}
+
+function Test-SkillFormat([string]$path, [string]$rel, [string]$name, [string]$text, $fm) {
+    $trigger = "$($fm.description)$($fm.when_to_use)"
+    if ($trigger.Length -gt $Budget.Desc) { Fail "${rel}: description + when_to_use $($trigger.Length) > $($Budget.Desc) chars" }
+    elseif ($trigger.Length -gt $Budget.DescTarget) { Legacy $rel "description + when_to_use > $($Budget.DescTarget) chars" }
+    if ($fm.description -match 'This skill|comprehensive|Preloaded by') { Legacy $rel 'description uses a banned phrase' }
+    if ($fm.description -cnotmatch '\bUse ' -and -not $fm.when_to_use -and $preloaded -notcontains $name) { Legacy $rel 'description has no Use trigger' }
+
+    $body = $text.Substring($fm._end)
+    if ($body.Length -gt $Budget.SkillChars) { Legacy $rel "body > $($Budget.SkillChars) chars" }
+    foreach ($m in [regex]::Matches($body, '(?m)^(?:- \*\*)?Not for:.*$')) {
+        foreach ($n in [regex]::Matches($m.Value, '`([a-z0-9]+(?:-[a-z0-9]+)+)`')) {
+            $v = $n.Groups[1].Value
+            if ($skills -notcontains $v -and $agents -notcontains $v) { Fail "${rel}: Not for names '$v', neither a skill nor an agent" }
+        }
+    }
+    $inFence = $false; $long = $false
+    foreach ($l in $body -split '\r?\n') {
+        if ($l.TrimStart().StartsWith('```')) { $inFence = -not $inFence; continue }
+        if (-not $inFence -and $l -match '^\s*(?:[-*]|\d+\.)\s' -and ($l -replace '\]\([^)]*\)', ']').Length -gt $Budget.BulletChars) { $long = $true }
+    }
+    if ($long) { Legacy $rel "list item > $($Budget.BulletChars) chars" }
+    if ($body.Contains('Latent concerns')) { Legacy $rel 'Latent concerns line' }
+    if ($body -match '(?m)^\s*- (?:\*\*)?(?:Verified|Known limitations):') { Legacy $rel 'Verified or Known limitations bullet (agent-protocol envelope owns them)' }
+    if ($body -match '(?m)^\|\s*(?:Reference|Script)\s*\|') { Legacy $rel 'reference or script table' }
+    if ($body.Contains(".claude/skills/$name/scripts/")) { Legacy $rel 'hardcoded script path' }
+
+    $dir = Split-Path $path
+    $scripts = Join-Path $dir 'scripts'
+    if (Test-Path $scripts) {
+        $named = $text
+        $refs = Join-Path $dir 'references'
+        if (Test-Path $refs) { Get-ChildItem $refs -Recurse -Filter *.md | ForEach-Object { $named += Get-Content $_.FullName -Raw -Encoding UTF8 } }
+        foreach ($s in Get-ChildItem $scripts -Recurse -File) {
+            if ($s.FullName -match '__pycache__' -or $s.Name -like 'test_*') { continue }
+            if (-not $named.Contains($s.Name)) { Legacy $rel 'script not named in SKILL.md or a reference' }
+        }
+    }
+    Test-ChecklistLink $dir
+}
+
+function Test-Checklist([string]$path, [string]$rel, [string[]]$lines) {
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+        if ($lines[$i] -notmatch '^(?:\s*|#{1,6} .+|- \[ \] \*\*[^*]+:\*\* \S.*)$') { Fail "${rel}:$($i + 1): not a heading or '- [ ] **<title>:** <text>' line" }
+    }
+    # The whole-layer run reaches this through the skill's SKILL.md.
+    if ($File) { Test-ChecklistLink (Split-Path $path) }
+}
+
+function Test-RefFences([string]$rel, [string[]]$lines) {
+    $start = -1
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+        if (-not $lines[$i].TrimStart().StartsWith('```')) { continue }
+        if ($start -lt 0) { $start = $i; continue }
+        if ($i - $start - 1 -ge $Budget.RefFence) { Legacy $rel "reference has a fenced block of $($Budget.RefFence)+ lines (move it to scripts/)"; return }
+        $start = -1
+    }
 }
 
 function Test-SkillRef([string]$name, [string]$where) {
@@ -127,6 +202,10 @@ function Test-File([string]$path) {
         }
         return
     }
+    if ($path -like '*.sh') {
+        if ([IO.File]::ReadAllText($path).Contains("`r")) { Fail "${rel}: CRLF in a shell script" }
+        return
+    }
     if ($path -notlike '*.md') { return }
     $text = Get-Content $path -Raw -Encoding UTF8
     $lines = $text -split '\r?\n'
@@ -161,11 +240,11 @@ function Test-File([string]$path) {
         if (-not $fm) { Fail "${rel}: no frontmatter"; return }
         if ($fm.name -and $fm.name -ne $name) { Fail "${rel}: name '$($fm.name)' != folder" }
         if (-not $fm.description) { Fail "${rel}: no description" }
-        elseif ($fm.description.Length -gt $Budget.Desc) { Fail "${rel}: description $($fm.description.Length) > $($Budget.Desc) chars" }
-        $limit = if ($fm.'user-invocable' -eq 'false') { $Budget.Skill } else { $Budget.Pipeline }
-        if ($lines.Count -gt $limit) { Warn "${rel}: $($lines.Count) lines > $limit recommended" }
+        else { Test-SkillFormat $path $rel $name $text $fm }
         if ($fm.'user-invocable' -ne 'false' -and $text -cmatch $IdPattern) { Fail "${rel}: retired ID '$($Matches[0])'" }
     }
+    elseif ($rel -match '^\.claude/skills/[^/]+/checklist\.md$') { Test-Checklist $path $rel $lines }
+    elseif ($rel -match '^\.claude/skills/[^/]+/references/') { Test-RefFences $rel $lines }
     elseif ($rel -match '^\.claude/rules/') {
         $fm = Get-Frontmatter $text
         if ($fm -and $fm.paths) {
@@ -180,7 +259,7 @@ if ($File) {
     $p = if ([IO.Path]::IsPathRooted($File)) { $File } else { Join-Path $root $File }
     Test-File $p
 } else {
-    $files = @(Get-ChildItem $claude -Recurse -File | Where-Object { $_.FullName -notmatch '[\\/](scripts|assets)[\\/]' -and $_.Extension -in '.md', '.js' -or $_.FullName -match '[\\/]workflows[\\/]' -or $_.Extension -in '.ps1', '.py' } |
+    $files = @(Get-ChildItem $claude -Recurse -File | Where-Object { $_.FullName -notmatch '[\\/](scripts|assets)[\\/]' -and $_.Extension -in '.md', '.js' -or $_.FullName -match '[\\/]workflows[\\/]' -or $_.Extension -in '.ps1', '.py', '.sh' } |
         # Agent worktrees (/feature lane A, isolation: "worktree") are checkouts of the layer, not part of it.
         # Relative to this layer's root: a layer that itself sits in a worktree is still verified.
         Where-Object { (Rel $_.FullName) -notmatch '^\.claude/worktrees/' })
@@ -196,6 +275,7 @@ if ($File) {
     if (Test-Path (Join-Path $claude 'commands')) { Fail ".claude/commands: convert commands to skills" }
 }
 
+$legacy.GetEnumerator() | ForEach-Object { Write-Output "WARN  $($_.Value) file(s): $($_.Key)" }
 $warns | ForEach-Object { Write-Output "WARN  $_" }
 $fails | ForEach-Object { Write-Output "FAIL  $_" }
 if ($fails.Count) { Write-Output "$($fails.Count) failure(s)"; exit 1 }

@@ -44,6 +44,8 @@ Shape
 - No frontmatter. One H1. kebab-case filename named for the topic.
 - Tables where content enumerates; prose only for one-line orientation, code,
   `**Caveat:**` lines.
+- A fenced block of 15+ lines, or a whole file, moves to `../scripts/` in its
+  real language; link it from here.
 - A doc base URL and version pin live in SKILL.md's `Docs:` line, so the
   header lists paths below that base, not full repeated URLs.
 - ~250 lines max; past that, split by topic.
