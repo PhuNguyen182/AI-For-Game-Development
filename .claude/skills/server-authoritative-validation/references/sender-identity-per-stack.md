@@ -19,31 +19,10 @@ A connection id names a transport slot, not an account. Binding an account to it
 | `NetworkManager.DisconnectClient(ulong clientId, string reason = null)` | Drops the client; `reason` reaches the client as `DisconnectReason` [nm], so keep it generic |
 | `NetworkConfig.ConnectionData` | Unauthenticated, unencrypted (`netcode-for-gameobjects` Never): never the source of an account binding |
 
-```csharp
-[Rpc(SendTo.Server)]
-public void UseItemRpc(int slot, RpcParams rpcParams = default)
-{
-    ulong sender = rpcParams.Receive.SenderClientId;
-    if (!this._limiter.TryConsume(sender, this._clock.Tick))
-        return;
-
-    if (this.OwnerClientId != sender)
-    {
-        this.RejectToSender(sender, UseItemRejection.NotAllowed);
-        return;
-    }
-
-    // Core decides; the handler only applies an accepted result.
-    UseItemResult result = this._inventoryRules.TryUse(this._inventory, slot, this._clock.Tick);
-    if (!result.IsAccepted)
-    {
-        this.RejectToSender(sender, result.Rejection);
-        return;
-    }
-
-    this._inventory = result.Inventory;
-}
-```
+- **Sample:** [UseItemRpc.cs](../scripts/UseItemRpc.cs) — an `[Rpc(SendTo.Server)]` method taking a trailing `RpcParams rpcParams = default`.
+  - **Adapt into:** the `NetworkBehaviour` that owns the Rpc; the file holds the method only.
+  - **Project members:** `_limiter`, `_clock`, `_inventoryRules`, `_inventory`, `RejectToSender` and `UseItemRejection` are project code, not NGO API.
+  - **Order:** sender id, rate limit, owner check against `OwnerClientId`, Core decision, then apply an accepted result only.
 
 ## Netcode for Entities 6.6
 

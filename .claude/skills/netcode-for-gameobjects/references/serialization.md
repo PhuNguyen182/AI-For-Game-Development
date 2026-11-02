@@ -28,23 +28,9 @@ Resolution order for an Rpc parameter or `NetworkVariable<T>` payload: `UserNetw
 
 **Caveat:** `INetworkSerializeByMemcpy` is a marker; NGO does not check memcpy-safety. A pointer, or a `NativeList`/`NativeArray` field, corrupts memory or crashes the receiver [b].
 
-```csharp
-struct SpawnPoint : INetworkSerializable
-{
-    public Vector3 Position;
-    public Quaternion Rotation;
-
-    public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
-    {
-        serializer.SerializeValue(ref Position);
-        serializer.SerializeValue(ref Rotation);
-    }
-}
-
-public struct MyStruct : INetworkSerializeByMemcpy { public int A; public float C; public bool D; }
-
-public NetworkVariable<ForceNetworkSerializeByMemcpy<Guid>> GuidVar;
-```
+- **Sample:** [SerializableTypes.cs](../scripts/SerializableTypes.cs) — `SpawnPoint : INetworkSerializable`, `MyStruct : INetworkSerializeByMemcpy`, and a `NetworkVariable<ForceNetworkSerializeByMemcpy<Guid>>` field.
+  - **Adapt into:** `Assets/_Project/Scripts/Networking/SerializableTypes.cs`; the `GuidVar` field line belongs in a `NetworkBehaviour`, not at file level.
+  - **`SpawnPoint`:** `NetworkSerialize<T>` calls `serializer.SerializeValue(ref ...)` on `Position` then `Rotation`.
 
 ## Object references
 
@@ -92,25 +78,9 @@ writer.WriteValue(i);
 
 `FastBufferWriter`/`FastBufferReader` extension methods, for hand-rolled messages:
 
-```csharp
-public struct Health { public int CurrentHealth; public uint MaxHealth; }
-
-public static class FastBufferExtensions
-{
-    public static void WriteValueSafe(this FastBufferWriter writer, in Health health)
-    {
-        writer.WriteValueSafe(health.MaxHealth);
-        writer.WriteValueSafe(health.CurrentHealth);
-    }
-
-    public static void ReadValueSafe(this FastBufferReader reader, out Health health)
-    {
-        reader.ReadValueSafe(out uint max);
-        reader.ReadValueSafe(out int current);
-        health = new Health { MaxHealth = max, CurrentHealth = current };
-    }
-}
-```
+- **Sample:** [FastBufferExtensions.cs](../scripts/FastBufferExtensions.cs) — `Health` struct plus `FastBufferExtensions.WriteValueSafe`/`ReadValueSafe`.
+  - **Adapt into:** `Assets/_Project/Scripts/Networking/FastBufferExtensions.cs`.
+  - **Order:** the writer writes `MaxHealth` then `CurrentHealth`; the reader reads in that same order.
 
 For `NetworkVariable<Health>`, register before any serialization (static constructor or early bootstrap):
 
