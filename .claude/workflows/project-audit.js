@@ -93,6 +93,7 @@ if (modules.length > MAX) {
 // Every audit brief opens with this marker line so round-cap.ps1 never counts an audit as a failed review round.
 const AUDIT = 'Mode: audit\n'
 const audits = await parallel([
+  // Sonnet below code-reviewer's Opus default: one agent per module fans out wide, and an audit is not a gate (routing.md → Dispatch).
   ...modules.map(m => () => agent(
     `${AUDIT}Audit ${at(m.path)} (read-only). Lenses: (1) runtime perf, memory and crash/ANR risk in hot paths — the ` +
     `review-code-risks lens; (2) the Shared Core / Client boundary — skill shared-core-boundary-audit. ` +
