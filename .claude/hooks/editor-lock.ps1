@@ -20,20 +20,20 @@ $in = Read-HookInput
 if (-not $in) { exit 0 }
 # A hook firing for a worktree agent may get the worktree as its project dir: the lock lives in the main checkout.
 $root = Get-MainCheckout (First $env:CLAUDE_PROJECT_DIR ([string]$in.cwd))
-if (-not (Test-Path (Join-Path $root 'Assets'))) { exit 0 }
+if (-not (Test-Path -LiteralPath (Join-Path $root 'Assets'))) { exit 0 }
 $lockPath = Join-Path $root '.workflow/editor.lock'
 $session = [string]$in.session_id
 
 $lock = $null
-if (Test-Path $lockPath) { try { $lock = Get-Content $lockPath -Raw -Encoding UTF8 | ConvertFrom-Json } catch { $lock = $null } }
+if (Test-Path -LiteralPath $lockPath) { try { $lock = Get-Content -LiteralPath $lockPath -Raw -Encoding UTF8 | ConvertFrom-Json } catch { $lock = $null } }
 $now = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
 $foreign = $lock -and $lock.session -ne $session -and (($now - [long]$lock.updatedUnix) / 3600) -lt $StaleHours
 
 function Save($holds) {
-    if (-not $holds -or $holds.Count -eq 0) { Remove-Item $lockPath -ErrorAction SilentlyContinue; return }
+    if (-not $holds -or $holds.Count -eq 0) { Remove-Item -LiteralPath $lockPath -ErrorAction SilentlyContinue; return }
     New-Item -ItemType Directory -Force (Split-Path $lockPath) | Out-Null
     [ordered]@{ session = $session; holds = @($holds); since = (First $lock.since (Get-Date).ToUniversalTime().ToString('o'))
-        updated = (Get-Date).ToUniversalTime().ToString('o'); updatedUnix = $now } | ConvertTo-Json | Set-Content $lockPath
+        updated = (Get-Date).ToUniversalTime().ToString('o'); updatedUnix = $now } | ConvertTo-Json | Set-Content -LiteralPath $lockPath
 }
 
 function Refuse {
@@ -47,7 +47,7 @@ function Refuse {
 function Get-GitHolder([string]$path) {
     $dir = $path
     while ($dir) {
-        if (Test-Path (Join-Path $dir '.git')) { return [IO.Path]::GetFullPath($dir).TrimEnd('\', '/') }
+        if (Test-Path -LiteralPath (Join-Path $dir '.git')) { return [IO.Path]::GetFullPath($dir).TrimEnd('\', '/') }
         $parent = Split-Path $dir
         if ($parent -eq $dir) { break }
         $dir = $parent
@@ -60,7 +60,7 @@ function Test-LaneWorktree([string]$path) {
     $holder = Get-GitHolder $path
     if (-not $holder -or $holder -ieq (Get-GitHolder $root)) { return $false }
     $git = Join-Path $holder '.git'
-    return ((Test-Path $git -PathType Leaf) -and ((Get-Content $git -Raw) -match 'gitdir:.*[\\/]worktrees[\\/]'))
+    return ((Test-Path -LiteralPath $git -PathType Leaf) -and ((Get-Content -LiteralPath $git -Raw) -match 'gitdir:.*[\\/]worktrees[\\/]'))
 }
 
 # First value of a property anywhere in parsed JSON (the CLI nests results differently per output format).
@@ -148,7 +148,7 @@ switch ($Mode) {
         Save $holds.ToArray()
     }
     'clear' {
-        if ($lock -and $lock.session -eq $session) { Remove-Item $lockPath -ErrorAction SilentlyContinue }
+        if ($lock -and $lock.session -eq $session) { Remove-Item -LiteralPath $lockPath -ErrorAction SilentlyContinue }
     }
 }
 exit 0

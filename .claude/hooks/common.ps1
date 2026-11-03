@@ -74,7 +74,7 @@ function Get-GitCalls([string]$Command, [string]$Cwd, [int]$Depth = 0) {
                 continue
             }
             $alias = $null
-            if ($Depth -lt 3 -and $Cwd -and (Test-Path $Cwd)) { $alias = [string](git -C $Cwd config --get "alias.$verb" 2>$null) }
+            if ($Depth -lt 3 -and $Cwd -and (Test-Path -LiteralPath $Cwd)) { $alias = [string](git -C $Cwd config --get "alias.$verb" 2>$null) }
             if (-not $alias) { [pscustomobject]@{ Globals = $globals; Verb = $verb; Rest = $rest; Alias = $false; Why = $null }; continue }
             if ($alias.StartsWith('!')) {
                 foreach ($c in (Get-GitCalls $alias.Substring(1) $Cwd ($Depth + 1))) { $c.Alias = $true; $c }
@@ -122,8 +122,15 @@ function Find-PushRadius3([string]$Globals, [string]$Rest) {
     return $null
 }
 
+# Bytes, decoded as UTF-8: [Console]::In takes the console code page, which turns a non-ASCII path into one that does not exist.
 function Read-HookInput {
-    $raw = [Console]::In.ReadToEnd()
+    $buffer = New-Object IO.MemoryStream
+    $stdin = [Console]::OpenStandardInput()
+    try { $stdin.CopyTo($buffer) } finally { $stdin.Dispose() }
+    $bytes = $buffer.ToArray()
+    try { $raw = (New-Object Text.UTF8Encoding $false, $true).GetString($bytes) }
+    catch { $raw = [Console]::InputEncoding.GetString($bytes) }
+    $raw = $raw.TrimStart([char]0xFEFF)
     if ([string]::IsNullOrWhiteSpace($raw)) { return $null }
     try { return $raw | ConvertFrom-Json } catch { return $null }
 }
@@ -175,7 +182,7 @@ function Get-GitDiffText([string]$Root, [string[]]$GitArgs) {
         # A failed git call leaves an empty file, which would read as "nothing to scan": fail closed instead.
         if ($LASTEXITCODE -ne 0) { Block "Blocked: git $($GitArgs -join ' ') failed (exit $LASTEXITCODE) - the change cannot be scanned for secrets." }
         return [IO.File]::ReadAllText($tmp)
-    } finally { Remove-Item $tmp -ErrorAction SilentlyContinue }
+    } finally { Remove-Item -LiteralPath $tmp -ErrorAction SilentlyContinue }
 }
 
 # Files that never enter git whatever their content: keystores, certificates and provisioning profiles, .env files,
@@ -237,7 +244,7 @@ function Get-MainCheckout([string]$Root) {
     $p = $Root -replace '\\', '/'
     foreach ($m in [regex]::Matches($p, '/\.claude/worktrees/[^/]+(?=/|$)')) {
         $prefix = $p.Substring(0, $m.Index)
-        if (Test-Path (Join-Path $prefix '.git') -PathType Container) { return $prefix }
+        if (Test-Path -LiteralPath (Join-Path $prefix '.git') -PathType Container) { return $prefix }
     }
     return $Root
 }
@@ -264,17 +271,68 @@ function Get-BugsRoot([string]$Root) {
         if ([IO.Directory]::Exists([IO.Path]::Combine($gitDir, 'objects'))) { return $Root }
         throw "$commonFile is missing and $gitDir holds no objects, so the main checkout's bug journal cannot be found"
     }
-    $common = [IO.Path]::GetFullPath([IO.Path]::Combine($gitDir, [IO.File]::ReadAllText($commonFile, $utf8).Trim()))
-    if ([IO.Path]::GetFileName($common) -ne '.git') { throw "$common is no checkout's .git, so the bug journal cannot be found" }
+    $common = [IO.Path]::GetFullPath([IO.Path]::Combine($gitDir, [IO.File]::ReadAllText($commonFile, $utf8).Trim())).TrimEnd('\', '/')
+    if ([IO.Path]::GetFileName($common) -cne '.git') { throw "$common is no checkout's .git, so the bug journal cannot be found" }
     if (-not [IO.Directory]::Exists($common)) { throw "$common, named by $commonFile, does not exist" }
     return [IO.Path]::GetDirectoryName($common)
+}
+
+# The working tree git reports for $Dir, or $null. A Process, not &: & decodes git's UTF-8 stdout with the console code page.
+function Get-GitTopLevel([string]$Dir) {
+    $utf8 = New-Object Text.UTF8Encoding $false
+    $psi = New-Object Diagnostics.ProcessStartInfo
+    $psi.FileName = 'git'
+    $psi.Arguments = (@(@('-C', $Dir, 'rev-parse', '--show-toplevel') | ForEach-Object { ConvertTo-NativeArg $_ }) -join ' ')
+    $psi.UseShellExecute = $false
+    $psi.CreateNoWindow = $true
+    $psi.RedirectStandardInput = $true
+    $psi.RedirectStandardOutput = $true
+    $psi.RedirectStandardError = $true
+    $psi.StandardOutputEncoding = $utf8
+    $psi.StandardErrorEncoding = $utf8
+    try {
+        $p = [Diagnostics.Process]::Start($psi)
+        $p.StandardInput.Close()
+        $outRead = $p.StandardOutput.ReadToEndAsync()
+        $errRead = $p.StandardError.ReadToEndAsync()
+        if (-not $p.WaitForExit(10000)) { try { $p.Kill() } catch {}; return $null }
+        [void]$errRead.GetAwaiter().GetResult()
+        $top = $outRead.GetAwaiter().GetResult().Trim()
+        if ($p.ExitCode -eq 0 -and $top -and [IO.Directory]::Exists($top)) { return $top }
+    } catch {}
+    return $null
+}
+
+# True when $Dir or a folder above it is a repository as git reads one: a .git file, or a .git folder holding HEAD.
+function Test-InsideGitRepo([string]$Dir) {
+    $d = $Dir
+    while ($d) {
+        $git = [IO.Path]::Combine($d, '.git')
+        if ([IO.File]::Exists($git) -or [IO.File]::Exists([IO.Path]::Combine($git, 'HEAD'))) { return $true }
+        $d = [IO.Path]::GetDirectoryName($d)
+    }
+    return $false
+}
+
+# The repository a secret gate must scan: the first of $Dirs git names a root for. $null only when no repository is there,
+# so the command itself cannot run. A real repository git cannot name blocks: a gate must never pass on what it cannot read.
+function Resolve-GitRoot([string[]]$Dirs, [string]$What) {
+    $unnamed = $null
+    foreach ($d in $Dirs) {
+        if (-not $d -or -not [IO.Directory]::Exists($d)) { continue }
+        $top = Get-GitTopLevel $d
+        if ($top) { return $top }
+        if (-not $unnamed -and (Test-InsideGitRepo ([IO.Path]::GetFullPath($d)))) { $unnamed = $d }
+    }
+    if ($unnamed) { Block "Blocked: $unnamed is inside a git repository, but git cannot name its root, so the $What cannot be scanned for secrets. Run git rev-parse --show-toplevel there to see why." }
+    return $null
 }
 
 # The folder above $Path that holds a .git entry (directory or file), or $null.
 function Get-GitCheckout([string]$Path) {
     $dir = $Path
     while ($dir) {
-        if (Test-Path (Join-Path $dir '.git')) { return [IO.Path]::GetFullPath($dir).TrimEnd('\', '/') }
+        if (Test-Path -LiteralPath (Join-Path $dir '.git')) { return [IO.Path]::GetFullPath($dir).TrimEnd('\', '/') }
         $parent = Split-Path $dir
         if ($parent -eq $dir) { break }
         $dir = $parent
@@ -290,7 +348,7 @@ function Test-LaneWorktree([string]$Path, [string]$Root) {
     $holder = Get-GitCheckout $Path
     if (-not $holder -or $holder -ieq (Get-GitCheckout $Root)) { return $false }
     $git = Join-Path $holder '.git'
-    return ((Test-Path $git -PathType Leaf) -and ((Get-Content $git -Raw) -match 'gitdir:.*[\\/]worktrees[\\/]'))
+    return ((Test-Path -LiteralPath $git -PathType Leaf) -and ((Get-Content -LiteralPath $git -Raw) -match 'gitdir:.*[\\/]worktrees[\\/]'))
 }
 
 function Block([string]$Message) {
@@ -392,8 +450,8 @@ function Get-XerjState([string]$Root) {
     if ($env:HOOK_TEST_XERJ) { return $env:HOOK_TEST_XERJ }
     $cache = Join-Path $Root '.memory/.state/xerj.json'
     $now = [long]([DateTime]::UtcNow - [DateTime]'1970-01-01').TotalSeconds
-    if (Test-Path $cache) {
-        try { $c = Get-Content $cache -Raw | ConvertFrom-Json; if ($c.state -ne 'up' -and $now - [long]$c.at -lt 300) { return [string]$c.state } } catch {}
+    if (Test-Path -LiteralPath $cache) {
+        try { $c = Get-Content -LiteralPath $cache -Raw | ConvertFrom-Json; if ($c.state -ne 'up' -and $now - [long]$c.at -lt 300) { return [string]$c.state } } catch {}
     }
     $state = 'none'
     # Loopback only (GD decision): a remote node would receive the agents' queries, so it counts as no XERJ.
@@ -409,7 +467,7 @@ function Get-XerjState([string]$Root) {
     }
     try {
         New-Item -ItemType Directory -Force (Split-Path $cache) | Out-Null
-        Set-Content $cache (@{ state = $state; at = $now } | ConvertTo-Json -Compress) -Encoding ASCII
+        Set-Content -LiteralPath $cache -Value (@{ state = $state; at = $now } | ConvertTo-Json -Compress) -Encoding ASCII
     } catch {}
     return $state
 }
@@ -431,6 +489,15 @@ function Test-XerjNode([string]$Url) {
     } catch { return $false }
 }
 
+# Where session-start starts the autoindex: { Log; Start, the splat for Start-Process }, or $null when nothing fits.
+# Start-Process has no -LiteralPath: it throws on brackets in a redirect, and on Windows PowerShell in the current folder,
+# whatever the escaping. So a checkout with brackets logs under per-user app data and starts in the PowerShell home.
+function Get-AutoindexPlace([string]$Root, [string]$Prefix, [string]$AppData = [Environment]::GetFolderPath('LocalApplicationData'), [string]$WorkDir = $PSHOME) {
+    if (-not [WildcardPattern]::ContainsWildcardCharacters($Root)) { return @{ Log = (Join-Path $Root '.memory/.state/xerj-autoindex.log'); Start = @{} } }
+    if (-not $AppData -or -not $WorkDir -or [WildcardPattern]::ContainsWildcardCharacters($AppData) -or [WildcardPattern]::ContainsWildcardCharacters($WorkDir)) { return $null }
+    return @{ Log = (Join-Path $AppData "ai-for-game-framework/xerj-autoindex-$Prefix.log"); Start = @{ WorkingDirectory = $WorkDir } }
+}
+
 # Loopback only: autoindex sends file contents to the node.
 # Literal hosts only, checked on the raw string that xerj will receive: [Uri].IsLoopback also accepts
 # "loopback", decimal/hex IPv4 and userinfo forms that another resolver may send off the machine.
@@ -441,6 +508,6 @@ function Test-LoopbackUrl([string]$Url) {
 # XERJ index prefix: CLAUDE.md row "| Code search | xerj prefix `<p>` |", else the project folder name.
 function Get-XerjPrefix([string]$Root) {
     $md = Join-Path $Root 'CLAUDE.md'
-    if ((Test-Path $md) -and ((Get-Content $md -Raw -Encoding UTF8) -match '(?m)^\|\s*Code search\s*\|[^|\n]*?prefix\s*`?([a-z0-9][a-z0-9-]*)')) { return $Matches[1] }
+    if ((Test-Path -LiteralPath $md) -and ((Get-Content -LiteralPath $md -Raw -Encoding UTF8) -match '(?m)^\|\s*Code search\s*\|[^|\n]*?prefix\s*`?([a-z0-9][a-z0-9-]*)')) { return $Matches[1] }
     return ((Split-Path $Root -Leaf).ToLower() -replace '[^a-z0-9]+', '-').Trim('-')
 }

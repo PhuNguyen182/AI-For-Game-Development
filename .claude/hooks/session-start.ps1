@@ -61,6 +61,7 @@ function Get-BugsLine([string]$Root, [bool]$SkipPurge) {
         else {
             if ($purge.Out -match '(?m)^(purged [1-9]\d*, journal uncommitted)\s*$') { $suffix = "; $($Matches[1])" }
             elseif ($purge.Out -match '(?m)^purge skipped: journal not clean') { $suffix = '; purge skipped, journal uncommitted' }
+            elseif ($purge.Out -match '(?m)^purge skipped: git failed') { $suffix = '; purge skipped, git failed' }
             # Exit 0 with stderr is a warning, such as a leftover BUGS_NOW: this is the one unattended purge, so show it.
             if ($purge.Err) { $suffix += "; $(Get-FirstLine $purge.Err)" }
         }
@@ -82,19 +83,18 @@ switch (Get-XerjState $root) {
         if (-not (Test-LoopbackUrl $env:XERJ_URL)) { "XERJ_URL is not loopback: index not refreshed (it would send file contents off this machine)." }
         elseif (-not $env:HOOK_TEST_XERJ) {
             # Incremental and BM25-only; the node skips unchanged files.
-            $log = Join-Path $root '.memory/.state/xerj-autoindex.log'
-            # Start-Process has no -LiteralPath: it throws on brackets in a redirect, and on Windows PowerShell in the current
-            # folder, whatever the escaping. Such a checkout logs to the temp folder and starts there.
-            $place = @{}
-            if ([WildcardPattern]::ContainsWildcardCharacters($root)) {
-                $log = Join-Path ([IO.Path]::GetTempPath()) "xerj-autoindex-$prefix.log"
-                $place.WorkingDirectory = [IO.Path]::GetTempPath()
+            $autoindex = Get-AutoindexPlace $root $prefix
+            if (-not $autoindex) { 'XERJ index not refreshed: no folder without brackets for its log.' }
+            else {
+                $log = $autoindex.Log
+                $place = $autoindex.Start
+                # --url pins the destination to the URL the loopback check just passed.
+                $url = First $env:XERJ_URL 'http://localhost:9200'
+                $xargs = @('autoindex', "`"$root`"", '--url', $url, '--prefix', $prefix, '--plan', 'code-and-docs-no-vectors', '--no-graph')
+                try { New-Item -ItemType Directory -Force (Split-Path $log) | Out-Null } catch {}
+                try { Start-Process xerj -ArgumentList $xargs -RedirectStandardOutput $log -RedirectStandardError "$log.err" -WindowStyle Hidden @place | Out-Null }
+                catch { try { Start-Process xerj -ArgumentList $xargs -RedirectStandardOutput $log -RedirectStandardError "$log.err" @place | Out-Null } catch {} }
             }
-            # --url pins the destination to the URL the loopback check just passed.
-            $url = First $env:XERJ_URL 'http://localhost:9200'
-            $xargs = @('autoindex', "`"$root`"", '--url', $url, '--prefix', $prefix, '--plan', 'code-and-docs-no-vectors', '--no-graph')
-            try { Start-Process xerj -ArgumentList $xargs -RedirectStandardOutput $log -RedirectStandardError "$log.err" -WindowStyle Hidden @place | Out-Null }
-            catch { try { Start-Process xerj -ArgumentList $xargs -RedirectStandardOutput $log -RedirectStandardError "$log.err" @place | Out-Null } catch {} }
         }
     }
     'down' { 'Search: XERJ installed, node down - Grep. Start: xerj --data-dir ~/xerj-data (skill code-search).' }

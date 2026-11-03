@@ -62,14 +62,14 @@ Synthesized from `../scripts/bugs.py`; commands in `../SKILL.md`.
 - **Write path:** `BEGIN IMMEDIATE`, hash check, rebuild if different, validate, apply, append, commit. A crash after the append is healed by the next hash mismatch.
 - **Hash check:** every command compares the journal's SHA-256 with the DB, which covers `git switch`, pull and merge.
 - **No journal:** reads return empty on an in-memory store; the DB appears with the first write.
-- **Empty journal:** what `/new-project`, `/feature` and a zero-row `import-md` create, so a missing one means a broken setup. Reads return empty, `doctor` is clean, the first write takes `BUG-0001`, `import-md` still runs.
+- **Empty journal:** what `/new-project`, `/feature` and a zero-row `import-md` create, so a missing one means a broken setup, which `doctor` can report only when git shows the tracked file deleted; a journal git never tracked reads as clean. Reads return empty, `doctor` is clean, the first write takes `BUG-0001`, `import-md` still runs.
 - **Duplicate ID:** two `bug_uid`s holding one ID after a merge. `counters` and writes for that ID fail closed until `doctor --fix` appends a `renumber` for the later create. Later lines attach by `bug_uid`.
 - **Purged ID:** a tombstone holds its ID. A create on it from another `bug_uid` is a duplicate; `doctor --fix` renumbers that bug. The same `bug_uid` brought back stays gone.
 - **High water:** max over creates, tombstones and renumbers. `add` takes the next one; a missing ID below it reads `purged`.
 - **Root:** `Ctx` in `bugs.py` and `Get-BugsRoot` in `common.ps1` apply one rule, driven over the same layouts by one test in `hooks/tests/run.ps1`. They read only the given root's own `.git`, never one above it. A `.git` folder or none: that root. A `.git` file: its `gitdir`, then `commondir`, whose folder's parent is the main checkout. `--root` omitted: the project holding the script, by the same rule.
 - **No `.git` at the root:** no git context, and writes go to that root's own journal. A subfolder of a checkout counts: `purge --auto` skips, `doctor` checks no attributes.
 - **Worktrees:** a linked worktree reads the main checkout's data and every write is refused.
-- **Git failing:** git missing, or refusing a `.git` at the root: reads work, every write is refused, `purge --auto` skips.
+- **Git failing:** git missing, or refusing a `.git` at the root: reads work, every write is refused, `purge --auto` prints `purge skipped: git failed`, and the session line says so.
 - **No `commondir`:** that root when the git dir holds `objects` (a submodule or `--separate-git-dir`). Otherwise both refuse: a damaged link must not read as no bugs.
 - **Bare repos:** a `commondir` folder not named `.git` refuses, so a linked worktree of a bare repo or of a submodule blocks a dispatch naming a bug and prints `Bugs: unavailable`. A bare repo stored in a folder named `.git` returns that folder's parent instead, which normally has no journal and reads as no bugs.
 

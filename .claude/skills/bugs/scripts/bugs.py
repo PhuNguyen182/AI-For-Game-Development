@@ -214,19 +214,29 @@ def mem_module():
     return _mem
 
 
+def loaded_patterns(mem, root) -> list:
+    """The one loading point. A list of (name, compiled regex) or it raises: an empty generator is truthy, and a one-shot
+    iterator would scan only the first field."""
+    patterns = list(mem.load_secret_patterns(root))
+    if not patterns:
+        raise ValueError("the list is empty")
+    for name, rx in patterns:
+        if not isinstance(name, str) or not isinstance(rx, re.Pattern):
+            raise TypeError("not a (name, compiled regex) pair")
+    return patterns
+
+
 class Cleaner:
     """Applies every content rule to text about to be written. A missing pattern file refuses here, before any write."""
 
     def __init__(self, ctx):
         self.mem = mem_module()
         try:
-            self.patterns = self.mem.load_secret_patterns(ctx.root)
+            self.patterns = loaded_patterns(self.mem, ctx.root)
         except KeyboardInterrupt:
             raise
         except BaseException as ex:  # a missing or malformed file, or a fault in mem.py's own code
             raise Refused("write refused: secret patterns cannot be loaded (%s: %s)" % (type(ex).__name__, ex)) from None
-        if not self.patterns:  # nothing to scan with is a fault, not a clean scan
-            raise Refused("write refused: secret patterns cannot be loaded (the list is empty)")
         self.redacted = []
 
     def clean(self, field: str, value) -> str:
@@ -1157,11 +1167,21 @@ def cmd_sql(ctx, a):
     db.execute("PRAGMA query_only=ON")
     db.set_authorizer(sql_authorizer)
     deadline = dt.datetime.now() + dt.timedelta(seconds=SQL_SECONDS)
-    db.set_progress_handler(lambda: dt.datetime.now() > deadline, 100000)
+    expired = []
+
+    def past_deadline():
+        if dt.datetime.now() > deadline:
+            expired.append(True)
+        return bool(expired)
+
+    db.set_progress_handler(past_deadline, 100000)
     try:
         cur = db.execute(a.query)
         rows = cur.fetchmany(1001)
     except (sqlite3.Error, sqlite3.Warning) as ex:
+        # A Ctrl+C lands in the handler, and SQLite reports it as this error with the deadline not reached.
+        if not expired and isinstance(ex, sqlite3.OperationalError) and str(ex) == "interrupted":
+            raise KeyboardInterrupt from None
         raise Refused("sql refused: %s" % shown(ex, 200)) from None  # SQLite quotes the query
     names = [c[0] for c in cur.description or ()]
     more = len(rows) > 1000
@@ -1197,6 +1217,8 @@ def purge_candidates(db) -> list:
 def auto_block_reason(ctx: Ctx) -> str | None:
     if ctx.linked:
         return "linked worktree"
+    if ctx.git_failed:
+        return "git failed"
     if ctx.git_dir is None:
         return "not a git repository"
     for marker, what in (("MERGE_HEAD", "merge"), ("rebase-merge", "rebase"), ("rebase-apply", "rebase"),
@@ -1288,6 +1310,10 @@ def git_problems(ctx: Ctx) -> list:
         return []
     out = []
     path = ".workflow/bugs.jsonl"
+    if not ctx.journal.exists():
+        code, text = run_git(ctx.root, "status", "--porcelain", "--", path)
+        if not code and "D" in text[:2]:
+            out.append("journal deleted: git tracks %s and the file is gone. Restore it with git restore, or commit an empty one" % path)
     for attr, want, harm in (("merge", "union", "merges can conflict"), ("eol", "lf", "the journal can end up with mixed line endings")):
         code, text = run_git(ctx.root, "check-attr", attr, "--", path)
         got = text.rsplit(": ", 1)[-1] if not code else "unknown"
@@ -1665,9 +1691,7 @@ def refusal_text(text: str, argv) -> str:
     an ID, a status or a JSON key can be a pasted secret. Nothing to scan with: the values stay out."""
     try:
         mem = mem_module()
-        patterns = mem.load_secret_patterns(given_root(argv))
-        if not patterns:
-            raise ValueError("no patterns")
+        patterns = loaded_patterns(mem, given_root(argv))
         lines = mem.redact_pii(mem.redact(text.replace(VALUE_MARK, ""), patterns)).split("\n")
     except KeyboardInterrupt:
         raise

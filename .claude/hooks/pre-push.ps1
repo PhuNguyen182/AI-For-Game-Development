@@ -30,10 +30,7 @@ if ($gc.Success) { $dir = @($gc.Groups[1].Value, $gc.Groups[2].Value, $gc.Groups
 if ($env:OS -eq 'Windows_NT' -and $dir -match '^/([a-zA-Z])(/|$)') { $dir = "$($Matches[1]):/" + $dir.Substring(3) }
 if ($dir -and -not [IO.Path]::IsPathRooted($dir)) { $dir = Join-Path $cwd $dir }
 
-$root = $null
-foreach ($d in @($dir, $cwd)) {
-    if ($d -and (Test-Path $d)) { $root = git -C $d rev-parse --show-toplevel 2>$null; if ($root) { break } }
-}
+$root = Resolve-GitRoot @($dir, $cwd) 'push'
 if (-not $root) { exit 0 }  # no repository at all: the push itself cannot run
 
 # `git push` is auto-allowed for the configured remotes; a URL or path sends the code somewhere no one set up.

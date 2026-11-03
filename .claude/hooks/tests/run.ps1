@@ -22,6 +22,27 @@ function Invoke-Hook([string]$Script, [hashtable]$Payload, [string[]]$HookArgs =
     return @{ Code = $code; Out = (Join-Output $out) }
 }
 
+# What Claude Code sends: raw UTF-8 on stdin, whatever the code page. Windows PowerShell's pipe would turn non-ASCII into ?.
+# No CreateNoWindow: the hook keeps this console, and so its code page.
+function Invoke-HookUtf8([string]$Script, [hashtable]$Payload, [string[]]$HookArgs = @()) {
+    $words = @('-NoProfile', '-NonInteractive', '-File', (Join-Path $hooks $Script)) + @($HookArgs)
+    $psi = New-Object Diagnostics.ProcessStartInfo
+    $psi.FileName = $shell
+    $psi.Arguments = (@($words | ForEach-Object { ConvertTo-NativeArg $_ }) -join ' ')
+    $psi.UseShellExecute = $false
+    $psi.RedirectStandardInput = $true
+    $psi.RedirectStandardOutput = $true
+    $psi.RedirectStandardError = $true
+    $p = [Diagnostics.Process]::Start($psi)
+    $outRead = $p.StandardOutput.ReadToEndAsync()
+    $errRead = $p.StandardError.ReadToEndAsync()
+    $bytes = (New-Object Text.UTF8Encoding $false).GetBytes(($Payload | ConvertTo-Json -Depth 5 -Compress))
+    $p.StandardInput.BaseStream.Write($bytes, 0, $bytes.Length)
+    $p.StandardInput.Close()
+    $p.WaitForExit()
+    return @{ Code = $p.ExitCode; Out = ($outRead.GetAwaiter().GetResult() + "`n" + $errRead.GetAwaiter().GetResult()) }
+}
+
 function Check([string]$Name, $Actual, $Expected) {
     if ($Actual -eq $Expected) { Write-Output "PASS  $Name" }
     else { Write-Output "FAIL  $Name (got $Actual, expected $Expected)"; $script:failures++ }
@@ -33,6 +54,9 @@ function New-Repo([string]$Path) {
 }
 
 $cpPinned = $false
+# The hooks read it first, so a value from the caller's session would decide what the fixtures below see.
+$callerProjectDir = $env:CLAUDE_PROJECT_DIR
+Remove-Item Env:CLAUDE_PROJECT_DIR -ErrorAction SilentlyContinue
 try {
     New-Item -ItemType Directory -Force $tmp | Out-Null
     Write-Output "Shell: $shell ($($PSVersionTable.PSVersion))"
@@ -44,6 +68,8 @@ try {
     Check 'suite: the code page restore runs in the finally' ($selfTry.Finally.Extent.Text -match $cpRestore) $true
     Check 'suite: ... and nowhere in the try' ($selfTry.Body.Extent.Text -match $cpRestore) $false
     Check 'suite: ... with its flag set before the try' ($selfAst.Extent.Text.Substring(0, $selfTry.Extent.StartOffset) -match '(?m)^\$cpPinned = \$false') $true
+    Check 'suite: the caller''s CLAUDE_PROJECT_DIR is cleared for the run' ([string]$env:CLAUDE_PROJECT_DIR) ''
+    Check 'suite: ... and restored in the finally' ($selfTry.Finally.Extent.Text -match '\$env:CLAUDE_PROJECT_DIR = \$callerProjectDir') $true
 
     # secret-scan
     $r = Invoke-Hook 'secret-scan.ps1' @{ tool_name = 'Write'; tool_input = @{ file_path = "$tmp/Assets/Cfg.cs"; content = "var k = `"$fakeKey`";" } }
@@ -1276,7 +1302,7 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     $brWorkflow = Join-Path $brRoot '.workflow'
     New-Repo $brRoot
     New-Item -ItemType Directory -Force $brHooks, (Join-Path $brRoot '.claude/skills/bugs/scripts'), (Join-Path $brRoot '.claude/skills/mem/scripts'), (Join-Path $brRoot '.claude/templates'), (Join-Path $brWorkflow 'features') | Out-Null
-    foreach ($f in 'common.ps1', 'round-cap.ps1', 'session-start.ps1', 'secret-patterns.txt') { [IO.File]::Copy((Join-Path $hooks $f), (Join-Path $brHooks $f)) }
+    foreach ($f in 'common.ps1', 'round-cap.ps1', 'session-start.ps1', 'secret-patterns.txt', 'pre-commit.ps1', 'editor-lock.ps1', 'search-guard.ps1', 'verify-on-edit.ps1') { [IO.File]::Copy((Join-Path $hooks $f), (Join-Path $brHooks $f)) }
     foreach ($f in 'skills/bugs/scripts/bugs.py', 'skills/mem/scripts/mem.py', 'templates/framework-backlog.md') { [IO.File]::Copy((Join-Path $hooks "../$f"), (Join-Path $brRoot ".claude/$f")) }
     function InBrackets([scriptblock]$Body) { $hooks = $brHooks; & $Body }
     function BrFeature([string]$Slug, [string]$Lines) { [IO.File]::WriteAllText((Join-Path $brWorkflow "features/$Slug.md"), "# $Slug`n`n- Status: Open`n- CP: 2`n- Size: M, Risk flag: no`n$Lines`n") }
@@ -1319,6 +1345,127 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     Check 'round-cap: ... a corrupt ledger blocks and is moved aside' ($r.Code -eq 2 -and $r.Out -match 'could not be parsed' -and -not [IO.File]::Exists($brLedger) -and @([IO.Directory]::GetFiles($brWorkflow, 'rounds.corrupt-*.json')).Count -eq 1) $true
     $r = InBrackets { DispatchR 'Explain the HUD' }
     Check 'round-cap: ... and the moved file keeps blocking' ($r.Code -eq 2 -and $r.Out -match 'unreadable ledger file') $true
+    # The other hooks in the same checkout: each read a project file as absent.
+    function BrLock([string]$Session, [string]$Mode) { InBrackets { Invoke-Hook 'editor-lock.ps1' @{ session_id = $Session; tool_input = @{ subagent_type = 'ui-engineer' } } @('-Mode', $Mode) } }
+    $brLock = Join-Path $brWorkflow 'editor.lock'
+    Check 'editor-lock: brackets in the checkout path: a holder takes the lock' ((BrLock 'A' 'acquire').Code -eq 0 -and [IO.File]::Exists($brLock)) $true
+    $r = BrLock 'B' 'acquire'
+    Check 'editor-lock: ... another session is refused' ($r.Code -eq 2 -and $r.Out -match 'held by another') $true
+    BrLock 'A' 'clear' | Out-Null
+    Check 'editor-lock: ... and clear removes the lock' ([IO.File]::Exists($brLock)) $false
+    $brLane = Join-Path $brRoot 'lane'
+    [void][IO.Directory]::CreateDirectory($brLane)
+    [IO.File]::WriteAllText((Join-Path $brLane '.git'), "gitdir: C:/repo/.git/worktrees/lane`n")
+    $r = InBrackets { Invoke-Hook 'editor-lock.ps1' @{ session_id = 'F'; cwd = $brLane; tool_input = @{ command = 'unity command script recompile' } } @('-Mode', 'check') }
+    Check 'editor-lock: ... a lane worktree cannot drive the Editor' $r.Code 2
+    [IO.Directory]::Delete($brLane, $true)
+    $brCommit = @{ tool_name = 'Bash'; cwd = $brRoot; tool_input = @{ command = 'git commit -m x' } }
+    [IO.File]::WriteAllText((Join-Path $brRoot 'Assets/A.cs'), "class A {}`n")
+    git -C $brRoot add -- Assets/A.cs 2>&1 | Out-Null
+    $r = InBrackets { Invoke-Hook 'pre-commit.ps1' $brCommit }
+    Check 'pre-commit: ... an asset without .meta blocks' ($r.Code -eq 2 -and $r.Out -match 'asset without \.meta') $true
+    [IO.File]::WriteAllText((Join-Path $brRoot 'Assets/A.cs.meta'), "guid: 1`n")
+    git -C $brRoot add -- Assets/A.cs.meta 2>&1 | Out-Null
+    $r = InBrackets { Invoke-Hook 'pre-commit.ps1' $brCommit }
+    Check 'pre-commit: ... a .meta beside its asset is no orphan' ($r.Out -match 'orphan') $false
+    git -C $brRoot reset -q 2>&1 | Out-Null
+    [IO.File]::Delete((Join-Path $brRoot 'Assets/A.cs'))
+    git -C $brRoot add -- Assets/A.cs.meta 2>&1 | Out-Null
+    $r = InBrackets { Invoke-Hook 'pre-commit.ps1' $brCommit }
+    Check 'pre-commit: ... an orphan .meta blocks' ($r.Code -eq 2 -and $r.Out -match 'orphan \.meta') $true
+    git -C $brRoot reset -q 2>&1 | Out-Null
+    [IO.File]::Delete((Join-Path $brRoot 'Assets/A.cs.meta'))
+    [IO.File]::WriteAllText((Join-Path $brRoot 'CLAUDE.md'), "| Code search | xerj prefix ``brprefix`` |`n")
+    $env:HOOK_TEST_XERJ = 'up'
+    $r = InBrackets { Invoke-Hook 'session-start.ps1' @{} }
+    Check 'session-start: ... the prefix in CLAUDE.md is read' ($r.Out -match 'Search: XERJ up, prefix brprefix') $true
+    [void][IO.Directory]::CreateDirectory((Join-Path $brRoot '.claude/agents'))
+    [IO.File]::WriteAllText((Join-Path $brRoot '.claude/agents/no-shell.md'), "---`nname: no-shell`ntools: Read, Grep`n---`n")
+    $r = InBrackets { Invoke-Hook 'search-guard.ps1' @{ tool_name = 'Grep'; cwd = $brRoot; agent_type = 'no-shell'; tool_input = @{ pattern = 'Foo'; path = ''; output_mode = 'content' } } }
+    Check 'search-guard: ... an agent with no shell keeps its Grep' ($r.Out -match '"permissionDecision":"deny"') $false
+    $env:HOOK_TEST_XERJ = 'none'
+    [void][IO.Directory]::CreateDirectory((Join-Path $brRoot '.claude/skills/verify-layer/scripts'))
+    [IO.File]::WriteAllText((Join-Path $brRoot '.claude/skills/verify-layer/scripts/verify.ps1'), "'stub verifier: planted failure'; exit 1`n")
+    $r = InBrackets { Invoke-Hook 'verify-on-edit.ps1' @{ tool_input = @{ file_path = (Join-Path $brRoot '.claude/rules/x.md') } } }
+    Check 'verify-on-edit: ... the verifier runs' ($r.Code -eq 2 -and $r.Out -match 'stub verifier') $true
+    Remove-Item Env:HOOK_TEST_XERJ
+    $env:XERJ_URL = 'http://127.0.0.1:1'
+    InBrackets { Invoke-Hook 'session-start.ps1' @{} } | Out-Null
+    Check 'session-start: ... the XERJ probe result is cached' ([IO.File]::Exists((Join-Path $brRoot '.memory/.state/xerj.json'))) $true
+    Remove-Item Env:XERJ_URL
+    $env:HOOK_TEST_XERJ = 'none'
+
+    # The secret gates in a checkout whose path git's stdout or -Path would lose, code page 437 pinned above, from a main
+    # checkout and a linked worktree. Raw UTF-8 on stdin, as Claude Code sends it.
+    foreach ($gateName in 'Gate [v2]', "Gate $viName") {
+        $gate = Join-Path $tmp $gateName
+        New-Repo $gate
+        $gateGit = @('-c', 'user.name=t', '-c', 'user.email=t@example.com', '-c', 'core.autocrlf=false')
+        [IO.File]::WriteAllText((Join-Path $gate 'base.txt'), "base`n")
+        git -C $gate @gateGit add base.txt 2>&1 | Out-Null
+        git -C $gate @gateGit commit -q -m 'base' 2>&1 | Out-Null
+        git -C $gate remote add origin https://example.test/configured.git 2>&1 | Out-Null
+        $gateLinked = Join-Path $tmp "$gateName linked"
+        git -C $gate worktree add -q -b linked-branch $gateLinked 2>&1 | Out-Null
+        $gateAscii = $gateName -replace '[^\x20-\x7e]', '?'
+        foreach ($c in @(@('main checkout', $gate), @('linked worktree', $gateLinked))) {
+            $where = "$gateAscii, $($c[0])"
+            $at = $c[1]
+            $env:CLAUDE_PROJECT_DIR = $at
+            [IO.File]::WriteAllText((Join-Path $at 'Key.txt'), "k = `"$fakeKey`"`n")
+            git -C $at @gateGit add -- Key.txt 2>&1 | Out-Null
+            $r = Invoke-HookUtf8 'pre-commit.ps1' @{ tool_name = 'Bash'; cwd = $at; tool_input = @{ command = 'git commit -m x' } }
+            Check "secret gate, ${where}: a staged key blocks a commit from the session cwd" ($r.Code -eq 2 -and $r.Out -match 'secret in Key\.txt') $true
+            $r = Invoke-HookUtf8 'pre-commit.ps1' @{ tool_name = 'Bash'; cwd = $tmp; tool_input = @{ command = "git -C `"$at`" commit -m x" } }
+            Check "secret gate, ${where}: ... and through git -C" ($r.Code -eq 2 -and $r.Out -match 'secret in Key\.txt') $true
+            $r = Invoke-HookUtf8 'pre-commit.ps1' @{ tool_name = 'Bash'; cwd = $tmp; tool_input = @{ command = "cd `"$at`" && git commit -m x" } }
+            Check "secret gate, ${where}: ... and after a cd" ($r.Code -eq 2 -and $r.Out -match 'secret in Key\.txt') $true
+            git -C $at @gateGit reset -q 2>&1 | Out-Null
+            $r = Invoke-HookUtf8 'pre-push.ps1' @{ tool_name = 'Bash'; cwd = $at; tool_input = @{ command = 'git push https://example.test/other.git' } }
+            Check "secret gate, ${where}: a push to a URL is checked" ($r.Code -eq 2 -and $r.Out -match 'not a configured remote') $true
+            $r = Invoke-HookUtf8 'pre-push.ps1' @{ tool_name = 'Bash'; cwd = $tmp; tool_input = @{ command = "git -C `"$at`" push https://example.test/other.git" } }
+            Check "secret gate, ${where}: ... and through git -C" ($r.Code -eq 2 -and $r.Out -match 'not a configured remote') $true
+            Check "secret gate, ${where}: a clean push to the configured remote passes" (Invoke-HookUtf8 'pre-push.ps1' @{ tool_name = 'Bash'; cwd = $at; tool_input = @{ command = 'git push origin' } }).Code 0
+            git -C $at @gateGit add -- Key.txt 2>&1 | Out-Null
+            git -C $at @gateGit commit -q -m 'key' 2>&1 | Out-Null
+            $r = Invoke-HookUtf8 'pre-push.ps1' @{ tool_name = 'Bash'; cwd = $at; tool_input = @{ command = 'git push origin' } }
+            Check "secret gate, ${where}: a committed key blocks the push" ($r.Code -eq 2 -and $r.Out -match 'secret in Key\.txt') $true
+            git -C $at @gateGit reset -q --hard HEAD~1 2>&1 | Out-Null
+        }
+    }
+    # A root git cannot name inside a real repository blocks. No repository at all stays a pass: the command cannot run.
+    $gate = Join-Path $tmp 'Gate [v2]'
+    $env:CLAUDE_PROJECT_DIR = $gate
+    $gatePayload = @{ tool_name = 'Bash'; cwd = $gate; tool_input = @{ command = 'git commit -m x' } }
+    $gatePush = @{ tool_name = 'Bash'; cwd = $gate; tool_input = @{ command = 'git push https://example.test/other.git' } }
+    $env:GIT_DIR = Join-Path $tmp 'no-such-git-dir'
+    $r = Invoke-HookUtf8 'pre-commit.ps1' $gatePayload
+    Check 'secret gate: git refusing inside a real repository blocks a commit' ($r.Code -eq 2 -and $r.Out -match 'cannot name its root') $true
+    $r = Invoke-HookUtf8 'pre-push.ps1' $gatePush
+    Check 'secret gate: ... and a push' ($r.Code -eq 2 -and $r.Out -match 'cannot name its root') $true
+    Remove-Item Env:GIT_DIR
+    $env:PATH = $noPyDir
+    $r = Invoke-HookUtf8 'pre-commit.ps1' $gatePayload
+    $env:PATH = $savedPath
+    Check 'secret gate: no git on PATH inside a real repository blocks' ($r.Code -eq 2 -and $r.Out -match 'cannot name its root') $true
+    $gateNone = Join-Path $tmp 'Gate None'
+    [void][IO.Directory]::CreateDirectory($gateNone)
+    Check 'secret gate: no repository at all passes a commit' (Invoke-HookUtf8 'pre-commit.ps1' @{ tool_name = 'Bash'; cwd = $gateNone; tool_input = @{ command = 'git commit -m x' } }).Code 0
+    Check 'secret gate: ... and a push' (Invoke-HookUtf8 'pre-push.ps1' @{ tool_name = 'Bash'; cwd = $gateNone; tool_input = @{ command = 'git push origin' } }).Code 0
+    [void][IO.Directory]::CreateDirectory((Join-Path $gateNone '.git'))
+    Check 'secret gate: ... and so does an empty .git folder, which git does not read as a repository' (Invoke-HookUtf8 'pre-commit.ps1' @{ tool_name = 'Bash'; cwd = $gateNone; tool_input = @{ command = 'git commit -m x' } }).Code 0
+
+    # Where the autoindex starts in a checkout with brackets: never the temp folder, and nowhere at all with no clean folder.
+    $aiApp = Join-Path $tmp 'App Data'
+    $aiPlain = Get-AutoindexPlace (Join-Path $tmp 'Plain') 'plain' $aiApp 'C:/ps'
+    Check 'autoindex: a plain checkout logs in its own state folder, with no working folder set' ([string]$aiPlain.Log -like '*Plain*xerj-autoindex.log' -and -not $aiPlain.Start.ContainsKey('WorkingDirectory')) $true
+    $aiBr = Get-AutoindexPlace $brRoot 'game-v2' $aiApp 'C:/ps'
+    Check 'autoindex: brackets log under per-user app data' ([IO.Path]::GetDirectoryName($aiBr.Log).StartsWith($aiApp) -and -not $aiBr.Log.StartsWith([IO.Path]::GetTempPath().TrimEnd('\', '/') + '\xerj')) $true
+    Check 'autoindex: ... and start in the PowerShell home' $aiBr.Start.WorkingDirectory 'C:/ps'
+    Check 'autoindex: ... with no brackets in the log path' ([WildcardPattern]::ContainsWildcardCharacters($aiBr.Log)) $false
+    Check 'autoindex: app data with brackets too: no start' ($null -eq (Get-AutoindexPlace $brRoot 'game-v2' (Join-Path $tmp 'App [Data]') 'C:/ps')) $true
+    Check 'autoindex: a PowerShell home with brackets: no start' ($null -eq (Get-AutoindexPlace $brRoot 'game-v2' $aiApp 'C:/p[s]')) $true
+    Check 'autoindex: no app data: no start' ($null -eq (Get-AutoindexPlace $brRoot 'game-v2' '' 'C:/ps')) $true
 
     # One root rule, two readers: Get-BugsRoot and bugs.py's Ctx take a layout to the same folder, or both refuse. A wrong root
     # fails open, and this rule has already drifted once. Each folder that could answer holds its own bug count, so the count
@@ -1403,6 +1550,15 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     $p = LyWorktree 'WtComBom'
     [IO.File]::WriteAllText((Join-Path (LyAdmin 'WtComBom') 'commondir'), "../..`n", $lyBom)
     LyCheck 'a commondir with a BOM: the main checkout' $p '2'
+    $p = LyWorktree 'WtComSlash'
+    [IO.File]::WriteAllText((Join-Path (LyAdmin 'WtComSlash') 'commondir'), "../../`n")
+    LyCheck 'a commondir with a trailing separator: the main checkout' $p '2'
+    $p = LyWorktree 'WtComAbsSlash'
+    [IO.File]::WriteAllText((Join-Path (LyAdmin 'WtComAbsSlash') 'commondir'), "$(Join-Path $lyMain '.git')/`n")
+    LyCheck 'an absolute commondir with a trailing separator: the main checkout' $p '2'
+    $p = LyWorktree 'WtComUpper'
+    [IO.File]::WriteAllText((Join-Path (LyAdmin 'WtComUpper') 'commondir'), "$(Join-Path $lyMain '.GIT')`n")
+    LyCheck 'a commondir spelled .GIT: both refuse' $p 'refuse'
     $p = LyWorktree 'WtNoGitdir'
     [IO.File]::WriteAllText((Join-Path $p '.git'), "not a link`n")
     LyCheck 'a .git file naming no gitdir: both refuse' $p 'refuse'
@@ -1446,6 +1602,14 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     [IO.File]::WriteAllText((Join-Path $lyAbove '.git'), "gitdir: $(LyAdmin 'WtHooks')`n")
     BugCli @('add') $bugFields | Out-Null
     BugCli @('round', 'BUG-0001', 'fix', '+3', '--note', 'test round') | Out-Null
+    # Git refusing a real checkout stops the 90-day purge: the session line says so.
+    $lyGitFails = Join-Path $lyMain 'GitFails'
+    [void][IO.Directory]::CreateDirectory((Join-Path $lyGitFails '.git'))
+    LyJournal $lyGitFails 1
+    Copy-Item (Join-Path $bugRoot '.claude') $lyGitFails -Recurse
+    $env:CLAUDE_PROJECT_DIR = $lyGitFails
+    $r = Invoke-Hook 'session-start.ps1' @{}
+    Check 'session-start: git failing at a real checkout names the skipped purge' ($r.Code -eq 0 -and $r.Out -match '(?m)^Bugs: 1 open \(1 High\+\); purge skipped, git failed\s*$') $true
     $env:CLAUDE_PROJECT_DIR = $bugRoot
     $r = DispatchR 'Bug: BUG-0001'
     Check 'round-cap: a .git file above the project: its own past-cap bug blocks' ($r.Code -eq 2 -and $r.Out -match 'BUG-0001: fix 3/2') $true
@@ -1870,6 +2034,7 @@ catch {
 finally {
     if ($cpPinned) { [Console]::InputEncoding = $cpIn; [Console]::OutputEncoding = $cpOut }
     Remove-Item Env:CLAUDE_PROJECT_DIR, Env:HOOK_TEST_XERJ, Env:MEM_CAPTURE, Env:XERJ_URL, Env:BUGS_NOW -ErrorAction SilentlyContinue
+    if ($null -ne $callerProjectDir) { $env:CLAUDE_PROJECT_DIR = $callerProjectDir }
     Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue
 }
 

@@ -60,10 +60,7 @@ if ($env:OS -eq 'Windows_NT' -and $dir -match '^/([a-zA-Z])(/|$)') { $dir = "$($
 if ($dir -and -not [IO.Path]::IsPathRooted($dir)) { $dir = Join-Path $cwd $dir }
 
 # A directory that does not resolve falls back to the session cwd rather than skipping the scan.
-$root = $null
-foreach ($d in @($dir, $cwd)) {
-    if ($d -and (Test-Path $d)) { $root = git -C $d rev-parse --show-toplevel 2>$null; if ($root) { break } }
-}
+$root = Resolve-GitRoot @($dir, $cwd) 'commit'
 if (-not $root) { exit 0 }  # no repository at all: the commit itself cannot run
 $problems = @()
 
@@ -81,13 +78,13 @@ $problems += @(Find-ForbiddenFiles $root $changes)
 # 3. Unity .meta pairing, only in a Unity project. A /feature lane A worktree has no Editor, so its new assets have no
 # .meta until the merge (the main session commits them after the post-merge import): that one check is skipped there.
 $lane = Test-LaneWorktree $root ([string](First $env:CLAUDE_PROJECT_DIR (Split-Path (Split-Path $PSScriptRoot))))
-if (Test-Path (Join-Path $root 'Assets')) {
+if (Test-Path -LiteralPath (Join-Path $root 'Assets')) {
     foreach ($p in $staged.Keys) {
         if ($p -notmatch '^Assets/') { continue }
         $s = $staged[$p]
         if ($p.EndsWith('.meta')) {
             $asset = $p.Substring(0, $p.Length - 5)
-            if ($s -eq 'A' -and -not (Test-Path (Join-Path $root $asset))) { $problems += "orphan .meta (no asset): $p" }
+            if ($s -eq 'A' -and -not (Test-Path -LiteralPath (Join-Path $root $asset))) { $problems += "orphan .meta (no asset): $p" }
             continue
         }
         $meta = "$p.meta"

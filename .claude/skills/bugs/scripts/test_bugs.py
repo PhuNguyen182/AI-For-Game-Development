@@ -11,7 +11,9 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
+import threading
 import unicodedata
+import _thread
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -1427,6 +1429,17 @@ class TestSql(Base):
         with mock.patch.object(bugs, "SQL_SECONDS", 0.05):
             self.assertIn("interrupted", self.no("sql", "WITH RECURSIVE c(n) AS (SELECT 1 UNION ALL SELECT n+1 FROM c) SELECT MAX(n) FROM c"))
 
+    def test_a_real_interrupt_during_a_query_exits_130(self):
+        timer = threading.Timer(0.5, _thread.interrupt_main)
+        timer.start()
+        try:
+            code, out, err = self.run_cli("sql", "WITH RECURSIVE c(n) AS (SELECT 1 UNION ALL SELECT n+1 FROM c) SELECT MAX(n) FROM c")
+        finally:
+            timer.cancel()
+        self.assertEqual((code, out), (130, ""))
+        self.assertIn("bugs: interrupted", err)
+        self.assertNotIn("sql refused", err)
+
     def test_a_blob_result_is_hex_in_json_and_text(self):
         code, out, err = self.run_cli("sql", "SELECT x'00ff' AS b, 'plain' AS t, 1 AS n, NULL AS z", "--json")
         self.assertEqual(code, 0, err)
@@ -2352,6 +2365,12 @@ class TestAFaultInsideMemStaysClean(Base):
                     "the PEM regex is not one": "RX_PEM_BLOCK = object()\n",
                     "a compiled pattern is not one": "def load_secret_patterns(root):\n    return [('x', object())]\n",
                     "no patterns": "def load_secret_patterns(root):\n    return []\n",
+                    "an empty generator": "def load_secret_patterns(root):\n    return (x for x in [])\n",
+                    "an empty iterator": "def load_secret_patterns(root):\n    return iter(())\n",
+                    "a string": "def load_secret_patterns(root):\n    return 'abc'\n",
+                    "pairs of strings": "def load_secret_patterns(root):\n    return [('x', 'y')]\n",
+                    "a generator that faults": "def load_secret_patterns(root):\n    yield ('x', RX_PEM_BLOCK)\n    raise RuntimeError('mid-way')\n",
+                    "no patterns at all": "def load_secret_patterns(root):\n    return None\n",
                     "the pattern loader exits 0": "def load_secret_patterns(root):\n    raise SystemExit(0)\n",
                     "the pattern loader raises BaseException": 'def load_secret_patterns(root):\n    raise BaseException("base")\n',
                     "exit 0 at import": "raise SystemExit(0)\n",
@@ -2433,6 +2452,20 @@ class TestAFaultInsideMemStaysClean(Base):
                     self.assertIn(b"write refused", r.stderr)
                     self.assert_clean(r, self.EMAIL)
                     self.assertEqual(self.journal.read_bytes(), before)
+
+    def test_a_one_shot_iterator_scans_every_field(self):
+        script = self.faulty_copy("_real_load = load_secret_patterns\ndef load_secret_patterns(root):\n    return iter(_real_load(root))\n")
+        for field in ("title", "actual", "evidence"):
+            with self.subTest(field):
+                r = self.cli(script, "add", stdin=json.dumps(fields(**{field: "Key %s here" % FAKE_KEY})).encode("utf-8"))
+                self.assertEqual(r.returncode, 1, r.stdout)
+                self.assertIn(("secret-shaped value in %s" % field).encode(), r.stderr)
+                self.assert_clean(r, FAKE_KEY)
+                self.assertFalse(self.journal.exists() and FAKE_KEY.encode() in self.journal.read_bytes())
+        r = self.cli(script, "show", FAKE_KEY)
+        self.assert_clean(r, FAKE_KEY)
+        self.assertIn(b"REDACTED", r.stderr)
+        self.assertEqual(self.cli(script, "add", stdin=json.dumps(fields()).encode("utf-8")).returncode, 0)
 
     def test_unrecognized_arguments_are_counted_never_echoed(self):
         self.add()
@@ -2542,7 +2575,7 @@ class TestRootRule(GitBase):
             self.assertIn("git failed", self.no("add", stdin=fields()))
             code, out, _ = self.run_cli("purge", "--auto")
         self.assertEqual(code, 0)
-        self.assertEqual(out.strip(), "purge skipped: not a git repository")
+        self.assertEqual(out.strip(), "purge skipped: git failed")
 
     def test_a_git_folder_git_will_not_read_is_never_read_as_the_repo_above(self):
         self.add()
@@ -2551,6 +2584,9 @@ class TestRootRule(GitBase):
         (project / ".git").mkdir(parents=True)
         self.assertEqual(self.bug_count(project), "Bugs: 0")
         self.assertIn("git failed", self.no("add", stdin=fields(), root=project))
+        code, out, _ = self.run_cli("purge", "--auto", root=project)
+        self.assertEqual(code, 0)
+        self.assertEqual(out.strip(), "purge skipped: git failed")
 
     def test_no_root_argument_means_the_project_holding_the_script(self):
         wt, admin = self.worktree()
@@ -2836,6 +2872,21 @@ class TestDoctorGitChecks(GitBase):
             f.write(".workflow/\n")
         self.assert_problem("ignored")
 
+    def test_a_tracked_journal_deleted_by_hand_is_a_problem(self):
+        self.add()
+        self.commit()
+        self.journal.unlink()
+        self.assert_problem("journal deleted")
+
+    def test_a_tracked_journal_deleted_in_the_index_too_is_a_problem(self):
+        self.add()
+        self.commit()
+        git(self.root, "rm", "-q", "--", ".workflow/bugs.jsonl")
+        self.assert_problem("journal deleted")
+
+    def test_a_journal_git_never_tracked_reads_clean_when_missing(self):
+        self.assertEqual(self.ok("doctor"), "doctor: clean\n")
+
     def test_a_later_rule_making_the_journal_crlf_is_a_problem(self):
         self.add()
         self.commit()
@@ -2912,6 +2963,14 @@ class TestDocContracts(unittest.TestCase):
     def test_an_empty_journal_lists_import_md_as_a_source(self):
         line = next(x for x in self.schema.split("\n") if x.startswith("- **Empty journal:**"))
         self.assertIn("zero-row `import-md`", line)
+
+    def test_a_failed_git_names_its_purge_skip(self):
+        line = next(x for x in self.schema.split("\n") if x.startswith("- **Git failing:**"))
+        self.assertIn("`purge skipped: git failed`", line)
+
+    def test_a_missing_journal_says_what_doctor_can_see(self):
+        line = next(x for x in self.schema.split("\n") if x.startswith("- **Empty journal:**"))
+        self.assertIn("only when git shows the tracked file deleted", line)
 
     def test_refusal_text_documents_the_unrecognized_count(self):
         line = next(x for x in self.schema.split("\n") if x.startswith("- **Refusal text:**"))

@@ -12,7 +12,7 @@ $rel = $path -replace '\\', '/'
 if ($rel.StartsWith($layerRoot, [StringComparison]::OrdinalIgnoreCase) -and $rel.Substring($layerRoot.Length) -match '^\.claude/worktrees/') { exit 0 }
 
 $verifier = Join-Path $PSScriptRoot '../skills/verify-layer/scripts/verify.ps1'
-if (-not (Test-Path $verifier)) { exit 0 }
+if (-not (Test-Path -LiteralPath $verifier)) { exit 0 }
 
 $out = & $verifier -File $path *>&1
 if ($LASTEXITCODE -ne 0) {
