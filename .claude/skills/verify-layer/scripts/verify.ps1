@@ -3,7 +3,7 @@
 Checks the .claude/ layer: paths resolve, agent and skill frontmatter, skill references, workflows are JS, skill format, reference fences, checklist files, hook contract strings, no retired IDs, agents, paths or namespaces, table widths.
 Warn only: size targets (skill description past 120 chars, list item past 200, body past 8,000, agent, rule and CLAUDE.md lengths), an unknown name in an agent, a unity:* plugin skill not installed. All else fails, including a description past 250 chars. Exit 0 = pass (warnings allowed), 1 = failure.
 .PARAMETER File
-Check only this file (used by the PostToolUse hook). Omit for the whole layer.
+Check only this file (used by the PostToolUse hook), plus the owning skill's script-named check for a file under references/. Omit for the whole layer.
 #>
 param([string]$File)
 
@@ -38,20 +38,33 @@ $RetiredNamespace = '\bGame\.(?:Core|Client|Server)\b'
 $TitlePattern = '\*\*(?:[^*]+|(?>`[^`]*`|[^*])+):\*\*'
 # Return strings hooks/round-cap.ps1 counts on: renaming one silently stops the count.
 $HookContracts = @{
-    '.claude/agents/code-reviewer.md'        = @('Verdict: Approve | Request changes')
-    '.claude/agents/security-reviewer.md'    = @('Verdict: Clear | Blocked')
-    '.claude/agents/qa-lead.md'              = @('Verdict: Signed off | Not signed off')
-    '.claude/skills/agent-protocol/SKILL.md' = @('Status: Done | Partial | Blocked | Needs-decision | Failed', 'Repro: BUG-#### reproduces | gone', '`Verify: BUG-####`')
+    '.claude/agents/code-reviewer.md'          = @('Verdict: Approve | Request changes | Needs-decision', '`Severity:`')
+    '.claude/agents/security-reviewer.md'      = @('Verdict: Clear | Blocked')
+    '.claude/agents/qa-lead.md'                = @('Verdict: Signed off | Not signed off')
+    '.claude/agents/playtest-tester.md'        = @('Repro: BUG-#### reproduces | gone')
+    '.claude/agents/qa-automation-engineer.md' = @('Repro: BUG-#### reproduces | gone')
+    '.claude/skills/agent-protocol/SKILL.md'   = @('Status: Done | Partial | Blocked | Needs-decision | Failed', 'Repro: BUG-#### reproduces | gone', '`Verify: BUG-####`')
+    '.claude/skills/code-review-method/SKILL.md' = @('`Request changes`')
     # Brief marker lines and state lines the hook parses.
-    '.claude/skills/review/SKILL.md'                        = @('`Round: <n>`', '`Mode: audit`', '`Mode: workflow`', '`Tree: <sha>`', '`Previous tree: <sha>`', '`Target: <path or base>`', '`Bug: BUG-####`')
-    '.claude/skills/qa/SKILL.md'                            = @('`Mode: test-code`', '`Verify: BUG-####`', '`Feature: .workflow/features/<slug>.md`')
-    '.claude/skills/fix/SKILL.md'                           = @('`Bug: BUG-####`', '`Verify: BUG-####`', '`Feature: .workflow/features/<slug>.md`')
+    '.claude/skills/review/SKILL.md'                        = @('`Round: <n>`', '`Mode: audit`', '`Mode: workflow`', '`Tree: <sha>`', '`Previous tree: <sha>`', '`Target: <path or base>`', '`Bug: BUG-####`',
+        '`Feature: .workflow/features/<slug>.md`', '`Verdict:`', '`Request changes`', '`Blocked`', '`.workflow/rounds.json`', '`feature:<slug>`', '`bug:<id>`', '`target:<path>`', '`Rounds:`', '`Review rounds:`', 'round-<n>-')
+    '.claude/skills/qa/SKILL.md'                            = @('`Mode: test-code`', '`Verify: BUG-####`', '`Feature: .workflow/features/<slug>.md`', '`Not signed off`')
+    '.claude/skills/fix/SKILL.md'                           = @('`Bug: BUG-####`', '`Verify: BUG-####`', '`Feature: .workflow/features/<slug>.md`', '`Review rounds:`', '`Repro:`', '`reproduces`')
+    '.claude/skills/feature/SKILL.md'                       = @('`Feature: .workflow/features/<slug>.md`')
+    '.claude/skills/release/SKILL.md'                       = @('`Target: ', '`Verify: BUG-####`')
     '.claude/skills/feature/references/feature-template.md' = @('- Status: Open', '- Size:', '- Rounds:', '## GD decisions', '- Stop rule:')
-    '.claude/skills/fix/references/bugs-template.md'        = @('- Fix rounds:', '- Review rounds:')
+    '.claude/skills/fix/references/bugs-template.md'        = @('- Fix rounds:', '- Review rounds:', '- Stop rule:', '## BUG-####', '| ID |')
+    '.claude/skills/qa-standards/references/bug-lifecycle.md' = @('Settled: Closed, Won''t fix, Accepted, As designed, Duplicate')
+    '.claude/skills/qa-standards/SKILL.md'                  = @('**Critical**', '**High**', '**Medium**')
     '.claude/rules/routing.md'                              = @('extra round')
     # Marker literals the workflows emit and round-cap.ps1 reads.
     '.claude/workflows/review-gate.js'                      = @("lines.push('Mode: workflow')", 'lines.push(`Round: ${round}`)', 'lines.push(`Tree: ${scope.tree}`)')
     '.claude/workflows/project-audit.js'                    = @('const AUDIT = ''Mode: audit\n''', '`${AUDIT}Audit ${at(m.path)}', '`${AUDIT}Scan the repository')
+}
+# The result field /review records from workflow review-gate. No hook reads it: only these two files depend on it.
+$WorkflowContracts = @{
+    '.claude/skills/review/SKILL.md'   = @('`roundId`')
+    '.claude/workflows/review-gate.js' = @('roundId: round')
 }
 
 $agents = @(Get-ChildItem (Join-Path $claude 'agents') -Filter *.md | ForEach-Object BaseName)
@@ -143,7 +156,8 @@ function Test-SkillFormat([string]$path, [string]$rel, [string]$name, [string]$t
     if ($long) { Soft $rel "list item > $($Budget.BulletChars) chars" }
     if ($body.Contains('Latent concerns')) { Fail "${rel}: Latent concerns line" }
     if ($body -match '(?m)^\s*- (?:\*\*)?(?:Verified|Known limitations):') { Fail "${rel}: Verified or Known limitations bullet (agent-protocol envelope owns them)" }
-    if ($body -match '(?m)^\|\s*(?:Reference|Script)\s*\|') { Fail "${rel}: reference or script table" }
+    # The old table's header only: a data table may hold a row whose first cell is Reference or Script.
+    if ($body -match '(?m)^\|[ \t]*(?:Reference[ \t]*\|[ \t]*Read when|Script[ \t]*\|[ \t]*Run)[ \t]*\|[ \t]*\r?$') { Fail "${rel}: reference or script table" }
     if ($body.Contains(".claude/skills/$name/scripts/")) { Fail "${rel}: hardcoded script path" }
     $untitled = @(Get-UntitledLines $body (($text.Substring(0, $fm._end) -split '\n').Count - 1))
     if ($untitled) {
@@ -152,19 +166,26 @@ function Test-SkillFormat([string]$path, [string]$rel, [string]$name, [string]$t
     }
 
     $dir = Split-Path $path
-    $scripts = Join-Path $dir 'scripts'
-    if (Test-Path $scripts) {
-        $named = $text
-        $refs = Join-Path $dir 'references'
-        if (Test-Path $refs) { Get-ChildItem $refs -Recurse -Filter *.md | ForEach-Object { $named += Get-Content $_.FullName -Raw -Encoding UTF8 } }
-        $scriptsRoot = (Resolve-Path $scripts).Path
-        foreach ($s in Get-ChildItem $scripts -Recurse -File) {
-            # Relative to scripts/: a dot-folder above it (.claude itself) must not skip the file.
-            if ($s.FullName.Substring($scriptsRoot.Length) -match '[\\/](?:__pycache__|\.[^\\/]+)[\\/]' -or $s.Name -like 'test_*') { continue }
-            if (-not $named.Contains($s.Name)) { Fail "${rel}: script '$($s.Name)' not named in SKILL.md or a reference" }
-        }
-    }
+    Test-ScriptsNamed $dir
     Test-ChecklistLink $dir
+}
+
+# Every file under the skill's scripts/ is named in SKILL.md or a reference. Also run for -File on a reference: an edit there
+# can drop a script's last mention, and SKILL.md's own check does not run on it. A new unnamed script waits for a SKILL.md
+# edit or a whole-layer run.
+function Test-ScriptsNamed([string]$dir) {
+    $skillMd = Join-Path $dir 'SKILL.md'
+    $scripts = Join-Path $dir 'scripts'
+    if (-not (Test-Path $skillMd) -or -not (Test-Path $scripts)) { return }
+    $named = [string](Get-Content $skillMd -Raw -Encoding UTF8)
+    $refs = Join-Path $dir 'references'
+    if (Test-Path $refs) { Get-ChildItem $refs -Recurse -Filter *.md | ForEach-Object { $named += Get-Content $_.FullName -Raw -Encoding UTF8 } }
+    $scriptsRoot = (Resolve-Path $scripts).Path
+    foreach ($s in Get-ChildItem $scripts -Recurse -File) {
+        # Relative to scripts/: a dot-folder above it (.claude itself) must not skip the file.
+        if ($s.FullName.Substring($scriptsRoot.Length) -match '[\\/](?:__pycache__|\.[^\\/]+)[\\/]' -or $s.Name -like 'test_*') { continue }
+        if (-not $named.Contains($s.Name)) { Fail "$(Rel $skillMd): script '$($s.Name)' not named in SKILL.md or a reference" }
+    }
 }
 
 function Test-Checklist([string]$path, [string]$rel, [string[]]$lines) {
@@ -221,6 +242,15 @@ function Test-Paths([string]$path, [string]$text) {
     }
 }
 
+function Test-Contracts([string]$rel, [string]$text) {
+    foreach ($s in @($HookContracts[$rel])) {
+        if ($s -and -not $text.Contains($s)) { Fail "${rel}: lost '$s', which hooks/round-cap.ps1 counts on - update both together" }
+    }
+    foreach ($s in @($WorkflowContracts[$rel])) {
+        if ($s -and -not $text.Contains($s)) { Fail "${rel}: lost '$s', which /review and workflow review-gate share - update both together" }
+    }
+}
+
 function Test-File([string]$path) {
     if (-not (Test-Path $path -PathType Leaf)) { return }
     $rel = Rel $path
@@ -228,10 +258,7 @@ function Test-File([string]$path) {
     if ($rel -match '^\.claude/workflows/') {
         if ($path -notlike '*.js') { Fail "${rel}: .claude/workflows/ holds only .js workflow scripts" }
         elseif ((Get-Content $path -Raw -Encoding UTF8) -notmatch '^\s*export const meta\s*=') { Fail "${rel}: must start with 'export const meta = {...}'" }
-        $js = Get-Content $path -Raw -Encoding UTF8
-        foreach ($s in @($HookContracts[$rel])) {
-            if ($s -and -not $js.Contains($s)) { Fail "${rel}: lost '$s', which hooks/round-cap.ps1 counts on - update both together" }
-        }
+        Test-Contracts $rel (Get-Content $path -Raw -Encoding UTF8)
         return
     }
     if ($rel -match '^\.claude/.*\.workflow') { Fail "${rel}: state belongs in <project>/.workflow/, never under .claude/" }
@@ -251,9 +278,7 @@ function Test-File([string]$path) {
     $lines = $text -split '\r?\n'
     Test-Tables $path $lines
     Test-Paths $path $text
-    foreach ($s in @($HookContracts[$rel])) {
-        if ($s -and -not $text.Contains($s)) { Fail "${rel}: lost '$s', which hooks/round-cap.ps1 counts on - update both together" }
-    }
+    Test-Contracts $rel $text
 
     if ($rel -match '^\.claude/agents/([^/]+)\.md$') {
         $name = $Matches[1]
@@ -298,8 +323,10 @@ function Test-File([string]$path) {
 if ($File) {
     $p = if ([IO.Path]::IsPathRooted($File)) { $File } else { Join-Path $root $File }
     Test-File $p
+    if ((Rel $p) -match '^\.claude/skills/([^/]+)/references/') { Test-ScriptsNamed (Join-Path $claude "skills/$($Matches[1])") }
 } else {
-    $files = @(Get-ChildItem $claude -Recurse -File | Where-Object { $_.FullName -notmatch '[\\/](scripts|assets)[\\/]' -and $_.Extension -in '.md', '.js' -or $_.FullName -match '[\\/]workflows[\\/]' -or $_.Extension -in '.ps1', '.py', '.sh' } |
+    # Relative to this layer's root: a parent folder named scripts or assets must not hide every .md.
+    $files = @(Get-ChildItem $claude -Recurse -File | Where-Object { $r = Rel $_.FullName; $r -notmatch '/(scripts|assets)/' -and $_.Extension -in '.md', '.js' -or $r -match '/workflows/' -or $_.Extension -in '.ps1', '.py', '.sh' } |
         # Agent worktrees (/feature lane A, isolation: "worktree") are checkouts of the layer, not part of it.
         # Relative to this layer's root: a layer that itself sits in a worktree is still verified.
         Where-Object { (Rel $_.FullName) -notmatch '^\.claude/worktrees/' })

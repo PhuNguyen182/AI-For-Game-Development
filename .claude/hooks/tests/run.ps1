@@ -313,7 +313,10 @@ try {
         Check "pre-push blocks an unpushed $($case[0])" (Push 'git push origin main' $pf) 2
         PF reset -q --hard HEAD~1
     }
+    # The reset above removed the folder. Without it nothing is committed and the allow below proves nothing.
+    New-Item -ItemType Directory -Force (Join-Path $pf '.workflow/evidence/x') | Out-Null
     Set-Content (Join-Path $pf '.workflow/evidence/x/report.md') '# Report'; PF add -f -- .workflow/evidence/x/report.md; PF commit -q -m report
+    Check 'pre-push fixture: the evidence report is committed' (git -C $pf log -1 --format= --name-only) '.workflow/evidence/x/report.md'
     Check 'pre-push allows an unpushed evidence report' (Push 'git push origin main' $pf) 0
 
     # git-guard
@@ -978,7 +981,7 @@ try {
         @('verified-title', $okDesc, @('- **Verified:** it ran.'), 'Verified or Known limitations bullet'),
         @('limitations-title', $okDesc, @('- **Known limitations:** none.'), 'Verified or Known limitations bullet'),
         @('limitations-in-fence', $okDesc, $vlFence, 'Verified or Known limitations bullet'),
-        @('reference-table', $okDesc, @('| Reference | When |', '|---|---|', '| a.md | b |'), 'reference or script table'),
+        @('reference-table', $okDesc, @('| Reference | Read when |', '|---|---|', '| a.md | b |'), 'reference or script table'),
         @('script-table', $okDesc, @('| Script | Run |', '|---|---|', '| a.ps1 | b |'), 'reference or script table'),
         @('hardcoded-path', $okDesc, @('- **Run:** `.claude/skills/hardcoded-path/scripts/x.ps1`.'), 'hardcoded script path'),
         @('prose-line', $okDesc, @('A prose paragraph.'), 'untitled list item or prose line'),
@@ -1102,6 +1105,87 @@ try {
     $lfRun = Verify (VRel 'eol-lf')
     $crRun = Verify (VRel 'eol-cr')
     Check 'verify: a CRLF copy gives the output of its LF original, name aside' ($lfRun.Out -match 'lines \d+\)' -and $crRun.Code -eq $lfRun.Code -and ($crRun.Out -replace 'eol-cr', 'eol-lf') -ceq $lfRun.Out) $true
+
+    # verify-layer: the table check matches the old table's header only. Last, as above: no whole-layer count below reads these.
+    VSkill 'data-table' @('| Reference | Owner |', '|---|---|', '| Reference | a data row |', '| Script | another |', '| Script | Run later |')
+    $r = Verify (VRel 'data-table')
+    Check 'verify: a data table with Reference or Script as a first cell passes with no output line' ($r.Code -eq 0 -and $r.Out -cnotmatch 'WARN|FAIL') $true
+    VSkill 'crlf-table' @('| Script | Run |', '|---|---|', '| a.ps1 | b |')
+    ToCrlf 'crlf-table'
+    $r = Verify (VRel 'crlf-table')
+    Check 'verify fails per file: the old table header in CRLF' ($r.Code -eq 1 -and $r.Out -match "$(VFail 'crlf-table')reference or script table") $true
+
+    # verify-layer: -File on a reference runs the owning skill's script-named check.
+    VSkill 'named-then-dropped'
+    Set-Content (Join-Path $vlSkills 'named-then-dropped/scripts/y.ps1') '# Prints y.'
+    Set-Content (Join-Path $vlSkills 'named-then-dropped/references/topic.md') "# Topic`n`n- Adapt ../scripts/y.ps1."
+    Check 'verify: -File on a reference that names the script passes' (Verify '.claude/skills/named-then-dropped/references/topic.md').Code 0
+    Set-Content (Join-Path $vlSkills 'named-then-dropped/references/topic.md') "# Topic`n`n- A fact."
+    $r = Verify '.claude/skills/named-then-dropped/references/topic.md'
+    Check 'verify fails on -File: a reference edit drops the only name of a script' ($r.Code -eq 1 -and $r.Out -match "$(VFail 'named-then-dropped')script 'y\.ps1' not named") $true
+    Check 'verify: -File on a named script passes' (Verify '.claude/skills/clean-skill/scripts/x.ps1').Code 0
+    # Production passes the raw absolute path, which the trigger must shorten first.
+    $droppedRef = Join-Path $vlSkills 'named-then-dropped/references/topic.md'
+    Check 'verify-on-edit blocks a reference edit, by absolute path, that drops the only name of a script' (VerifyEdit $droppedRef) 2
+    if ($env:OS -eq 'Windows_NT') {
+        $rawPath = $droppedRef -replace '\\', '/'
+        $rawPath = $rawPath.Substring(0, 1).ToLowerInvariant() + $rawPath.Substring(1)
+        Check 'verify-on-edit blocks that edit given as a lowercase drive and forward slashes' (VerifyEdit $rawPath) 2
+    }
+
+    # verify-layer: each contract table names what depends on the lost string. Removed after, so no run below reads them.
+    $contractRule = Join-Path $vl '.claude/rules/routing.md'
+    Set-Content $contractRule '# Routing'
+    $r = Verify '.claude/rules/routing.md'
+    Check 'verify fails per file: a file missing a hook contract string' ($r.Code -eq 1 -and $r.Out -match "FAIL  \.claude/rules/routing\.md: lost 'extra round', which hooks/round-cap\.ps1 counts on") $true
+    Set-Content $contractRule '# Routing - extra round'
+    Check 'verify: the same file with the string passes' (Verify '.claude/rules/routing.md').Code 0
+    Remove-Item $contractRule
+    $workflows = Join-Path $vl '.claude/workflows'
+    New-Item -ItemType Directory -Force $workflows | Out-Null
+    $gateMarkers = @('export const meta = {}', "lines.push('Mode: workflow')", 'lines.push(`Round: ${round}`)', 'lines.push(`Tree: ${scope.tree}`)')
+    Set-Content (Join-Path $workflows 'review-gate.js') $gateMarkers
+    $r = Verify '.claude/workflows/review-gate.js'
+    Check 'verify fails per file: a workflow missing its review contract string' ($r.Code -eq 1 -and $r.Out -match "FAIL  \.claude/workflows/review-gate\.js: lost 'roundId: round', which /review and workflow review-gate share" -and $r.Out -notmatch 'round-cap') $true
+    Set-Content (Join-Path $workflows 'review-gate.js') ($gateMarkers + 'const x = { roundId: round }')
+    Check 'verify: the same workflow with the string passes' (Verify '.claude/workflows/review-gate.js').Code 0
+    Remove-Item -Recurse -Force $workflows
+
+    # verify-layer: a parent folder named scripts or assets must not hide the layer from a whole-layer run.
+    foreach ($parent in 'scripts', 'assets') {
+        $pl = Join-Path $tmp "Parents/$parent/Layer"
+        $plSkills = Join-Path $pl '.claude/skills'
+        New-Item -ItemType Directory -Force (Join-Path $pl '.claude/agents'), (Join-Path $pl '.claude/rules'), (Join-Path $plSkills 'verify-layer/scripts') | Out-Null
+        Copy-Item (Join-Path $vlSkills 'verify-layer/scripts/verify.ps1') (Join-Path $plSkills 'verify-layer/scripts')
+        Copy-Item -Recurse (Join-Path $vlSkills 'plain-bullet') $plSkills
+        $out = & $shell -NoProfile -NonInteractive -File (Join-Path $plSkills 'verify-layer/scripts/verify.ps1') 2>&1
+        Check "verify fails whole-layer under a parent folder named ${parent}: a planted violation" ($LASTEXITCODE -eq 1 -and ($out -join "`n") -match "$(VFail 'plain-bullet')untitled list item or prose line") $true
+    }
+
+    # verify-layer: in a clean layer, a whole-layer run skips a violating .md under a skill's own scripts/ or assets/, and a
+    # skill folder with no SKILL.md has no script check. -File reads the same .md, which proves the plant violates.
+    $il = Join-Path $tmp 'InLayer'
+    $ilSkills = Join-Path $il '.claude/skills'
+    New-Item -ItemType Directory -Force (Join-Path $il '.claude/agents'), (Join-Path $il '.claude/rules'), (Join-Path $ilSkills 'verify-layer/scripts'), (Join-Path $ilSkills 'no-skill-md/scripts'), (Join-Path $ilSkills 'no-skill-md/references') | Out-Null
+    $ilVerifier = Join-Path $ilSkills 'verify-layer/scripts/verify.ps1'
+    Copy-Item (Join-Path $vlSkills 'verify-layer/scripts/verify.ps1') $ilVerifier
+    Copy-Item -Recurse (Join-Path $vlSkills 'clean-skill') $ilSkills
+    # Named, so the script check has nothing to say about the plant under scripts/.
+    Set-Content (Join-Path $ilSkills 'clean-skill/references/topic.md') "# Topic`n`n- A fact.`n- See notes.md."
+    foreach ($sub in 'scripts', 'assets') {
+        New-Item -ItemType Directory -Force (Join-Path $ilSkills "clean-skill/$sub") | Out-Null
+        Set-Content (Join-Path $ilSkills "clean-skill/$sub/notes.md") '- [broken](missing.md)'
+        $out = & $shell -NoProfile -NonInteractive -File $ilVerifier -File ".claude/skills/clean-skill/$sub/notes.md" 2>&1
+        Check "verify fails on -File: the .md planted under in-layer ${sub}/" ($LASTEXITCODE -eq 1 -and ($out -join "`n") -match "link 'missing\.md' does not exist") $true
+    }
+    Set-Content (Join-Path $ilSkills 'no-skill-md/scripts/orphan.ps1') '# Named nowhere.'
+    Set-Content (Join-Path $ilSkills 'no-skill-md/references/topic.md') '# Topic'
+    foreach ($f in 'references/topic.md', 'scripts/orphan.ps1') {
+        & $shell -NoProfile -NonInteractive -File $ilVerifier -File ".claude/skills/no-skill-md/$f" 2>&1 | Out-Null
+        Check "verify: -File on $f in a folder with no SKILL.md passes, an unnamed script beside it" $LASTEXITCODE 0
+    }
+    $out = & $shell -NoProfile -NonInteractive -File $ilVerifier 2>&1
+    Check 'verify: a whole-layer run passes over a violating .md in in-layer scripts/ and assets/ and a folder with no SKILL.md' ($LASTEXITCODE -eq 0 -and ($out -join "`n") -cnotmatch 'FAIL') $true
 }
 finally {
     Remove-Item Env:CLAUDE_PROJECT_DIR, Env:HOOK_TEST_XERJ, Env:MEM_CAPTURE, Env:XERJ_URL -ErrorAction SilentlyContinue
