@@ -34,7 +34,7 @@ user-invocable: false
 | Need | Command |
 |---|---|
 | File a bug, prints its ID | `add [--by W]`, stdin: `title description priority repro expected actual evidence`, optional `feature owner regression_test root_cause note` |
-| Change fields | `update <id> [--by W]`, stdin: any of those fields |
+| Change fields, or a `note` alone to record evidence | `update <id> [--by W]`, stdin: any of those fields |
 | Move status | `set-status <id> "<status>" [--note N] [--by W] [--duplicate-of BUG-####]`, or stdin: `{"note": ...}` |
 | Used round | `round <id> fix\|review +1 --note N` |
 | GD's extra round, raises the cap | `extra-round <id> fix\|review +n --note N` |

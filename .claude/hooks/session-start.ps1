@@ -44,7 +44,7 @@ if (Test-Path (Join-Path $root '.claude/skills/mem/scripts/mem.py')) {
 }
 
 # Bugs: purge past the 90-day window, then one status line, or nothing with no journal. Python starts only for a journal.
-function Get-BugsLine([string]$Root) {
+function Get-BugsLine([string]$Root, [bool]$SkipPurge) {
     $workflow = Join-Path $Root '.workflow'
     if (Test-Path (Join-Path $workflow 'bugs.md')) { return 'Bugs: .workflow/bugs.md is still present - run bugs.py import-md, then delete the file (skill bugs).' }
     if (-not (Test-Path (Join-Path $workflow 'bugs.jsonl'))) { return $null }
@@ -52,17 +52,24 @@ function Get-BugsLine([string]$Root) {
     $budget = [Math]::Min(3000, 12000 - $clock.ElapsedMilliseconds)
     if ($budget -lt 1000) { return 'Bugs: not checked - the session-start time budget is used up.' }
     $started = $clock.ElapsedMilliseconds
-    $purge = Invoke-Bugs $Root @('purge', '--auto') ([int]$budget)
-    if ($purge.State -eq 'NoPython') { return 'Bugs: unavailable - install Python 3.10+ with SQLite FTS5 (skill bugs).' }
+    $noPython = 'Bugs: unavailable - install Python 3.10+ with SQLite FTS5 (skill bugs).'
     $suffix = ''
-    if ($purge.State -ne 'Ok') { $suffix = "; purge failed: $(Get-FirstLine $purge.Err)" }
-    elseif ($purge.Out -match '(?m)^(purged [1-9]\d*, journal uncommitted)\s*$') { $suffix = "; $($Matches[1])" }
+    if (-not $SkipPurge) {
+        $purge = Invoke-Bugs $Root @('purge', '--auto') ([int]$budget)
+        if ($purge.State -eq 'NoPython') { return $noPython }
+        if ($purge.State -ne 'Ok') { $suffix = "; purge failed: $(Get-FirstLine $purge.Err)" }
+        elseif ($purge.Out -match '(?m)^(purged [1-9]\d*, journal uncommitted)\s*$') { $suffix = "; $($Matches[1])" }
+    }
     $stats = Invoke-Bugs $Root @('stats') ([int][Math]::Max(1000, $budget - ($clock.ElapsedMilliseconds - $started)))
+    if ($stats.State -eq 'NoPython') { return $noPython }
     if ($stats.State -ne 'Ok') { return "Bugs: unavailable - $(Get-FirstLine $stats.Err)" }
     return "$($stats.Out.Trim())$suffix"
 }
 function Get-FirstLine([string]$Text) { $line = ($Text -split '\r?\n')[0]; if ($line.Length -gt 160) { $line.Substring(0, 160) } else { $line } }
-try { Get-BugsLine (Get-MainCheckout $root) } catch { "Bugs: unavailable - $(Get-FirstLine $_.Exception.Message)" }
+# The journal checks and stats use the main checkout, but the CLI then sees --root as a main checkout, so its own worktree
+# guard cannot fire: a session in an agent worktree must not purge. Get-MainCheckout changes $root only for such a worktree;
+# a linked worktree elsewhere keeps its root, and purge --auto refuses it itself.
+try { $main = Get-MainCheckout $root; Get-BugsLine $main ($main -ne $root) } catch { "Bugs: unavailable - $(Get-FirstLine $_.Exception.Message)" }
 
 $prefix = Get-XerjPrefix $root
 switch (Get-XerjState $root) {

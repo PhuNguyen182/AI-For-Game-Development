@@ -270,6 +270,31 @@ class TestCrud(Base):
         self.assertIn("no change", self.ok("update", "BUG-0001", stdin={"priority": "Medium"}))
         self.assertEqual(self.journal.read_bytes(), before)
 
+    def test_note_only_update_records_the_note(self):
+        self.add()
+        out = self.ok("update", "BUG-0001", stdin={"note": "qa: second hit in log2.md"})
+        self.assertIn("BUG-0001 updated", out)
+        self.assertNotIn("no change", out)
+        e = self.show("BUG-0001")["events"][-1]
+        self.assertEqual((e["type"], e["note"], e["data"]), ("update", "qa: second hit in log2.md", "{}"))
+        self.assertEqual(len(self.lines()), 2)
+        self.assertIn("BUG-0001", self.ok("search", "log2"))
+        self.db_path.unlink()
+        self.assertEqual(self.show("BUG-0001")["events"][-1]["note"], "qa: second hit in log2.md")
+
+    def test_note_with_an_unchanged_field_keeps_the_note(self):
+        self.add()
+        self.ok("update", "BUG-0001", stdin={"priority": "Medium", "note": "qa: same priority, new evidence"})
+        e = self.show("BUG-0001")["events"][-1]
+        self.assertEqual((e["note"], e["data"]), ("qa: same priority, new evidence", "{}"))
+
+    def test_truly_empty_update_says_no_change(self):
+        self.add()
+        before = self.journal.read_bytes()
+        self.assertIn("no change", self.ok("update", "BUG-0001", stdin={}))
+        self.assertIn("no change", self.ok("update", "BUG-0001", stdin={"note": "   "}))
+        self.assertEqual(self.journal.read_bytes(), before)
+
     def test_update_refuses_status_id_and_counters(self):
         self.add()
         for key, val in (("status", "Complete"), ("id", "BUG-0009"), ("fix_cap", 9), ("closed_at", T0), ("duplicate_of", "BUG-0001")):
@@ -733,6 +758,20 @@ class TestPurge(Base):
         self.assertEqual([r["id"] for r in rows], ["BUG-0002"])
         self.assertEqual(self.add(), "BUG-0003")
         self.assertFalse(self.counters("BUG-0001")["found"])
+
+    def test_the_test_clock_warns_on_every_purge_form(self):
+        self.closed_at_t0()
+        for args in (["purge", "--dry-run"], ["purge", "--auto"], ["purge"]):
+            with self.subTest(args):
+                code, out, err = self.run_cli(*args, now=stamp(10))
+                self.assertEqual(code, 0, err)
+                self.assertEqual(len(err.strip().splitlines()), 1, err)
+                self.assertIn("BUGS_NOW", err)
+                self.assertNotIn("BUGS_NOW", out)
+
+    def test_no_clock_override_no_warning(self):
+        self.closed_at_t0()
+        self.assertEqual(self.run_cli("purge", "--dry-run")[2], "")
 
     def test_auto_without_git_does_nothing_and_says_why(self):
         self.closed_at_t0()
@@ -1216,6 +1255,7 @@ class TestSecurity(Base):
         self.assertEqual(b["actual"], "Contact [REDACTED:email] from [REDACTED:ip]")
         self.assertEqual(b["evidence"], "phone [REDACTED:phone]")
         self.assertIn("[REDACTED:device id]", b["repro"])
+        self.assertTrue(bugs.mem_module().RX_DEVICE_ID.search("idfa: " + idfa))
         raw = self.journal.read_text(encoding="utf-8")
         for value in (email, ip, phone, idfa):
             self.assertNotIn(value, raw)
@@ -1378,6 +1418,15 @@ class TestSql(Base):
         self.add()
         with mock.patch.object(bugs, "SQL_SECONDS", 0.05):
             self.assertIn("interrupted", self.no("sql", "WITH RECURSIVE c(n) AS (SELECT 1 UNION ALL SELECT n+1 FROM c) SELECT MAX(n) FROM c"))
+
+    def test_a_blob_result_is_hex_in_json_and_text(self):
+        code, out, err = self.run_cli("sql", "SELECT x'00ff' AS b, 'plain' AS t, 1 AS n, NULL AS z", "--json")
+        self.assertEqual(code, 0, err)
+        self.assertEqual(json.loads(out), [{"b": "x'00ff'", "t": "plain", "n": 1, "z": None}])
+        self.assertEqual(self.ok("sql", "SELECT x'00ff' AS b").split(), ["b", "x'00ff'"])
+
+    def test_text_that_is_not_utf8_is_a_clean_refusal(self):
+        self.assertIn("sql refused", self.no("sql", "SELECT CAST(x'ff' AS TEXT) AS bad", "--json"))
 
     def test_bad_sql_is_an_error(self):
         self.add()
@@ -1548,6 +1597,33 @@ class TestImport(Base):
         self.assertEqual(self.show("BUG-0005")["duplicate_of"], "BUG-0001")
         self.assertTrue(self.show("BUG-0002")["closed_at"].startswith("2026-10-30"))
 
+    def test_duplicate_of_status_cell_is_the_documented_form(self):
+        first = md_record("BUG-0001")
+        self.imported(md_file(first, md_record("BUG-0002", status="Duplicate of BUG-0001",
+                                               history="2026-10-29 Open — a. 2026-10-30 Duplicate of BUG-0001 — QA executor.")))
+        b = self.show("BUG-0002")
+        self.assertEqual((b["status"], b["duplicate_of"]), ("Duplicate", "BUG-0001"))
+        self.assertTrue(b["closed_at"].startswith("2026-10-30"))
+        self.assertEqual(json.loads(b["events"][-1]["data"])["to"], "Duplicate")
+
+    def test_duplicate_target_comes_from_the_cell_over_any_note(self):
+        self.imported(md_file(md_record("BUG-0001"), md_record(
+            "BUG-0002", status="Duplicate of BUG-0001",
+            history="2026-10-29 Open — seen beside BUG-0077. 2026-10-30 Duplicate — QA executor.")))
+        self.assertEqual(self.show("BUG-0002")["duplicate_of"], "BUG-0001")
+
+    def test_duplicate_target_without_a_cell_comes_from_the_duplicate_event(self):
+        self.imported(md_file(md_record("BUG-0001"), md_record(
+            "BUG-0002", status="Duplicate",
+            history="2026-10-29 Open — seen beside BUG-0077. 2026-10-30 Duplicate — of BUG-0001.")))
+        self.assertEqual(self.show("BUG-0002")["duplicate_of"], "BUG-0001")
+
+    def test_duplicate_cell_with_no_real_target_stops(self):
+        self.write_md(md_file(md_record("BUG-0002", status="Duplicate of nothing",
+                                        history="2026-10-29 Open — a. 2026-10-30 Duplicate — b.")))
+        self.assertIn("status", self.no("import-md"))
+        self.assertFalse(self.journal.exists())
+
     def test_unknown_history_status_and_label_stop(self):
         self.write_md(md_file(md_record(history="2026-10-29 Open — a. 2026-10-30 Parked — b.")))
         self.assertIn("History", self.no("import-md"))
@@ -1588,6 +1664,15 @@ class TestImport(Base):
     def test_next_id_above_the_records_keeps_the_high_water(self):
         self.imported(md_file(md_record(), next_id="BUG-0040"))
         self.assertEqual(self.add(), "BUG-0040")
+
+    def test_next_id_above_one_with_no_records_leaves_a_working_store(self):
+        self.imported(MD_HEADER % "BUG-0006")
+        self.assertEqual(self.add(), "BUG-0006")
+        self.assertEqual(self.add(), "BUG-0007")
+        self.ok("list")
+        self.ok("doctor")
+        self.db_path.unlink()
+        self.assertEqual(self.add(), "BUG-0008")
 
     def test_empty_template_imports_nothing_but_keeps_the_next_id(self):
         self.imported("# Bugs\n\nNext ID: BUG-0001\n\n| ID | Title | Severity | Status | Feature | Owner | Regression test |\n|---|---|---|---|---|---|---|\n\n"
@@ -1942,6 +2027,10 @@ class TestSkillContract(unittest.TestCase):
             elif fence:
                 n += 1
                 self.assertLess(n, 15)
+
+    def test_the_test_clock_is_documented_as_test_only(self):
+        line = next(x for x in self.schema.splitlines() if "BUGS_NOW" in x)
+        self.assertIn("test-only", line.lower())
 
     def test_stdlib_only(self):
         imports = set(re.findall(r"(?m)^\s*(?:import|from)\s+([A-Za-z_][A-Za-z0-9_]*)", self.source))

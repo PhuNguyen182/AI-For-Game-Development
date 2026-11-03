@@ -365,7 +365,10 @@ else {
 foreach ($c in @($hits | Where-Object { $_ })) {
     $line = Format $c.What $c
     if ($c.Used -gt $c.Cap) { $msg += "$line - past the cap: stop and report to the GD." }
-    elseif (-not $c.Stopped) { $msg += "$line - at the cap: technical-architect root-causes once (record '- Stop rule:'), the owner gets one more dispatch; another failure stops the work." }
+    elseif (-not $c.Stopped) {
+        $record = if ($c.What -match '^BUG-') { "run bugs.py stop-rule $($c.What) $($c.Name) --extra-dispatch unused" } else { "record '- Stop rule:'" }
+        $msg += "$line - at the cap: technical-architect root-causes once ($record), the owner gets one more dispatch; another failure stops the work."
+    }
 }
 if ($msg.Count) { $unread += "Stop rule (routing.md):`n" + ($msg -join "`n") }
 if (-not $unread.Count) { exit 0 }

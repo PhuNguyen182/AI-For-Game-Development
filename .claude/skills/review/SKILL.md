@@ -30,7 +30,7 @@ argument-hint: "<diff range, feature slug or path>"
   - **Scope args:** pass `args.base` from the feature's `Base:`, and `args.spec` (the feature file, the bug's Expected, or the S acceptance criteria).
   - **Audit arg:** `args.audit: true` only for an audit.
   - **Hook counting:** its gate briefs carry `Mode: workflow`, so the hook never counts them; it only blocks a launch past the cap.
-  - **Recording a failed round:** the main session records each round the verdicts fail (after the skeptic): +1 on the feature's `Rounds:` review and rework, or `bugs.py round <id> review +1`.
+  - **Recording a failed round:** the main session records each round the verdicts fail (after the skeptic): +1 on the feature's `Rounds:` review and rework, or `bugs.py round <id> review +1 --note <why>`.
   - **Target record:** a `Target:` has no file line → add the result's `roundId` to `.workflow/rounds.json` under `target:<path, lower-cased, / separators>` → `review`.
   - **Missing result:** a result `incomplete`, `no result` for a gate, or `nothing to review` on a non-empty change → re-run only the missing gate.
     - **Re-run args:** `args.gates` (`['code']` or `['security']`; both when no gate ran), the same `args.round` and an unchanged tree.

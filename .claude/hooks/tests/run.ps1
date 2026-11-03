@@ -722,6 +722,7 @@ try {
     Check 'round-cap: a bug at its cap still dispatches' (Dispatch 'Fix BUG-0001') 0
     $r = ShellEdit $bugCall 'Bash'
     Check 'round-cap: a bugs.py command warns at the cap' ($r.Code -eq 2 -and $r.Out -match 'BUG-0001: fix 2/2' -and $r.Out -match 'at the cap') $true
+    Check 'round-cap: ... and names the bug''s stop-rule command' ($r.Out -match 'bugs\.py stop-rule BUG-0001 fix --extra-dispatch unused' -and $r.Out -notmatch "record '- Stop rule:'") $true
     BugCli @('stop-rule', 'BUG-0001', 'fix', '--extra-dispatch', 'unused', '--note', 'test') | Out-Null
     Check 'round-cap: a Stop rule silences the at-cap message' (ShellEdit $bugCall).Code 0
     BugCli @('round', 'BUG-0001', 'fix', '+1', '--note', 'test') | Out-Null
@@ -963,6 +964,19 @@ try {
     git @bpGit commit -q -m 'journal' 2>&1 | Out-Null
     $env:CLAUDE_PROJECT_DIR = $bp
     $env:HOOK_TEST_XERJ = 'none'
+    # A session in a linked worktree: stats read the main checkout, the purge must not run against it.
+    $bpWt = Join-Path $bp '.claude/worktrees/w1'
+    git @bpGit worktree add -q -b wt-branch $bpWt 2>&1 | Out-Null
+    $bpBefore = [IO.File]::ReadAllText($bpJournal)
+    $env:CLAUDE_PROJECT_DIR = $bpWt
+    $r = Invoke-Hook 'session-start.ps1' @{}
+    $env:CLAUDE_PROJECT_DIR = $bp
+    Check 'session-start: a linked worktree still reads the main checkout''s stats' ($r.Code -eq 0 -and $r.Out -match '(?m)^Bugs: 1 open \(1 High\+\)\s*$') $true
+    Check 'session-start: ... and purges nothing' ($r.Out -notmatch 'purged') $true
+    Check 'session-start: ... the main journal is untouched' ([IO.File]::ReadAllText($bpJournal)) $bpBefore
+    Check 'session-start: ... and clean in git status' ((git @bpGit status --porcelain -- .workflow/bugs.jsonl | Out-String).Trim()) ''
+    git @bpGit worktree remove --force $bpWt 2>&1 | Out-Null
+    git @bpGit branch -q -D wt-branch 2>&1 | Out-Null
     # Feature branch first: the journal must still hold the expired bug when the purge case runs.
     git @bpGit checkout -q -b feature/x 2>&1 | Out-Null
     $r = Invoke-Hook 'session-start.ps1' @{}

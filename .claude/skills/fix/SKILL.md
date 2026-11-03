@@ -15,7 +15,8 @@ argument-hint: "<bug id, or the symptom in the GD's words>"
 - **Check first:** `bugs.py search "<words>"` before filing.
 - **New bug:** `bugs.py add` prints the next `BUG-####`, status `Request`: title, description, priority, feature slug, repro, expected, actual, evidence, owner.
 - **Existing bug:** matches an existing bug → add evidence with `update`; a terminal one → `Reopen`.
-- **Reopen by the GD:** a reopen the GD reports → `Reopen`, then `round <id> fix +1` (and the feature's `rework`).
+- **Reopen by the GD:** a reopen the GD reports → `Reopen`, then `round <id> fix +1 --note <why>` (and the feature's `rework`).
+- **Still broken while `Resolved`:** the GD reports it → `Resolved` → `Review` → `Reopen`; a direct `Resolved` → `Reopen` is refused.
 - **Reopen by a run:** a reopen found by a `Verify:` run is counted by the hook — never write it.
 - **Brief markers:** every brief carries `Bug: BUG-####` (one bug) and, when the bug belongs to a feature, `Feature: .workflow/features/<slug>.md`.
 - **Hook charge:** hook `round-cap.ps1` charges only the `Bug:` and `Feature:` lines and blocks past a cap.
@@ -47,7 +48,7 @@ argument-hint: "<bug id, or the symptom in the GD's words>"
 - **Failing check:** a failing compile or regression test → same owner, next attempt (not a fix round).
 - **No fix delivered:** a `Failed` or `Blocked` attempt with no fix → `Request`; the next dispatch → `Processing`.
 - **Review offer:** risk flag on the touched code, or a Core assembly touched → offer `/review` on the diff (`routing.md` → Gates).
-- **Rounds without a feature:** without a feature, a workflow review round the hook cannot see → `round <id> review +1` (cap 3).
+- **Rounds without a feature:** without a feature, a workflow review round the hook cannot see → `round <id> review +1 --note <why>` (cap 3).
 - **Extra round:** the GD's order → `extra-round <id> fix|review +n --note <the order>`.
 - **Stop rule:** fired → `stop-rule <id> fix|review --extra-dispatch unused`; dispatch spent → `used`.
 

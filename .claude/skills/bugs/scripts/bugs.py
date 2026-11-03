@@ -761,7 +761,7 @@ class Writer:
                 _after_append()
                 set_meta(self.db, "journal_hash", sha(new))
                 set_meta(self.db, "high_water", self.top)
-                set_meta(self.db, "last_ts", self.last_ts)
+                set_meta(self.db, "last_ts", self.last_ts or "")
             self.db.execute("COMMIT")
         except BaseException:
             self.db.execute("ROLLBACK")
@@ -803,7 +803,7 @@ def cmd_update(ctx, a):
     unknown = sorted(set(data) - set(UPDATABLE) - {"note"})
     if unknown:
         raise Refused("update: unknown or read-only field: %s (status moves through set-status)" % ", ".join(unknown))
-    note = cleaner.clean("note", data["note"]) if data.get("note") else None
+    note = (cleaner.clean("note", data["note"]) or None) if data.get("note") else None
     changes = {}
     for field, value in data.items():
         if field == "note":
@@ -818,10 +818,11 @@ def cmd_update(ctx, a):
     with Writer(ctx) as w:
         row = live_bug(w.db, a.id)
         changes = {k: v for k, v in changes.items() if row[k] != v}
-        if changes:
+        if changes or note:  # a note alone is evidence: /fix records it this way
             w.emit("update", row["uid"], changes, by=by, note=note)
     cleaner.report()
-    print("%s updated: %s" % (a.id, ", ".join(sorted(changes))) if changes else "%s: no change" % a.id)
+    written = sorted(changes) + (["note"] if note else [])
+    print("%s updated: %s" % (a.id, ", ".join(written)) if written else "%s: no change" % a.id)
     return 0
 
 
@@ -1051,6 +1052,10 @@ def strip_sql_comments(text: str) -> str:
     return re.sub(r"--[^\n]*|/\*.*?(?:\*/|$)", " ", text, flags=re.S).strip()
 
 
+def sql_cell(value):
+    return "x'%s'" % value.hex() if isinstance(value, bytes) else value  # a BLOB prints as its SQL literal
+
+
 def cmd_sql(ctx, a):
     query = strip_sql_comments(a.query)
     first = re.match(r"[A-Za-z]+", query)
@@ -1073,11 +1078,11 @@ def cmd_sql(ctx, a):
     more = len(rows) > 1000
     rows = rows[:1000]
     if a.json:
-        print(json.dumps([dict(zip(names, tuple(r))) for r in rows], ensure_ascii=False, indent=1))
+        print(json.dumps([dict(zip(names, map(sql_cell, tuple(r)))) for r in rows], ensure_ascii=False, indent=1))
     else:
         print("\t".join(names))
         for r in rows:
-            print("\t".join("" if v is None else str(v).replace("\n", "\\n") for v in tuple(r)))
+            print("\t".join("" if v is None else str(sql_cell(v)).replace("\n", "\\n") for v in tuple(r)))
     if more:
         print("(first 1000 rows)", file=sys.stderr)
     return 0
@@ -1123,6 +1128,8 @@ def auto_block_reason(ctx: Ctx) -> str | None:
 
 
 def cmd_purge(ctx, a):
+    if os.environ.get("BUGS_NOW"):
+        print("warning: BUGS_NOW is set: purge runs on that test clock, not the real time", file=sys.stderr)
     if a.auto:
         why = auto_block_reason(ctx)
         if why:
@@ -1234,6 +1241,7 @@ OLD_STATUS = {"Open": "Request", "Fixed": "Resolved", "Closed": "Complete", "Reo
 OLD_SEVERITY = {"Critical": "Highest", "High": "High", "Medium": "Medium", "Low": "Low"}
 RX_HISTORY = re.compile(r"(?:(?<=\s)|^)(\d{4}-\d{2}-\d{2}) (Open|Fixed|Closed|Reopened|Won't fix|Accepted|As designed|Duplicate)\b(?:\s*[—–-]+\s*)?")
 RX_DATED_WORD = re.compile(r"(?:^|\s)\d{4}-\d{2}-\d{2} [A-Z]")
+RX_DUPLICATE_CELL = re.compile(r"Duplicate of (BUG-\d{4,})")  # the old lifecycle's own status form
 RX_STOP_RULE = re.compile(r"(fix|review) root-caused (\d{4}-\d{2}-\d{2}) - extra dispatch: (unused|used)\b")
 MD_LABELS = {"repro": "repro", "expected": "expected", "actual": "actual", "evidence": "evidence", "root cause": "root_cause",
              "fix rounds": "fix_rounds", "review rounds": "review_rounds", "stop rule": "stop_rule", "history": "history", "extra round": "extra_round"}
@@ -1347,9 +1355,11 @@ def stage_record(bug_id: str, row: dict, rec: dict, cleaner: Cleaner, problems: 
     history = md_history(bug_id, rec.get("history"), problems)
     if history and history[0][1] != "Open":
         problems.append("%s History: must start with Open" % bug_id)
-    if row["status"] not in OLD_STATUS:
+    dup_cell = RX_DUPLICATE_CELL.match(row["status"])
+    status = "Duplicate" if dup_cell else row["status"]
+    if status not in OLD_STATUS:
         problems.append("%s status: unknown '%s'" % (bug_id, row["status"]))
-    elif history and history[-1][1] != row["status"]:
+    elif history and history[-1][1] != status:
         problems.append("%s History: ends at %s, the table says %s" % (bug_id, history[-1][1], row["status"]))
 
     notes = []
@@ -1385,12 +1395,12 @@ def stage_record(bug_id: str, row: dict, rec: dict, cleaner: Cleaner, problems: 
         if not stop:
             problems.append("%s stop_rule: expected '<counter> root-caused <date> - extra dispatch: unused|used'" % bug_id)
 
-    dup_of = None
-    if row["status"] == "Duplicate":
-        m = re.search(r"BUG-\d{4,}", " ".join(n or "" for n in notes))
-        if m:
-            dup_of = m.group(0)
-        else:
+    dup_of = dup_cell.group(1) if dup_cell else None
+    if status == "Duplicate" and not dup_of:
+        for (_, word, _), note in zip(history, notes):  # only the Duplicate event: an earlier note may name another bug
+            m = re.search(r"BUG-\d{4,}", note or "") if word == "Duplicate" else None
+            dup_of = m.group(0) if m else dup_of
+        if not dup_of:
             problems.append("%s History: Duplicate names no BUG-#### target" % bug_id)
 
     if problems and any(p.startswith(bug_id) for p in problems):
@@ -1465,6 +1475,7 @@ def cmd_import_md(ctx, a):
             w.lines.append(encode_line({"event_uid": stable_uid("import/gap-event/%d" % (next_id - 1)), "bug_uid": uid, "ts": GAP_TS,
                                         "type": "tombstone", "data": {"id": next_id - 1}}))
             w.top = next_id - 1
+            w.last_ts = max(w.last_ts or "", GAP_TS)
     cleaner.report()
     print("imported %d bugs, %d events; delete .workflow/bugs.md next" % (new_bugs, new_events))
     return 0
