@@ -31,7 +31,7 @@ color: gray
 - **`unity-batchmode-cli`:** classic batchmode, where the Unity CLI lacks the capability.
 - **Authoring:** `jenkins-pipeline-authoring` · `fastlane-mobile-delivery` · `firebase-app-distribution`.
 - **`ci-pipeline-failure-triage`:** a failed run.
-- **`unity-test-framework`:** headless test stages.
+- **`unity-test-framework`:** headless test stages; the Code Coverage run and its artifacts when the package is installed (step 14).
 - **`git-unity-repo`:** the job's checkout, LFS and ignore assumptions.
 
 ## Checklist

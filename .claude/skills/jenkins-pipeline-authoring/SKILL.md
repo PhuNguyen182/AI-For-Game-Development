@@ -29,6 +29,7 @@ user-invocable: false
 5. **Bound the run first:** `timeout`, `disableConcurrentBuilds`, `buildDiscarder`. Per [declarative-syntax-and-stages.md](references/declarative-syntax-and-stages.md).
 6. **Publish tests so an empty result set fails:** Unity writes NUnit 3, which `junit` does not read natively. Per [artifacts-test-reports-and-notifications.md](references/artifacts-test-reports-and-notifications.md).
 7. **Collect logs and reports in `post { always }`:** build artifacts only on success.
+   - **Code coverage:** package installed → its stage and artifacts per [artifacts-test-reports-and-notifications.md](references/artifacts-test-reports-and-notifications.md).
 8. **Put an `input` gate, wrapped in `timeout`, before any stage that reaches people:** delivery to testers is the GD's decision (`ci-cd-engineer`).
 9. **Extract a shared library only when a second pipeline needs the same logic:** YAGNI.
 10. **List every assumed label, credential id and trigger in the output:** never invent a value that fails on first run.

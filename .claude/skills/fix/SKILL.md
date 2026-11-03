@@ -48,6 +48,9 @@ argument-hint: "<bug id, or the symptom in the GD's words>"
 
 ## 6. Verify
 - **Passing state:** the regression test passes; the original repro no longer fails; nearby tests still pass. Ran → `Fixed`.
+- **Fix reached:** `com.unity.testtools.codecoverage` installed → run the regression test alone with coverage (`unity-test-framework` → code-coverage.md).
+  - **Fix's lines not executed:** the test does not guard this fix → back to step 4, even when green.
+  - **Not runnable:** package absent or Editor open → say so; not a blocker.
 - **Verification run:** a QA executor brief with `Verify: BUG-####` re-runs the repro (a written repro: its written steps) and returns its `Repro:` line:
   - **`gone`:** → `Closed`, cited in History.
   - **`reproduces`:** → `Reopened` (the hook counts the fix round), back to step 3; a cap reached → stop rule.

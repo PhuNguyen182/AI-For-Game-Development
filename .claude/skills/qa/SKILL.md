@@ -26,6 +26,8 @@ argument-hint: "<feature slug, or what to test>"
 3. **`performance-qa-engineer`:** budget per device tier (profile's lowest device first).
 4. **`build-release-engineer`:** device cases on a real build.
 
+- **Code coverage:** `com.unity.testtools.codecoverage` installed → `qa-automation-engineer`'s last run collects it (`unity-test-framework` step 14).
+  - **Editor open:** `Needs GD: close the Editor` for that run, or the gap stated `not run: Editor open`.
 - **New test code:** new test code → `code-reviewer` once before its results count, brief marked `Mode: test-code` (not a review round).
 - **Test-code findings:** only findings that weaken what a test proves block; style findings are fixed without another round.
 - **Bug re-runs:** a brief that re-runs a fixed bug carries `Verify: BUG-####` (one per bug) — this run is `/fix` step 6's verification.
@@ -45,3 +47,4 @@ argument-hint: "<feature slug, or what to test>"
 - **Per acceptance criterion:** evidence | gap.
 - **Bugs:** bugs by status.
 - **Not run:** what did not run, and why.
+- **Code coverage:** changed lines executed, gaps by owner, or why it did not run; never evidence for a criterion.

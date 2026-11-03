@@ -26,7 +26,7 @@ color: gray
 ## Skills (on demand)
 - **`unity:unity-cli`** (first): every Editor and build operation.
 - **`unity-batchmode-cli`:** neither the Unity CLI nor the configured MCP can run the build.
-- **`unity-test-framework`:** the existing suite on the Player.
+- **`unity-test-framework`:** the existing suite on the Player; Code Coverage is Editor-only, so no coverage figure from a Player run.
 - **`device-test-walkthrough`:** device cases on an installed build.
 - **`git-unity-repo`:** a fault traced to an LFS pointer or a broken `.meta`.
 - **`secret-and-supply-chain-scan`:** the release signing row's no-secret check.

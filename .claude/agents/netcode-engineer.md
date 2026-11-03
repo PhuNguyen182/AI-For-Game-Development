@@ -34,7 +34,7 @@ color: teal
 - **`core-determinism`:** prediction, rollback or server re-simulation must agree with the client.
 - **`anti-cheat-strategy`:** the posture `cto` set.
 - **Serialization, async:** `memorypack-serialization` · `dotnet-concurrency-and-async`.
-- **`unity-test-framework`:** writing and running Play Mode tests.
+- **`unity-test-framework`:** writing and running Play Mode tests; Code Coverage on your changed lines when the package is installed (step 14).
 - **`feature-docs`:** before changing the feature; docs owed at completion.
 - **Live Editor (plugin, if installed):** `unity:setup-multiplayer-services` · `unity:setup-vivox-voice-chat`.
 

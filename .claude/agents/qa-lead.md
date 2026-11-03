@@ -46,4 +46,5 @@ color: red
 - **Running tests:** run or re-run one → the executor the plan names.
 - **Other gates:** re-run or re-decide another gate's verdict → consume it as given.
 - **Extra coverage:** plan coverage the criteria do not ask for.
+- **Coverage figure as evidence:** a Code Coverage figure cited for a criterion → `unsupported`; it shows lines executed, not behaviour.
 - **Contradictions:** a verdict contradicting its evidence, or correct work built to a wrong requirement → `Needs-decision`, `Next: gd`.
