@@ -1355,7 +1355,7 @@ def stage_record(bug_id: str, row: dict, rec: dict, cleaner: Cleaner, problems: 
     history = md_history(bug_id, rec.get("history"), problems)
     if history and history[0][1] != "Open":
         problems.append("%s History: must start with Open" % bug_id)
-    dup_cell = RX_DUPLICATE_CELL.match(row["status"])
+    dup_cell = RX_DUPLICATE_CELL.fullmatch(row["status"])  # trailing text would be dropped: it stops as an unknown status
     status = "Duplicate" if dup_cell else row["status"]
     if status not in OLD_STATUS:
         problems.append("%s status: unknown '%s'" % (bug_id, row["status"]))
@@ -1449,7 +1449,13 @@ def cmd_import_md(ctx, a):
             problems.append("%s: a table row with no record" % bug_id)
     staged = []
     for bug_id in sorted(set(rows) & set(records), key=parse_id):
-        staged += stage_record(bug_id, rows[bug_id], records[bug_id], cleaner, problems)
+        events = stage_record(bug_id, rows[bug_id], records[bug_id], cleaner, problems)
+        staged += events
+        for target in {ev["data"]["duplicate_of"] for ev in events if ev["data"].get("duplicate_of")}:  # what set-status refuses
+            if target == bug_id:
+                problems.append("%s duplicate_of: a bug cannot duplicate itself" % bug_id)
+            elif target not in rows:
+                problems.append("%s duplicate_of: %s is not in the table" % (bug_id, target))
     m = re.search(r"(?m)^Next ID:\s*BUG-(\d+)", text)
     next_id = int(m.group(1)) if m else 1
     if problems:

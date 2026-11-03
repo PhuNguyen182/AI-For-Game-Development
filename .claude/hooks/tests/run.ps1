@@ -990,6 +990,12 @@ try {
     Check 'session-start: a dirty journal skips the purge' ($r.Code -eq 0 -and $r.Out -match '(?m)^Bugs: 2 open \(2 High\+\)\s*$') $true
     Check 'session-start: ... and leaves the journal as it was' ([IO.File]::ReadAllText($bpJournal)) $dirty
     git @bpGit checkout -q -- .workflow/bugs.jsonl 2>&1 | Out-Null
+    # The one unattended purge: a leftover test clock must show on the status line.
+    $env:BUGS_NOW = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss') + 'Z'
+    $r = Invoke-Hook 'session-start.ps1' @{}
+    Remove-Item Env:BUGS_NOW
+    Check 'session-start: a set BUGS_NOW shows its warning on the status line' ($r.Code -eq 0 -and $r.Out -match '(?m)^Bugs: 1 open \(1 High\+\); purged 1, journal uncommitted; warning: BUGS_NOW is set') $true
+    git @bpGit checkout -q -- .workflow/bugs.jsonl 2>&1 | Out-Null
     $r = Invoke-Hook 'session-start.ps1' @{}
     Check 'session-start: an expired terminal bug is purged, with the line shown' ($r.Code -eq 0 -and $r.Out -match '(?m)^Bugs: 1 open \(1 High\+\); purged 1, journal uncommitted\s*$') $true
     Check 'session-start: ... the bug is gone' ((BugCli @('counters', 'BUG-0001', '--json')) -match '"found": false') $true

@@ -1624,6 +1624,44 @@ class TestImport(Base):
         self.assertIn("status", self.no("import-md"))
         self.assertFalse(self.journal.exists())
 
+    def test_duplicate_cell_with_trailing_text_stops(self):
+        self.write_md(md_file(md_record("BUG-0001"), md_record(
+            "BUG-0002", status="Duplicate of BUG-0001 see notes",
+            history="2026-10-29 Open — a. 2026-10-30 Duplicate — b.")))
+        err = self.no("import-md")
+        self.assertIn("BUG-0002 status", err)
+        self.assertIn("see notes", err)
+        self.assertFalse(self.journal.exists())
+
+    def test_duplicate_of_itself_stops_in_either_form(self):
+        h_cell = "2026-10-29 Open — a. 2026-10-30 Duplicate — b."
+        h_note = "2026-10-29 Open — a. 2026-10-30 Duplicate — of BUG-0002."
+        for status, history in (("Duplicate of BUG-0002", h_cell), ("Duplicate", h_note)):
+            with self.subTest(status):
+                self.write_md(md_file(md_record("BUG-0001"), md_record("BUG-0002", status=status, history=history)))
+                err = self.no("import-md")
+                self.assertIn("BUG-0002 duplicate_of", err)
+                self.assertIn("itself", err)
+                self.assertFalse(self.journal.exists())
+
+    def test_duplicate_of_a_missing_row_stops_in_either_form(self):
+        h_cell = "2026-10-29 Open — a. 2026-10-30 Duplicate — b."
+        h_note = "2026-10-29 Open — a. 2026-10-30 Duplicate — of BUG-0077."
+        for status, history in (("Duplicate of BUG-0077", h_cell), ("Duplicate", h_note)):
+            with self.subTest(status):
+                self.write_md(md_file(md_record("BUG-0001"), md_record("BUG-0002", status=status, history=history)))
+                err = self.no("import-md")
+                self.assertIn("BUG-0002 duplicate_of", err)
+                self.assertIn("BUG-0077", err)
+                self.assertFalse(self.journal.exists())
+
+    def test_duplicate_target_problems_join_the_rest_of_the_report(self):
+        self.write_md(md_file(md_record("BUG-0001", title="t" * 101), md_record("BUG-0002", status="Duplicate of BUG-0077",
+                                                                                history="2026-10-29 Open — a. 2026-10-30 Duplicate — b.")))
+        err = self.no("import-md")
+        self.assertIn("BUG-0001 title: 101", err)
+        self.assertIn("BUG-0002 duplicate_of", err)
+
     def test_unknown_history_status_and_label_stop(self):
         self.write_md(md_file(md_record(history="2026-10-29 Open — a. 2026-10-30 Parked — b.")))
         self.assertIn("History", self.no("import-md"))

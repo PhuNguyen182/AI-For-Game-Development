@@ -84,7 +84,7 @@ Synthesized from `../scripts/bugs.py`; commands in `../SKILL.md`.
 - **`sql`:** `mode=ro` connection, `query_only`, an authorizer, and a leading-keyword gate; one statement, 1000 rows, 10 seconds. A BLOB prints as its literal, `x'00ff'`.
 
 ## Migration (`import-md`)
-- **Mapping:** `Open` → `Request` · `Fixed` → `Resolved` · `Closed` → `Complete` · `Reopened` → `Reopen`; the other four keep their names. A status cell `Duplicate of BUG-####` → `Duplicate` with that target. `description` takes the old `Actual` text. Uids are `uuid5`, so a re-run adds nothing.
+- **Mapping:** `Open` → `Request` · `Fixed` → `Resolved` · `Closed` → `Complete` · `Reopened` → `Reopen`; the other four keep their names. A status cell that is exactly `Duplicate of BUG-####` → `Duplicate` with that target, which must be another row of the table. `description` takes the old `Actual` text. Uids are `uuid5`, so a re-run adds nothing.
 - **A broken rule:** stops the whole import with a report of bug, field and length; nothing is written. Rewrite that field by hand, then re-run.
 - **Afterwards:** the caller deletes the old file; every other command refuses while it exists.
 

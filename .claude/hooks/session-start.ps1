@@ -58,7 +58,11 @@ function Get-BugsLine([string]$Root, [bool]$SkipPurge) {
         $purge = Invoke-Bugs $Root @('purge', '--auto') ([int]$budget)
         if ($purge.State -eq 'NoPython') { return $noPython }
         if ($purge.State -ne 'Ok') { $suffix = "; purge failed: $(Get-FirstLine $purge.Err)" }
-        elseif ($purge.Out -match '(?m)^(purged [1-9]\d*, journal uncommitted)\s*$') { $suffix = "; $($Matches[1])" }
+        else {
+            if ($purge.Out -match '(?m)^(purged [1-9]\d*, journal uncommitted)\s*$') { $suffix = "; $($Matches[1])" }
+            # Exit 0 with stderr is a warning, such as a leftover BUGS_NOW: this is the one unattended purge, so show it.
+            if ($purge.Err) { $suffix += "; $(Get-FirstLine $purge.Err)" }
+        }
     }
     $stats = Invoke-Bugs $Root @('stats') ([int][Math]::Max(1000, $budget - ($clock.ElapsedMilliseconds - $started)))
     if ($stats.State -eq 'NoPython') { return $noPython }
