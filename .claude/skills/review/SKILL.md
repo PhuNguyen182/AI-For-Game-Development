@@ -14,7 +14,7 @@ argument-hint: "<diff range, feature slug or path>"
 - **Audit scope:** an audit has no spec — say so in the brief; `code-reviewer` runs audit mode.
 - **Marker lines:** every gate brief carries these, each on its own line:
   - **Round line:** `Round: <n>` — continuous across runs and rework, never restarting at 1.
-  - **Round number:** n = the target's file count (`Rounds:` / `Review rounds:`) + the hook's count for its key in `.workflow/rounds.json` (`feature:<slug>`, `bug:<id>`, `target:<path>`) + 1.
+  - **Round number:** n = the target's count (`Rounds:` / `bugs.py counters <id>`) + the hook's count for its key in `.workflow/rounds.json` (`feature:<slug>`, `bug:<id>`, `target:<path>`) + 1.
   - **Target line:** `Feature: .workflow/features/<slug>.md`, else `Bug: BUG-####`, else `Target: <path or base>`.
   - **Audit line:** an audit also `Mode: audit`.
   - **Hook reading:** the round-cap hook reads only these marker lines.
@@ -30,7 +30,7 @@ argument-hint: "<diff range, feature slug or path>"
   - **Scope args:** pass `args.base` from the feature's `Base:`, and `args.spec` (the feature file, the bug's Expected, or the S acceptance criteria).
   - **Audit arg:** `args.audit: true` only for an audit.
   - **Hook counting:** its gate briefs carry `Mode: workflow`, so the hook never counts them; it only blocks a launch past the cap.
-  - **Recording a failed round:** the main session records each round the returned verdicts fail (after the skeptic): +1 on the feature's `Rounds:` review and rework, or the bug's `Review rounds:`.
+  - **Recording a failed round:** the main session records each round the verdicts fail (after the skeptic): +1 on the feature's `Rounds:` review and rework, or `bugs.py round <id> review +1`.
   - **Target record:** a `Target:` has no file line → add the result's `roundId` to `.workflow/rounds.json` under `target:<path, lower-cased, / separators>` → `review`.
   - **Missing result:** a result `incomplete`, `no result` for a gate, or `nothing to review` on a non-empty change → re-run only the missing gate.
     - **Re-run args:** `args.gates` (`['code']` or `['security']`; both when no gate ran), the same `args.round` and an unchanged tree.

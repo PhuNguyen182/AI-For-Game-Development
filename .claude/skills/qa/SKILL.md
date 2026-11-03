@@ -9,7 +9,7 @@ argument-hint: "<feature slug, or what to test>"
 ## 1. Plan — `qa-lead` (Plan)
 - **Timing:** may run while `/review` is in progress; execution waits for review approval when review was chosen.
 - **Review declined:** execute; each executor brief states that no correctness gate stands behind the code.
-- **Brief:** `Feature: .workflow/features/<slug>.md`, acceptance criteria, this feature's open bugs, platforms, profile default QA (`routing.md`), multiplayer on/off.
+- **Brief:** `Feature: .workflow/features/<slug>.md`, acceptance criteria, this feature's open bugs (`bugs.py list`), platforms, profile default QA (`routing.md`), multiplayer on/off.
 - **Missing build:** device or perf coverage needs a build that does not exist → `AskUserQuestion` now.
   - **Build yes:** dispatch `build-release-engineer` with that build request (dev config, no version bump — never `/release`).
   - **Build no:** that coverage is a gap from the start.
@@ -28,7 +28,7 @@ argument-hint: "<feature slug, or what to test>"
 
 - **New test code:** new test code → `code-reviewer` once before its results count, brief marked `Mode: test-code` (not a review round).
 - **Test-code findings:** only findings that weaken what a test proves block; style findings are fixed without another round.
-- **Bug re-runs:** a brief that re-runs a fixed bug carries `Verify: BUG-####` (one per bug) — this run is `/fix` step 6's verification.
+- **Bug re-runs:** a brief that re-runs a `Resolved` bug carries `Verify: BUG-####` (one per bug) — this run is `/fix` step 6's verification, status moves included.
 - **Returns:** read every return's body: `Done` with defects is a finished run.
 
 ## 3. File
@@ -37,7 +37,7 @@ argument-hint: "<feature slug, or what to test>"
 - **Stated gaps:** every gap a run states → feature file `Known limitations` candidate.
 
 ## 4. Sign-off — `qa-lead` (Sign-off)
-- **Brief:** `Feature:` line, the plan verbatim, every report, review verdicts, the bugs whose Feature is this slug.
+- **Brief:** `Feature:` line, the plan verbatim, every report, review verdicts, `bugs.py show` output for each bug whose Feature is this slug (`qa-lead` has no shell).
 - **`Not signed off`:** the hook counts +1 `QA` and `rework` (never write it); fix the gaps (`/fix`), re-run only the affected cases, sign off again.
 - **Cap:** a cap reached → stop rule (`routing.md`).
 

@@ -49,6 +49,9 @@ Assets/_Project/Scripts/Shared/Server/          _Project.Scripts.Shared.Server  
   - **`.gitattributes` addition:** `.gitattributes` += `.memory/traces/** text eol=lf linguist-generated` (never `-diff`: the pre-commit secret scan reads diffs).
   - **Copied files:** copy `.xerjignore` and `.memory/sources.txt` from the framework root.
   - **Notes:** `.memory/notes/` starts empty.
+- **Bug journal:** per skill `bugs`:
+  - **`.gitignore` addition:** `.gitignore` += `.workflow/bugs.db*`.
+  - **`.gitattributes` addition:** `.gitattributes` += `.workflow/bugs.jsonl text eol=lf merge=union`.
 - **Framework block:** delete the copied `.gitignore`'s `Framework repo only` block, down to its end marker: the project commits its traces and its framework backlog.
 - **Framework backlog source:** `.workflow/framework-backlog.md` comes from `.claude/templates/framework-backlog.md` (the session-start hook creates it; copy the template if absent).
 - **Framework backlog commit:** `.workflow/framework-backlog.md` is committed with the project.
@@ -64,7 +67,7 @@ Assets/_Project/Scripts/Shared/Server/          _Project.Scripts.Shared.Server  
 - **Left-out metric:** a metric left out gets no verdict from `performance-qa-engineer`.
 
 ## 7. State
-- **Workflow state:** create `.workflow/bugs.md` from `/fix`'s template and `.workflow/features/`.
+- **Workflow state:** create `.workflow/features/`; the first `bugs.py add` starts `.workflow/bugs.jsonl`.
 - **Staging:** stage nothing yet: step 9 asks once for the bootstrap commit (`.workflow/`, `.memory/`, the setup).
 - **Code search:** `CLAUDE.md` → Code search: `xerj prefix <kebab project name>` when `xerj` is installed, else `Grep`.
 - **Tech stack:** create `docs/tech-stack.md` from `references/tech-stack-template.md`, filled from `Packages/manifest.json`, `ProjectSettings/` and the answers above.

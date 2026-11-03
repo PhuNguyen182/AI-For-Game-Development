@@ -6,19 +6,20 @@ argument-hint: "<bug id, or the symptom in the GD's words>"
 
 # /fix
 
-- **Writer:** main session is the only writer of `.workflow/bugs.md`.
+- **Writer:** main session is the only writer of bug records, through `bugs.py` (skill `bugs`).
 - **Finding format:** skill `qa-standards`.
 - **Statuses:** `.claude/skills/qa-standards/references/bug-lifecycle.md`.
 - **Any size:** `/fix` runs at any size; the size of what the fix touches sets the attempt budget and the gate offer (`routing.md`).
 
 ## 1. Record
-- **New bug:** next `BUG-####` in `.workflow/bugs.md` (create from `references/bugs-template.md`): title, severity, feature, repro, owner, `Open`.
-- **Existing bug:** matches an existing bug → add evidence to it; a `Closed` one → `Reopened`.
-- **Reopen by the GD:** a reopen the GD reports → +1 `Fix rounds` in the record (and the feature's `rework`).
+- **Check first:** `bugs.py search "<words>"` before filing.
+- **New bug:** `bugs.py add` prints the next `BUG-####`, status `Request`: title, description, priority, feature slug, repro, expected, actual, evidence, owner.
+- **Existing bug:** matches an existing bug → add evidence with `update`; a terminal one → `Reopen`.
+- **Reopen by the GD:** a reopen the GD reports → `Reopen`, then `round <id> fix +1` (and the feature's `rework`).
 - **Reopen by a run:** a reopen found by a `Verify:` run is counted by the hook — never write it.
 - **Brief markers:** every brief carries `Bug: BUG-####` (one bug) and, when the bug belongs to a feature, `Feature: .workflow/features/<slug>.md`.
 - **Hook charge:** hook `round-cap.ps1` charges only the `Bug:` and `Feature:` lines and blocks past a cap.
-- **Feature file:** on a feature with a file → also add the bug to that file's `Bugs` table.
+- **Feature file:** on a feature with a file → also add the bug's ID, title and priority to that file's `Bugs` table; status stays in the CLI.
 - **Closed feature:** a closed feature stays `Closed`.
 
 ## 2. Reproduce
@@ -26,9 +27,10 @@ argument-hint: "<bug id, or the symptom in the GD's words>"
 - **Tools:** Play Mode (`playtest-tester`), a test, device (`/investigate-device-crash` for a device crash).
 - **Reproduce briefs:** briefs for this step never carry `Verify:`.
 - **Production telemetry:** a `crash-anr-investigator` return with `Stages: pass` and an evidenced `Root cause:` is the repro; its `Impact:` is the hit rate.
-- **Cannot reproduce:** report that, with what was tried; ask the GD via `AskUserQuestion` (more info / keep open / close).
+- **Cannot reproduce:** report that, with what was tried; ask the GD via `AskUserQuestion` (more info / keep open / close as `Won't fix`, `--by GD`).
 
 ## 3. Root cause
+- **Dispatch status:** dispatching the owner from `Request` or `Reopen`, here or at step 5 → `Processing`.
 - **Cause:** the owning agent finds the cause in code, not the symptom.
 - **Spec flaw:** spec itself wrong → design flaw → GD now.
 - **Debugging approach:** skill `superpowers:systematic-debugging` if installed.
@@ -43,18 +45,23 @@ argument-hint: "<bug id, or the symptom in the GD's words>"
 - **Owner:** owner fixes it, `Fixes: BUG-####` in its return.
 - **Compile check:** as in `/feature` step 4; commands in `feature` → build-checks.md.
 - **Failing check:** a failing compile or regression test → same owner, next attempt (not a fix round).
+- **No fix delivered:** a `Failed` or `Blocked` attempt with no fix → `Request`; the next dispatch → `Processing`.
 - **Review offer:** risk flag on the touched code, or a Core assembly touched → offer `/review` on the diff (`routing.md` → Gates).
-- **Rounds without a feature:** without a feature, its rounds count on the bug's `Review rounds:` (cap 3).
+- **Rounds without a feature:** without a feature, a workflow review round the hook cannot see → `round <id> review +1` (cap 3).
+- **Extra round:** the GD's order → `extra-round <id> fix|review +n --note <the order>`.
+- **Stop rule:** fired → `stop-rule <id> fix|review --extra-dispatch unused`; dispatch spent → `used`.
 
 ## 6. Verify
-- **Passing state:** the regression test passes; the original repro no longer fails; nearby tests still pass. Ran → `Fixed`.
-- **Verification run:** a QA executor brief with `Verify: BUG-####` re-runs the repro (a written repro: its written steps) and returns its `Repro:` line:
-  - **`gone`:** → `Closed`, cited in History.
-  - **`reproduces`:** → `Reopened` (the hook counts the fix round), back to step 3; a cap reached → stop rule.
+- **Passing state:** the regression test passes; the original repro no longer fails; nearby tests still pass. Ran, with the owner's `Fixes:` → `Resolved`.
+- **Verification run:** dispatching a QA executor brief with `Verify: BUG-####` → `Review`; it re-runs the repro (a written repro: its written steps) and returns its `Repro:` line:
+  - **`gone`:** → `Complete`, cited in the status note.
+  - **`reproduces`:** → `Reopen` (the hook counts the fix round), back to step 3; a cap reached → stop rule.
+  - **No `Repro:` line:** → back to `Resolved`; the run settled nothing.
   - **Inside `/qa`:** the `/qa` re-run of the affected cases is this run; no offer.
-  - **Within a feature, QA declined:** no offer; CP4 lists the `Fixed` bug for the GD (accept unverified → `Accepted`, or verify).
-  - **No feature:** `AskUserQuestion` — verify now (Khuyến nghị) / accept unverified (→ `Accepted`, the GD's call). A `Fixed` bug is never left without one of these.
+  - **Within a feature, QA declined:** no offer; CP4 lists the `Resolved` bug for the GD (accept unverified → `Accepted`, or verify).
+  - **No feature:** `AskUserQuestion` — verify now (Khuyến nghị) / accept unverified (→ `Accepted`, `--by GD`). A `Resolved` bug is never left without one of these.
   - **Needs a device build that does not exist (a production crash):** verified by the device run on the next release candidate (`/release` step 4), or accepted by the GD at `/release` step 1.
 
 ## 7. Report
 - **Reply:** cause, fix, test name, what was verified and what was not.
+- **No feature:** add "journal uncommitted": `.workflow/bugs.jsonl` waits for the GD's commit order.

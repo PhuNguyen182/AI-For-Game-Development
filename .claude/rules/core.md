@@ -34,7 +34,7 @@
 - Unity: Unity CLI (`unity:unity-cli`) → any configured MCP server → classic batchmode. Drop a rung only on failure or a missing capability.
 - Search: XERJ when session start says up (skill `code-search`) → Grep. Never `xerj feedback`, `share` or `init`.
 - One Unity Editor and one physical device, project-wide: never two agents on either at once. Writing into the main checkout's `Assets/`, `Packages/` or `ProjectSettings/` holds the Editor: before a direct write, read `.workflow/editor.lock` — another session's hold under 3 h old → ask the GD.
-- Commits: English imperative subject, blank line, body saying why; no `feat:`-style prefixes; one change per commit. Never commit or push unasked — not after finishing work. Exception: the local commits `/feature` prescribes (step 4 on its `feature/<slug>` branch, the CP4 closure commit), made by the main session per `git-commit` on the feature's paths only. Push always waits for the GD's order. When the GD orders a commit or push, run it at once, no confirmation; only the secret hooks may block it.
+- Commits: English imperative subject, blank line, body saying why; no `feat:`-style prefixes; one change per commit. Never commit or push unasked — not after finishing work. Exception: the local commits `/feature` prescribes (step 4 on its `feature/<slug>` branch, the CP4 closure commit with `.workflow/bugs.jsonl`), made by the main session per `git-commit` on the feature's paths only. Push always waits for the GD's order. When the GD orders a commit or push, run it at once, no confirmation; only the secret hooks may block it.
 - After any change under `.claude/`, run `/verify-layer`.
 
 ## Memory — Zero-Mem, skill `mem`
