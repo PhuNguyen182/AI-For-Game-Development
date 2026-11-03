@@ -243,17 +243,28 @@ function Get-MainCheckout([string]$Root) {
 }
 
 # The checkout whose .workflow holds the bug journal, known before any Python starts. A linked worktree anywhere reads its
-# main checkout's (bugs.py does the same), so a branch with no journal cannot hide a past-cap bug. Git names it; with no git
-# or no repo, the path rule above.
+# main checkout's (bugs.py does the same), so a branch with no journal cannot hide a past-cap bug. Starts no process: reads
+# the .git file, then <gitdir>/commondir, as UTF-8. Captured git output decodes with the console code page, and a wrong
+# folder would read as "no bugs". Throws when the links lead nowhere: a caller naming a bug blocks, a session prints a line.
 function Get-BugsRoot([string]$Root) {
-    $lines = @()
-    try { $lines = @(git -C $Root rev-parse --git-dir --git-common-dir 2>$null) } catch {}
-    if ($lines.Count -ne 2) { return Get-MainCheckout $Root }
-    $gitDir = [IO.Path]::GetFullPath([IO.Path]::Combine($Root, $lines[0]))
-    $common = [IO.Path]::GetFullPath([IO.Path]::Combine($Root, $lines[1]))
-    if ($gitDir -eq $common) { return $Root }
-    if ((Split-Path $common -Leaf) -eq '.git') { return (Split-Path $common) }
-    return Get-MainCheckout $Root
+    $utf8 = New-Object Text.UTF8Encoding $false
+    $dir = [IO.Path]::GetFullPath($Root)
+    while ($dir -and -not [IO.File]::Exists([IO.Path]::Combine($dir, '.git'))) {
+        if ([IO.Directory]::Exists([IO.Path]::Combine($dir, '.git'))) { return $Root }  # a main checkout: its own journal
+        $dir = [IO.Path]::GetDirectoryName($dir)
+    }
+    if (-not $dir) { return $Root }
+    $link = [IO.Path]::Combine($dir, '.git')
+    $m = [regex]::Match([IO.File]::ReadAllText($link, $utf8), '(?m)^gitdir:\s*(.+?)\s*$')
+    if (-not $m.Success) { throw "$link names no gitdir, so the main checkout's bug journal cannot be found" }
+    $gitDir = [IO.Path]::GetFullPath([IO.Path]::Combine($dir, $m.Groups[1].Value))
+    if (-not [IO.Directory]::Exists($gitDir)) { throw "$gitDir, named by $link, does not exist" }
+    $commonFile = [IO.Path]::Combine($gitDir, 'commondir')
+    if (-not [IO.File]::Exists($commonFile)) { return $Root }  # a submodule: its .git file points at its own git dir
+    $common = [IO.Path]::GetFullPath([IO.Path]::Combine($gitDir, [IO.File]::ReadAllText($commonFile, $utf8).Trim()))
+    if ([IO.Path]::GetFileName($common) -ne '.git') { throw "$common is no checkout's .git, so the bug journal cannot be found" }
+    if (-not [IO.Directory]::Exists($common)) { throw "$common, named by $commonFile, does not exist" }
+    return [IO.Path]::GetDirectoryName($common)
 }
 
 # The folder above $Path that holds a .git entry (directory or file), or $null.

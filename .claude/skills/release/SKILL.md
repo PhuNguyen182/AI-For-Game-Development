@@ -8,7 +8,7 @@ argument-hint: "<platforms> [--dry-run]"
 
 - **Invocation:** invoking `/release` is the GD's build request for the platforms named.
 - **`--dry-run`:** no tag, push or upload, and no writes — step 2 reports the next version instead of setting it, and step 4's bug status moves are reported, not written.
-- **Dry-run brief:** step 4's brief omits the `Verify:` line, so the hook charges no fix round.
+- **Dry-run brief:** step 4's brief states each deferred bug's repro steps in plain words, with no `Verify:` line; the run reports that outcome, not a `Repro:` line, and the hook charges nothing.
 - **Attempts:** unsized: 2 attempts per dispatch.
 - **Risk flag:** risk flag is always set.
 

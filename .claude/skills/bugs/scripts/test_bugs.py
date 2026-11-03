@@ -2226,7 +2226,20 @@ class TestEveryWriteNeedsThePatterns(Base):
         def mem_raises(script):
             (script.parents[2] / "mem" / "scripts" / "mem.py").write_text("raise RuntimeError('broken')\n", encoding="utf-8")
 
-        return (missing, comments_only, bad_regex, no_tab, mem_missing, mem_raises)
+        def mem_syntax_error(script):
+            (script.parents[2] / "mem" / "scripts" / "mem.py").write_text("def broken(:\n", encoding="utf-8")
+
+        def mem_import_error(script):
+            (script.parents[2] / "mem" / "scripts" / "mem.py").write_text("import no_such_module_anywhere\n", encoding="utf-8")
+
+        def mem_lacks_the_api(script):
+            (script.parents[2] / "mem" / "scripts" / "mem.py").write_text("x = 1\n", encoding="utf-8")
+
+        def mem_api_raises(script):
+            (script.parents[2] / "mem" / "scripts" / "mem.py").write_text(
+                "RX_PEM_BLOCK = None\nredact = redact_pii = None\ndef load_secret_patterns(root):\n    return undefined_name\n", encoding="utf-8")
+
+        return (missing, comments_only, bad_regex, no_tab, mem_missing, mem_raises, mem_syntax_error, mem_import_error, mem_lacks_the_api, mem_api_raises)
 
     def assert_refused(self, *argv, env=None):
         for state in self.broken_states():
@@ -2241,11 +2254,28 @@ class TestEveryWriteNeedsThePatterns(Base):
                                    input=b"", capture_output=True, env=e)
                 self.assertNotEqual(r.returncode, 0, r.stdout)
                 self.assertTrue(r.stderr.strip())
+                self.assertNotIn(b"Traceback", r.stderr)
+                self.assertIn(b"bugs: ", r.stderr)
                 self.assertEqual(self.journal.read_bytes(), before)
 
     def test_delete(self):
         self.add()
         self.assert_refused("delete", "BUG-0001", "--by", "GD")
+
+    def test_every_other_write_gives_a_clean_refusal_too(self):
+        self.add()
+        self.assert_refused("set-status", "BUG-0001", "Processing", "--note", "n")
+        self.assert_refused("round", "BUG-0001", "fix", "+1", "--note", "n")
+
+    def test_a_refusal_on_a_read_stays_clean_with_mem_broken(self):
+        self.add()
+        script = self.isolated_copy(with_mem=True, with_patterns=True)
+        (script.parents[2] / "mem" / "scripts" / "mem.py").write_text("def broken(:\n", encoding="utf-8")
+        r = self.cli(script, "show", FAKE_KEY)
+        self.assertEqual(r.returncode, 1)
+        self.assertNotIn(b"Traceback", r.stderr)
+        self.assertNotIn(FAKE_KEY.encode(), r.stderr)
+        self.assertEqual(self.cli(script, "show", "BUG-0001").returncode, 0)
 
     def test_purge_with_a_bug_due(self):
         self.seed(create("old", 1, stamp(-5)), event("status", "old", {"to": "Complete"}, T0))
@@ -2287,7 +2317,9 @@ class TestTombstoneHoldsItsId(GitBase):
         self.assertIn("duplicate", self.no("doctor"))
         self.assertIn("doctor --fix", self.run_cli("show", "BUG-0002")[2])
 
-        self.assertIn("renumbered BUG-0002", self.ok("doctor", "--fix"))
+        fixed = self.ok("doctor", "--fix")
+        self.assertEqual(fixed.splitlines()[0], "renumbered BUG-0002 to BUG-0003")
+        self.assertNotIn("uid", fixed)
         self.ok("doctor")
         self.assertIn("purged", self.ok("show", "BUG-0002"))
         self.assertFalse(self.counters("BUG-0002")["found"])
@@ -2298,6 +2330,30 @@ class TestTombstoneHoldsItsId(GitBase):
         self.db_path.unlink()
         self.assertEqual({r["title"]: r["id"] for r in json.loads(self.ok("list", "--json"))}["B second"], "BUG-0003")
         self.assertEqual(self.lines(), lines)
+
+
+class TestNonAsciiPaths(Base):
+    """git's output is bytes decoded as UTF-8 here, whatever the console code page: the hook's bug class cannot occur."""
+
+    def test_a_non_ascii_main_checkout_and_worktree_resolve(self):
+        name = "\u0110\u1ec7"
+        main = Path(self.tmp) / ("main " + name)
+        main.mkdir()
+        git(main, "init", "-q", "-b", "main")
+        (main / ".gitattributes").write_text(".workflow/bugs.jsonl text eol=lf merge=union\n", encoding="utf-8")
+        (main / ".gitignore").write_text(".workflow/bugs.db*\n", encoding="utf-8")
+        git(main, "add", "-A")
+        git(main, "commit", "-q", "-m", "base")
+        wt = Path(self.tmp) / ("wt " + name)
+        git(main, "worktree", "add", "-q", str(wt), "-b", "wt-branch")
+        self.assertEqual(self.ok("add", stdin=fields(), root=main).strip(), "BUG-0001")
+        self.assertEqual(self.counters_at(wt, "BUG-0001")["status"], "Request")
+        self.assertIn("worktree", self.no("add", stdin=fields(), root=wt))
+        self.assertFalse((wt / ".workflow" / "bugs.jsonl").exists())
+        self.assertEqual(self.ok("doctor", root=wt), "doctor: clean\n")
+
+    def counters_at(self, root, bug_id):
+        return json.loads(self.ok("counters", bug_id, "--json", root=root))
 
 
 class TestTombstoneReplay(Base):
@@ -2563,11 +2619,17 @@ class TestDocContracts(unittest.TestCase):
         state = self.line(self.new_project, "**Workflow state:**")
         self.assertIn("empty `.workflow/bugs.jsonl`", state)
         self.assertNotIn("first `bugs.py add` starts", self.new_project)
-        self.assertIn("no `.workflow/bugs.jsonl` → create it empty", self.feature)
+        step_0 = self.feature[self.feature.index("## 0. Open"):self.feature.index("## 4. Build")]
+        step_4 = self.feature[self.feature.index("## 4. Build"):]
+        self.assertNotIn("bugs.jsonl", step_0)  # the S exit leaves step 1: an empty file there would stay untracked
+        self.assertIn("no `.workflow/bugs.jsonl` → create it empty", step_4.split("\n- **Start:**")[0])
         self.assertIn("not a pass", self.line(self.release, "**Bug queries:**"))
 
     def test_e3_02_a_dry_run_brief_has_no_verify_line(self):
-        self.assertRegex(self.line(self.release, "**Dry-run brief:**"), r"omits? the `Verify:` line")
+        line = self.line(self.release, "**Dry-run brief:**")
+        self.assertIn("repro steps in plain words", line)
+        self.assertIn("no `Verify:` line", line)
+        self.assertIn("not a `Repro:` line", line)
 
     def test_e3_05_release_and_standalone_qa_report_the_uncommitted_journal(self):
         self.assertIn("journal uncommitted", self.release)
@@ -2606,6 +2668,26 @@ class TestDocContracts(unittest.TestCase):
     def test_e3_13_a_duplicate_hit_follows_its_target(self):
         for text in (self.line(self.skill, "**Check first:**"), self.line(self.fix, "**Match by status:**"), self.line(self.lifecycle, "Check existing bugs first")):
             self.assertIn("duplicate_of", text)
+
+    def test_abandon_reports_the_uncommitted_journal(self):
+        abandon = self.feature[self.feature.index("## Abandon"):]
+        self.assertIn("journal uncommitted", abandon)
+        self.assertIn(".workflow/bugs.jsonl", abandon)
+
+    def test_the_echo_limits_are_the_codes(self):
+        line = self.line(self.schema, "**Refusal text:**")
+        self.assertNotIn("over 40 chars is not echoed", line)
+        self.assertIn("redaction always runs", line)
+        source = (HERE / "bugs.py").read_text(encoding="utf-8")
+        self.assertIn("def shown(value, limit=40)", source)
+        for limit, call in ((60, "shown(note, 60)"), (200, "shown(ex, 200)"), (200, "shown(given, 200)"), (300, "shown(message, 300)")):
+            self.assertIn(call, source)
+            self.assertIn(str(limit), line)
+        self.assertIn("500", line)
+        self.assertIn("REFUSAL_LINE = 500", source)
+
+    def test_a_broken_mem_is_named_in_the_fail_closed_rule(self):
+        self.assertIn("syntax error", self.line(self.schema, "**Fail closed:**"))
 
     def test_the_purge_clock_is_documented(self):
         self.assertIn("last terminal status reached", self.schema)

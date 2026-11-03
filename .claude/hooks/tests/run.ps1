@@ -1091,7 +1091,9 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     Check 'round-cap: an empty journal passes a bug dispatch' (Dispatch 'Fix BUG-0001') 0
 
     # A linked worktree anywhere, on a commit with no journal, reads the main checkout's: not only .claude/worktrees/<name>.
-    $bw = Join-Path $tmp 'BugWorktree'
+    # Both paths non-ASCII ([char] keeps this file ASCII): a code page that cannot hold them must not change the answer.
+    $viName = [string][char]0x0110 + [char]0x1EC7
+    $bw = Join-Path $tmp "BugWorktree $viName"
     New-Repo $bw
     New-Item -ItemType Directory -Force (Join-Path $bw '.claude/skills/bugs/scripts'), (Join-Path $bw '.claude/skills/mem/scripts'), (Join-Path $bw '.claude/hooks') | Out-Null
     Copy-Item (Join-Path $hooks '../skills/bugs/scripts/bugs.py') (Join-Path $bw '.claude/skills/bugs/scripts')
@@ -1107,11 +1109,21 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     BugCli @('round', 'BUG-0001', 'fix', '+3', '--note', 'test round') | Out-Null
     git @bwGit add .workflow/bugs.jsonl 2>&1 | Out-Null
     git @bwGit commit -q -m 'journal' 2>&1 | Out-Null
-    $bwOut = Join-Path $tmp 'Outside Worktree'
+    $bwOut = Join-Path $tmp "Outside Worktree $viName"
     git @bwGit worktree add -q -b outside $bwOut $bwBase 2>&1 | Out-Null
     $bwJournal = Join-Path $bw '.workflow/bugs.jsonl'
     $bwBefore = [IO.File]::ReadAllText($bwJournal)
     $env:CLAUDE_PROJECT_DIR = $bwOut
+    # Code page 437 cannot hold these paths. Set here because a hook takes it from the console when it starts, and the suite
+    # may have been launched under another. Through [Console], not chcp: Windows PowerShell keeps the encoding it cached, and
+    # from 65001 it writes a BOM to the child's stdin, which the hook reads as no input. No console: the checks still run.
+    $cpIn = [Console]::InputEncoding; $cpOut = [Console]::OutputEncoding; $cpPinned = $false
+    try {
+        [Console]::InputEncoding = [Text.Encoding]::GetEncoding(437)
+        [Console]::OutputEncoding = [Text.Encoding]::GetEncoding(437)
+        $cpPinned = $true
+    } catch { Write-Output "SKIP  bugs root fixture: no console to set code page 437 on" }
+    if ($cpPinned) { Check 'bugs root fixture: a hook''s shell decodes with code page 437' ([string](& $shell -NoProfile -NonInteractive -Command '[Console]::OutputEncoding.CodePage' 2>$null)).Trim() '437' }
     Check 'round-cap: the fixture worktree has no journal' (Test-Path (Join-Path $bwOut '.workflow/bugs.jsonl')) $false
     $r = DispatchR 'Bug: BUG-0001'
     Check 'round-cap: a worktree outside .claude/worktrees reads the main journal, past the cap blocks' ($r.Code -eq 2 -and $r.Out -match 'BUG-0001: fix 3/2') $true
@@ -1122,6 +1134,48 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     $r = Invoke-Hook 'session-start.ps1' @{}
     Check 'session-start: a worktree outside .claude/worktrees prints the main status line' ($r.Code -eq 0 -and $r.Out -match '(?m)^Bugs: 1 open \(1 High\+\)\s*$') $true
     Check 'session-start: ... and writes no journal' ([IO.File]::ReadAllText($bwJournal)) $bwBefore
+    # Nothing in the answer depends on git: not its output, not its environment, not its presence.
+    Check 'bugs root: Get-BugsRoot starts no process' ((Get-Command Get-BugsRoot).Definition -notmatch '\bgit\s+-|&\s|Start-Process|Process\]') $true
+    $norm = { param($p) ([IO.Path]::GetFullPath($p) -replace '\\', '/').TrimEnd('/') }
+    Check 'bugs root: a linked worktree names the main checkout' (& $norm (Get-BugsRoot $bwOut)) (& $norm $bw)
+    $bwSub = Join-Path $bwOut 'Sub Folder'
+    New-Item -ItemType Directory -Force $bwSub | Out-Null
+    Check 'bugs root: ... from a subfolder of it too' (& $norm (Get-BugsRoot $bwSub)) (& $norm $bw)
+    Check 'bugs root: the main checkout keeps its own root' (Get-BugsRoot $bw) $bw
+    $bwMainSub = Join-Path $bw 'Sub Folder'
+    New-Item -ItemType Directory -Force $bwMainSub | Out-Null
+    Check 'bugs root: ... and so does a subfolder of it' (Get-BugsRoot $bwMainSub) $bwMainSub
+    $env:GIT_DIR = Join-Path $tmp 'no-such-git-dir'
+    $r = DispatchR 'Bug: BUG-0001'
+    Remove-Item Env:GIT_DIR
+    Check 'round-cap: a stray GIT_DIR changes nothing: past the cap blocks' ($r.Code -eq 2 -and $r.Out -match 'BUG-0001: fix 3/2') $true
+    $r = NoPython { Remove-Item (Join-Path $bw '.memory/.state/python.txt') -ErrorAction SilentlyContinue; DispatchR 'Bug: BUG-0001' }
+    Check 'round-cap: no git and no Python on PATH, main has a journal: blocks' ($r.Code -eq 2 -and $r.Out -match 'Python 3\.10') $true
+    # A link that leads nowhere is an answer the hook cannot trust: a dispatch naming a bug blocks, a session never does.
+    $bwAdmin = @(Get-ChildItem (Join-Path $bw '.git/worktrees') -Directory)[0].FullName
+    $bwCommon = Join-Path $bwAdmin 'commondir'
+    $bwCommonText = [IO.File]::ReadAllText($bwCommon)
+    [IO.File]::WriteAllText($bwCommon, "../../../no-such-main/.git`n")
+    $r = DispatchR 'Bug: BUG-0001'
+    Check 'round-cap: a commondir naming a missing folder blocks a dispatch naming a bug' ($r.Code -eq 2 -and $r.Out -match 'cannot be checked' -and $r.Out -match 'does not exist') $true
+    Check 'round-cap: ... and leaves a brief naming no bug alone' (Dispatch 'Explain the HUD') 0
+    $r = ShellEdit 'python -I bugs.py show BUG-0001'
+    Check 'round-cap: ... a bugs.py command gets a message only' ($r.Code -eq 2 -and $r.Out -match 'could not be read' -and $r.Out -notmatch 'Stop rule') $true
+    $r = Invoke-Hook 'session-start.ps1' @{}
+    Check 'session-start: ... and it never blocks a session' ($r.Code -eq 0 -and $r.Out -match '(?m)^Bugs: unavailable - ' -and $r.Out -match 'Search: Grep') $true
+    Remove-Item $bwCommon
+    Check 'bugs root: no commondir returns the root as given' (Get-BugsRoot $bwOut) $bwOut
+    [IO.File]::WriteAllText($bwCommon, $bwCommonText)
+    $bwLink = Join-Path $bwOut '.git'
+    $bwLinkText = [IO.File]::ReadAllText($bwLink)
+    (Get-Item -LiteralPath $bwLink -Force).Attributes = 'Normal'  # git hides the .git file, and a hidden file refuses a write
+    [IO.File]::WriteAllText($bwLink, "not a link`n")
+    $r = DispatchR 'Bug: BUG-0001'
+    Check 'round-cap: a .git file naming no gitdir blocks a dispatch naming a bug' ($r.Code -eq 2 -and $r.Out -match 'cannot be checked') $true
+    [IO.File]::WriteAllText($bwLink, "gitdir: $($tmp -replace '\\', '/')/no-such-admin-dir`n")
+    $r = DispatchR 'Bug: BUG-0001'
+    Check 'round-cap: a gitdir that does not exist blocks too' ($r.Code -eq 2 -and $r.Out -match 'does not exist') $true
+    [IO.File]::WriteAllText($bwLink, $bwLinkText)
     # Git works, Python does not: the journal check still reaches main, and only then Python is needed.
     $gitDir = Split-Path (Get-Command git -CommandType Application | Select-Object -First 1).Source
     $bwCache = Join-Path $bw '.memory/.state/python.txt'
@@ -1139,6 +1193,7 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
         Remove-Item (Join-Path $bw '.workflow/bugs.db*') -Force -ErrorAction SilentlyContinue
         Check 'round-cap: git but no Python, no journal in main: no Python start' (OnlyGit { Dispatch 'Bug: BUG-0001' }) 0
     }
+    if ($cpPinned) { [Console]::InputEncoding = $cpIn; [Console]::OutputEncoding = $cpOut }
     git @bwGit worktree remove --force $bwOut 2>&1 | Out-Null
 
     # framework-sync: line endings, and the warnings for a target that defeats the journal. The tool requires pwsh 7.
@@ -1545,6 +1600,11 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     }
     $out = & $shell -NoProfile -NonInteractive -File $ilVerifier 2>&1
     Check 'verify: a whole-layer run passes over a violating .md in in-layer scripts/ and assets/ and a folder with no SKILL.md' ($LASTEXITCODE -eq 0 -and ($out -join "`n") -cnotmatch 'FAIL') $true
+}
+catch {
+    # A method's exception ends this try: without this line the checks after it were skipped and the suite still read as passed.
+    Write-Output "FAIL  suite aborted: $($_.Exception.Message) (line $($_.InvocationInfo.ScriptLineNumber))"
+    $failures++
 }
 finally {
     Remove-Item Env:CLAUDE_PROJECT_DIR, Env:HOOK_TEST_XERJ, Env:MEM_CAPTURE, Env:XERJ_URL, Env:BUGS_NOW -ErrorAction SilentlyContinue

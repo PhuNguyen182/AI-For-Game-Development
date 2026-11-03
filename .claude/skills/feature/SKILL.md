@@ -32,7 +32,6 @@ argument-hint: "<the request, in the GD's words>"
   - **Request:** the GD's words verbatim (from a backlog item: its row and GDD section).
   - **Profile:** from `CLAUDE.md`.
   - **Backlog row:** the `.workflow/backlog.md` row → `in progress`.
-  - **Bug journal:** no `.workflow/bugs.jsonl` → create it empty.
 - **GD answers:** every GD answer → `GD decisions` at once; an accepted gap or risk also → `Known limitations` in the same edit.
 
 ## 1. Size — `technical-architect` (Size mode)
@@ -68,6 +67,7 @@ argument-hint: "<the request, in the GD's words>"
 - **Multiplayer:** a multiplayer feature approved → `Multiplayer: yes` in `CLAUDE.md`.
 
 ## 4. Build — serial, one Editor holder at a time
+- **Bug journal:** no `.workflow/bugs.jsonl` → create it empty (here, so an S exit leaves no untracked file).
 - **Start:** `git-expert` creates the local branch `feature/<slug>` from the current branch → `Branch:`, `Base:`.
   - **Shared checkout:** another session's `Session:` live under 3 h → `AskUserQuestion` before any branch switch: the checkout is shared.
 - **Order:** skipping roles the tasks omit:
@@ -169,6 +169,7 @@ argument-hint: "<the request, in the GD's words>"
 ## Abandon
 - **GD drops it:** `Status: Abandoned`, why, last verified state.
 - **Open bugs:** `Won't fix`, `--by GD`: abandoning is the GD's order.
+- **Journal:** those moves → add "journal uncommitted" to the report: `.workflow/bugs.jsonl` waits for the GD's commit order.
 - **Backlog row:** the backlog row → `dropped`.
 - **Worktrees:** `Worktrees:` entries removed (`git-expert`).
 - **Branch:** `AskUserQuestion`: delete `feature/<slug>` via `git-expert` (Khuyến nghị) / keep it, with a `DEBT.md` entry naming the dormant code.

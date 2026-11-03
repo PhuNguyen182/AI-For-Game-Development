@@ -172,7 +172,7 @@ function Get-FeatureCounters([string]$slug, $ledger) {
 
 # Counters of one unsettled bug from bugs.py, or @() when it is settled or unknown. Throws the cause and its fix when
 # the CLI cannot answer. No journal and no old bugs.md: no bugs yet, and Python never starts.
-$script:BugsRoot = $null  # resolved once, and only for a brief that names a bug: it starts git
+$script:BugsRoot = $null  # resolved once, and only for a brief that names a bug
 function Get-BugCounters([string]$id, $ledger) {
     if (-not $script:BugsRoot) { $script:BugsRoot = Get-BugsRoot $root }
     $workflow = Join-Path $script:BugsRoot '.workflow'

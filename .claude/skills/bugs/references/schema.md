@@ -46,8 +46,8 @@ Synthesized from `../scripts/bugs.py`; commands in `../SKILL.md`.
 | `--by` | 100 | One line |
 
 - **Checked on every text value:** control characters, Vietnamese diacritics (any Unicode form), secret shapes via `mem.py`, then PII redaction. The limit applies to the stored text.
-- **Fail closed:** a missing or broken `mem.py` or pattern file refuses every write, `delete`, `purge` and `doctor --fix` included; reads do not need them.
-- **Refusal text:** one exit in `main`. It passes the same secret and PII redaction, so a pasted secret as an ID, a status or a JSON key never reaches stderr. A value over 40 chars is not echoed; with nothing to scan, values are hidden.
+- **Fail closed:** a missing or broken `mem.py` (a syntax error or a failed import included) or pattern file refuses every write, `delete`, `purge` and `doctor --fix` included, with no traceback; reads do not need them.
+- **Refusal text:** one exit in `main`; secret and PII redaction always runs, so a pasted secret as an ID, a status or a JSON key never reaches stderr. A value over its limit is not echoed: 40 chars for an ID, status or key, 60 for an `import-md` History note, 200 for a SQLite message or `--root`, 300 for an argparse message. A line stops at 500. With nothing to scan, values are hidden.
 - **Stdin encoding:** the CLI reads UTF-8. Windows PowerShell 5.1's default pipe turns each non-ASCII character into `?` first, and the CLI cannot detect the loss; run `$OutputEncoding = [Text.UTF8Encoding]::new($false)` before the pipe.
 
 ## Journal (`.workflow/bugs.jsonl`, tracked; LF, UTF-8, no BOM)

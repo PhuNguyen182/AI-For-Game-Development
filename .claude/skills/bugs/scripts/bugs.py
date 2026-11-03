@@ -180,6 +180,7 @@ def check_english(field: str, text: str):
 
 
 _mem = None
+MEM_API = ("load_secret_patterns", "redact", "redact_pii", "RX_PEM_BLOCK")
 
 
 def mem_module():
@@ -194,6 +195,10 @@ def mem_module():
         keep, sys.dont_write_bytecode = sys.dont_write_bytecode, True
         try:
             spec.loader.exec_module(module)
+            for name in MEM_API:
+                getattr(module, name)
+        except Exception as ex:  # whatever the fault in that file, a SyntaxError or ImportError too: it leaves through main()
+            raise Refused("write refused: %s cannot be loaded (%s), so secret shapes cannot be checked" % (path, type(ex).__name__)) from None
         finally:
             sys.dont_write_bytecode = keep
         _mem = module
@@ -205,7 +210,10 @@ class Cleaner:
 
     def __init__(self, ctx):
         self.mem = mem_module()
-        self.patterns = self.mem.load_secret_patterns(ctx.root)
+        try:
+            self.patterns = self.mem.load_secret_patterns(ctx.root)
+        except Exception as ex:  # a missing or malformed file, or a fault in mem.py's own code
+            raise Refused("write refused: secret patterns cannot be loaded (%s: %s)" % (type(ex).__name__, ex)) from None
         self.redacted = []
 
     def clean(self, field: str, value) -> str:
@@ -1232,7 +1240,7 @@ def renumber_duplicates(w: Writer) -> list:
             old, new = parse_id(bug_id), w.top + 1
             # Same event_uid on two machines fixing the same merge: the second copy dedupes.
             w.emit("renumber", row["uid"], {"from": old, "to": new}, by="doctor", event_uid=stable_uid("renumber/%s/%d/%d" % (row["uid"], old, new)))
-            done.append("renumbered %s (uid %s) to %s" % (bug_id, row["uid"], fmt_id(new)))
+            done.append("renumbered %s to %s" % (bug_id, fmt_id(new)))
     return done
 
 
