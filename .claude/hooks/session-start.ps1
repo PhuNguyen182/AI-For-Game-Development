@@ -1,6 +1,7 @@
 # SessionStart: the framework backlog from its template when missing, in-flight features, then one status line each
-# for memory and code search.
+# for memory, bugs and code search.
 # Zero-Mem: no memory content is preloaded; the agent queries mem.py when it needs something.
+$clock = [Diagnostics.Stopwatch]::StartNew()
 . "$PSScriptRoot/common.ps1"
 $root = if ($env:CLAUDE_PROJECT_DIR) { $env:CLAUDE_PROJECT_DIR } else { (Get-Location).Path }
 
@@ -41,6 +42,27 @@ if (Test-Path (Join-Path $root '.claude/skills/mem/scripts/mem.py')) {
         "Memory: $stats. Query: $py -I .claude/skills/mem/scripts/mem.py q `"<words>`" (skill mem)."
     }
 }
+
+# Bugs: purge past the 90-day window, then one status line, or nothing with no journal. Python starts only for a journal.
+function Get-BugsLine([string]$Root) {
+    $workflow = Join-Path $Root '.workflow'
+    if (Test-Path (Join-Path $workflow 'bugs.md')) { return 'Bugs: .workflow/bugs.md is still present - run bugs.py import-md, then delete the file (skill bugs).' }
+    if (-not (Test-Path (Join-Path $workflow 'bugs.jsonl'))) { return $null }
+    # The hook has 15 s: the mem call above takes up to 8, the XERJ probe below up to 2. A purge cut short resumes next session.
+    $budget = [Math]::Min(3000, 12000 - $clock.ElapsedMilliseconds)
+    if ($budget -lt 1000) { return 'Bugs: not checked - the session-start time budget is used up.' }
+    $started = $clock.ElapsedMilliseconds
+    $purge = Invoke-Bugs $Root @('purge', '--auto') ([int]$budget)
+    if ($purge.State -eq 'NoPython') { return 'Bugs: unavailable - install Python 3.10+ with SQLite FTS5 (skill bugs).' }
+    $suffix = ''
+    if ($purge.State -ne 'Ok') { $suffix = "; purge failed: $(Get-FirstLine $purge.Err)" }
+    elseif ($purge.Out -match '(?m)^(purged [1-9]\d*, journal uncommitted)\s*$') { $suffix = "; $($Matches[1])" }
+    $stats = Invoke-Bugs $Root @('stats') ([int][Math]::Max(1000, $budget - ($clock.ElapsedMilliseconds - $started)))
+    if ($stats.State -ne 'Ok') { return "Bugs: unavailable - $(Get-FirstLine $stats.Err)" }
+    return "$($stats.Out.Trim())$suffix"
+}
+function Get-FirstLine([string]$Text) { $line = ($Text -split '\r?\n')[0]; if ($line.Length -gt 160) { $line.Substring(0, 160) } else { $line } }
+try { Get-BugsLine (Get-MainCheckout $root) } catch { "Bugs: unavailable - $(Get-FirstLine $_.Exception.Message)" }
 
 $prefix = Get-XerjPrefix $root
 switch (Get-XerjState $root) {

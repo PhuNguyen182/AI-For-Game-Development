@@ -9,12 +9,14 @@
 #             session. Failed returns are attempts, not rounds: never counted here.
 #   dispatch  PreToolUse Agent / Workflow: blocked when the brief's (or the workflow args') feature, bug or target
 #             is past a cap. A brief without marker lines falls back to every feature path and bug id it mentions.
-#   edit      PostToolUse Edit/Write under .workflow/: tells Claude when a counter reaches or passes its cap (silent
-#             at the cap once a "- Stop rule:" line names that counter), or an open feature file has no Rounds line.
-# Counters: "- Rounds: review n/cap, QA n/cap, rework n/cap" in a feature file; "- Fix rounds: n/cap" and
-# "- Review rounds: n/cap" in a bugs.md record. The files hold only events this hook cannot see; Used = file + ledger.
-# A cap above the default counts only with an "extra round" line in the feature's GD decisions or the bug's record;
-# for target or session work, one "extra-<counter>" entry in the ledger per extra round.
+#             A brief naming a bug fails closed: no Python or any bugs.py failure blocks the dispatch.
+#   edit      PostToolUse Edit/Write under .workflow/, and Bash/PowerShell commands that call bugs.py (for the bug ids in
+#             the command): tells Claude when a counter reaches or passes its cap (silent at the cap once a Stop rule
+#             names that counter), or an open feature file has no Rounds line. Any other command exits at once.
+# Counters: "- Rounds: review n/cap, QA n/cap, rework n/cap" in a feature file; a bug's fix and review rounds in the bug
+# database, read with "bugs.py counters". Both hold only events this hook cannot see; Used = file or database + ledger.
+# A cap above the default counts only with an "extra round" line in the feature's GD decisions or the bug's record
+# ("bugs.py extra-round" writes it); for target or session work, one "extra-<counter>" entry in the ledger per extra round.
 # Ledger safety: an unparsable ledger is moved to rounds.corrupt-<utc>.json (never overwritten); a lock timeout
 # parks the events in rounds.pending-<id>.json, merged on the next write; dispatch fails closed on an unreadable ledger.
 param([Parameter(Mandatory)][ValidateSet('count', 'dispatch', 'edit')][string]$Mode)
@@ -22,12 +24,12 @@ param([Parameter(Mandatory)][ValidateSet('count', 'dispatch', 'edit')][string]$M
 
 $Defaults = @{ review = 3; qa = 2; fix = 2; 'rework-M' = 6; 'rework-L' = 8 }
 $Gates = 'code-reviewer', 'security-reviewer', 'qa-lead'
-$Settled = "Closed|Won't fix|Accepted|As designed|Duplicate[^|]*"
 
 $in = Read-HookInput
 if (-not $in) { exit 0 }
 $root = Get-ProjectRoot $in
-$bugsPath = Join-Path $root '.workflow/bugs.md'
+# bugs.py reads the main checkout's data from a linked worktree too.
+$bugsRoot = Get-MainCheckout $root
 $ledgerPath = Join-Path $root '.workflow/rounds.json'
 $ledgerDir = Split-Path $ledgerPath
 $sessionKey = "session:$([string]$in.session_id)"
@@ -169,18 +171,24 @@ function Get-FeatureCounters([string]$slug, $ledger) {
     return $out
 }
 
-# Counters of one unsettled bug in bugs.md, or @().
+# Counters of one unsettled bug from bugs.py, or @() when it is settled or unknown. Throws the cause and its fix when
+# the CLI cannot answer. No journal and no old bugs.md: no bugs yet, and Python never starts.
 function Get-BugCounters([string]$id, $ledger) {
-    if (-not (Test-Path $bugsPath)) { return @() }
-    $text = Get-Content $bugsPath -Raw -Encoding UTF8
-    if ($text -match "(?m)^\|\s*$id\s*\|[^\n]*\|\s*($Settled)\s*\|") { return @() }
-    if ($text -notmatch "(?s)\r?\n## $id\b(.*?)(\r?\n## |$)") { return @() }
-    $record = $Matches[1]
+    $workflow = Join-Path $bugsRoot '.workflow'
+    if (-not (Test-Path (Join-Path $workflow 'bugs.jsonl')) -and -not (Test-Path (Join-Path $workflow 'bugs.md'))) { return @() }
+    $r = Invoke-Bugs $bugsRoot @('counters', $id, '--json')
+    if ($r.State -eq 'NoPython') { throw "no Python 3.10+ with SQLite FTS5 found. Install it, then retry (skill bugs)." }
+    if ($r.State -ne 'Ok') { throw "bugs.py counters $id failed: $($r.Err). Clear that cause, then retry (skill bugs)." }
+    $j = $null
+    try { $j = $r.Out | ConvertFrom-Json -ErrorAction Stop } catch {}
+    # A shape this hook does not know must not read as 0 rounds.
+    if ($null -eq $j -or $j.found -isnot [bool] -or $j.settled -isnot [bool] -or $null -eq $j.fix.used -or $null -eq $j.fix.cap -or $null -eq $j.review.used -or $null -eq $j.review.cap) {
+        throw "bugs.py counters $id returned unreadable output. Run it by hand to see why, then retry (skill bugs)."
+    }
+    if (-not $j.found -or $j.settled) { return @() }
     $out = @()
-    foreach ($pair in @(@('fix', 'Fix rounds'), @('review', 'Review rounds'))) {
-        $name = $pair[0]; $default = $Defaults[$name]; $used = 0; $cap = $default
-        if ($record -match "(?m)^- $($pair[1]):\s*(\d+)\s*/\s*(\d+)") { $used = [int]$Matches[1]; $cap = [int]$Matches[2] }
-        $out += New-Counter $name $used $cap $default $record (Get-LedgerCount $ledger "bug:$id" $name)
+    foreach ($name in 'fix', 'review') {
+        $out += New-Counter $name ([int]$j.$name.used) ([int]$j.$name.cap) $Defaults[$name] ([string]$j.record) (Get-LedgerCount $ledger "bug:$id" $name)
     }
     return $out
 }
@@ -266,6 +274,15 @@ if ($Mode -eq 'count') {
     exit 0
 }
 
+# Runs for every shell command the settings filter lets through: no Python and no ledger before this test.
+$shellIds = @()
+if ($Mode -eq 'edit' -and 'Bash', 'PowerShell' -contains [string]$in.tool_name) {
+    $command = [string]$in.tool_input.command
+    if ($command -notmatch '(?i)\bbugs\.py\b') { exit 0 }
+    $shellIds = @(Get-BugIds $command)
+    if (-not $shellIds.Count) { exit 0 }
+}
+
 $ledger = Get-Ledger
 if ($script:LedgerProblem -eq 'corrupt') {
     $dest = Move-CorruptLedger
@@ -304,7 +321,11 @@ if ($Mode -eq 'dispatch') {
     $bugs = @(if ($bug) { $bug } elseif (-not $marked) { Get-BugIds $brief })
     $over = @()
     foreach ($s in $slugs) { foreach ($c in Get-FeatureCounters $s $ledger) { if ($c.Used -gt $c.Cap) { $over += Format "feature $s" $c } } }
-    foreach ($b in $bugs) { foreach ($c in Get-BugCounters $b $ledger) { if ($c.Used -gt $c.Cap) { $over += Format $b $c } } }
+    foreach ($b in $bugs) {
+        try { $counters = @(Get-BugCounters $b $ledger) }
+        catch { Block "round-cap: the brief names $b but its round caps cannot be checked: $($_.Exception.Message)" }
+        foreach ($c in $counters) { if ($c.Used -gt $c.Cap) { $over += Format $b $c } }
+    }
     if ($tkey) { foreach ($c in Get-KeyCounters $tkey $ledger) { if ($c.Used -gt $c.Cap) { $over += Format $tkey $c } } }
     if (-not $marked -and -not $slugs.Count -and -not $bugs.Count -and $Gates -contains $agent) {
         foreach ($c in Get-KeyCounters $sessionKey $ledger) { if ($c.Used -gt $c.Cap) { $over += Format 'this session (no feature, bug or target named)' $c } }
@@ -312,29 +333,33 @@ if ($Mode -eq 'dispatch') {
     if ($over.Count) {
         Block ("Stop rule (routing.md): past the round cap - $($over -join '; '). " +
             'Report to the GD: what was tried, last verified state, next best action. ' +
-            'Another round only on the GD''s order: record "extra round: <counter> +n" under GD decisions (or in the bug record) and raise that cap; ' +
+            'Another round only on the GD''s order: for a feature, record "extra round: <counter> +n" under GD decisions and raise that cap; ' +
+            'for a bug, run bugs.py extra-round <id> <counter> +n --note <the order> (skill bugs); ' +
             "for target or session work add one `"extra-<counter>`" entry under that key in .workflow/rounds.json per round.")
     }
     exit 0
 }
 
-# edit
-$path = [string](First $in.tool_input.file_path '')
-if ($path -notmatch '[\\/]\.workflow[\\/]') { exit 0 }
+# edit. Exit 2 here only hands Claude the message: the tool has already run.
 $msg = @()
 $hits = @()
-if ($path -match '[\\/]features[\\/]([A-Za-z0-9_-]+)\.md$') {
-    $slug = $Matches[1]
-    $counters = @(Get-FeatureCounters $slug $ledger)
-    if ($counters.Count -and (Get-Content $path -Raw -Encoding UTF8) -notmatch '(?m)^- Rounds:') {
-        $msg += "feature ${slug}: no '- Rounds:' line (template in /feature); default caps apply."
+$unread = @()
+if ($shellIds.Count) {
+    $hits = foreach ($id in $shellIds) {
+        try { foreach ($c in Get-BugCounters $id $ledger) { if ($c.Used -ge $c.Cap) { $c | Add-Member -PassThru NoteProperty What $id } } }
+        catch { $unread += "round-cap: the round caps of $id could not be read: $($_.Exception.Message)" }
     }
-    $hits = foreach ($c in $counters) { if ($c.Used -ge $c.Cap) { $c | Add-Member -PassThru NoteProperty What "feature $slug" } }
 }
-elseif ($path -match '[\\/]bugs\.md$' -and (Test-Path $path)) {
-    $text = Get-Content $path -Raw -Encoding UTF8
-    $hits = foreach ($id in [regex]::Matches($text, '(?m)^## (BUG-\d{4,})') | ForEach-Object { $_.Groups[1].Value }) {
-        foreach ($c in Get-BugCounters $id $ledger) { if ($c.Used -ge $c.Cap) { $c | Add-Member -PassThru NoteProperty What $id } }
+else {
+    $path = [string](First $in.tool_input.file_path '')
+    if ($path -notmatch '[\\/]\.workflow[\\/]') { exit 0 }
+    if ($path -match '[\\/]features[\\/]([A-Za-z0-9_-]+)\.md$') {
+        $slug = $Matches[1]
+        $counters = @(Get-FeatureCounters $slug $ledger)
+        if ($counters.Count -and (Get-Content $path -Raw -Encoding UTF8) -notmatch '(?m)^- Rounds:') {
+            $msg += "feature ${slug}: no '- Rounds:' line (template in /feature); default caps apply."
+        }
+        $hits = foreach ($c in $counters) { if ($c.Used -ge $c.Cap) { $c | Add-Member -PassThru NoteProperty What "feature $slug" } }
     }
 }
 foreach ($c in @($hits | Where-Object { $_ })) {
@@ -342,5 +367,6 @@ foreach ($c in @($hits | Where-Object { $_ })) {
     if ($c.Used -gt $c.Cap) { $msg += "$line - past the cap: stop and report to the GD." }
     elseif (-not $c.Stopped) { $msg += "$line - at the cap: technical-architect root-causes once (record '- Stop rule:'), the owner gets one more dispatch; another failure stops the work." }
 }
-if (-not $msg.Count) { exit 0 }
-Block ("Stop rule (routing.md):`n" + ($msg -join "`n"))
+if ($msg.Count) { $unread += "Stop rule (routing.md):`n" + ($msg -join "`n") }
+if (-not $unread.Count) { exit 0 }
+Block ($unread -join "`n")

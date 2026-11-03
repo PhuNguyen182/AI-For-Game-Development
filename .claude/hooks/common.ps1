@@ -310,6 +310,54 @@ function Invoke-Mem([string]$Root, [string[]]$MemArgs) {
     return & $py[0] @rest -I (Join-Path $Root '.claude/skills/mem/scripts/mem.py') --root $Root @MemArgs 2>$null
 }
 
+# One argument for ProcessStartInfo.Arguments (Windows PowerShell has no ArgumentList). A plain word stays bare: the py
+# launcher reads its own raw command line and does not take a quoted "-3".
+function ConvertTo-NativeArg([string]$Arg) {
+    if ($Arg -and $Arg -notmatch '[\s"]') { return $Arg }
+    return '"' + (($Arg -replace '(\\*)"', '$1$1\"') -replace '(\\+)$', '$1$1') + '"'
+}
+
+# Runs bugs.py with the resolved Python. Returns { State; Code; Out; Err }, where State tells the outcomes apart:
+# 'NoPython' (nothing started), 'Failed' (non-zero exit, timeout, missing script; Err says why), 'Ok' (Out is all of stdout).
+# A Process, not &: & decodes stdout with the console code page while bugs.py writes UTF-8, [Console]::OutputEncoding
+# throws in a hook with no console, and Windows PowerShell wraps a native command's stderr lines as errors.
+function Invoke-Bugs([string]$Root, [string[]]$BugsArgs, [int]$TimeoutMs = 10000) {
+    function Result([string]$State, $Code, [string]$Out, [string]$Err) { [pscustomobject]@{ State = $State; Code = $Code; Out = $Out; Err = $Err } }
+    # @() because PowerShell unrolls a one-element array on return.
+    $py = @(Resolve-Python $Root | Where-Object { $_ })
+    if (-not $py.Count) { return Result 'NoPython' $null '' 'no Python 3.10+ with SQLite FTS5 found' }
+    $script = Join-Path $Root '.claude/skills/bugs/scripts/bugs.py'
+    if (-not (Test-Path $script)) { return Result 'Failed' $null '' "$script is missing" }
+    $words = @($py | Select-Object -Skip 1) + @('-I', $script, '--root', $Root) + @($BugsArgs)
+    $utf8 = New-Object Text.UTF8Encoding $false
+    $psi = New-Object Diagnostics.ProcessStartInfo
+    $psi.FileName = $py[0]
+    $psi.Arguments = (@($words | ForEach-Object { ConvertTo-NativeArg $_ }) -join ' ')
+    $psi.UseShellExecute = $false
+    $psi.CreateNoWindow = $true
+    $psi.RedirectStandardInput = $true
+    $psi.RedirectStandardOutput = $true
+    $psi.RedirectStandardError = $true
+    $psi.StandardOutputEncoding = $utf8
+    $psi.StandardErrorEncoding = $utf8
+    try {
+        $p = [Diagnostics.Process]::Start($psi)
+        $p.StandardInput.Close()
+        # Both pipes drain at once: a full one would stall the child.
+        $outRead = $p.StandardOutput.ReadToEndAsync()
+        $errRead = $p.StandardError.ReadToEndAsync()
+        if (-not $p.WaitForExit($TimeoutMs)) {
+            # A killed write is healed by the next command's hash check. Kill($true) does not exist on Windows PowerShell.
+            try { $p.Kill($true) } catch { try { $p.Kill() } catch {} }
+            return Result 'Failed' $null '' "timed out after $([int]($TimeoutMs / 1000)) s"
+        }
+        $out = $outRead.GetAwaiter().GetResult()
+        $err = $errRead.GetAwaiter().GetResult().Trim()
+        if ($p.ExitCode -ne 0) { return Result 'Failed' $p.ExitCode $out ([string](First $err "exit $($p.ExitCode)")) }
+        return Result 'Ok' 0 $out $err
+    } catch { return Result 'Failed' $null '' $_.Exception.Message }
+}
+
 # 'up' | 'down' | 'none' for the XERJ node at $XERJ_URL. HOOK_TEST_XERJ overrides for tests.
 # Only 'down'/'none' are cached (5 min): those probes are the slow ones, and a stale 'up' would deny Grep with no node.
 function Get-XerjState([string]$Root) {

@@ -675,23 +675,131 @@ try {
     Feature 'review 9/3, QA 0/2, rework 9/6' '' 'Closed'
     Check 'round-cap: a closed feature is not checked' (Dispatch $brief) 0
     Check 'round-cap: a brief naming no state passes' (Dispatch 'Explain the HUD') 0
-    $bugs = Join-Path $proj '.workflow/bugs.md'
-    function Bugs([string]$Status, [string]$Rounds) {
-        Set-Content $bugs "# Bugs`n`n| ID | Title | Severity | Status | Feature | Owner | Regression test |`n|---|---|---|---|---|---|---|`n| BUG-0007 | HUD | Low | $Status | demo | ui | t |`n`n## BUG-0007 - HUD`n- Repro: x`n- Fix rounds: $Rounds`n" -Encoding UTF8
+    # Bugs come from real bugs.py calls: the CLI owns the journal format. A copy of it, beside the mem.py copy it needs.
+    $bugsDir = Join-Path $proj '.claude/skills/bugs/scripts'
+    New-Item -ItemType Directory -Force $bugsDir | Out-Null
+    Copy-Item (Join-Path $hooks '../skills/bugs/scripts/bugs.py') $bugsDir
+    $bugPy = @(Resolve-Python $proj)
+    $bugRoot = $proj
+    $bugFields = '{"title":"HUD bar wrong","description":"The HUD bar shows the wrong value.","priority":"High","repro":"not yet","expected":"Value per the GDD","actual":"Wrong value","evidence":"none yet"}'
+    function BugCli([string[]]$CliArgs, [string]$Stdin = '') {
+        $rest = @($bugPy | Select-Object -Skip 1)
+        $cli = Join-Path $bugRoot '.claude/skills/bugs/scripts/bugs.py'
+        $out = if ($Stdin) { $Stdin | & $bugPy[0] @rest -I $cli --root $bugRoot @CliArgs 2>&1 } else { & $bugPy[0] @rest -I $cli --root $bugRoot @CliArgs 2>&1 }
+        if ($LASTEXITCODE -ne 0) { Write-Host "FAIL  fixture: bugs.py $($CliArgs -join ' '): $out"; $script:failures++ }
+        return ($out | Out-String)
     }
-    Bugs 'Reopened' '3/2'
-    Check 'round-cap: a bug past its cap blocks' (Dispatch 'Fix BUG-0007') 2
-    Check 'round-cap: bugs.md edit warns past the cap' (EditState $bugs) 2
-    Bugs 'Reopened' '1/2'
-    Check 'round-cap: a bug under its cap dispatches' (Dispatch 'Fix BUG-0007') 0
-    Bugs 'Closed' '3/2'
-    Check 'round-cap: a closed bug is not checked' (Dispatch 'Verify BUG-0007') 0
-    Bugs 'Accepted' '3/2'
-    Check 'round-cap: an accepted bug is settled, not capped' (Dispatch 'Bug: BUG-0007') 0
-    Bugs 'Duplicate of BUG-0001' '3/2'
-    Check 'round-cap: a duplicate bug is settled' (Dispatch 'Bug: BUG-0007') 0
-    Bugs 'Reopened' '3/2'
-    Check 'round-cap: a QA brief listing a past-cap bug but charging the feature passes' (Dispatch "Feature: .workflow/features/demo.md`nOpen bugs: BUG-0007") 0
+    function ClearBugs { Remove-Item (Join-Path $bugRoot '.workflow/bugs.*') -Force -ErrorAction SilentlyContinue }
+    function MoveBug([string]$Id, [string[]]$Statuses) { foreach ($s in $Statuses) { BugCli @('set-status', $Id, $s, '--note', 'test move') | Out-Null } }
+    # One bug, BUG-0001, in $Status with $Fix used fix rounds. A Duplicate points at a second bug.
+    function Bugs([string]$Status, [int]$Fix) {
+        ClearBugs
+        BugCli @('add') $bugFields | Out-Null
+        if ($Fix) { BugCli @('round', 'BUG-0001', 'fix', "+$Fix", '--note', 'test round') | Out-Null }
+        switch ($Status) {
+            'Request' {}
+            'Reopen' { MoveBug 'BUG-0001' 'Processing', 'Resolved', 'Review', 'Reopen' }
+            'Complete' { MoveBug 'BUG-0001' 'Processing', 'Resolved', 'Review', 'Complete' }
+            'Duplicate' {
+                BugCli @('add') $bugFields | Out-Null
+                BugCli @('set-status', 'BUG-0001', 'Duplicate', '--duplicate-of', 'BUG-0002', '--note', 'test move') | Out-Null
+            }
+            default { BugCli @('set-status', 'BUG-0001', $Status, '--by', 'GD', '--note', 'test move') | Out-Null }
+        }
+    }
+    function DispatchR([string]$Brief) { Invoke-Hook 'round-cap.ps1' @{ tool_name = 'Agent'; tool_input = @{ prompt = $Brief } } @('-Mode', 'dispatch') }
+    function ShellEdit([string]$Command, [string]$Tool = 'PowerShell') { Invoke-Hook 'round-cap.ps1' @{ tool_name = $Tool; tool_input = @{ command = $Command } } @('-Mode', 'edit') }
+    $bugCall = 'python -I .claude/skills/bugs/scripts/bugs.py round BUG-0001 fix +1 --note x'
+    Bugs 'Reopen' 3
+    Check 'round-cap: a bug past its cap blocks' (Dispatch 'Fix BUG-0001') 2
+    $r = ShellEdit $bugCall
+    Check 'round-cap: a bugs.py command warns past the cap' ($r.Code -eq 2 -and $r.Out -match 'BUG-0001: fix 3/2' -and $r.Out -match 'past the cap') $true
+    Check 'round-cap: an edit under .workflow names no bug any more' (EditState (Join-Path $proj '.workflow/bugs.md')) 0
+    Bugs 'Reopen' 1
+    Check 'round-cap: a bug under its cap dispatches' (Dispatch 'Fix BUG-0001') 0
+    Check 'round-cap: a bugs.py command under the cap is silent' (ShellEdit $bugCall).Code 0
+    Bugs 'Reopen' 2
+    Check 'round-cap: a bug at its cap still dispatches' (Dispatch 'Fix BUG-0001') 0
+    $r = ShellEdit $bugCall 'Bash'
+    Check 'round-cap: a bugs.py command warns at the cap' ($r.Code -eq 2 -and $r.Out -match 'BUG-0001: fix 2/2' -and $r.Out -match 'at the cap') $true
+    BugCli @('stop-rule', 'BUG-0001', 'fix', '--extra-dispatch', 'unused', '--note', 'test') | Out-Null
+    Check 'round-cap: a Stop rule silences the at-cap message' (ShellEdit $bugCall).Code 0
+    BugCli @('round', 'BUG-0001', 'fix', '+1', '--note', 'test') | Out-Null
+    Check 'round-cap: ... and never the past-cap message' ((ShellEdit $bugCall).Out -match 'past the cap') $true
+    Bugs 'Reopen' 3
+    $r = DispatchR 'Fix BUG-0001'
+    Check 'round-cap: the past-cap block names bugs.py extra-round' ($r.Out -match 'bugs\.py extra-round') $true
+    BugCli @('extra-round', 'BUG-0001', 'fix', '+1', '--note', 'GD order') | Out-Null
+    Check 'round-cap: an extra round raises the cap' (Dispatch 'Fix BUG-0001') 0
+    Bugs 'Complete' 3
+    Check 'round-cap: a Complete bug is not checked' (Dispatch 'Verify BUG-0001') 0
+    Check 'round-cap: a settled bug gets no cap message' (ShellEdit $bugCall).Code 0
+    Bugs 'Accepted' 3
+    Check 'round-cap: an accepted bug is settled, not capped' (Dispatch 'Bug: BUG-0001') 0
+    Bugs 'Duplicate' 3
+    Check 'round-cap: a duplicate bug is settled' (Dispatch 'Bug: BUG-0001') 0
+    Bugs 'Backlog' 3
+    Check 'round-cap: a Backlog bug is not capped' (Dispatch 'Bug: BUG-0001') 0
+    Check 'round-cap: an unknown id passes' (Dispatch 'Fix BUG-0999') 0
+    Bugs 'Reopen' 3
+    Check 'round-cap: a QA brief listing a past-cap bug but charging the feature passes' (Dispatch "Feature: .workflow/features/demo.md`nOpen bugs: BUG-0001") 0
+    # Decoding: Out is UTF-8 whatever the console code page is. \u escapes keep this file and the stdin pipe ASCII.
+    ClearBugs
+    BugCli @('add') '{"title":"Gr\u00f6\u00dfe wrong","description":"d","priority":"Low","repro":"not yet","expected":"e","actual":"a","evidence":"n"}' | Out-Null
+    $o = Invoke-Bugs $proj @('show', 'BUG-0001', '--json')
+    Check 'bugs: Invoke-Bugs decodes non-ASCII stdout as UTF-8' ($o.State -eq 'Ok' -and $o.Out.Contains("Gr$([char]0xF6)$([char]0xDF)e wrong")) $true
+    $o = Invoke-Bugs $proj @('show', 'not-an-id')
+    Check 'bugs: Invoke-Bugs reports a CLI failure with its stderr' ($o.State -eq 'Failed' -and $o.Code -eq 1 -and $o.Err -match '^bugs: ') $true
+    Check 'bugs: Invoke-Bugs reports a missing script as a failure' ((Invoke-Bugs (Join-Path $tmp 'NoSuchProject') @('stats')).State) 'Failed'
+    $o = Invoke-Bugs $proj @('stats') 1
+    Check 'bugs: Invoke-Bugs kills a call past its timeout and reports it' ($o.State -eq 'Failed' -and $o.Err -match 'timed out') $true
+    # Fail closed. An empty PATH and no cached interpreter stand for a machine without Python.
+    $noPyDir = Join-Path $tmp 'empty-path'
+    New-Item -ItemType Directory -Force $noPyDir | Out-Null
+    $pyCache = Join-Path $proj '.memory/.state/python.txt'
+    $savedPath = $env:PATH
+    function NoPython([scriptblock]$Body) {
+        Remove-Item $pyCache -ErrorAction SilentlyContinue
+        $env:PATH = $noPyDir
+        try { & $Body } finally { $env:PATH = $savedPath }
+    }
+    Bugs 'Reopen' 1
+    $r = NoPython { DispatchR 'Fix BUG-0001' }
+    Check 'round-cap: no Python on a bug dispatch blocks, naming the fix' ($r.Code -eq 2 -and $r.Out -match 'BUG-0001' -and $r.Out -match 'Python 3\.10') $true
+    $r = NoPython { DispatchR 'Bug: BUG-0001' }
+    Check 'round-cap: no Python on a Bug marker blocks' $r.Code 2
+    Check 'round-cap: no Python leaves a brief naming no bug alone' (NoPython { Dispatch 'Explain the HUD' }) 0
+    $r = NoPython { ShellEdit $bugCall }
+    Check 'round-cap: no Python on a bugs.py command gives a message only' ($r.Code -eq 2 -and $r.Out -match 'could not be read' -and $r.Out -notmatch 'Stop rule') $true
+    ClearBugs
+    Check 'round-cap: no journal and no bugs.md pass without Python' (NoPython { Dispatch 'Fix BUG-0001' }) 0
+    Check 'round-cap: a shell command with no journal stays silent without Python' (NoPython { (ShellEdit $bugCall).Code }) 0
+    $oldBugs = Join-Path $proj '.workflow/bugs.md'
+    Set-Content $oldBugs "# Bugs`n" -Encoding UTF8
+    $r = DispatchR 'Fix BUG-0001'
+    Check 'round-cap: a remaining bugs.md blocks a bug dispatch, naming import-md' ($r.Code -eq 2 -and $r.Out -match 'import-md') $true
+    Check 'round-cap: a remaining bugs.md leaves other dispatches alone' (Dispatch 'Explain the HUD') 0
+    Remove-Item $oldBugs
+    # A merge of two branches that each filed a bug: two real create lines holding one id.
+    BugCli @('add') $bugFields | Out-Null
+    $oneLine = Get-Content (Join-Path $proj '.workflow/bugs.jsonl') -Raw
+    ClearBugs
+    BugCli @('add') $bugFields | Out-Null
+    [IO.File]::AppendAllText((Join-Path $proj '.workflow/bugs.jsonl'), $oneLine)
+    $r = DispatchR 'Fix BUG-0001'
+    Check 'round-cap: a duplicate id blocks, naming doctor --fix' ($r.Code -eq 2 -and $r.Out -match 'doctor --fix') $true
+    $r = ShellEdit $bugCall
+    Check 'round-cap: a CLI failure on a bugs.py command gives its message' ($r.Code -eq 2 -and $r.Out -match 'could not be read' -and $r.Out -match 'duplicate id') $true
+    ClearBugs
+    # A shell command that does not call bugs.py: nothing runs, not even the ledger step that moves a corrupt file aside.
+    $ledgerProbe = Join-Path $proj '.workflow/rounds.json'
+    Set-Content $ledgerProbe '{ broken' -Encoding UTF8
+    $r = NoPython { ShellEdit 'git log --grep BUG-0001' }
+    Check 'round-cap: another shell command is silent' ($r.Code -eq 0 -and -not $r.Out.Trim()) $true
+    Check 'round-cap: ... and leaves the ledger alone' ((Test-Path $ledgerProbe) -and -not @(Get-ChildItem (Split-Path $ledgerProbe) -Filter 'rounds.corrupt-*.json').Count) $true
+    $r = NoPython { ShellEdit 'python -I bugs.py list --open' 'Bash' }
+    Check 'round-cap: a bugs.py command naming no id is silent' ($r.Code -eq 0 -and -not $r.Out.Trim()) $true
+    Remove-Item $ledgerProbe
     Feature 'review 1/3, QA 0/2, rework 1/6'
     Check 'round-cap: edits outside .workflow are ignored' (EditState "$proj/Assets/A.cs") 0
 
@@ -744,19 +852,22 @@ try {
     Check 'count: used = file + hook (1 + 3 > 3) blocks' (Dispatch "$fm`nNext attempt") 2
     Feature 'review 0/3, QA 0/2, rework 0/6'
     Remove-Item $ledger
-    Bugs 'Reopened' '0/2'
-    foreach ($n in 1..3) { SubStop 'gameplay-engineer' "Bug: BUG-0007`n$fm" "Status: Failed`nAttempts: 3/3" "f$n" | Out-Null }
-    Check 'count: Failed returns are attempts, not rounds' (Dispatch 'Bug: BUG-0007') 0
-    SubStop 'playtest-tester' "Bug: BUG-0007`nReproduce it." "Status: Done`nRepro: BUG-0007 reproduces" 'q1' | Out-Null
+    Bugs 'Reopen' 0
+    foreach ($n in 1..3) { SubStop 'gameplay-engineer' "Bug: BUG-0001`n$fm" "Status: Failed`nAttempts: 3/3" "f$n" | Out-Null }
+    Check 'count: Failed returns are attempts, not rounds' (Dispatch 'Bug: BUG-0001') 0
+    SubStop 'playtest-tester' "Bug: BUG-0001`nReproduce it." "Status: Done`nRepro: BUG-0001 reproduces" 'q1' | Out-Null
     Check 'count: reproducing a bug without Verify is not a fix round' (Test-Path $ledger) $false
-    SubStop 'playtest-tester' "Verify: BUG-0007`n$fm" "Status: Done`nRepro: BUG-0007 reproduces" 'p1' | Out-Null
-    SubStop 'playtest-tester' "Verify: BUG-0007" "Status: Failed`nRepro: BUG-0007 reproduces" 'p2' | Out-Null
-    SubStop 'playtest-tester' "Verify: BUG-0007" "Status: Done`nRepro: BUG-0007 gone" 'p3' | Out-Null
-    Check 'count: a verify that still fails counts once per run' (Count 'bug:BUG-0007' 'fix') 2
+    SubStop 'playtest-tester' "Verify: BUG-0001`n$fm" "Status: Done`nRepro: BUG-0001 reproduces" 'p1' | Out-Null
+    SubStop 'playtest-tester' "Verify: BUG-0001" "Status: Failed`nRepro: BUG-0001 reproduces" 'p2' | Out-Null
+    SubStop 'playtest-tester' "Verify: BUG-0001" "Status: Done`nRepro: BUG-0001 gone" 'p3' | Out-Null
+    Check 'count: a verify that still fails counts once per run' (Count 'bug:BUG-0001' 'fix') 2
     Check 'count: a verify that still fails adds feature rework' (Count 'feature:demo' 'rework') 1
-    SubStop 'code-reviewer' "Round: 1`nBug: BUG-0007" 'Verdict: Request changes' 'b1' | Out-Null
-    Check 'count: a no-feature fix review counts on the bug review counter' (Count 'bug:BUG-0007' 'review') 1
-    Check 'count: ... and not on its fix counter' (Count 'bug:BUG-0007' 'fix') 2
+    SubStop 'code-reviewer' "Round: 1`nBug: BUG-0001" 'Verdict: Request changes' 'b1' | Out-Null
+    Check 'count: a no-feature fix review counts on the bug review counter' (Count 'bug:BUG-0001' 'review') 1
+    Check 'count: ... and not on its fix counter' (Count 'bug:BUG-0001' 'fix') 2
+    Check 'count: used = database + ledger (0 + 2 is at the cap, still dispatches)' (Dispatch 'Bug: BUG-0001') 0
+    SubStop 'playtest-tester' "Verify: BUG-0001" "Status: Done`nRepro: BUG-0001 reproduces" 'p4' | Out-Null
+    Check 'count: used = database + ledger (0 + 3 past the cap blocks)' (Dispatch 'Bug: BUG-0001') 2
     Remove-Item $ledger
     foreach ($n in 1..4) { SubStop 'code-reviewer' "Round: $n`nTarget: Assets/Shop" 'Verdict: Request changes' "t$n" | Out-Null }
     Check 'count: target work past the cap blocks the gate' (Dispatch "Round: 5`nTarget: Assets/Shop") 2
@@ -830,6 +941,65 @@ try {
     Set-Content $feat "# Demo`n`n- Status: Open`n- Size: L, Risk flag: no`n`n## GD decisions`n" -Encoding UTF8
     Check 'round-cap: an open feature without Rounds warns on edit' (EditState $feat) 2
     Check 'round-cap: an open feature without Rounds still dispatches' (Dispatch $brief) 0
+
+    # session-start: the bug line and the purge trigger, in a real repo holding a journal built by the CLI
+    ClearBugs
+    $bp = Join-Path $tmp 'BugProject'
+    New-Repo $bp
+    New-Item -ItemType Directory -Force (Join-Path $bp '.claude/skills/bugs/scripts'), (Join-Path $bp '.claude/skills/mem/scripts'), (Join-Path $bp '.claude/hooks') | Out-Null
+    Copy-Item (Join-Path $hooks '../skills/bugs/scripts/bugs.py') (Join-Path $bp '.claude/skills/bugs/scripts')
+    Copy-Item (Join-Path $hooks '../skills/mem/scripts/mem.py') (Join-Path $bp '.claude/skills/mem/scripts')
+    Copy-Item (Join-Path $hooks 'secret-patterns.txt') (Join-Path $bp '.claude/hooks')
+    $bugRoot = $bp
+    $bpGit = @('-C', $bp, '-c', 'user.name=t', '-c', 'user.email=t@example.com', '-c', 'core.autocrlf=false')
+    $bpJournal = Join-Path $bp '.workflow/bugs.jsonl'
+    # BUG-0001 went terminal 100 days ago (BUGS_NOW is the CLI's test clock); BUG-0002 is open, High.
+    $env:BUGS_NOW = (Get-Date).ToUniversalTime().AddDays(-100).ToString('yyyy-MM-ddTHH:mm:ss') + 'Z'
+    BugCli @('add') $bugFields | Out-Null
+    MoveBug 'BUG-0001' 'As designed'
+    Remove-Item Env:BUGS_NOW
+    BugCli @('add') $bugFields | Out-Null
+    git @bpGit add .workflow/bugs.jsonl 2>&1 | Out-Null
+    git @bpGit commit -q -m 'journal' 2>&1 | Out-Null
+    $env:CLAUDE_PROJECT_DIR = $bp
+    $env:HOOK_TEST_XERJ = 'none'
+    # Feature branch first: the journal must still hold the expired bug when the purge case runs.
+    git @bpGit checkout -q -b feature/x 2>&1 | Out-Null
+    $r = Invoke-Hook 'session-start.ps1' @{}
+    Check 'session-start: a feature branch skips the purge' ($r.Code -eq 0 -and $r.Out -match '(?m)^Bugs: 1 open \(1 High\+\)\s*$') $true
+    Check 'session-start: ... and writes no journal' ((git @bpGit status --porcelain -- .workflow/bugs.jsonl | Out-String).Trim()) ''
+    git @bpGit checkout -q - 2>&1 | Out-Null
+    # A dirty journal: an uncommitted real write.
+    BugCli @('add') $bugFields | Out-Null
+    $dirty = [IO.File]::ReadAllText($bpJournal)
+    $r = Invoke-Hook 'session-start.ps1' @{}
+    Check 'session-start: a dirty journal skips the purge' ($r.Code -eq 0 -and $r.Out -match '(?m)^Bugs: 2 open \(2 High\+\)\s*$') $true
+    Check 'session-start: ... and leaves the journal as it was' ([IO.File]::ReadAllText($bpJournal)) $dirty
+    git @bpGit checkout -q -- .workflow/bugs.jsonl 2>&1 | Out-Null
+    $r = Invoke-Hook 'session-start.ps1' @{}
+    Check 'session-start: an expired terminal bug is purged, with the line shown' ($r.Code -eq 0 -and $r.Out -match '(?m)^Bugs: 1 open \(1 High\+\); purged 1, journal uncommitted\s*$') $true
+    Check 'session-start: ... the bug is gone' ((BugCli @('counters', 'BUG-0001', '--json')) -match '"found": false') $true
+    Check 'session-start: ... and nothing was committed' (@(git @bpGit log --oneline).Count) 1
+    Check 'session-start: ... the journal is left uncommitted' ([bool](git @bpGit status --porcelain -- .workflow/bugs.jsonl | Out-String).Trim()) $true
+    $saved = [IO.File]::ReadAllText($bpJournal)
+    [IO.File]::WriteAllText($bpJournal, "{ not json`n")
+    $r = Invoke-Hook 'session-start.ps1' @{}
+    Check 'session-start: a CLI error prints a short line and never fails' ($r.Code -eq 0 -and $r.Out -match '(?m)^Bugs: unavailable - bugs: ' -and $r.Out -match 'Search: Grep') $true
+    [IO.File]::WriteAllText($bpJournal, $saved)
+    $pyCache = Join-Path $bp '.memory/.state/python.txt'
+    $r = NoPython { Invoke-Hook 'session-start.ps1' @{} }
+    Check 'session-start: no Python with a journal prints a short line and never fails' ($r.Code -eq 0 -and $r.Out -match '(?m)^Bugs: unavailable - install Python') $true
+    Remove-Item $bpJournal
+    Remove-Item (Join-Path $bp '.workflow/bugs.db*') -Force -ErrorAction SilentlyContinue
+    $r = NoPython { Invoke-Hook 'session-start.ps1' @{} }
+    Check 'session-start: no journal prints no bug line and needs no Python' ($r.Code -eq 0 -and $r.Out -notmatch 'Bugs:') $true
+    Set-Content (Join-Path $bp '.workflow/bugs.md') "# Bugs`n" -Encoding UTF8
+    $r = NoPython { Invoke-Hook 'session-start.ps1' @{} }
+    Check 'session-start: a remaining bugs.md prints one import-md line' ($r.Code -eq 0 -and @($r.Out -split '\r?\n' | Where-Object { $_ -match '^Bugs: .*import-md' }).Count -eq 1) $true
+    $env:CLAUDE_PROJECT_DIR = $proj
+    Remove-Item Env:HOOK_TEST_XERJ
+    $bugRoot = $proj
+    $pyCache = Join-Path $proj '.memory/.state/python.txt'
 
     # verify-on-edit
     Check 'verify-on-edit ignores files outside .claude' (Invoke-Hook 'verify-on-edit.ps1' @{ tool_input = @{ file_path = "$proj/Assets/A.cs" } }).Code 0
@@ -1188,7 +1358,7 @@ try {
     Check 'verify: a whole-layer run passes over a violating .md in in-layer scripts/ and assets/ and a folder with no SKILL.md' ($LASTEXITCODE -eq 0 -and ($out -join "`n") -cnotmatch 'FAIL') $true
 }
 finally {
-    Remove-Item Env:CLAUDE_PROJECT_DIR, Env:HOOK_TEST_XERJ, Env:MEM_CAPTURE, Env:XERJ_URL -ErrorAction SilentlyContinue
+    Remove-Item Env:CLAUDE_PROJECT_DIR, Env:HOOK_TEST_XERJ, Env:MEM_CAPTURE, Env:XERJ_URL, Env:BUGS_NOW -ErrorAction SilentlyContinue
     Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue
 }
 

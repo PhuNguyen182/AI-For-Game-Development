@@ -524,6 +524,25 @@
             "if": "PowerShell(unity command package *)"
           }
         ]
+      },
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(*bugs.py*)",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/round-cap.ps1\" -Mode edit; exit $LASTEXITCODE",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "if": "PowerShell(*bugs.py*)",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/round-cap.ps1\" -Mode edit; exit $LASTEXITCODE",
+            "timeout": 15
+          }
+        ]
       }
     ],
     "SubagentStop": [
