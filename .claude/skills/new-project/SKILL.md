@@ -42,7 +42,7 @@ Assets/_Project/Scripts/Shared/Server/          _Project.Scripts.Shared.Server  
 - **Base files:** Unity `.gitignore`, `.gitattributes` (UnityYAMLMerge, LFS for binaries), `git lfs install`.
 - **Never committed:** never commit `Library/`, `Temp/`, `Logs/`, `UserSettings/`.
 - **Signing globs:** keep the framework `.gitignore`'s signing/credential globs (`*.keystore`, `*.jks`, `*.p12`, `.env*`, service-account JSON, ...).
-- **Raw-dump globs:** keep the framework `.gitignore`'s `.workflow/evidence/**` raw-dump globs (`logcat_*.txt`, `syslog*.txt`, `*.ips`, `*.crash`).
+- **Raw-dump globs:** keep the framework `.gitignore`'s `.workflow/evidence/**` raw-dump globs (`*.ips`, `*.crash`, `*.txt`).
 - **Both glob sets:** the signing and raw-dump globs sit outside the `Framework repo only` block and must stay in every game project.
 - **Memory and search:** per skills `mem`, `code-search`:
   - **`.gitignore` additions:** `.gitignore` += `.memory/.index/`, `.memory/.state/`.

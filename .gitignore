@@ -141,10 +141,9 @@ id_rsa*
 
 # Raw device dumps stay local: other apps' data, tokens, player PII. Under .workflow/evidence/ only .md reports and
 # .png screenshots are committed; a report cites a dump's path or a redacted excerpt.
-.workflow/evidence/**/logcat_*.txt
-.workflow/evidence/**/syslog*.txt
 .workflow/evidence/**/*.ips
 .workflow/evidence/**/*.crash
+.workflow/evidence/**/*.txt
 
 # Zero-Mem: derived index and per-machine state (the files under .memory/ are the record)
 .memory/.index/
