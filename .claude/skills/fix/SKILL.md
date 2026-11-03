@@ -57,7 +57,7 @@ argument-hint: "<bug id, or the symptom in the GD's words>"
 - **Fix reached:** `com.unity.testtools.codecoverage` installed → run the regression test alone with coverage (`unity-test-framework` → code-coverage.md).
   - **Fix's lines not executed:** the test does not guard this fix → back to step 4, even when green; the bug stays `Processing`.
   - **Not runnable:** package absent or Editor open → say so; not a blocker.
-- **Checks passed:** with the owner's `Fixes:` and `Fix reached` passed or not runnable → `Resolved`.
+- **Checks passed:** `Passing state` holds, the owner's `Fixes:` is present, and `Fix reached` passed or was not runnable → `Resolved`.
 - **Verification run:** dispatching a QA executor brief with `Verify: BUG-####` → `Review`; it re-runs the repro (a written repro: its written steps) and returns its `Repro:` line:
   - **`gone`:** → `Complete`, cited in the status note.
   - **`reproduces`:** → `Reopen` (the hook counts the fix round), back to step 3; a cap reached → stop rule.

@@ -1129,7 +1129,7 @@ def auto_block_reason(ctx: Ctx) -> str | None:
 
 def cmd_purge(ctx, a):
     if os.environ.get("BUGS_NOW"):
-        print("warning: BUGS_NOW is set: purge runs on that test clock, not the real time", file=sys.stderr)
+        print("warning: BUGS_NOW is set: time here reads as the test clock", file=sys.stderr)
     if a.auto:
         why = auto_block_reason(ctx)
         if why:
@@ -1325,7 +1325,7 @@ def md_history(bug_id: str, text: str, problems: list) -> list:
     return out
 
 
-def stage_record(bug_id: str, row: dict, rec: dict, cleaner: Cleaner, problems: list) -> list:
+def stage_record(bug_id: str, row: dict, rec: dict, cleaner: Cleaner, problems: list, row_ids) -> list:
     """The journal lines of one bug, or nothing when it breaks a rule. Every break is reported, none is truncated."""
     say = lambda ex: problems.append("%s %s" % (bug_id, ex))
     fields = {}
@@ -1402,6 +1402,10 @@ def stage_record(bug_id: str, row: dict, rec: dict, cleaner: Cleaner, problems: 
             dup_of = m.group(0) if m else dup_of
         if not dup_of:
             problems.append("%s History: Duplicate names no BUG-#### target" % bug_id)
+    if dup_of == bug_id:  # what set-status refuses
+        say("duplicate_of: a bug cannot duplicate itself")
+    elif dup_of and dup_of not in row_ids:
+        say("duplicate_of: %s is not in the table" % dup_of)
 
     if problems and any(p.startswith(bug_id) for p in problems):
         return []
@@ -1449,13 +1453,7 @@ def cmd_import_md(ctx, a):
             problems.append("%s: a table row with no record" % bug_id)
     staged = []
     for bug_id in sorted(set(rows) & set(records), key=parse_id):
-        events = stage_record(bug_id, rows[bug_id], records[bug_id], cleaner, problems)
-        staged += events
-        for target in {ev["data"]["duplicate_of"] for ev in events if ev["data"].get("duplicate_of")}:  # what set-status refuses
-            if target == bug_id:
-                problems.append("%s duplicate_of: a bug cannot duplicate itself" % bug_id)
-            elif target not in rows:
-                problems.append("%s duplicate_of: %s is not in the table" % (bug_id, target))
+        staged += stage_record(bug_id, rows[bug_id], records[bug_id], cleaner, problems, rows)
     m = re.search(r"(?m)^Next ID:\s*BUG-(\d+)", text)
     next_id = int(m.group(1)) if m else 1
     if problems:

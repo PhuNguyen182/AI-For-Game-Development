@@ -767,6 +767,8 @@ class TestPurge(Base):
                 self.assertEqual(code, 0, err)
                 self.assertEqual(len(err.strip().splitlines()), 1, err)
                 self.assertIn("BUGS_NOW", err)
+                self.assertIn("reads as the test clock", err)
+                self.assertNotIn("purge runs", err)  # --auto can skip: the line must not claim a run
                 self.assertNotIn("BUGS_NOW", out)
 
     def test_no_clock_override_no_warning(self):
@@ -1661,6 +1663,17 @@ class TestImport(Base):
         err = self.no("import-md")
         self.assertIn("BUG-0001 title: 101", err)
         self.assertIn("BUG-0002 duplicate_of", err)
+
+    def test_one_bug_breaking_two_rules_reports_both(self):
+        h = "2026-10-29 Open — a. 2026-10-30 Duplicate — b."
+        for status, needle in (("Duplicate of BUG-0077", "BUG-0077"), ("Duplicate of BUG-0002", "itself")):
+            with self.subTest(status):
+                self.write_md(md_file(md_record("BUG-0001"), md_record("BUG-0002", title="t" * 101, status=status, history=h)))
+                err = self.no("import-md")
+                self.assertIn("BUG-0002 title: 101", err)
+                self.assertIn("BUG-0002 duplicate_of", err)
+                self.assertIn(needle, err)
+                self.assertFalse(self.journal.exists())
 
     def test_unknown_history_status_and_label_stop(self):
         self.write_md(md_file(md_record(history="2026-10-29 Open — a. 2026-10-30 Parked — b.")))
