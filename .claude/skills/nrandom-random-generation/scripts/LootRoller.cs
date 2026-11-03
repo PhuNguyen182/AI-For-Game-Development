@@ -1,4 +1,4 @@
-// Per-match deterministic RNG: an injected Xoshiro256StarStarRandom initialised with the match seed.
+// Per-match deterministic RNG: an injected IRandom the caller initialised with the match seed.
 // Adapt into: Assets/_Project/Scripts/<Feature>/Core/LootRoller.cs
 // Unverified: not compiled or run (no Unity project in this repo).
 // Core: deterministic per-match RNG, injected, never RandomEx.Shared.
@@ -6,10 +6,10 @@ public sealed class LootRoller
 {
     private readonly IRandom _random;
 
-    public LootRoller(uint matchSeed)
+    // Caller: var random = new Xoshiro256StarStarRandom(); random.InitState(matchSeed); new LootRoller(random);
+    public LootRoller(IRandom random)
     {
-        this._random = new Xoshiro256StarStarRandom();
-        this._random.InitState(matchSeed);
+        this._random = random;
     }
 
     public int RollCriticalPercent()
