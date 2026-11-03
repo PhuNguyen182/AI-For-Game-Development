@@ -1,7 +1,8 @@
 // Shape of the Firebase Functions 2nd gen redeemPurchase callable with a Firestore ledger transaction.
 // Adapt into: the Cloud Functions source (functions/index.js)
-// Unverified: not compiled or run (no Unity project in this repo).
+// Unverified: run only under stubs of Firebase and the project code, never against Firebase, Firestore or a store.
 // Shape only. verifyWithStore, finishWithStore, flagConflict and CATALOG are project code.
+const {createHash} = require("crypto");
 const {onCall, HttpsError} = require("firebase-functions/https");
 const logger = require("firebase-functions/logger");
 const {defineSecret} = require("firebase-functions/params");
@@ -12,17 +13,32 @@ initializeApp();
 // Secret id only; the value lives in Cloud Secret Manager.
 const appStoreKey = defineSecret("APP_STORE_SERVER_API_KEY");
 const REJECTED = "Purchase could not be verified.";
+// A Play ledger id holds the purchase token, a replayable proof: logs get this hash, never the id.
+// The hash is for correlation, not concealment of an enumerable id; a project needing concealment uses an HMAC whose key lives in the secret store.
+const ledgerHash = (ledgerId) => createHash("sha256").update(ledgerId).digest("hex").slice(0, 16);
+// onCall logs any other thrown error whole as "Unhandled error", and a Firestore error or a request URL can hold the token.
+// So an error log gets only code, name, stage and ledgerHash once known, never err.message or err.stack.
+const failClosed = (err, ctx) => {
+  if (err instanceof HttpsError) {
+    throw err;
+  }
+  logger.error("redeem failed", {code: err?.code, name: err?.name, ...ctx});
+  throw new HttpsError("internal", "INTERNAL");
+};
 
-exports.redeemPurchase = onCall({enforceAppCheck: true, secrets: [appStoreKey]}, async (request) => {
+const redeem = async (request, ctx) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
   const uid = request.auth.uid;
-  // Store checks only (state, product id, package, signature); throws HttpsError("failed-precondition", REJECTED).
+  // Store checks only (state, product id, package, signature); on a failed check logs stage "verify" and a reason from a fixed list,
+  // never the proof, then throws HttpsError("failed-precondition", REJECTED). An unexpected exception propagates, so failClosed logs it.
   // Consumption state is returned in proof.consumed, not judged here.
   const proof = await verifyWithStore(request.data, appStoreKey);
+  ctx.stage = "ledger";
   const db = getFirestore();
   const ledgerRef = db.collection("iapLedger").doc(`${proof.store}:${proof.ledgerId}`);  // Play purchaseToken | Apple originalTransactionId
+  ctx.ledgerHash = ledgerHash(ledgerRef.id);
   const walletRef = db.collection("wallets").doc(uid);
 
   const outcome = await db.runTransaction(async (tx) => {
@@ -48,7 +64,9 @@ exports.redeemPurchase = onCall({enforceAppCheck: true, secrets: [appStoreKey]},
   });
 
   if (outcome.result === "conflict") {
-    await flagConflict(ledgerRef.id, outcome.owner, uid);  // both players, outside the transaction
+    ctx.stage = "flag";
+    // Both players, outside the transaction. The flag record holds the id only in a store clients cannot read; its alert or log carries ledgerHash.
+    await flagConflict(ledgerRef.id, outcome.owner, uid, ledgerHash(ledgerRef.id));
   }
   if (outcome.result !== "granted") {
     throw new HttpsError("failed-precondition", REJECTED); // same reason as an invalid proof
@@ -58,7 +76,12 @@ exports.redeemPurchase = onCall({enforceAppCheck: true, secrets: [appStoreKey]},
     await ledgerRef.update({finished: true});
   } catch (err) {
     // Grant is committed; the scheduled reconciler retries entries with finished == false.
-    logger.warn("store finish deferred", {ledgerId: ledgerRef.id});
+    logger.warn("store finish deferred", {code: err?.code, name: err?.name, stage: "finish", ledgerHash: ledgerHash(ledgerRef.id)});
   }
   return {status: "granted", grant: outcome.grant};
+};
+
+exports.redeemPurchase = onCall({enforceAppCheck: true, secrets: [appStoreKey]}, (request) => {
+  const ctx = {stage: "verify"};
+  return redeem(request, ctx).catch((err) => failClosed(err, ctx));
 });

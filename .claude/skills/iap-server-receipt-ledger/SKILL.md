@@ -36,12 +36,14 @@ user-invocable: false
    - **Consumption state:** not judged here (step 5).
    - **Pending:** no grant, answer `pending`.
    - **Signature invalid, check failed, store unreachable or any exception:** no grant, no consume/acknowledge, answer retryable or final; never catch-and-grant.
+   - **Rejection log:** before answering a failed check, log `stage: "verify"` and a reason from a fixed list, never the proof; an unexpected exception propagates to `failClosed`.
 4. **Key the ledger on the store transaction id:** ledger id `<store>:<id>`.
    - **Id:** Play `purchaseToken` (never `orderId`, absent on promo-code purchases); Apple `originalTransactionId` (a restore keeps it).
    - **Done when:** a replayed proof maps to the same ledger entry.
 5. **Commit grant and ledger entry in one transaction:** per the backend reference, checks in this order.
    - **Entry exists and `granted` for this player:** return its stored grant (replay = same answer, no second credit).
    - **Entry exists for another player:** reject with the same generic reason as an invalid proof, and record a flag (ledger id, both players) outside the transaction.
+     - **Flag record:** holds the id only in a store clients cannot read; its alert or log carries the hash (`## Never`).
    - **Entry is a void tombstone (step 8):** reject.
    - **No entry and Play reports the token already consumed:** reject.
    - **Otherwise:** create the entry, storing its ownership (Apple `inAppOwnershipType`; Play `PURCHASED`), and credit.
@@ -70,7 +72,10 @@ user-invocable: false
     - **Release candidate:** `release` step 7 owns its sandbox check.
 
 ## Never
-- **Logging proofs:** log a full purchase token, JWS or receipt — each is a replayable purchase proof; log the ledger id or a hash.
+- **Logging proofs:** log a full purchase token, JWS or receipt — each is a replayable purchase proof.
+- **Logging ledger ids:** a raw ledger id or event key in a log or alert — Play's holds the `purchaseToken`, Apple's can be sent as proof (step 2); use its truncated SHA-256 or a non-token field.
+  - **Hash limit:** for correlation, not concealment of an enumerable id; a project needing concealment uses an HMAC whose key lives in the secret store.
+- **Logging errors:** a whole error object, its message or stack, or a request URL — each can hold the token; log only its code, name and stage, plus the hash once known (backend reference).
 - **Ungated restore:** grant on a client "restore" without the same server verification — restore re-delivers proofs; the ledger key makes it a no-op.
 - **Sandbox in production:** credit a sandbox or license-test purchase in the production ledger — Apple `environment` `Sandbox`, Play `purchaseType` 0.
 

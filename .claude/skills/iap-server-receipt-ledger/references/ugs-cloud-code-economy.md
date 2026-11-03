@@ -1,6 +1,6 @@
 # UGS: Economy Real-Money Purchases + Cloud Code
 
-Sources (under https://docs.unity.com/en-us/): [a] `economy/sdk/purchases`, [b] `economy/add-real-money-purchase`, [c] `cloud-code/modules/how-to-guides/access-control`, [d] `services/secret-manager/tutorials/integrations/cloud-code/modules`, [e] `triggers/overview`. [g] `services/access-control`, [h] `cloud-code/3.0.0/server-access-control`. Elsewhere: [f] Cloud Code JavaScript Economy SDK https://cloud-code-sdk-documentation.cloud.unity3d.com/economy/v2.0/configurationparameters.
+Sources (under https://docs.unity.com/en-us/): [a] `economy/sdk/purchases`, [b] `economy/add-real-money-purchase`, [c] `cloud-code/modules/how-to-guides/access-control`, [d] `services/secret-manager/tutorials/integrations/cloud-code/modules`, [e] `triggers/overview`. [g] `services/access-control`, [h] `cloud-code/3.0.0/server-access-control`. Elsewhere: [f] Cloud Code JavaScript Economy SDK https://cloud-code-sdk-documentation.cloud.unity3d.com/economy/v2.0/configurationparameters, [i] Cloud Save game data https://docs.unity.com/ugs/manual/cloud-save/manual/concepts/game-data.
 
 ## Pick the path
 
@@ -45,6 +45,7 @@ Call from the Cloud Code module: the JavaScript `PurchasesApi` exposes Redeem Ap
 | Deny all Economy writes | `{"Sid": "deny-economy-writes", "Effect": "Deny", "Action": ["Write"], "Principal": "Player", "Resource": "urn:ugs:economy:/**"}` [h] — covers balance set/increment/decrement, inventory add/update/delete and purchases. The narrower `urn:ugs:economy:/*/*crement` example [c] leaves set-balance and inventory open: not enough |
 | No player Allow on purchases | Omit the `urn:ugs:economy:/**/purchases/*` Allow from the docs' example [h]: it also opens real-money redeem to the client and bypasses the void tombstone. Real-money redeem and virtual purchases go through the module; a narrower Allow for virtual purchases only once its URN is confirmed |
 | Deny Cloud Save writes | `{"Effect": "Deny", "Action": ["Write"], "Principal": "Player", "Resource": "urn:ugs:cloud-save:/**"}` [h], so a player cannot write the mapping or void entries below; re-allow narrower paths (e.g. `/**/query` [h]) only as needed |
+| Records holding the raw id | The write Deny above leaves reads open. The mapping, void entries and flag records hold `<store>:<id>`: keep them in Private custom items, "Readable and writeable only from a server", never Default, "Readable by any player" [i]. An alert or log about one carries the hash (`SKILL.md` Never) |
 | Evaluation | The most specific matching rule wins; Deny beats Allow only between identical `Resource` values [g] |
 | Apply | `ugs access upsert-project-policy project-policy.json`; a blocked call returns 403, code 56 [c] |
 | Why | Under the default allow-all, a modified client writes its own balance or inventory through the public Economy API, so receipt verification protects nothing |
