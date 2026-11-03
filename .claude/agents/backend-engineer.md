@@ -32,6 +32,7 @@ color: teal
 - **`iap-server-receipt-ledger`:** crediting a real-money purchase.
 - **`live-ops-content-pipeline`:** steps 3, 5, 7 only — in-build defaults, fetch/activate window, old-client keys.
 - **`firebase-unity-sdk`:** the remote-config client side.
+- **`unity:build-live-game`** (plugin, if installed): backend-driven features on Unity Gaming Services — progression, cloud saves, leaderboards, matchmaking.
 - **Serialization, async, RPC:** `memorypack-serialization` · `unitask-async-programming` · `magiconion-rpc-networking`.
 - **`secret-and-supply-chain-scan`:** every diff; fills `No secret`.
 - **`feature-docs`:** before changing the feature; docs owed at completion.

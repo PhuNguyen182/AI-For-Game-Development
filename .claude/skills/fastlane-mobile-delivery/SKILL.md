@@ -7,7 +7,8 @@ user-invocable: false
 # Fastlane Mobile Delivery
 
 - **Not for:** the Unity build itself (`unity-batchmode-cli`), the job that calls the lane (`jenkins-pipeline-authoring`), the tester upload (`firebase-app-distribution`).
-- **Not for:** store submission and policy (`sdk-platform-engineer`), runtime faults in the installed artifact (`build-release-engineer`).
+- **Not for:** store submission (`release`; `build-release-engineer` checks only the store checklist and signing), store policy (`sdk-platform-engineer`).
+- **Not for:** runtime faults in the installed artifact (`build-release-engineer`).
 - **Docs:** https://docs.fastlane.tools — unversioned (describes the newest release), so the version that runs is the one `Gemfile.lock` pins.
 
 ## References

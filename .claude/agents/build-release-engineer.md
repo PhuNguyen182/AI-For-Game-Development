@@ -30,7 +30,6 @@ color: gray
 - **`device-test-walkthrough`:** device cases on an installed build.
 - **`git-unity-repo`:** a fault traced to an LFS pointer or a broken `.meta`.
 - **`secret-and-supply-chain-scan`:** the release signing row's no-secret check.
-- **`unity:build-live-game`** (plugin, if installed): a build on Unity Gaming Services.
 
 ## Checklist
 - [ ] **Artifact identified:** path, platform, config, backend, stripping level, version, size — evidence: the `Artifact:` line.
