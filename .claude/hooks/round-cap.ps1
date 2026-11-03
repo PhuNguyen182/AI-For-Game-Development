@@ -52,7 +52,7 @@ function Add-Event($l, [string]$key, [string]$counter, [string]$id) {
     if (@($l[$key][$counter]) -notcontains $id) { $l[$key][$counter] = @($l[$key][$counter]) + $id }
 }
 
-function Get-PendingFiles { if (Test-Path $ledgerDir) { @(Get-ChildItem $ledgerDir -Filter 'rounds.pending-*.json' -File) } else { @() } }
+function Get-PendingFiles { if (Test-Path -LiteralPath $ledgerDir) { @(Get-ChildItem -LiteralPath $ledgerDir -Filter 'rounds.pending-*.json' -File) } else { @() } }
 
 # Merges parked events into $l. An unparsable parked file is renamed rounds.corrupt-pending-*.json (kept, never
 # deleted) and dropped from $files' merged set; the corrupt file then blocks dispatch until the GD resolves it.
@@ -65,24 +65,24 @@ function Merge-Pending($l, $files) {
             }
             $merged += $f
         } catch {
-            try { Move-Item $f.FullName (Join-Path $ledgerDir ("rounds.corrupt-pending-" + $f.Name.Substring(15))) -Force -ErrorAction Stop } catch {}
+            try { Move-Item -LiteralPath $f.FullName -Destination (Join-Path $ledgerDir ("rounds.corrupt-pending-" + $f.Name.Substring(15))) -Force -ErrorAction Stop } catch {}
         }
     }
     return $merged
 }
 
-function Get-CorruptFiles { if (Test-Path $ledgerDir) { @(Get-ChildItem $ledgerDir -Filter 'rounds.corrupt-*.json' -File) } else { @() } }
+function Get-CorruptFiles { if (Test-Path -LiteralPath $ledgerDir) { @(Get-ChildItem -LiteralPath $ledgerDir -Filter 'rounds.corrupt-*.json' -File) } else { @() } }
 
 function Move-CorruptLedger {
     $dest = Join-Path $ledgerDir "rounds.corrupt-$stamp.json"
-    try { Move-Item $ledgerPath $dest -Force -ErrorAction Stop; return $dest } catch { return $null }
+    try { Move-Item -LiteralPath $ledgerPath -Destination $dest -Force -ErrorAction Stop; return $dest } catch { return $null }
 }
 
 # Read-only view: ledger + parked events. Sets $script:LedgerProblem to 'unreadable' or 'corrupt' and returns $null.
 $script:LedgerProblem = $null
 function Get-Ledger {
     $l = @{}
-    if (Test-Path $ledgerPath) {
+    if (Test-Path -LiteralPath $ledgerPath) {
         $raw = $null
         for ($i = 0; $i -lt 5 -and $null -eq $raw; $i++) {
             try { $raw = [IO.File]::ReadAllText($ledgerPath) } catch { Start-Sleep -Milliseconds 100 }
@@ -97,7 +97,7 @@ function Get-Ledger {
 function Save-Pending([object[]]$events, [string]$why) {
     New-Item -ItemType Directory -Force $ledgerDir | Out-Null
     $p = Join-Path $ledgerDir "rounds.pending-$stamp-$([guid]::NewGuid().ToString('N').Substring(0, 8)).json"
-    ConvertTo-Json -InputObject @($events) -Depth 4 | Set-Content $p -Encoding UTF8
+    ConvertTo-Json -InputObject @($events) -Depth 4 | Set-Content -LiteralPath $p -Encoding UTF8
     [Console]::Error.WriteLine("round-cap: $why; events parked in $p")
 }
 
@@ -131,7 +131,7 @@ function Save-Events([object[]]$events) {
         Save-Events $events
         return
     }
-    foreach ($f in $merged) { Remove-Item $f.FullName -ErrorAction SilentlyContinue }
+    foreach ($f in $merged) { Remove-Item -LiteralPath $f.FullName -ErrorAction SilentlyContinue }
 }
 
 function Get-LedgerCount($ledger, [string]$key, [string]$counter) {
@@ -153,8 +153,8 @@ function New-Counter([string]$name, [int]$fileUsed, [int]$cap, [int]$default, [s
 # Counters of an open feature file, or @(). Missing counters start at 0 with the default cap.
 function Get-FeatureCounters([string]$slug, $ledger) {
     $path = Join-Path $root ".workflow/features/$slug.md"
-    if (-not (Test-Path $path)) { return @() }
-    $text = Get-Content $path -Raw -Encoding UTF8
+    if (-not (Test-Path -LiteralPath $path)) { return @() }
+    $text = Get-Content -LiteralPath $path -Raw -Encoding UTF8
     if ($text -notmatch '(?m)^- Status:\s*Open') { return @() }
     $line = if ($text -match '(?m)^- Rounds:(.*)$') { $Matches[1] } else { '' }
     $size = if ($text -match '(?m)^- Size:\s*(S|M|L)\b') { $Matches[1] } else { 'M' }
@@ -176,7 +176,7 @@ $script:BugsRoot = $null  # resolved once, and only for a brief that names a bug
 function Get-BugCounters([string]$id, $ledger) {
     if (-not $script:BugsRoot) { $script:BugsRoot = Get-BugsRoot $root }
     $workflow = Join-Path $script:BugsRoot '.workflow'
-    if (-not (Test-Path (Join-Path $workflow 'bugs.jsonl')) -and -not (Test-Path (Join-Path $workflow 'bugs.md'))) { return @() }
+    if (-not (Test-Path -LiteralPath (Join-Path $workflow 'bugs.jsonl')) -and -not (Test-Path -LiteralPath (Join-Path $workflow 'bugs.md'))) { return @() }
     $r = Invoke-Bugs $script:BugsRoot @('counters', $id, '--json')
     if ($r.State -eq 'NoPython') { throw "no Python 3.10+ with SQLite FTS5 found. Install it, then retry (skill bugs)." }
     if ($r.State -ne 'Ok') { throw "bugs.py counters $id failed: $($r.Err). Clear that cause, then retry (skill bugs)." }
@@ -224,8 +224,8 @@ if ($Mode -eq 'count') {
     $brief = ''
     $ret = [string](First $in.last_assistant_message '')
     $tp = [string]$in.agent_transcript_path
-    if ($tp -and (Test-Path $tp)) {
-        $lines = @(Get-Content $tp -Encoding UTF8)
+    if ($tp -and (Test-Path -LiteralPath $tp)) {
+        $lines = @(Get-Content -LiteralPath $tp -Encoding UTF8)
         foreach ($l in $lines) {
             try { $o = $l | ConvertFrom-Json } catch { continue }
             if ($o.type -ne 'user') { continue }
@@ -360,7 +360,7 @@ else {
     if ($path -match '[\\/]features[\\/]([A-Za-z0-9_-]+)\.md$') {
         $slug = $Matches[1]
         $counters = @(Get-FeatureCounters $slug $ledger)
-        if ($counters.Count -and (Get-Content $path -Raw -Encoding UTF8) -notmatch '(?m)^- Rounds:') {
+        if ($counters.Count -and (Get-Content -LiteralPath $path -Raw -Encoding UTF8) -notmatch '(?m)^- Rounds:') {
             $msg += "feature ${slug}: no '- Rounds:' line (template in /feature); default caps apply."
         }
         $hits = foreach ($c in $counters) { if ($c.Used -ge $c.Cap) { $c | Add-Member -PassThru NoteProperty What "feature $slug" } }

@@ -67,6 +67,9 @@ Synthesized from `../scripts/bugs.py`; commands in `../SKILL.md`.
 - **Purged ID:** a tombstone holds its ID. A create on it from another `bug_uid` is a duplicate; `doctor --fix` renumbers that bug. The same `bug_uid` brought back stays gone.
 - **High water:** max over creates, tombstones and renumbers. `add` takes the next one; a missing ID below it reads `purged`.
 - **Worktrees:** root comes from comparing `--git-dir` with `--git-common-dir`. A linked worktree reads the main checkout's data and every write is refused.
+- **Hook root:** `Get-BugsRoot` in `common.ps1` starts no process and reads only the project root's own `.git`, never one above it. A `.git` folder or none: that root. A `.git` file: its `gitdir`, then `commondir`, whose folder's parent is the main checkout.
+- **Hook root, no `commondir`:** that root when the git dir holds `objects` (a submodule or `--separate-git-dir`). Otherwise it throws: a damaged link must not read as no bugs.
+- **Hook root, bare repos:** a `commondir` folder not named `.git` throws, so a linked worktree of a bare repo or of a submodule blocks a dispatch naming a bug and prints `Bugs: unavailable`. A bare repo stored in a folder named `.git` returns that folder's parent instead, which normally has no journal and reads as no bugs.
 
 ## Purge
 - **Rule:** terminal for strictly more than 90 days. Open and `Backlog` bugs never go. IDs are never reused.

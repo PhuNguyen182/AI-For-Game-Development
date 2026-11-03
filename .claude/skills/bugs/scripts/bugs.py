@@ -228,12 +228,17 @@ class Cleaner:
         if RX_CONTROL.search(text):
             raise Refused("%s: control character" % field)
         check_english(field, text)
-        hits = [name for name, rx in self.patterns if rx.search(text)]
-        if self.mem.RX_PEM_BLOCK.search(text) and "private key" not in hits:
-            hits.append("private key")
+        try:
+            hits = [name for name, rx in self.patterns if rx.search(text)]
+            if self.mem.RX_PEM_BLOCK.search(text) and "private key" not in hits:
+                hits.append("private key")
+            stored = "" if hits else self.mem.redact_pii(text)
+            if not isinstance(stored, str):
+                raise TypeError("redact_pii returned %s" % type(stored).__name__)
+        except Exception as ex:  # a fault in mem.py's own code; its type only, as its message can hold the value
+            raise Refused("write refused: %s cannot be checked for secrets and PII (%s)" % (field, type(ex).__name__)) from None
         if hits:
             raise Refused("refused: secret-shaped value in %s (%s)" % (field, ", ".join(hits)))
-        stored = self.mem.redact_pii(text)
         if stored != text:
             self.redacted.append(field)
         limit = LIMITS[field]
@@ -1625,11 +1630,10 @@ def refusal_text(text: str, argv) -> str:
     try:
         mem = mem_module()
         patterns = mem.load_secret_patterns(given_root(argv))
-    except Exception:  # it is already reporting an error, whatever broke the module or the file: it must not raise
-        text = RX_SHOWN.sub("<hidden: secret patterns unavailable>", text)
-    else:
-        text = mem.redact_pii(mem.redact(text.replace(VALUE_MARK, ""), patterns))
-    return "\n".join(line[:REFUSAL_LINE] for line in text.split("\n"))
+        lines = mem.redact_pii(mem.redact(text.replace(VALUE_MARK, ""), patterns)).split("\n")
+    except Exception:  # it is already reporting an error, whatever broke the module, the file or a redaction: it must not raise
+        lines = RX_SHOWN.sub("<hidden: secret patterns unavailable>", text).split("\n")
+    return "\n".join(line[:REFUSAL_LINE] for line in lines)
 
 
 def main(argv=None) -> int:

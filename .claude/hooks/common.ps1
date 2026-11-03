@@ -242,25 +242,28 @@ function Get-MainCheckout([string]$Root) {
     return $Root
 }
 
-# The checkout whose .workflow holds the bug journal, known before any Python starts. A linked worktree anywhere reads its
-# main checkout's (bugs.py does the same), so a branch with no journal cannot hide a past-cap bug. Starts no process: reads
-# the .git file, then <gitdir>/commondir, as UTF-8. Captured git output decodes with the console code page, and a wrong
-# folder would read as "no bugs". Throws when the links lead nowhere: a caller naming a bug blocks, a session prints a line.
+# The checkout whose .workflow holds the bug journal, known before any Python starts. $Root is the project root, as the hooks
+# pass it, and only its own .git counts: a link planted above a project cannot pick the folder whose script and cached
+# interpreter run. A linked worktree anywhere reads its main checkout's (bugs.py does the same), so a branch with no journal
+# cannot hide a past-cap bug. Starts no process: reads the .git file, then <gitdir>/commondir, as UTF-8. Captured git output
+# decodes with the console code page, and a wrong folder would read as "no bugs". Throws when the links lead nowhere or the
+# common folder is not named .git (a bare repo, a submodule's worktree): a caller naming a bug blocks, a session prints a line.
+# A bare repo stored in a folder named .git looks like a checkout: it returns that folder's parent, normally with no journal.
 function Get-BugsRoot([string]$Root) {
     $utf8 = New-Object Text.UTF8Encoding $false
     $dir = [IO.Path]::GetFullPath($Root)
-    while ($dir -and -not [IO.File]::Exists([IO.Path]::Combine($dir, '.git'))) {
-        if ([IO.Directory]::Exists([IO.Path]::Combine($dir, '.git'))) { return $Root }  # a main checkout: its own journal
-        $dir = [IO.Path]::GetDirectoryName($dir)
-    }
-    if (-not $dir) { return $Root }
     $link = [IO.Path]::Combine($dir, '.git')
+    if (-not [IO.File]::Exists($link)) { return $Root }  # a main checkout, or no checkout: its own journal
     $m = [regex]::Match([IO.File]::ReadAllText($link, $utf8), '(?m)^gitdir:\s*(.+?)\s*$')
     if (-not $m.Success) { throw "$link names no gitdir, so the main checkout's bug journal cannot be found" }
     $gitDir = [IO.Path]::GetFullPath([IO.Path]::Combine($dir, $m.Groups[1].Value))
     if (-not [IO.Directory]::Exists($gitDir)) { throw "$gitDir, named by $link, does not exist" }
     $commonFile = [IO.Path]::Combine($gitDir, 'commondir')
-    if (-not [IO.File]::Exists($commonFile)) { return $Root }  # a submodule: its .git file points at its own git dir
+    if (-not [IO.File]::Exists($commonFile)) {
+        # Objects of its own: a full git dir, a submodule or --separate-git-dir. Without them a worktree's admin folder lost the file.
+        if ([IO.Directory]::Exists([IO.Path]::Combine($gitDir, 'objects'))) { return $Root }
+        throw "$commonFile is missing and $gitDir holds no objects, so the main checkout's bug journal cannot be found"
+    }
     $common = [IO.Path]::GetFullPath([IO.Path]::Combine($gitDir, [IO.File]::ReadAllText($commonFile, $utf8).Trim()))
     if ([IO.Path]::GetFileName($common) -ne '.git') { throw "$common is no checkout's .git, so the bug journal cannot be found" }
     if (-not [IO.Directory]::Exists($common)) { throw "$common, named by $commonFile, does not exist" }
@@ -302,10 +305,10 @@ function Get-ProjectRoot($HookInput) { return [string](First $env:CLAUDE_PROJECT
 # Cached per checkout in .memory/.state/python.txt (one argument per line) while the executable still exists.
 function Resolve-Python([string]$Root) {
     $cache = Join-Path $Root '.memory/.state/python.txt'
-    if (Test-Path $cache) {
+    if (Test-Path -LiteralPath $cache) {
         try {
-            $c = @(Get-Content $cache -Encoding UTF8 -ErrorAction Stop | Where-Object { $_ })
-            if ($c.Count -and (Test-Path $c[0])) { return $c }
+            $c = @(Get-Content -LiteralPath $cache -Encoding UTF8 -ErrorAction Stop | Where-Object { $_ })
+            if ($c.Count -and (Test-Path -LiteralPath $c[0])) { return $c }
         } catch {}
     }
     $probe = "import sys,sqlite3;sqlite3.connect(':memory:').execute('create virtual table t using fts5(a)');sys.exit(0 if sys.version_info>=(3,10) else 1)"
@@ -318,7 +321,7 @@ function Resolve-Python([string]$Root) {
             $found = @($cmd.Source) + $rest
             try {
                 New-Item -ItemType Directory -Force (Split-Path $cache) | Out-Null
-                Set-Content $cache $found -Encoding UTF8
+                Set-Content -LiteralPath $cache -Value $found -Encoding UTF8
             } catch {}
             return $found
         }
@@ -352,7 +355,7 @@ function Invoke-Bugs([string]$Root, [string[]]$BugsArgs, [int]$TimeoutMs = 10000
     $py = @(Resolve-Python $Root | Where-Object { $_ })
     if (-not $py.Count) { return Result 'NoPython' $null '' 'no Python 3.10+ with SQLite FTS5 found' }
     $script = Join-Path $Root '.claude/skills/bugs/scripts/bugs.py'
-    if (-not (Test-Path $script)) { return Result 'Failed' $null '' "$script is missing" }
+    if (-not (Test-Path -LiteralPath $script)) { return Result 'Failed' $null '' "$script is missing" }
     $words = @($py | Select-Object -Skip 1) + @('-I', $script, '--root', $Root) + @($BugsArgs)
     $utf8 = New-Object Text.UTF8Encoding $false
     $psi = New-Object Diagnostics.ProcessStartInfo

@@ -8,18 +8,18 @@ $root = if ($env:CLAUDE_PROJECT_DIR) { $env:CLAUDE_PROJECT_DIR } else { (Get-Loc
 # Each repo keeps its own framework backlog outside .claude/: a fresh clone or install gets an empty one.
 $backlog = Join-Path $root '.workflow/framework-backlog.md'
 $template = Join-Path $root '.claude/templates/framework-backlog.md'
-if (-not (Test-Path $backlog) -and (Test-Path $template)) {
+if (-not (Test-Path -LiteralPath $backlog) -and (Test-Path -LiteralPath $template)) {
     try {
         New-Item -ItemType Directory -Force (Split-Path $backlog) | Out-Null
-        Copy-Item $template $backlog -ErrorAction Stop
+        Copy-Item -LiteralPath $template -Destination $backlog -ErrorAction Stop
         'Framework backlog: created .workflow/framework-backlog.md from .claude/templates/framework-backlog.md.'
     } catch { 'Framework backlog: .workflow/framework-backlog.md is missing and could not be created from the template.' }
 }
 
 $dir = Join-Path $root '.workflow/features'
-if (Test-Path $dir) {
-    $open = foreach ($f in Get-ChildItem $dir -Filter *.md) {
-        $text = Get-Content $f.FullName -Raw -Encoding UTF8
+if (Test-Path -LiteralPath $dir) {
+    $open = foreach ($f in Get-ChildItem -LiteralPath $dir -Filter *.md) {
+        $text = Get-Content -LiteralPath $f.FullName -Raw -Encoding UTF8
         if ($text -match '(?m)^- Status:\s*Open\b') {
             $cp = if ($text -match '(?m)^- CP:\s*(.+)$') { $Matches[1].Trim() } else { '?' }
             "- $($f.BaseName) - CP: $cp"
@@ -31,7 +31,7 @@ if (Test-Path $dir) {
     }
 }
 
-if (Test-Path (Join-Path $root '.claude/skills/mem/scripts/mem.py')) {
+if (Test-Path -LiteralPath (Join-Path $root '.claude/skills/mem/scripts/mem.py')) {
     # Bounded: the hook has 15 s; a large first index finishes on later queries.
     $stats = Invoke-Mem $root @('stats', '--seconds', '8')
     if ($null -eq $stats) { 'Memory: unavailable - install Python 3.10+ with SQLite FTS5 (skill mem).' }
@@ -46,8 +46,8 @@ if (Test-Path (Join-Path $root '.claude/skills/mem/scripts/mem.py')) {
 # Bugs: purge past the 90-day window, then one status line, or nothing with no journal. Python starts only for a journal.
 function Get-BugsLine([string]$Root, [bool]$SkipPurge) {
     $workflow = Join-Path $Root '.workflow'
-    if (Test-Path (Join-Path $workflow 'bugs.md')) { return 'Bugs: .workflow/bugs.md is still present - run bugs.py import-md, then delete the file (skill bugs).' }
-    if (-not (Test-Path (Join-Path $workflow 'bugs.jsonl'))) { return $null }
+    if (Test-Path -LiteralPath (Join-Path $workflow 'bugs.md')) { return 'Bugs: .workflow/bugs.md is still present - run bugs.py import-md, then delete the file (skill bugs).' }
+    if (-not (Test-Path -LiteralPath (Join-Path $workflow 'bugs.jsonl'))) { return $null }
     # The hook has 15 s: the mem call above takes up to 8, the XERJ probe below up to 2. A purge cut short resumes next session.
     $budget = [Math]::Min(3000, 12000 - $clock.ElapsedMilliseconds)
     if ($budget -lt 1000) { return 'Bugs: not checked - the session-start time budget is used up.' }
@@ -83,11 +83,18 @@ switch (Get-XerjState $root) {
         elseif (-not $env:HOOK_TEST_XERJ) {
             # Incremental and BM25-only; the node skips unchanged files.
             $log = Join-Path $root '.memory/.state/xerj-autoindex.log'
+            # Start-Process has no -LiteralPath: it throws on brackets in a redirect, and on Windows PowerShell in the current
+            # folder, whatever the escaping. Such a checkout logs to the temp folder and starts there.
+            $place = @{}
+            if ([WildcardPattern]::ContainsWildcardCharacters($root)) {
+                $log = Join-Path ([IO.Path]::GetTempPath()) "xerj-autoindex-$prefix.log"
+                $place.WorkingDirectory = [IO.Path]::GetTempPath()
+            }
             # --url pins the destination to the URL the loopback check just passed.
             $url = First $env:XERJ_URL 'http://localhost:9200'
             $xargs = @('autoindex', "`"$root`"", '--url', $url, '--prefix', $prefix, '--plan', 'code-and-docs-no-vectors', '--no-graph')
-            try { Start-Process xerj -ArgumentList $xargs -RedirectStandardOutput $log -RedirectStandardError "$log.err" -WindowStyle Hidden | Out-Null }
-            catch { try { Start-Process xerj -ArgumentList $xargs -RedirectStandardOutput $log -RedirectStandardError "$log.err" | Out-Null } catch {} }
+            try { Start-Process xerj -ArgumentList $xargs -RedirectStandardOutput $log -RedirectStandardError "$log.err" -WindowStyle Hidden @place | Out-Null }
+            catch { try { Start-Process xerj -ArgumentList $xargs -RedirectStandardOutput $log -RedirectStandardError "$log.err" @place | Out-Null } catch {} }
         }
     }
     'down' { 'Search: XERJ installed, node down - Grep. Start: xerj --data-dir ~/xerj-data (skill code-search).' }

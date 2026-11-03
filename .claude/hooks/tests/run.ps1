@@ -32,9 +32,18 @@ function New-Repo([string]$Path) {
     git -C $Path init -q 2>&1 | Out-Null
 }
 
+$cpPinned = $false
 try {
     New-Item -ItemType Directory -Force $tmp | Out-Null
     Write-Output "Shell: $shell ($($PSVersionTable.PSVersion))"
+
+    # An aborted run must not leave the console on the code page the bugs root fixture pins: the restore sits in the finally.
+    $selfAst = [Management.Automation.Language.Parser]::ParseFile($PSCommandPath, [ref]$null, [ref]$null)
+    $selfTry = $selfAst.Find({ param($n) $n -is [Management.Automation.Language.TryStatementAst] }, $false)
+    $cpRestore = '\[Console\]::OutputEncoding = \$cpOut'
+    Check 'suite: the code page restore runs in the finally' ($selfTry.Finally.Extent.Text -match $cpRestore) $true
+    Check 'suite: ... and nowhere in the try' ($selfTry.Body.Extent.Text -match $cpRestore) $false
+    Check 'suite: ... with its flag set before the try' ($selfAst.Extent.Text.Substring(0, $selfTry.Extent.StartOffset) -match '(?m)^\$cpPinned = \$false') $true
 
     # secret-scan
     $r = Invoke-Hook 'secret-scan.ps1' @{ tool_name = 'Write'; tool_input = @{ file_path = "$tmp/Assets/Cfg.cs"; content = "var k = `"$fakeKey`";" } }
@@ -1117,7 +1126,7 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     # Code page 437 cannot hold these paths. Set here because a hook takes it from the console when it starts, and the suite
     # may have been launched under another. Through [Console], not chcp: Windows PowerShell keeps the encoding it cached, and
     # from 65001 it writes a BOM to the child's stdin, which the hook reads as no input. No console: the checks still run.
-    $cpIn = [Console]::InputEncoding; $cpOut = [Console]::OutputEncoding; $cpPinned = $false
+    $cpIn = [Console]::InputEncoding; $cpOut = [Console]::OutputEncoding
     try {
         [Console]::InputEncoding = [Text.Encoding]::GetEncoding(437)
         [Console]::OutputEncoding = [Text.Encoding]::GetEncoding(437)
@@ -1138,13 +1147,34 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     Check 'bugs root: Get-BugsRoot starts no process' ((Get-Command Get-BugsRoot).Definition -notmatch '\bgit\s+-|&\s|Start-Process|Process\]') $true
     $norm = { param($p) ([IO.Path]::GetFullPath($p) -replace '\\', '/').TrimEnd('/') }
     Check 'bugs root: a linked worktree names the main checkout' (& $norm (Get-BugsRoot $bwOut)) (& $norm $bw)
+    Check 'bugs root: the main checkout keeps its own root' (Get-BugsRoot $bw) $bw
+    # The walk stops at the root given: a subfolder of either checkout is its own root, with no journal of its own.
     $bwSub = Join-Path $bwOut 'Sub Folder'
     New-Item -ItemType Directory -Force $bwSub | Out-Null
-    Check 'bugs root: ... from a subfolder of it too' (& $norm (Get-BugsRoot $bwSub)) (& $norm $bw)
-    Check 'bugs root: the main checkout keeps its own root' (Get-BugsRoot $bw) $bw
+    Check 'bugs root: a subfolder of a linked worktree is its own root' (Get-BugsRoot $bwSub) $bwSub
     $bwMainSub = Join-Path $bw 'Sub Folder'
     New-Item -ItemType Directory -Force $bwMainSub | Out-Null
-    Check 'bugs root: ... and so does a subfolder of it' (Get-BugsRoot $bwMainSub) $bwMainSub
+    Check 'bugs root: ... and so is a subfolder of the main checkout' (Get-BugsRoot $bwMainSub) $bwMainSub
+    $env:CLAUDE_PROJECT_DIR = $bwSub
+    Check 'round-cap: a project dir set to that subfolder reads no journal: a brief naming a bug passes' (Dispatch 'Bug: BUG-0001') 0
+    # A .git file above a project with none is not followed: it would run the script and interpreter of the folder it names.
+    $plAbove = Join-Path $tmp 'Planted Above'
+    $plOther = Join-Path $plAbove 'Other Folder'
+    $plProject = Join-Path $plAbove 'Project'
+    $plAdmin = Join-Path $plOther '.git/worktrees/x'
+    $plMarker = Join-Path $tmp 'planted-ran.txt'
+    New-Item -ItemType Directory -Force $plAdmin, $plProject, (Join-Path $plOther '.workflow'), (Join-Path $plOther '.claude/skills/bugs/scripts') | Out-Null
+    [IO.File]::WriteAllText((Join-Path $plAbove '.git'), "gitdir: Other Folder/.git/worktrees/x`n")
+    [IO.File]::WriteAllText((Join-Path $plAdmin 'commondir'), "../..`n")
+    [IO.File]::WriteAllText((Join-Path $plOther '.workflow/bugs.jsonl'), '')
+    [IO.File]::WriteAllText((Join-Path $plOther '.claude/skills/bugs/scripts/bugs.py'), "open(r'$plMarker', 'w').close()`nprint('Bugs: planted')`n")
+    Check 'bugs root: a .git file above the project is not followed' (Get-BugsRoot $plProject) $plProject
+    $env:CLAUDE_PROJECT_DIR = $plProject
+    $r = Invoke-Hook 'session-start.ps1' @{}
+    Check 'session-start: ... and starts no script of the folder it names' ($r.Out -notmatch 'Bugs: planted' -and -not [IO.File]::Exists($plMarker)) $true
+    $r = DispatchR 'Bug: BUG-0001'
+    Check 'round-cap: ... and neither does a dispatch' ($r.Code -eq 0 -and -not [IO.File]::Exists($plMarker)) $true
+    $env:CLAUDE_PROJECT_DIR = $bwOut
     $env:GIT_DIR = Join-Path $tmp 'no-such-git-dir'
     $r = DispatchR 'Bug: BUG-0001'
     Remove-Item Env:GIT_DIR
@@ -1163,9 +1193,34 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     Check 'round-cap: ... a bugs.py command gets a message only' ($r.Code -eq 2 -and $r.Out -match 'could not be read' -and $r.Out -notmatch 'Stop rule') $true
     $r = Invoke-Hook 'session-start.ps1' @{}
     Check 'session-start: ... and it never blocks a session' ($r.Code -eq 0 -and $r.Out -match '(?m)^Bugs: unavailable - ' -and $r.Out -match 'Search: Grep') $true
+    # A commondir folder not named .git: what a bare repo or a submodule's worktree has. The first exists, the second does not.
+    foreach ($named in '..', '../../../no-such-folder') {
+        [IO.File]::WriteAllText($bwCommon, "$named`n")
+        $r = DispatchR 'Bug: BUG-0001'
+        Check "round-cap: a commondir of $named, not named .git, blocks a dispatch naming a bug" ($r.Code -eq 2 -and $r.Out -match 'cannot be checked' -and $r.Out -match "is no checkout's \.git") $true
+    }
+    $r = Invoke-Hook 'session-start.ps1' @{}
+    Check 'session-start: ... and prints unavailable, never blocking' ($r.Code -eq 0 -and $r.Out -match '(?m)^Bugs: unavailable - ') $true
+    # Spellings of a good link: each still reaches the main journal, so the past-cap bug blocks.
+    $bwUtf8Bom = New-Object Text.UTF8Encoding $true
+    function BwBlocksPastCap { $b = DispatchR 'Bug: BUG-0001'; $b.Code -eq 2 -and $b.Out -match 'BUG-0001: fix 3/2' }
+    [IO.File]::WriteAllText($bwCommon, "$(Join-Path $bw '.git')`n")
+    Check 'round-cap: an absolute commondir reaches the main journal: past the cap blocks' (BwBlocksPastCap) $true
+    [IO.File]::WriteAllText($bwCommon, "$($bwCommonText.Trim())`r`n")
+    Check 'round-cap: ... and so does a commondir ending in CRLF' (BwBlocksPastCap) $true
+    [IO.File]::WriteAllText($bwCommon, "$($bwCommonText.Trim())`n", $bwUtf8Bom)
+    Check 'round-cap: ... and one with a BOM' (BwBlocksPastCap) $true
+    # Lost: nothing shows the checkout is a submodule, so it must not read as no bugs.
     Remove-Item $bwCommon
-    Check 'bugs root: no commondir returns the root as given' (Get-BugsRoot $bwOut) $bwOut
+    $r = DispatchR 'Bug: BUG-0001'
+    Check 'round-cap: a linked worktree whose admin folder lost commondir blocks a dispatch naming a bug' ($r.Code -eq 2 -and $r.Out -match 'cannot be checked' -and $r.Out -match 'commondir') $true
+    $r = Invoke-Hook 'session-start.ps1' @{}
+    Check 'session-start: ... and prints unavailable there too' ($r.Code -eq 0 -and $r.Out -match '(?m)^Bugs: unavailable - ') $true
     [IO.File]::WriteAllText($bwCommon, $bwCommonText)
+    # No commondir and objects beside it is a full git dir: a submodule has this shape too.
+    $bwSeparate = Join-Path $tmp 'Separate Git'
+    git init -q --separate-git-dir (Join-Path $tmp 'separate-admin') $bwSeparate 2>&1 | Out-Null
+    Check 'bugs root: --separate-git-dir keeps its own root' (Get-BugsRoot $bwSeparate) $bwSeparate
     $bwLink = Join-Path $bwOut '.git'
     $bwLinkText = [IO.File]::ReadAllText($bwLink)
     (Get-Item -LiteralPath $bwLink -Force).Attributes = 'Normal'  # git hides the .git file, and a hidden file refuses a write
@@ -1175,7 +1230,26 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     [IO.File]::WriteAllText($bwLink, "gitdir: $($tmp -replace '\\', '/')/no-such-admin-dir`n")
     $r = DispatchR 'Bug: BUG-0001'
     Check 'round-cap: a gitdir that does not exist blocks too' ($r.Code -eq 2 -and $r.Out -match 'does not exist') $true
+    [IO.File]::WriteAllText($bwLink, "gitdir: ../$(Split-Path $bw -Leaf)/.git/worktrees/$(Split-Path $bwAdmin -Leaf)`n")
+    Check 'round-cap: a relative gitdir reaches the main journal: past the cap blocks' (BwBlocksPastCap) $true
+    [IO.File]::WriteAllText($bwLink, "gitdir: $bwAdmin`r`n")
+    Check 'round-cap: ... and so does a .git file ending in CRLF' (BwBlocksPastCap) $true
+    [IO.File]::WriteAllText($bwLink, "gitdir: $bwAdmin`n", $bwUtf8Bom)
+    Check 'round-cap: ... and one with a BOM' (BwBlocksPastCap) $true
     [IO.File]::WriteAllText($bwLink, $bwLinkText)
+    # Real bare repos. A folder named .git is all the code sees, so one stored in such a folder returns its parent.
+    $bareStore = Join-Path $tmp 'Bare Store.git'
+    $bareWorktree = Join-Path $tmp 'Bare Worktree'
+    git clone -q --bare $bw $bareStore 2>&1 | Out-Null
+    git -C $bareStore worktree add -q --detach $bareWorktree $bwBase 2>&1 | Out-Null
+    $bareThrown = try { Get-BugsRoot $bareWorktree; 'no throw' } catch { $_.Exception.Message }
+    Check 'bugs root: a linked worktree of a bare repo throws, which blocks a dispatch naming a bug' ($bareThrown -match "is no checkout's \.git") $true
+    $bareParent = Join-Path $tmp 'Bare Parent'
+    $bareDotGit = Join-Path $bareParent '.git'
+    $bareDotWorktree = Join-Path $tmp 'Bare Dot Worktree'
+    git clone -q --bare $bw $bareDotGit 2>&1 | Out-Null
+    git -C $bareDotGit worktree add -q --detach $bareDotWorktree $bwBase 2>&1 | Out-Null
+    Check 'bugs root: a linked worktree of a bare repo in a folder named .git returns the parent' (& $norm (Get-BugsRoot $bareDotWorktree)) (& $norm $bareParent)
     # Git works, Python does not: the journal check still reaches main, and only then Python is needed.
     $gitDir = Split-Path (Get-Command git -CommandType Application | Select-Object -First 1).Source
     $bwCache = Join-Path $bw '.memory/.state/python.txt'
@@ -1193,8 +1267,58 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
         Remove-Item (Join-Path $bw '.workflow/bugs.db*') -Force -ErrorAction SilentlyContinue
         Check 'round-cap: git but no Python, no journal in main: no Python start' (OnlyGit { Dispatch 'Bug: BUG-0001' }) 0
     }
-    if ($cpPinned) { [Console]::InputEncoding = $cpIn; [Console]::OutputEncoding = $cpOut }
     git @bwGit worktree remove --force $bwOut 2>&1 | Out-Null
+
+    # Brackets in a checkout path: -Path reads them as wildcards, so an existing journal reads as absent, Python never starts
+    # and a past-cap bug dispatches. The hooks run from inside the checkout, as settings.json runs them.
+    $brRoot = Join-Path $tmp 'Game [v2]'
+    $brHooks = Join-Path $brRoot '.claude/hooks'
+    $brWorkflow = Join-Path $brRoot '.workflow'
+    New-Repo $brRoot
+    New-Item -ItemType Directory -Force $brHooks, (Join-Path $brRoot '.claude/skills/bugs/scripts'), (Join-Path $brRoot '.claude/skills/mem/scripts'), (Join-Path $brRoot '.claude/templates'), (Join-Path $brWorkflow 'features') | Out-Null
+    foreach ($f in 'common.ps1', 'round-cap.ps1', 'session-start.ps1', 'secret-patterns.txt') { [IO.File]::Copy((Join-Path $hooks $f), (Join-Path $brHooks $f)) }
+    foreach ($f in 'skills/bugs/scripts/bugs.py', 'skills/mem/scripts/mem.py', 'templates/framework-backlog.md') { [IO.File]::Copy((Join-Path $hooks "../$f"), (Join-Path $brRoot ".claude/$f")) }
+    function InBrackets([scriptblock]$Body) { $hooks = $brHooks; & $Body }
+    function BrFeature([string]$Slug, [string]$Lines) { [IO.File]::WriteAllText((Join-Path $brWorkflow "features/$Slug.md"), "# $Slug`n`n- Status: Open`n- CP: 2`n- Size: M, Risk flag: no`n$Lines`n") }
+    $bugRoot = $brRoot
+    BugCli @('add') $bugFields | Out-Null
+    BugCli @('round', 'BUG-0001', 'fix', '+3', '--note', 'test round') | Out-Null
+    BrFeature 'past-cap' '- Rounds: review 4/3, QA 0/2, rework 0/6'
+    $env:CLAUDE_PROJECT_DIR = $brRoot
+    $r = InBrackets { DispatchR 'Bug: BUG-0001' }
+    Check 'round-cap: brackets in the checkout path: a past-cap bug blocks' ($r.Code -eq 2 -and $r.Out -match 'BUG-0001: fix 3/2') $true
+    $r = InBrackets { Invoke-Hook 'session-start.ps1' @{} }
+    Check 'session-start: ... and the status line prints' ($r.Code -eq 0 -and $r.Out -match '(?m)^Bugs: 1 open \(1 High\+\); purge skipped, journal uncommitted\s*$') $true
+    Check 'session-start: ... the memory line too' ($r.Out -match '(?m)^Memory: ' -and $r.Out -notmatch 'Memory: unavailable') $true
+    Check 'session-start: ... an in-flight feature is listed' ($r.Out -match '(?m)^- past-cap - CP: 2') $true
+    Check 'session-start: ... the framework backlog is created' ($r.Out -match 'Framework backlog: created' -and [IO.File]::Exists((Join-Path $brWorkflow 'framework-backlog.md'))) $true
+    Check 'session-start: ... and the Python found is cached' ([IO.File]::Exists((Join-Path $brRoot '.memory/.state/python.txt'))) $true
+    $r = InBrackets { DispatchR 'Feature: .workflow/features/past-cap.md' }
+    Check 'round-cap: ... a past-cap feature blocks' ($r.Code -eq 2 -and $r.Out -match 'review 4/3') $true
+    BrFeature 'no-rounds' ''
+    $r = InBrackets { Invoke-Hook 'round-cap.ps1' @{ tool_name = 'Edit'; tool_input = @{ file_path = (Join-Path $brWorkflow 'features/no-rounds.md') } } @('-Mode', 'edit') }
+    Check 'round-cap: ... an edit reads the feature file' ($r.Code -eq 2 -and $r.Out -match 'no-rounds' -and $r.Out -match 'no ''- Rounds:'' line') $true
+    # The ledger: parked events, a brief read from a transcript, a locked ledger, a corrupt one.
+    $brPending = Join-Path $brWorkflow 'rounds.pending-x.json'
+    $brLedger = Join-Path $brWorkflow 'rounds.json'
+    BrFeature 'parked' '- Rounds: review 3/3, QA 0/2, rework 0/6'
+    [IO.File]::WriteAllText($brPending, '[{"key":"feature:parked","counter":"review","id":"round-9"}]')
+    $r = InBrackets { DispatchR 'Feature: .workflow/features/parked.md' }
+    Check 'round-cap: ... parked events count' ($r.Code -eq 2 -and $r.Out -match 'review 4/3') $true
+    $brTranscript = Join-Path $brRoot 'agent-br.jsonl'
+    [IO.File]::WriteAllText($brTranscript, (@{ type = 'user'; message = @{ role = 'user'; content = "Round: 1`nFeature: .workflow/features/parked.md" } } | ConvertTo-Json -Depth 5 -Compress))
+    function BrCount([string]$Id) { InBrackets { Invoke-Hook 'round-cap.ps1' @{ session_id = 'br'; agent_type = 'code-reviewer'; agent_id = $Id; agent_transcript_path = $brTranscript; last_assistant_message = 'Verdict: Request changes' } @('-Mode', 'count') } }
+    BrCount 'br1' | Out-Null
+    Check 'round-cap: ... a transcript in the checkout charges its feature, and parked events merge' (@(([IO.File]::ReadAllText($brLedger) | ConvertFrom-Json).'feature:parked'.review).Count) 2
+    Check 'round-cap: ... and the parked file is removed' ([IO.File]::Exists($brPending)) $false
+    $brHold = [IO.File]::Open($brLedger, 'Open', 'ReadWrite', 'None')
+    try { $r = BrCount 'br2' } finally { $brHold.Dispose() }
+    Check 'round-cap: ... a locked ledger parks the event' ($r.Out -match 'ledger locked' -and @([IO.Directory]::GetFiles($brWorkflow, 'rounds.pending-*.json')).Count -eq 1) $true
+    [IO.File]::WriteAllText($brLedger, '{ not json')
+    $r = InBrackets { DispatchR 'Explain the HUD' }
+    Check 'round-cap: ... a corrupt ledger blocks and is moved aside' ($r.Code -eq 2 -and $r.Out -match 'could not be parsed' -and -not [IO.File]::Exists($brLedger) -and @([IO.Directory]::GetFiles($brWorkflow, 'rounds.corrupt-*.json')).Count -eq 1) $true
+    $r = InBrackets { DispatchR 'Explain the HUD' }
+    Check 'round-cap: ... and the moved file keeps blocking' ($r.Code -eq 2 -and $r.Out -match 'unreadable ledger file') $true
 
     # framework-sync: line endings, and the warnings for a target that defeats the journal. The tool requires pwsh 7.
     $pwsh = if ($PSVersionTable.PSVersion.Major -ge 7) { $shell } else { (Get-Command pwsh -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1).Source }
@@ -1607,6 +1731,7 @@ catch {
     $failures++
 }
 finally {
+    if ($cpPinned) { [Console]::InputEncoding = $cpIn; [Console]::OutputEncoding = $cpOut }
     Remove-Item Env:CLAUDE_PROJECT_DIR, Env:HOOK_TEST_XERJ, Env:MEM_CAPTURE, Env:XERJ_URL, Env:BUGS_NOW -ErrorAction SilentlyContinue
     Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue
 }

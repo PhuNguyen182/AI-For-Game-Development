@@ -2292,6 +2292,78 @@ class TestEveryWriteNeedsThePatterns(Base):
         self.assertEqual(self.cli(script, "purge", "--dry-run").returncode, 0)
 
 
+class TestAFaultInsideMemStaysClean(Base):
+    """mem.py and the patterns load, then a call into mem.py faults: no Traceback and no raw value, refusal or write."""
+
+    EMAIL = "qa.tester@example.com"
+    # Appended to a copy of the real mem.py: each overrides one name and the rest stays real. The exception text holds the
+    # value, as a fault in real redaction code could.
+    REDACT_FAULTS = {"redact raises": 'def redact(text, patterns):\n    raise TypeError("fault on " + text)\n',
+                     "redact returns nothing": "def redact(text, patterns):\n    return None\n"}
+    WRITE_FAULTS = {"redact_pii raises": 'def redact_pii(text):\n    raise AttributeError("fault on " + text)\n',
+                    "redact_pii returns nothing": "def redact_pii(text):\n    return None\n",
+                    "the PEM regex is not one": "RX_PEM_BLOCK = object()\n",
+                    "a compiled pattern is not one": "def load_secret_patterns(root):\n    return [('x', object())]\n"}
+
+    def faulty_copy(self, fault):
+        shutil.rmtree(Path(self.tmp) / "framework", ignore_errors=True)
+        script = self.isolated_copy(with_mem=True, with_patterns=True)
+        with open(script.parents[2] / "mem" / "scripts" / "mem.py", "a", encoding="utf-8") as f:
+            f.write("\n" + fault)
+        return script
+
+    def assert_clean(self, r, *raw):
+        for value in raw:
+            self.assertNotIn(value.encode(), r.stderr + r.stdout)
+        self.assertNotIn(b"Traceback", r.stderr)
+
+    def test_a_refusal_hides_the_value_when_redaction_faults(self):
+        self.add()
+        before = self.journal.read_bytes()
+        for name, fault in {**self.REDACT_FAULTS, **self.WRITE_FAULTS}.items():
+            script = self.faulty_copy(fault)
+            for value in (FAKE_KEY, self.EMAIL):
+                for argv in (["show", value], ["list", "--status", value], ["sql", "SELECT %s" % value]):
+                    with self.subTest(fault=name, argv=argv[0], value=value[:4]):
+                        r = self.cli(script, *argv)
+                        self.assertNotEqual(r.returncode, 0, r.stdout)
+                        self.assertIn(b"bugs: ", r.stderr)
+                        self.assert_clean(r, value)
+            with self.subTest(fault=name, argv="add with a secret"):
+                r = self.cli(script, "add", stdin=json.dumps(fields(actual="Key %s here" % FAKE_KEY)).encode("utf-8"))
+                self.assertNotEqual(r.returncode, 0, r.stdout)
+                self.assert_clean(r, FAKE_KEY)
+        self.assertEqual(self.journal.read_bytes(), before)
+
+    def test_a_refused_read_still_names_what_is_wrong(self):
+        self.add()
+        r = self.cli(self.faulty_copy(self.REDACT_FAULTS["redact raises"]), "show", FAKE_KEY)
+        self.assertIn(b"expected BUG-####", r.stderr)
+        self.assertIn(b"<hidden: secret patterns unavailable>", r.stderr)
+
+    def test_a_write_is_refused_when_the_write_rules_fault(self):
+        self.add()
+        before = self.journal.read_bytes()
+        for name, fault in self.WRITE_FAULTS.items():
+            script = self.faulty_copy(fault)
+            for argv, stdin in ((["add"], fields(actual="Mail %s here" % self.EMAIL)), (["update", "BUG-0001"], {"actual": "Mail %s here" % self.EMAIL}),
+                                (["round", "BUG-0001", "fix", "+1", "--note", "Mail %s" % self.EMAIL], None)):
+                with self.subTest(fault=name, argv=argv[0]):
+                    r = self.cli(script, *argv, stdin=b"" if stdin is None else json.dumps(stdin).encode("utf-8"))
+                    self.assertEqual(r.returncode, 1, r.stdout)
+                    self.assertIn(b"write refused", r.stderr)
+                    self.assert_clean(r, self.EMAIL)
+                    self.assertEqual(self.journal.read_bytes(), before)
+
+    def test_a_write_needing_only_the_write_rules_survives_a_redact_fault(self):
+        for name, fault in self.REDACT_FAULTS.items():
+            with self.subTest(fault=name):
+                r = self.cli(self.faulty_copy(fault), "add", stdin=json.dumps(fields(actual="Mail %s here" % self.EMAIL)).encode("utf-8"))
+                self.assertEqual(r.returncode, 0, r.stderr)
+                self.assert_clean(r, self.EMAIL)
+                self.assertNotIn(self.EMAIL.encode(), self.journal.read_bytes())
+
+
 class TestTombstoneHoldsItsId(GitBase):
     """DEF-E1-03: a purged ID coming back through a merge is a duplicate, not a silent reuse."""
 
