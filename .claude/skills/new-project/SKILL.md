@@ -67,7 +67,7 @@ Assets/_Project/Scripts/Shared/Server/          _Project.Scripts.Shared.Server  
 - **Left-out metric:** a metric left out gets no verdict from `performance-qa-engineer`.
 
 ## 7. State
-- **Workflow state:** create `.workflow/features/`; the first `bugs.py add` starts `.workflow/bugs.jsonl`.
+- **Workflow state:** create `.workflow/features/` and an empty `.workflow/bugs.jsonl`: `/release` reads a missing journal as a broken setup.
 - **Staging:** stage nothing yet: step 9 asks once for the bootstrap commit (`.workflow/`, `.memory/`, the setup).
 - **Code search:** `CLAUDE.md` → Code search: `xerj prefix <kebab project name>` when `xerj` is installed, else `Grep`.
 - **Tech stack:** create `docs/tech-stack.md` from `references/tech-stack-template.md`, filled from `Packages/manifest.json`, `ProjectSettings/` and the answers above.

@@ -14,7 +14,8 @@ argument-hint: "<bug id, or the symptom in the GD's words>"
 ## 1. Record
 - **Check first:** `bugs.py search "<words>"` before filing.
 - **New bug:** `bugs.py add` prints the next `BUG-####`, status `Request`: title, description, priority, feature slug, repro, expected, actual, evidence, owner.
-- **Existing bug:** matches an existing bug → add evidence with `update`; a terminal one → `Reopen`.
+- **Existing bug:** a match is evidence on that ID: `update` with a `note` alone adds it; the `evidence` field is replaced by an `update`, never appended.
+- **Match by status:** a terminal bug → `Reopen`; a `Backlog` bug adds evidence with `update`, as `Backlog` cannot reach `Reopen`; a `Duplicate` hit → follow `duplicate_of`, judge the target.
 - **Reopen by the GD:** a reopen the GD reports → `Reopen`, then `round <id> fix +1 --note <why>` (and the feature's `rework`).
 - **Still broken while `Resolved`:** the GD reports it → `Resolved` → `Review` → `Reopen`; a direct `Resolved` → `Reopen` is refused.
 - **Reopen by a run:** a reopen found by a `Verify:` run is counted by the hook — never write it.
@@ -28,7 +29,7 @@ argument-hint: "<bug id, or the symptom in the GD's words>"
 - **Tools:** Play Mode (`playtest-tester`), a test, device (`/investigate-device-crash` for a device crash).
 - **Reproduce briefs:** briefs for this step never carry `Verify:`.
 - **Production telemetry:** a `crash-anr-investigator` return with `Stages: pass` and an evidenced `Root cause:` is the repro; its `Impact:` is the hit rate.
-- **Cannot reproduce:** report that, with what was tried; ask the GD via `AskUserQuestion` (more info / keep open / close as `Won't fix`, `--by GD`).
+- **Cannot reproduce:** report that, with what was tried; ask the GD via `AskUserQuestion` (more info / keep open / close as `Won't fix`, `--by GD`, mirrored: no feature → `.workflow/DEBT.md`).
 
 ## 3. Root cause
 - **Dispatch status:** dispatching the owner from `Request` or `Reopen`, here or at step 5 → `Processing`.
@@ -64,8 +65,9 @@ argument-hint: "<bug id, or the symptom in the GD's words>"
   - **No `Repro:` line:** → back to `Resolved`; the run settled nothing.
   - **Inside `/qa`:** the `/qa` re-run of the affected cases is this run; no offer.
   - **Within a feature, QA declined:** no offer; CP4 lists the `Resolved` bug for the GD (accept unverified → `Accepted`, or verify).
-  - **No feature:** `AskUserQuestion` — verify now (Khuyến nghị) / accept unverified (→ `Accepted`, `--by GD`). A `Resolved` bug is never left without one of these.
+  - **No feature:** `AskUserQuestion` — verify now (Khuyến nghị) / accept unverified (→ `Accepted`, `--by GD`, mirror `.workflow/DEBT.md`). A `Resolved` bug never stays without one.
   - **Needs a device build that does not exist (a production crash):** verified by the device run on the next release candidate (`/release` step 4), or accepted by the GD at `/release` step 1.
+  - **Its marker:** `update` with the `note` `awaits device verification`, which `/release` step 1 reads.
 
 ## 7. Report
 - **Reply:** cause, fix, test name, what was verified and what was not.

@@ -60,6 +60,7 @@ function Get-BugsLine([string]$Root, [bool]$SkipPurge) {
         if ($purge.State -ne 'Ok') { $suffix = "; purge failed: $(Get-FirstLine $purge.Err)" }
         else {
             if ($purge.Out -match '(?m)^(purged [1-9]\d*, journal uncommitted)\s*$') { $suffix = "; $($Matches[1])" }
+            elseif ($purge.Out -match '(?m)^purge skipped: journal not clean') { $suffix = '; purge skipped, journal uncommitted' }
             # Exit 0 with stderr is a warning, such as a leftover BUGS_NOW: this is the one unattended purge, so show it.
             if ($purge.Err) { $suffix += "; $(Get-FirstLine $purge.Err)" }
         }
@@ -71,9 +72,8 @@ function Get-BugsLine([string]$Root, [bool]$SkipPurge) {
 }
 function Get-FirstLine([string]$Text) { $line = ($Text -split '\r?\n')[0]; if ($line.Length -gt 160) { $line.Substring(0, 160) } else { $line } }
 # The journal checks and stats use the main checkout, but the CLI then sees --root as a main checkout, so its own worktree
-# guard cannot fire: a session in an agent worktree must not purge. Get-MainCheckout changes $root only for such a worktree;
-# a linked worktree elsewhere keeps its root, and purge --auto refuses it itself.
-try { $main = Get-MainCheckout $root; Get-BugsLine $main ($main -ne $root) } catch { "Bugs: unavailable - $(Get-FirstLine $_.Exception.Message)" }
+# guard cannot fire: a session in a linked worktree must not purge. Get-BugsRoot changes $root only for such a worktree.
+try { $main = Get-BugsRoot $root; Get-BugsLine $main ($main -ne $root) } catch { "Bugs: unavailable - $(Get-FirstLine $_.Exception.Message)" }
 
 $prefix = Get-XerjPrefix $root
 switch (Get-XerjState $root) {

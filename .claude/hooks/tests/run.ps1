@@ -12,10 +12,14 @@ $failures = 0
 # Built at runtime so this file never holds a secret-shaped literal.
 $fakeKey = 'AK' + 'IA' + ('Q' * 16)
 
+# Joined, never Out-String: on Windows PowerShell Out-String wraps an error record at the console width and splits the text a test matches.
+function Join-Output($Lines) { return (@($Lines | ForEach-Object { [string]$_ }) -join "`n") }
+
 function Invoke-Hook([string]$Script, [hashtable]$Payload, [string[]]$HookArgs = @()) {
     $json = $Payload | ConvertTo-Json -Depth 5 -Compress
     $out = $json | & $shell -NoProfile -NonInteractive -File (Join-Path $hooks $Script) @HookArgs 2>&1
-    return @{ Code = $LASTEXITCODE; Out = ($out | Out-String) }
+    $code = $LASTEXITCODE
+    return @{ Code = $code; Out = (Join-Output $out) }
 }
 
 function Check([string]$Name, $Actual, $Expected) {
@@ -687,7 +691,7 @@ try {
         $cli = Join-Path $bugRoot '.claude/skills/bugs/scripts/bugs.py'
         $out = if ($Stdin) { $Stdin | & $bugPy[0] @rest -I $cli --root $bugRoot @CliArgs 2>&1 } else { & $bugPy[0] @rest -I $cli --root $bugRoot @CliArgs 2>&1 }
         if ($LASTEXITCODE -ne 0) { Write-Host "FAIL  fixture: bugs.py $($CliArgs -join ' '): $out"; $script:failures++ }
-        return ($out | Out-String)
+        return (Join-Output $out)
     }
     function ClearBugs { Remove-Item (Join-Path $bugRoot '.workflow/bugs.*') -Force -ErrorAction SilentlyContinue }
     function MoveBug([string]$Id, [string[]]$Statuses) { foreach ($s in $Statuses) { BugCli @('set-status', $Id, $s, '--note', 'test move') | Out-Null } }
@@ -742,6 +746,18 @@ try {
     Bugs 'Backlog' 3
     Check 'round-cap: a Backlog bug is not capped' (Dispatch 'Bug: BUG-0001') 0
     Check 'round-cap: an unknown id passes' (Dispatch 'Fix BUG-0999') 0
+    # One bug however its ID is spelled: case, short and over-padded forms mean the canonical ID on every path.
+    Bugs 'Reopen' 3
+    foreach ($b in 'Bug: bug-0001', 'Bug: BUG-1', 'Bug: BUG-00001', 'Bug: bug-1', 'Fix bug-0001', 'Fix BUG-1', 'Fix BUG-00001', 'Fix bug-01') {
+        $r = DispatchR $b
+        Check "round-cap: '$b' is the past-cap BUG-0001" ($r.Code -eq 2 -and $r.Out -match 'BUG-0001: fix 3/2') $true
+    }
+    Check 'round-cap: another number is another bug' (Dispatch 'Fix BUG-2') 0
+    Check 'round-cap: debug-1 names no bug' (Dispatch 'Fix debug-1') 0
+    $r = ShellEdit 'python -I .claude/skills/bugs/scripts/bugs.py show bug-1'
+    Check 'round-cap: a bugs.py command with a short lowercase id warns under the canonical one' ($r.Code -eq 2 -and $r.Out -match 'BUG-0001: fix 3/2') $true
+    $r = DispatchR 'Fix BUG-0001'
+    Check 'run.ps1: a long hook message stays on one line' ($r.Out -match 'past the round cap.*for target or session work') $true
     Bugs 'Reopen' 3
     Check 'round-cap: a QA brief listing a past-cap bug but charging the feature passes' (Dispatch "Feature: .workflow/features/demo.md`nOpen bugs: BUG-0001") 0
     # Decoding: Out is UTF-8 whatever the console code page is. \u escapes keep this file and the stdin pipe ASCII.
@@ -754,6 +770,41 @@ try {
     Check 'bugs: Invoke-Bugs reports a missing script as a failure' ((Invoke-Bugs (Join-Path $tmp 'NoSuchProject') @('stats')).State) 'Failed'
     $o = Invoke-Bugs $proj @('stats') 1
     Check 'bugs: Invoke-Bugs kills a call past its timeout and reports it' ($o.State -eq 'Failed' -and $o.Err -match 'timed out') $true
+    # The stdin form bugs/SKILL.md names, in a real child shell of this edition: byte-exact, and the Vietnamese refusal still fires.
+    $stdinChild = Join-Path $tmp 'stdin-child.ps1'
+    Set-Content $stdinChild @'
+param([string]$Mode, [string]$Hex, [string]$Cli, [string]$Root, [string]$Py, [string]$PyArg)
+if ($Mode -eq 'form') { $OutputEncoding = [Text.UTF8Encoding]::new($false) }
+$title = 'Cost ' + [char][Convert]::ToInt32($Hex, 16) + ' ok'
+$j = '{"title":"' + $title + '","description":"d","priority":"Low","repro":"not yet","expected":"e","actual":"a","evidence":"n"}'
+$rest = @('-I', $Cli, '--root', $Root, 'add')
+if ($PyArg) { $rest = @($PyArg) + $rest }
+$j | & $Py @rest
+exit $LASTEXITCODE
+'@
+    function StdinChild([string]$Mode, [string]$Hex) {
+        ClearBugs
+        $cli = Join-Path $bugRoot '.claude/skills/bugs/scripts/bugs.py'
+        # An empty -PyArg would lose its value on the 5.1 command line: only a real second word is passed.
+        $childArgs = @('-Mode', $Mode, '-Hex', $Hex, '-Cli', $cli, '-Root', $bugRoot, '-Py', $bugPy[0])
+        if ($bugPy.Count -gt 1) { $childArgs += @('-PyArg', $bugPy[1]) }
+        $o = & $shell -NoProfile -NonInteractive -File $stdinChild @childArgs 2>&1
+        $code = $LASTEXITCODE
+        $path = Join-Path $bugRoot '.workflow/bugs.jsonl'
+        $text = if (Test-Path $path) { [IO.File]::ReadAllText($path) } else { '' }
+        @{ Code = $code; Out = (Join-Output $o); Journal = $text }
+    }
+    $o = StdinChild 'form' '2014'
+    Check 'bugs stdin: the named form reaches the journal byte-exact' ($o.Code -eq 0 -and $o.Journal.Contains("Cost $([char]0x2014) ok")) $true
+    $o = StdinChild 'form' '1EC7'
+    Check 'bugs stdin: the named form still meets the Vietnamese refusal' ($o.Code -eq 1 -and $o.Out -match 'Vietnamese diacritics' -and -not $o.Journal) $true
+    $o = StdinChild 'default' '2014'
+    if ($PSVersionTable.PSVersion.Major -lt 6) {
+        Check 'bugs stdin: why the rule exists: the 5.1 default pipe writes ? and exits 0' ($o.Code -eq 0 -and $o.Journal.Contains('Cost ? ok')) $true
+    } else {
+        Check 'bugs stdin: the default pipe of pwsh 7 is already byte-exact' ($o.Code -eq 0 -and $o.Journal.Contains("Cost $([char]0x2014) ok")) $true
+    }
+    ClearBugs
     # Fail closed. An empty PATH and no cached interpreter stand for a machine without Python.
     $noPyDir = Join-Path $tmp 'empty-path'
     New-Item -ItemType Directory -Force $noPyDir | Out-Null
@@ -789,6 +840,8 @@ try {
     [IO.File]::AppendAllText((Join-Path $proj '.workflow/bugs.jsonl'), $oneLine)
     $r = DispatchR 'Fix BUG-0001'
     Check 'round-cap: a duplicate id blocks, naming doctor --fix' ($r.Code -eq 2 -and $r.Out -match 'doctor --fix') $true
+    $r = DispatchR 'Bug: bug-1'
+    Check 'round-cap: ... on any spelling of it' ($r.Code -eq 2 -and $r.Out -match 'doctor --fix') $true
     $r = ShellEdit $bugCall
     Check 'round-cap: a CLI failure on a bugs.py command gives its message' ($r.Code -eq 2 -and $r.Out -match 'could not be read' -and $r.Out -match 'duplicate id') $true
     ClearBugs
@@ -817,7 +870,8 @@ try {
         Set-Content $t $lines -Encoding UTF8
         (Invoke-Hook 'round-cap.ps1' @{ session_id = 'sess-1'; agent_type = $Agent; agent_id = $Id; agent_transcript_path = $t; last_assistant_message = $last } @('-Mode', 'count')).Code
     }
-    function Count([string]$Key, [string]$Counter) { $o = Get-Content $ledger -Raw | ConvertFrom-Json; @($o.$Key.$Counter).Count }
+    # Where-Object: @($null).Count is 1, which read a missing counter as one event.
+    function Count([string]$Key, [string]$Counter) { $o = Get-Content $ledger -Raw | ConvertFrom-Json; @($o.$Key.$Counter | Where-Object { $_ }).Count }
     Feature 'review 0/3, QA 0/2, rework 0/6'
     $fm = 'Feature: .workflow/features/demo.md'
     $rb = "Round: 1`n$fm`nReview the HUD diff (skill shared-core-boundary-audit)."
@@ -869,6 +923,19 @@ try {
     Check 'count: used = database + ledger (0 + 2 is at the cap, still dispatches)' (Dispatch 'Bug: BUG-0001') 0
     SubStop 'playtest-tester' "Verify: BUG-0001" "Status: Done`nRepro: BUG-0001 reproduces" 'p4' | Out-Null
     Check 'count: used = database + ledger (0 + 3 past the cap blocks)' (Dispatch 'Bug: BUG-0001') 2
+    Check 'count: an over-padded marker reads the same ledger key' (Dispatch 'Bug: BUG-00001') 2
+    Check 'count: a short lowercase id in free text reads it too' (Dispatch 'Fix bug-1') 2
+    Remove-Item $ledger
+    Bugs 'Reopen' 0
+    SubStop 'playtest-tester' "Verify: bug-1" "Status: Done`nRepro: BUG-0001 reproduces" 'c1' | Out-Null
+    SubStop 'playtest-tester' "Verify: BUG-00001" "Status: Done`nRepro: bug-0001 reproduces" 'c2' | Out-Null
+    SubStop 'playtest-tester' "Verify: BUG-0001" "Status: Done`nRepro: BUG-00001 reproduces" 'c3' | Out-Null
+    Check 'count: every Verify and Repro spelling charges the canonical key' (Count 'bug:BUG-0001' 'fix') 3
+    SubStop 'playtest-tester' "Verify: BUG-0002" "Status: Done`nRepro: BUG-0001 reproduces" 'c4' | Out-Null
+    Check 'count: a Repro for a bug the brief did not verify is not charged' (Count 'bug:BUG-0001' 'fix') 3
+    SubStop 'code-reviewer' "Round: 1`
+Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
+    Check 'count: a Bug marker spelling charges the canonical key' (Count 'bug:BUG-0001' 'review') 1
     Remove-Item $ledger
     foreach ($n in 1..4) { SubStop 'code-reviewer' "Round: $n`nTarget: Assets/Shop" 'Verdict: Request changes' "t$n" | Out-Null }
     Check 'count: target work past the cap blocks the gate' (Dispatch "Round: 5`nTarget: Assets/Shop") 2
@@ -987,7 +1054,7 @@ try {
     BugCli @('add') $bugFields | Out-Null
     $dirty = [IO.File]::ReadAllText($bpJournal)
     $r = Invoke-Hook 'session-start.ps1' @{}
-    Check 'session-start: a dirty journal skips the purge' ($r.Code -eq 0 -and $r.Out -match '(?m)^Bugs: 2 open \(2 High\+\)\s*$') $true
+    Check 'session-start: a dirty journal skips the purge, and the line says so' ($r.Code -eq 0 -and $r.Out -match '(?m)^Bugs: 2 open \(2 High\+\); purge skipped, journal uncommitted\s*$') $true
     Check 'session-start: ... and leaves the journal as it was' ([IO.File]::ReadAllText($bpJournal)) $dirty
     git @bpGit checkout -q -- .workflow/bugs.jsonl 2>&1 | Out-Null
     # The one unattended purge: a leftover test clock must show on the status line.
@@ -1016,6 +1083,108 @@ try {
     Set-Content (Join-Path $bp '.workflow/bugs.md') "# Bugs`n" -Encoding UTF8
     $r = NoPython { Invoke-Hook 'session-start.ps1' @{} }
     Check 'session-start: a remaining bugs.md prints one import-md line' ($r.Code -eq 0 -and @($r.Out -split '\r?\n' | Where-Object { $_ -match '^Bugs: .*import-md' }).Count -eq 1) $true
+    # An empty journal, as bootstrap creates it: reads as no bugs, never as a failure.
+    Remove-Item (Join-Path $bp '.workflow/bugs.md')
+    [IO.File]::WriteAllBytes($bpJournal, [byte[]]@())
+    $r = Invoke-Hook 'session-start.ps1' @{}
+    Check 'session-start: an empty journal reads as no bugs' ($r.Code -eq 0 -and $r.Out -match '(?m)^Bugs: 0 open \(0 High\+\)') $true
+    Check 'round-cap: an empty journal passes a bug dispatch' (Dispatch 'Fix BUG-0001') 0
+
+    # A linked worktree anywhere, on a commit with no journal, reads the main checkout's: not only .claude/worktrees/<name>.
+    $bw = Join-Path $tmp 'BugWorktree'
+    New-Repo $bw
+    New-Item -ItemType Directory -Force (Join-Path $bw '.claude/skills/bugs/scripts'), (Join-Path $bw '.claude/skills/mem/scripts'), (Join-Path $bw '.claude/hooks') | Out-Null
+    Copy-Item (Join-Path $hooks '../skills/bugs/scripts/bugs.py') (Join-Path $bw '.claude/skills/bugs/scripts')
+    Copy-Item (Join-Path $hooks '../skills/mem/scripts/mem.py') (Join-Path $bw '.claude/skills/mem/scripts')
+    Copy-Item (Join-Path $hooks 'secret-patterns.txt') (Join-Path $bw '.claude/hooks')
+    $bwGit = @('-C', $bw, '-c', 'user.name=t', '-c', 'user.email=t@example.com', '-c', 'core.autocrlf=false')
+    Set-Content (Join-Path $bw 'base.txt') 'base'
+    git @bwGit add base.txt 2>&1 | Out-Null
+    git @bwGit commit -q -m 'base' 2>&1 | Out-Null
+    $bwBase = (git @bwGit rev-parse HEAD)
+    $bugRoot = $bw
+    BugCli @('add') $bugFields | Out-Null
+    BugCli @('round', 'BUG-0001', 'fix', '+3', '--note', 'test round') | Out-Null
+    git @bwGit add .workflow/bugs.jsonl 2>&1 | Out-Null
+    git @bwGit commit -q -m 'journal' 2>&1 | Out-Null
+    $bwOut = Join-Path $tmp 'Outside Worktree'
+    git @bwGit worktree add -q -b outside $bwOut $bwBase 2>&1 | Out-Null
+    $bwJournal = Join-Path $bw '.workflow/bugs.jsonl'
+    $bwBefore = [IO.File]::ReadAllText($bwJournal)
+    $env:CLAUDE_PROJECT_DIR = $bwOut
+    Check 'round-cap: the fixture worktree has no journal' (Test-Path (Join-Path $bwOut '.workflow/bugs.jsonl')) $false
+    $r = DispatchR 'Bug: BUG-0001'
+    Check 'round-cap: a worktree outside .claude/worktrees reads the main journal, past the cap blocks' ($r.Code -eq 2 -and $r.Out -match 'BUG-0001: fix 3/2') $true
+    $r = DispatchR 'Fix BUG-0001'
+    Check 'round-cap: ... from free text too' ($r.Code -eq 2 -and $r.Out -match 'BUG-0001: fix 3/2') $true
+    $r = ShellEdit 'python -I bugs.py show BUG-0001'
+    Check 'round-cap: ... and a bugs.py command warns there' ($r.Code -eq 2 -and $r.Out -match 'BUG-0001: fix 3/2') $true
+    $r = Invoke-Hook 'session-start.ps1' @{}
+    Check 'session-start: a worktree outside .claude/worktrees prints the main status line' ($r.Code -eq 0 -and $r.Out -match '(?m)^Bugs: 1 open \(1 High\+\)\s*$') $true
+    Check 'session-start: ... and writes no journal' ([IO.File]::ReadAllText($bwJournal)) $bwBefore
+    # Git works, Python does not: the journal check still reaches main, and only then Python is needed.
+    $gitDir = Split-Path (Get-Command git -CommandType Application | Select-Object -First 1).Source
+    $bwCache = Join-Path $bw '.memory/.state/python.txt'
+    function OnlyGit([scriptblock]$Body) {
+        Remove-Item $bwCache -ErrorAction SilentlyContinue
+        $env:PATH = $gitDir
+        try { & $Body } finally { $env:PATH = $savedPath }
+    }
+    if (OnlyGit { Get-Command python, python3, py -CommandType Application -ErrorAction SilentlyContinue }) {
+        Write-Output 'SKIP  round-cap: Python sits in git''s folder here, so a machine with git and no Python cannot be simulated'
+    } else {
+        $r = OnlyGit { DispatchR 'Bug: BUG-0001' }
+        Check 'round-cap: git but no Python, main has a journal: blocks' ($r.Code -eq 2 -and $r.Out -match 'Python 3\.10') $true
+        Remove-Item $bwJournal
+        Remove-Item (Join-Path $bw '.workflow/bugs.db*') -Force -ErrorAction SilentlyContinue
+        Check 'round-cap: git but no Python, no journal in main: no Python start' (OnlyGit { Dispatch 'Bug: BUG-0001' }) 0
+    }
+    git @bwGit worktree remove --force $bwOut 2>&1 | Out-Null
+
+    # framework-sync: line endings, and the warnings for a target that defeats the journal. The tool requires pwsh 7.
+    $pwsh = if ($PSVersionTable.PSVersion.Major -ge 7) { $shell } else { (Get-Command pwsh -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1).Source }
+    if (-not $pwsh) { Write-Output 'SKIP  framework-sync: pwsh 7 not found' }
+    else {
+        $syncTool = Join-Path $hooks '../tools/framework-sync.ps1'
+        $syncSrc = Join-Path $tmp 'SyncSource'
+        New-Repo $syncSrc
+        New-Item -ItemType Directory -Force (Join-Path $syncSrc '.claude') | Out-Null
+        [IO.File]::WriteAllText((Join-Path $syncSrc '.claude/settings.json'), '{}')
+        [IO.File]::WriteAllText((Join-Path $syncSrc '.claude/x.md'), "x`n")
+        [IO.File]::WriteAllText((Join-Path $syncSrc '.gitignore'), "# Claude Code local runtime state`n.workflow/bugs.db*`n")
+        [IO.File]::WriteAllText((Join-Path $syncSrc '.gitattributes'), "# Bug journal`n.workflow/bugs.jsonl text eol=lf merge=union`n")
+        git -C $syncSrc add .claude .gitignore .gitattributes 2>&1 | Out-Null
+        function SyncTarget([string]$Name, $Attr, $Ignore, [string[]]$Extra = @()) {
+            $t = Join-Path $tmp "sync-$Name"
+            New-Repo $t
+            if ($null -ne $Attr) { [IO.File]::WriteAllText((Join-Path $t '.gitattributes'), $Attr) }
+            if ($null -ne $Ignore) { [IO.File]::WriteAllText((Join-Path $t '.gitignore'), $Ignore) }
+            $o = & $pwsh -NoProfile -NonInteractive -File $syncTool -Mode Install -SourceRoot $syncSrc -Target $t @Extra 2>&1
+            $code = $LASTEXITCODE
+            @{ Path = $t; Code = $code; Out = (Join-Output $o) }
+        }
+        function SyncAttr($Target) { [string](git -C $Target.Path check-attr merge -- .workflow/bugs.jsonl) }
+        function SyncText($Target, [string]$File) { [IO.File]::ReadAllText((Join-Path $Target.Path $File)) }
+        $t = SyncTarget 'created' $null $null
+        Check 'framework-sync: a created file is LF only and ends in one newline' ($t.Code -eq 0 -and -not (SyncText $t '.gitattributes').Contains("`r") -and (SyncText $t '.gitattributes').EndsWith("union`n") -and -not (SyncText $t '.gitignore').Contains("`r") -and (SyncText $t '.gitignore').EndsWith("/`n")) $true
+        Check 'framework-sync: ... with no warning' ($t.Out -match '(?i)warning') $false
+        Check 'framework-sync: ... and merge resolves to union' ((SyncAttr $t) -match 'union$') $true
+        $t = SyncTarget 'crlf' "*.png -text`r`n" "Library/`r`n"
+        Check 'framework-sync: lines appended to a CRLF file are CRLF' ($t.Code -eq 0 -and (SyncText $t '.gitattributes') -notmatch '(?<!\r)\n' -and (SyncText $t '.gitignore') -notmatch '(?<!\r)\n') $true
+        Check 'framework-sync: ... git still reads them' ((SyncAttr $t) -match 'union$' -and (git -C $t.Path check-ignore .workflow/bugs.db)) $true
+        $t = SyncTarget 'lf' "*.png -text`n" "Library/`n"
+        Check 'framework-sync: lines appended to an LF file are LF' ($t.Code -eq 0 -and -not (SyncText $t '.gitattributes').Contains("`r") -and -not (SyncText $t '.gitignore').Contains("`r")) $true
+        $t = SyncTarget 'nonl' '*.png -text' 'Library/'
+        Check 'framework-sync: a file with no final newline gets its lines on a new line' ((SyncAttr $t) -match 'union$' -and (SyncText $t '.gitattributes').StartsWith("*.png -text`n")) $true
+        $t = SyncTarget 'override' ".workflow/bugs.jsonl text eol=lf merge=union`n.workflow/** -text merge=binary`n" $null
+        Check 'framework-sync: a later rule defeating union warns, naming what it resolves to' ($t.Code -eq 0 -and $t.Out -match '(?i)warning' -and $t.Out -match 'binary') $true
+        $t = SyncTarget 'ignored' $null ".workflow/`n"
+        Check 'framework-sync: an ignored journal warns' ($t.Code -eq 0 -and $t.Out -match '(?i)warning' -and $t.Out -match 'ignored') $true
+        $t = SyncTarget 'dry' $null $null @('-DryRun')
+        Check 'framework-sync: a dry run on a fresh target has no false warning and writes nothing' ($t.Code -eq 0 -and $t.Out -notmatch '(?i)warning' -and -not (Test-Path (Join-Path $t.Path '.gitattributes'))) $true
+        $t = SyncTarget 'dry-ignored' $null ".workflow/`n" @('-DryRun')
+        Check 'framework-sync: a dry run still warns about an ignored journal' ($t.Out -match 'ignored') $true
+    }
     $env:CLAUDE_PROJECT_DIR = $proj
     Remove-Item Env:HOOK_TEST_XERJ
     $bugRoot = $proj

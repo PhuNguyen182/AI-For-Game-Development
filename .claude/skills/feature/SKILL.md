@@ -32,6 +32,7 @@ argument-hint: "<the request, in the GD's words>"
   - **Request:** the GD's words verbatim (from a backlog item: its row and GDD section).
   - **Profile:** from `CLAUDE.md`.
   - **Backlog row:** the `.workflow/backlog.md` row → `in progress`.
+  - **Bug journal:** no `.workflow/bugs.jsonl` → create it empty.
 - **GD answers:** every GD answer → `GD decisions` at once; an accepted gap or risk also → `Known limitations` in the same edit.
 
 ## 1. Size — `technical-architect` (Size mode)

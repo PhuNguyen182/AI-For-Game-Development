@@ -10,6 +10,7 @@
 #   dispatch  PreToolUse Agent / Workflow: blocked when the brief's (or the workflow args') feature, bug or target
 #             is past a cap. A brief without marker lines falls back to every feature path and bug id it mentions.
 #             A brief naming a bug fails closed: no Python or any bugs.py failure blocks the dispatch.
+#             A bug ID is one bug whatever its case or padding: bug-0027, BUG-27 and BUG-00027 all mean BUG-0027.
 #   edit      PostToolUse Edit/Write under .workflow/, and Bash/PowerShell commands that call bugs.py (for the bug ids in
 #             the command): tells Claude when a counter reaches or passes its cap (silent at the cap once a Stop rule
 #             names that counter), or an open feature file has no Rounds line. Any other command exits at once.
@@ -28,8 +29,6 @@ $Gates = 'code-reviewer', 'security-reviewer', 'qa-lead'
 $in = Read-HookInput
 if (-not $in) { exit 0 }
 $root = Get-ProjectRoot $in
-# bugs.py reads the main checkout's data from a linked worktree too.
-$bugsRoot = Get-MainCheckout $root
 $ledgerPath = Join-Path $root '.workflow/rounds.json'
 $ledgerDir = Split-Path $ledgerPath
 $sessionKey = "session:$([string]$in.session_id)"
@@ -173,10 +172,12 @@ function Get-FeatureCounters([string]$slug, $ledger) {
 
 # Counters of one unsettled bug from bugs.py, or @() when it is settled or unknown. Throws the cause and its fix when
 # the CLI cannot answer. No journal and no old bugs.md: no bugs yet, and Python never starts.
+$script:BugsRoot = $null  # resolved once, and only for a brief that names a bug: it starts git
 function Get-BugCounters([string]$id, $ledger) {
-    $workflow = Join-Path $bugsRoot '.workflow'
+    if (-not $script:BugsRoot) { $script:BugsRoot = Get-BugsRoot $root }
+    $workflow = Join-Path $script:BugsRoot '.workflow'
     if (-not (Test-Path (Join-Path $workflow 'bugs.jsonl')) -and -not (Test-Path (Join-Path $workflow 'bugs.md'))) { return @() }
-    $r = Invoke-Bugs $bugsRoot @('counters', $id, '--json')
+    $r = Invoke-Bugs $script:BugsRoot @('counters', $id, '--json')
     if ($r.State -eq 'NoPython') { throw "no Python 3.10+ with SQLite FTS5 found. Install it, then retry (skill bugs)." }
     if ($r.State -ne 'Ok') { throw "bugs.py counters $id failed: $($r.Err). Clear that cause, then retry (skill bugs)." }
     $j = $null
@@ -207,11 +208,14 @@ function Get-FeatureMarker([string]$text) {
     if ($v -and $v -match '\.workflow[\\/]features[\\/]([A-Za-z0-9_-]+)\.md') { return $Matches[1] }
     return $null
 }
-function Get-BugMarker([string]$text) { $v = Get-Marker $text 'Bug'; if ($v -and $v -match '^(BUG-\d{4,})\b') { return $Matches[1] }; return $null }
+# One spelling for a matched BUG-<digits>: BUG- plus at least 4 digits, no leading zeros beyond that. The CLI call and the
+# ledger key both use it, so a marker, free text, Verify and Repro all reach the same counters.
+function ConvertTo-BugId([string]$Text) { return 'BUG-' + $Text.Substring(4).TrimStart('0').PadLeft(4, '0') }
+function Get-BugMarker([string]$text) { $v = Get-Marker $text 'Bug'; if ($v -and $v -match '(?i)^(BUG-[0-9]+)\b') { return (ConvertTo-BugId $Matches[1]) }; return $null }
 function Get-TargetKey([string]$text) { $v = Get-Marker $text 'Target'; if ($v) { return 'target:' + ($v -replace '\\', '/').ToLowerInvariant() }; return $null }
-function Get-VerifyIds([string]$text) { @([regex]::Matches($text, '(?im)^[\s*_>-]*Verify[*_]*:[*_\s]*(BUG-\d{4,})') | ForEach-Object { $_.Groups[1].Value } | Select-Object -Unique) }
+function Get-VerifyIds([string]$text) { @([regex]::Matches($text, '(?im)^[\s*_>-]*Verify[*_]*:[*_\s]*(BUG-[0-9]+)\b') | ForEach-Object { ConvertTo-BugId $_.Groups[1].Value } | Select-Object -Unique) }
 function Get-Slugs([string]$text) { [regex]::Matches($text, '\.workflow[\\/]features[\\/]([A-Za-z0-9_-]+)\.md') | ForEach-Object { $_.Groups[1].Value } | Select-Object -Unique }
-function Get-BugIds([string]$text) { [regex]::Matches($text, '\bBUG-\d{4,}\b') | ForEach-Object { $_.Value } | Select-Object -Unique }
+function Get-BugIds([string]$text) { [regex]::Matches($text, '\bBUG-[0-9]+\b', 'IgnoreCase') | ForEach-Object { ConvertTo-BugId $_.Value } | Select-Object -Unique }
 function Format([string]$what, $c) { return "${what}: $($c.Name) $($c.Used)/$($c.Cap)$($c.Note)" }
 
 if ($Mode -eq 'count') {
@@ -246,8 +250,8 @@ if ($Mode -eq 'count') {
     $reviewFail = -not $skip -and ($codeFail -or ($agent -eq 'security-reviewer' -and $ret -match "${v}Blocked"))
     $qaFail = $agent -eq 'qa-lead' -and $ret -match "${v}Not signed off"
     $verifyIds = @(Get-VerifyIds $brief)
-    $repros = @([regex]::Matches($ret, '(?im)^[\s*_>-]*Repro[*_]*:[*_\s]*(BUG-\d{4,})\s+reproduces') |
-        ForEach-Object { $_.Groups[1].Value } | Select-Object -Unique | Where-Object { $verifyIds -contains $_ })
+    $repros = @([regex]::Matches($ret, '(?im)^[\s*_>-]*Repro[*_]*:[*_\s]*(BUG-[0-9]+)\s+reproduces') |
+        ForEach-Object { ConvertTo-BugId $_.Groups[1].Value } | Select-Object -Unique | Where-Object { $verifyIds -contains $_ })
     if (-not ($reviewFail -or $qaFail -or $repros.Count)) { exit 0 }
     # code-reviewer and security-reviewer failing the same round count once: same Round number on the same Tree.
     # The Tree keeps a repeated number (a resumed session restarting at 1) on new code from merging into an old event.

@@ -20,7 +20,7 @@ import unicodedata
 import uuid
 from pathlib import Path
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 STATUSES = ("Request", "Processing", "Resolved", "Review", "Complete", "Reopen", "Backlog", "Won't fix", "Accepted", "As designed", "Duplicate")
 TERMINAL = ("Complete", "Won't fix", "Accepted", "As designed", "Duplicate")
 OPEN = tuple(s for s in STATUSES if s not in TERMINAL)
@@ -28,6 +28,10 @@ PRIORITIES = ("Low", "Medium", "High", "Highest")
 DEFAULT_CAPS = {"fix": 2, "review": 3}
 WINDOW = dt.timedelta(days=90)
 SQL_SECONDS = 10
+MAX_COUNT = 100  # one round or extra-round call; replay refuses more, so a counter's total stays a small integer
+REFUSAL_LINE = 500
+VALUE_MARK = "\ue000"  # brackets a caller's value inside refusal text; refusal_text() is the only reader
+RX_SHOWN = re.compile("%s.*?%s" % (VALUE_MARK, VALUE_MARK), re.S)
 
 # Moves anyone with the writer's role may make; GD-only moves and "any open" moves are in move_rule().
 PLAIN_MOVES = {"Request": ("Processing",), "Reopen": ("Processing",), "Processing": ("Request", "Resolved"),
@@ -86,6 +90,16 @@ class Corrupt(Exception):
     """The journal cannot be replayed. Fails closed: the hook blocks on it."""
 
 
+class UsageError(Refused):
+    """argparse's complaint, which quotes the argument. Refused here so it leaves through the one exit in main()."""
+
+
+class Parser(argparse.ArgumentParser):
+    def error(self, message):
+        self.print_usage(sys.stderr)
+        raise UsageError("bad arguments: %s" % shown(message, 300))
+
+
 def _after_append():
     """Between the journal append and the DB commit. Tests replace this to crash exactly there."""
 
@@ -135,10 +149,21 @@ def fmt_id(num: int) -> str:
     return "BUG-%04d" % num
 
 
+def shown(value, limit=40) -> str:
+    """A caller's or a file's value inside refusal text. A long one is never echoed, not cut: the scan at the exit
+    could miss a secret cut in half."""
+    text = str(value).replace(VALUE_MARK, "")
+    return VALUE_MARK + (text if len(text) <= limit else "<%d chars>" % len(text)) + VALUE_MARK
+
+
+def shown_all(values) -> str:
+    return ", ".join(shown(v) for v in values)
+
+
 def parse_id(text: str) -> int:
     m = RX_ID.fullmatch(text) if isinstance(text, str) else None
     if not m:
-        raise Refused("bad id '%s': expected BUG-####" % text)
+        raise Refused("bad id '%s': expected BUG-####" % shown(text))
     return int(m.group(1))
 
 
@@ -250,7 +275,11 @@ def read_stdin_json(required: bool):
 
 
 def by_of(cleaner: Cleaner, a) -> str:
-    return cleaner.required("by", a.by) if a.by is not None else DEFAULT_BY
+    if a.by is None:
+        return DEFAULT_BY
+    if a.by != "GD" and a.by.strip() == "GD":  # clean() trims, which would store a padded form as the GD's attribution
+        raise Refused("by: must be exactly GD, with no padding")
+    return cleaner.required("by", a.by)
 
 
 def note_of(cleaner: Cleaner, a, required: bool, allowed=("note",)) -> tuple[str | None, dict]:
@@ -258,7 +287,7 @@ def note_of(cleaner: Cleaner, a, required: bool, allowed=("note",)) -> tuple[str
     data = {} if a.note is not None else read_stdin_json(False)
     unknown = sorted(set(data) - set(allowed))
     if unknown:
-        raise Refused("unknown field: %s" % ", ".join(unknown))
+        raise Refused("unknown field: %s" % shown_all(unknown))
     raw = a.note if a.note is not None else data.get("note")
     note = cleaner.clean("note", raw) if raw is not None else None
     if required and not note:
@@ -267,10 +296,11 @@ def note_of(cleaner: Cleaner, a, required: bool, allowed=("note",)) -> tuple[str
 
 
 def parse_count(text: str) -> int:
-    m = re.fullmatch(r"\+?(\d+)", text)
-    if not m or int(m.group(1)) < 1:
-        raise Refused("bad count '%s': expected +n with n at least 1" % text)
-    return int(m.group(1))
+    m = re.fullmatch(r"\+(\d{1,3})", text)
+    n = int(m.group(1)) if m else 0
+    if not 1 <= n <= MAX_COUNT:
+        raise Refused("bad count '%s': expected +n with n from 1 to %d" % (shown(text), MAX_COUNT))
+    return n
 
 
 # ---------------------------------------------------------------- paths and git
@@ -287,7 +317,7 @@ class Ctx:
     def __init__(self, arg: str | None):
         given = Path(arg).resolve() if arg else Path(__file__).resolve().parents[4]
         if not given.is_dir():
-            raise Refused("root %s is not a directory" % given)
+            raise Refused("root %s is not a directory" % shown(given, 200))
         self.root, self.linked, self.git_dir, self.git_failed = given, False, None, False
         try:
             code, out = run_git(given, "rev-parse", "--git-dir", "--git-common-dir")
@@ -355,7 +385,7 @@ def is_count(v) -> bool:
 
 def check_fields(data: dict, allowed):
     for key, value in data.items():
-        need(key in allowed, "unknown field '%s'" % key[:40])
+        need(key in allowed, "unknown field '%s'" % shown(key))
         need(value is None or isinstance(value, str), "field '%s' is not text" % key)
     if data.get("priority") is not None:
         need(data["priority"] in PRIORITIES, "bad priority")
@@ -391,7 +421,7 @@ def check_event(ev):
         need(data.get("duplicate_of") is None or isinstance(data["duplicate_of"], str), "bad duplicate_of")
     elif t in ("round", "extra_round"):
         need(data.get("counter") in DEFAULT_CAPS, "bad counter")
-        need(is_count(data.get("n")), "bad n")
+        need(is_count(data.get("n")) and data["n"] <= MAX_COUNT, "bad n")
     elif t == "stop_rule":
         need(data.get("counter") in DEFAULT_CAPS, "bad counter")
         need(data.get("extra_dispatch") in ("unused", "used"), "bad extra_dispatch")
@@ -465,7 +495,7 @@ def replay_order(events) -> list:
     known = set(uids)
     for ev in live:
         if ev["bug_uid"] not in known:
-            raise Corrupt("corrupt journal: %s line for a bug_uid with no create: %s" % (ev["type"], ev["event_uid"][:40]))
+            raise Corrupt("corrupt journal: %s line for a bug_uid with no create: %s" % (ev["type"], shown(ev["event_uid"])))
     return creates + [ev for ev in live if ev["type"] != "create"]
 
 
@@ -552,7 +582,7 @@ def apply_event(db, ev: dict):
     elif t == "update":
         for key in data:  # check_event limited the keys to UPDATABLE: column names never come from the journal unchecked
             if key not in UPDATABLE:
-                raise Corrupt("corrupt journal: unknown field in %s" % ev["event_uid"][:40])
+                raise Corrupt("corrupt journal: unknown field in %s" % shown(ev["event_uid"]))
             db.execute("UPDATE bug SET %s=? WHERE uid=?" % key, (data[key], uid))
     elif t == "status":
         to = data["to"]
@@ -595,6 +625,7 @@ def rebuild_tables(db, raw: bytes):
     for row in db.execute("SELECT uid FROM bug").fetchall():
         sync_fts(db, row[0])
     set_meta(db, "high_water", high_water_of(parsed.events))
+    set_meta(db, "purged_ids", json.dumps(sorted({ev["data"]["id"] for ev in parsed.events if ev["type"] == "tombstone"})))
     set_meta(db, "last_ts", max((ev["ts"] for ev in parsed.events), default=""))
     set_meta(db, "journal_hash", sha(raw))
 
@@ -623,8 +654,19 @@ def high_water(db) -> int:
     return int(get_meta(db, "high_water") or 0)
 
 
+def purged_numbers(db) -> set:
+    return set(json.loads(get_meta(db, "purged_ids") or "[]"))
+
+
+def holders(db, num: int, rows) -> int:
+    """How many bug_uids hold this ID. A tombstone holds its ID: a live bug on it came in through a merge."""
+    return len(rows) + (1 if num in purged_numbers(db) else 0)
+
+
 def duplicate_ids(db) -> list:
-    return [r[0] for r in db.execute("SELECT id FROM bug GROUP BY id HAVING COUNT(*) > 1 ORDER BY id")]
+    purged = {fmt_id(n) for n in purged_numbers(db)}
+    live = db.execute("SELECT id, COUNT(*) FROM bug GROUP BY id ORDER BY CAST(substr(id, 5) AS INTEGER)").fetchall()
+    return [r[0] for r in live if r[1] > 1 or r[0] in purged]
 
 
 def warn_duplicates(db):
@@ -636,8 +678,8 @@ def live_bug(db, bug_id: str):
     """The one bug a write or counters may touch. A duplicate id fails closed."""
     num = parse_id(bug_id)
     rows = db.execute("SELECT * FROM bug WHERE id=?", (fmt_id(num),)).fetchall()
-    if len(rows) > 1:
-        raise Refused("duplicate id %s held by %d bug_uids: run doctor --fix" % (bug_id, len(rows)))
+    if rows and holders(db, num, rows) > 1:
+        raise Refused("duplicate id %s held by %d bug_uids: run doctor --fix" % (bug_id, holders(db, num, rows)))
     if rows:
         return rows[0]
     if num <= high_water(db):
@@ -702,6 +744,7 @@ class Writer:
 
     def __enter__(self):
         self.ctx.require_writable()
+        Cleaner(self.ctx)  # every write, text-free ones too: a missing pattern file refuses here (schema.md, Fail closed)
         self.db = open_db(self.ctx, create=self.create)
         self.db.execute("BEGIN IMMEDIATE")
         try:
@@ -778,7 +821,7 @@ def cmd_add(ctx, a):
     allowed = set(UPDATABLE) | {"note"}
     unknown = sorted(set(data) - allowed)
     if unknown:
-        raise Refused("add: unknown field: %s (status starts at Request; bugs have a priority, no severity)" % ", ".join(unknown))
+        raise Refused("add: unknown field: %s (status starts at Request; bugs have a priority, no severity)" % shown_all(unknown))
     record = {"priority": cleaner.priority(data.get("priority"))}
     for field in REQUIRED:
         record[field] = cleaner.required(field, data.get(field))
@@ -802,7 +845,7 @@ def cmd_update(ctx, a):
     data = read_stdin_json(True)
     unknown = sorted(set(data) - set(UPDATABLE) - {"note"})
     if unknown:
-        raise Refused("update: unknown or read-only field: %s (status moves through set-status)" % ", ".join(unknown))
+        raise Refused("update: unknown or read-only field: %s (status moves through set-status)" % shown_all(unknown))
     note = (cleaner.clean("note", data["note"]) or None) if data.get("note") else None
     changes = {}
     for field, value in data.items():
@@ -830,7 +873,7 @@ def cmd_set_status(ctx, a):
     ctx.require_writable()
     parse_id(a.id)
     if a.status not in STATUSES:
-        raise Refused("unknown status '%s': one of %s" % (a.status, ", ".join(STATUSES)))
+        raise Refused("unknown status '%s': one of %s" % (shown(a.status), ", ".join(STATUSES)))
     cleaner = Cleaner(ctx)
     note, data = note_of(cleaner, a, True, ("note", "duplicate_of"))
     by = by_of(cleaner, a)
@@ -933,8 +976,8 @@ def cmd_counters(ctx, a):
     num = parse_id(a.id)
     bug_id = fmt_id(num)
     rows = db.execute("SELECT * FROM bug WHERE id=?", (bug_id,)).fetchall()
-    if len(rows) > 1:
-        raise Refused("duplicate id %s held by %d bug_uids: run doctor --fix" % (bug_id, len(rows)))
+    if rows and holders(db, num, rows) > 1:
+        raise Refused("duplicate id %s held by %d bug_uids: run doctor --fix" % (bug_id, holders(db, num, rows)))
     if not rows:
         out = {"id": bug_id, "found": False, "settled": False, "status": None,
                "fix": {"used": 0, "cap": DEFAULT_CAPS["fix"]}, "review": {"used": 0, "cap": DEFAULT_CAPS["review"]}, "record": ""}
@@ -980,7 +1023,7 @@ def cmd_show(ctx, a):
             print(json.dumps({"id": fmt_id(num), "purged": True}) if a.json else "%s purged" % fmt_id(num))
             return 0
         raise Refused("%s not found" % a.id)
-    if len(rows) > 1:
+    if holders(db, num, rows) > 1:
         warn_duplicates(db)
     if a.json:
         items = [dict(public_row(r), events=events_of(db, r["uid"])) for r in rows]
@@ -1073,7 +1116,7 @@ def cmd_sql(ctx, a):
         cur = db.execute(a.query)
         rows = cur.fetchmany(1001)
     except (sqlite3.Error, sqlite3.Warning) as ex:
-        raise Refused("sql refused: %s" % ex) from None
+        raise Refused("sql refused: %s" % shown(ex, 200)) from None  # SQLite quotes the query
     names = [c[0] for c in cur.description or ()]
     more = len(rows) > 1000
     rows = rows[:1000]
@@ -1184,7 +1227,8 @@ def renumber_duplicates(w: Writer) -> list:
     done = []
     for bug_id in duplicate_ids(w.db):
         rows = w.db.execute("SELECT uid FROM bug WHERE id=? ORDER BY created_at, uid", (bug_id,)).fetchall()
-        for row in rows[1:]:
+        # A tombstone keeps its ID, so no live bug may stay on it; between two live bugs the earlier create stays.
+        for row in rows[0 if parse_id(bug_id) in purged_numbers(w.db) else 1:]:
             old, new = parse_id(bug_id), w.top + 1
             # Same event_uid on two machines fixing the same merge: the second copy dedupes.
             w.emit("renumber", row["uid"], {"from": old, "to": new}, by="doctor", event_uid=stable_uid("renumber/%s/%d/%d" % (row["uid"], old, new)))
@@ -1192,29 +1236,34 @@ def renumber_duplicates(w: Writer) -> list:
     return done
 
 
-def warn_attributes(ctx: Ctx):
-    if ctx.git_dir is None or ctx.linked or not ctx.journal.exists():
-        return
-    code, out = run_git(ctx.root, "check-attr", "merge", "--", ".workflow/bugs.jsonl")
-    if code or not out.endswith("union"):
-        print("warning: .gitattributes lacks `.workflow/bugs.jsonl text eol=lf merge=union`: merges can conflict", file=sys.stderr)
+def git_problems(ctx: Ctx) -> list:
+    """What the project's own git rules do to the journal. No repair: the rules are the project's to change."""
+    if ctx.git_dir is None:
+        return []
+    out = []
+    path = ".workflow/bugs.jsonl"
+    code, text = run_git(ctx.root, "check-attr", "merge", "--", path)
+    merge = text.rsplit(": ", 1)[-1] if not code else "unknown"
+    if merge != "union":
+        out.append("journal attributes: merge resolves to %s, not union: merges can conflict. Put `%s text eol=lf merge=union` "
+                   "in .gitattributes, after any rule that overrides it" % (shown(merge), path))
+    code, _ = run_git(ctx.root, "check-ignore", "-q", "--", path)
+    if code == 0:
+        out.append("journal ignored by git: %s must stay tracked, it is the truth. Remove the rule that ignores it" % path)
+    elif code != 1:
+        out.append("git check-ignore failed on %s" % path)
+    return out
 
 
 def cmd_doctor(ctx, a):
     if a.fix:
         ctx.require_writable()
+        Cleaner(ctx)  # refuses before the checks, with or without something to repair
     raw = read_journal(ctx)
     parsed = parse_journal(raw)
     if parsed.errors:
-        for e in parsed.errors:
-            print("corrupt journal: %s" % e, file=sys.stderr)
-        print("doctor: fix those lines by hand, then rerun", file=sys.stderr)
-        return 1
-    try:
-        replay_order(parsed.events)
-    except Corrupt as ex:
-        print(str(ex), file=sys.stderr)
-        return 1
+        raise Refused("\n".join(["corrupt journal: %s" % e for e in parsed.errors] + ["doctor: fix those lines by hand, then rerun"]))
+    replay_order(parsed.events)
     db = open_read(ctx)
     problems, _, inert = journal_problems(raw, db)
     if a.fix and problems:
@@ -1225,11 +1274,9 @@ def cmd_doctor(ctx, a):
                 print(line)
         db = open_read(ctx)
         problems, _, _ = journal_problems(read_journal(ctx), db)
-    warn_attributes(ctx)
+    problems += git_problems(ctx)
     if problems:
-        for p in problems:
-            print(p, file=sys.stderr)
-        return 1
+        raise Refused("\n".join(problems))
     print("doctor: clean")
     return 0
 
@@ -1264,13 +1311,13 @@ def md_table(text: str, problems: list) -> dict:
             header = [c.lower() for c in cells]
             missing = [c for c in ("id", "title", "severity", "status", "feature", "owner", "regression test") if c not in header]
             if missing:
-                problems.append("table: missing column %s" % ", ".join(missing))
+                problems.append("table: missing column %s" % ", ".join(missing))  # our own names, not the file's
                 return rows
             continue
         if all(re.fullmatch(r":?-+:?", c) for c in cells):
             continue
         if len(cells) != len(header):
-            problems.append("table: row has %d cells, header has %d: %s" % (len(cells), len(header), cells[0]))
+            problems.append("table: row has %d cells, header has %d: %s" % (len(cells), len(header), shown(cells[0])))
             continue
         row = dict(zip(header, cells))
         rows[row["id"]] = row
@@ -1294,7 +1341,7 @@ def md_records(text: str, problems: list) -> dict:
         m = re.match(r"(?:- )?([A-Za-z][A-Za-z' ]*?):\s*(.*)$", line)
         known = m and m.group(1).strip().lower() in MD_LABELS
         if line.startswith("- ") and not known:
-            problems.append("%s: unknown line '%s': nothing may be dropped" % (bug_id, (m.group(1) if m else line[:40])))
+            problems.append("%s: unknown line '%s': nothing may be dropped" % (bug_id, shown(m.group(1) if m else line)))
             continue
         if known:
             label = MD_LABELS[m.group(1).strip().lower()]
@@ -1306,7 +1353,7 @@ def md_records(text: str, problems: list) -> dict:
         elif label:
             current[label] = current[label] + "\n" + line.strip()
         else:
-            problems.append("%s: stray line '%s'" % (bug_id, line[:40]))
+            problems.append("%s: stray line '%s'" % (bug_id, shown(line)))
     return records
 
 
@@ -1320,7 +1367,7 @@ def md_history(bug_id: str, text: str, problems: list) -> list:
         end = marks[i + 1].start() if i + 1 < len(marks) else len(text)
         note = text[m.end():end].strip()
         if RX_DATED_WORD.search(note):
-            problems.append("%s History: unknown status in '%s'" % (bug_id, note[:60]))
+            problems.append("%s History: unknown status in '%s'" % (bug_id, shown(note, 60)))
         out.append((m.group(1), m.group(2), note))
     return out
 
@@ -1343,7 +1390,7 @@ def stage_record(bug_id: str, row: dict, rec: dict, cleaner: Cleaner, problems: 
     if severity in OLD_SEVERITY:
         fields["priority"] = OLD_SEVERITY[severity]
     else:
-        say("severity: unknown '%s'" % severity)
+        say("severity: unknown '%s'" % shown(severity))
     take("title", row["title"])
     take("description", rec.get("actual"))
     for field in ("repro", "expected", "actual", "evidence"):
@@ -1358,9 +1405,9 @@ def stage_record(bug_id: str, row: dict, rec: dict, cleaner: Cleaner, problems: 
     dup_cell = RX_DUPLICATE_CELL.fullmatch(row["status"])  # trailing text would be dropped: it stops as an unknown status
     status = "Duplicate" if dup_cell else row["status"]
     if status not in OLD_STATUS:
-        problems.append("%s status: unknown '%s'" % (bug_id, row["status"]))
+        problems.append("%s status: unknown '%s'" % (bug_id, shown(row["status"])))
     elif history and history[-1][1] != status:
-        problems.append("%s History: ends at %s, the table says %s" % (bug_id, history[-1][1], row["status"]))
+        problems.append("%s History: ends at %s, the table says %s" % (bug_id, history[-1][1], shown(row["status"])))
 
     notes = []
     for date, word, note in history:
@@ -1382,6 +1429,9 @@ def stage_record(bug_id: str, row: dict, rec: dict, cleaner: Cleaner, problems: 
             problems.append("%s %s: expected n/cap" % (bug_id, key))
             continue
         used, cap = int(m.group(1)), int(m.group(2))
+        if used > MAX_COUNT or cap - DEFAULT_CAPS[counter] > MAX_COUNT:  # one journal event each: replay would refuse it
+            problems.append("%s %s: more than %d in one event" % (bug_id, key, MAX_COUNT))
+            continue
         if used:
             extras.append(("round", {"counter": counter, "n": used}))
         if cap > DEFAULT_CAPS[counter]:
@@ -1448,9 +1498,9 @@ def cmd_import_md(ctx, a):
     records = md_records(text, problems)
     for bug_id in sorted(set(rows) | set(records)):
         if bug_id not in rows:
-            problems.append("%s: a record with no table row" % bug_id)
+            problems.append("%s: a record with no table row" % shown(bug_id))
         elif bug_id not in records:
-            problems.append("%s: a table row with no record" % bug_id)
+            problems.append("%s: a table row with no record" % shown(bug_id))
     staged = []
     for bug_id in sorted(set(rows) & set(records), key=parse_id):
         staged += stage_record(bug_id, rows[bug_id], records[bug_id], cleaner, problems, rows)
@@ -1488,7 +1538,7 @@ def cmd_import_md(ctx, a):
 # ---------------------------------------------------------------- main
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="bugs", description="Bug tracker: SQLite cache over the tracked journal .workflow/bugs.jsonl.")
+    p = Parser(prog="bugs", description="Bug tracker: SQLite cache over the tracked journal .workflow/bugs.jsonl.")
     p.add_argument("--root", help="project root (default: derived from this script's location)")
     sub = p.add_subparsers(dest="cmd", required=True)
     counter_choices = sorted(DEFAULT_CAPS)
@@ -1509,7 +1559,7 @@ def build_parser() -> argparse.ArgumentParser:
         s = write_cmd(name, text)
         s.add_argument("id")
         s.add_argument("counter", choices=counter_choices)
-        s.add_argument("n", help="+n")
+        s.add_argument("n", help="+n, with n from 1 to %d" % MAX_COUNT)
         s.add_argument("--note")
     s = write_cmd("stop-rule", "record the stop rule for a counter")
     s.add_argument("id")
@@ -1550,23 +1600,50 @@ HANDLERS = {"add": cmd_add, "update": cmd_update, "set-status": cmd_set_status, 
             "counters": cmd_counters, "stats": cmd_stats, "purge": cmd_purge, "rebuild": cmd_rebuild, "doctor": cmd_doctor, "import-md": cmd_import_md}
 
 
+def given_root(argv) -> Path:
+    """--root as typed, for the pattern lookup when the arguments themselves did not parse."""
+    words = sys.argv[1:] if argv is None else list(argv)
+    for i, word in enumerate(words):
+        if word == "--root" and i + 1 < len(words):
+            return Path(words[i + 1])
+        if word.startswith("--root="):
+            return Path(word[len("--root="):])
+    return Path(__file__).resolve().parents[4]
+
+
+def refusal_text(text: str, argv) -> str:
+    """The only way refusal text reaches stderr. Everything passes the same secret and PII redaction as a write, because
+    an ID, a status or a JSON key can be a pasted secret. Nothing to scan with: the values stay out."""
+    try:
+        mem = mem_module()
+        patterns = mem.load_secret_patterns(given_root(argv))
+    except Exception:  # it is already reporting an error, whatever broke the module or the file: it must not raise
+        text = RX_SHOWN.sub("<hidden: secret patterns unavailable>", text)
+    else:
+        text = mem.redact_pii(mem.redact(text.replace(VALUE_MARK, ""), patterns))
+    return "\n".join(line[:REFUSAL_LINE] for line in text.split("\n"))
+
+
 def main(argv=None) -> int:
     for s in (sys.stdout, sys.stderr):
         try:
             s.reconfigure(encoding="utf-8", errors="replace")
         except (AttributeError, ValueError):
             pass
-    a = build_parser().parse_args(argv)
     try:
+        a = build_parser().parse_args(argv)
         ctx = Ctx(a.root)
         if a.cmd != "import-md" and ctx.md.exists():
             raise Refused(".workflow/bugs.md exists: run import-md, delete the file, then retry")
         return HANDLERS[a.cmd](ctx, a)
+    except UsageError as ex:
+        print("bugs: %s" % refusal_text(str(ex), argv), file=sys.stderr)
+        return 2
     except (Refused, Corrupt) as ex:
-        print("bugs: %s" % ex, file=sys.stderr)
+        print("bugs: %s" % refusal_text(str(ex), argv), file=sys.stderr)
         return 1
     except (RuntimeError, re.error, ValueError, OSError, sqlite3.Error, subprocess.SubprocessError) as ex:
-        print("bugs: %s" % ex, file=sys.stderr)  # e.g. a broken or missing secret-patterns.txt
+        print("bugs: %s" % refusal_text(str(ex), argv), file=sys.stderr)  # e.g. a broken or missing secret-patterns.txt
         return 1
     finally:
         while _connections:

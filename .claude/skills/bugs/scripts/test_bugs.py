@@ -128,6 +128,12 @@ def create(uid, num, ts=T0, **over):
     return event("create", uid, data, ts)
 
 
+def fmt_future(days):
+    """The real clock plus some days: a purge clock for bugs just closed on the real clock."""
+    d = dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=days)
+    return d.strftime("%Y-%m-%dT%H:%M:%S.") + "%03dZ" % (d.microsecond // 1000)
+
+
 def git(cwd, *args, check=True):
     return subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@t", "-C", str(cwd)] + list(args),
                           check=check, capture_output=True, text=True, encoding="utf-8")
@@ -199,6 +205,25 @@ class Base(unittest.TestCase):
         if to == "Duplicate":
             args += ["--duplicate-of", kw.get("dup", "BUG-0001")]
         return self.ok(*args, now=now)
+
+    def isolated_copy(self, with_mem=True, with_patterns=False):
+        base = Path(self.tmp) / "framework"
+        scripts = base / ".claude" / "skills" / "bugs" / "scripts"
+        scripts.mkdir(parents=True)
+        shutil.copy(HERE / "bugs.py", scripts / "bugs.py")
+        if with_mem:
+            m = base / ".claude" / "skills" / "mem" / "scripts"
+            m.mkdir(parents=True)
+            shutil.copy(SKILL_DIR.parent / "mem" / "scripts" / "mem.py", m / "mem.py")
+        if with_patterns:
+            h = base / ".claude" / "hooks"
+            h.mkdir(parents=True)
+            shutil.copy(SKILL_DIR.parents[1] / "hooks" / "secret-patterns.txt", h / "secret-patterns.txt")
+        return scripts / "bugs.py"
+
+    def cli(self, script, *argv, stdin=b""):
+        return subprocess.run([sys.executable, "-I", str(script), "--root", str(self.root)] + list(argv),
+                              input=stdin, capture_output=True)
 
     def seed(self, *events):
         self.journal.parent.mkdir(parents=True, exist_ok=True)
@@ -1273,25 +1298,6 @@ class TestSecurity(Base):
         self.add(title="Short")
         self.assertIn("title", self.no("update", "BUG-0001", stdin={"title": "x" * 90 + " a@ex.io"}))
 
-    def isolated_copy(self, with_mem=True, with_patterns=False):
-        base = Path(self.tmp) / "framework"
-        scripts = base / ".claude" / "skills" / "bugs" / "scripts"
-        scripts.mkdir(parents=True)
-        shutil.copy(HERE / "bugs.py", scripts / "bugs.py")
-        if with_mem:
-            m = base / ".claude" / "skills" / "mem" / "scripts"
-            m.mkdir(parents=True)
-            shutil.copy(SKILL_DIR.parent / "mem" / "scripts" / "mem.py", m / "mem.py")
-        if with_patterns:
-            h = base / ".claude" / "hooks"
-            h.mkdir(parents=True)
-            shutil.copy(SKILL_DIR.parents[1] / "hooks" / "secret-patterns.txt", h / "secret-patterns.txt")
-        return scripts / "bugs.py"
-
-    def cli(self, script, *argv, stdin=b""):
-        return subprocess.run([sys.executable, "-I", str(script), "--root", str(self.root)] + list(argv),
-                              input=stdin, capture_output=True)
-
     def test_missing_pattern_file_refuses_the_write(self):
         script = self.isolated_copy(with_mem=True, with_patterns=False)
         r = self.cli(script, "add", stdin=json.dumps(fields()).encode("utf-8"))
@@ -2087,6 +2093,522 @@ class TestSkillContract(unittest.TestCase):
         imports = set(re.findall(r"(?m)^\s*(?:import|from)\s+([A-Za-z_][A-Za-z0-9_]*)", self.source))
         self.assertLessEqual(imports, {"__future__", "argparse", "datetime", "hashlib", "importlib", "json", "os", "re", "sqlite3",
                                        "subprocess", "sys", "unicodedata", "uuid", "pathlib"})
+
+
+def secret_shapes():
+    """Synthetic values, built at runtime so this file holds no secret-shaped literal. One per pattern family."""
+    return {"aws": FAKE_KEY, "github": "gh" + "p_" + "a" * 36, "pem": PEM_HEADER, "long": "s" + "k-" + "ant-" + "x" * 95,
+            "jwt": ".".join(("ey" + "J" + "a" * 12, "ey" + "J" + "b" * 12, "c" * 12)), "credential": "api" + "_key=" + "q" * 16}
+
+
+class TestRefusalsAreRedacted(Base):
+    """No value the caller passed reaches stderr unredacted: DEF-E1-01."""
+
+    def forms(self, value):
+        yield ["show", value], None
+        yield ["counters", value], None
+        yield ["update", value], {"note": "n"}
+        yield ["set-status", value, "Request", "--note", "n"], None
+        yield ["set-status", "BUG-0001", value, "--note", "n"], None
+        yield ["set-status", "BUG-0001", "Duplicate", "--note", "n", "--duplicate-of", value], None
+        yield ["set-status", "BUG-0001", "Duplicate"], {"note": "n", "duplicate_of": value}
+        yield ["round", "BUG-0001", "fix", value, "--note", "n"], None
+        yield ["extra-round", "BUG-0001", "fix", value, "--note", "n"], None
+        yield ["delete", value, "--by", "GD"], None
+        yield ["add"], dict(fields(), **{value: "x"})
+        yield ["update", "BUG-0001"], {value: "x"}
+        yield ["set-status", "BUG-0001", "Processing"], {"note": "n", value: "x"}
+        yield ["round", "BUG-0001", "fix", "+1"], {"note": "n", value: "x"}
+        yield ["list", "--status", value], None
+        yield ["list", "--priority", value], None
+        yield ["round", "BUG-0001", value, "+1", "--note", "n"], None
+        yield ["show", "BUG-0001", value], None
+        yield [value], None
+        yield ["sql", "SELECT %s" % value], None
+        yield ["sql", "SELECT 1 FROM [%s]" % value], None
+
+    def test_no_shape_reaches_stderr_or_stdout_in_any_form(self):
+        self.add()
+        before = self.journal.read_bytes()
+        for name, value in secret_shapes().items():
+            for argv, stdin in self.forms(value):
+                with self.subTest(shape=name, argv=argv[:2]):
+                    code, out, err = self.run_cli(*argv, stdin=stdin)
+                    self.assertNotEqual(code, 0, out)
+                    self.assertTrue(err.strip())
+                    self.assertNotIn(value, err)
+                    self.assertNotIn(value, out)
+        self.assertEqual(self.journal.read_bytes(), before)
+
+    def test_pii_shape_as_a_value_is_redacted_too(self):
+        self.add()
+        err = self.no("show", "qa.tester@example.com")
+        self.assertNotIn("qa.tester@example.com", err)
+        self.assertIn("REDACTED", err)
+
+    def test_a_refusal_still_names_what_is_wrong(self):
+        self.add()
+        self.assertIn("expected BUG-####", self.no("show", FAKE_KEY))
+        self.assertIn("REDACTED", self.no("show", FAKE_KEY))
+        self.assertIn("unknown status", self.no("set-status", "BUG-0001", FAKE_KEY, "--note", "n"))
+        self.assertIn("unknown or read-only field", self.no("update", "BUG-0001", stdin={FAKE_KEY: "x"}))
+        self.assertIn("garbage", self.no("show", "garbage"))
+
+    def test_a_long_value_is_not_echoed(self):
+        self.add()
+        for argv, stdin in (
+                (["show", "z" * 500], None), (["set-status", "BUG-0001", "z" * 500, "--note", "n"], None),
+                (["update", "BUG-0001"], {"z" * 500: "x"}), (["round", "BUG-0001", "fix", "z" * 500, "--note", "n"], None)):
+            with self.subTest(argv[:2]):
+                err = self.no(*argv, stdin=stdin)
+                self.assertNotIn("z" * 41, err)
+                self.assertLess(len(err), 400)
+
+    def test_argparse_usage_errors_keep_their_exit_code(self):
+        code, _, err = self.run_cli("list", "--status", FAKE_KEY)
+        self.assertEqual(code, 2)
+        self.assertIn("usage", err)
+        self.assertNotIn(FAKE_KEY, err)
+
+    def test_values_are_hidden_when_nothing_can_scan_them(self):
+        for kw in (dict(with_mem=True, with_patterns=False), dict(with_mem=False, with_patterns=True)):
+            with self.subTest(**kw):
+                shutil.rmtree(Path(self.tmp) / "framework", ignore_errors=True)
+                script = self.isolated_copy(**kw)
+                for argv in (["show", FAKE_KEY], ["list", "--status", FAKE_KEY], ["sql", "SELECT %s" % FAKE_KEY]):
+                    r = self.cli(script, *argv)
+                    self.assertNotEqual(r.returncode, 0)
+                    self.assertTrue(r.stderr.strip())
+                    self.assertNotIn(FAKE_KEY.encode(), r.stderr + r.stdout)
+
+    def test_a_table_cell_or_label_in_import_md_is_redacted(self):
+        self.root.joinpath(".workflow").mkdir()
+        md = self.root / ".workflow" / "bugs.md"
+        long_value = secret_shapes()["long"]
+        for text in (md_file(md_record(status=FAKE_KEY)), md_file(md_record(severity=FAKE_KEY)),
+                     md_file(md_record(extra="- %s: x\n" % long_value)),
+                     md_file(md_record(history="2026-10-29 Open — 2026-10-29 Bogus %s" % long_value))):
+            md.write_text(text, encoding="utf-8")
+            err = self.no("import-md")
+            self.assertIn("import stopped", err)
+            self.assertNotIn(FAKE_KEY, err)
+            self.assertNotIn(long_value[:20], err)
+        self.assertFalse(self.journal.exists())
+
+    def test_a_cut_journal_value_cannot_slip_past_the_scan(self):
+        long_value = secret_shapes()["long"]
+        self.seed(create("a", 1), event("update", "a", {long_value: "x"}, stamp(1)))
+        for argv in (["list"], ["doctor"]):
+            err = self.no(*argv)
+            self.assertIn("corrupt journal", err)
+            self.assertNotIn(long_value[:20], err)
+
+
+class TestEveryWriteNeedsThePatterns(Base):
+    """DEF-E1-02: delete, purge and doctor --fix refuse like every other write."""
+
+    def broken_states(self):
+        def missing(script):
+            (script.parents[3] / "hooks" / "secret-patterns.txt").unlink()
+
+        def comments_only(script):
+            (script.parents[3] / "hooks" / "secret-patterns.txt").write_text("# only comments\n", encoding="utf-8")
+
+        def bad_regex(script):
+            (script.parents[3] / "hooks" / "secret-patterns.txt").write_text("name\t([unclosed\n", encoding="utf-8")
+
+        def no_tab(script):
+            (script.parents[3] / "hooks" / "secret-patterns.txt").write_text("no tab here\n", encoding="utf-8")
+
+        def mem_missing(script):
+            (script.parents[2] / "mem" / "scripts" / "mem.py").unlink()
+
+        def mem_raises(script):
+            (script.parents[2] / "mem" / "scripts" / "mem.py").write_text("raise RuntimeError('broken')\n", encoding="utf-8")
+
+        return (missing, comments_only, bad_regex, no_tab, mem_missing, mem_raises)
+
+    def assert_refused(self, *argv, env=None):
+        for state in self.broken_states():
+            with self.subTest(state=state.__name__, argv=argv):
+                shutil.rmtree(Path(self.tmp) / "framework", ignore_errors=True)
+                script = self.isolated_copy(with_mem=True, with_patterns=True)
+                state(script)
+                before = self.journal.read_bytes()
+                e = dict(os.environ)
+                e.update(env or {})
+                r = subprocess.run([sys.executable, "-I", str(script), "--root", str(self.root)] + list(argv),
+                                   input=b"", capture_output=True, env=e)
+                self.assertNotEqual(r.returncode, 0, r.stdout)
+                self.assertTrue(r.stderr.strip())
+                self.assertEqual(self.journal.read_bytes(), before)
+
+    def test_delete(self):
+        self.add()
+        self.assert_refused("delete", "BUG-0001", "--by", "GD")
+
+    def test_purge_with_a_bug_due(self):
+        self.seed(create("old", 1, stamp(-5)), event("status", "old", {"to": "Complete"}, T0))
+        self.assert_refused("purge", env={"BUGS_NOW": stamp(91)})
+
+    def test_doctor_fix_with_a_duplicate_to_renumber(self):
+        self.seed(create("a", 2), create("b", 2, stamp(1)))
+        self.assert_refused("doctor", "--fix")
+
+    def test_doctor_without_fix_and_a_dry_run_are_reads(self):
+        self.add()
+        script = self.isolated_copy(with_mem=True, with_patterns=False)
+        self.assertEqual(self.cli(script, "doctor").returncode, 0)
+        self.assertEqual(self.cli(script, "purge", "--dry-run").returncode, 0)
+
+
+class TestTombstoneHoldsItsId(GitBase):
+    """DEF-E1-03: a purged ID coming back through a merge is a duplicate, not a silent reuse."""
+
+    def test_merge_returning_a_purged_id_fails_closed_until_doctor_fix(self):
+        self.add(title="Bug A")
+        self.status("BUG-0001", "As designed")
+        self.commit("a")
+        git(self.root, "switch", "-q", "-c", "b")
+        self.assertEqual(self.add(title="B second"), "BUG-0002")
+        self.commit("b")
+        git(self.root, "switch", "-q", "main")
+        self.assertEqual(self.add(title="main second"), "BUG-0002")
+        self.status("BUG-0002", "As designed")
+        self.commit("main")
+        self.assertIn("purged", self.ok("purge", now=fmt_future(100)))
+        self.commit("purge")
+        r = git(self.root, "merge", "--no-edit", "b", check=False)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+
+        self.assertIn("duplicate", self.no("counters", "BUG-0002", "--json"))
+        self.assertIn("duplicate", self.no("update", "BUG-0002", stdin={"note": "n"}))
+        self.assertIn("duplicate", self.no("set-status", "BUG-0002", "Processing", "--note", "n"))
+        self.assertIn("duplicate", self.no("doctor"))
+        self.assertIn("doctor --fix", self.run_cli("show", "BUG-0002")[2])
+
+        self.assertIn("renumbered BUG-0002", self.ok("doctor", "--fix"))
+        self.ok("doctor")
+        self.assertIn("purged", self.ok("show", "BUG-0002"))
+        self.assertFalse(self.counters("BUG-0002")["found"])
+        rows = {r["title"]: r["id"] for r in json.loads(self.ok("list", "--json"))}
+        self.assertEqual(rows["B second"], "BUG-0003")
+        self.assertEqual(self.add(title="After"), "BUG-0004")
+        lines = self.lines()
+        self.db_path.unlink()
+        self.assertEqual({r["title"]: r["id"] for r in json.loads(self.ok("list", "--json"))}["B second"], "BUG-0003")
+        self.assertEqual(self.lines(), lines)
+
+
+class TestTombstoneReplay(Base):
+    def test_a_create_on_a_tombstoned_id_from_another_uid_is_a_duplicate(self):
+        self.seed(create("live", 2, stamp(1)), event("tombstone", "gone", {"id": 2}, stamp(2)))
+        self.assertIn("duplicate", self.no("counters", "BUG-0002", "--json"))
+        self.assertIn("duplicate", self.no("round", "BUG-0002", "fix", "+1", "--note", "n"))
+        self.assertIn("duplicate", self.no("doctor"))
+        self.ok("doctor", "--fix")
+        self.assertEqual(self.counters("BUG-0003")["status"], "Request")
+        self.assertIn("purged", self.ok("show", "BUG-0002"))
+
+    def test_the_same_uid_resurrected_stays_gone_with_no_duplicate(self):
+        self.seed(create("gone", 2, stamp(1)), event("tombstone", "gone", {"id": 2}, stamp(2)))
+        self.assertFalse(self.counters("BUG-0002")["found"])
+        self.assertIn("purged", self.ok("show", "BUG-0002"))
+        self.assertNotIn("duplicate", self.no("doctor"))
+        self.assertEqual(json.loads(self.ok("list", "--json")), [])
+
+    def test_a_renumbered_bug_that_left_the_id_is_not_a_duplicate(self):
+        self.seed(create("live", 2, stamp(1)), event("renumber", "live", {"from": 2, "to": 3}, stamp(2)),
+                  event("tombstone", "gone", {"id": 2}, stamp(3)))
+        self.assertEqual(self.counters("BUG-0003")["found"], True)
+        self.assertFalse(self.counters("BUG-0002")["found"])
+        self.ok("doctor")
+
+    def test_replay_is_the_same_in_any_line_order(self):
+        evs = [create("live", 2, stamp(1)), event("tombstone", "gone", {"id": 2}, stamp(2))]
+        self.seed(*reversed(evs))
+        self.assertIn("duplicate", self.no("counters", "BUG-0002", "--json"))
+
+    def test_delete_then_add_is_no_duplicate(self):
+        self.add()
+        self.ok("delete", "BUG-0001", "--by", "GD")
+        self.assertEqual(self.add(), "BUG-0002")
+        self.ok("doctor")
+
+
+class TestRoundCount(Base):
+    """DEF-E1-04, DEF-E1-06: +n only, 1 to 100 per call, an integer total."""
+
+    TOO_BIG = ("+101", "+1000", "+99999999999999", "+9223372036854775807", "+9223372036854775808", "+" + "9" * 5000)
+    NO_PLUS = ("1", "100", "0", "007")
+
+    def test_limits_on_both_commands(self):
+        self.add()
+        before = self.counters("BUG-0001")
+        for cmd in ("round", "extra-round"):
+            for bad in self.TOO_BIG + self.NO_PLUS + ("+0", "+00", "abc", "+", "+1.5", "+1e3"):
+                with self.subTest(cmd=cmd, n=bad[:24]):
+                    code, _, err = self.run_cli(cmd, "BUG-0001", "fix", bad, "--note", "n")
+                    self.assertNotEqual(code, 0)
+                    self.assertIn("bad count", err)
+                    self.assertNotIn("Traceback", err)
+        self.assertEqual(self.counters("BUG-0001"), before)
+        self.ok("round", "BUG-0001", "fix", "+100", "--note", "n")
+        self.ok("extra-round", "BUG-0001", "fix", "+100", "--note", "n")
+        c = self.counters("BUG-0001")
+        self.assertEqual(c["fix"], {"used": 100, "cap": 102})
+        self.assertIsInstance(c["fix"]["used"], int)
+
+    def test_out_of_range_journal_values_refuse_with_no_float_or_traceback(self):
+        for bad in (101, 2 ** 63, 2 ** 64, 1000.0, 1e30):
+            for etype in ("round", "extra_round"):
+                with self.subTest(etype=etype, n=bad):
+                    shutil.rmtree(self.root / ".workflow", ignore_errors=True)
+                    self.seed(create("a", 1), event(etype, "a", {"counter": "fix", "n": bad}, stamp(1)))
+                    for argv in (["counters", "BUG-0001", "--json"], ["list"], ["doctor"]):
+                        code, out, err = self.run_cli(*argv)
+                        self.assertNotEqual(code, 0, out)
+                        self.assertIn("corrupt journal", err)
+                        self.assertNotIn("Traceback", err)
+
+    def test_import_refuses_a_count_replay_would_refuse(self):
+        self.root.joinpath(".workflow").mkdir()
+        md = self.root / ".workflow" / "bugs.md"
+        for extra in ("- Fix rounds: 101/2\n", "- Fix rounds: 1/900\n- Extra round: fix +898\n"):
+            md.write_text(md_file(md_record(extra=extra)), encoding="utf-8")
+            self.assertIn("import stopped", self.no("import-md"))
+            self.assertFalse(self.journal.exists())
+
+
+class TestGdAttribution(Base):
+    """DEF-E1-05: exactly GD on every path; whitespace variants are refused, as delete does."""
+
+    VARIANTS = ("GD ", " GD", "\tGD", "GD\t", " GD ", "GD ")
+
+    def test_set_status_refuses_a_padded_gd(self):
+        self.add()
+        before = self.journal.read_bytes()
+        for by in self.VARIANTS:
+            with self.subTest(by=by):
+                self.assertIn("exactly GD", self.no("set-status", "BUG-0001", "Backlog", "--note", "n", "--by", by))
+                self.assertEqual(self.show("BUG-0001")["status"], "Request")
+        self.assertEqual(self.journal.read_bytes(), before)
+        self.ok("set-status", "BUG-0001", "Backlog", "--note", "n", "--by", "GD")
+
+    def test_every_other_path_refuses_it_too(self):
+        self.add()
+        before = self.journal.read_bytes()
+        calls = ((["add"], fields()), (["update", "BUG-0001"], {"note": "n"}), (["round", "BUG-0001", "fix", "+1", "--note", "n"], None),
+                 (["extra-round", "BUG-0001", "fix", "+1", "--note", "n"], None), (["stop-rule", "BUG-0001", "fix", "--extra-dispatch", "used"], None),
+                 (["set-status", "BUG-0001", "Processing", "--note", "n"], None), (["delete", "BUG-0001"], None))
+        for argv, stdin in calls:
+            for by in self.VARIANTS:
+                with self.subTest(argv=argv[0], by=by):
+                    self.no(*argv, "--by", by, stdin=stdin)
+        self.assertEqual(self.journal.read_bytes(), before)
+
+    def test_other_writers_keep_their_trim(self):
+        self.add()
+        self.ok("update", "BUG-0001", "--by", " QA executor ", stdin={"note": "n"})
+        self.assertEqual(self.show("BUG-0001")["events"][-1]["by"], "QA executor")
+
+
+class TestEmptyJournal(Base):
+    """E3-01: bootstrap creates an empty tracked journal; every command takes it."""
+
+    def setUp(self):
+        super().setUp()
+        (self.root / ".workflow").mkdir()
+        self.journal.write_bytes(b"")
+
+    def test_reads_are_empty(self):
+        self.assertEqual(self.ok("list"), "no bugs\n")
+        self.assertEqual(json.loads(self.ok("list", "--json")), [])
+        self.assertEqual(self.ok("stats"), "Bugs: 0 open (0 High+)\n")
+        self.assertEqual(self.ok("search", "coins"), "no matches\n")
+        self.assertEqual(self.ok("sql", "SELECT COUNT(*) AS n FROM bug"), "n\n0\n")
+        self.assertFalse(self.counters("BUG-0001")["found"])
+        self.assertIn("not found", self.no("show", "BUG-0001"))
+        self.assertEqual(self.journal.read_bytes(), b"")
+
+    def test_first_write_works_and_starts_at_one(self):
+        self.assertEqual(self.add(), "BUG-0001")
+        self.assertEqual(len(self.lines()), 1)
+        self.assertTrue(self.journal.read_bytes().endswith(b"\n"))
+        self.assertFalse(self.journal.read_bytes().startswith(b"\n"))
+
+    def test_purge_and_doctor_are_clean_and_write_nothing(self):
+        self.assertEqual(self.ok("purge"), "purged 0\n")
+        self.assertEqual(self.ok("purge", "--dry-run"), "would purge 0\n")
+        self.assertEqual(self.ok("doctor"), "doctor: clean\n")
+        self.assertEqual(self.ok("doctor", "--fix"), "doctor: clean\n")
+        self.assertEqual(self.ok("rebuild"), "rebuilt: 0 bugs, 0 events\n")
+        self.assertEqual(self.journal.read_bytes(), b"")
+
+    def test_import_md_works_with_it(self):
+        (self.root / ".workflow" / "bugs.md").write_text(REAL_BUGS_MD, encoding="utf-8")
+        self.assertIn("imported 5 bugs", self.ok("import-md"))
+        (self.root / ".workflow" / "bugs.md").unlink()
+        self.assertEqual(len(json.loads(self.ok("list", "--json"))), 5)
+
+    def test_bugs_md_refuse_rule_is_unchanged(self):
+        (self.root / ".workflow" / "bugs.md").write_text("# Bugs\n", encoding="utf-8")
+        for argv in (["list"], ["stats"], ["doctor"], ["purge"], ["add"]):
+            with self.subTest(argv):
+                self.assertIn("bugs.md", self.no(*argv, stdin=fields() if argv[0] == "add" else None))
+        self.assertEqual(self.journal.read_bytes(), b"")
+
+
+class TestDoctorGitChecks(GitBase):
+    """E3-03, E3-04: a project rule that defeats the journal's attributes or ignores it is a problem, not a clean bill."""
+
+    def assert_problem(self, needle, *argv):
+        code, out, err = self.run_cli("doctor", *argv)
+        self.assertEqual(code, 1, out + err)
+        self.assertNotIn("doctor: clean", out)
+        self.assertIn(needle, err)
+
+    def test_clean_when_merge_is_union_and_tracked(self):
+        self.add()
+        self.commit()
+        self.assertEqual(self.ok("doctor"), "doctor: clean\n")
+
+    def test_no_line_at_all_is_a_problem(self):
+        self.add()
+        (self.root / ".gitattributes").write_text("", encoding="utf-8")
+        self.assert_problem("merge=union")
+        self.assert_problem("merge=union", "--fix")
+
+    def test_a_later_rule_defeating_union_is_a_problem(self):
+        self.add()
+        with open(self.root / ".gitattributes", "a", encoding="utf-8") as f:
+            f.write(".workflow/** -text merge=binary\n")
+        self.assert_problem("binary")
+        self.assert_problem("binary", "--fix")
+
+    def test_an_ignored_journal_is_a_problem(self):
+        with open(self.root / ".gitignore", "a", encoding="utf-8") as f:
+            f.write(".workflow/\n")
+        self.add()
+        self.assert_problem("ignored")
+        self.assert_problem("ignored", "--fix")
+
+    def test_a_tracked_journal_under_an_ignore_rule_is_not(self):
+        self.add()
+        self.commit()
+        with open(self.root / ".gitignore", "a", encoding="utf-8") as f:
+            f.write(".workflow/\n")
+        self.assertEqual(self.ok("doctor"), "doctor: clean\n")
+
+    def test_no_journal_yet_is_checked_too(self):
+        with open(self.root / ".gitignore", "a", encoding="utf-8") as f:
+            f.write(".workflow/\n")
+        self.assert_problem("ignored")
+
+    def test_a_linked_worktree_reads_the_main_checkout(self):
+        self.add()
+        self.commit()
+        wt = Path(self.tmp) / "wt"
+        git(self.root, "worktree", "add", "-q", str(wt), "-b", "wt-branch")
+        self.assertEqual(self.ok("doctor", root=wt), "doctor: clean\n")
+
+
+class TestDocContracts(unittest.TestCase):
+    """Text the QA findings turned on. verify.ps1 cannot express these, and a real session only reads the words."""
+
+    @classmethod
+    def setUpClass(cls):
+        layer = SKILL_DIR.parents[1]
+        read = lambda rel: (layer / rel).read_text(encoding="utf-8").replace("\r\n", "\n")
+        cls.skill = read("skills/bugs/SKILL.md")
+        cls.schema = read("skills/bugs/references/schema.md")
+        cls.fix = read("skills/fix/SKILL.md")
+        cls.release = read("skills/release/SKILL.md")
+        cls.qa = read("skills/qa/SKILL.md")
+        cls.feature = read("skills/feature/SKILL.md")
+        cls.new_project = read("skills/new-project/SKILL.md")
+        cls.lifecycle = read("skills/qa-standards/references/bug-lifecycle.md")
+        cls.routing = read("rules/routing.md")
+
+    def line(self, text, needle):
+        hits = [x for x in text.splitlines() if needle in x]
+        self.assertTrue(hits, needle)
+        return hits[0]
+
+    def test_f1_stdin_rule_names_the_form_that_works_on_both_shells(self):
+        form = "$OutputEncoding = [Text.UTF8Encoding]::new($false)"
+        self.assertIn(form, self.line(self.skill, "**Stdin:**"))
+        self.assertIn(form, self.schema)
+        self.assertRegex(self.line(self.schema, form), r"(?i)cannot (?:detect|tell)")
+
+    def test_def_e1_07_a_match_moves_only_a_terminal_bug_to_reopen(self):
+        check = self.line(self.skill, "**Check first:**")
+        self.assertNotIn("settled bug moves", check)
+        self.assertIn("terminal", check)
+        for text in (check, self.line(self.fix, "**Match by status:**"), self.line(self.lifecycle, "Check existing bugs first")):
+            self.assertIn("Backlog", text)
+            self.assertIn("update", text)
+            self.assertIn("Reopen", text)
+
+    def test_def_e1_08_e3_08_the_note_is_written_as_required(self):
+        row = self.line(self.skill, "`set-status <id>")
+        self.assertIn('`set-status <id> "<status>" --note N', row)
+        self.assertNotIn("[--note N]", self.skill)
+
+    def test_counts_are_documented(self):
+        for text in (self.skill, self.schema):
+            self.assertRegex(text, r"1 to 100")
+
+    def test_e3_01_bootstrap_creates_the_empty_journal(self):
+        state = self.line(self.new_project, "**Workflow state:**")
+        self.assertIn("empty `.workflow/bugs.jsonl`", state)
+        self.assertNotIn("first `bugs.py add` starts", self.new_project)
+        self.assertIn("no `.workflow/bugs.jsonl` → create it empty", self.feature)
+        self.assertIn("not a pass", self.line(self.release, "**Bug queries:**"))
+
+    def test_e3_02_a_dry_run_brief_has_no_verify_line(self):
+        self.assertRegex(self.line(self.release, "**Dry-run brief:**"), r"omits? the `Verify:` line")
+
+    def test_e3_05_release_and_standalone_qa_report_the_uncommitted_journal(self):
+        self.assertIn("journal uncommitted", self.release)
+        self.assertIn("journal uncommitted", self.qa)
+        self.assertIn(".workflow/bugs.jsonl", self.line(self.release, "journal uncommitted"))
+        self.assertIn(".workflow/bugs.jsonl", self.line(self.qa, "journal uncommitted"))
+
+    def test_e3_06_fix_names_the_safe_evidence_form(self):
+        line = self.line(self.fix, "**Existing bug:**")
+        self.assertIn("a `note` alone", line)
+        self.assertIn("`evidence` field is replaced", line)
+
+    def test_e3_07_a_no_feature_mirror_has_a_home_and_row_0b_reads_it(self):
+        self.assertIn(".workflow/DEBT.md", self.line(self.skill, "**Mirror:**"))
+        self.assertIn(".workflow/DEBT.md", self.line(self.release, "| 0b |"))
+        self.assertIn(".workflow/DEBT.md", self.line(self.lifecycle, "**Won't fix**"))
+        self.assertIn(".workflow/DEBT.md", self.line(self.fix, "**No feature:** `AskUserQuestion`"))
+        self.assertIn(".workflow/DEBT.md", self.line(self.fix, "**Cannot reproduce:**"))
+
+    def test_e3_09_qa_plan_command_has_its_filters(self):
+        self.assertIn("`bugs.py list --feature <slug> --open`", self.line(self.qa, "**Brief:** `Feature:"))
+
+    def test_e3_10_the_interpreter_line_is_named(self):
+        self.assertIn("`Memory:`", self.line(self.skill, "**Python:**"))
+
+    def test_e3_11_routing_names_the_bug_record_beside_the_state_file(self):
+        line = self.line(self.routing, "The state file")
+        self.assertIn("bug record", line)
+        self.assertIn("used = file or database + hook", line)
+
+    def test_e3_12_the_device_exception_has_a_marker(self):
+        marker = "awaits device verification"
+        self.assertIn(marker, self.line(self.release, "| 1 | Open bugs |"))
+        self.assertIn(marker, self.line(self.fix, "**Its marker:**"))
+
+    def test_e3_13_a_duplicate_hit_follows_its_target(self):
+        for text in (self.line(self.skill, "**Check first:**"), self.line(self.fix, "**Match by status:**"), self.line(self.lifecycle, "Check existing bugs first")):
+            self.assertIn("duplicate_of", text)
+
+    def test_the_purge_clock_is_documented(self):
+        self.assertIn("last terminal status reached", self.schema)
 
 
 if __name__ == "__main__":

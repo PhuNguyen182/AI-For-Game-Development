@@ -242,6 +242,20 @@ function Get-MainCheckout([string]$Root) {
     return $Root
 }
 
+# The checkout whose .workflow holds the bug journal, known before any Python starts. A linked worktree anywhere reads its
+# main checkout's (bugs.py does the same), so a branch with no journal cannot hide a past-cap bug. Git names it; with no git
+# or no repo, the path rule above.
+function Get-BugsRoot([string]$Root) {
+    $lines = @()
+    try { $lines = @(git -C $Root rev-parse --git-dir --git-common-dir 2>$null) } catch {}
+    if ($lines.Count -ne 2) { return Get-MainCheckout $Root }
+    $gitDir = [IO.Path]::GetFullPath([IO.Path]::Combine($Root, $lines[0]))
+    $common = [IO.Path]::GetFullPath([IO.Path]::Combine($Root, $lines[1]))
+    if ($gitDir -eq $common) { return $Root }
+    if ((Split-Path $common -Leaf) -eq '.git') { return (Split-Path $common) }
+    return Get-MainCheckout $Root
+}
+
 # The folder above $Path that holds a .git entry (directory or file), or $null.
 function Get-GitCheckout([string]$Path) {
     $dir = $Path

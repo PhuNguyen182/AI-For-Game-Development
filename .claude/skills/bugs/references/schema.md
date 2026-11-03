@@ -28,8 +28,8 @@ Synthesized from `../scripts/bugs.py`; commands in `../SKILL.md`.
 | Any open | `As designed`, `Duplicate` | QA or main session (`duplicate_of` required for `Duplicate`) |
 
 - **Enforced on write only:** every other move is refused. Replay never enforces transitions: the history already happened.
-- **GD attribution:** a GD-only move needs exactly `--by GD`; a note is required on every `set-status`.
-- **closed_at:** set when a bug reaches terminal, cleared by any move out of it. Purge counts from it.
+- **GD attribution:** a GD-only move needs exactly `--by GD`; a padded form is refused on every path; a note is required on every `set-status`.
+- **closed_at:** set when a bug reaches terminal, cleared by any move out of it. The purge clock counts from it: from the last terminal status reached.
 
 ## Content limits (over the limit: refused with field and length, never truncated)
 | Field | Limit | Rule |
@@ -46,20 +46,25 @@ Synthesized from `../scripts/bugs.py`; commands in `../SKILL.md`.
 | `--by` | 100 | One line |
 
 - **Checked on every text value:** control characters, Vietnamese diacritics (any Unicode form), secret shapes via `mem.py`, then PII redaction. The limit applies to the stored text.
-- **Fail closed:** a missing `mem.py` or pattern file refuses the write; reads do not need them.
+- **Fail closed:** a missing or broken `mem.py` or pattern file refuses every write, `delete`, `purge` and `doctor --fix` included; reads do not need them.
+- **Refusal text:** one exit in `main`. It passes the same secret and PII redaction, so a pasted secret as an ID, a status or a JSON key never reaches stderr. A value over 40 chars is not echoed; with nothing to scan, values are hidden.
+- **Stdin encoding:** the CLI reads UTF-8. Windows PowerShell 5.1's default pipe turns each non-ASCII character into `?` first, and the CLI cannot detect the loss; run `$OutputEncoding = [Text.UTF8Encoding]::new($false)` before the pipe.
 
 ## Journal (`.workflow/bugs.jsonl`, tracked; LF, UTF-8, no BOM)
 - **Line:** `{event_uid, bug_uid, ts, type, data, by?, note?}`; `ts` is UTC `YYYY-MM-DDTHH:MM:SS.mmmZ`, always `max(now, last + 1 ms)`.
 - **Types:** `create` (`id`, `status`, fields) · `update` (changed fields) · `status` (`from`, `to`, `duplicate_of?`) · `round` and `extra_round` (`counter`, `n`) · `stop_rule` (`counter`, `extra_dispatch`) · `renumber` (`from`, `to`) · `tombstone` (`id`, no text).
 - **Replay:** sort by `(ts, event_uid)`, one copy per `event_uid`, drop tombstoned uids, creates first. A malformed line refuses every command with its line number.
 - **Torn tail:** a final line with no newline is kept when it is a whole event; otherwise skipped and removed by the next write.
-- **Attributes:** `.workflow/bugs.jsonl text eol=lf merge=union`; `doctor` warns when absent.
+- **Counts:** `round` and `extra-round` take `+n`, n from 1 to 100 per call; replay refuses any other `n` as a malformed line.
+- **Attributes:** `.workflow/bugs.jsonl text eol=lf merge=union`. `doctor` reports a problem, exit 1, when git resolves `merge` to anything but `union` or ignores the journal; `framework-sync.ps1` warns on a target for the same two.
 
 ## Consistency
 - **Write path:** `BEGIN IMMEDIATE`, hash check, rebuild if different, validate, apply, append, commit. A crash after the append is healed by the next hash mismatch.
 - **Hash check:** every command compares the journal's SHA-256 with the DB, which covers `git switch`, pull and merge.
 - **No journal:** reads return empty on an in-memory store; the DB appears with the first write.
+- **Empty journal:** what `/new-project` and `/feature` create, so a missing one means a broken setup. Reads return empty, `doctor` is clean, the first write takes `BUG-0001`, `import-md` still runs.
 - **Duplicate ID:** two `bug_uid`s holding one ID after a merge. `counters` and writes for that ID fail closed until `doctor --fix` appends a `renumber` for the later create. Later lines attach by `bug_uid`.
+- **Purged ID:** a tombstone holds its ID. A create on it from another `bug_uid` is a duplicate; `doctor --fix` renumbers that bug. The same `bug_uid` brought back stays gone.
 - **High water:** max over creates, tombstones and renumbers. `add` takes the next one; a missing ID below it reads `purged`.
 - **Worktrees:** root comes from comparing `--git-dir` with `--git-common-dir`. A linked worktree reads the main checkout's data and every write is refused.
 
@@ -75,12 +80,13 @@ Synthesized from `../scripts/bugs.py`; commands in `../SKILL.md`.
 - **Record:** `- Stop rule: <counter> root-caused <date> - extra dispatch: unused|used` and `extra round: <counter> +<n>`, the lines `round-cap.ps1` matches.
 - **Exit:** unknown or purged ID `found:false`, exit 0. Duplicate ID, corrupt journal or a remaining `bugs.md`: non-zero with stderr, and the hook fails closed.
 - **Ledger:** Python never reads the hook's local ledger; used there is added by the hook.
+- **Hook spelling:** `round-cap.ps1` reads any case and padding (`bug-0027`, `BUG-27`, `BUG-00027`) as `BUG-0027`; the CLI takes `BUG-####` only.
 
 ## Tables (`.workflow/bugs.db`, gitignored)
 - **`bug`:** `id, uid, title, description, priority, status, feature, owner, regression_test, repro, expected, actual, evidence, root_cause, duplicate_of, fix_used, fix_cap, review_used, review_cap, created_at, updated_at, closed_at`. `CHECK` on status and priority; indexes on id, status, priority, feature, closed_at.
 - **`bug_event`:** `event_uid, bug_uid, ts, type, by_who, note, data`.
 - **`bug_fts`:** FTS5 `porter unicode61 remove_diacritics 2` over the text fields and notes.
-- **`meta`:** `journal_hash`, `high_water`, `last_ts`.
+- **`meta`:** `journal_hash`, `high_water`, `last_ts`, `purged_ids`.
 - **`sql`:** `mode=ro` connection, `query_only`, an authorizer, and a leading-keyword gate; one statement, 1000 rows, 10 seconds. A BLOB prints as its literal, `x'00ff'`.
 
 ## Migration (`import-md`)

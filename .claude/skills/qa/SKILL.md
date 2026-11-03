@@ -9,7 +9,7 @@ argument-hint: "<feature slug, or what to test>"
 ## 1. Plan — `qa-lead` (Plan)
 - **Timing:** may run while `/review` is in progress; execution waits for review approval when review was chosen.
 - **Review declined:** execute; each executor brief states that no correctness gate stands behind the code.
-- **Brief:** `Feature: .workflow/features/<slug>.md`, acceptance criteria, this feature's open bugs (`bugs.py list`), platforms, profile default QA (`routing.md`), multiplayer on/off.
+- **Brief:** `Feature: .workflow/features/<slug>.md`, acceptance criteria, open bugs (`bugs.py list --feature <slug> --open`), platforms, profile default QA (`routing.md`), multiplayer on/off.
 - **Missing build:** device or perf coverage needs a build that does not exist → `AskUserQuestion` now.
   - **Build yes:** dispatch `build-release-engineer` with that build request (dev config, no version bump — never `/release`).
   - **Build no:** that coverage is a gap from the start.
@@ -47,4 +47,5 @@ argument-hint: "<feature slug, or what to test>"
 - **Per acceptance criterion:** evidence | gap.
 - **Bugs:** bugs by status.
 - **Not run:** what did not run, and why.
+- **No feature:** a run that moved a status → add "journal uncommitted": `.workflow/bugs.jsonl` waits for the GD's commit order.
 - **Code coverage:** changed lines executed, gaps by owner, or why it did not run; never evidence for a criterion.
