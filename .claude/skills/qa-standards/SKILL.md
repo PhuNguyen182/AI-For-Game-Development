@@ -14,10 +14,12 @@ user-invocable: false
 | Works on platform | A real build ran. Editor results are labelled "indicative" every time |
 | Repeatable | Seed/clock injected, or repeated runs with spread reported |
 | No regression | Same metric, same method, before and after. No baseline → this run is the baseline; say so |
+| Code reached | A Code Coverage run on this revision; state mode, filters, changed lines executed. Editor only |
 
 - **Report coverage:** every report has `Not covered:` — never "none" unless exhaustive.
 - **Coverage owners:** name the owner agent of each gap.
 - **Never:** weaken an assertion to go green, report the best run, call an Editor run a device run, infer an unobserved result, reuse an old result, count a skipped check as passed.
+- **Coverage figure:** proves only that lines ran; never cite it for a behaviour claim, or set a target the GD did not state.
 - **Missing input:** `Blocked` on a missing budget, clause or target is correct. A guessed input is not.
 - **Other gates:** consume other gates' verdicts; never re-run their checks.
 

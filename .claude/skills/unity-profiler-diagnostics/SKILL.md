@@ -52,6 +52,7 @@ user-invocable: false
 - **GPU Usage data:** expect it from a plain Editor session or every platform/graphics API; confirm it populates first.
 - **Undisposed recorder:** leave a `ProfilerRecorder` undisposed — it keeps collecting.
 - **`Profiler.BeginSample`:** build new instrumentation on it — it passes its label string every call.
+- **Coverage on:** profile with Code Coverage enabled — it adds Editor overhead and forces a Debug compile.
 
 ## Output
 ```

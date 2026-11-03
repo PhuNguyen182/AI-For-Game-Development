@@ -29,7 +29,7 @@ color: blue
 ## Skills (on demand)
 ### Editor and verification
 - **`unity:unity-cli`** (first): every Editor operation.
-- **`unity-test-framework`:** writing and running Play Mode tests.
+- **`unity-test-framework`:** writing and running Play Mode tests; Code Coverage on your changed lines when the package is installed (step 14).
 - **`unity-profiler-diagnostics`:** UI rebuild cost.
 - **`feature-docs`:** before changing the feature; docs owed at completion.
 ### UI

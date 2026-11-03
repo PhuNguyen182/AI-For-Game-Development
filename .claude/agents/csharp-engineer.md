@@ -31,7 +31,7 @@ color: blue
 
 ## Skills (on demand)
 - **`core-determinism`:** results must reproduce across machines; fills `Determinism:`.
-- **Tests:** `core-tests-without-unity` · `unity-test-framework`.
+- **Tests:** `core-tests-without-unity` · `unity-test-framework` (Code Coverage on your changed lines when the package is installed: step 14).
 - **`feature-docs`:** before changing the feature; the Core and DataModels entries.
 - **`save-data-versioning-migration`:** the Core save model.
 - **Randomness, state:** `nrandom-random-generation` · `stateless-state-machines`.

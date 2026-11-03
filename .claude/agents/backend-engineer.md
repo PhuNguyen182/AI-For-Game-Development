@@ -19,7 +19,7 @@ color: teal
 - **Server side:** server functions and rules.
 - **Save schema:** the schema and its versioned migrations.
 - **Remote config:** the remote-config keys.
-- **Tests:** the spec's `Tests:` rows assigned to you — UTF, or the backend's own runner for server code.
+- **Tests:** the spec's `Tests:` rows assigned to you — UTF (Code Coverage when installed: `unity-test-framework` step 14), or the backend's own runner for server code.
 
 ## Inputs
 - **Backend:** `CLAUDE.md` → Stack headline, `docs/tech-stack.md` → Backend or its ADR. `none` → `Blocked`.

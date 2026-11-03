@@ -35,6 +35,7 @@ user-invocable: false
 2. **Run Core tests from the feature's `Tests/EditMode/` assembly (`…<Feature>.Tests.EditMode`) in Edit Mode by default:** Editor-only platform, NUnit reference, per `unity-test-framework` steps 2–3.
    - **Play Mode:** none for Core.
    - **Criterion:** the fixture appears under EditMode in the Test Runner and the run executes more than zero tests.
+   - **Code coverage:** comes from this Edit Mode run (`unity-test-framework` step 14); a `dotnet test` mirror gives no Unity coverage figure.
 3. **Write every Core test mirror-ready, mirror or not:** NUnit attributes and constraints only.
    - **Banned in Core tests:** `UnityEngine`, `UnityEditor` or `UnityEngine.TestTools` (`[UnityTest]`, `LogAssert`, allocation constraint).
    - **Fixtures:** C# data, not files under `Assets/`.

@@ -18,6 +18,7 @@ allowed-tools: PowerShell, Read, Grep, Glob, Bash, Skill
    - **Request:** (2) the request itself (counts as spec for an S-size change).
    - **Code:** (3) the code (`$ARGUMENTS` paths, else `git diff --name-only HEAD -- '*.cs'` plus staged), always read even with a doc.
    - **Code against doc:** a mismatch between the code and a doc is a finding.
+   - **Coverage report:** an existing `CodeCoverage/` of this revision: uncovered lines in scope are leads for cases (`unity-test-framework` → code-coverage.md). Never run one here.
    - **No source:** none resolves → `AskUserQuestion`; never guess scope.
 2. **Cases:** invoke `risk-based-test-planning` with the testable claims; do not re-derive by hand.
    - **Doc/code mismatch:** its own finding (`qa-standards` format), never silently tested around.

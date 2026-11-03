@@ -14,6 +14,7 @@ Entries marked * are Unity's own instruction to exclude [dirs]; the rest are der
 | `/[Ll]ogs/` | Per-machine Editor logs |
 | `/[Oo]bj/`, `/[Bb]uild/`, `/[Bb]uilds/`, `*.apk`, `*.aab`, `*.pdb` | Compiler and build output, reproducible |
 | `/[Mm]emoryCaptures/`, `/[Rr]ecordings/` | Memory Profiler snapshots and Recorder output, per machine |
+| `/[Cc]ode[Cc]overage/` | Code Coverage results and report: per run, with absolute machine paths and source |
 | `/ServerData/`, `/[Aa]ssets/[Ss]treaming[Aa]ssets/aa/`, `/[Aa]ssets/[Ss]treaming[Aa]ssets/aa.meta` | Addressables build output, rebuilt from the groups |
 | `*.csproj`, `*.sln` | Generated per machine; conflict on every package change |
 | `*.userprefs`, `.vs/`, `.idea/` | Per-developer IDE state |

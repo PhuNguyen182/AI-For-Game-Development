@@ -9,3 +9,4 @@ Synthesized from project decisions. Commands behind the compile check and the te
 
 ## Test run
 - **`unity test`:** `unity test <project> --mode EditMode|PlayMode -- -assemblyNames <assembly>` (it imports, compiles and writes the NUnit report).
+- **Code coverage:** not in this per-implementer run (a Debug compile each time); `/qa` and `/fix` collect it (`unity-test-framework` → code-coverage.md).

@@ -16,6 +16,7 @@ user-invocable: false
 1. **Extract every testable claim from the spec:** as an observable outcome.
    - **Untestable clause:** goes back to `technical-architect`; never invent a criterion for it.
 2. **Partition each input into equivalence classes:** one value per class; state the partitions so they can be challenged.
+   - **Coverage report at hand:** uncovered changed lines point at missing partitions (`unity-test-framework` → code-coverage.md); a lead, never a case list or a target.
 3. **Test every boundary on both sides:** min, min−1, max, max+1, zero/empty where representable.
    - **Criterion:** a plan without boundary cases has not covered the rule.
 4. **Decision table when an outcome depends on several conditions:** enumerate combinations, cover each distinct outcome, not every permutation.

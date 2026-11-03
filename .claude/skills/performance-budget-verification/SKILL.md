@@ -34,6 +34,7 @@ user-invocable: false
 - **Hidden handling:** trim an outlier without saying so, or omit the warm-up handling.
 - **Moving the target:** edit code, settings or the budget to make a number pass.
 - **Unmatched improvement claim:** claim an improvement not measured on both sides under identical conditions.
+- **Coverage on:** measure with Code Coverage enabled or under `-debugCodeOptimization`: documented overhead, and not the shipped compile.
 
 ## Output
 ```

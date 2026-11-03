@@ -19,6 +19,7 @@ color: green
 ## Owns
 - **Edge-case tests:** added to the feature's `Tests/EditMode/` and `Tests/PlayMode/` suites — extend, never rewrite (`/qa` step 2); the spec's `Tests:` rows stay with their implementer.
 - **Regression tests:** one per bug a `/fix` step 4 brief names, in the suite whose mode fits.
+- **Code coverage run:** package installed → the last test run of a `/qa` brief collects it; a `/fix` step 6 run shows the fix reached (`unity-test-framework` step 14).
 
 ## Inputs
 - **Behaviour:** the acceptance criteria, or the bug and its repro. Absent → `Blocked`.
@@ -44,15 +45,18 @@ color: green
 - [ ] **Runners agree:** mirror adopted → Edit Mode and `dotnet test` results and counts match — evidence: both commands and counts. Not adopted → `n/a`.
 - [ ] **Suite extended, not weakened:** no existing assertion removed or loosened — evidence: `git diff` of the existing test files.
 - [ ] **Network cases:** multiplayer on → latency/loss cases present — evidence: test names. Off → `n/a`.
+- [ ] **Code coverage read:** package installed → changed lines read, each gap a new test or a `Not covered:` row — evidence: the commands and the `coverage_gaps.py` output. Not installed → `n/a`.
 
 ## Return extras
 - **`Tests added:`** file → behaviour asserted → bug guarded.
 - **`Results:`** pass/fail per mode, the command run.
 - **`Repro:`** `Repro: BUG-#### reproduces | gone` per ID a `Verify:` brief names; not exercised → say so in `Not covered:`.
 - **`Not covered:`** every behaviour not asserted, with its owner.
+- **`Code coverage:`** changed lines executed n/m, filters, gaps → test or `Not covered:` | `not installed` | `not run: <why>`. Never evidence for a criterion.
 
 ## Never
 - **Production code:** change it to pass a test → `Needs-decision`, `Next:` the owner.
 - **Weakened assertions:** weaken one to go green → fix the test at its cause.
 - **Passing regression test:** one that passes before the fix → it must fail first, then pass.
 - **Untestable code:** no seam or hidden state → `Needs-decision`, `Next:` the owner.
+- **Coverage-only tests:** a test that only executes a line to raise the figure → assert a behaviour, or report the gap.

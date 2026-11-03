@@ -1,6 +1,6 @@
 ---
 name: unity-test-framework
-description: "Unity Test Framework 2.0: UnityTest, UnitySetUp, LogAssert, -runTests, TestRunnerApi. Use to write or run tests."
+description: "Unity Test Framework 2.0: UnityTest, LogAssert, -runTests, TestRunnerApi, Code Coverage. Use to write or run tests."
 user-invocable: false
 ---
 
@@ -15,12 +15,17 @@ user-invocable: false
 - **Not for:** a `dotnet test` mirror of Core outside the Editor (`core-tests-without-unity`).
 - **Docs:** `https://docs.unity3d.com/Packages/com.unity.test-framework@2.0/manual/` (API under `.../api/`) — keep `@2.0`; read the installed version from `Packages/manifest.json`.
   - **Version caveat:** the 2.0 manual lacks pages that exist in 1.x; check the API page before concluding a feature is missing.
+- **Code Coverage docs:** `https://docs.unity3d.com/Packages/com.unity.testtools.codecoverage@1.3/manual/` — installed version in `Packages/packages-lock.json`.
 
 ## References
 - **[authoring.md](references/authoring.md):** Creating an assembly, choosing a mode or attribute, a test spans frames or is parameterized.
 - **[execution-order.md](references/execution-order.md):** A setup/teardown runs at a surprising time, state vanishes after a domain reload, or assets/files must be staged for a Player run (`PrebuildSetup`/`PostBuildCleanup`).
 - **[assertions.md](references/assertions.md):** Asserting logs, floats/vectors/quaternions, allocations, or a MonoBehaviour's completion.
 - **[running.md](references/running.md):** Scoping a headless run, running in a Player, or driving runs from Editor tooling.
+- **[code-coverage.md](references/code-coverage.md):** `com.unity.testtools.codecoverage` is installed and a run closes work, a fix must be shown reached, or a coverage figure needs reading.
+
+## Scripts
+- **[coverage_gaps.py](scripts/coverage_gaps.py):** run `<python> -I "${CLAUDE_SKILL_DIR}/scripts/coverage_gaps.py" <coverage dir> [--changed <ref> --project <path>]` → lines no test executed; exit 2 = no data.
 
 ## Steps
 1. **Record the review status of the code under test:** unreviewed → still test it and say no correctness gate stands behind the results.
@@ -43,6 +48,10 @@ user-invocable: false
 12. **Fix a flaky test at its cause:** real time/randomness in Core, unaccounted frame timing in Play Mode.
     - **Tolerance:** never widen it.
 13. **A repeatedly failing submission goes back through code review:** not another test pass.
+14. **`com.unity.testtools.codecoverage` installed → collect coverage on the run that closes the work:** detection, commands and traps per [code-coverage.md](references/code-coverage.md).
+    - **Not installed:** report `Code coverage: not installed` and run the tests as usual; never add the package unasked.
+    - **Read changed lines first:** [coverage_gaps.py](scripts/coverage_gaps.py) `--changed <base>`; a project-wide percentage changes no decision.
+    - **Each gap:** a criterion covers it → a test asserting the behaviour; none does → report it, never a test that only executes the line.
 
 ## Never
 - **Unsupported combinations:** combine `[UnityTest]` with `Repeat`, or use `Retry` in Play Mode — unsupported / throws.
@@ -50,6 +59,7 @@ user-invocable: false
 - **`TestRunnerApi` instance members:** write new tooling on them — flagged for obsolescence.
 - **Scene-search calls in test code:** treat `Find*` as test-only; do not copy them into production code (banned by `csharp-standards`).
 - **Players and Editors:** build a platform Player or open extra Editor instances — hand to `build-release-engineer` on the GD's explicit request.
+- **Coverage as a verdict:** cite a coverage figure as proof of behaviour, set a target the GD did not state, or report a Player figure — it shows lines executed in the Editor.
 
 ## Output
 ```
@@ -59,6 +69,7 @@ user-invocable: false
 - Parameterization / setup hooks / log expectations: <...>
 - Assertions: <comparers, allocation constraint>
 - CI: <flags, filter, results path — or "local only">
+- Code coverage: <changed lines executed n/m, gaps → test or report> | not installed | not run: <why>
 ```
 
 ## Example
