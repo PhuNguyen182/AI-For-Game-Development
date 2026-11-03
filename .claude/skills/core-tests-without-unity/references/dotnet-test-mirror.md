@@ -21,7 +21,7 @@ Sources: [a] C# compiler `https://docs.unity.com/en-us/engine/6000.0/manual/prog
 | One `.csproj` per engine-free asmdef: `TestsDotnet/<Feature>/Core/<Feature>.Core.Mirror.csproj`, `…/DataModels/…` | Library over that asmdef's linked sources only; `AssemblyName` = the asmdef name (`_Project.Scripts.<Feature>.Core`) so `InternalsVisibleTo` and type names match the editor build |
 | Each asmdef reference → a `ProjectReference` | One glob over every feature would compile a cross-feature reference Unity rejects; the asmdef graph is the mirror's graph |
 | `TestsDotnet/<Feature>/Tests/<Feature>.Tests.Mirror.csproj` | Test project over the feature's `Tests/EditMode/` sources; `AssemblyName` = `_Project.Scripts.<Feature>.Tests.EditMode` for the same reason |
-| `.gitignore` | `TestsDotnet/**/bin/`, `TestsDotnet/**/obj/` |
+| `.gitignore` | `TestsDotnet/**/bin/`, `TestsDotnet/**/obj/`, and `!TestsDotnet/**/*.csproj` on a line after `*.csproj`: the last matching line wins, so before it the mirror's project files stay ignored |
 
 Sample: [Combat.Core.Mirror.xml](../scripts/Combat.Core.Mirror.xml) (library over one engine-free asmdef, linked sources). Adapt it into `TestsDotnet/<Feature>/Core/<Feature>.Core.Mirror.csproj`; it is stored as `.xml` only because `*.csproj` is gitignored here.
 
