@@ -156,6 +156,22 @@ function Get-GitignoreFrameworkLines([string]$Text) {
     return $out
 }
 
+function Add-MissingFrameworkLines([string]$Path, [string[]]$FwLines) {
+    # Append framework lines the file lacks. Comments and blank lines are context only: they are never a reason to append.
+    if (-not (Test-Path -LiteralPath $Path)) {
+        if (-not $DryRun) { Set-Content -LiteralPath $Path -Value ($FwLines -join "`n") -Encoding utf8NoBOM }
+        return 'created with the framework patterns'
+    }
+    $have = @((Get-Content -LiteralPath $Path) | ForEach-Object { $_.Trim() })
+    $missing = @($FwLines | Where-Object { $_.Trim() -and -not $_.StartsWith('#') -and $have -notcontains $_.Trim() })
+    if ($missing.Count -eq 0) { return 'already up to date' }
+    if (-not $DryRun) {
+        $block = "`n# Added by the AI-For-Game framework`n" + ($missing -join "`n") + "`n"
+        Add-Content -LiteralPath $Path -Value $block -NoNewline -Encoding utf8NoBOM
+    }
+    return "$($missing.Count) line(s) appended"
+}
+
 # ---------- state ----------
 $recorded = @{}
 $recordedHooks = @()
@@ -251,28 +267,18 @@ else {
     else { $settingsNote = 'already up to date' }
 }
 
-# ---------- .gitignore (append missing framework lines) ----------
+# ---------- .gitignore, .gitattributes (append missing framework lines) ----------
 $giNote = ''
 $srcGi = Join-Path $SourceRoot '.gitignore'
-$dstGi = Join-Path $Target '.gitignore'
 if (Test-Path -LiteralPath $srcGi) {
     $fwLines = @(Get-GitignoreFrameworkLines (Get-Content -Raw -LiteralPath $srcGi)) + '.claude/.framework-backup/'
-    if (-not (Test-Path -LiteralPath $dstGi)) {
-        if (-not $DryRun) { Set-Content -LiteralPath $dstGi -Value ($fwLines -join "`n") -Encoding utf8NoBOM }
-        $giNote = 'created with the framework patterns'
-    }
-    else {
-        $have = @((Get-Content -LiteralPath $dstGi) | ForEach-Object { $_.Trim() })
-        $missing = @($fwLines | Where-Object { $_.Trim() -and -not $_.StartsWith('#') -and $have -notcontains $_.Trim() })
-        if ($missing.Count -gt 0) {
-            if (-not $DryRun) {
-                $block = "`n# Added by the AI-For-Game framework`n" + ($missing -join "`n") + "`n"
-                Add-Content -LiteralPath $dstGi -Value $block -NoNewline -Encoding utf8NoBOM
-            }
-            $giNote = "$($missing.Count) line(s) appended"
-        }
-        else { $giNote = 'already up to date' }
-    }
+    $giNote = Add-MissingFrameworkLines (Join-Path $Target '.gitignore') $fwLines
+}
+$gaNote = ''
+$srcGa = Join-Path $SourceRoot '.gitattributes'
+if (Test-Path -LiteralPath $srcGa) {
+    # The framework's own .gitattributes holds only framework lines: a project's Unity and LFS rules live in its copy.
+    $gaNote = Add-MissingFrameworkLines (Join-Path $Target '.gitattributes') @((Get-Content -Raw -LiteralPath $srcGa) -split "`r?`n")
 }
 
 # ---------- project-owned seeds (install only, never overwrite) ----------
@@ -307,6 +313,7 @@ if ($SourceCommit) { Write-Host "  source: $SourceUrl @ $($SourceCommit.Substrin
 Write-Host ("  added {0} | updated {1} | unchanged {2} | kept local edits {3} | removed {4} | conflicts {5}" -f $added.Count, $updated.Count, $unchanged, $kept.Count, $removed.Count, $conflicts.Count)
 Write-Host "  settings.json: $settingsNote"
 if ($giNote) { Write-Host "  .gitignore: $giNote" }
+if ($gaNote) { Write-Host "  .gitattributes: $gaNote" }
 if ($seeded.Count) { Write-Host "  created (project-owned): $($seeded -join ', ')" }
 if ($seedKept.Count) { Write-Host "  kept your existing: $($seedKept -join ', ')" }
 foreach ($x in $updated) { Write-Host "  updated  $x" }

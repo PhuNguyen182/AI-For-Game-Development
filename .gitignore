@@ -117,6 +117,7 @@ __pycache__/
 .workflow/rounds.json
 .workflow/rounds.pending-*.json
 .workflow/rounds.corrupt-*.json
+.workflow/bugs.db*
 
 # Signing material and credentials never enter git; the pre-commit and pre-push hooks refuse them too
 # (rule core.md -> Security). Reference a credential id or a secret store instead.
