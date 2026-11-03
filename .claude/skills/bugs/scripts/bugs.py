@@ -99,6 +99,13 @@ class Parser(argparse.ArgumentParser):
         self.print_usage(sys.stderr)
         raise UsageError("bad arguments: %s" % shown(message, 300))
 
+    def parse_args(self, args=None, namespace=None):
+        """Counted, never quoted: with a leading -, a pasted key is no longer the shape redaction looks for."""
+        parsed, unrecognized = self.parse_known_args(args, namespace)
+        if unrecognized:
+            self.error("%d unrecognized argument(s)" % len(unrecognized))
+        return parsed
+
 
 def _after_append():
     """Between the journal append and the DB commit. Tests replace this to crash exactly there."""
@@ -197,7 +204,9 @@ def mem_module():
             spec.loader.exec_module(module)
             for name in MEM_API:
                 getattr(module, name)
-        except Exception as ex:  # whatever the fault in that file, a SyntaxError or ImportError too: it leaves through main()
+        except KeyboardInterrupt:
+            raise
+        except BaseException as ex:  # whatever the fault in that file, a SyntaxError or a sys.exit too: it leaves through main()
             raise Refused("write refused: %s cannot be loaded (%s), so secret shapes cannot be checked" % (path, type(ex).__name__)) from None
         finally:
             sys.dont_write_bytecode = keep
@@ -212,8 +221,12 @@ class Cleaner:
         self.mem = mem_module()
         try:
             self.patterns = self.mem.load_secret_patterns(ctx.root)
-        except Exception as ex:  # a missing or malformed file, or a fault in mem.py's own code
+        except KeyboardInterrupt:
+            raise
+        except BaseException as ex:  # a missing or malformed file, or a fault in mem.py's own code
             raise Refused("write refused: secret patterns cannot be loaded (%s: %s)" % (type(ex).__name__, ex)) from None
+        if not self.patterns:  # nothing to scan with is a fault, not a clean scan
+            raise Refused("write refused: secret patterns cannot be loaded (the list is empty)")
         self.redacted = []
 
     def clean(self, field: str, value) -> str:
@@ -235,7 +248,9 @@ class Cleaner:
             stored = "" if hits else self.mem.redact_pii(text)
             if not isinstance(stored, str):
                 raise TypeError("redact_pii returned %s" % type(stored).__name__)
-        except Exception as ex:  # a fault in mem.py's own code; its type only, as its message can hold the value
+        except KeyboardInterrupt:
+            raise
+        except BaseException as ex:  # a fault in mem.py's own code; its type only, as its message can hold the value
             raise Refused("write refused: %s cannot be checked for secrets and PII (%s)" % (field, type(ex).__name__)) from None
         if hits:
             raise Refused("refused: secret-shaped value in %s (%s)" % (field, ", ".join(hits)))
@@ -324,32 +339,50 @@ def run_git(cwd: Path, *args) -> tuple[int, str]:
     return r.returncode, r.stdout.decode("utf-8", "replace").strip()
 
 
+def main_checkout(root: Path) -> tuple[Path, Path | None, bool]:
+    """(the checkout holding the journal, its git dir, whether root is a linked worktree). The rule of Get-BugsRoot in
+    hooks/common.ps1, kept the same in effect: hooks/tests/run.ps1 drives both over the same layouts. Only the root's own .git
+    counts, since git itself walks up to any link planted above. A link that leads nowhere refuses, read or write."""
+    link = root / ".git"
+    if not link.is_file():
+        return root, link if link.is_dir() else None, False
+    m = re.search(r"(?m)^gitdir:\s*(.+?)\s*$", link.read_text(encoding="utf-8-sig", errors="replace"))
+    if not m:
+        raise Refused("%s names no gitdir, so the main checkout's bug journal cannot be found" % shown(link, 200))
+    git_dir = Path(os.path.normpath(root / m.group(1)))
+    if not git_dir.is_dir():
+        raise Refused("%s, named by %s, does not exist" % (shown(git_dir, 200), shown(link, 200)))
+    common_file = git_dir / "commondir"
+    if not common_file.is_file():
+        if (git_dir / "objects").is_dir():  # a full git dir: a submodule or --separate-git-dir
+            return root, git_dir, False
+        raise Refused("%s is missing and %s holds no objects, so the main checkout's bug journal cannot be found" % (shown(common_file, 200), shown(git_dir, 200)))
+    common = Path(os.path.normpath(git_dir / common_file.read_text(encoding="utf-8-sig", errors="replace").strip()))
+    if common.name != ".git":
+        raise Refused("%s is no checkout's .git, so the bug journal cannot be found" % shown(common, 200))
+    if not common.is_dir():
+        raise Refused("%s, named by %s, does not exist" % (shown(common, 200), shown(common_file, 200)))
+    return common.parent.resolve(), common, True
+
+
 class Ctx:
-    """Root comes from comparing --git-dir with --git-common-dir: a linked worktree reads the main checkout's data."""
+    """The root per main_checkout: a linked worktree reads the main checkout's data, a root with no .git has no git context."""
 
     def __init__(self, arg: str | None):
         given = Path(arg).resolve() if arg else Path(__file__).resolve().parents[4]
         if not given.is_dir():
             raise Refused("root %s is not a directory" % shown(given, 200))
-        self.root, self.linked, self.git_dir, self.git_failed = given, False, None, False
+        self.root, self.git_dir, self.linked = main_checkout(given)
+        self.git_failed = False
+        if self.git_dir is None:
+            return
         try:
-            code, out = run_git(given, "rev-parse", "--git-dir", "--git-common-dir")
+            code, out = run_git(given, "rev-parse", "--git-common-dir")
         except (OSError, subprocess.SubprocessError):
             code, out = 1, ""
-        lines = out.splitlines()
-        if code or len(lines) != 2:
-            self.git_failed = (given / ".git").exists()  # git is missing or refuses: cannot rule out a linked worktree
-            return
-        git_dir, common = (given / lines[0]).resolve(), (given / lines[1]).resolve()
-        self.git_dir = git_dir
-        if git_dir != common:
-            self.linked = True
-            code, out = run_git(given, "worktree", "list", "--porcelain")
-            first = out.splitlines()[0] if out else ""
-            if code or not first.startswith("worktree "):
-                raise Refused("linked worktree: cannot find the main checkout")
-            self.root = Path(first[len("worktree "):]).resolve()
-            self.git_dir = common
+        # Git is missing, refuses, or walked past a .git it will not read to a repo above: cannot rule out a linked worktree.
+        if code or (given / out).resolve() != self.git_dir.resolve():
+            self.git_failed, self.git_dir = True, None
 
     @property
     def workflow(self) -> Path:
@@ -1255,11 +1288,12 @@ def git_problems(ctx: Ctx) -> list:
         return []
     out = []
     path = ".workflow/bugs.jsonl"
-    code, text = run_git(ctx.root, "check-attr", "merge", "--", path)
-    merge = text.rsplit(": ", 1)[-1] if not code else "unknown"
-    if merge != "union":
-        out.append("journal attributes: merge resolves to %s, not union: merges can conflict. Put `%s text eol=lf merge=union` "
-                   "in .gitattributes, after any rule that overrides it" % (shown(merge), path))
+    for attr, want, harm in (("merge", "union", "merges can conflict"), ("eol", "lf", "the journal can end up with mixed line endings")):
+        code, text = run_git(ctx.root, "check-attr", attr, "--", path)
+        got = text.rsplit(": ", 1)[-1] if not code else "unknown"
+        if got != want:
+            out.append("journal attributes: %s resolves to %s, not %s: %s. Put `%s text eol=lf merge=union` "
+                       "in .gitattributes, after any rule that overrides it" % (attr, shown(got), want, harm, path))
     code, _ = run_git(ctx.root, "check-ignore", "-q", "--", path)
     if code == 0:
         out.append("journal ignored by git: %s must stay tracked, it is the truth. Remove the rule that ignores it" % path)
@@ -1543,6 +1577,8 @@ def cmd_import_md(ctx, a):
                                         "type": "tombstone", "data": {"id": next_id - 1}}))
             w.top = next_id - 1
             w.last_ts = max(w.last_ts or "", GAP_TS)
+        if not w.lines and not ctx.journal.exists():  # zero rows: the file /release asks for must outlive the ordered delete
+            ctx.journal.write_bytes(b"")
     cleaner.report()
     print("imported %d bugs, %d events; delete .workflow/bugs.md next" % (new_bugs, new_events))
     return 0
@@ -1630,13 +1666,26 @@ def refusal_text(text: str, argv) -> str:
     try:
         mem = mem_module()
         patterns = mem.load_secret_patterns(given_root(argv))
+        if not patterns:
+            raise ValueError("no patterns")
         lines = mem.redact_pii(mem.redact(text.replace(VALUE_MARK, ""), patterns)).split("\n")
-    except Exception:  # it is already reporting an error, whatever broke the module, the file or a redaction: it must not raise
+    except KeyboardInterrupt:
+        raise
+    except BaseException:  # it is already reporting an error, whatever broke the module, the file or a redaction: it must not raise
         lines = RX_SHOWN.sub("<hidden: secret patterns unavailable>", text).split("\n")
     return "\n".join(line[:REFUSAL_LINE] for line in lines)
 
 
 def main(argv=None) -> int:
+    """An interrupt leaves here: raised inside a handler below, its traceback would chain the refusal holding the raw value."""
+    try:
+        return run(argv)
+    except KeyboardInterrupt:
+        print("bugs: interrupted", file=sys.stderr)
+        return 130
+
+
+def run(argv) -> int:
     for s in (sys.stdout, sys.stderr):
         try:
             s.reconfigure(encoding="utf-8", errors="replace")

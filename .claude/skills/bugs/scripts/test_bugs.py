@@ -1456,6 +1456,49 @@ class TestBugsMdRefusal(Base):
                 self.assertIn("bugs.md", self.no(*argv, stdin=fields() if argv[0] == "add" else None))
 
 
+# develop:.claude/skills/fix/references/bugs-template.md, the file an adopted project with no bugs holds.
+ZERO_ROW_BUGS_MD = """# Bugs
+
+Next ID: BUG-0001
+
+| ID | Title | Severity | Status | Feature | Owner | Regression test |
+|---|---|---|---|---|---|---|
+
+<!-- One record per bug, below the table. Delete this comment and the sample heading. -->
+## BUG-#### \u2014 <title>
+- Repro: <steps from a known state; attempts / hits>
+- Expected: <and its source> \u00b7 Actual: <observed>
+- Evidence: <log, screenshot, failing test>
+- Root cause: <when known>
+- Fix rounds: 0/2
+- Review rounds: 0/3
+- Stop rule: <counter> root-caused <date> - extra dispatch: unused|used (only when it fires)
+- History: <date status \u2014 by whom, evidence>
+"""
+
+
+class TestZeroRowImport(Base):
+    """E3-15: after the ordered delete, a project with no bugs has the empty journal /release asks for."""
+
+    def test_the_real_template_leaves_an_empty_journal(self):
+        md = self.root / ".workflow" / "bugs.md"
+        md.parent.mkdir()
+        md.write_text(ZERO_ROW_BUGS_MD, encoding="utf-8")
+        self.assertIn("imported 0 bugs", self.ok("import-md"))
+        md.unlink()
+        self.assertEqual(self.journal.read_bytes(), b"")
+        self.assertEqual(self.ok("stats").split(" open")[0], "Bugs: 0")
+        self.assertEqual(self.ok("doctor"), "doctor: clean\n")
+        self.assertEqual(self.add(), "BUG-0001")
+
+    def test_a_journal_already_there_is_left_alone(self):
+        self.add()
+        before = self.journal.read_bytes()
+        (self.root / ".workflow" / "bugs.md").write_text(ZERO_ROW_BUGS_MD, encoding="utf-8")
+        self.ok("import-md")
+        self.assertEqual(self.journal.read_bytes(), before)
+
+
 class TestImport(Base):
     def write_md(self, text, root=None):
         p = (root or self.root) / ".workflow"
@@ -2299,11 +2342,27 @@ class TestAFaultInsideMemStaysClean(Base):
     # Appended to a copy of the real mem.py: each overrides one name and the rest stays real. The exception text holds the
     # value, as a fault in real redaction code could.
     REDACT_FAULTS = {"redact raises": 'def redact(text, patterns):\n    raise TypeError("fault on " + text)\n',
-                     "redact returns nothing": "def redact(text, patterns):\n    return None\n"}
+                     "redact returns nothing": "def redact(text, patterns):\n    return None\n",
+                     "redact raises BaseException": 'def redact(text, patterns):\n    raise BaseException("fault on " + text)\n',
+                     "redact exits 0": "def redact(text, patterns):\n    raise SystemExit(0)\n"}
     WRITE_FAULTS = {"redact_pii raises": 'def redact_pii(text):\n    raise AttributeError("fault on " + text)\n',
                     "redact_pii returns nothing": "def redact_pii(text):\n    return None\n",
+                    "redact_pii raises BaseException": 'def redact_pii(text):\n    raise BaseException("fault on " + text)\n',
+                    "redact_pii exits 0": "def redact_pii(text):\n    raise SystemExit(0)\n",
                     "the PEM regex is not one": "RX_PEM_BLOCK = object()\n",
-                    "a compiled pattern is not one": "def load_secret_patterns(root):\n    return [('x', object())]\n"}
+                    "a compiled pattern is not one": "def load_secret_patterns(root):\n    return [('x', object())]\n",
+                    "no patterns": "def load_secret_patterns(root):\n    return []\n",
+                    "the pattern loader exits 0": "def load_secret_patterns(root):\n    raise SystemExit(0)\n",
+                    "the pattern loader raises BaseException": 'def load_secret_patterns(root):\n    raise BaseException("base")\n',
+                    "exit 0 at import": "raise SystemExit(0)\n",
+                    "exit 3 at import": "raise SystemExit(3)\n",
+                    "BaseException at import": 'raise BaseException("base")\n'}
+    # A real SIGINT through Python's own handler, at the points the fault tests fault.
+    SIGINT = ("import signal, time", "signal.signal(signal.SIGINT, signal.default_int_handler)", "signal.raise_signal(signal.SIGINT)", "time.sleep(30)")
+    INTERRUPTS = {"in redact": ("def redact(text, patterns):\n    " + "\n    ".join(SIGINT) + "\n", ("show", FAKE_KEY)),
+                  "in the pattern loader": ("def load_secret_patterns(root):\n    " + "\n    ".join(SIGINT) + "\n", ("show", FAKE_KEY)),
+                  "at import": ("\n".join(SIGINT) + "\n", ("show", FAKE_KEY)),
+                  "in redact_pii": ("def redact_pii(text):\n    " + "\n    ".join(SIGINT) + "\n", ("round", "BUG-0001", "fix", "+1", "--note", "Mail qa.tester@example.com"))}
 
     def faulty_copy(self, fault):
         shutil.rmtree(Path(self.tmp) / "framework", ignore_errors=True)
@@ -2335,6 +2394,26 @@ class TestAFaultInsideMemStaysClean(Base):
                 self.assert_clean(r, FAKE_KEY)
         self.assertEqual(self.journal.read_bytes(), before)
 
+    def test_an_interrupt_exits_130_and_prints_no_value(self):
+        self.add()
+        before = self.journal.read_bytes()
+        for name, (fault, argv) in self.INTERRUPTS.items():
+            with self.subTest(interrupt=name):
+                r = self.cli(self.faulty_copy(fault), *argv)
+                self.assertEqual(r.returncode, 130, r.stderr)
+                self.assert_clean(r, FAKE_KEY, self.EMAIL)
+                self.assertEqual(self.journal.read_bytes(), before)
+
+    def test_an_interrupt_outside_mem_exits_130(self):
+        self.add()
+        with mock.patch.object(bugs, "open_read", side_effect=KeyboardInterrupt):
+            try:
+                code, out, err = self.run_cli("list")
+            except KeyboardInterrupt:
+                self.fail("main let the interrupt through")
+        self.assertEqual((code, out), (130, ""))
+        self.assertNotIn("Traceback", err)
+
     def test_a_refused_read_still_names_what_is_wrong(self):
         self.add()
         r = self.cli(self.faulty_copy(self.REDACT_FAULTS["redact raises"]), "show", FAKE_KEY)
@@ -2355,6 +2434,17 @@ class TestAFaultInsideMemStaysClean(Base):
                     self.assert_clean(r, self.EMAIL)
                     self.assertEqual(self.journal.read_bytes(), before)
 
+    def test_unrecognized_arguments_are_counted_never_echoed(self):
+        self.add()
+        flag = "--" + "s" + "k-" + "a" * 24
+        for argv, count in ((["list", flag], 1), ([flag, "list"], 1), (["show", "BUG-0001", flag, "stray"], 2), (["list", "stray"], 1)):
+            with self.subTest(argv=argv[0]):
+                code, out, err = self.run_cli(*argv)
+                self.assertEqual(code, 2, out)
+                self.assertIn("%d unrecognized argument" % count, err)
+                self.assertNotIn(flag, err + out)
+                self.assertNotIn("stray", err + out)
+
     def test_a_write_needing_only_the_write_rules_survives_a_redact_fault(self):
         for name, fault in self.REDACT_FAULTS.items():
             with self.subTest(fault=name):
@@ -2362,6 +2452,119 @@ class TestAFaultInsideMemStaysClean(Base):
                 self.assertEqual(r.returncode, 0, r.stderr)
                 self.assert_clean(r, self.EMAIL)
                 self.assertNotIn(self.EMAIL.encode(), self.journal.read_bytes())
+
+
+class TestRootRule(GitBase):
+    """N1: only the root's own .git counts, as in Get-BugsRoot. hooks/tests/run.ps1 drives the two over the same layouts."""
+
+    def worktree(self):
+        self.add(title="Other repo first")
+        self.add(title="Other repo second")
+        self.commit()
+        wt = Path(self.tmp) / "wt"
+        git(self.root, "worktree", "add", "-q", str(wt), "-b", "wt-branch")
+        return wt, self.root / ".git" / "worktrees" / "wt"
+
+    def planted(self):
+        """A project with no .git and its own bug, below a .git file naming this repo's real worktree, which has two bugs."""
+        _, admin = self.worktree()
+        above = Path(self.tmp) / "above"
+        project = above / "proj"
+        project.mkdir(parents=True)
+        (above / ".git").write_text("gitdir: %s\n" % admin, encoding="utf-8")
+        self.ok("add", stdin=fields(title="Own bug"), root=project)
+        return project
+
+    def bug_count(self, root):
+        return self.ok("stats", root=root).split(" open")[0]
+
+    def test_a_git_file_above_a_project_with_none_is_not_followed(self):
+        project = self.planted()
+        before = self.journal.read_bytes()
+        self.assertEqual(self.bug_count(project), "Bugs: 1")
+        self.assertEqual(json.loads(self.ok("show", "BUG-0001", "--json", root=project))["title"], "Own bug")
+        self.assertFalse(json.loads(self.ok("counters", "BUG-0002", "--json", root=project))["found"])
+        self.assertEqual(self.journal.read_bytes(), before)
+
+    def test_a_project_there_has_no_git_context(self):
+        project = self.planted()
+        code, out, _ = self.run_cli("purge", "--auto", root=project)
+        self.assertEqual(code, 0)
+        self.assertEqual(out.strip(), "purge skipped: not a git repository")
+        self.assertEqual(self.ok("doctor", root=project), "doctor: clean\n")
+        self.assertIn("BUG-0002", self.ok("add", stdin=fields(), root=project))
+
+    def test_a_subfolder_of_a_repo_is_its_own_root(self):
+        self.add()
+        self.commit()
+        sub = self.root / "Sub"
+        sub.mkdir()
+        self.assertEqual(self.bug_count(sub), "Bugs: 0")
+        self.assertEqual(self.ok("add", stdin=fields(), root=sub).strip(), "BUG-0001")
+        self.assertTrue((sub / ".workflow" / "bugs.jsonl").exists())
+
+    def test_a_subfolder_of_a_linked_worktree_is_its_own_root(self):
+        wt, _ = self.worktree()
+        sub = wt / "Sub"
+        sub.mkdir()
+        self.ok("add", stdin=fields(title="Own bug"), root=sub)
+        self.assertEqual(self.bug_count(sub), "Bugs: 1")
+
+    def test_a_linked_worktree_still_reads_main_and_refuses_writes(self):
+        wt, _ = self.worktree()
+        self.assertEqual(self.bug_count(wt), "Bugs: 2")
+        self.assertIn("worktree", self.no("add", stdin=fields(), root=wt))
+        code, out, _ = self.run_cli("purge", "--auto", root=wt)
+        self.assertEqual(code, 0)
+        self.assertIn("linked worktree", out)
+
+    def test_a_damaged_link_at_the_root_refuses_a_read_too(self):
+        wt, admin = self.worktree()
+        link, commondir = wt / ".git", admin / "commondir"
+        if os.name == "nt":
+            subprocess.run(["attrib", "-h", str(link)], check=True, capture_output=True)  # a hidden file refuses a write
+        good_link, good_common = link.read_text(encoding="utf-8"), commondir.read_text(encoding="utf-8")
+        for name, damage in {"no gitdir": lambda: link.write_text("not a link\n", encoding="utf-8"),
+                             "missing gitdir": lambda: link.write_text("gitdir: %s\n" % (Path(self.tmp) / "nowhere"), encoding="utf-8"),
+                             "commondir lost": commondir.unlink,
+                             "commondir not .git": lambda: commondir.write_text("..\n", encoding="utf-8"),
+                             "commondir missing": lambda: commondir.write_text("../../../no-such/.git\n", encoding="utf-8")}.items():
+            with self.subTest(name):
+                damage()
+                self.no("stats", root=wt)
+                link.write_text(good_link, encoding="utf-8")
+                commondir.write_text(good_common, encoding="utf-8")
+
+    def test_git_failing_at_a_real_git_folder_reads_and_refuses_writes(self):
+        self.add()
+        with mock.patch.object(bugs, "run_git", side_effect=OSError("no git")):
+            self.assertEqual(self.bug_count(self.root), "Bugs: 1")
+            self.assertIn("git failed", self.no("add", stdin=fields()))
+            code, out, _ = self.run_cli("purge", "--auto")
+        self.assertEqual(code, 0)
+        self.assertEqual(out.strip(), "purge skipped: not a git repository")
+
+    def test_a_git_folder_git_will_not_read_is_never_read_as_the_repo_above(self):
+        self.add()
+        self.commit()
+        project = self.root / "Inner"
+        (project / ".git").mkdir(parents=True)
+        self.assertEqual(self.bug_count(project), "Bugs: 0")
+        self.assertIn("git failed", self.no("add", stdin=fields(), root=project))
+
+    def test_no_root_argument_means_the_project_holding_the_script(self):
+        wt, admin = self.worktree()
+        plain = Path(self.tmp) / "above" / "proj"
+        plain.mkdir(parents=True)
+        (Path(self.tmp) / "above" / ".git").write_text("gitdir: %s\n" % admin, encoding="utf-8")
+        for folder, want in ((wt, "Bugs: 2"), (plain, "Bugs: 0"), (self.root, "Bugs: 2")):
+            scripts = folder / ".claude" / "skills" / "bugs" / "scripts"
+            scripts.mkdir(parents=True)
+            shutil.copy(HERE / "bugs.py", scripts / "bugs.py")
+            with self.subTest(folder.name):
+                r = subprocess.run([sys.executable, "-I", str(scripts / "bugs.py"), "stats"], input=b"", capture_output=True, cwd=self.tmp)
+                self.assertEqual(r.returncode, 0, r.stderr)
+                self.assertEqual(r.stdout.decode("utf-8").split(" open")[0], want)
 
 
 class TestTombstoneHoldsItsId(GitBase):
@@ -2633,6 +2836,21 @@ class TestDoctorGitChecks(GitBase):
             f.write(".workflow/\n")
         self.assert_problem("ignored")
 
+    def test_a_later_rule_making_the_journal_crlf_is_a_problem(self):
+        self.add()
+        self.commit()
+        with open(self.root / ".gitattributes", "a", encoding="utf-8") as f:
+            f.write(".workflow/** eol=crlf\n")
+        self.assert_problem("eol resolves to crlf")
+        self.assert_problem("eol resolves to crlf", "--fix")
+
+    def test_a_rule_unsetting_eol_is_a_problem(self):
+        self.add()
+        self.commit()
+        with open(self.root / ".gitattributes", "a", encoding="utf-8") as f:
+            f.write(".workflow/** !eol\n")
+        self.assert_problem("eol resolves to")
+
     def test_a_linked_worktree_reads_the_main_checkout(self):
         self.add()
         self.commit()
@@ -2657,6 +2875,47 @@ class TestDocContracts(unittest.TestCase):
         cls.new_project = read("skills/new-project/SKILL.md")
         cls.lifecycle = read("skills/qa-standards/references/bug-lifecycle.md")
         cls.routing = read("rules/routing.md")
+        cls.feature_docs = read("skills/feature-docs/SKILL.md")
+
+    def test_abandon_reports_a_dirty_journal_with_or_without_moves(self):
+        line = next(x for x in self.feature.split("\n") if x.startswith("- **Journal:**") and "journal uncommitted" in x)
+        self.assertNotIn("those moves", line)
+        self.assertIn("dirty or untracked", line)
+        self.assertIn("no bugs moved", line)
+
+    def test_the_device_marker_says_how_to_read_it_and_when_it_counts(self):
+        for name, text in (("release", self.release), ("fix", self.fix)):
+            line = next(x for x in text.split("\n") if "awaits device verification" in x)
+            with self.subTest(name):
+                self.assertIn("`show`", line)
+                self.assertIn("latest move to `Resolved`", line)
+
+    def test_uncommitted_reports_name_the_no_feature_debt_file(self):
+        for name, text in (("fix", self.fix), ("qa", self.qa), ("release", self.release)):
+            line = next(x for x in text.split("\n") if "journal uncommitted" in x and "`.workflow/bugs.jsonl`" in x)
+            with self.subTest(name):
+                self.assertIn("`.workflow/DEBT.md`", line)
+
+    def test_known_debt_is_read_from_the_no_feature_file_too(self):
+        line = next(x for x in self.feature_docs.split("\n") if x.startswith("- **Before filing a bug"))
+        self.assertIn("`.workflow/DEBT.md`", line)
+
+    def test_the_eol_check_is_documented(self):
+        line = next(x for x in self.schema.split("\n") if x.startswith("- **Attributes:**"))
+        self.assertIn("`eol`", line)
+        self.assertIn("`lf`", line)
+
+    def test_the_root_rule_is_one_rule_in_the_schema(self):
+        self.assertIn("`Ctx` in `bugs.py` and `Get-BugsRoot` in `common.ps1`", self.schema)
+        self.assertNotIn("root comes from comparing", self.schema)
+
+    def test_an_empty_journal_lists_import_md_as_a_source(self):
+        line = next(x for x in self.schema.split("\n") if x.startswith("- **Empty journal:**"))
+        self.assertIn("zero-row `import-md`", line)
+
+    def test_refusal_text_documents_the_unrecognized_count(self):
+        line = next(x for x in self.schema.split("\n") if x.startswith("- **Refusal text:**"))
+        self.assertIn("Unrecognized arguments are counted", line)
 
     def line(self, text, needle):
         hits = [x for x in text.splitlines() if needle in x]

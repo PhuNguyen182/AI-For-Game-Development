@@ -244,8 +244,8 @@ function Get-MainCheckout([string]$Root) {
 
 # The checkout whose .workflow holds the bug journal, known before any Python starts. $Root is the project root, as the hooks
 # pass it, and only its own .git counts: a link planted above a project cannot pick the folder whose script and cached
-# interpreter run. A linked worktree anywhere reads its main checkout's (bugs.py does the same), so a branch with no journal
-# cannot hide a past-cap bug. Starts no process: reads the .git file, then <gitdir>/commondir, as UTF-8. Captured git output
+# interpreter run. A linked worktree anywhere reads its main checkout's, so a branch with no journal cannot hide a past-cap
+# bug. main_checkout in bugs.py is the same rule, and tests/run.ps1 drives both over the same layouts. Starts no process: reads the .git file, then <gitdir>/commondir, as UTF-8. Captured git output
 # decodes with the console code page, and a wrong folder would read as "no bugs". Throws when the links lead nowhere or the
 # common folder is not named .git (a bare repo, a submodule's worktree): a caller naming a bug blocks, a session prints a line.
 # A bare repo stored in a folder named .git looks like a checkout: it returns that folder's parent, normally with no journal.

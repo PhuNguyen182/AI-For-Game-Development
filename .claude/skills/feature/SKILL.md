@@ -169,7 +169,7 @@ argument-hint: "<the request, in the GD's words>"
 ## Abandon
 - **GD drops it:** `Status: Abandoned`, why, last verified state.
 - **Open bugs:** `Won't fix`, `--by GD`: abandoning is the GD's order.
-- **Journal:** those moves → add "journal uncommitted" to the report: `.workflow/bugs.jsonl` waits for the GD's commit order.
+- **Journal:** `.workflow/bugs.jsonl` dirty or untracked in `git status`, even with no bugs moved → add "journal uncommitted" to the report: it waits for the GD's commit order.
 - **Backlog row:** the backlog row → `dropped`.
 - **Worktrees:** `Worktrees:` entries removed (`git-expert`).
 - **Branch:** `AskUserQuestion`: delete `feature/<slug>` via `git-expert` (Khuyến nghị) / keep it, with a `DEBT.md` entry naming the dormant code.

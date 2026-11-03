@@ -1320,6 +1320,139 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     $r = InBrackets { DispatchR 'Explain the HUD' }
     Check 'round-cap: ... and the moved file keeps blocking' ($r.Code -eq 2 -and $r.Out -match 'unreadable ledger file') $true
 
+    # One root rule, two readers: Get-BugsRoot and bugs.py's Ctx take a layout to the same folder, or both refuse. A wrong root
+    # fails open, and this rule has already drifted once. Each folder that could answer holds its own bug count, so the count
+    # names the folder: the project or a linked worktree 1, the main checkout 2, a bare repo's parent 3.
+    $ly = Join-Path $tmp 'Layouts'
+    $lyCli = Join-Path $hooks '../skills/bugs/scripts/bugs.py'
+    $lyPyRest = @($bugPy | Select-Object -Skip 1)
+    $lySeed = Join-Path $ly 'Seed'
+    New-Item -ItemType Directory -Force $lySeed | Out-Null
+    foreach ($i in 1..3) { $bugFields | & $bugPy[0] @lyPyRest -I $lyCli --root $lySeed add 2>&1 | Out-Null }
+    $lyLines = [IO.File]::ReadAllLines((Join-Path $lySeed '.workflow/bugs.jsonl'))
+    function LyJournal([string]$Root, [int]$Count) {
+        [void][IO.Directory]::CreateDirectory((Join-Path $Root '.workflow'))
+        [IO.File]::WriteAllText((Join-Path $Root '.workflow/bugs.jsonl'), (($lyLines | Select-Object -First $Count) -join "`n") + "`n")
+    }
+    function LyHook([string]$Root) {
+        try { $main = Get-BugsRoot $Root } catch { return 'refuse' }
+        $journal = Join-Path $main '.workflow/bugs.jsonl'
+        if ([IO.File]::Exists($journal)) { [string]@([IO.File]::ReadAllLines($journal)).Count } else { '0' }
+    }
+    function LyCli([string]$Root) {
+        $out = & $bugPy[0] @lyPyRest -I $lyCli --root $Root stats 2>$null
+        if ($LASTEXITCODE) { return 'refuse' }
+        if ((Join-Output $out) -match '^Bugs: (\d+) open') { return $Matches[1] }
+        return "unread: $out"
+    }
+    function LyCheck([string]$Name, [string]$Root, [string]$Want) { Check "one root rule: $Name" "hook $(LyHook $Root), cli $(LyCli $Root)" "hook $Want, cli $Want" }
+    $lyMain = Join-Path $ly 'Main'
+    New-Repo $lyMain
+    $lyGit = @('-C', $lyMain, '-c', 'user.name=t', '-c', 'user.email=t@example.com', '-c', 'core.autocrlf=false')
+    [IO.File]::WriteAllText((Join-Path $lyMain 'base.txt'), "base`n")
+    git @lyGit add base.txt 2>&1 | Out-Null
+    git @lyGit commit -q -m 'base' 2>&1 | Out-Null
+    LyJournal $lyMain 2
+    $lyBom = New-Object Text.UTF8Encoding $true
+    function LyWorktree([string]$Name) {
+        $p = Join-Path $ly $Name
+        git @lyGit worktree add -q --detach $p 2>&1 | Out-Null
+        LyJournal $p 1
+        (Get-Item -LiteralPath (Join-Path $p '.git') -Force).Attributes = 'Normal'  # git hides it, and a hidden file refuses a write
+        return $p
+    }
+    function LyAdmin([string]$Name) { Join-Path $lyMain ".git/worktrees/$Name" }
+    LyWorktree 'WtHooks' | Out-Null  # here: git refuses a new worktree once the layouts below have damaged an admin folder
+    $lyPlain = Join-Path $ly 'Plain'
+    LyJournal $lyPlain 1
+    LyCheck 'no .git and nothing above: the root' $lyPlain '1'
+    LyCheck 'a .git folder: the root' $lyMain '2'
+    $p = LyWorktree 'WtPlain'
+    LyCheck 'a linked worktree: the main checkout' $p '2'
+    $lySub = Join-Path $p 'Sub'
+    LyJournal $lySub 1
+    LyCheck 'a subfolder of a linked worktree with its own journal: the subfolder' $lySub '1'
+    $lySub = Join-Path $lyMain 'Sub'
+    LyJournal $lySub 1
+    LyCheck 'a subfolder of a repo with its own journal: the subfolder' $lySub '1'
+    $lyInner = Join-Path $lyMain 'Inner'
+    LyJournal $lyInner 1
+    [void][IO.Directory]::CreateDirectory((Join-Path $lyInner '.git'))
+    LyCheck 'a .git folder git will not read: still the root, never the repo above' $lyInner '1'
+    $p = LyWorktree 'WtAbove'
+    $lyAbove = Join-Path $ly 'Above'
+    $lyProj = Join-Path $lyAbove 'Proj'
+    LyJournal $lyProj 1
+    [IO.File]::WriteAllText((Join-Path $lyAbove '.git'), "gitdir: $(LyAdmin 'WtAbove')`n")
+    LyCheck 'a .git file above a project with none: the project' $lyProj '1'
+    $p = LyWorktree 'WtRel'
+    [IO.File]::WriteAllText((Join-Path $p '.git'), "gitdir: ../Main/.git/worktrees/WtRel`n")
+    LyCheck 'a relative gitdir: the main checkout' $p '2'
+    $p = LyWorktree 'WtCrlf'
+    [IO.File]::WriteAllText((Join-Path $p '.git'), "gitdir: $(LyAdmin 'WtCrlf')`r`n")
+    LyCheck 'a .git file in CRLF: the main checkout' $p '2'
+    $p = LyWorktree 'WtBom'
+    [IO.File]::WriteAllText((Join-Path $p '.git'), "gitdir: $(LyAdmin 'WtBom')`n", $lyBom)
+    LyCheck 'a .git file with a BOM: the main checkout' $p '2'
+    $p = LyWorktree 'WtAbs'
+    [IO.File]::WriteAllText((Join-Path (LyAdmin 'WtAbs') 'commondir'), "$(Join-Path $lyMain '.git')`n")
+    LyCheck 'an absolute commondir: the main checkout' $p '2'
+    $p = LyWorktree 'WtComCrlf'
+    [IO.File]::WriteAllText((Join-Path (LyAdmin 'WtComCrlf') 'commondir'), "../..`r`n")
+    LyCheck 'a commondir in CRLF: the main checkout' $p '2'
+    $p = LyWorktree 'WtComBom'
+    [IO.File]::WriteAllText((Join-Path (LyAdmin 'WtComBom') 'commondir'), "../..`n", $lyBom)
+    LyCheck 'a commondir with a BOM: the main checkout' $p '2'
+    $p = LyWorktree 'WtNoGitdir'
+    [IO.File]::WriteAllText((Join-Path $p '.git'), "not a link`n")
+    LyCheck 'a .git file naming no gitdir: both refuse' $p 'refuse'
+    $p = LyWorktree 'WtGone'
+    [IO.File]::WriteAllText((Join-Path $p '.git'), "gitdir: $(Join-Path $ly 'no-such-admin')`n")
+    LyCheck 'a gitdir that does not exist: both refuse' $p 'refuse'
+    $p = LyWorktree 'WtLost'
+    Remove-Item (Join-Path (LyAdmin 'WtLost') 'commondir')
+    LyCheck 'commondir lost, no objects: both refuse' $p 'refuse'
+    $p = LyWorktree 'WtNotGit'
+    [IO.File]::WriteAllText((Join-Path (LyAdmin 'WtNotGit') 'commondir'), "..`n")
+    LyCheck 'a commondir folder not named .git: both refuse' $p 'refuse'
+    $p = LyWorktree 'WtMissing'
+    [IO.File]::WriteAllText((Join-Path (LyAdmin 'WtMissing') 'commondir'), "../../../no-such-main/.git`n")
+    LyCheck 'a commondir naming a missing .git: both refuse' $p 'refuse'
+    $lySeparate = Join-Path $ly 'Separate'
+    git init -q --separate-git-dir (Join-Path $ly 'separate-admin') $lySeparate 2>&1 | Out-Null
+    LyJournal $lySeparate 1
+    LyCheck '--separate-git-dir: the root' $lySeparate '1'
+    $lyBare = Join-Path $ly 'Store.git'
+    git clone -q --bare $lyMain $lyBare 2>&1 | Out-Null
+    $p = Join-Path $ly 'WtBare'
+    git -C $lyBare worktree add -q --detach $p 2>&1 | Out-Null
+    LyJournal $p 1
+    LyCheck 'a linked worktree of a bare repo: both refuse' $p 'refuse'
+    $lyBareParent = Join-Path $ly 'BareParent'
+    git clone -q --bare $lyMain (Join-Path $lyBareParent '.git') 2>&1 | Out-Null
+    LyJournal $lyBareParent 3
+    $p = Join-Path $ly 'WtBareDot'
+    git -C (Join-Path $lyBareParent '.git') worktree add -q --detach $p 2>&1 | Out-Null
+    LyJournal $p 1
+    LyCheck 'a linked worktree of a bare repo in a folder named .git: the parent' $p '3'
+    # The same planted link through the hooks: the project's past-cap bug blocks, the other repo's bug does not, the line is its own.
+    & $bugPy[0] @lyPyRest -I $lyCli --root $lyMain round BUG-0002 fix +3 --note 'test round' 2>&1 | Out-Null
+    $lyAbove = Join-Path $ly 'HooksAbove'
+    $bugRoot = Join-Path $lyAbove 'Proj'
+    New-Item -ItemType Directory -Force (Join-Path $bugRoot '.claude/skills/bugs/scripts'), (Join-Path $bugRoot '.claude/skills/mem/scripts'), (Join-Path $bugRoot '.claude/hooks') | Out-Null
+    Copy-Item (Join-Path $hooks '../skills/bugs/scripts/bugs.py') (Join-Path $bugRoot '.claude/skills/bugs/scripts')
+    Copy-Item (Join-Path $hooks '../skills/mem/scripts/mem.py') (Join-Path $bugRoot '.claude/skills/mem/scripts')
+    Copy-Item (Join-Path $hooks 'secret-patterns.txt') (Join-Path $bugRoot '.claude/hooks')
+    [IO.File]::WriteAllText((Join-Path $lyAbove '.git'), "gitdir: $(LyAdmin 'WtHooks')`n")
+    BugCli @('add') $bugFields | Out-Null
+    BugCli @('round', 'BUG-0001', 'fix', '+3', '--note', 'test round') | Out-Null
+    $env:CLAUDE_PROJECT_DIR = $bugRoot
+    $r = DispatchR 'Bug: BUG-0001'
+    Check 'round-cap: a .git file above the project: its own past-cap bug blocks' ($r.Code -eq 2 -and $r.Out -match 'BUG-0001: fix 3/2') $true
+    Check 'round-cap: ... another repo''s past-cap bug does not' (Dispatch 'Bug: BUG-0002') 0
+    $r = Invoke-Hook 'session-start.ps1' @{}
+    Check 'session-start: ... and the status line is the project''s' ($r.Code -eq 0 -and $r.Out -match '(?m)^Bugs: 1 open \(1 High\+\)\s*$') $true
+
     # framework-sync: line endings, and the warnings for a target that defeats the journal. The tool requires pwsh 7.
     $pwsh = if ($PSVersionTable.PSVersion.Major -ge 7) { $shell } else { (Get-Command pwsh -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1).Source }
     if (-not $pwsh) { Write-Output 'SKIP  framework-sync: pwsh 7 not found' }
@@ -1357,6 +1490,10 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
         Check 'framework-sync: a file with no final newline gets its lines on a new line' ((SyncAttr $t) -match 'union$' -and (SyncText $t '.gitattributes').StartsWith("*.png -text`n")) $true
         $t = SyncTarget 'override' ".workflow/bugs.jsonl text eol=lf merge=union`n.workflow/** -text merge=binary`n" $null
         Check 'framework-sync: a later rule defeating union warns, naming what it resolves to' ($t.Code -eq 0 -and $t.Out -match '(?i)warning' -and $t.Out -match 'binary') $true
+        $t = SyncTarget 'eol-crlf' ".workflow/bugs.jsonl text eol=lf merge=union`n.workflow/** eol=crlf`n" $null
+        Check 'framework-sync: a later rule making the journal CRLF warns, naming what it resolves to' ($t.Code -eq 0 -and $t.Out -match '(?i)warning' -and $t.Out -match 'eol=crlf in this target') $true
+        $t = SyncTarget 'eol-unset' ".workflow/bugs.jsonl text eol=lf merge=union`n.workflow/** !eol`n" $null
+        Check 'framework-sync: ... and so does one unsetting eol' ($t.Code -eq 0 -and $t.Out -match 'eol=unspecified in this target') $true
         $t = SyncTarget 'ignored' $null ".workflow/`n"
         Check 'framework-sync: an ignored journal warns' ($t.Code -eq 0 -and $t.Out -match '(?i)warning' -and $t.Out -match 'ignored') $true
         $t = SyncTarget 'dry' $null $null @('-DryRun')

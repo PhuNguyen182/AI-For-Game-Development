@@ -67,8 +67,8 @@ argument-hint: "<bug id, or the symptom in the GD's words>"
   - **Within a feature, QA declined:** no offer; CP4 lists the `Resolved` bug for the GD (accept unverified → `Accepted`, or verify).
   - **No feature:** `AskUserQuestion` — verify now (Khuyến nghị) / accept unverified (→ `Accepted`, `--by GD`, mirror `.workflow/DEBT.md`). A `Resolved` bug never stays without one.
   - **Needs a device build that does not exist (a production crash):** verified by the device run on the next release candidate (`/release` step 4), or accepted by the GD at `/release` step 1.
-  - **Its marker:** `update` with the `note` `awaits device verification`, which `/release` step 1 reads.
+  - **Its marker:** `update` with the `note` `awaits device verification`, which `/release` step 1 reads with `show`; it counts only on the bug's latest move to `Resolved`, so write it after that move.
 
 ## 7. Report
 - **Reply:** cause, fix, test name, what was verified and what was not.
-- **No feature:** add "journal uncommitted": `.workflow/bugs.jsonl` waits for the GD's commit order.
+- **No feature:** add "journal uncommitted": `.workflow/bugs.jsonl`, and `.workflow/DEBT.md` when this run wrote it, wait for the GD's commit order.

@@ -29,7 +29,7 @@ user-invocable: false
 | Review / test | spec → CONTRACTS → diff (tests: + DEBT, so known debt is not filed as new) |
 
 - **Before undoing a design that looks wrong:** read DECISIONS.
-- **Before filing a bug against code that looks wrong:** read DEBT.
+- **Before filing a bug against code that looks wrong:** read DEBT, and `.workflow/DEBT.md` for a gap accepted with no feature.
 - **Missing file:** never written, not "none"; fall back to source.
 - **Stop:** once you know the entry point, the invariants, and who sees your change.
 - **Doc vs code disagree:** report both anchors; never pick silently.

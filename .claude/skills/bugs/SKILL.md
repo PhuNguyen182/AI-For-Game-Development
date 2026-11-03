@@ -59,5 +59,5 @@ user-invocable: false
 | Need | Command |
 |---|---|
 | Rebuild the cache | `rebuild` |
-| Report duplicates, a torn line, inert lines, a journal git ignores or does not union-merge | `doctor` |
+| Report duplicates, a torn line, inert lines, a journal git ignores, does not union-merge or does not keep LF | `doctor` |
 | Repair them | `doctor --fix` (appends a durable `renumber`); a malformed line is reported for a hand fix |

@@ -17,7 +17,7 @@ argument-hint: "<platforms> [--dry-run]"
 |---|---|---|---|
 | 0 | Content | main session | Release content committed; every feature in it closed at CP4 |
 | 0b | Unchecked work | main session | Every feature in `<last tag>..HEAD` whose file says "not reviewed" or "not QA'd", every `Accepted` High or Highest bug (`bugs.py list --status Accepted --priority High --priority Highest`, plus `.workflow/DEBT.md` and each feature root's `DEBT.md`: purge can remove an old one from the DB), every commit outside a closed feature (S work, no-feature `/fix`) — each listed as a named gap |
-| 1 | Open bugs | main session | No High or Highest unsettled, `Backlog` included (`bugs.py list --open --priority High --priority Highest`), except a `Resolved` bug noted `awaits device verification` (`/fix` step 6), left for step 4 — re-checked after step 4 |
+| 1 | Open bugs | main session | No High or Highest unsettled, `Backlog` included (`bugs.py list --open --priority High --priority Highest`), except a `Resolved` bug noted `awaits device verification` (`/fix` step 6; read it with `show`; it counts only on the bug's latest move to `Resolved`), left for step 4 — re-checked after step 4 |
 | 2 | Version bump | main session | `bundleVersion` + build number / version code incremented |
 | 3 | Build per platform | `build-release-engineer` | Release config, IL2CPP, artifact exists |
 | 4 | Smoke test | `build-release-engineer` | Launch, core loop, purchase/ad screens open, quit/resume; the brief carries `Verify: BUG-####` per bug row 1 deferred (dispatch → `Review`); its `Repro: … gone` → `Complete`, `reproduces` → `Reopen`, no line → `Resolved` |
@@ -50,7 +50,7 @@ argument-hint: "<platforms> [--dry-run]"
 ## Finish — `AskUserQuestion`
 - **Tag, push, submit:** none of them runs before this `AskUserQuestion`.
 - **Show:** the gate table with results.
-- **Journal:** row 4 moved a status → add "journal uncommitted": `.workflow/bugs.jsonl` waits for the GD's commit order, and a tag omits those moves until then.
+- **Journal:** row 4 moved a status → add "journal uncommitted": `.workflow/bugs.jsonl`, and `.workflow/DEBT.md` when this run wrote it, wait for the GD's commit order, and a tag omits those moves until then.
 - **Options:** tag + push (recommended only when every row passes or the GD accepted each gap by name in this run; never in a dry run) / fix failures first / stop.
 - **Fix failures first:** each failed row goes to its route (`/fix`, `/review`, the owning agent), then re-run only the failed rows.
   - **Round count:** +1 `release` round, cap 2, recorded as `- Release rounds: n/2` in `.workflow/release-<version>.md`, then the stop rule.

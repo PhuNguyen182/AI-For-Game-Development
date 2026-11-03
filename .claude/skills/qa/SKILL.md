@@ -47,5 +47,5 @@ argument-hint: "<feature slug, or what to test>"
 - **Per acceptance criterion:** evidence | gap.
 - **Bugs:** bugs by status.
 - **Not run:** what did not run, and why.
-- **No feature:** a run that moved a status → add "journal uncommitted": `.workflow/bugs.jsonl` waits for the GD's commit order.
+- **No feature:** a run that moved a status → add "journal uncommitted": `.workflow/bugs.jsonl`, and `.workflow/DEBT.md` when this run wrote it, wait for the GD's commit order.
 - **Code coverage:** changed lines executed, gaps by owner, or why it did not run; never evidence for a criterion.

@@ -295,6 +295,8 @@ $journalWarnings = [System.Collections.Generic.List[string]]::new()
 if ($gaNote -and (-not $DryRun -or $gaNote -eq 'already up to date')) {
     $merge = ([string](git -C $Target check-attr merge -- $journalRel) -split ': ')[-1]
     if ($merge -ne 'union') { $journalWarnings.Add("$journalRel resolves to merge=$merge in this target, not union: a project rule overrides the framework line, so merges of the bug journal can conflict. Move ``$journalRel text eol=lf merge=union`` after that rule.") }
+    $eol = ([string](git -C $Target check-attr eol -- $journalRel) -split ': ')[-1]
+    if ($eol -ne 'lf') { $journalWarnings.Add("$journalRel resolves to eol=$eol in this target, not lf: a project rule overrides the framework line, so the bug journal can end up with mixed line endings. Move ``$journalRel text eol=lf merge=union`` after that rule.") }
 }
 git -C $Target check-ignore -q -- $journalRel 2>$null
 if ($LASTEXITCODE -eq 0) { $journalWarnings.Add("$journalRel is ignored by this target's git rules: the bug journal is the truth and must stay tracked. Remove the rule that ignores it.") }
