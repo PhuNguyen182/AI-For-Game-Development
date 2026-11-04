@@ -19,6 +19,7 @@ if ($form.Kind -eq 'None') {
     foreach ($c in (Get-GitCalls $cmd $cwd)) {
         if ($c.Alias -and $c.Verb -eq 'commit') { Block 'Commit blocked: a commit through an alias, which the scan cannot read. Spell out git commit.' }
     }
+    if (Test-GateCallHit $cmd $cwd 'commit') { Block 'Commit blocked: a git commit in a form the scan cannot read. Re-run it in a simple form: git commit ..., git -C <path> commit ..., or cd <path> && git commit ...' }
     exit 0
 }
 if ($form.Why) { Block "Commit blocked: $($form.Why)" }
@@ -26,12 +27,17 @@ if ($form.Why) { Block "Commit blocked: $($form.Why)" }
 # The scan below reads the index as it stands before the command runs. A commit that stages as it commits
 # (-a, -i, -o, -p, a pathspec) would record content the scan never saw. A `git add` before it is refused with the form.
 function Find-UnscannedCommit([string]$Rest) {
+    # Each long option that stages, with the shortest prefix git takes for it (a shorter one is ambiguous, and git refuses it).
+    $staging = @{ 'all' = 3; 'include' = 3; 'interactive' = 3; 'only' = 1; 'patch' = 4; 'pathspec-from-file' = 11 }
     $skip = $false
     foreach ($t in @([regex]::Matches($Rest, '\S+') | ForEach-Object { $_.Value })) {
         if ($skip) { $skip = $false; continue }
         if ($t -eq '--') { return '-- <pathspec>' }
         if ($t -match '^\d*[<>]' -or $t -eq '-') { continue }  # a redirection, or stdin for -F
-        if ($t -match '^--(?:all|inc(?:l(?:u(?:de?)?)?)?|onl(?:y)?|pathspec-from-file|interactive|patch)(?:=|$)') { return $t }
+        if ($t -match '^--([^=]+)') {
+            $name = $Matches[1]
+            foreach ($long in $staging.Keys) { if ($name.Length -ge $staging[$long] -and $long.StartsWith($name, [StringComparison]::OrdinalIgnoreCase)) { return $t } }
+        }
         if ($t -match '^--(?:message|file|reuse-message|reedit-message|template|author|date|fixup|squash|trailer|cleanup)$') { $skip = $true; continue }
         if ($t -match '^--') { continue }
         if ($t -cmatch '^-([A-Za-z]\S*)$') {  # \S: -m"a b" is one word, the message attached

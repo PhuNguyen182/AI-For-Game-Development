@@ -33,9 +33,12 @@ function First { foreach ($v in $args) { if ($null -ne $v -and [string]$v -ne ''
 # A command with heredoc / here-string bodies removed and multi-word quoted text blanked to Q, so a commit message
 # that mentions `git push --force` is not read as one. A one-word quoted value ('+main', "--force") keeps its text;
 # a quoted path to git itself ("C:/Program Files/Git/cmd/git.exe") reads as git.
-function Remove-QuotedText([string]$Command) {
+function Remove-HeredocBody([string]$Command) {
     $c = [regex]::Replace($Command, '<<-?\s*([''"]?)(\w+)\1[^\n]*\n[\s\S]*?\n\s*\2[ \t]*(?=\r?\n|$)', ' ')
-    $c = [regex]::Replace($c, '@([''"])\r?\n[\s\S]*?\r?\n\1@', ' ')
+    return [regex]::Replace($c, '@([''"])\r?\n[\s\S]*?\r?\n\1@', ' ')
+}
+function Remove-QuotedText([string]$Command) {
+    $c = Remove-HeredocBody $Command
     return [regex]::Replace($c, '"([^"]*)"|''([^'']*)''', { param($m) $v = $m.Groups[1].Value + $m.Groups[2].Value
             if ($v -match '(?i)(?:^|[\\/])git(?:\.exe)?$') { 'git' } elseif ($v -match '^\S+$') { $v } else { 'Q' } })
 }
@@ -48,13 +51,14 @@ $script:GitUnsafeConfig = '(?i)^(?:core\.(?:sshcommand|fsmonitor|pager|editor|ho
 # Git's global options before the verb (-C dir, -c k=v, --no-pager, --git-dir x, ...).
 $script:GitArg = '(?:"[^"]*"|''[^'']*''|\S+)'
 $script:GitOpt = "(?:-[Cc]\s+$script:GitArg|--(?:git-dir|work-tree|namespace|config-env|exec-path)(?:=|\s+)$script:GitArg|--[\w-]+(?:=$script:GitArg)?|-[A-Za-z]+)"
+$script:GitShellScript = '(?i)\b(?:sh|bash|zsh|dash|pwsh|powershell|cmd)(?:\.exe)?\s+(?:-[A-Za-z]*c\b|-Command\b|/c\b)'
 
 # Every `git <verb> <args>` a shell command runs, as { Globals, Verb, Rest, Alias, Why }. Reads through commit-message
 # text (blanked), the quoted script of an sh/bash/pwsh/cmd -c wrapper, and an alias configured in $Cwd's repo or
 # the user's config. Why is set, and the call refused, for config nothing on disk shows: `-c alias.*`, GIT_CONFIG_*.
 function Get-GitCalls([string]$Command, [string]$Cwd, [int]$Depth = 0) {
     $texts = @(Remove-QuotedText $Command)
-    if ($Command -match '(?i)\b(?:sh|bash|zsh|dash|pwsh|powershell|cmd)(?:\.exe)?\s+(?:-[A-Za-z]*c\b|-Command\b|/c\b)') {
+    if ($Command -match $script:GitShellScript) {
         $texts += ($Command -replace '[\x22\x27]', ' ')
     }
     # Read on the raw command: a quoted `-c "core.sshCommand=..."` is blanked in $texts.
@@ -85,6 +89,14 @@ function Get-GitCalls([string]$Command, [string]$Cwd, [int]$Depth = 0) {
             [pscustomobject]@{ Globals = $globals; Verb = $parts[0].ToLowerInvariant(); Rest = ' ' + (@($parts[1], $rest) -join ' '); Alias = $true; Why = $null }
         }
     }
+}
+
+# The last check on a command Read-GateCommand read as Kind None: does the text still run $Verb? A heredoc body is text, and
+# so is quoted text unless a shell -c outside the quotes could run it (a commit message may name both).
+function Test-GateCallHit([string]$Command, [string]$Cwd, [string]$Verb) {
+    $blank = Remove-QuotedText $Command
+    $text = if ($blank -match $script:GitShellScript) { Remove-HeredocBody $Command } else { $blank }
+    return [bool]@(Get-GitCalls $text $Cwd | Where-Object { $_.Verb -eq $Verb }).Count
 }
 
 # Words of a git call's arguments up to `--` (after it come paths, never options).
@@ -410,7 +422,7 @@ function Read-ShellHeredocStart($s, $c) {
     while ($s.I -lt $n) {
         $ch = [string]$t[$s.I]
         if ($ch -ceq "'" -or $ch -ceq '"') {
-            $end = $t.IndexOf($ch, $s.I + 1)
+            $end = $t.IndexOf($ch, $s.I + 1, [StringComparison]::Ordinal)
             if ($end -lt 0) { throw 'an unterminated heredoc delimiter' }
             [void]$delim.Append($t.Substring($s.I + 1, $end - $s.I - 1))
             $quoted = $true
@@ -434,7 +446,8 @@ function Skip-ShellHeredocs($s) {
         $pos = $start
         $found = $false
         while ($pos -le $n) {
-            $e = if ($pos -lt $n) { $t.IndexOf("`n", $pos) } else { -1 }
+            # Ordinal: the culture-sensitive overload can miss the `n of a CRLF under ICU.
+            $e = if ($pos -lt $n) { $t.IndexOf("`n", $pos, [StringComparison]::Ordinal) } else { -1 }
             if ($e -lt 0) { $e = $n }
             $line = $t.Substring($pos, $e - $pos).TrimEnd("`r")
             if ($h.Strip) { $line = $line.TrimStart("`t") }
@@ -558,7 +571,7 @@ function Read-ShellStatements($s, [string]$Close, $Into) {
         } elseif ($ch -ceq "'") {
             Add-ShellText $c ''; $c.W.Q = $true
             while ($true) {
-                $end = $t.IndexOf("'", $s.I + 1)
+                $end = $t.IndexOf("'", $s.I + 1, [StringComparison]::Ordinal)
                 if ($end -lt 0) { throw 'an unterminated single quote' }
                 Add-ShellText $c $t.Substring($s.I + 1, $end - $s.I - 1)
                 $s.I = $end + 1
@@ -579,7 +592,7 @@ function Read-ShellStatements($s, [string]$Close, $Into) {
         } elseif ($ch -ceq '@' -and $s.Ps -and -not $c.W -and ($here = [regex]::new('\G@([''"])[ \t]*\r?\n').Match($t, $s.I)).Success) {
             $q = $here.Groups[1].Value
             $bodyAt = $here.Index + $here.Length
-            $end = $t.IndexOf("`n$q@", $bodyAt - 1)
+            $end = $t.IndexOf("`n$q@", $bodyAt - 1, [StringComparison]::Ordinal)
             if ($end -lt 0) { throw 'a here-string with no closing line' }
             if ($q -ceq '"' -and $end -gt $bodyAt -and (Test-ActiveBody $t.Substring($bodyAt, $end - $bodyAt))) { throw 'a double-quoted here-string that expands a substitution near a commit or push' }
             Add-ShellText $c 'Q'; $c.W.Q = $true
@@ -659,7 +672,15 @@ function Resolve-GatePath($Word, [string]$Base, [string]$Tool, [bool]$Wildcards)
 #   either after one `cd <literal path> &&` or, in PowerShell, `Set-Location [-LiteralPath] <literal path>;`
 #   stdin forms: `git commit -F - <<'EOF'`, `$msg | git commit -F -`, after `$msg = <text>`
 #   an `echo <literal text>` before it, and any later statement that holds no second commit or push
+#   the skills' prompt switches (Test-GateEnv) as leading NAME=VALUE words in Bash, or `$env:NAME = 'v';` in PowerShell
 # Everything else that runs a commit or push is refused.
+function Test-GateEnv([string]$Name, [string]$Value) {
+    if ($Value -match '[$`%]') { return $false }
+    if ($Name -ceq 'GIT_SSH_COMMAND') { return $Value -ceq 'ssh -o BatchMode=yes' }
+    if ($Name -ceq 'GIT_EDITOR') { return $Value -ceq 'true' }  # any other value is a program that runs after the scan
+    return 'GIT_TERMINAL_PROMPT', 'GCM_INTERACTIVE' -ccontains $Name
+}
+
 function Read-GateCommand([string]$Command, [string]$Tool, [string]$Cwd, [string]$Verb) {
     function Refuse([string]$Why) {
         $form = "git $Verb ..., git -C <path> $Verb ..., cd <path> && git $Verb ..."
@@ -682,13 +703,33 @@ function Read-GateCommand([string]$Command, [string]$Tool, [string]$Cwd, [string
     foreach ($st in $nested) { foreach ($c in @(Get-StatementCalls $st)) { $calls += [pscustomobject]@{ Call = $c; At = -1; Nested = $true } } }
     $mine = @($calls | Where-Object { $_.Call.Class -eq $Verb -or $_.Call.Class -eq 'any' })
 
-    # The script of a shell wrapper is one quoted word, so it is read on the raw text, heredocs and quotes included.
-    $wrapper = '(?i)(?:^|[\\/])(?:sh|bash|zsh|dash|ksh|pwsh|powershell|cmd|eval|xargs|exec|source|iex|invoke-expression|start-process|saps|start)(?:\.exe)?$'
-    $held = ($Command -replace '[\x22\x27]', ' ') -match "(?i)\bgit(?:\.exe)?\b(?:\s+$script:GitOpt)*\s+(?:$gateVerb)"
-    if ($held) {
-        foreach ($st in @($top) + @($nested)) {
-            $at = if ($st.Words[0].Value -ceq '&' -and $st.Words.Count -gt 1) { 1 } else { 0 }
-            if ($st.Words[$at].Value -match $wrapper) { return Refuse "a $Verb reached through $($st.Words[$at].Value), which the scan cannot read" }
+    # The script of a wrapper is one quoted word, so git and the verb are looked for on the raw text, and the wrapper may sit
+    # anywhere in its statement (timeout 60 bash -c, { bash -c; }). A statement that is git, or that only prints text or takes
+    # a path (echo, cd source), runs no script: its words are arguments. Leading NAME=VALUE words are not the program.
+    # Statements after the call are skipped (git push && npm start) unless the text holds the verb beyond the call's own words:
+    # bash -c "git push", and a heredoc or an echo fed to a shell, both hold it where the words of the later statement may not.
+    $wrapper ='(?i)(?:^|[\\/])(?:sh|bash|zsh|dash|ksh|pwsh|powershell|cmd|eval|xargs|exec|source|iex|invoke-expression|start-process|saps|start)(?:\.exe)?$'
+    $inline = '(?i)(?:^|[\\/])(?:python3?|py|node|perl|ruby)(?:\.exe)?$'
+    if ($Command -match "(?is)\bgit(?:\.exe)?\b.*\b(?:$gateVerb)") {
+        $checked = @($top)
+        $topCalls = @($mine | Where-Object { -not $_.Nested })
+        if ($topCalls.Count) {
+            $callText = @($top[$topCalls[0].At].Words | ForEach-Object { $_.Value }) -join ' '
+            $verbs = '(?i)commit|push|--continue'
+            if ([regex]::Matches($Command, $verbs).Count -le [regex]::Matches($callText, $verbs).Count) { $checked = @($top | Select-Object -First ($topCalls[0].At + 1)) }
+        }
+        foreach ($st in $checked + @($nested)) {
+            $sw = @($st.Words)
+            $at = 0
+            while ($at -lt $sw.Count -and $sw[$at].Value -cmatch '^[A-Za-z_]\w*=') { $at++ }
+            if ($at -ge $sw.Count) { continue }
+            $head = $sw[$at].Value
+            if ($head -match '(?i)(?:^|[\\/])git(?:\.exe)?$' -or $head -ceq 'echo' -or $head -ceq 'cd' -or $head -ieq 'Set-Location') { continue }
+            for ($i = $at; $i -lt $sw.Count; $i++) {
+                $word = $sw[$i].Value
+                if ($word -match $wrapper) { return Refuse "a $Verb reached through $word, which the scan cannot read" }
+                if ($word -match $inline -and @($sw | Select-Object -Skip ($i + 1) | Where-Object { $_.Value -ceq '-c' -or $_.Value -ceq '-e' }).Count) { return Refuse "a $Verb reached through $word, which the scan cannot read" }
+            }
         }
     }
     if (-not $mine.Count) { return $none }
@@ -703,15 +744,20 @@ function Read-GateCommand([string]$Command, [string]$Tool, [string]$Cwd, [string
     $call = $mine[0]
     if ($call.Nested) { return Refuse "a $Verb inside a subshell or substitution" }
     $ws = @($top[$call.At].Words)
-    if ($call.Call.Index -ne 0) { return Refuse "$($ws[0].Value) before git on the same statement" }
-    $g = $ws[0]
+    # Leading NAME=VALUE words the skills prescribe. PowerShell has no such form; there it is `$env:NAME = 'v';`, read below.
+    $p = 0
+    if (-not $s.Ps) {
+        while ($p -lt $ws.Count -and -not $ws[$p].Dynamic -and -not $ws[$p].Escaped -and $ws[$p].Value -cmatch '(?s)^([A-Z_]+)=(.*)$' -and (Test-GateEnv $Matches[1] $Matches[2])) { $p++ }
+    }
+    if ($call.Call.Index -ne $p) { return Refuse "$($ws[$p].Value) before git on the same statement" }
+    $g = $ws[$p]
     if ($g.Value -cne 'git' -or $g.Quoted -or $g.Dynamic -or $g.Escaped) { return Refuse "git spelled $($g.Value)" }
     $verbWord = $ws[$call.Call.VerbAt]
     if ($verbWord.Quoted -or $verbWord.Dynamic -or $verbWord.Escaped -or $verbWord.Value -cne $verbWord.Value.ToLowerInvariant()) { return Refuse "the verb spelled $($verbWord.Value)" }
 
     # Global options: at most one -C, first, then -c k=v.
     $cWord = $null; $globals = @(); $seenConfig = $false
-    for ($j = 1; $j -lt $call.Call.VerbAt; $j++) {
+    for ($j = $p + 1; $j -lt $call.Call.VerbAt; $j++) {
         $v = $ws[$j].Value
         if ($v -ceq '-C') {
             if ($cWord) { return Refuse 'more than one -C' }
@@ -733,6 +779,7 @@ function Read-GateCommand([string]$Command, [string]$Tool, [string]$Cwd, [string
         $st = $top[$k]; $w = @($st.Words); $first = $w[0].Value
         $isVar = $first -match '^\$[A-Za-z_]\w*$'
         if ($isVar -and $w.Count -eq 3 -and $w[1].Value -ceq '=' -and $st.Sep -in ';', "`n") { continue }
+        if ($s.Ps -and $first -cmatch '^\$env:(\w+)$' -and $w.Count -eq 3 -and $w[1].Value -ceq '=' -and $w[2].Quoted -and -not $w[2].Dynamic -and $st.Sep -in ';', "`n" -and (Test-GateEnv $Matches[1] $w[2].Value)) { continue }
         if ($w.Count -eq 1 -and $st.Sep -ceq '|' -and $k -eq $call.At - 1 -and ($isVar -or $w[0].Quoted)) { continue }
         if ($first -ceq 'echo' -and $st.Sep -in ';', "`n", '&&', '|' -and -not @($w | Where-Object { $_.Dynamic -or (-not $_.Quoted -and $_.Value -match '[<>]') }).Count) { continue }
         if ($first -match '(?i)^(?:pushd|popd|push-location|pop-location|chdir|sl)$') { return Refuse "$first before the $Verb" }

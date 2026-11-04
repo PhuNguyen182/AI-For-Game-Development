@@ -1488,6 +1488,21 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     [IO.File]::WriteAllText((Join-Path $gfApp 'Key.txt'), $gfSecret)
     GfGit -C $gfApp add Key.txt
     $gfClean = GfRepo 'clean'
+    # The same key, in a repository whose path holds a space: quotes inside a wrapper's quoted script.
+    $gfSp = GfRepo 'App Space'
+    [IO.File]::WriteAllText((Join-Path $gfSp 'Committed.txt'), $gfSecret)
+    GfGit -C $gfSp add Committed.txt
+    GfGit -C $gfSp commit -q -m key
+    [IO.File]::WriteAllText((Join-Path $gfSp 'Key.txt'), $gfSecret)
+    GfGit -C $gfSp add Key.txt
+    $gfS = $gfSp -replace '\\', '/'
+    # The same key, in a folder named like a wrapper: an argument of git, not a program.
+    $gfSrc = GfRepo 'source'
+    [IO.File]::WriteAllText((Join-Path $gfSrc 'Committed.txt'), $gfSecret)
+    GfGit -C $gfSrc add Committed.txt
+    GfGit -C $gfSrc commit -q -m key
+    [IO.File]::WriteAllText((Join-Path $gfSrc 'Key.txt'), $gfSecret)
+    GfGit -C $gfSrc add Key.txt
     $gfA = $gfApp -replace '\\', '/'
     $gfRefuse = 'Re-run it in a simple form'
     $gfGates = @(@('pre-commit.ps1', 'commit -m x', 'secret in Key\.txt'), @('pre-push.ps1', 'push', 'secret in Committed\.txt'))
@@ -1534,6 +1549,58 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
         @('refuse', $gfBoth, $gf, 'cat f.txt && git -C app {V}'),
         @('refuse', @('Bash'), $gf, 'git -C {B} {V}'),
         @('refuse', @('PowerShell'), $gf, 'git -C /{D} {V}'),
+        # A wrapper whose script quotes a path, and a wrapper that is not the first word.
+        @('refuse', $gfBoth, $gf, 'bash -c "git -C ''{S}'' {V}"'),
+        @('refuse', $gfBoth, $gf, 'sh -c "git -C ''{S}'' {V}"'),
+        @('refuse', $gfBoth, $gf, 'eval "git -C ''{S}'' {V}"'),
+        @('refuse', $gfBoth, $gf, 'iex "git -C ''{S}'' {V}"'),
+        @('refuse', $gfBoth, $gf, 'powershell -c "git -C ''{S}'' {V}"'),
+        @('refuse', $gfBoth, $gf, 'timeout 60 bash -c "git -C app {V}"'),
+        @('refuse', $gfBoth, $gf, 'env bash -c "git -C app {V}"'),
+        @('refuse', @('Bash'), $gf, 'FOO=1 bash -c "git -C app {V}"'),
+        @('refuse', $gfBoth, $gf, 'nohup bash -c "git -C app {V}"'),
+        @('refuse', @('Bash'), $gf, '{ bash -c "git -C app {V}"; }'),
+        @('refuse', $gfBoth, $gf, 'python -c "import os; os.system(''git -C app {V}'')"'),
+        @('refuse', $gfBoth, $gf, 'python3 -c "import os; os.system(''git -C app {V}'')"'),
+        @('refuse', $gfBoth, $gf, 'py -3 -c "import os; os.system(''git -C app {V}'')"'),
+        @('refuse', $gfBoth, $gf, 'node -e "require(''child_process'').execSync(''git -C app {V}'')"'),
+        @('refuse', $gfBoth, $gf, 'perl -e "system(''git -C app {V}'')"'),
+        @('refuse', $gfBoth, $gf, 'ruby -e "system(''git -C app {V}'')"'),
+        # Only the prompt switches the skills print come before git, and none of them moves the repository.
+        @('refuse', @('Bash'), $gf, 'GIT_DIR=x git {V}'),
+        @('refuse', @('Bash'), $gf, 'GIT_TERMINAL_PROMPT=0 GIT_DIR=x git {V}'),
+        @('refuse', @('Bash'), $gf, 'GIT_WORK_TREE=x GIT_TERMINAL_PROMPT=0 git {V}'),
+        @('refuse', @('Bash'), $gf, 'GIT_TERMINAL_PROMPT=0 GIT_INDEX_FILE=x git {V}'),
+        @('refuse', @('Bash'), $gf, 'GIT_TERMINAL_PROMPT=0 GIT_COMMON_DIR=x git {V}'),
+        @('refuse', @('Bash'), $gf, 'FOO=1 git {V}'),
+        @('refuse', @('Bash'), $gf, 'GIT_TERMINAL_PROMPT=$(pwd) git {V}'),
+        @('refuse', @('Bash'), $gf, 'GIT_TERMINAL_PROMPT=$X git {V}'),
+        @('refuse', @('Bash'), $gf, 'GIT_SSH_COMMAND=ssh git {V}'),
+        @('refuse', @('Bash'), $gf, 'GIT_SSH_COMMAND=''ssh -o ProxyCommand=x'' git {V}'),
+        @('refuse', @('PowerShell'), $gf, 'GIT_TERMINAL_PROMPT=0 git {V}'),
+        @('refuse', @('PowerShell'), $gf, '$env:FOO = ''1''; git {V}'),
+        @('refuse', @('PowerShell'), $gf, '$env:GIT_TERMINAL_PROMPT = $x; git {V}'),
+        @('refuse', @('PowerShell'), $gf, '$env:GIT_TERMINAL_PROMPT = 0; git {V}'),
+        @('refuse', @('PowerShell'), $gf, '$env:GIT_SSH_COMMAND = ''ssh''; git {V}'),
+        @('refuse', @('Bash'), $gf, '$env:GIT_TERMINAL_PROMPT = ''0''; git {V}'),
+        @('refuse', @('Bash'), $gf, 'GIT_EDITOR=./x.sh git {V}'),
+        @('refuse', @('PowerShell'), $gf, '$env:GIT_EDITOR = ''./x.sh''; git {V}'),
+        @('refuse', @('Bash'), $gf, 'FOO=1 git -C source {V}'),
+        @('refuse', $gfBoth, $gf, 'git -C app {V} && bash -c "git -C app push"'),
+        @('refuse', $gfBoth, $gf, 'git -C app {V} && bash -c "git -C app commit -m y"'),
+        @('refuse', @('Bash'), $gf, ('git -C app {V} && bash <<''EOF''' + "`n" + 'git -C app {V}' + "`n" + 'EOF')),
+        @('refuse', $gfBoth, $gf, 'git -C app {V}; echo "git -C app {V}" | bash'),
+        @('scan', @('Bash'), $gf, 'GIT_TERMINAL_PROMPT=0 git -C source {V}'),
+        @('scan', $gfBoth, $gf, 'git -C source {V}'),
+        @('scan', $gfBoth, $gfApp, 'git {V} && npm start'),
+        @('scan', $gfBoth, $gfApp, 'git {V} && ls docs/source'),
+        @('scan', @('Bash'), $gfApp, 'GIT_TERMINAL_PROMPT=0 git {V} && npm start'),
+        @('scan', @('Bash'), $gfApp, 'GIT_TERMINAL_PROMPT=0 git {V}'),
+        @('scan', @('Bash'), $gf, 'GIT_TERMINAL_PROMPT=0 git -C app {V}'),
+        @('scan', @('Bash'), $gf, 'cd app && GCM_INTERACTIVE=never git {V}'),
+        @('scan', @('Bash'), $gfApp, 'GIT_TERMINAL_PROMPT=0 GCM_INTERACTIVE=never GIT_SSH_COMMAND=''ssh -o BatchMode=yes'' GIT_EDITOR=true git {V}'),
+        @('scan', @('PowerShell'), $gfApp, '$env:GIT_TERMINAL_PROMPT = ''0''; git {V}'),
+        @('scan', @('PowerShell'), $gfApp, '$env:GIT_SSH_COMMAND = ''ssh -o BatchMode=yes''; $env:GCM_INTERACTIVE = "never"; git {V}'),
         @('scan', $gfBoth, $gfApp, 'git {V}'),
         @('scan', $gfBoth, $gf, 'git -C app {V}'),
         @('scan', $gfBoth, $gf, 'git -C "{A}" {V}'),
@@ -1553,10 +1620,10 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     foreach ($g in $gfGates) {
         foreach ($row in $gfRows) {
             foreach ($t in $row[1]) {
-                $c = $row[3].Replace('{A}', $gfA).Replace('{V}', $g[1]).Replace('{B}', $gfApp).Replace('{D}', $gfDriveless).Replace('{Q}', ($g[1] -replace '^(\w+)', '"$1"'))
+                $c = $row[3].Replace('{A}', $gfA).Replace('{V}', $g[1]).Replace('{B}', $gfApp).Replace('{D}', $gfDriveless).Replace('{S}', $gfS).Replace('{Q}', ($g[1] -replace '^(\w+)', '"$1"'))
                 $r = Invoke-HookUtf8 $g[0] @{ tool_name = $t; cwd = $row[2]; tool_input = @{ command = $c } }
                 $want = if ($row[0] -eq 'refuse') { $gfRefuse } else { $g[2] }
-                $shown = ($c -replace [regex]::Escape($gfApp), '<app>' -replace [regex]::Escape($gfA), '<app>' -replace "`n", ' ')
+                $shown = ($c -replace [regex]::Escape($gfApp), '<app>' -replace [regex]::Escape($gfA), '<app>' -replace [regex]::Escape($gfS), '<space>' -replace "`n", ' ')
                 Check "gate form, $($g[0]), $t, $($row[0]): $shown" ($r.Code -eq 2 -and $r.Out -match $want) $true
             }
         }
@@ -1591,6 +1658,54 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     Check 'gate form: a second commit on the heredoc line is seen' ($r.Code -eq 2 -and $r.Out -match 'two commit or push') $true
     $r = Invoke-HookUtf8 'pre-push.ps1' @{ tool_name = 'Bash'; cwd = $gfClean; tool_input = @{ command = "git push origin main <<EOF --force`nbody`nEOF" } }
     Check 'gate form: a force on the heredoc line is seen' ($r.Code -eq 2 -and $r.Out -match 'blast radius 3') $true
+    # Naming a wrapper is not running one.
+    $r = Invoke-HookUtf8 'pre-commit.ps1' @{ tool_name = 'Bash'; cwd = $gfApp; tool_input = @{ command = 'git commit -m "bash -c"' } }
+    Check 'gate form, wrapper as text: git commit -m "bash -c" reaches the key' ($r.Code -eq 2 -and $r.Out -match 'secret in Key\.txt') $true
+    $r = Invoke-HookUtf8 'pre-commit.ps1' @{ tool_name = 'Bash'; cwd = $gfApp; tool_input = @{ command = "git commit -F - <<'EOF'`nbash -c `"git commit -m x`"; python -c x`nEOF" } }
+    Check 'gate form, wrapper as text: a commit heredoc body naming them reaches the key' ($r.Code -eq 2 -and $r.Out -match 'secret in Key\.txt') $true
+    foreach ($g in @(@('pre-commit.ps1', 'commit -m x'), @('pre-push.ps1', 'push'))) {
+        foreach ($c in @("cat <<'EOF'`nbash -c `"git $($g[1])`"`nEOF", "cat <<'EOF'`npython -c x; git $($g[1])`nEOF", "echo `"bash -c 'git $($g[1])'`"")) {
+            $r = Invoke-HookUtf8 $g[0] @{ tool_name = 'Bash'; cwd = $gfApp; tool_input = @{ command = $c } }
+            Check "gate form, wrapper as text, $($g[0]): $($c -replace "`n", ' ')" $r.Code 0
+        }
+        # A path or printed text that happens to be a wrapper's name, before the real call.
+        foreach ($c in @("cd source && git $($g[1])", "echo bash; git $($g[1])")) {
+            [void][IO.Directory]::CreateDirectory((Join-Path $gfClean 'source'))
+            $r = Invoke-HookUtf8 $g[0] @{ tool_name = 'Bash'; cwd = $gfClean; tool_input = @{ command = $c } }
+            Check "gate form, wrapper as a word, $($g[0]): $c" $r.Code 0
+        }
+        # The parser saw no call, the text still holds one: refused, alias or not.
+        foreach ($c in @("C:\Git\bin\bash.exe -c `"git $($g[1])`"", "echo git $($g[1])")) {
+            $r = Invoke-HookUtf8 $g[0] @{ tool_name = 'Bash'; cwd = $gfApp; tool_input = @{ command = $c } }
+            Check "gate form, Kind None with a call in the text, $($g[0]): $c" ($r.Code -eq 2 -and $r.Out -match 'cannot read') $true
+        }
+    }
+    $r = Invoke-HookUtf8 'pre-push.ps1' @{ tool_name = 'Bash'; cwd = $gfApp; tool_input = @{ command = 'git commit -m "bash -c"' } }
+    Check 'gate form, wrapper as text: git commit -m "bash -c" is no push' $r.Code 0
+    $r = Invoke-HookUtf8 'pre-push.ps1' @{ tool_name = 'Bash'; cwd = $gfApp; tool_input = @{ command = 'git commit -m "bash -c x; git push"' } }
+    Check 'gate form, wrapper as text: a message naming bash -c and git push is no push' $r.Code 0
+    # A wrapper's name as an argument of the call, or in a statement after it, is not a wrapper.
+    foreach ($row in @(@('pre-push.ps1', 'GIT_TERMINAL_PROMPT=0 git push origin feature/start'), @('pre-push.ps1', 'git push origin feature/start'),
+            @('pre-push.ps1', 'git push && npm start'), @('pre-commit.ps1', 'git commit -m x && ls docs/source'),
+            @('pre-commit.ps1', 'GIT_EDITOR=true git commit --amend -m source'), @('pre-commit.ps1', 'GIT_TERMINAL_PROMPT=0 git commit -m start'))) {
+        $r = Invoke-HookUtf8 $row[0] @{ tool_name = 'Bash'; cwd = $gfClean; tool_input = @{ command = $row[1] } }
+        Check "gate form, wrapper as an argument, $($row[0]): $($row[1])" $r.Code 0
+    }
+    foreach ($g in 'pre-commit.ps1', 'pre-push.ps1') {
+        $r = Invoke-HookUtf8 $g @{ tool_name = 'Bash'; cwd = $gfClean; tool_input = @{ command = 'git commit -m x && bash -c "git push"' } }
+        Check "gate form, wrapper after the call, ${g}: git commit -m x && bash -c `"git push`"" ($r.Code -eq 2 -and $r.Out -match $gfRefuse) $true
+    }
+    # A staging option in any abbreviation git takes, as the full spelling is.
+    foreach ($o in '--pathspec-fr=list.txt', '--pathspec-from-file=list.txt', '--inter', '--patc', '--inc', '--o', '--al', '--all', '--only') {
+        $r = Invoke-HookUtf8 'pre-commit.ps1' @{ tool_name = 'Bash'; cwd = $gfClean; tool_input = @{ command = "git commit $o -m x" } }
+        $want = if ($o -eq '--al') { 0 } else { 2 }  # ambiguous: git itself refuses --al
+        Check "gate form, staging abbreviation: git commit $o -m x" $r.Code $want
+        if ($want -eq 2) { Check "gate form, staging abbreviation: ... says why: $o" ($r.Out -match 'stages as it commits') $true }
+    }
+    foreach ($o in '--allow-empty', '--amend', '--no-verify', '--porcelain') {
+        $r = Invoke-HookUtf8 'pre-commit.ps1' @{ tool_name = 'Bash'; cwd = $gfClean; tool_input = @{ command = "git commit $o -m x" } }
+        Check "gate form, staging abbreviation: $o does not stage" $r.Code 0
+    }
 
     # Aliases. settings.json runs pre-commit only when "commit" is in the text, so git-guard is the line `git ci` meets.
     $gfOk = GfRepo 'ok'
@@ -1686,6 +1801,18 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     Remove-Item Env:GIT_EDITOR
     $r = Invoke-HookUtf8 'pre-commit.ps1' @{ tool_name = 'PowerShell'; cwd = $gfOk; tool_input = @{ command = '$msg | git commit -F -' } }
     Check 'gate form, allow: the skill''s $msg | git commit -F -, as the skill writes it' $r.Code 0
+    GfAllowCommit 'Bash' $gfOk $gfOk 'git commit -m "bash -c"' 'git commit -m "bash -c"'
+    GfAllowCommit 'Bash' $gfOk $gfOk "git commit -F - <<'EOF'`nSubject`n`nBody says bash -c `"git commit`", python -c x and eval.`nEOF" 'a heredoc body naming the wrappers'
+    GfAllowCommit 'PowerShell' $gfOk $gfOk "`$msg = @'`nSubject`n`nBody says bash -c `"git commit`" and iex.`n'@`n`$msg | git commit -F -" 'a here-string body naming the wrappers'
+    # Text with CRLF line ends: the line search must not read CR LF as one culture-sensitive character.
+    GfAllowCommit 'Bash' $gfOk $gfOk "git commit -F - <<'EOF'`r`nSubject`r`n`r`nBody.`r`nEOF`r`n" 'CRLF heredoc'
+    GfAllowCommit 'PowerShell' $gfOk $gfOk "`$msg = @'`r`nSubject`r`n`r`nBody.`r`n'@`r`n`$msg | git commit -F -" 'CRLF here-string'
+    GfAllowCommit 'PowerShell' $gfOk $gfOk "git commit -m @'`r`nSubject`r`n`r`nBody.`r`n'@" 'CRLF git commit -m here-string'
+    # The prompt switches routine-workflows.md prints, on a commit that lands.
+    GfAllowCommit 'Bash' $gfOk $gfOk 'GIT_EDITOR=true git commit --amend' 'GIT_EDITOR=true git commit --amend'
+    GfAllowCommit 'Bash' $gfOk $gfOk 'GIT_EDITOR=true git commit --amend -m source' 'GIT_EDITOR=true git commit --amend -m source'
+    GfAllowCommit 'Bash' $gfOk $gfOk 'GIT_TERMINAL_PROMPT=0 git commit -m x' 'GIT_TERMINAL_PROMPT=0 git commit -m x'
+    GfAllowCommit 'PowerShell' $gfOk $gfOk "`$env:GIT_EDITOR = 'true'; git commit --amend" '$env:GIT_EDITOR = true; git commit --amend'
 
     $gfRemote = Join-Path $gf 'remote.git'
     git init -q --bare -b main $gfRemote 2>&1 | Out-Null
@@ -1708,6 +1835,12 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
         GfAllowPush $t $gf "git -C `"$gfO`" push" 'git -C <path> push'
         GfAllowPush $t $gf "cd `"$gfO`" && git push" 'cd <path> && git push'
     }
+    GfAllowPush 'Bash' $gfOk 'GIT_TERMINAL_PROMPT=0 git push origin develop' 'GIT_TERMINAL_PROMPT=0 git push origin develop'
+    GfAllowPush 'Bash' $gfOk 'GCM_INTERACTIVE=never git push' 'GCM_INTERACTIVE=never git push'
+    GfAllowPush 'Bash' $gfOk "GIT_TERMINAL_PROMPT=0 GCM_INTERACTIVE=never GIT_SSH_COMMAND='ssh -o BatchMode=yes' git push origin develop" 'all three prompt switches'
+    GfAllowPush 'Bash' $gf "GIT_TERMINAL_PROMPT=0 git -C `"$gfO`" push" 'GIT_TERMINAL_PROMPT=0 git -C <path> push'
+    GfAllowPush 'PowerShell' $gfOk "`$env:GIT_TERMINAL_PROMPT = '0'; git push origin develop" '$env:GIT_TERMINAL_PROMPT = 0; git push origin develop'
+    GfAllowPush 'PowerShell' $gfOk "`$env:GIT_SSH_COMMAND = 'ssh -o BatchMode=yes'; `$env:GCM_INTERACTIVE = 'never'; git push" '$env:GIT_SSH_COMMAND, $env:GCM_INTERACTIVE; git push'
     GfGit -C $gfOk reset -q
 
     # Item: a git in the hook's working folder never runs, and never picks the repository to scan. A Claude Code session sets

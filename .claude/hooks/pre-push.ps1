@@ -26,6 +26,7 @@ if ($form.Kind -eq 'None') {
     foreach ($p in (Get-GitCalls $cmd $cwd)) {
         if ($p.Alias -and $p.Verb -eq 'push') { Block 'Push blocked: a push through an alias, which the scan cannot read. Spell out git push.' }
     }
+    if (Test-GateCallHit $cmd $cwd 'push') { Block 'Push blocked: a git push in a form the scan cannot read. Re-run it in a simple form: git push ..., git -C <path> push ..., or cd <path> && git push ...' }
     exit 0
 }
 if ($form.Why) { Block "Push blocked: $($form.Why)" }
