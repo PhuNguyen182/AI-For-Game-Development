@@ -29,7 +29,7 @@ Since Unity 6.6 a `NetworkTransport` can be wrapped via `NetworkTransportInterfa
 
 ## NetworkTransport contract
 
-`public abstract class NetworkTransport : MonoBehaviour`, a stripped-down copy of NGO's. Implement the contract and no more; do not reimplement transport lifecycle in `Game.Client` code.
+`public abstract class NetworkTransport : MonoBehaviour`, a stripped-down copy of NGO's. Implement the contract and no more; do not reimplement transport lifecycle in Client code.
 
 | Member | Contract |
 |---|---|

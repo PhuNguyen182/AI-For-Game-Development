@@ -1,44 +1,74 @@
-# PreToolUse Bash|PowerShell on `git push`: block when a commit not yet on any remote adds a secret.
+# PreToolUse Bash|PowerShell on `git push`: block a radius-3 push form, and block when a commit not yet on any
+# remote adds a secret, a secret-bearing file (keystore, .env, service-account JSON) or a raw evidence dump.
 . "$PSScriptRoot/common.ps1"
+# Fail closed: an unexpected error must block the push, not let it through unscanned.
+trap { Block "Blocked: pre-push scan failed ($_) - the push was not scanned." }
 
 $in = Read-HookInput
-if (-not $in) { exit 0 }
+if (-not $in) { Block 'Blocked: pre-push received no readable hook input - the push was not scanned.' }
 $cmd = [string]$in.tool_input.command
-# Any run of git global options may precede `push` (-C dir, -c k=v, --no-pager, --git-dir x, ...).
-$arg = '(?:"[^"]*"|''[^'']*''|\S+)'
-$opt = "(?:-[Cc]\s+$arg|--(?:git-dir|work-tree|namespace|config-env|exec-path)(?:=|\s+)$arg|--[\w-]+(?:=$arg)?|-[A-Za-z]+)"
-$git = [regex]::Match($cmd, "\bgit\b((?:\s+$opt)*)\s+push(?![\w.-])", 'IgnoreCase')
-if (-not $git.Success) { exit 0 }
+$tool = [string]$in.tool_name
+$cwd = Get-GateCwd $in $tool
 
-# Resolve the repository the push runs in: `cd <dir> &&`, `git -C <dir>`, else the session cwd.
-$cwd = [string](First $in.cwd (Get-Location).Path)
-$dir = $cwd
-$cd = [regex]::Match($cmd, '^\s*(?:cd|Set-Location)\s+(?:"([^"]+)"|''([^'']+)''|(\S+))\s*(?:&&|;)')
-if ($cd.Success) { $dir = @($cd.Groups[1].Value, $cd.Groups[2].Value, $cd.Groups[3].Value | Where-Object { $_ })[0] }
-$gc = [regex]::Match($git.Groups[1].Value, '(?:^|\s)-C\s+(?:"([^"]+)"|''([^'']+)''|(\S+))')
-if ($gc.Success) { $dir = @($gc.Groups[1].Value, $gc.Groups[2].Value, $gc.Groups[3].Value | Where-Object { $_ })[0] }
-# Git Bash spells C:\ as /c/.
-if ($env:OS -eq 'Windows_NT' -and $dir -match '^/([a-zA-Z])(/|$)') { $dir = "$($Matches[1]):/" + $dir.Substring(3) }
-if ($dir -and -not [IO.Path]::IsPathRooted($dir)) { $dir = Join-Path $cwd $dir }
+# The closed list of forms (Read-GateCommand in common.ps1): quoted text and heredoc bodies are not commands, anything else
+# that pushes is accepted only in a form whose repository is certain, and refused with the way to re-run it.
+$form = Read-GateCommand $cmd $tool $cwd 'push'
 
-$root = $null
-foreach ($d in @($dir, $cwd)) {
-    if ($d -and (Test-Path $d)) { $root = git -C $d rev-parse --show-toplevel 2>$null; if ($root) { break } }
+# Radius-3 push forms (Find-PushRadius3 in common.ps1), read through quoting, shell wrappers and aliases. First, so a force
+# push hears that it is one, not that its spelling is unusual.
+$radius = 'a force, delete, mirror, prune, all-tags or anchor-tag push is blast radius 3'
+foreach ($p in (Get-GitCalls $cmd ([string](First $cwd (Get-Location).Path)))) {
+    $why = if ($p.Why) { $p.Why } elseif ($p.Verb -eq 'push') { Find-PushRadius3 $p.Globals $p.Rest }
+    if ($why) { Block "Push blocked: $why ($radius). The GD runs it: put the exact command under ``Needs GD``." }
 }
-if (-not $root) { exit 0 }  # no repository at all: the push itself cannot run
-
-# Every commit reachable from HEAD and from no remote-tracking ref: what this push would publish.
-$problems = @()
-$file = $null
-foreach ($line in (git -C $root log HEAD --not --remotes -p --unified=0 --no-color --text --format= 2>$null)) {
-    if ($line -match '^\+\+\+ b/(.+)$') { $file = $Matches[1]; continue }
-    if (-not $file -or $line -notmatch '^\+' -or ("/$file" -match $script:SecretScanExempt)) { continue }
-    $added = $line.Substring(1)
-    if ($file -like '*.jsonl') { $added = $added.Replace('\"', '"') }
-    foreach ($h in (Find-Secrets $added)) { $problems += "secret in ${file}: $h" }
+if ($form.Kind -eq 'None') {
+    # A push through an alias: git-guard refuses it too, but this hook holds the same line when "push" is in the text.
+    foreach ($p in (Get-GitCalls $cmd $cwd)) {
+        if ($p.Alias -and $p.Verb -eq 'push') { Block 'Push blocked: a push through an alias, which the scan cannot read. Spell out git push.' }
+    }
+    if (Test-GateCallHit $cmd $cwd 'push') { Block 'Push blocked: a git push in a form the scan cannot read. Re-run it in a simple form: git push ..., git -C <path> push ..., or cd <path> && git push ...' }
+    exit 0
 }
+if ($form.Why) { Block "Push blocked: $($form.Why)" }
+# The parser's words as well: the regex above stops at a heredoc operator, and the rest of that line is still arguments.
+$why = Find-PushRadius3 $form.Globals $form.Rest
+if ($why) { Block "Push blocked: $why ($radius). The GD runs it: put the exact command under ``Needs GD``." }
+
+$root = Resolve-GitRoot @($form.Dir) 'push' -AllowBare
+if (-not $root) { exit 0 }  # an existing folder outside any repository: the push itself cannot run
+
+# `git push` is auto-allowed for the configured remotes; a URL or path sends the code somewhere no one set up.
+$remotes = @(git -C $root remote 2>$null)
+$repo = $null; $skip = $false; $isRepo = $false
+foreach ($t in @(Get-GitWords $form.Rest)) {
+    if ($isRepo) { $repo = $t; break }
+    if ($skip) { $skip = $false; continue }
+    if ($t -match '^--repo=(.+)$') { $repo = $Matches[1]; break }
+    if ($t -eq '--repo') { $isRepo = $true; continue }
+    if ($t -in '-o', '--push-option', '--recurse-submodules') { $skip = $true; continue }
+    if ($t -like '-*') { continue }
+    $repo = $t; break
+}
+if ($repo -and $remotes -notcontains $repo -and $repo -match '[:/\\@.]') {
+    Block "Push blocked: $repo is not a configured remote ($($remotes -join ', ')). Push to a remote by name; adding one is the GD's call."
+}
+
+# A clone made with --mirror, or a forced push refspec in config, turns a plain `git push` into radius 3.
+foreach ($row in (git -C $root config --get-regexp '^remote\..+\.(mirror|push)$' 2>$null)) {
+    if ($row -match '\.mirror\s+true$' -or $row -match '\.push\s+\+') {
+        Block "Push blocked: this repository's config makes every push forced or mirrored ($row). The GD runs it: put the exact command under ``Needs GD``."
+    }
+}
+
+# Every commit on HEAD, a local branch or a tag and on no remote-tracking ref: whatever this push names is among
+# them. backup/* anchors are left out: pushing one is refused above, and they may hold pre-rewrite history.
+# --diff-merges=first-parent: a merge commit's own changes (a hand-resolved conflict) are scanned too.
+$range = @('log', 'HEAD', '--branches', '--exclude=backup/*', '--tags', '--not', '--remotes', '--diff-merges=first-parent', '--format=')
+$problems = @(Find-AddedSecrets (Get-GitDiffText $root ($range + @('-p', '--unified=0', '--no-color', '--text'))))
+# The same file rules as pre-commit (keystore, .env, service-account JSON, raw evidence) on every file those commits add.
+$problems += @(Find-ForbiddenFiles $root @(Get-GitRawChanges $root $range))
 
 if ($problems.Count -gt 0) {
-    Block ("Push blocked: unpushed commits add secrets:`n  " + (($problems | Select-Object -Unique) -join "`n  ") + "`nA secret already committed is in git history: stop and route to cto (rule core.md -> Security).")
+    Block ("Push blocked: unpushed commits add secrets or secret-bearing files:`n  " + (($problems | Select-Object -Unique) -join "`n  ") + "`nA secret already committed is in git history: stop and route to cto (rule core.md -> Security).")
 }
 exit 0

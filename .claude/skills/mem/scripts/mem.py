@@ -52,7 +52,7 @@ RX_FENCE = re.compile(r"^\s*(```|~~~)")
 RX_PATH = re.compile(r"(?<![\w.-])((?:[\w.-]+/)*[\w-][\w.-]*\.(?:cs|md|ps1|py|js|ts|json|asset|prefab|unity|asmdef|shader|hlsl|uxml|uss|txt|ya?ml|xml|csv))\b", re.I)
 RX_IDS = re.compile(r"\b(BUG-\d{4}|ADR-\d+|CP[1-4])\b")
 RX_PKG = re.compile(r"\b(com\.[a-z0-9-]+(?:\.[a-z0-9-]+)+)\b")
-RX_TYPE = re.compile(r"\b(Game\.(?:Core|Client|Server)(?:\.[A-Z]\w*)*|[A-Z][a-z0-9]+(?:[A-Z][a-z0-9]*)+)\b")
+RX_TYPE = re.compile(r"\b(_Project(?:\.[A-Z_]\w*)+|[A-Z][a-z0-9]+(?:[A-Z][a-z0-9]*)+)\b")
 RX_WORD = re.compile(r"\w+", re.UNICODE)
 RX_HARNESS = re.compile(r"<(system-reminder|ide_\w+|local-command-\w+|command-message|browser_instruction|user-prompt-submit-hook|bash-stdout|bash-stderr)>.*?</\1>", re.S)
 RX_TAG_KEEP = re.compile(r"</?(command-name|command-args|bash-input|pasted_content[^>]*)>")
@@ -88,6 +88,18 @@ def load_secret_patterns(root: Path) -> list[tuple[str, re.Pattern]]:
 # The pattern list detects a key by its header; redaction must remove the whole block, body included.
 RX_PEM_BLOCK = re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?(?:-----END [A-Z ]*PRIVATE KEY-----|$)")
 RX_EMAIL = re.compile(r"\b[\w.+-]+@[\w-]+(?:\.[\w-]+)*\.[A-Za-z]{2,}\b")  # not package@1.2.3
+# Player PII that device logs carry into agent returns: an advertising/device id after its label, an IPv4 address
+# (loopback and 0.0.0.0 kept), an international phone number.
+RX_DEVICE_ID = re.compile(r"(?i)(\b(?:adid|idfa|idfv|gaid|aaid|advertising[ _-]?id|device[ _-]?id|android[ _-]?id|installation[ _-]?id)\b[^0-9A-Za-z\n]{0,20})[0-9A-Fa-f][0-9A-Fa-f-]{15,35}\b")
+RX_IPV4 = re.compile(r"(?<![\d.])(?!127\.|0\.0\.0\.0)(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)(?![\d.])")
+RX_PHONE = re.compile(r"(?<![\w+])\+\d[\d ()-]{8,}\d\b")
+
+
+def redact_pii(text: str) -> str:
+    text = RX_EMAIL.sub("[REDACTED:email]", text)
+    text = RX_DEVICE_ID.sub(lambda m: m.group(1) + "[REDACTED:device id]", text)
+    text = RX_IPV4.sub("[REDACTED:ip]", text)
+    return RX_PHONE.sub("[REDACTED:phone]", text)
 
 
 def redact(text: str, patterns) -> str:
@@ -138,10 +150,26 @@ def read_sources(mem: Path):
     return inc, exc
 
 
+def git_exe() -> str:
+    """git's full path from PATH alone. On Windows CreateProcess tries the current folder before PATH, and so does shutil.which,
+    so a bare "git" would run a git.exe in the folder a session starts in. A relative PATH entry names that folder too. None: the
+    FileNotFoundError subprocess raises for a missing program."""
+    names = ("git.exe", "git.cmd", "git.bat") if os.name == "nt" else ("git",)
+    for folder in os.environ.get("PATH", "").split(os.pathsep):
+        folder = folder.strip().strip('"')
+        if not os.path.isabs(folder):
+            continue
+        for name in names:
+            path = os.path.join(folder, name)
+            if os.path.isfile(path) and os.access(path, os.X_OK):
+                return path
+    raise FileNotFoundError("git is not on PATH")
+
+
 def list_files(root: Path) -> list[str]:
     """Tracked + untracked-not-ignored files (git respects .gitignore, so Library/Temp never appear)."""
     try:
-        r = subprocess.run(["git", "-C", str(root), "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
+        r = subprocess.run([git_exe(), "-C", str(root), "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
                            capture_output=True, timeout=30)
         if r.returncode == 0:
             return sorted({p for p in r.stdout.decode("utf-8", "replace").split("\0") if p})
@@ -922,7 +950,7 @@ def trace_record(root: Path, t: dict, pats, n: int = 0) -> dict:
         if slug_leaf:
             text = re.sub(r"(?i)(?<![A-Za-z0-9])([A-Za-z]--)?users-" + slug_leaf + r"(?![A-Za-z0-9])",
                           lambda m: (m.group(1) or "") + "Users-<user>", text)
-    text = RX_EMAIL.sub("[REDACTED:email]", redact(text, pats))
+    text = redact_pii(redact(text, pats))
     if len(text) > MAX_TURN_CHARS:
         text = text[:MAX_TURN_CHARS] + "\n...[truncated %d chars]" % (len(text) - MAX_TURN_CHARS)
     rec = {"n": n, "ts": t.get("ts", ""), "role": t["role"]}  # n: transcript turn index, the append mark

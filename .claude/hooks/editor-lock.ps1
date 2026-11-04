@@ -1,6 +1,11 @@
 # Cross-session Unity Editor lock in <project>/.workflow/editor.lock.
 #   acquire  PreToolUse Agent: an Editor-holding agent takes the lock; blocked if another session holds it.
-#   check    PreToolUse Bash/PowerShell `unity ...`: blocked if another session holds it.
+#            A worktree dispatch (/feature lane A) never touches the Editor and takes no hold.
+#   check    PreToolUse Bash/PowerShell `unity ...` and mcp__unity*: blocked if another session holds it,
+#            or if the call comes from a linked worktree (lane A must not drive the main checkout's Editor);
+#            otherwise the session takes a `main` hold (its own compile checks and test runs) and refreshes the lock.
+#            PreToolUse Edit/Write into the main checkout's Assets/, Packages/, ProjectSettings/ counts as such a call.
+#            Read-only status calls always pass.
 #   release  SubagentStop: an Editor holder left in Play Mode or with compile errors is sent back once; else its hold drops.
 #   clear    Stop / SessionEnd: drops every hold this session owns.
 param([Parameter(Mandatory)][ValidateSet('acquire', 'check', 'release', 'clear')][string]$Mode)
@@ -13,27 +18,49 @@ $StaleHours = 3
 
 $in = Read-HookInput
 if (-not $in) { exit 0 }
-$root = First $env:CLAUDE_PROJECT_DIR ([string]$in.cwd)
-if (-not (Test-Path (Join-Path $root 'Assets'))) { exit 0 }
+# A hook firing for a worktree agent may get the worktree as its project dir: the lock lives in the main checkout.
+$root = Get-MainCheckout (First $env:CLAUDE_PROJECT_DIR ([string]$in.cwd))
+if (-not (Test-Path -LiteralPath (Join-Path $root 'Assets'))) { exit 0 }
 $lockPath = Join-Path $root '.workflow/editor.lock'
 $session = [string]$in.session_id
 
 $lock = $null
-if (Test-Path $lockPath) { try { $lock = Get-Content $lockPath -Raw -Encoding UTF8 | ConvertFrom-Json } catch { $lock = $null } }
+if (Test-Path -LiteralPath $lockPath) { try { $lock = Get-Content -LiteralPath $lockPath -Raw -Encoding UTF8 | ConvertFrom-Json } catch { $lock = $null } }
 $now = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
 $foreign = $lock -and $lock.session -ne $session -and (($now - [long]$lock.updatedUnix) / 3600) -lt $StaleHours
 
 function Save($holds) {
-    if (-not $holds -or $holds.Count -eq 0) { Remove-Item $lockPath -ErrorAction SilentlyContinue; return }
+    if (-not $holds -or $holds.Count -eq 0) { Remove-Item -LiteralPath $lockPath -ErrorAction SilentlyContinue; return }
     New-Item -ItemType Directory -Force (Split-Path $lockPath) | Out-Null
     [ordered]@{ session = $session; holds = @($holds); since = (First $lock.since (Get-Date).ToUniversalTime().ToString('o'))
-        updated = (Get-Date).ToUniversalTime().ToString('o'); updatedUnix = $now } | ConvertTo-Json | Set-Content $lockPath
+        updated = (Get-Date).ToUniversalTime().ToString('o'); updatedUnix = $now } | ConvertTo-Json | Set-Content -LiteralPath $lockPath
 }
 
 function Refuse {
     Block ("Unity Editor is held by another Claude session ($($lock.session), agents: $($lock.holds -join ', '), since $($lock.since)). " +
         'One Editor, one holder (rule core.md). Wait for it to finish. If that session is gone: confirm with ' +
-        '"unity command editor status", then ask the GD before deleting .workflow/editor.lock.')
+        '"unity command editor status" (allowed while locked), then ask the GD before deleting .workflow/editor.lock.')
+}
+
+# True when $path sits in a linked git worktree other than the project's own checkout (a /feature lane A agent).
+# The project may itself be a linked worktree; only a different checkout counts.
+function Get-GitHolder([string]$path) {
+    $dir = $path
+    while ($dir) {
+        if (Test-Path -LiteralPath (Join-Path $dir '.git')) { return [IO.Path]::GetFullPath($dir).TrimEnd('\', '/') }
+        $parent = Split-Path $dir
+        if ($parent -eq $dir) { break }
+        $dir = $parent
+    }
+    return $null
+}
+
+function Test-LaneWorktree([string]$path) {
+    if (-not $path) { return $false }
+    $holder = Get-GitHolder $path
+    if (-not $holder -or $holder -ieq (Get-GitHolder $root)) { return $false }
+    $git = Join-Path $holder '.git'
+    return ((Test-Path -LiteralPath $git -PathType Leaf) -and ((Get-Content -LiteralPath $git -Raw) -match 'gitdir:.*[\\/]worktrees[\\/]'))
 }
 
 # First value of a property anywhere in parsed JSON (the CLI nests results differently per output format).
@@ -73,20 +100,46 @@ function Get-EditorProblem {
 switch ($Mode) {
     'acquire' {
         $agent = [string]$in.tool_input.subagent_type
-        if ($Holders -notcontains $agent) { exit 0 }
+        if ($Holders -notcontains $agent -or [string]$in.tool_input.isolation -eq 'worktree') { exit 0 }
         if ($foreign) { Refuse }
         $holds = if ($lock -and $lock.session -eq $session) { @($lock.holds) } else { @() }
         if ($lock -and $lock.session -ne $session) { $lock = $null }
-        Save ($holds + $agent)
+        # @() again: an `if` expression unrolls a one-item array to a string, and string + string concatenates.
+        Save (@($holds) + $agent)
     }
     'check' {
-        if ([string]$in.tool_input.command -notmatch '(^|[;&|]\s*|\bcd\b.*?&&\s*)unity\s') { exit 0 }
+        $unityCall = ([string]$in.tool_name -match '^mcp__unity') -or
+            ([string]$in.tool_input.command -match '(^|[;&|]\s*|\bcd\b.*?&&\s*)unity\s')
+        # A direct write into the main checkout's Assets/, Packages/ or ProjectSettings/ holds the Editor too (core.md).
+        $file = [string](First $in.tool_input.file_path $in.tool_input.notebook_path '')
+        if (-not $unityCall -and $file -and [string]$in.tool_name -match '^(Edit|Write|MultiEdit|NotebookEdit)$') {
+            $rel = $file -replace '\\', '/'
+            $r = (([IO.Path]::GetFullPath($root)) -replace '\\', '/').TrimEnd('/') + '/'
+            $unityCall = $rel.StartsWith($r, [StringComparison]::OrdinalIgnoreCase) -and
+                $rel.Substring($r.Length) -match '^(?i:Assets|Packages|ProjectSettings)/'
+        }
+        if (-not $unityCall) { exit 0 }
+        if (Test-LaneWorktree ([string]$in.cwd)) {
+            Block ('No Unity CLI or MCP call from a worktree: it would drive the main checkout''s Editor while lane B holds it. ' +
+                'Verify with dotnet build / dotnet test on the mirror (/feature step 4, Lanes).')
+        }
+        # Read-only status is always allowed: it is how a stale lock is confirmed before the GD deletes it.
+        $statusOnly = '^\s*(cd\s+\S+\s*&&\s*)?unity\s+(status|pipeline\s+list|command\s+editor\s+status)\b[^;&|]*$'
+        if ([string]$in.tool_input.command -match $statusOnly) { exit 0 }
         if ($foreign) { Refuse }
+        # The session's own Unity work (compile check, test run, import) holds the Editor until its turn ends (clear);
+        # every call also refreshes the lock, so a live holder never reads as stale.
+        $holds = if ($lock -and $lock.session -eq $session) { @($lock.holds) } else { @() }
+        if ($lock -and $lock.session -ne $session) { $lock = $null }
+        if (@($holds) -notcontains 'main') { $holds = @($holds) + 'main' }
+        Save @($holds)
     }
     'release' {
         if (-not $lock -or $lock.session -ne $session) { exit 0 }
+        # A lane A agent took no hold; its stop must neither check lane B's Editor nor drop a same-type lane B hold.
+        if (Test-LaneWorktree ([string]$in.cwd)) { exit 0 }
         # Exit 2 keeps the agent running so it cleans up; stop_hook_active means it was already told once.
-        if ($Holders -contains [string]$in.agent_type -and -not $in.stop_hook_active) {
+        if (@($lock.holds) -contains [string]$in.agent_type -and -not $in.stop_hook_active) {
             $problem = Get-EditorProblem
             if ($problem) { Block "Before you return: $problem. Leave the Editor clean (skill agent-protocol)." }
         }
@@ -95,7 +148,7 @@ switch ($Mode) {
         Save $holds.ToArray()
     }
     'clear' {
-        if ($lock -and $lock.session -eq $session) { Remove-Item $lockPath -ErrorAction SilentlyContinue }
+        if ($lock -and $lock.session -eq $session) { Remove-Item -LiteralPath $lockPath -ErrorAction SilentlyContinue }
     }
 }
 exit 0

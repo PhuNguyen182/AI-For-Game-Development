@@ -2,7 +2,7 @@
 
 Sources: [a] manual/random-numbers.html, [b] api/Unity.Mathematics.Random.html — below the SKILL.md `Docs:` base.
 
-Caller-managed state, so it satisfies the seeded, injectable RNG that `csharp-standards` → `coding-principles.md` requires in Shared Core, where `UnityEngine.Random`'s global state is disallowed.
+Caller-managed state, so it satisfies the seeded, injectable RNG rule for Burst, job and ECS code, where `UnityEngine.Random`'s global state is disallowed. Shared Core uses `nrandom-random-generation`.
 
 ## State model
 

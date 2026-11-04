@@ -33,7 +33,7 @@ A cross-asset reference is stored as `{fileID, guid, type}` [scene]; paths are n
 | `guid` line | Take one side whole, never a blend. Discarding a GUID breaks every asset referencing it with no diff, so first search the tree for the discarded GUID string and list the referrers; prefer the side other assets already reference (the search result decides) |
 | Importer settings | Line-level merge is legitimate |
 | Both sides added the same asset independently | Two GUIDs for one path; keeping one `.meta` orphans references authored against the other |
-| Inspect candidates | `git show :2:<path>.meta` (HEAD) and `git show :3:<path>.meta` (incoming) |
+| Inspect candidates | `git show :2:<path>.meta` (HEAD) and `git show :3:<path>.meta` (incoming). In a rebase `HEAD` is the upstream plus the commits already replayed, and `:3:` the branch's own commit |
 
 ## Practice
 

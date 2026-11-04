@@ -1,0 +1,25 @@
+<!-- Test project for the dotnet test mirror: links the feature's Edit Mode sources, pinned LangVersion and NUnit 3.x packages. -->
+<!-- Adapt into: TestsDotnet/Combat/Tests/Combat.Tests.Mirror.csproj -->
+<!-- Unverified: not compiled or run (no Unity project in this repo). -->
+<!-- TestsDotnet/Combat/Tests/Combat.Tests.Mirror.csproj -->
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <AssemblyName>_Project.Scripts.Combat.Tests.EditMode</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Combat\Tests\EditMode\**\*.cs"
+             Link="Tests\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Core\Combat.Core.Mirror.csproj" />
+    <ProjectReference Include="..\DataModels\Combat.DataModels.Mirror.csproj" />
+    <!-- Exact versions, recorded in docs/tech-stack.md; NUnit stays on 3.x. -->
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="$(TestSdkVersion)" />
+    <PackageReference Include="NUnit" Version="$(NUnitVersion)" />
+    <PackageReference Include="NUnit3TestAdapter" Version="$(NUnitAdapterVersion)" />
+  </ItemGroup>
+</Project>

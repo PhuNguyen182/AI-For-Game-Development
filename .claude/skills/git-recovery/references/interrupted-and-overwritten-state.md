@@ -45,7 +45,7 @@ Commits made there are reachable only through `HEAD`; switching away orphans the
 | This clone's `refs/remotes/<remote>/<branch>` reflog | It fetched the old history and the entry is inside `gc.reflogExpireUnreachable` (default 30 days) |
 | A local branch or tag here | Still points at the old tip — check `for-each-ref` before the reflog |
 | Another clone | It fetched the old history and has not re-fetched; read its reflog there |
-| Hosting provider | Provider retention policy, not git — ask the provider, never assume |
+| Hosting provider | Provider retention policy, not git — `Needs GD`: the provider decides; never assume |
 | Genuinely nowhere | This clone was created or first fetched after the push; no command here can produce them |
 
 ```sh

@@ -1,18 +1,18 @@
 # Third-Party and Engine Escalation
 
-Sources: [a] distribute/sdk-index, [b] issuetracker.unity3d.com — from the SKILL.md `Docs:` roots. Acting on these belongs to `technical-architect` or `sdk-platform-engineer`.
+Sources: [a] distribute/sdk-index, [b] issuetracker.unity3d.com — from the SKILL.md `Docs:` roots. Acting on these belongs to `cto` (engine version) or `sdk-platform-engineer` (SDK).
 
 ## Unity engine ladder [b]
 
 | Rung | Establishes |
 |---|---|
 | 1. Search forums and issue tracker | Whether known, and in which stream/version fixed |
-| 2. Upgrade to the fixed version | Resolution in most engine cases; `technical-architect` decides, as an upgrade moves every subsystem |
+| 2. Upgrade to the fixed version | Resolution in most engine cases; `cto` decides, as an upgrade moves every subsystem |
 | 3. Report a bug | Only if 1-2 produce nothing; attach symbolicated trace and smallest reproduction |
 
 Before starting: confirm the frames below are not game code supplying bad state (see [fault-domain-signals.md](fault-domain-signals.md)); look for an interim path (different API, ordering change).
 
-**Caveat:** an engine upgrade is a proposal to `technical-architect`, not a fix this pipeline applies.
+**Caveat:** an engine upgrade is a proposal to `cto`, not a fix this pipeline applies.
 
 ## Third-party SDK [a]
 

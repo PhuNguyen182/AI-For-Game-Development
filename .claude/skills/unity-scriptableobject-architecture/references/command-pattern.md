@@ -11,5 +11,5 @@ Sources: Manual `class-ScriptableObject.html`; `ScriptableObject.CreateInstance`
 | Shared-state risk | Like any shared SO ([dual-serialization.md](dual-serialization.md)) if it stores per-invocation state | None |
 
 - Target binding example: `MoveCommandSO` with `[SerializeField] float distance`, `Bind(ICharacterMotor)`, `Execute()` saving `previousPosition` then `motor.MoveBy(distance)`, `Undo()` calling `motor.MoveTo(previousPosition)`.
-- `Execute`/`Undo` decide when an action runs and whether it can be undone. The state change itself goes through an interface backed by `Game.Core.*`; a command that computes movement or any server-validated rule itself reimplements Core.
+- `Execute`/`Undo` decide when an action runs and whether it can be undone. The state change itself goes through an interface backed by Core; a command that computes movement or any server-validated rule itself reimplements Core.
 - Never `AssetDatabase.CreateAsset` a runtime-created command.

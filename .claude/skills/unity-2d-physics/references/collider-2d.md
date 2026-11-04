@@ -38,7 +38,7 @@ Order: Circle/Box/Capsule, then Polygon, then a traced per-pixel outline.
 
 | Member | Decides |
 |---|---|
-| `Collision2D.relativeVelocity` | Impact speed; derive impact-strength rules in `Game.Core.*` |
+| `Collision2D.relativeVelocity` | Impact speed; derive impact-strength rules in a Core assembly |
 | `contactCount` / `GetContact(int)` | `contacts` allocates an array on every access; use these |
 | `ContactPoint2D.point` / `normal` | World position and surface normal for a hit reaction |
 | `ContactPoint2D.separation` | Negative = penetration depth |

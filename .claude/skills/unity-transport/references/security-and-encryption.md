@@ -37,6 +37,8 @@ Default `Optional` encrypts the channel and authenticates the server, but does n
 - Server-authenticated: `caCertificate` + `serverName`.
 - Mutual TLS: `certificate` + `privateKey` + `caCertificate` + `serverName`.
 
+**Caveat:** a client certificate and private key shipped in a build can be extracted; mutual TLS there proves "a copy of the game", never the player. Player identity comes from the auth token (`server-authoritative-validation`).
+
 `WithSecureServerParameters` overloads:
 - Base: `certificate` + `privateKey`.
 - Mutual TLS: adds `caCertificate`, `clientName`, `SecureClientAuthPolicy`.

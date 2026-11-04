@@ -15,4 +15,4 @@ Synthesized from [device_playtest.py](../scripts/device_playtest.py).
 | `tap`, `swipe` | `x y` / `x1 y1 x2 y2 [--duration-ms]` | — |
 | `text` | `value` | Android sends spaces as `%s` |
 | `keyevent` | `code` | Android: numeric keycode. iOS: named button (`HOME`, `LOCK`, `SIRI`, `SIDE_BUTTON`). The wrong kind fails |
-| `pull-logs` | `out_dir [--package]` | Android: `logcat_crash.txt`, `logcat_full.txt`, `logcat_fatal_exception.txt`, and `logcat_anr.txt` with `--package`. iOS: crash reports of all apps, left on the device so earlier ones return — use a fresh `out_dir` per pull; + 5 s `syslog.txt` |
+| `pull-logs` | `out_dir --package <id> [--process <exe>] [--full-buffer]` | App-only by default; `--package` is required unless `--full-buffer`. Android: `logcat_app.txt`, `logcat_crash.txt`, `logcat_fatal_exception.txt`, `logcat_anr.txt`. iOS: the app's crash reports (left on the device, so use a fresh `out_dir` per pull) + 5 s `syslog_app.txt`. `--full-buffer` adds `logcat_full.txt` / `logcat_crash_full.txt` / `syslog_full.txt` / every app's reports. Raw dumps are gitignored and never committed |

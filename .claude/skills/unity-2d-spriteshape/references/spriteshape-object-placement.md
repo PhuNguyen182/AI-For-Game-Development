@@ -13,4 +13,4 @@ Sources: `manual/SSObjectPlacement.html`, `api/UnityEngine.U2D.SpriteShapeObject
 | `mode` = `Auto` | Hand-nudgeable while constrained to the spline; for art direction in progress |
 | `mode` = `Manual` | Driven strictly by index and ratio, no free-hand editing; for data-driven or scripted placement |
 
-Appearance reacting to game state is decided in `Game.Core.*`; this component only answers where along the spline the object sits.
+Appearance reacting to game state is decided in Core; this component only answers where along the spline the object sits.

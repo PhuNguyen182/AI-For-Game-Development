@@ -31,13 +31,31 @@ public struct AbilityConfig
 ```
 
 ## Unity assets
-- Prefab `Category_Name` (`Enemy_Goblin`) · Scene `Scene_Name` · ScriptableObject `SO_Name` · Material `Mat_` · Texture `Tex_` · Animation clip `Anim_` · Animator Controller `AC_` · Shader `Shader_` · VFX/particle prefab `VFX_` · `.asmdef` = its root namespace (`Game.Core.asmdef`).
+- Prefab `Category_Name` (`Enemy_Goblin`) · Scene `Scene_Name` · ScriptableObject `SO_Name` · Material `Mat_` · Texture `Tex_` · Animation clip `Anim_` · Animator Controller `AC_` · Shader `Shader_` · VFX/particle prefab `VFX_` · `.asmdef` `name` = `rootNamespace` = its folder path below `Assets/`, segments joined by `.` (`_Project.Scripts.Ads.Core.asmdef` in `Assets/_Project/Scripts/Ads/Core/`).
 
-## Namespace boundary (enforces the Shared Core rule)
-- `Game.Core.*` — Shared Core, no `UnityEngine`; `csharp-engineer`. A class needing `UnityEngine` belongs in Client.
-- `Game.Client.*` — Unity integration; `gameplay-engineer`, `ui-engineer`.
-- `Game.Server.*` — server-authoritative wrapper, only when the backend track is active; `netcode-engineer`.
+## Folders
+- PascalCase segments, never a `.` in a folder name; a leading `_` is allowed (`_Project`).
+- Feature layout (root `Assets/_Project/Scripts/` unless `CLAUDE.md` overrides it); create only the folders the feature uses:
 
-## Namespace must mirror the folder path
-- Every folder segment below `Assets/`, each PascalCased (`ui` → `UI`); the file name is never a segment. Every `.cs` file, tests and editor tooling included; the `.asmdef` name does not change it.
-- `Assets/Game.Client/UI/Inventory/InventoryPanel.cs` → `Game.Client.UI.Inventory`.
+| Folder | asmdef | Holds | Owner |
+|---|---|---|---|
+| `<Feature>/` | `…<Feature>` | Unity code: `DataControllers/`, `Views/` | `gameplay-engineer`, `ui-engineer` |
+| `DataModels/` | `…<Feature>.DataModels`, `noEngineReferences` | Plain data types | `csharp-engineer` |
+| `Core/` | `…<Feature>.Core`, `noEngineReferences`, refs `DataModels` | Game rules | `csharp-engineer` |
+| `DataControllers/` | feature root | Load/save, ScriptableObject, adapters into Core | `gameplay-engineer` |
+| `Views/` | feature root | MonoBehaviour, UI | `gameplay-engineer`, `ui-engineer` |
+| `Server/` | `…<Feature>.Server` | Server-authoritative wrapper; backend/netcode track only | `netcode-engineer` |
+| `Editor/` | `…<Feature>.Editor`, Editor only | Editor tooling | owner of the code it serves |
+| `Tests/EditMode/` | `…<Feature>.Tests.EditMode` | Edit Mode tests: Core, DataModels | `csharp-engineer` |
+| `Tests/PlayMode/` | `…<Feature>.Tests.PlayMode` | Play Mode tests: scene, prefab, UI | Client implementers |
+
+- Shared Core = every assembly with `noEngineReferences: true` (`Core/`, `DataModels/`). A class needing `UnityEngine` belongs in the feature root.
+- Cross-feature contracts live in the `Shared` feature (same layout). Feature references are one-way, never a cycle; a Core assembly never references a feature root.
+
+## Namespace = asmdef `rootNamespace` + folder path relative to that asmdef's folder
+- No asmdef above the file → the folder path below `Assets/`. Never `Assets`, never the file name. Every `.cs` file, tests and editor tooling included.
+- `Assets/_Project/Scripts/Ads/AdsCustomUnit.cs`, no asmdef → `_Project.Scripts.Ads`.
+- Same file, asmdef `_Project.Scripts` in `Assets/_Project/` → `_Project.Scripts.Scripts.Ads`: why every asmdef's `rootNamespace` must equal its folder path.
+- With that rule, namespace = folder path: `Assets/_Project/Scripts/Ads/Core/Rules/AdCap.cs` → `_Project.Scripts.Ads.Core.Rules`.
+- In a `….Editor` namespace the sibling namespace hides `UnityEditor.Editor` (CS0118): write `UnityEditor.Editor` fully qualified, or put `using UnityEditor;` inside the namespace block.
+- Existing code keeps its layout; only new features follow it. Moving a file updates its namespace in the same change.

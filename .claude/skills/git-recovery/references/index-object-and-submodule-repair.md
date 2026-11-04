@@ -8,7 +8,7 @@ Sources: `git-read-tree`, `git-reset`, `git-update-index`, `git-fsck`, `git-subm
 |---|---|
 | `git status` fails with an index read error | Index file corrupt — rebuild it |
 | Every tracked file modified, no edits made | Line-ending or filemode change, not corruption |
-| Unmerged entries persist after resolving | Stale conflict state — `git read-tree --reset HEAD` discards it |
+| Unmerged entries persist after resolving | The resolved paths were never staged: `git add <path>` (or `git rm <path>` for a deletion) per path. Never `read-tree --reset HEAD` while `MERGE_HEAD` exists: it unstages every resolution and the next commit records a merge without the other side |
 | `fsck --cache` reports missing objects | Object-store damage, not the index |
 
 | Rebuild | Effect |

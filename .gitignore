@@ -114,10 +114,46 @@ __pycache__/
 .claude/settings.local.json
 .claude/worktrees/
 .workflow/editor.lock
+.workflow/rounds.json
+.workflow/rounds.pending-*.json
+.workflow/rounds.corrupt-*.json
+.workflow/bugs.db*
+
+# Signing material and credentials never enter git; the pre-commit and pre-push hooks refuse them too
+# (rule core.md -> Security). Reference a credential id or a secret store instead.
+*.keystore
+*.jks
+*.p12
+*.pfx
+*.p8
+*.pem
+*.mobileprovision
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+id_rsa*
+!id_rsa*.pub
+.upmconfig.toml
+*[Ss]ervice[Aa]ccount*.json
+*[Ss]ervice-[Aa]ccount*.json
+*[Ss]ervice_[Aa]ccount*.json
+
+# Raw device dumps stay local: other apps' data, tokens, player PII. Under .workflow/evidence/ only .md reports and
+# .png screenshots are committed; a report cites a dump's path or a redacted excerpt.
+.workflow/evidence/**/*.ips
+.workflow/evidence/**/*.crash
+.workflow/evidence/**/*.txt
 
 # Zero-Mem: derived index and per-machine state (the files under .memory/ are the record)
 .memory/.index/
 .memory/.state/
-# Framework repo only (not copied into game projects): its sessions are framework development,
-# not project memory, so traces stay local here. mem.py still indexes them from disk.
+# --- Framework repo only: /new-project deletes this block, down to its end marker, in a game project. ---
+# The framework repo's sessions are framework development, not project memory, so traces stay local here.
+# mem.py still indexes them from disk.
 .memory/traces/
+# Each clone keeps its own framework backlog, created from .claude/templates/framework-backlog.md by the
+# session-start hook; a game project commits its copy.
+/.workflow/framework-backlog.md
+# --- end framework repo only ---

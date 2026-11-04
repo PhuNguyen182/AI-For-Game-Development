@@ -14,4 +14,4 @@ A source emits at a world position; listeners react scaled by distance. Unlike a
 | Gain | Per-listener scaling |
 | Use 2D Distance | Falloff in-plane, for side-on/top-down where depth offset dominates |
 
-Fire it from the Client handler that knows the event happened; the rule that decides it happened is `Game.Core.*`.
+Fire it from the Client handler that knows the event happened; the rule that decides it happened is in Core.

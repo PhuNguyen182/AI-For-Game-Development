@@ -21,6 +21,7 @@ Producing a platform build is `build-release-engineer`'s work on the GD's explic
 | `-playerHeartbeatTimeout` | How long to wait for a Player run to report in — the cause of an unexplained hang on a slow device |
 | `-buildPlayerPath` | Player output dir instead of a temp dir CI cannot collect |
 | `-orderedTestListFile` | Exact order, to reproduce an order-dependent failure |
+| `-enableCodeCoverage`, `-coverageResultsPath`, `-coverageOptions` | Need package `com.unity.testtools.codecoverage`; per [code-coverage.md](code-coverage.md) |
 
 ## `TestRunnerApi` (`UnityEditor.TestTools.TestRunner.Api`, Editor-only)
 Use only for real Editor tooling; the window and command line cover routine runs.

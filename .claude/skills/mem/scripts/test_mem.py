@@ -9,6 +9,7 @@ import sys
 import tempfile
 import time
 import unittest
+import unittest.mock
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -248,6 +249,15 @@ class MemTest(unittest.TestCase):
         self.assertIn("~/x.txt", text)
         self.assertIn("[REDACTED:email]", text)
 
+    def test_redaction_device_ids_ip_phone(self):
+        f = self.capture_lines([self.user("logcat: adid=38400000-8cf0-11bd-b23e-10b96e40000d from 203.0.113.42, "
+                                          "call +84 912 345 678; local 127.0.0.1, version 1.2.3")])
+        text = f.read_text(encoding="utf-8")
+        for absent in ("38400000-8cf0", "203.0.113.42", "912 345 678"):
+            self.assertNotIn(absent, text)
+        for kept in ("[REDACTED:device id]", "[REDACTED:ip]", "[REDACTED:phone]", "127.0.0.1", "version 1.2.3"):
+            self.assertIn(kept, text)
+
     def test_missing_patterns_fail_closed(self):
         (self.root / ".claude/hooks/secret-patterns.txt").write_text("# only comments\n", encoding="utf-8")
         self.assertIsNone(self.capture_lines([self.user("key %s" % FAKE_KEY)]))
@@ -445,6 +455,61 @@ class MemTest(unittest.TestCase):
         self.assertIn("M 2 notes", out)
         self.assertIn("T 1 turns", out)
         self.assertIn("m:lesson/from-a", run(b, "q", "alpha")[1])
+
+
+CSC = Path(os.environ.get("WINDIR", "")) / "Microsoft.NET" / "Framework64" / "v4.0.30319" / "csc.exe"
+
+
+@unittest.skipUnless(os.name == "nt" and CSC.exists(), "needs Windows and its csc.exe to build a stub git.exe")
+class TestPlantedGit(unittest.TestCase):
+    """A git in the working folder never runs: CreateProcess and shutil.which both try that folder before PATH.
+    Unless NoDefaultCurrentDirectoryInExePath is set, as a Claude Code session sets it: nothing promises a hook that, so it is cleared."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+        self.addCleanup(os.chdir, os.getcwd())
+        env = unittest.mock.patch.dict(os.environ)
+        env.start()
+        self.addCleanup(env.stop)
+        os.environ.pop("NoDefaultCurrentDirectoryInExePath", None)
+        self.root = self.tmp / "repo"
+        self.root.mkdir()
+        git(self.root, "init", "-q")
+        write(self.root, "real.txt", "x")
+        git(self.root, "add", "real.txt")
+        self.planted = self.tmp / "planted"
+        self.planted.mkdir()
+        self.marker = self.tmp / "ran.txt"
+
+    def stub_exe(self):
+        src = self.tmp / "stub.cs"
+        src.write_text('class P { static int Main() { System.IO.File.WriteAllText(@"%s", "ran"); System.Console.Write("planted.txt"); return 0; } }' % self.marker,
+                       encoding="utf-8")
+        subprocess.run([str(CSC), "/nologo", "/out:" + str(self.planted / "git.exe"), str(src)], check=True, capture_output=True)
+
+    def test_a_git_exe_in_the_working_folder_never_runs(self):
+        self.stub_exe()
+        os.chdir(self.planted)
+        self.assertEqual(mem.list_files(self.root), ["real.txt"])
+        self.assertFalse(self.marker.exists())
+
+    def test_a_git_cmd_in_the_working_folder_never_runs(self):
+        (self.planted / "git.cmd").write_text('@echo ran> "%s"' % self.marker, encoding="ascii")
+        os.chdir(self.planted)
+        self.assertEqual(mem.list_files(self.root), ["real.txt"])
+        self.assertFalse(self.marker.exists())
+
+    def test_a_relative_path_entry_is_not_searched(self):
+        self.stub_exe()
+        os.chdir(self.planted)
+        with unittest.mock.patch.dict(os.environ, {"PATH": "." + os.pathsep + os.environ["PATH"]}):
+            self.assertNotEqual(Path(mem.git_exe()).parent, self.planted)
+
+    def test_no_git_on_path_is_the_error_a_missing_program_raises(self):
+        with unittest.mock.patch.dict(os.environ, {"PATH": str(self.tmp)}):
+            with self.assertRaises(FileNotFoundError):
+                mem.git_exe()
 
 
 if __name__ == "__main__":

@@ -20,7 +20,7 @@ It is a plain `MonoBehaviour`, not a `FlexalonComponent`, and has no layout of i
 - `DataSource.DataChanged` (`event Action`): raise on every mutation; nothing polls `Data`, so a silent mutation leaves stale clones.
 - `DataBinding.SetData(object)`: called on the clone. The cloner searches the instantiated prefab for it, so the component must sit on the prefab, not a parent or sibling.
 - Do not instantiate into the cloner's parent by hand: those objects are never rebuilt or rebound.
-- The data model stays in Shared Core; `DataSource`/`DataBinding` are `Game.Client.*` adapters over it.
+- The data model stays in Shared Core; `DataSource`/`DataBinding` are Client adapters over it.
 
 ```csharp
 public class ItemSource : MonoBehaviour, DataSource

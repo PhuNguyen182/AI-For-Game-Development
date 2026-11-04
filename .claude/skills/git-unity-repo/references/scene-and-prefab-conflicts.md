@@ -16,7 +16,8 @@ Sources (Docs bases in SKILL.md): [editor] Manual/class-EditorManager.html, [sma
 |---|---|
 | Windows | `C:\Program Files\Unity\Editor\Data\Tools\UnityYAMLMerge.exe` |
 | macOS | `/Applications/Unity/Unity.app/Contents/Helpers/UnityYAMLMerge` |
-| Invocation | `merge -p <base> <remote> <local> <merged>` |
+| Invocation | `merge -p <base> <remote> <local> <merged>`; the tool's own usage names `<left>` = theirs, `<right>` = mine |
+| Unattended run | Add `-h` (headless: no error dialogs) and `--fallback none`; otherwise the shipped `mergespecfile.txt` hands an unresolved conflict to a GUI tool, which hangs a merge with no one at the screen (both flags in the usage text of Unity 6000.0's `UnityYAMLMerge.exe`). With them, a same-field clash exits non-zero and writes the left (theirs) value with no markers: the file looks resolved and is not (`resolve-merge-conflicts` step 6) |
 | Fallback | `mergespecfile.txt` decides handling of unresolved conflicts and unknown files; its syntax is not documented, so check the shipped file in the Editor's `Tools` directory |
 
 **Caveat:** those paths are default-install only (Unity Hub nests the tool under the version folder). Resolve the real path per machine and never commit it.
@@ -29,27 +30,30 @@ Unity documents only the interactive mergetool. The automatic merge driver form 
 [merge]
 	tool = unityyamlmerge
 
+[mergetool]
+	keepBackup = false
+
 [mergetool "unityyamlmerge"]
 	trustExitCode = false
 	cmd = '<path to UnityYAMLMerge>' merge -p "$BASE" "$REMOTE" "$LOCAL" "$MERGED"
 
 [merge "unityyamlmerge"]
 	name = Unity SmartMerge
-	driver = '<path to UnityYAMLMerge>' merge -p %O %B %A %A
+	driver = '<path to UnityYAMLMerge>' merge -h -p --fallback none %O %B %A %A
 	recursive = binary
 ```
 
 ```gitattributes
-*.unity          merge=unityyamlmerge eol=lf
-*.prefab         merge=unityyamlmerge eol=lf
-*.asset          merge=unityyamlmerge eol=lf
-*.controller     merge=unityyamlmerge eol=lf
-*.anim           merge=unityyamlmerge eol=lf
-*.physicMaterial merge=unityyamlmerge eol=lf
-*.mat            merge=unityyamlmerge eol=lf
+*.unity          merge=unityyamlmerge -text
+*.prefab         merge=unityyamlmerge -text
+*.asset          merge=unityyamlmerge -text
+*.controller     merge=unityyamlmerge -text
+*.anim           merge=unityyamlmerge -text
+*.physicMaterial merge=unityyamlmerge -text
+*.mat            merge=unityyamlmerge -text
 ```
 
-`eol=lf` stops a CRLF rewrite from marking every line of a scene changed. `*.controller`, `*.anim`, `*.physicMaterial`, `*.mat` are included on the assumption they are UnityYAML under Force Text. The mergetool section runs only on `git mergetool`; the driver runs during `git merge`.
+`-text` turns off end-of-line conversion, so `core.autocrlf=true` cannot mark every line of a scene changed; files are stored byte-for-byte as Unity's serializer wrote them (LF in practice; the Manual does not state it). Never `eol=lf`: it implies `text`, and some `.asset` files are binary under Force Text (`LightingData.asset`, baked NavMesh and terrain data), so `git add` rewrites CR LF byte pairs inside them (checked on git 2.56: a NUL-bearing file lost its CR bytes). `*.controller`, `*.anim`, `*.physicMaterial`, `*.mat` are included on the assumption they are UnityYAML under Force Text. The driver runs during `merge`, `rebase`, `cherry-pick` and `revert`; the mergetool section runs only on `git mergetool`, which is for a person's terminal (it prompts, and `keepBackup` would leave `*.orig` files Unity gives a `.meta`). An agent runs the tool directly on the three stages (`resolve-merge-conflicts` step 6).
 
 ## Taking one side
 

@@ -16,28 +16,8 @@ Neither world nor local space. You may rely on: node centre at `(0,0,0)`; each c
 ## `Arrange(node, layoutSize)` (once per update)
 - `child.GetArrangeSize()` (not `GetMeasureSize`), then `SetPositionResult(Vector3)` and `SetRotationResult(Quaternion)` in Layout Space.
 
-```csharp
-public class HelixStackLayout : LayoutBase
-{
-    [SerializeField] float step = 1f, degrees = 15f;
-    public override Bounds Measure(FlexalonNode node, Vector3 size, Vector3 min, Vector3 max)
-    {
-        if (node.GetSizeType(Axis.Y) == SizeType.Layout) size.y = Mathf.Max(0f, (node.Children.Count - 1) * step);
-        size = Vector3.Max(min, Vector3.Min(max, size));
-        SetChildrenFillShrinkSize(node, size, size);
-        return new Bounds(Vector3.zero, size);
-    }
-    public override void Arrange(FlexalonNode node, Vector3 layoutSize)
-    {
-        for (int i = 0; i < node.Children.Count; i++)
-        {
-            var c = node.GetChild(i);
-            c.SetPositionResult(new Vector3(0f, -layoutSize.y * 0.5f + i * step, 0f));
-            c.SetRotationResult(Quaternion.Euler(0f, i * degrees, 0f));
-        }
-    }
-}
-```
+- **Sample:** [HelixStackLayout.cs](../scripts/HelixStackLayout.cs) — a complete `LayoutBase` subclass with serialized `step` and `degrees` fields. `Measure` sets the Y size to `(Children.Count - 1) * step` only when Y is `SizeType.Layout`, clamps to `min`/`max`, calls `SetChildrenFillShrinkSize(node, size, size)` and returns `new Bounds(Vector3.zero, size)`. `Arrange` sets child i to `(0, -layoutSize.y * 0.5 + i * step, 0)` and `Quaternion.Euler(0, i * degrees, 0)`.
+  - **Adapt into:** `Assets/_Project/Scripts/<Feature>/Views/HelixStackLayout.cs`; the sample keeps a 3-line header marking it unverified.
 
 ## `FlexalonNode` members
 | Member | Use |
@@ -55,4 +35,4 @@ public class HelixStackLayout : LayoutBase
 ## Rules
 - No allocation in `Measure`/`Arrange`: hot path for every dirty node.
 - No `UnityEngine.Random` or wall-clock time; use a seed field as `FlexalonRandomLayout` does.
-- A game rule that decides the arrangement belongs in `Game.Core.*`; the `LayoutBase` stays in `Game.Client.*`.
+- A game rule that decides the arrangement belongs in a Core assembly; the `LayoutBase` stays in Client code.

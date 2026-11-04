@@ -1,30 +1,45 @@
 ---
 name: anti-cheat-strategy
-description: "Choose a game's anti-cheat posture: server authority, server-side detection, client anti-tamper, kernel drivers (EAC, BattlEye) — stakes vs Steam Deck/console and player trust. Use when sizing anti-cheat or a recurring exploit is a posture gap."
+description: "Anti-cheat posture: server authority, detection, anti-tamper, EAC/BattlEye. Use when sizing anti-cheat or exploits."
 user-invocable: false
 ---
 
 # Anti-Cheat Strategy
 
-Not for: writing one server-side validation check or relevancy culling (`netcode-engineer`), sync model (`netcode-architecture-decision`), the scoring rubric (`tco-reversibility-scoring`), platform-expansion cost (`cross-platform-expansion-assessment`).
+- **Not for:** writing one server-side validation check (`server-authoritative-validation`).
+- **Not for:** relevancy culling (`netcode-engineer`).
+- **Not for:** sync model (`netcode-architecture-decision`).
+- **Not for:** the scoring rubric (`tco-reversibility-scoring`).
+- **Not for:** platform-expansion cost (`cross-platform-expansion-assessment`).
 
 ## Steps
-1. **Establish what cheating costs this game** — casual PvE, ranked ladder, esports ambition and a real-money-adjacent economy are different stakes; stakes decide which tier is worth its price. Player-to-player item trading makes duplication an economy attack even without PvP, so stakes are at least medium; confirm server authority over item creation and transfer as the floor.
-2. **Confirm server authority against the Shared Core is the floor** — a precondition at every stakes level, not tier one of a menu. Client anti-tamper over a server that never validates outcomes is a lock on a door with no frame.
-3. **Name the cheat classes observed or plausible** — state manipulation (speedhack, duplication): server authority. Input automation (aimbot, macro): statistical detection. Information cheats (wallhack, ESP, map hack): read-only, invisible to server authority.
-4. **Fix information cheats in what the server sends** — relevancy culling and server-side fog of war; no tier can un-send data. Route to `netcode-engineer` before buying anything.
-5. **Tiers and what each buys** — server authority: outcome correctness. Heuristic detection: input automation, with false positives. User-mode anti-tamper: raises effort for casual cheats, defeated by kernel-level cheats. Kernel driver: strongest deterrence, heaviest cost on every other axis.
-6. **A committed platform the tier cannot ship on disqualifies it before price** — kernel-level is generally incompatible with Steam Deck/Proton and carries per-console certification overhead.
-7. **Price player trust** — a ring-0 driver asks every player to install it; reputational and review-bombing exposure exists whether or not it works.
-8. **Require an owner for bans and appeals before any detection tier** — a false ban with no appeal path costs more retention than the cheating; unowned means not shippable.
-9. **Score survivors with `tco-reversibility-scoring`** — kernel-level is Low reversibility (removal after a cheating wave reads as surrender).
-10. **Frame platform, vendor-cost and player-trust consequences for the GD**; record the posture via `engineering-standard-adr-authoring`.
-11. **Ask when platform commitments, competitive stakes or economy design are open** — mark the tier provisional on the missing input.
+1. **Establish what cheating costs this game:** casual PvE, ranked ladder, esports ambition and a real-money-adjacent economy are different stakes; stakes decide which tier is worth its price.
+   - **Item trading:** player-to-player item trading makes duplication an economy attack even without PvP, so stakes are at least medium.
+   - **Item-trading floor:** with player-to-player item trading, confirm server authority over item creation and transfer as the floor.
+2. **Confirm server authority against the Shared Core is the floor:** a precondition at every stakes level, not tier one of a menu.
+   - **Anti-tamper alone:** client anti-tamper over a server that never validates outcomes is a lock on a door with no frame.
+3. **Name the cheat classes observed or plausible:** each class has its own answer.
+   - **State manipulation (speedhack, duplication):** server authority.
+   - **Input automation (aimbot, macro):** statistical detection.
+   - **Information cheats (wallhack, ESP, map hack):** read-only, invisible to server authority.
+4. **Fix information cheats in what the server sends:** relevancy culling and server-side fog of war; no tier can un-send data.
+   - **Route:** to `netcode-engineer` before buying anything.
+5. **Tiers and what each buys:** what each tier covers.
+   - **Server authority:** outcome correctness.
+   - **Heuristic detection:** input automation, with false positives.
+   - **User-mode anti-tamper:** raises effort for casual cheats, defeated by kernel-level cheats.
+   - **Kernel driver:** strongest deterrence, heaviest cost on every other axis.
+6. **A committed platform the tier cannot ship on disqualifies it before price:** kernel-level is generally incompatible with Steam Deck/Proton and carries per-console certification overhead.
+7. **Price player trust:** a ring-0 driver asks every player to install it; reputational and review-bombing exposure exists whether or not it works.
+8. **Require an owner for bans and appeals before any detection tier:** a false ban with no appeal path costs more retention than the cheating; unowned means not shippable.
+9. **Score survivors with `tco-reversibility-scoring`:** kernel-level is Low reversibility (removal after a cheating wave reads as surrender).
+10. **Frame platform, vendor-cost and player-trust consequences for the GD:** record the posture via `engineering-standard-adr-authoring`.
+11. **Platform commitments, competitive stakes or economy design open → `Needs-decision` naming them:** mark the tier provisional on the missing input.
 
 ## Never
-- Default to kernel-level, or buy a tier for a cheat class it cannot address (anti-tamper against ESP changes nothing).
-- Let a tier decision substitute for the server-authority floor.
-- Ship a heuristic tier with no false-positive appeal owner.
+- **Kernel default:** defaulting to kernel-level, or buying a tier for a cheat class it cannot address (anti-tamper against ESP changes nothing).
+- **Floor substitution:** letting a tier decision substitute for the server-authority floor.
+- **Unowned heuristic tier:** shipping a heuristic tier with no false-positive appeal owner.
 
 ## Output
 ```
@@ -42,7 +57,8 @@ Not for: writing one server-side validation check or relevancy culling (`netcode
 - Needs GD decision: yes/no — <trade-off>
 - Routed to: <...>
 ```
-On request only, add `Known limitations`, `Latent concerns` and `Future remediation`, each with its escalation trigger.
 
 ## Example
-- "Ship Easy Anti-Cheat, it will stop the wallhacks" → declined: a kernel driver does not stop ESP when the server broadcasts full world state, and Steam Deck is committed so kernel-level is disqualified; culling plus heuristic detection instead.
+- **"Ship Easy Anti-Cheat, it will stop the wallhacks":** declined.
+  - **Why:** a kernel driver does not stop ESP when the server broadcasts full world state, and Steam Deck is committed so kernel-level is disqualified.
+  - **Did instead:** culling plus heuristic detection.

@@ -13,7 +13,7 @@ Sources: M = manual https://forbiddenbyte.com/blog/osa-complete-manual/ (Known i
 | `Image.sprite` set from script misbehaves | Unity 2019.1/2019.2 bug, unrelated to OSA |
 | WebGL: "call stack size exceeded" `RangeError` | High managed stripping; add OSA namespaces to `link.xml` |
 | Android older devices: `Gfx.WaitForPresent` costs 10-20 FPS | Unity issue; vendor fix was upgrading the Editor |
-| Low-end devices: terrible performance on OpenGL ES 3 / Auto Graphics API | Untick Auto Graphics API, target OpenGL ES 2 |
+| Low-end devices: terrible performance on OpenGL ES 3 / Auto Graphics API | Legacy Editors only: untick Auto Graphics API, target OpenGL ES 2. Unity 2023.1+ removed GLES2 — profile on Vulkan/GLES3 instead |
 | Input System | Works under either (tested 5.3.1 / Unity 2019.4 LTS); only migrate the `EventSystem`. Demo scenes ship on the old input system |
 | Custom `OnPointerDown`/`OnPointerUp` component blocks scrolling when dragged | General Unity event consumption; model forwarding on `InputFieldInScrollRectFixerBase` |
 | Button clicks fire while content moves | Invisible `Image` at Content's hierarchy level, enabled while `OSA.Velocity` is non-zero (blocks items, forwards drags). `CutMovementOnPointerDown` can usually stay on; turn it off if the combination misbehaves |

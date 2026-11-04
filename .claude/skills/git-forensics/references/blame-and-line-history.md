@@ -44,7 +44,7 @@ git config blame.ignoreRevsFile .git-blame-ignore-revs
 
 | | `git blame` | `git log -L` |
 |---|---|---|
-| Answers | Last writer of each line now present | Every change to the range, oldest to newest |
+| Answers | Last writer of each line now present | Every change to the range, newest first like `git log` (`--reverse` for oldest first) |
 | Line added then removed | Not shown (unless `--reverse`) | Shown |
 | Whitespace/reformat exclusion | `-w`, `--ignore-rev` | None |
 

@@ -56,4 +56,4 @@ Equivalents: `[Name("x")]`, `[Index(1)]`, `[Ignore]`, `[Optional]`, `[Constant(v
 var config = CsvConfiguration.FromAttributes<ItemBalanceRow>();
 using (var csv = new CsvReader(reader, config)) { /* GetRecords<ItemBalanceRow>() */ }
 ```
-Attributes put a CsvHelper reference on the model, so a type destined for `Game.Core.*` must use a `ClassMap<T>` outside Core.
+Attributes put a CsvHelper reference on the model, so a type destined for a Core assembly must use a `ClassMap<T>` outside Core.

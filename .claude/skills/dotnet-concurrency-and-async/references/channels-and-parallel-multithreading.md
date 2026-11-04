@@ -9,7 +9,7 @@ Sources: Learn "Channel Class", "Data Parallelism (TPL)", API `Parallel`, `Inter
 
 ## CPU-bound parallelism
 - `Parallel.For` / `ForEach`: the TPL partitions across the thread pool; do not manage threads by hand.
-- `Parallel.ForEachAsync`: async body per element with bounded concurrency via `ParallelOptions.MaxDegreeOfParallelism`.
+- `Parallel.ForEachAsync` (.NET 6+, absent on netstandard 2.1 — server only): async body per element with bounded concurrency via `ParallelOptions.MaxDegreeOfParallelism`. On Unity, bound concurrency with `SemaphoreSlim`.
 - `ParallelOptions.CancellationToken` lets a running loop observe cancellation.
 - Pays off only when per-iteration work outweighs partitioning overhead: measure against the sequential loop first. Burst-compiled bulk work over `NativeArray<T>` goes to `unity-job-system-and-burst`.
 
@@ -18,18 +18,18 @@ Sources: Learn "Channel Class", "Data Parallelism (TPL)", API `Parallel`, `Inter
 | Primitive | Use when |
 |---|---|
 | `Interlocked.Increment` / `CompareExchange` / `Exchange` | One counter, flag or reference needs an atomic update |
-| `lock` (`System.Threading.Lock` in C# 13+, else a dedicated `object`) | A short section spanning several fields; never lock `this`, a `Type` or a `string` |
+| `lock` on a dedicated `readonly object` (`System.Threading.Lock` needs .NET 9 — server only) | A short section spanning several fields; never lock `this`, a `Type` or a `string` |
 | `SemaphoreSlim` + `WaitAsync`/`Release` | Bounding concurrent entry from async code; `lock` cannot wrap an `await` (compiler error) |
 
 ```csharp
-private readonly System.Threading.Lock _balanceLock = new();
+private readonly object _balanceLock = new object();
 private int _balance;
 
 public void Credit(int amount)
 {
-    lock (_balanceLock)
+    lock (this._balanceLock)
     {
-        _balance += amount;
+        this._balance += amount;
     }
 }
 ```

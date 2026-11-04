@@ -62,38 +62,11 @@ Sources (`@6.6`): manual `client-server-simple`; API `NetworkDriver`, `NetworkCo
 
 Each frame: `ScheduleUpdate().Complete()`, then drain events. Skipping it leaves events queued and can miss a timeout or disconnect.
 
-```csharp
-void Update()
-{
-    driver.ScheduleUpdate().Complete();
-    for (int i = 0; i < connections.Length; i++)
-        if (!connections[i].IsCreated) { connections.RemoveAtSwapBack(i); i--; }
-
-    NetworkConnection c;
-    while ((c = driver.Accept()) != default) connections.Add(c);
-
-    for (int i = 0; i < connections.Length; i++)
-    {
-        NetworkEvent.Type cmd;
-        while ((cmd = driver.PopEventForConnection(connections[i], out var stream)) != NetworkEvent.Type.Empty)
-        {
-            if (cmd == NetworkEvent.Type.Data)
-            {
-                uint v = stream.ReadUInt();
-                driver.BeginSend(NetworkPipeline.Null, connections[i], out var w);
-                w.WriteUInt(v);
-                driver.EndSend(w);
-            }
-            else if (cmd == NetworkEvent.Type.Disconnect) { connections[i] = default; break; }
-        }
-    }
-}
-
-void OnDestroy()
-{
-    if (driver.IsCreated) { driver.Dispose(); connections.Dispose(); }
-}
-```
+- **Sample:** [ServerUpdateLoop.cs](../scripts/ServerUpdateLoop.cs) — `Update()` and `OnDestroy()` of a server `MonoBehaviour`.
+  - **Adapt into:** `Assets/_Project/Scripts/Networking/Server/ServerUpdateLoop.cs`; `driver` (`NetworkDriver`) and `connections` (`NativeList<NetworkConnection>`) are fields declared elsewhere in that class.
+  - **Order per frame:** `ScheduleUpdate().Complete()`, remove uncreated connections, `Accept()` loop, then pop events per connection.
+  - **Data event:** reads a `uint` and echoes it back through `BeginSend`/`EndSend` on `NetworkPipeline.Null`.
+  - **Disconnect event:** sets the slot to `default` and breaks out of that connection's pop loop.
 
 Dispose the driver and every `Native*` it owns on shutdown; `IsCreated` stops a double dispose.
 

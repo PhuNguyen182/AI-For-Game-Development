@@ -1,0 +1,61 @@
+# Google UMP (Unity)
+
+Sources: [a] `/admob/unity/privacy`, [b] `/admob/unity/privacy/gdpr`, [c] `/admob/unity/privacy/us-iab-support`, [d] `/admob/unity/reference/class/google-mobile-ads/ump/api/consent-request-parameters` (all under https://developers.google.com), [e] https://github.com/googleads/googleads-mobile-unity/releases, [f] https://ads-developers.googleblog.com/2023/08/.
+
+## Flow API (`GoogleMobileAds.Ump.Api`)
+
+| Member | Fact that decides |
+|---|---|
+| `ConsentInformation.Update(ConsentRequestParameters, Action<FormError>)` | Call on every launch; the only supported way to learn consent status [a] |
+| `ConsentForm.LoadAndShowConsentFormIfRequired(Action<FormError>)` | Loads and shows every required message; callback fires immediately when none is required [a] |
+| `ConsentInformation.CanRequestAds()` | Always `false` until `Update()` has run; check after `Update` (consent may come from a previous session) and after the form [a]. `true` when consent status is obtained or not required [f] — so also after a refusal, when only Limited Ads serve [b]. Gates ad requests only; never a source for Firebase consent types |
+| Consent error | The SDK falls back to the previous session's status — still check `CanRequestAds()` [a] |
+| `ConsentInformation.PrivacyOptionsRequirementStatus` | `PrivacyOptionsRequirementStatus.Required` → show the privacy-options control [a] |
+| `ConsentForm.ShowPrivacyOptionsForm(Action<FormError>)` | Presents the form when the player taps that control [a] |
+| `ConsentInformation.Reset()` | Testing only; never in production code [a] |
+
+**Caveat:** both `CanRequestAds()` checks can return `true` in one launch; without a guard flag the ad SDK initializes and requests twice [a].
+
+- **Sample:** [StartupConsentFlow.cs](../scripts/StartupConsentFlow.cs) — the callbacks `OnConsentInfoUpdated`, `OnConsentFormDone`, `OnAttResolved`, `ContinueStartupAsync`, `TryStartAds`, `OnPrivacyOptionsClicked` and `OnPrivacyOptionsClosed`.
+  - **Adapt into:** the one bootstrap class that owns SKILL.md step 3's sequence, or `Assets/_Project/Scripts/Platform/StartupConsentFlow.cs` when the project has none; the sample holds class members only, and `_firebaseBootstrap`, `_lifetimeToken`, `RequestAttThen`, `ApplyFirebaseConsent`, `ApplyAdConsentSignals`, `InitializeAds` and `OnStartupFailed` are project code.
+  - **Guards:** `_isAdsStarted` makes ad start once; `_isAttResolved` is `true` on Android or once the ATT status is no longer not-determined.
+  - **Order:** the `Update` callback runs `TryStartAds`, then loads the form; the form callback requests ATT; ATT resolved continues to the Firebase gate (`firebase-unity-sdk` step 4), then `ApplyFirebaseConsent`, then `TryStartAds` (sub-steps (a), (d), (e) of SKILL.md step 3).
+
+**Caveat:** on a returning iOS player ATT is already answered, so `_isAttResolved` starts `true` and the post-`Update` check starts ads at once, before Firebase; on a first launch ads wait for the ATT answer, so the first ad request carries the IDFA decision.
+
+**Caveat:** `ApplyFirebaseConsent` runs on every launch after the form callback and the Firebase gate, and again with `ApplyAdConsentSignals` in `OnPrivacyOptionsClosed`, so a withdrawal stops Analytics collection and reaches the ad networks in the same session. Crashlytics withdrawal (`IsCrashlyticsCollectionEnabled = false`) takes effect next launch (SKILL.md step 8).
+
+## `ConsentRequestParameters` [d]
+
+| Member | Fact |
+|---|---|
+| `TagForUnderAgeOfConsent` | `bool`; `true` → UMP does not ask that user for consent [b][c] |
+| `ConsentDebugSettings` | Debug geography and test devices |
+| `ConsentSyncId` | 22–150 characters, else not set and a warning is logged |
+
+**Caveat:** UMP does not forward `TagForUnderAgeOfConsent` to the Google Mobile Ads plugin; set `AgeRestrictedTreatment` on the ad request configuration too ([child-audience-flags.md](child-audience-flags.md)) [b].
+
+## EEA / UK / Switzerland and US states
+
+| Subject | Fact that decides |
+|---|---|
+| Certified CMP | From 2024-01-16 a partner without a Google-certified CMP gets only Limited Ads on EEA and UK traffic; UMP is one certified CMP, not the only one [b] |
+| TCF | UMP implements IAB TCF v2; consent strings land in `IABTCF_*` local-storage keys for other SDKs to read [b] |
+| US state regulations messaging | Plugin 8.7.0 or later [c] |
+
+## Testing (test devices only) [a]
+
+| Setting | Fact |
+|---|---|
+| `ConsentDebugSettings.TestDeviceHashedIds` | Hash from the device log on the first `Update`; debug settings are ignored on other devices |
+| `DebugGeography.EEA` | Simulates EEA; pair with `Reset()` in a debug build to see the form again |
+
+## Plugin [e]
+
+| Version | Fact |
+|---|---|
+| v11.6.0 | Latest at pin; minimum Unity 2022.3 (breaking) |
+| v11.3.0 | Added `RequestConfiguration.AgeRestrictedTreatment` |
+| v11.0.0 | UMP Android dependency 4.0.0 |
+
+Unverified: the release year of v11.6.0 (page showed "13 Oct" only); the exact `Action<FormError>` callback signatures and `DebugGeography` value set beyond `EEA`; which message UMP shows first when both a GDPR and an IDFA explainer message are enabled.

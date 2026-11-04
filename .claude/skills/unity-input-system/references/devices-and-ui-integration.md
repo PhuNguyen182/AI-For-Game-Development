@@ -1,6 +1,6 @@
 # Devices and UI Integration
 
-Docs (1.20 manual): `devices-overview`, `read-devices-directly`, `ui-input`, `introduction-ui-input-module`, `configure-ui-input-action-map`. Canvas layout beyond the module: `gameplay-engineer`.
+Docs (1.20 manual): `devices-overview`, `read-devices-directly`, `ui-input`, `introduction-ui-input-module`, `configure-ui-input-action-map`. Canvas layout beyond the module: `ui-engineer` (`ugui`, `ui-toolkit`).
 
 ## Device categories
 | Category | Note |

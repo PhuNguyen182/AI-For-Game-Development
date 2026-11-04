@@ -60,7 +60,7 @@ private void OnHealthChanged(int previous, int current) { }
 [Rpc(SendTo.Server)]
 public void SubmitMoveRpc(Vector3 destination, RpcParams rpcParams = default)
 {
-    ulong sender = rpcParams.Receive.SenderClientId; // validate; rules live in Game.Core.*
+    ulong sender = rpcParams.Receive.SenderClientId; // validate; rules live in Core
 }
 
 [Rpc(SendTo.NotServer, Delivery = RpcDelivery.Unreliable)]

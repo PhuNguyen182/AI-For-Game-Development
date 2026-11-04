@@ -14,7 +14,7 @@ Per Canvas: **Self Batch Count** (this canvas), **Cumulative Batch Count** (incl
 Inferred, not stated on the Profiler page: any change to one element rebuilds its Canvas's batch geometry. Put a frequently-updating element (health bar, timer) on its own `Canvas`, apart from static chrome. Also gate text updates on an actual value change rather than per-frame `.ToString()`.
 
 ## Multi-resolution
-Anchor elements to the edges they track ([rect-transform-and-layout.md](rect-transform-and-layout.md)) and use `CanvasScaler` Scale With Screen Size with Match 0.5 for multiple aspect ratios ([canvas-and-scaling.md](canvas-and-scaling.md)).
+Anchor elements to the edges they track ([rect-transform-and-layout.md](rect-transform-and-layout.md)) and use `CanvasScaler` Scale With Screen Size with Match set per SKILL step 3 (stable axis; 0.5 only when both orientations ship) ([canvas-and-scaling.md](canvas-and-scaling.md)).
 
 ## World Space UI
 1. Create a UI element (auto-creates a Canvas); set Render Mode World Space.

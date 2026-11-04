@@ -14,7 +14,7 @@ Sources: [Mesh API](https://docs.unity3d.com/Manual/UsingtheMeshClass.html), [qu
 - `RecalculateBounds`, `RecalculateNormals`, `RecalculateTangents` (needs normals and UVs); `Clear`.
 - `GetIndices`/`SetIndices` take a submesh and topology; `triangles` addresses the default submesh only.
 - `isReadable` (read-only), `vertexCount`, `HasVertexAttribute`.
-- Mesh LOD members (`lodCount`, `GetLod`/`SetLod`) belong to `gameplay-engineer`.
+- Mesh LOD members (`lodCount`, `GetLod`/`SetLod`) belong to `unity-performance-engineer`.
 
 ## Quad example
 ```csharp

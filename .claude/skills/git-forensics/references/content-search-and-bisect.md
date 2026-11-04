@@ -38,7 +38,7 @@ Walk scope: `--all` (every ref + `HEAD`, no reflogs), `--reflog` (adds objects o
 | `125` | skip (cannot test) |
 | `128`+ (incl. `exit(-1)` = 255) | aborts the session |
 
-126/127 are the shell's "not executable"/"not found": a bad script path or missing interpreter is silently recorded as bad at every revision, yielding the oldest tested revision as a confident answer. First confirm the script exits 0 on a known-good and non-zero on a known-bad revision.
+126/127 are the shell's "not executable"/"not found". git 2.56 aborts the run on them (`error: bogus exit code 127`, checked with a missing script), but a script that hits a missing tool and exits `1` is still recorded as bad at every revision, yielding the oldest tested revision as a confident answer. First confirm the script exits 0 on a known-good and non-zero on a known-bad revision.
 
 ## Test requirements
 - Deterministic per revision; a flake compounds silently.

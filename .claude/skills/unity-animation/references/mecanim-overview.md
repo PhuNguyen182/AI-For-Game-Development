@@ -29,4 +29,4 @@ Animation window owns one clip's keys, curves and events; Animator window owns t
 - At most one parameter, of a small set of supported types; two parameters is not called.
 - On the last frame of a non-looping clip it is unreliable — place it slightly earlier.
 - On an imported clip, add events in the import settings (the asset is read-only).
-- An event signals a moment; what it means is `Game.Core.*`'s (`csharp-standards` → `coding-principles.md`).
+- An event signals a moment; what it means is Core's (`csharp-standards` → `coding-principles.md`).

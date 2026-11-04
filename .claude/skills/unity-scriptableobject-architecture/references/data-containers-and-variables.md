@@ -9,4 +9,4 @@ Sources: Manual `class-ScriptableObject.html`; `CreateAssetMenuAttribute`. Patte
 | Reference wrapper | `[Serializable] struct FloatReference` with `useConstant`, `constantValue`, a `FloatVariable` field, and `implicit operator float` | A designer picks per instance between the shared Variable and a local one-off value; the implicit conversion hides the choice from consumers |
 
 - A Data Container is never mutated at runtime, so it needs no reset. A Variable written at runtime needs [dual-serialization.md](dual-serialization.md).
-- A Variable's `Value` is one shared asset field, not per-instance state: a write changes what every reader sees next. Use only for values global to the system. Per-instance state (one enemy's current health) belongs on that component or in `Game.Core.*`.
+- A Variable's `Value` is one shared asset field, not per-instance state: a write changes what every reader sees next. Use only for values global to the system. Per-instance state (one enemy's current health) belongs on that component or in Core.

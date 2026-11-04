@@ -25,6 +25,7 @@ Every package, SDK, service and tool the project depends on. One row each. Updat
 | Crash reporting | | | | | |
 | Push notifications | | | | | |
 | Testing | Unity Test Framework | | `Packages/manifest.json` | | |
+| Code coverage | Unity Code Coverage (optional) | | `Packages/manifest.json` | | `com.unity.testtools.codecoverage`; a percentage gate only if stated here |
 | CI/CD | | | | | |
 | Distribution | | | | | |
 | Version control | git + LFS | | `.gitattributes` | | |
