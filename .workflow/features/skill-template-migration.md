@@ -89,3 +89,5 @@ See `.workflow/features/skill-template-migration.spec.md`. Lanes: serial only.
 - **`verify.ps1` edges now the promotion ships:** a whole-layer run skips every `.md` under a parent folder named `scripts` or `assets`. In the backlog.
 - **Budget cost:** Skills went from 9.9k to 18k tokens per session, about 8.1k more; the GD was told about 7.5k.
 - **Other commits on this branch:** `2ffcce1`, `6bd65f4`, `e791c78`, `ff26bda` (Game Engineer output style, README) are the GD's own work, made on purpose (GD's words: "cái đấy tôi chủ động làm"). They go into `develop` with the merge and push; no CP4 question needed.
+
+> Evidence under `.workflow/evidence/skill-template-migration/` was removed on 2026-11-04 as unused; read it from git history at `9bdaa30`.
