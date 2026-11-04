@@ -35,6 +35,7 @@ user-invocable: false
 | Repro | Steps from a known state; attempts and hits (intermittent → rate) |
 
 - **Severity rule:** one severity per finding; impact if shipped, never cost to fix.
+- **Filed bug priority:** a finding keeps its Severity; a filed bug maps Critical → Highest and the rest by name.
 - **Defect:** code ≠ spec → owner.
 - **Design flaw:** spec itself wrong, including a spec assumption that contradicts an acceptance criterion (the criterion wins) → GD immediately, never downgraded.
 - **As designed:** report it as such.
@@ -42,3 +43,4 @@ user-invocable: false
 
 ## Bugs
 - **[bug-lifecycle.md](references/bug-lifecycle.md):** filing, matching, verifying or closing a bug, and every QA sign-off → read it first: writer, statuses, what counts as settled.
+- **Record text:** concise English, title and short description; rules per skill `bugs` → Writing rules.

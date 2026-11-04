@@ -34,6 +34,7 @@ user-invocable: false
 | Past sessions | `sessions [--since D]` |
 
 - **Query words:** file names, symbols, `BUG-0001`, agent/skill names. Vietnamese works without diacritics.
+- **Bug text:** not indexed here; find it with `bugs.py search` (skill `bugs`).
 - **Hits:** snippets; `get` only what you will use.
 - **`(+N more)`:** from `q`/`for`: raise `-n`/`--budget` or narrow with `-l`/`-t`/`-e`.
 - **Superseded:** `--all` includes superseded entries.

@@ -150,10 +150,26 @@ def read_sources(mem: Path):
     return inc, exc
 
 
+def git_exe() -> str:
+    """git's full path from PATH alone. On Windows CreateProcess tries the current folder before PATH, and so does shutil.which,
+    so a bare "git" would run a git.exe in the folder a session starts in. A relative PATH entry names that folder too. None: the
+    FileNotFoundError subprocess raises for a missing program."""
+    names = ("git.exe", "git.cmd", "git.bat") if os.name == "nt" else ("git",)
+    for folder in os.environ.get("PATH", "").split(os.pathsep):
+        folder = folder.strip().strip('"')
+        if not os.path.isabs(folder):
+            continue
+        for name in names:
+            path = os.path.join(folder, name)
+            if os.path.isfile(path) and os.access(path, os.X_OK):
+                return path
+    raise FileNotFoundError("git is not on PATH")
+
+
 def list_files(root: Path) -> list[str]:
     """Tracked + untracked-not-ignored files (git respects .gitignore, so Library/Temp never appear)."""
     try:
-        r = subprocess.run(["git", "-C", str(root), "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
+        r = subprocess.run([git_exe(), "-C", str(root), "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
                            capture_output=True, timeout=30)
         if r.returncode == 0:
             return sorted({p for p in r.stdout.decode("utf-8", "replace").split("\0") if p})

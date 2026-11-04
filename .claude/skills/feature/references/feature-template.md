@@ -30,8 +30,8 @@
 |---|---|---|---|---|
 
 ## Bugs
-| ID | Title | Severity | Status |
-|---|---|---|---|
+| ID | Title | Priority |
+|---|---|---|
 
 ## Known limitations
 - <accepted gaps; mirrored into the feature root's DEBT.md at closure>

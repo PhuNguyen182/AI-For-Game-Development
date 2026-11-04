@@ -10,8 +10,9 @@ A Claude Code setup for making Unity games. You direct as the Game Designer; age
   - Windows: `winget install Microsoft.PowerShell`
   - macOS: `brew install --cask powershell`
   - Linux: `sudo snap install powershell --classic`
+- Python 3.10+ with SQLite FTS5, for bug records. Without it, bug work and dispatches naming a bug are blocked.
 - Optional:
-  - Python 3.10+, for session memory.
+  - Session memory uses the same Python and degrades without it.
   - Unity CLI and a Unity MCP server, for Play Mode, profiling and in-Editor tests.
 
 ## Install
@@ -73,7 +74,7 @@ Both commands accept `-DryRun` (print the report, write nothing) and `-Force` (t
 | Your own agents and skills (names the framework does not have) | Leave alone |
 | A framework file you edited | Keep yours and write the framework's version beside it as `<file>.framework-new`. Merge it, delete it, or rerun with `-Force`. Old versions are backed up under .claude/.framework-backup/ |
 | `.claude/settings.json` | Merge: add the framework's permissions, env keys and hooks. Your other settings stay |
-| `.gitignore` | Append the framework's missing lines |
+| `.gitignore`, `.gitattributes` | Append the framework's missing lines |
 | `CLAUDE.md`, `.xerjignore`, `.memory/sources.txt`, `.workflow/` | Create at install if missing, never overwrite |
 
 The state of the last sync is in the file .claude/.framework-manifest.json. Commit it.

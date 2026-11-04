@@ -9,7 +9,7 @@ $root = Get-ProjectRoot $in
 # A subagent without a shell cannot run xerj: leave its Grep alone. No tools: line means every tool, shell included.
 if ($in.agent_type) {
     $def = Join-Path $root ".claude/agents/$($in.agent_type).md"
-    if ((Test-Path $def) -and ((Get-Content $def -Raw -Encoding UTF8) -match '(?ms)^tools:(.*?)(?=^[\w-]+:|^---)')) {
+    if ((Test-Path -LiteralPath $def) -and ((Get-Content -LiteralPath $def -Raw -Encoding UTF8) -match '(?ms)^tools:(.*?)(?=^[\w-]+:|^---)')) {
         if ($Matches[1] -notmatch '\b(Bash|PowerShell)\b') { exit 0 }
     }
 }

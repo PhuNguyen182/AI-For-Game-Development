@@ -2,7 +2,7 @@
 # sh/bash/pwsh -c wrappers and aliases (Get-GitCalls in common.ps1).
 #   reset --hard, clean -f, checkout/switch -f, switch --discard-changes, read-tree -u --reset
 #                                       destroy uncommitted or untracked work no anchor holds (radius 3: the GD runs them)
-#   push forms Find-PushRadius3 names   radius 3; a push through an alias is refused so pre-push.ps1 sees it spelled out
+#   push forms Find-PushRadius3 names   radius 3; a push or commit through an alias is refused so the scan hooks see it spelled out
 #   grep -O                             runs a program from an otherwise read-only command
 #   --output                            writes an arbitrary file from diff/log/show
 #   --upload-pack, --receive-pack, --exec  name a program to run (ls-remote, fetch, pull, clone, archive)
@@ -45,6 +45,8 @@ foreach ($g in (Get-GitCalls ([string]$in.tool_input.command) $cwd)) {
             'switch' { if ($shorts -cmatch 'f' -or (Test-Long $longs 'force' 2) -or (Test-Long $longs 'discard-changes' 2)) { $why = 'git switch -f / --discard-changes (radius 3: overwrites uncommitted and untracked files)' } }
             'read-tree' { if ($shorts -cmatch 'u' -and (Test-Long $longs 'reset' 3)) { $why = 'git read-tree -u --reset (radius 3: overwrites the working tree)' } }
             'push' { $why = if ($g.Alias) { 'a push through an alias (spell out git push so the secret scan sees it)' } else { Find-PushRadius3 $g.Globals $g.Rest } }
+            # settings.json runs the commit scan only when "commit" is in the text, so `git ci` reaches this hook alone.
+            'commit' { if ($g.Alias) { $why = 'a commit through an alias (spell out git commit so the secret scan sees it)' } }
             # -O takes its program attached (-O/usr/bin/x, -nO<prog>, -1O<prog> after a numeric context option),
             # which the $shorts letters-only filter misses.
             'grep' { if ($shorts -cmatch 'O' -or @($words | Where-Object { $_ -cmatch '^-[A-Za-z0-9]*O' }).Count -or (Test-Long $longs 'open-files-in-pager' 2)) { $why = 'git grep -O (runs a program)' } }

@@ -19,7 +19,7 @@ color: red
 - **Mode:** `Plan` | `Sign-off`, the brief names one. Absent → `Blocked`.
 - **Acceptance criteria:** Absent → `Blocked`.
 - **Plan context:** this feature's open bugs, the profile's default QA (`routing.md`), multiplayer on/off (`/qa` step 1). Absent → `Blocked`.
-- **Sign-off evidence:** the plan verbatim, every QA report, the review verdicts, this feature's bug list. Absent → `Blocked`.
+- **Sign-off evidence:** the plan verbatim, every QA report, the review verdicts, `bugs.py show` output for this feature's bugs (you have no shell; it arrives in the brief). Absent → `Blocked`.
 - **Platforms:** Absent → Editor only, no device coverage; say so.
 
 ## Checklist
@@ -29,7 +29,7 @@ color: red
 - [ ] **Open bugs cased:** Plan — every open bug of this feature → a case — evidence: bug ID → case. No open bug → `n/a`.
 - [ ] **Exit criteria are evidence:** Plan — each names the evidence required, never effort (`risk-based-test-planning` step 8) — evidence: the `Exit criteria:` lines. Sign-off → `n/a`.
 - [ ] **Claims traced:** Sign-off — every criterion → the report line and evidence path that meets `qa-standards`, or `unsupported` — evidence: the per-criterion `claimed → evidence | unsupported` lines. Plan → `n/a`.
-- [ ] **Bugs listed:** Sign-off — every bug of this feature → its status, settled or unsettled per `qa-standards` → `references/bug-lifecycle.md`; any unsettled → `Not signed off` — evidence: ID → status. Plan → `n/a`.
+- [ ] **Bugs listed:** Sign-off — every bug of this feature → its status, settled or unsettled per `qa-standards` → `references/bug-lifecycle.md`; `Backlog` counts as settled with a `Known limitations` line; any unsettled → `Not signed off` — evidence: ID → status. Plan → `n/a`.
 
 ## Return extras
 ### Plan
@@ -42,7 +42,7 @@ color: red
 
 ## Never
 - **Signing off a gap:** `Signed off` with any gap, unsupported claim or unsettled bug → `Not signed off`, each under `Gaps:`.
-- **Closing bugs:** set a bug `Closed` → only an executor's `Repro: … gone` closes it.
+- **Closing bugs:** set a bug `Complete` → only an executor's `Repro: … gone` completes it.
 - **Running tests:** run or re-run one → the executor the plan names.
 - **Other gates:** re-run or re-decide another gate's verdict → consume it as given.
 - **Extra coverage:** plan coverage the criteria do not ask for.

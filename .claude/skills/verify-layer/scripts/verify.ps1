@@ -47,14 +47,14 @@ $HookContracts = @{
     '.claude/skills/code-review-method/SKILL.md' = @('`Request changes`')
     # Brief marker lines and state lines the hook parses.
     '.claude/skills/review/SKILL.md'                        = @('`Round: <n>`', '`Mode: audit`', '`Mode: workflow`', '`Tree: <sha>`', '`Previous tree: <sha>`', '`Target: <path or base>`', '`Bug: BUG-####`',
-        '`Feature: .workflow/features/<slug>.md`', '`Verdict:`', '`Request changes`', '`Blocked`', '`.workflow/rounds.json`', '`feature:<slug>`', '`bug:<id>`', '`target:<path>`', '`Rounds:`', '`Review rounds:`', 'round-<n>-')
+        '`Feature: .workflow/features/<slug>.md`', '`Verdict:`', '`Request changes`', '`Blocked`', '`.workflow/rounds.json`', '`feature:<slug>`', '`bug:<id>`', '`target:<path>`', '`Rounds:`', '`bugs.py counters <id>`', '`bugs.py round <id> review +1 --note <why>`', 'round-<n>-')
     '.claude/skills/qa/SKILL.md'                            = @('`Mode: test-code`', '`Verify: BUG-####`', '`Feature: .workflow/features/<slug>.md`', '`Not signed off`')
-    '.claude/skills/fix/SKILL.md'                           = @('`Bug: BUG-####`', '`Verify: BUG-####`', '`Feature: .workflow/features/<slug>.md`', '`Review rounds:`', '`Repro:`', '`reproduces`')
+    '.claude/skills/fix/SKILL.md'                           = @('`Bug: BUG-####`', '`Verify: BUG-####`', '`Feature: .workflow/features/<slug>.md`', '`round <id> review +1 --note <why>`', '`round <id> fix +1 --note <why>`', '**Still broken while `Resolved`:**', '**Checks passed:**', '`extra-round <id> fix|review +n --note <the order>`', '`stop-rule <id> fix|review --extra-dispatch unused`', '`Repro:`', '`reproduces`')
     '.claude/skills/feature/SKILL.md'                       = @('`Feature: .workflow/features/<slug>.md`')
     '.claude/skills/release/SKILL.md'                       = @('`Target: ', '`Verify: BUG-####`')
     '.claude/skills/feature/references/feature-template.md' = @('- Status: Open', '- Size:', '- Rounds:', '## GD decisions', '- Stop rule:')
-    '.claude/skills/fix/references/bugs-template.md'        = @('- Fix rounds:', '- Review rounds:', '- Stop rule:', '## BUG-####', '| ID |')
-    '.claude/skills/qa-standards/references/bug-lifecycle.md' = @('Settled: Closed, Won''t fix, Accepted, As designed, Duplicate')
+    '.claude/skills/bugs/SKILL.md'                          = @('`Bug: BUG-####`', '`Verify: BUG-####`', '`counters <id> --json`', '`round <id> fix\|review +1 --note N`', '`extra-round <id> fix\|review +n --note N`', '`stop-rule <id> fix\|review --extra-dispatch unused\|used`')
+    '.claude/skills/qa-standards/references/bug-lifecycle.md' = @('Settled: Complete, Won''t fix, Accepted, As designed, Duplicate')
     '.claude/skills/qa-standards/SKILL.md'                  = @('**Critical**', '**High**', '**Medium**')
     '.claude/rules/routing.md'                              = @('extra round')
     # Marker literals the workflows emit and round-cap.ps1 reads.

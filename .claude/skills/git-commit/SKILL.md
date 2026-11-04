@@ -32,5 +32,6 @@ user-invocable: false
    - **Message:** commit with both subject and body, never a placeholder to amend later.
    - **Bash:** `git commit -F - <<'EOF' … EOF`.
    - **PowerShell:** `$msg | git commit -F -`; a here-string after `-F -` becomes a pathspec.
+   - **Form:** one commit per call, with a literal path: `git commit`, `git -C <path> commit`, `cd <path> && git commit`. The hook refuses other forms and says how to re-run.
 4. **Confirm:** `git log -1 --stat` shows what was recorded.
 5. **Report:** quote that `git log -1 --stat` output. Never push unless the GD ordered it; when ordered, push without asking.

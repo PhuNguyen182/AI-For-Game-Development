@@ -11,7 +11,7 @@ argument-hint: "<the request, in the GD's words>"
 - **Every git write in this skill:** each commit, the CP4 merge, first checks `git branch --show-current` equals `Branch:` (from step 4 on).
   - **Lane A commit:** a lane A worktree commit instead checks `git -C <worktree> branch --show-current` equals that `Worktrees:` entry's branch.
   - **Mismatch:** else stop, `Needs GD` — another session moved the shared checkout's HEAD.
-- **Feature paths (used below):** the feature root, `TestsDotnet/<Feature>/`, every path in an attempt's brief or `Changed`, with their `.meta` — never `.workflow/`.
+- **Feature paths (used below):** the feature root, `TestsDotnet/<Feature>/`, every path in an attempt's brief or `Changed`, with their `.meta` — never `.workflow/` (closure commit: step 8).
 
 ## 0. Open
 - **Slug:** kebab-case name.
@@ -32,7 +32,6 @@ argument-hint: "<the request, in the GD's words>"
   - **Request:** the GD's words verbatim (from a backlog item: its row and GDD section).
   - **Profile:** from `CLAUDE.md`.
   - **Backlog row:** the `.workflow/backlog.md` row → `in progress`.
-  - **Bugs file:** no `.workflow/bugs.md` → create it from `/fix`'s template.
 - **GD answers:** every GD answer → `GD decisions` at once; an accepted gap or risk also → `Known limitations` in the same edit.
 
 ## 1. Size — `technical-architect` (Size mode)
@@ -68,6 +67,7 @@ argument-hint: "<the request, in the GD's words>"
 - **Multiplayer:** a multiplayer feature approved → `Multiplayer: yes` in `CLAUDE.md`.
 
 ## 4. Build — serial, one Editor holder at a time
+- **Bug journal:** no `.workflow/bugs.jsonl` → create it empty (here, so an S exit leaves no untracked file).
 - **Start:** `git-expert` creates the local branch `feature/<slug>` from the current branch → `Branch:`, `Base:`.
   - **Shared checkout:** another session's `Session:` live under 3 h → `AskUserQuestion` before any branch switch: the checkout is shared.
 - **Order:** skipping roles the tasks omit:
@@ -145,12 +145,12 @@ argument-hint: "<the request, in the GD's words>"
 - **Show:**
   - **Criteria:** each acceptance criterion → test id · mode · last result, or the gap (no passing test, `manual`).
   - **Docs:** `Docs owed` → written / missing.
-  - **Open items:** open bugs · limitations · gates declined · what did not run.
+  - **Open items:** open bugs (`bugs.py list --feature <slug> --open`) · limitations · gates declined · what did not run.
 - **Options:** close / fix gaps first / accept named gaps (cost stated).
 - **Gap rule:** a criterion without a passing test closes only as an accepted gap.
 - **Fix gaps:** step 4 with the gap criteria as tasks for their `Tests:` owner (+1 `rework`, written in the file), then step 5's rework rule, then CP4 again.
 - **Close:** `Status: Closed`; each accepted gap into the feature root's `DEBT.md`; the backlog row → `done`.
-  - **Closure commit:** the closure commit (`DEBT.md`, the feature file, `backlog.md`; the `core.md` exception).
+  - **Closure commit:** the closure commit (`DEBT.md`, the feature file, `backlog.md`, `.workflow/bugs.jsonl`; the `core.md` exception).
   - **Merge question:** second question in the same CP4 call: merge `feature/<slug>` into `Base:` now via `git-expert` (Khuyến nghị) / keep the branch.
   - **Push:** never push.
   - **Next item:** then offer the next backlog item — the first `todo` whose dependencies are `done` (`/plan-game`).
@@ -168,7 +168,8 @@ argument-hint: "<the request, in the GD's words>"
 
 ## Abandon
 - **GD drops it:** `Status: Abandoned`, why, last verified state.
-- **Open bugs:** `Won't fix`.
+- **Open bugs:** `Won't fix`, `--by GD`: abandoning is the GD's order.
+- **Journal:** `.workflow/bugs.jsonl` dirty or untracked in `git status`, even with no bugs moved → add "journal uncommitted" to the report: it waits for the GD's commit order.
 - **Backlog row:** the backlog row → `dropped`.
 - **Worktrees:** `Worktrees:` entries removed (`git-expert`).
 - **Branch:** `AskUserQuestion`: delete `feature/<slug>` via `git-expert` (Khuyến nghị) / keep it, with a `DEBT.md` entry naming the dormant code.

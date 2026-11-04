@@ -156,6 +156,27 @@ function Get-GitignoreFrameworkLines([string]$Text) {
     return $out
 }
 
+function Add-MissingFrameworkLines([string]$Path, [string[]]$FwLines) {
+    # Append framework lines the file lacks. Comments and blank lines are context only: they are never a reason to append.
+    if (-not (Test-Path -LiteralPath $Path)) {
+        # LF and one final newline: Set-Content would end it in the platform's line ending.
+        if (-not $DryRun) { [IO.File]::WriteAllText($Path, (($FwLines -join "`n").TrimEnd("`r", "`n") + "`n"), [Text.UTF8Encoding]::new($false)) }
+        return 'created with the framework patterns'
+    }
+    $have = @((Get-Content -LiteralPath $Path) | ForEach-Object { $_.Trim() })
+    $missing = @($FwLines | Where-Object { $_.Trim() -and -not $_.StartsWith('#') -and $have -notcontains $_.Trim() })
+    if ($missing.Count -eq 0) { return 'already up to date' }
+    if (-not $DryRun) {
+        # The target's own line ending, by majority: a CRLF file stays CRLF.
+        $raw = [IO.File]::ReadAllText($Path)
+        $crlf = [regex]::Matches($raw, "`r`n").Count
+        $eol = if ($crlf -gt [regex]::Matches($raw, "(?<!`r)`n").Count) { "`r`n" } else { "`n" }
+        $block = "$eol# Added by the AI-For-Game framework$eol" + ($missing -join $eol) + $eol
+        Add-Content -LiteralPath $Path -Value $block -NoNewline -Encoding utf8NoBOM
+    }
+    return "$($missing.Count) line(s) appended"
+}
+
 # ---------- state ----------
 $recorded = @{}
 $recordedHooks = @()
@@ -251,29 +272,34 @@ else {
     else { $settingsNote = 'already up to date' }
 }
 
-# ---------- .gitignore (append missing framework lines) ----------
+# ---------- .gitignore, .gitattributes (append missing framework lines) ----------
 $giNote = ''
 $srcGi = Join-Path $SourceRoot '.gitignore'
-$dstGi = Join-Path $Target '.gitignore'
 if (Test-Path -LiteralPath $srcGi) {
     $fwLines = @(Get-GitignoreFrameworkLines (Get-Content -Raw -LiteralPath $srcGi)) + '.claude/.framework-backup/'
-    if (-not (Test-Path -LiteralPath $dstGi)) {
-        if (-not $DryRun) { Set-Content -LiteralPath $dstGi -Value ($fwLines -join "`n") -Encoding utf8NoBOM }
-        $giNote = 'created with the framework patterns'
-    }
-    else {
-        $have = @((Get-Content -LiteralPath $dstGi) | ForEach-Object { $_.Trim() })
-        $missing = @($fwLines | Where-Object { $_.Trim() -and -not $_.StartsWith('#') -and $have -notcontains $_.Trim() })
-        if ($missing.Count -gt 0) {
-            if (-not $DryRun) {
-                $block = "`n# Added by the AI-For-Game framework`n" + ($missing -join "`n") + "`n"
-                Add-Content -LiteralPath $dstGi -Value $block -NoNewline -Encoding utf8NoBOM
-            }
-            $giNote = "$($missing.Count) line(s) appended"
-        }
-        else { $giNote = 'already up to date' }
-    }
+    $giNote = Add-MissingFrameworkLines (Join-Path $Target '.gitignore') $fwLines
 }
+$gaNote = ''
+$srcGa = Join-Path $SourceRoot '.gitattributes'
+if (Test-Path -LiteralPath $srcGa) {
+    # The framework's own .gitattributes holds only framework lines: a project's Unity and LFS rules live in its copy.
+    $gaNote = Add-MissingFrameworkLines (Join-Path $Target '.gitattributes') @((Get-Content -Raw -LiteralPath $srcGa) -split "`r?`n")
+}
+
+# ---------- the bug journal in this target ----------
+# Reads git's answer, not the file's text: a later project rule can defeat the framework line, and a project that ignores
+# .workflow/ loses the journal from git with no other sign. The project's rules stay the project's: warn, change nothing.
+$journalRel = '.workflow/bugs.jsonl'
+$journalWarnings = [System.Collections.Generic.List[string]]::new()
+# A dry run that would append lines cannot read their effect yet.
+if ($gaNote -and (-not $DryRun -or $gaNote -eq 'already up to date')) {
+    $merge = ([string](git -C $Target check-attr merge -- $journalRel) -split ': ')[-1]
+    if ($merge -ne 'union') { $journalWarnings.Add("$journalRel resolves to merge=$merge in this target, not union: a project rule overrides the framework line, so merges of the bug journal can conflict. Move ``$journalRel text eol=lf merge=union`` after that rule.") }
+    $eol = ([string](git -C $Target check-attr eol -- $journalRel) -split ': ')[-1]
+    if ($eol -ne 'lf') { $journalWarnings.Add("$journalRel resolves to eol=$eol in this target, not lf: a project rule overrides the framework line, so the bug journal can end up with mixed line endings. Move ``$journalRel text eol=lf merge=union`` after that rule.") }
+}
+git -C $Target check-ignore -q -- $journalRel 2>$null
+if ($LASTEXITCODE -eq 0) { $journalWarnings.Add("$journalRel is ignored by this target's git rules: the bug journal is the truth and must stay tracked. Remove the rule that ignores it.") }
 
 # ---------- project-owned seeds (install only, never overwrite) ----------
 $seeded = [System.Collections.Generic.List[string]]::new()
@@ -307,6 +333,8 @@ if ($SourceCommit) { Write-Host "  source: $SourceUrl @ $($SourceCommit.Substrin
 Write-Host ("  added {0} | updated {1} | unchanged {2} | kept local edits {3} | removed {4} | conflicts {5}" -f $added.Count, $updated.Count, $unchanged, $kept.Count, $removed.Count, $conflicts.Count)
 Write-Host "  settings.json: $settingsNote"
 if ($giNote) { Write-Host "  .gitignore: $giNote" }
+if ($gaNote) { Write-Host "  .gitattributes: $gaNote" }
+foreach ($x in $journalWarnings) { Write-Warning $x }
 if ($seeded.Count) { Write-Host "  created (project-owned): $($seeded -join ', ')" }
 if ($seedKept.Count) { Write-Host "  kept your existing: $($seedKept -join ', ')" }
 foreach ($x in $updated) { Write-Host "  updated  $x" }
