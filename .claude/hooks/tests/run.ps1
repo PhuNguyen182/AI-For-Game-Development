@@ -24,8 +24,11 @@ function Invoke-Hook([string]$Script, [hashtable]$Payload, [string[]]$HookArgs =
 
 # What Claude Code sends: raw UTF-8 on stdin, whatever the code page. Windows PowerShell's pipe would turn non-ASCII into ?.
 # No CreateNoWindow: the hook keeps this console, and so its code page.
-function Invoke-HookUtf8([string]$Script, [hashtable]$Payload, [string[]]$HookArgs = @()) {
-    $words = @('-NoProfile', '-NonInteractive', '-File', (Join-Path $hooks $Script)) + @($HookArgs)
+# -RawBytes: these bytes go on stdin as they are (a BOM, an invalid UTF-8 byte). -WorkDir: the hook process's own folder.
+# -Production: the launch settings.json uses, `& "<hook>"; exit $LASTEXITCODE`, instead of -File.
+function Invoke-HookUtf8([string]$Script, [hashtable]$Payload, [string[]]$HookArgs = @(), [byte[]]$RawBytes = $null, [string]$WorkDir = '', [switch]$Production) {
+    $words = if ($Production) { @('-NoProfile', '-NonInteractive', '-Command', "& `"$(Join-Path $hooks $Script)`"; exit `$LASTEXITCODE") }
+    else { @('-NoProfile', '-NonInteractive', '-File', (Join-Path $hooks $Script)) + @($HookArgs) }
     $psi = New-Object Diagnostics.ProcessStartInfo
     $psi.FileName = $shell
     $psi.Arguments = (@($words | ForEach-Object { ConvertTo-NativeArg $_ }) -join ' ')
@@ -33,10 +36,11 @@ function Invoke-HookUtf8([string]$Script, [hashtable]$Payload, [string[]]$HookAr
     $psi.RedirectStandardInput = $true
     $psi.RedirectStandardOutput = $true
     $psi.RedirectStandardError = $true
+    if ($WorkDir) { $psi.WorkingDirectory = $WorkDir }
     $p = [Diagnostics.Process]::Start($psi)
     $outRead = $p.StandardOutput.ReadToEndAsync()
     $errRead = $p.StandardError.ReadToEndAsync()
-    $bytes = (New-Object Text.UTF8Encoding $false).GetBytes(($Payload | ConvertTo-Json -Depth 5 -Compress))
+    $bytes = if ($null -ne $RawBytes) { $RawBytes } else { (New-Object Text.UTF8Encoding $false).GetBytes(($Payload | ConvertTo-Json -Depth 5 -Compress)) }
     $p.StandardInput.BaseStream.Write($bytes, 0, $bytes.Length)
     $p.StandardInput.Close()
     $p.WaitForExit()
@@ -141,7 +145,7 @@ try {
     }
     Check 'pre-commit ignores git -c k=v log' (Invoke-Hook 'pre-commit.ps1' @{ tool_name = 'Bash'; cwd = $tmp; tool_input = @{ command = "git -C `"$repo`" -c a=b log" } }).Code 0
     Check 'pre-commit: commit -C <rev> is not a directory' (Invoke-Hook 'pre-commit.ps1' @{ tool_name = 'Bash'; cwd = $repo; tool_input = @{ command = 'git commit -C HEAD -m x' } }).Code 2
-    Check 'pre-commit: an unresolvable -C falls back to cwd' (Invoke-Hook 'pre-commit.ps1' @{ tool_name = 'PowerShell'; cwd = $repo; tool_input = @{ command = 'git -C nowhere commit -m x' } }).Code 2
+    Check 'pre-commit: a -C naming a missing folder blocks' (Invoke-Hook 'pre-commit.ps1' @{ tool_name = 'PowerShell'; cwd = $repo; tool_input = @{ command = 'git -C nowhere commit -m x' } }).Code 2
     Check 'pre-commit: plain commit from cwd' (Invoke-Hook 'pre-commit.ps1' @{ tool_name = 'Bash'; cwd = $repo; tool_input = @{ command = 'git commit -m x' } }).Code 2
     $leaf = Split-Path $repo -Leaf
     Check 'pre-commit: relative -C resolves against the session cwd' (Invoke-Hook 'pre-commit.ps1' @{ tool_name = 'Bash'; cwd = $tmp; tool_input = @{ command = "git -C `"$leaf`" commit -m x" } }).Code 2
@@ -1150,8 +1154,8 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     $bwBefore = [IO.File]::ReadAllText($bwJournal)
     $env:CLAUDE_PROJECT_DIR = $bwOut
     # Code page 437 cannot hold these paths. Set here because a hook takes it from the console when it starts, and the suite
-    # may have been launched under another. Through [Console], not chcp: Windows PowerShell keeps the encoding it cached, and
-    # from 65001 it writes a BOM to the child's stdin, which the hook reads as no input. No console: the checks still run.
+    # may have been launched under another. Through [Console], not chcp: Windows PowerShell keeps the encoding it cached. No
+    # console: the checks still run.
     $cpIn = [Console]::InputEncoding; $cpOut = [Console]::OutputEncoding
     try {
         [Console]::InputEncoding = [Text.Encoding]::GetEncoding(437)
@@ -1454,6 +1458,371 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     Check 'secret gate: ... and a push' (Invoke-HookUtf8 'pre-push.ps1' @{ tool_name = 'Bash'; cwd = $gateNone; tool_input = @{ command = 'git push origin' } }).Code 0
     [void][IO.Directory]::CreateDirectory((Join-Path $gateNone '.git'))
     Check 'secret gate: ... and so does an empty .git folder, which git does not read as a repository' (Invoke-HookUtf8 'pre-commit.ps1' @{ tool_name = 'Bash'; cwd = $gateNone; tool_input = @{ command = 'git commit -m x' } }).Code 0
+
+    # gate-forms-start
+    # The closed list of commit and push forms, with real keys in real repositories. {A} is the repo, {V} the verb.
+    $gfProject = $env:CLAUDE_PROJECT_DIR
+    $gf = Join-Path $tmp 'GateForms'  # no space: two rows below spell the path unquoted, which is what they test
+    $gfNone = Join-Path $gf 'none'
+    [void][IO.Directory]::CreateDirectory($gfNone)
+    $env:CLAUDE_PROJECT_DIR = $gf
+    function GfGit { git @args 2>&1 | Out-Null }
+    function GfRepo([string]$Name) {
+        $p = Join-Path $gf $Name
+        git init -q -b main $p 2>&1 | Out-Null
+        GfGit -C $p config user.name t
+        GfGit -C $p config user.email t@example.com
+        GfGit -C $p config core.autocrlf false
+        [IO.File]::WriteAllText((Join-Path $p 'base.txt'), "base`n")
+        GfGit -C $p add base.txt
+        GfGit -C $p commit -q -m base
+        return $p
+    }
+    $gfApp = GfRepo 'app'
+    [void][IO.Directory]::CreateDirectory((Join-Path $gfApp 'sub'))
+    [IO.File]::WriteAllText((Join-Path $gfApp 'sub/keep.txt'), "x`n")
+    $gfSecret = "k = `"$fakeKey`"`n"
+    [IO.File]::WriteAllText((Join-Path $gfApp 'Committed.txt'), $gfSecret)
+    GfGit -C $gfApp add Committed.txt
+    GfGit -C $gfApp commit -q -m key
+    [IO.File]::WriteAllText((Join-Path $gfApp 'Key.txt'), $gfSecret)
+    GfGit -C $gfApp add Key.txt
+    $gfClean = GfRepo 'clean'
+    $gfA = $gfApp -replace '\\', '/'
+    $gfRefuse = 'Re-run it in a simple form'
+    $gfGates = @(@('pre-commit.ps1', 'commit -m x', 'secret in Key\.txt'), @('pre-push.ps1', 'push', 'secret in Committed\.txt'))
+    $gfBoth = 'Bash', 'PowerShell'
+    # Kind, tools, cwd, command. refuse: blocked with the way to re-run it. scan: blocked by the key, so the right repo was read.
+    $gfRows = @(
+        @('refuse', $gfBoth, $gf, 'git --git-dir="{A}/.git" --work-tree="{A}" {V}'),
+        @('refuse', $gfBoth, $gf, 'git --git-dir "{A}/.git" {V}'),
+        @('refuse', $gfBoth, $gf, 'git --work-tree="{A}" {V}'),
+        @('refuse', @('Bash'), $gf, 'GIT_DIR="{A}/.git" GIT_WORK_TREE="{A}" git {V}'),
+        @('refuse', @('Bash'), $gf, 'env GIT_DIR="{A}/.git" git {V}'),
+        @('refuse', @('Bash'), $gf, 'GIT_INDEX_FILE=x git {V}'),
+        @('refuse', @('Bash'), $gf, 'GIT_COMMON_DIR=x git {V}'),
+        @('refuse', @('PowerShell'), $gf, '$env:GIT_DIR=''{A}/.git''; git {V}'),
+        @('refuse', @('PowerShell'), $gf, '$env:GIT_WORK_TREE = ''{A}''; git {V}'),
+        @('refuse', $gfBoth, $gf, 'git -C none -C ../app {V}'),
+        @('refuse', $gfBoth, $gf, 'cd app && git -C sub {V}'),
+        @('refuse', $gfBoth, $gfNone, 'cd .. && cd app && git {V}'),
+        @('refuse', $gfBoth, $gf, 'git -C ~/repo {V}'),
+        @('refuse', $gfBoth, $gf, 'git -C "$R" {V}'),
+        @('refuse', $gfBoth, $gf, 'cd $R && git {V}'),
+        @('refuse', $gfBoth, $gf, 'git -C "%R%" {V}'),
+        @('refuse', @('Bash'), $gf, 'git -C `pwd` {V}'),
+        @('refuse', $gfBoth, $gf, 'git -C $(pwd) {V}'),
+        @('refuse', $gfBoth, $gf, 'git -C app {V} && git -C clean {V}'),
+        @('refuse', $gfBoth, $gf, 'pushd app && git {V}'),
+        @('refuse', @('PowerShell'), $gf, 'Push-Location app; git {V}'),
+        @('refuse', $gfBoth, $gf, 'true && cd app && git {V}'),
+        @('refuse', $gfBoth, $gf, 'cd /d D:\x && git {V}'),
+        @('refuse', $gfBoth, $gf, 'git -C missing {V}'),
+        @('refuse', $gfBoth, $gf, 'cd missing && git {V}'),
+        @('refuse', $gfBoth, $gf, 'cd app; git {V}'),
+        @('refuse', @('Bash'), $gf, 'Set-Location app; git {V}'),
+        @('refuse', @('Bash'), $gf, 'Set-Location -LiteralPath app; git {V}'),
+        @('refuse', $gfBoth, $gf, 'sh -c "git {V}"'),
+        @('refuse', $gfBoth, $gf, 'eval "git {V}"'),
+        @('refuse', $gfBoth, $gf, 'echo x | xargs git {V}'),
+        @('refuse', $gfBoth, $gf, 'echo "$(git -C app {V})"'),
+        @('refuse', $gfBoth, $gf, '(git -C app {V})'),
+        @('refuse', $gfBoth, $gf, 'git -C app status; git -C app {V}'),
+        @('refuse', $gfBoth, $gf, '$git {V}'),
+        @('refuse', $gfBoth, $gf, 'git --no-pager -C app {V}'),
+        @('refuse', @('Bash'), $gf, 'git {Q}'),
+        @('refuse', $gfBoth, $gf, 'cat f.txt && git -C app {V}'),
+        @('refuse', @('Bash'), $gf, 'git -C {B} {V}'),
+        @('refuse', @('PowerShell'), $gf, 'git -C /{D} {V}'),
+        @('scan', $gfBoth, $gfApp, 'git {V}'),
+        @('scan', $gfBoth, $gf, 'git -C app {V}'),
+        @('scan', $gfBoth, $gf, 'git -C "{A}" {V}'),
+        @('scan', $gfBoth, $gf, 'git -C "{A}" -c user.name=t {V}'),
+        @('scan', $gfBoth, $gf, 'cd app && git {V}'),
+        @('scan', $gfBoth, $gf, 'cd "{A}" && git {V}'),
+        @('scan', $gfBoth, $gfNone, 'cd ../app && git {V}'),
+        @('scan', $gfBoth, $gfClean, 'cd "{A}" && git -C "{A}" {V}'),
+        @('scan', $gfBoth, $gfApp, ('echo "git -C ' + $gfClean.Replace('\', '/') + ' commit"; git {V}')),
+        @('scan', @('PowerShell'), $gf, 'Set-Location -LiteralPath app; git {V}'),
+        @('scan', @('PowerShell'), $gf, 'Set-Location app; git {V}'),
+        @('scan', @('Bash'), $gf, 'git -C /{D} {V}'),
+        @('scan', @('PowerShell'), $gf, 'git -C {B} {V}'),
+        @('scan', @('Bash'), $gf, ('echo @''' + "`n" + '''; git -C app {V}; echo ''' + "`n" + '''@'))
+    )
+    $gfDriveless = $gfA.Substring(0, 1).ToLowerInvariant() + $gfA.Substring(2)
+    foreach ($g in $gfGates) {
+        foreach ($row in $gfRows) {
+            foreach ($t in $row[1]) {
+                $c = $row[3].Replace('{A}', $gfA).Replace('{V}', $g[1]).Replace('{B}', $gfApp).Replace('{D}', $gfDriveless).Replace('{Q}', ($g[1] -replace '^(\w+)', '"$1"'))
+                $r = Invoke-HookUtf8 $g[0] @{ tool_name = $t; cwd = $row[2]; tool_input = @{ command = $c } }
+                $want = if ($row[0] -eq 'refuse') { $gfRefuse } else { $g[2] }
+                $shown = ($c -replace [regex]::Escape($gfApp), '<app>' -replace [regex]::Escape($gfA), '<app>' -replace "`n", ' ')
+                Check "gate form, $($g[0]), $t, $($row[0]): $shown" ($r.Code -eq 2 -and $r.Out -match $want) $true
+            }
+        }
+    }
+    # PowerShell's Set-Location reads [v2] as a wildcard, so it may land elsewhere; -LiteralPath and Bash's quoted cd do not.
+    $gfBr = GfRepo 'App [v2]'
+    [IO.File]::WriteAllText((Join-Path $gfBr 'Key.txt'), $gfSecret)
+    GfGit -C $gfBr add Key.txt
+    foreach ($row in @(@('PowerShell', 'Set-Location "App [v2]"; git commit -m x', $gfRefuse), @('PowerShell', 'cd "App [v2]" && git commit -m x', $gfRefuse),
+            @('PowerShell', 'Set-Location -LiteralPath "App [v2]"; git commit -m x', 'secret in Key\.txt'), @('Bash', 'cd "App [v2]" && git commit -m x', 'secret in Key\.txt'),
+            @('Bash', 'cd App\ [v2] && git commit -m x', $gfRefuse), @('Bash', 'git -C "App [v2]" commit -m x', 'secret in Key\.txt'))) {
+        $r = Invoke-HookUtf8 'pre-commit.ps1' @{ tool_name = $row[0]; cwd = $gf; tool_input = @{ command = $row[1] } }
+        Check "gate form, brackets, $($row[0]): $($row[1])" ($r.Code -eq 2 -and $r.Out -match $row[2]) $true
+    }
+    # Text is not a command, and an unparsable command that may hold one is refused.
+    foreach ($c in @('echo "git commit -m x"', "echo 'git -C elsewhere commit'", 'git log --grep "git commit"', "cat <<'EOF'`ngit commit -m x`nEOF", 'git stash push -m x', 'git -c commit.gpgsign=false log -1')) {
+        $r = Invoke-HookUtf8 'pre-commit.ps1' @{ tool_name = 'Bash'; cwd = $gfApp; tool_input = @{ command = $c } }
+        Check "gate form, text is not a commit: $($c -replace "`n", ' ')" $r.Code 0
+    }
+    foreach ($c in @('echo "git push"', 'git stash push', "cat <<'EOF'`ngit push`nEOF", 'git commit -m "never git push here"')) {
+        $r = Invoke-HookUtf8 'pre-push.ps1' @{ tool_name = 'Bash'; cwd = $gfApp; tool_input = @{ command = $c } }
+        Check "gate form, text is not a push: $($c -replace "`n", ' ')" $r.Code 0
+    }
+    foreach ($row in @(@('Bash', 'git commit -m "unterminated', 'cannot be parsed'), @('Bash', "git commit -F - <<'EOF'`nbody with no end", 'cannot be parsed'),
+            @('Bash', "git commit -F - <<EOF`n`$(git push)`nEOF", 'cannot be parsed'), @('PowerShell', "`$m = @`"`n`$(git commit -m y)`n`"@`ngit commit -m x", 'cannot be parsed'),
+            @('Bash', 'git commit -m "x" )', 'cannot be parsed'), @('PowerShell', "git commit -F - <<'EOF'`nbody`nEOF", 'secret in Key\.txt'))) {
+        $r = Invoke-HookUtf8 'pre-commit.ps1' @{ tool_name = $row[0]; cwd = $gfApp; tool_input = @{ command = $row[1] } }
+        Check "gate form, unparsable, $($row[0]): $($row[1] -replace "`n", ' ')" ($r.Code -eq 2 -and $r.Out -match $row[2]) $true
+    }
+    # The rest of a heredoc's first line is commands, not body.
+    $r = Invoke-HookUtf8 'pre-commit.ps1' @{ tool_name = 'Bash'; cwd = $gfClean; tool_input = @{ command = "git commit -F - <<'EOF' && git -C `"$gfA`" commit -m y`nbody`nEOF" } }
+    Check 'gate form: a second commit on the heredoc line is seen' ($r.Code -eq 2 -and $r.Out -match 'two commit or push') $true
+    $r = Invoke-HookUtf8 'pre-push.ps1' @{ tool_name = 'Bash'; cwd = $gfClean; tool_input = @{ command = "git push origin main <<EOF --force`nbody`nEOF" } }
+    Check 'gate form: a force on the heredoc line is seen' ($r.Code -eq 2 -and $r.Out -match 'blast radius 3') $true
+
+    # Aliases. settings.json runs pre-commit only when "commit" is in the text, so git-guard is the line `git ci` meets.
+    $gfOk = GfRepo 'ok'
+    GfGit -C $gfOk config alias.ci 'commit'
+    GfGit -C $gfOk config alias.sci '!git commit -m x'
+    GfGit -C $gfOk config alias.pp 'push'
+    GfGit -C $gfOk config alias.st 'status'
+    foreach ($row in @(@('git-guard.ps1', 'git ci -m x'), @('git-guard.ps1', 'git sci'), @('git-guard.ps1', 'git pp origin main'), @('pre-commit.ps1', 'git ci -m commit'), @('pre-push.ps1', 'git pp push'))) {
+        $r = Invoke-HookUtf8 $row[0] @{ tool_name = 'Bash'; cwd = $gfOk; tool_input = @{ command = $row[1] } }
+        Check "gate form, alias, $($row[0]): $($row[1])" ($r.Code -eq 2 -and $r.Out -match 'through an alias') $true
+    }
+    Check 'gate form, alias: a harmless alias passes the guard' (Invoke-HookUtf8 'git-guard.ps1' @{ tool_name = 'Bash'; cwd = $gfOk; tool_input = @{ command = 'git st' } }).Code 0
+    GfGit -C $gfOk config alias.push 'status'
+    $r = Invoke-HookUtf8 'git-guard.ps1' @{ tool_name = 'Bash'; cwd = $gfOk; tool_input = @{ command = 'git push --force origin main' } }
+    Check 'gate form, alias: git ignores an alias named push, so a force push is still one' $r.Code 2
+    GfGit -C $gfOk config --unset alias.push
+
+    # Must allow: real commits and pushes landing, each spelled as the skill or the shell's own default writes it.
+    $gfExec = [string](git --exec-path)
+    $gfBash = Join-Path $gfExec '../../../bin/bash.exe'
+    if (-not [IO.File]::Exists($gfBash)) { $gfBash = $null; Write-Output 'SKIP  gate form: no Git Bash beside git, so the Bash commands do not run for real' }
+    $gfScripts = Join-Path $tmp 'gf-scripts'
+    [void][IO.Directory]::CreateDirectory($gfScripts)
+    function GfRun([string]$Tool, [string]$Cwd, [string]$Command) {
+        $ext = if ($Tool -eq 'Bash') { '.sh' } else { '.ps1' }
+        $file = Join-Path $gfScripts ([guid]::NewGuid().ToString('N') + $ext)
+        [IO.File]::WriteAllText($file, $Command + "`n", (New-Object Text.UTF8Encoding $false))
+        $psi = New-Object Diagnostics.ProcessStartInfo
+        if ($Tool -eq 'Bash') { $psi.FileName = $gfBash; $psi.Arguments = ConvertTo-NativeArg $file }
+        else { $psi.FileName = $shell; $psi.Arguments = (@('-NoProfile', '-NonInteractive', '-File', $file) | ForEach-Object { ConvertTo-NativeArg $_ }) -join ' ' }
+        $psi.WorkingDirectory = $Cwd
+        $psi.UseShellExecute = $false
+        $psi.RedirectStandardInput = $true
+        $psi.RedirectStandardOutput = $true
+        $psi.RedirectStandardError = $true
+        $p = [Diagnostics.Process]::Start($psi)
+        $p.StandardInput.Close()
+        $o = $p.StandardOutput.ReadToEndAsync(); $e = $p.StandardError.ReadToEndAsync()
+        $p.WaitForExit()
+        [void]$o.GetAwaiter().GetResult(); [void]$e.GetAwaiter().GetResult()
+    }
+    # Windows PowerShell has no &&: that command is a parse error there and runs nothing, so only the gate's verdict is checked.
+    function GfRunnable([string]$Tool, [string]$Command) {
+        if ($Tool -eq 'Bash') { return [bool]$gfBash }
+        return -not ($Command -match '&&' -and $PSVersionTable.PSVersion.Major -lt 7)
+    }
+    $gfN = 0
+    function GfStage([string]$Repo) {
+        $script:gfN++
+        $f = "file$($script:gfN).txt"
+        [IO.File]::WriteAllText((Join-Path $Repo $f), "clean $($script:gfN)`n")
+        GfGit -C $Repo add -- $f
+    }
+    function GfAllowCommit([string]$Tool, [string]$Cwd, [string]$Repo, [string]$Command, [string]$Label) {
+        GfStage $Repo
+        $before = [string](git -C $Repo rev-parse HEAD)
+        $r = Invoke-HookUtf8 'pre-commit.ps1' @{ tool_name = $Tool; cwd = $Cwd; tool_input = @{ command = $Command } }
+        Check "gate form, allow, ${Tool}: $Label" $r.Code 0
+        if (-not (GfRunnable $Tool $Command)) { GfGit -C $Repo reset -q; return }
+        GfRun $Tool $Cwd $Command
+        Check "gate form, allow, ${Tool}: ... and the commit lands: $Label" ([string](git -C $Repo rev-parse HEAD) -ne $before) $true
+        Check "gate form, allow, ${Tool}: ... with nothing left staged: $Label" (-not (git -C $Repo diff --cached --name-only)) $true
+    }
+    $gfSubDir = Join-Path $gfOk 'sub'
+    [void][IO.Directory]::CreateDirectory($gfSubDir)
+    $gfWt = Join-Path $gf 'ok linked'
+    GfGit -C $gfOk worktree add -q -b linked $gfWt
+    $gfO = $gfOk -replace '\\', '/'
+    $gfW = $gfWt -replace '\\', '/'
+    GfAllowCommit 'Bash' $gfOk $gfOk "git commit -F - <<'EOF'`nSubject`n`nBody says cd x && git push, and git -C y commit.`nEOF" 'git commit -F - <<EOF, a body naming cd x and git push'
+    GfAllowCommit 'Bash' $gfOk $gfOk "git commit -m `"`$(cat <<'EOF'`nSubject`n`nIt's the body: cd x && git push.`nEOF`n)`"" 'git commit -m "$(cat <<EOF ...)"'
+    GfAllowCommit 'PowerShell' $gfOk $gfOk "`$msg = @'`nSubject`n`nBody says cd x; git push.`n'@`n`$msg | git commit -F -" '$msg = here-string, $msg | git commit -F -'
+    GfAllowCommit 'PowerShell' $gfOk $gfOk "`$msg = 'Subject'; `$msg | git commit -F -" '$msg = text; $msg | git commit -F -'
+    GfAllowCommit 'PowerShell' $gfOk $gfOk "git commit -m @'`nSubject`n`nBody says git push.`n'@" 'git commit -m here-string'
+    foreach ($t in 'Bash', 'PowerShell') {
+        GfAllowCommit $t $gf $gfWt "git -C `"$gfW`" commit -m x" 'git -C <worktree> commit -m x'
+        GfAllowCommit $t $gf $gfOk 'git -C ok commit -m x' 'git -C <relative> commit -m x'
+        GfAllowCommit $t $gf $gfOk 'git -C ok -c user.name=t commit -m x' 'git -C <path> -c k=v commit -m x'
+        GfAllowCommit $t $gfOk $gfOk 'git -c user.name=t -c user.email=t@example.com commit -m x' 'git -c k=v -c k=v commit -m x'
+        GfAllowCommit $t $gf $gfOk "cd `"$gfO`" && git commit -m x" 'cd <path> && git commit -m x'
+        GfAllowCommit $t $gfSubDir $gfOk 'git commit -m x' 'a commit from a subfolder of the repository'
+        GfAllowCommit $t $gfOk $gfOk 'git commit -m x 2>&1 | Select-String -Pattern x' 'later statements with no second commit (a pipe)'
+        GfAllowCommit $t $gfOk $gfOk 'git commit -m "a b" && git log -1 --stat' 'later statements with no second commit (&&)'
+        GfAllowCommit $t $gfOk $gfOk 'echo "git push"; git commit -m x' 'echo of literal text before the commit'
+        GfAllowCommit $t $gfOk $gfOk 'git commit --message="two words"' 'git commit --message="two words"'
+        GfAllowCommit $t $gfOk $gfOk 'git commit -m"two words"' 'git commit -m"two words"'
+    }
+    GfAllowCommit 'PowerShell' $gf $gfOk "Set-Location `"$gfO`"; git commit -m x" 'Set-Location <path>; git commit -m x'
+    GfAllowCommit 'PowerShell' $gf $gfOk "Set-Location -LiteralPath `"$gfO`"; git commit -m x" 'Set-Location -LiteralPath <path>; git commit -m x'
+    $env:GIT_EDITOR = 'true'
+    GfAllowCommit 'PowerShell' $gfOk $gfOk 'git commit --amend' 'git commit --amend'
+    GfAllowCommit 'Bash' $gfOk $gfOk 'git commit --amend' 'git commit --amend'
+    Remove-Item Env:GIT_EDITOR
+    $r = Invoke-HookUtf8 'pre-commit.ps1' @{ tool_name = 'PowerShell'; cwd = $gfOk; tool_input = @{ command = '$msg | git commit -F -' } }
+    Check 'gate form, allow: the skill''s $msg | git commit -F -, as the skill writes it' $r.Code 0
+
+    $gfRemote = Join-Path $gf 'remote.git'
+    git init -q --bare -b main $gfRemote 2>&1 | Out-Null
+    GfGit -C $gfOk remote add origin $gfRemote
+    GfGit -C $gfOk push -q -u origin main
+    GfGit -C $gfOk switch -q -c develop
+    GfGit -C $gfOk push -q -u origin develop
+    function GfAllowPush([string]$Tool, [string]$Cwd, [string]$Command, [string]$Label) {
+        GfStage $gfOk
+        GfGit -C $gfOk commit -q -m step
+        $r = Invoke-HookUtf8 'pre-push.ps1' @{ tool_name = $Tool; cwd = $Cwd; tool_input = @{ command = $Command } }
+        Check "gate form, allow, ${Tool}: $Label" $r.Code 0
+        if (-not (GfRunnable $Tool $Command)) { return }
+        GfRun $Tool $Cwd $Command
+        Check "gate form, allow, ${Tool}: ... and the push reaches the remote: $Label" ([string](git -C $gfRemote rev-parse refs/heads/develop)) ([string](git -C $gfOk rev-parse HEAD))
+    }
+    foreach ($t in 'Bash', 'PowerShell') {
+        GfAllowPush $t $gfOk 'git push' 'git push'
+        GfAllowPush $t $gfOk 'git push origin develop' 'git push origin develop'
+        GfAllowPush $t $gf "git -C `"$gfO`" push" 'git -C <path> push'
+        GfAllowPush $t $gf "cd `"$gfO`" && git push" 'cd <path> && git push'
+    }
+    GfGit -C $gfOk reset -q
+
+    # Item: a git in the hook's working folder never runs, and never picks the repository to scan. A Claude Code session sets
+    # NoDefaultCurrentDirectoryInExePath, which alone hides the search of that folder. Nothing promises a hook that: cleared here.
+    $gfNoCwd = $env:NoDefaultCurrentDirectoryInExePath
+    Remove-Item Env:NoDefaultCurrentDirectoryInExePath -ErrorAction SilentlyContinue
+    $gfCsc = if ($env:WINDIR) { Join-Path $env:WINDIR 'Microsoft.NET/Framework64/v4.0.30319/csc.exe' } else { '' }
+    if ($gfCsc -and [IO.File]::Exists($gfCsc)) {
+        $gfPlant = Join-Path $gf 'planted-exe'
+        [void][IO.Directory]::CreateDirectory($gfPlant)
+        $gfMark = Join-Path $gf 'planted.ran'
+        $gfSrc = Join-Path $gf 'stub.cs'
+        [IO.File]::WriteAllText($gfSrc, "class P { static int Main() { System.IO.File.WriteAllText(@`"$gfMark`", `"ran`"); System.Console.WriteLine(@`"$gfClean`"); return 0; } }")
+        & $gfCsc /nologo "/out:$(Join-Path $gfPlant 'git.exe')" $gfSrc 2>&1 | Out-Null
+        foreach ($g in $gfGates) {
+            $r = Invoke-HookUtf8 $g[0] @{ tool_name = 'Bash'; cwd = $gfApp; tool_input = @{ command = "git $($g[1])" } } -WorkDir $gfPlant
+            Check "planted git.exe, $($g[0]): the key still blocks" ($r.Code -eq 2 -and $r.Out -match $g[2]) $true
+            if (-not ($r.Code -eq 2 -and $r.Out -match $g[2])) { Write-Output "      exit $($r.Code): $($r.Out)" }
+            Check "planted git.exe, $($g[0]): ... and it never ran" ([IO.File]::Exists($gfMark)) $false
+        }
+        if ([IO.File]::Exists($gfMark)) { [IO.File]::Delete($gfMark) }
+    } else { Write-Output 'SKIP  planted git.exe: no csc.exe to build one with' }
+    $gfPlantCmd = Join-Path $gf 'planted-cmd'
+    [void][IO.Directory]::CreateDirectory($gfPlantCmd)
+    $gfMarkCmd = Join-Path $gf 'planted-cmd.ran'
+    [IO.File]::WriteAllText((Join-Path $gfPlantCmd 'git.cmd'), "@echo ran> `"$gfMarkCmd`"`r`n@echo $gfClean`r`n")
+    foreach ($g in $gfGates) {
+        $r = Invoke-HookUtf8 $g[0] @{ tool_name = 'Bash'; cwd = $gfApp; tool_input = @{ command = "git $($g[1])" } } -WorkDir $gfPlantCmd
+        Check "planted git.cmd, $($g[0]): the key still blocks" ($r.Code -eq 2 -and $r.Out -match $g[2]) $true
+        Check "planted git.cmd, $($g[0]): ... and it never ran" ([IO.File]::Exists($gfMarkCmd)) $false
+    }
+    if ($gfNoCwd) { $env:NoDefaultCurrentDirectoryInExePath = $gfNoCwd }
+
+    # Item: a repository git cannot name blocks at once, never moving on to the session cwd. Format 99: git refuses to read it.
+    $gfFmt = GfRepo 'format99'
+    [IO.File]::WriteAllText((Join-Path $gfFmt 'Key.txt'), $gfSecret)
+    GfGit -C $gfFmt add Key.txt
+    GfGit -C $gfFmt config core.repositoryformatversion 99
+    foreach ($v in @(@('pre-commit.ps1', 'commit -m x'), @('pre-push.ps1', 'push'))) {
+        $r = Invoke-HookUtf8 $v[0] @{ tool_name = 'Bash'; cwd = $gfClean; tool_input = @{ command = "git -C `"$($gfFmt -replace '\\', '/')`" $($v[1])" } }
+        Check "unnamed repository, $($v[0]): blocks, the clean session repository does not stand in" ($r.Code -eq 2 -and $r.Out -match 'cannot name its root') $true
+    }
+    $env:GIT_TEST_ASSUME_DIFFERENT_OWNER = '1'
+    $r = Invoke-HookUtf8 'pre-commit.ps1' @{ tool_name = 'Bash'; cwd = $gf; tool_input = @{ command = 'git -C app -c safe.directory=* commit -m x' } }
+    Check 'unnamed repository: git -C <repo git refuses on ownership> -c safe.directory=* blocks' ($r.Code -eq 2 -and $r.Out -match 'cannot name its root') $true
+    $r = Invoke-HookUtf8 'pre-commit.ps1' @{ tool_name = 'Bash'; cwd = $gf; tool_input = @{ command = 'git -c safe.directory=* -C app commit -m x' } }
+    Check 'unnamed repository: ... and -c before -C is refused as a form' ($r.Code -eq 2 -and $r.Out -match $gfRefuse) $true
+    Remove-Item Env:GIT_TEST_ASSUME_DIFFERENT_OWNER
+    $gfFmtBare = Join-Path $gf 'format99.git'
+    git init -q --bare $gfFmtBare 2>&1 | Out-Null
+    GfGit -C $gfFmtBare config core.repositoryformatversion 99
+    $r = Invoke-HookUtf8 'pre-push.ps1' @{ tool_name = 'Bash'; cwd = $gf; tool_input = @{ command = 'git -C format99.git -c safe.directory=* push' } }
+    Check 'unnamed repository: a bare one git cannot read blocks a push' ($r.Code -eq 2 -and $r.Out -match 'cannot name its root') $true
+
+    # Item: a push from a bare repository reaches the mirror check and the scan.
+    $gfMirror = Join-Path $gf 'mirror.git'
+    GfGit clone -q --mirror $gfClean $gfMirror
+    Check 'bare push fixture: a real --mirror clone' ([string](git -C $gfMirror config --get remote.origin.mirror)) 'true'
+    $r = Invoke-HookUtf8 'pre-push.ps1' @{ tool_name = 'Bash'; cwd = $gfMirror; tool_input = @{ command = 'git push' } }
+    Check 'bare push: a real --mirror clone reaches the mirror check' ($r.Code -eq 2 -and $r.Out -match 'every push forced or mirrored') $true
+    $r = Invoke-HookUtf8 'pre-push.ps1' @{ tool_name = 'Bash'; cwd = $gf; tool_input = @{ command = 'git -C mirror.git push' } }
+    Check 'bare push: ... and through -C' ($r.Code -eq 2 -and $r.Out -match 'every push forced or mirrored') $true
+    $gfBareKey = Join-Path $gf 'bare-key.git'
+    GfGit clone -q --bare $gfApp $gfBareKey
+    $r = Invoke-HookUtf8 'pre-push.ps1' @{ tool_name = 'Bash'; cwd = $gfBareKey; tool_input = @{ command = 'git push' } }
+    Check 'bare push: a committed key in a bare repository blocks' ($r.Code -eq 2 -and $r.Out -match 'secret in Committed\.txt') $true
+    $gfBareClean = Join-Path $gf 'bare-clean.git'
+    $gfBareTarget = Join-Path $gf 'bare-target.git'
+    GfGit clone -q --bare $gfClean $gfBareClean
+    git init -q --bare -b main $gfBareTarget 2>&1 | Out-Null
+    GfGit -C $gfBareClean remote set-url origin $gfBareTarget
+    $r = Invoke-HookUtf8 'pre-push.ps1' @{ tool_name = 'Bash'; cwd = $gfBareClean; tool_input = @{ command = 'git push origin main' } }
+    Check 'bare push: a clean bare repository passes' $r.Code 0
+    GfGit -C $gfBareClean push -q origin main
+    Check 'bare push: ... and the real push reaches the target' ([string](git -C $gfBareTarget rev-parse refs/heads/main)) ([string](git -C $gfClean rev-parse refs/heads/main))
+
+    # Item: exit 0 only when the session cwd exists. The hook's own folder holds the key, so a pass here is a real leak.
+    $gfUtf8 = New-Object Text.UTF8Encoding $false
+    function GfBytes([string]$Before, [byte[]]$Mid, [string]$After, [byte[]]$Lead = @()) {
+        return [byte[]](@($Lead) + @($gfUtf8.GetBytes($Before)) + @($Mid) + @($gfUtf8.GetBytes($After)))
+    }
+    foreach ($g in $gfGates) {
+        $c = "git $($g[1])"
+        $tail = "`",`"tool_input`":{`"command`":`"$c`"}}"
+        $bytes = GfBytes "{`"tool_name`":`"Bash`",`"cwd`":`"$gfA/su" ([byte[]](0xFF)) "b$tail"
+        $r = Invoke-HookUtf8 $g[0] $null -RawBytes $bytes -WorkDir $gfApp
+        Check "session cwd, $($g[0]): a cwd of invalid UTF-8 blocks" ($r.Code -eq 2 -and $r.Out -match 'no existing session folder') $true
+        # Under code page 437 a trailing 0xFF decodes to U+00A0, which Windows PowerShell's path rules trim: the real folder, so the key answers.
+        $bytes = GfBytes "{`"tool_name`":`"Bash`",`"cwd`":`"$gfA" ([byte[]](0xFF)) $tail
+        $r = Invoke-HookUtf8 $g[0] $null -RawBytes $bytes -WorkDir $gfNone
+        Check "session cwd, $($g[0]): ... and with the invalid byte at the end" $r.Code 2
+        $r = Invoke-HookUtf8 $g[0] @{ tool_name = 'Bash'; cwd = (Join-Path $gf 'gone'); tool_input = @{ command = $c } } -WorkDir $gfApp
+        Check "session cwd, $($g[0]): a cwd naming a missing folder blocks" ($r.Code -eq 2 -and $r.Out -match 'no existing session folder') $true
+        $r = Invoke-HookUtf8 $g[0] @{ tool_name = 'Bash'; tool_input = @{ command = $c } } -WorkDir $gfNone
+        Check "session cwd, $($g[0]): no cwd field blocks" ($r.Code -eq 2 -and $r.Out -match 'no existing session folder') $true
+        $r = Invoke-HookUtf8 $g[0] @{ tool_name = 'Bash'; cwd = $gfNone; tool_input = @{ command = $c } }
+        Check "session cwd, $($g[0]): an existing folder outside any repository still passes" $r.Code 0
+        $r = Invoke-HookUtf8 $g[0] @{ tool_name = 'Bash'; cwd = (Join-Path $gf 'gone'); tool_input = @{ command = 'git status' } }
+        Check "session cwd, $($g[0]): no such call passes whatever the cwd" $r.Code 0
+    }
+
+    # Item: the bytes on stdin, and the launch settings.json uses, change nothing.
+    $gfJson = @{ tool_name = 'Bash'; cwd = $gfA; tool_input = @{ command = 'git commit -m x' } } | ConvertTo-Json -Depth 5 -Compress
+    $r = Invoke-HookUtf8 'pre-commit.ps1' $null -RawBytes (GfBytes $gfJson ([byte[]]@()) '' ([byte[]](0xEF, 0xBB, 0xBF)))
+    Check 'stdin bytes: a BOM before the payload: a staged key still blocks' ($r.Code -eq 2 -and $r.Out -match 'secret in Key\.txt') $true
+    $r = Invoke-HookUtf8 'pre-commit.ps1' $null -RawBytes (GfBytes "{`"tool_name`":`"Bash`",`"cwd`":`"$gfA`",`"tool_input`":{`"command`":`"git commit -m a" ([byte[]](0xFF)) 'b"}}')
+    Check 'stdin bytes: a 0xFF byte in the message: a staged key still blocks' ($r.Code -eq 2 -and $r.Out -match 'secret in Key\.txt') $true
+    $r = Invoke-HookUtf8 'pre-commit.ps1' @{ tool_name = 'Bash'; cwd = $gfApp; tool_input = @{ command = 'git commit -m x' } } -Production
+    Check 'production launch: a staged key blocks' ($r.Code -eq 2 -and $r.Out -match 'secret in Key\.txt') $true
+    $r = Invoke-HookUtf8 'pre-push.ps1' @{ tool_name = 'Bash'; cwd = $gfApp; tool_input = @{ command = 'git push' } } -Production
+    Check 'production launch: a committed key blocks a push' ($r.Code -eq 2 -and $r.Out -match 'secret in Committed\.txt') $true
+    $r = Invoke-HookUtf8 'pre-commit.ps1' @{ tool_name = 'Bash'; cwd = $gfClean; tool_input = @{ command = 'git commit -m x' } } -Production
+    Check 'production launch: a clean commit exits 0' $r.Code 0
+    $env:CLAUDE_PROJECT_DIR = $gfProject
+    # gate-forms-end
 
     # Where the autoindex starts in a checkout with brackets: never the temp folder, and nowhere at all with no clean folder.
     $aiApp = Join-Path $tmp 'App Data'
