@@ -10,6 +10,9 @@
 | Project | Value |
 |---|---|
 | Profile | hyper-casual / mid-core / hard-core |
+| Genre / reference games | e.g. match-3 — Royal Match |
+| Dimension | 2D / 3D |
+| Input | touch / gamepad / keyboard+mouse |
 | Platforms | |
 | Unity version / render pipeline | / URP |
 | Multiplayer | no |
@@ -18,6 +21,10 @@
 | Perf budget per device tier (frame ms · GC/frame · RAM · draw calls · install size) | |
 | Min OS / device | |
 | Compliance | COPPA / GDPR / none |
+| Art / asset source | placeholder / store pack / custom |
+| Save / offline | local only / cloud · offline-capable yes / no |
+| Localization | EN only / list of languages |
+| GDD path | `docs/gdd.md` |
 | Unity CLI editor alias | |
 | Build targets | |
 | Test command | |
