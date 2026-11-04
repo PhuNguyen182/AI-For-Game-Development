@@ -12,7 +12,7 @@ user-invocable: false
 - **Brief markers:** `Bug: BUG-####` and `Verify: BUG-####` lines stay as they are; the hook reads them.
 
 ## References
-- **[schema.md](references/schema.md):** the state machine, journal format, tables, purge, migration, or tests.
+- **[schema.md](references/schema.md):** the state machine, journal format, tables, purge, or tests.
 
 ## Scripts
 - **[bugs.py](scripts/bugs.py):** run `<python> -I "${CLAUDE_SKILL_DIR}/scripts/bugs.py" --root <project root> <cmd>` → the commands below.
@@ -43,7 +43,6 @@ user-invocable: false
 | Stop rule fired or spent | `stop-rule <id> fix\|review --extra-dispatch unused\|used` |
 | Drop a bug on the GD's order | `delete <id> --by GD` |
 | Purge past the window | `purge [--dry-run]`; session start runs `purge --auto` |
-| Migrate the old file | `import-md`, then delete the file; every other command refuses until it is gone |
 
 ## Query
 | Need | Command |

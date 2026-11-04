@@ -41,66 +41,6 @@ GD_MOVES = {("Backlog", "Request")}
 GD_MOVES |= {(o, "Backlog") for o in OPEN if o != "Backlog"}
 GD_MOVES |= {(o, t) for o in OPEN for t in ("Won't fix", "Accepted")}
 
-# Copied from .workflow/bugs.md on 2026-11-03: the import has to take today's real file.
-REAL_BUGS_MD = r"""# Bugs
-
-Next ID: BUG-0006
-
-| ID | Title | Severity | Status | Feature | Owner | Regression test |
-|---|---|---|---|---|---|---|
-| BUG-0001 | Consent skill allows Firebase bootstrap before consent without GD acceptance | Medium | Closed | engineer-skill-gaps | consent-att-init-order (sdk author) | Written repro (docs, no seam) |
-| BUG-0002 | google-ump.md caveat omits Firebase re-apply on privacy-options close | Medium | Closed | engineer-skill-gaps | consent-att-init-order (main session R3-1 text) | Written repro (docs, no seam) |
-| BUG-0003 | mobile-safe-area defaults gate placed after the per-device verify step | Low | Closed | engineer-skill-gaps | mobile-safe-area (ui author) | Written repro (docs, no seam) |
-| BUG-0004 | Apple Family-Shared refund fallback can reverse or tombstone the purchaser's grant | High | Closed | engineer-skill-gaps | iap-server-receipt-ledger (backend author) | Written repro (docs, no seam) |
-| BUG-0005 | Consent caveat claims Crashlytics stops in-session on withdrawal | Medium | Closed | engineer-skill-gaps | consent-att-init-order (sdk author) | Written repro (docs, no seam) |
-
-## BUG-0001 — Consent skill allows Firebase bootstrap before consent without GD acceptance
-- Repro: read `.claude/skills/consent-att-init-order/SKILL.md:21`, step 3 clause "Firebase bootstrap may move before (b) only when … off keys ship".
-- Expected: spec 4 "no ad/analytics SDK starts before consent resolves" · Actual: an optional path lets Firebase Installations and Remote Config/Auth traffic precede consent; no GD acceptance recorded.
-- Evidence: `.workflow/evidence/engineer-skill-gaps/attempt-1/qa-report.md` DEF-1.
-- History: 2026-10-29 Open — QA executor. 2026-10-29 Fixed — sdk author (consent SKILL:21); security re-check: nothing starts before consent. 2026-10-29 Closed — qa-lead re-read the fixed lines (sign-off read-through).
-
-## BUG-0002 — google-ump.md caveat omits Firebase re-apply on privacy-options close
-- Repro: compare `consent-att-init-order/SKILL.md:26` (re-apply 3(d) Firebase consent and 3(e) ad signals on close) with `references/google-ump.md:73` (Firebase re-applied only "every launch").
-- Expected: both re-applied on close · Actual: a reader following the reference leaves Firebase collecting until the next launch after a withdrawal.
-- Evidence: qa-report.md DEF-2.
-- Root cause: R3-1 fix text written by the main session named only `ApplyAdConsentSignals` for on-close.
-- History: 2026-10-29 Open — QA executor. 2026-10-29 Fixed — sdk author (google-ump.md:70-89); security re-check: analytics stops in-session (Crashlytics → BUG-0005). 2026-10-29 Closed — qa-lead re-read the fixed lines (sign-off read-through).
-
-## BUG-0003 — mobile-safe-area defaults gate placed after the per-device verify step
-- Repro: read `mobile-safe-area/SKILL.md:25-26`: step 10 "target devices unstated → defaults" follows step 9 verification per target device.
-- Expected: decision-ordered steps (skill template) · Actual: the gate that sets the device list comes after its use.
-- Evidence: qa-report.md DEF-3.
-- History: 2026-10-29 Open — QA executor. 2026-10-29 Fixed — ui author (mobile-safe-area SKILL:25-26; localization SKILL:27 ref). 2026-10-29 Closed — qa-lead re-read the fixed lines (sign-off read-through).
-
-## BUG-0004 — Apple Family-Shared refund fallback can reverse or tombstone the purchaser's grant
-- Repro: read `iap-server-receipt-ledger/references/app-store-server-api.md:65` and `SKILL.md:28`: FAMILY_SHARED refund/REVOKE with no entry → match by appAccountToken+productId; void with no entry → orphan + tombstone.
-- Expected: a family REVOKE never reverses or blocks the purchaser's PURCHASED grant · Actual: fallback can land on the purchaser's entry; a tombstone can block their later grant.
-- Evidence: security re-check after QA fixes, F-1.
-- History: 2026-10-29 Open — security-reviewer. 2026-10-29 Fixed — backend author (ownership per entry; family events never touch PURCHASED; tombstones only from PURCHASED); security re-check Clear. 2026-10-29 Closed — qa-lead re-read the fixed lines (sign-off read-through).
-
-## BUG-0005 — Consent caveat claims Crashlytics stops in-session on withdrawal
-- Repro: `consent-att-init-order/references/google-ump.md:89` says withdrawal stops Firebase collection in the same session; `firebase-unity-sdk/references/crashlytics.md:29` says the Crashlytics flag takes effect next launch.
-- Expected: caveat limited to Analytics, Crashlytics gap stated · Actual: overclaims.
-- Evidence: security re-check, F-2.
-- History: 2026-10-29 Open — security-reviewer. 2026-10-29 Fixed — sdk author (same-session stop limited to Analytics + ads; Crashlytics next launch in Known limitations); security re-check Clear. 2026-10-29 Closed — qa-lead re-read the fixed lines (sign-off read-through).
-"""
-
-MD_HEADER = "# Bugs\n\nNext ID: %s\n\n| ID | Title | Severity | Status | Feature | Owner | Regression test |\n|---|---|---|---|---|---|---|\n"
-
-
-def md_record(bug_id="BUG-0001", title="Save slot overwrite drops coins", severity="Medium", status="Open",
-              repro="1. load slot", expected="coins kept (spec 3)", actual="coins zero", evidence="log.md",
-              history="2026-10-29 Open — QA executor.", extra=""):
-    row = "| %s | %s | %s | %s | feat | owner | none |\n" % (bug_id, title, severity, status)
-    rec = "\n## %s — %s\n- Repro: %s\n- Expected: %s · Actual: %s\n- Evidence: %s\n%s- History: %s\n" % (
-        bug_id, title, repro, expected, actual, evidence, extra, history)
-    return row, rec
-
-
-def md_file(*records, next_id="BUG-0099"):
-    return MD_HEADER % next_id + "".join(r[0] for r in records) + "".join(r[1] for r in records)
-
 
 def fields(**over):
     d = dict(title="Save slot overwrite drops coins", description="Overwriting a save slot zeroes coins for the player.",
@@ -1454,349 +1394,60 @@ class TestSql(Base):
         self.no("sql", "SELECT nope FROM nothing")
         self.no("sql", "")
 
-
-class TestBugsMdRefusal(Base):
-    def test_every_command_but_import_md_refuses(self):
-        self.add()
-        (self.root / ".workflow" / "bugs.md").write_text("# Bugs\n", encoding="utf-8")
-        calls = [["add"], ["update", "BUG-0001"], ["set-status", "BUG-0001", "Processing", "--note", "n"],
-                 ["round", "BUG-0001", "fix", "+1", "--note", "n"], ["extra-round", "BUG-0001", "fix", "+1", "--note", "n"],
-                 ["stop-rule", "BUG-0001", "fix", "--extra-dispatch", "used"], ["show", "BUG-0001"], ["list"], ["search", "x"],
-                 ["sql", "SELECT 1"], ["delete", "BUG-0001", "--by", "GD"], ["counters", "BUG-0001", "--json"], ["purge"],
-                 ["purge", "--auto"], ["purge", "--dry-run"], ["rebuild"], ["doctor"], ["doctor", "--fix"], ["stats"]]
-        for argv in calls:
-            with self.subTest(argv):
-                self.assertIn("bugs.md", self.no(*argv, stdin=fields() if argv[0] == "add" else None))
-
-
-# develop:.claude/skills/fix/references/bugs-template.md, the file an adopted project with no bugs holds.
-ZERO_ROW_BUGS_MD = """# Bugs
-
-Next ID: BUG-0001
-
-| ID | Title | Severity | Status | Feature | Owner | Regression test |
-|---|---|---|---|---|---|---|
-
-<!-- One record per bug, below the table. Delete this comment and the sample heading. -->
-## BUG-#### \u2014 <title>
-- Repro: <steps from a known state; attempts / hits>
-- Expected: <and its source> \u00b7 Actual: <observed>
-- Evidence: <log, screenshot, failing test>
-- Root cause: <when known>
-- Fix rounds: 0/2
-- Review rounds: 0/3
-- Stop rule: <counter> root-caused <date> - extra dispatch: unused|used (only when it fires)
-- History: <date status \u2014 by whom, evidence>
+# Real output of the retired importer: every event shape it wrote. Its uids are uuid5, so they are not the uuid4 of `add`; the
+# ts is a date plus a sequence, so a line can sort before its neighbours; the gap tombstone is dated 2000 and has no create.
+IMPORTED_JOURNAL = r"""{"event_uid":"cc687f0f-7aff-5c6b-8ef8-0a5d223cf3be","bug_uid":"73d7fc51-10ce-54ed-add9-79980d97d8e6","ts":"2026-10-29T00:00:00.000Z","type":"create","data":{"priority":"Highest","title":"Save slot overwrite drops coins","description":"coins zero","repro":"1. load slot","expected":"coins kept (spec 3)","actual":"coins zero","evidence":"log.md","root_cause":"slot index off by one","feature":"save","owner":"gameplay-engineer","regression_test":"SaveTests.Overwrite","id":1,"status":"Request"},"by":"import-md","note":"QA executor."}
+{"event_uid":"6b0496b3-4b56-5999-bf08-c46be1b48d53","bug_uid":"73d7fc51-10ce-54ed-add9-79980d97d8e6","ts":"2026-10-30T00:00:00.001Z","type":"status","data":{"from":"Request","to":"Resolved"},"by":"import-md","note":"owner."}
+{"event_uid":"b33dd967-b749-560c-9b5f-51ce6c4521a1","bug_uid":"73d7fc51-10ce-54ed-add9-79980d97d8e6","ts":"2026-10-31T00:00:00.002Z","type":"status","data":{"from":"Resolved","to":"Reopen"},"by":"import-md","note":"verify failed."}
+{"event_uid":"7c71b193-befc-5b32-9cb2-0f49a49d6510","bug_uid":"73d7fc51-10ce-54ed-add9-79980d97d8e6","ts":"2026-10-31T00:00:00.003Z","type":"round","data":{"counter":"fix","n":2},"by":"import-md"}
+{"event_uid":"fa603171-3a93-5608-8aa7-705f483b440a","bug_uid":"73d7fc51-10ce-54ed-add9-79980d97d8e6","ts":"2026-10-31T00:00:00.004Z","type":"extra_round","data":{"counter":"fix","n":1},"by":"import-md"}
+{"event_uid":"c8a0a3ab-8bff-5b87-b323-e16bed9892e7","bug_uid":"73d7fc51-10ce-54ed-add9-79980d97d8e6","ts":"2026-10-31T00:00:00.005Z","type":"round","data":{"counter":"review","n":1},"by":"import-md"}
+{"event_uid":"bc64e92a-7303-541f-a5c0-86fc0152c19a","bug_uid":"73d7fc51-10ce-54ed-add9-79980d97d8e6","ts":"2026-10-30T00:00:00.006Z","type":"stop_rule","data":{"counter":"fix","extra_dispatch":"unused"},"by":"import-md"}
+{"event_uid":"84121fa1-aa14-548e-95e6-3eae1f64b24b","bug_uid":"d9cb5345-9d6e-5608-9410-4914424520b3","ts":"2026-10-29T00:00:00.000Z","type":"create","data":{"priority":"Medium","title":"Coins reset after load","description":"coins zero after load","repro":"not yet","expected":"coins kept","actual":"coins zero after load","evidence":"log2.md","id":2,"status":"Request"},"by":"import-md","note":"QA executor."}
+{"event_uid":"f28fd296-de15-534b-9152-9ae5dc7b3a86","bug_uid":"d9cb5345-9d6e-5608-9410-4914424520b3","ts":"2026-10-30T00:00:00.001Z","type":"status","data":{"from":"Request","to":"Duplicate","duplicate_of":"BUG-0001"},"by":"import-md","note":"same cause."}
+{"event_uid":"1bee5702-f2fc-5580-8826-9d9cc5ff6009","bug_uid":"58a209b3-a3e9-5ea5-992d-77c1d58e49e0","ts":"2000-01-01T00:00:00.000Z","type":"tombstone","data":{"id":5}}
 """
 
 
-class TestZeroRowImport(Base):
-    """E3-15: after the ordered delete, a project with no bugs has the empty journal /release asks for."""
+class TestImportedJournal(Base):
+    """A journal already holding imported lines keeps replaying: the tracker's own journal began this way."""
 
-    def test_the_real_template_leaves_an_empty_journal(self):
-        md = self.root / ".workflow" / "bugs.md"
-        md.parent.mkdir()
-        md.write_text(ZERO_ROW_BUGS_MD, encoding="utf-8")
-        self.assertIn("imported 0 bugs", self.ok("import-md"))
-        md.unlink()
-        self.assertEqual(self.journal.read_bytes(), b"")
-        self.assertEqual(self.ok("stats").split(" open")[0], "Bugs: 0")
-        self.assertEqual(self.ok("doctor"), "doctor: clean\n")
-        self.assertEqual(self.add(), "BUG-0001")
+    def setUp(self):
+        super().setUp()
+        (self.root / ".workflow").mkdir()
+        self.raw = IMPORTED_JOURNAL.encode("utf-8")
+        self.journal.write_bytes(self.raw)
 
-    def test_a_journal_already_there_is_left_alone(self):
-        self.add()
-        before = self.journal.read_bytes()
-        (self.root / ".workflow" / "bugs.md").write_text(ZERO_ROW_BUGS_MD, encoding="utf-8")
-        self.ok("import-md")
-        self.assertEqual(self.journal.read_bytes(), before)
-
-
-class TestImport(Base):
-    def write_md(self, text, root=None):
-        p = (root or self.root) / ".workflow"
-        p.mkdir(parents=True, exist_ok=True)
-        with open(p / "bugs.md", "w", encoding="utf-8", newline="") as f:
-            f.write(text)
-        return p / "bugs.md"
-
-    def imported(self, text=REAL_BUGS_MD):
-        md = self.write_md(text)
-        out = self.ok("import-md")
-        md.unlink()
-        return out
-
-    def test_real_file_imports_five_complete_bugs(self):
-        out = self.imported()
-        self.assertIn("5 bugs", out)
+    def test_records_replay_with_every_field(self):
         rows = json.loads(self.ok("list", "--json"))
-        self.assertEqual([r["id"] for r in rows], ["BUG-%04d" % i for i in range(1, 6)])
-        for r in rows:
-            self.assertEqual(r["status"], "Complete")
-            self.assertTrue(r["closed_at"].startswith("2026-10-29"), r)
-            self.assertEqual(r["feature"], "engineer-skill-gaps")
-            self.assertEqual(r["regression_test"], "Written repro (docs, no seam)")
-        self.assertEqual([r["priority"] for r in rows], ["Medium", "Medium", "Low", "High", "Medium"])
-        self.assertEqual(self.ok("stats").strip(), "Bugs: 0 open (0 High+)")
+        self.assertEqual([(r["id"], r["priority"], r["status"]) for r in rows],
+                         [("BUG-0001", "Highest", "Reopen"), ("BUG-0002", "Medium", "Duplicate")])
+        first = self.show("BUG-0001")
+        self.assertEqual((first["root_cause"], first["regression_test"], first["closed_at"]), ("slot index off by one", "SaveTests.Overwrite", None))
+        self.assertEqual(len(first["events"]), 7)
+        self.assertEqual({e["by"] for e in first["events"]}, {"import-md"})
+        second = self.show("BUG-0002")
+        self.assertEqual((second["duplicate_of"], second["closed_at"]), ("BUG-0001", "2026-10-30T00:00:00.001Z"))
 
-    def test_real_file_keeps_each_field(self):
-        self.imported()
-        b = self.show("BUG-0004")
-        self.assertEqual(b["title"], "Apple Family-Shared refund fallback can reverse or tombstone the purchaser's grant")
-        self.assertEqual(b["owner"], "iap-server-receipt-ledger (backend author)")
-        self.assertEqual(b["expected"], "a family REVOKE never reverses or blocks the purchaser's PURCHASED grant")
-        self.assertEqual(b["actual"], "fallback can land on the purchaser's entry; a tombstone can block their later grant.")
-        self.assertEqual(b["description"], b["actual"])
-        self.assertIn("appAccountToken+productId", b["repro"])
-        self.assertEqual(b["evidence"], "security re-check after QA fixes, F-1.")
-        self.assertIsNone(b["root_cause"])
-        self.assertEqual(self.show("BUG-0002")["root_cause"], "R3-1 fix text written by the main session named only `ApplyAdConsentSignals` for on-close.")
-
-    def test_real_file_history_becomes_events(self):
-        self.imported()
-        for i in range(1, 6):
-            e = self.show("BUG-%04d" % i)["events"]
-            self.assertEqual([x["type"] for x in e], ["create", "status", "status"])
-            self.assertEqual([json.loads(x["data"]).get("to") for x in e[1:]], ["Resolved", "Complete"])
-            self.assertTrue(all(x["ts"].startswith("2026-10-29") for x in e))
-            self.assertEqual(e[0]["by"], "import-md")
-        e = self.show("BUG-0004")["events"]
-        self.assertEqual(e[0]["note"], "security-reviewer.")
-        self.assertIn("tombstones only from PURCHASED", e[1]["note"])
-        self.assertIn("qa-lead re-read", e[2]["note"])
-
-    def test_next_id_follows_the_file(self):
-        self.imported()
-        self.assertEqual(self.add(), "BUG-0006")
-
-    def test_crlf_copy_imports_the_same(self):
-        self.imported(REAL_BUGS_MD.replace("\n", "\r\n"))
-        want = self.journal.read_bytes()
-        other = Path(self.tmp) / "other"
-        other.mkdir()
-        self.write_md(REAL_BUGS_MD, root=other)
-        self.ok("import-md", root=other)
-        self.assertEqual((other / ".workflow" / "bugs.jsonl").read_bytes(), want)
-
-    def test_uids_are_deterministic_and_rerun_cannot_duplicate(self):
-        md = self.write_md(REAL_BUGS_MD)
-        self.ok("import-md")
-        first = self.journal.read_bytes()
-        self.assertIn("0 bugs", self.ok("import-md"))
-        self.assertEqual(self.journal.read_bytes(), first)
-        self.assertTrue(md.exists(), "deleting the file is the caller's job")
-        uids = {e["bug_uid"] for e in self.lines()}
-        self.assertEqual(len(uids), 5)
-        for u in uids:
-            self.assertRegex(u, r"^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-")
-
-    def test_import_keeps_working_with_the_file_present_and_nothing_else_does(self):
-        self.write_md(REAL_BUGS_MD)
-        self.ok("import-md")
-        self.assertIn("bugs.md", self.no("list"))
-
-    def test_missing_file_is_an_error(self):
-        self.assertIn("bugs.md", self.no("import-md"))
-
-    def test_journal_is_lf_after_import(self):
-        self.imported(REAL_BUGS_MD.replace("\n", "\r\n"))
-        self.assertNotIn(b"\r", self.journal.read_bytes())
-
-    def test_over_limit_stops_the_whole_import_with_a_report(self):
-        good = md_record()
-        bad = md_record("BUG-0002", actual="x" * 281)
-        self.write_md(md_file(good, bad))
-        err = self.no("import-md")
-        self.assertIn("BUG-0002", err)
-        self.assertIn("description", err)
-        self.assertIn("281", err)
-        self.assertFalse(self.journal.exists())
-        self.assertFalse(self.db_path.exists())
-
-    def test_every_problem_is_reported_at_once(self):
-        self.write_md(md_file(md_record("BUG-0001", title="t" * 101), md_record("BUG-0002", evidence="e" * 301),
-                              md_record("BUG-0003", history="2026-10-29 Open — " + "n" * 201)))
-        err = self.no("import-md")
-        for piece in ("BUG-0001 title: 101", "BUG-0002 evidence: 301", "BUG-0003 note: 201"):
-            self.assertIn(piece, err)
-
-    def test_vietnamese_and_secret_stop_the_import(self):
-        self.write_md(md_file(md_record(actual="không chạy")))
-        self.assertIn("actual", self.no("import-md"))
-        self.write_md(md_file(md_record(evidence=FAKE_KEY)))
-        err = self.no("import-md")
-        self.assertIn("secret-shaped", err)
-        self.assertNotIn(FAKE_KEY, err)
-        self.assertFalse(self.journal.exists())
-
-    def test_pii_is_redacted_on_import(self):
-        self.imported(md_file(md_record(actual="seen by qa.tester@example.com")))
-        self.assertEqual(self.show("BUG-0001")["actual"], "seen by [REDACTED:email]")
-
-    def test_severity_map(self):
-        self.imported(md_file(md_record("BUG-0001", severity="Critical"), md_record("BUG-0002", severity="High"),
-                              md_record("BUG-0003", severity="Medium"), md_record("BUG-0004", severity="Low")))
-        self.assertEqual([r["priority"] for r in json.loads(self.ok("list", "--json"))], ["Highest", "High", "Medium", "Low"])
-
-    def test_unknown_severity_stops(self):
-        self.write_md(md_file(md_record(severity="Blocker")))
-        self.assertIn("Blocker", self.no("import-md"))
-
-    def test_status_map_and_final_status_must_match_the_table(self):
-        h = "2026-10-29 Open — a. 2026-10-30 Fixed — b. 2026-10-31 Closed — c. 2026-11-01 Reopened — d."
-        self.imported(md_file(md_record(status="Reopened", history=h)))
-        b = self.show("BUG-0001")
-        self.assertEqual(b["status"], "Reopen")
-        self.assertIsNone(b["closed_at"])
-        self.write_md(md_file(md_record(status="Closed", history="2026-10-29 Open — a.")))
-        self.assertIn("History", self.no("import-md", root=self.root))
-
-    def test_kept_statuses(self):
-        for i, (old, h) in enumerate((("Won't fix", "Won't fix — GD."), ("Accepted", "Accepted — GD."), ("As designed", "As designed — QA."),
-                                      ("Duplicate", "Duplicate — of BUG-0001.")), 2):
-            self.write_md(md_file(md_record("BUG-0001"), md_record("BUG-%04d" % i, status=old, history="2026-10-29 Open — a. 2026-10-30 " + h)))
-            self.ok("import-md")
-        (self.root / ".workflow" / "bugs.md").unlink()
-        self.assertEqual([self.show("BUG-%04d" % i)["status"] for i in range(2, 6)], ["Won't fix", "Accepted", "As designed", "Duplicate"])
-        self.assertEqual(self.show("BUG-0005")["duplicate_of"], "BUG-0001")
-        self.assertTrue(self.show("BUG-0002")["closed_at"].startswith("2026-10-30"))
-
-    def test_duplicate_of_status_cell_is_the_documented_form(self):
-        first = md_record("BUG-0001")
-        self.imported(md_file(first, md_record("BUG-0002", status="Duplicate of BUG-0001",
-                                               history="2026-10-29 Open — a. 2026-10-30 Duplicate of BUG-0001 — QA executor.")))
-        b = self.show("BUG-0002")
-        self.assertEqual((b["status"], b["duplicate_of"]), ("Duplicate", "BUG-0001"))
-        self.assertTrue(b["closed_at"].startswith("2026-10-30"))
-        self.assertEqual(json.loads(b["events"][-1]["data"])["to"], "Duplicate")
-
-    def test_duplicate_target_comes_from_the_cell_over_any_note(self):
-        self.imported(md_file(md_record("BUG-0001"), md_record(
-            "BUG-0002", status="Duplicate of BUG-0001",
-            history="2026-10-29 Open — seen beside BUG-0077. 2026-10-30 Duplicate — QA executor.")))
-        self.assertEqual(self.show("BUG-0002")["duplicate_of"], "BUG-0001")
-
-    def test_duplicate_target_without_a_cell_comes_from_the_duplicate_event(self):
-        self.imported(md_file(md_record("BUG-0001"), md_record(
-            "BUG-0002", status="Duplicate",
-            history="2026-10-29 Open — seen beside BUG-0077. 2026-10-30 Duplicate — of BUG-0001.")))
-        self.assertEqual(self.show("BUG-0002")["duplicate_of"], "BUG-0001")
-
-    def test_duplicate_cell_with_no_real_target_stops(self):
-        self.write_md(md_file(md_record("BUG-0002", status="Duplicate of nothing",
-                                        history="2026-10-29 Open — a. 2026-10-30 Duplicate — b.")))
-        self.assertIn("status", self.no("import-md"))
-        self.assertFalse(self.journal.exists())
-
-    def test_duplicate_cell_with_trailing_text_stops(self):
-        self.write_md(md_file(md_record("BUG-0001"), md_record(
-            "BUG-0002", status="Duplicate of BUG-0001 see notes",
-            history="2026-10-29 Open — a. 2026-10-30 Duplicate — b.")))
-        err = self.no("import-md")
-        self.assertIn("BUG-0002 status", err)
-        self.assertIn("see notes", err)
-        self.assertFalse(self.journal.exists())
-
-    def test_duplicate_of_itself_stops_in_either_form(self):
-        h_cell = "2026-10-29 Open — a. 2026-10-30 Duplicate — b."
-        h_note = "2026-10-29 Open — a. 2026-10-30 Duplicate — of BUG-0002."
-        for status, history in (("Duplicate of BUG-0002", h_cell), ("Duplicate", h_note)):
-            with self.subTest(status):
-                self.write_md(md_file(md_record("BUG-0001"), md_record("BUG-0002", status=status, history=history)))
-                err = self.no("import-md")
-                self.assertIn("BUG-0002 duplicate_of", err)
-                self.assertIn("itself", err)
-                self.assertFalse(self.journal.exists())
-
-    def test_duplicate_of_a_missing_row_stops_in_either_form(self):
-        h_cell = "2026-10-29 Open — a. 2026-10-30 Duplicate — b."
-        h_note = "2026-10-29 Open — a. 2026-10-30 Duplicate — of BUG-0077."
-        for status, history in (("Duplicate of BUG-0077", h_cell), ("Duplicate", h_note)):
-            with self.subTest(status):
-                self.write_md(md_file(md_record("BUG-0001"), md_record("BUG-0002", status=status, history=history)))
-                err = self.no("import-md")
-                self.assertIn("BUG-0002 duplicate_of", err)
-                self.assertIn("BUG-0077", err)
-                self.assertFalse(self.journal.exists())
-
-    def test_duplicate_target_problems_join_the_rest_of_the_report(self):
-        self.write_md(md_file(md_record("BUG-0001", title="t" * 101), md_record("BUG-0002", status="Duplicate of BUG-0077",
-                                                                                history="2026-10-29 Open — a. 2026-10-30 Duplicate — b.")))
-        err = self.no("import-md")
-        self.assertIn("BUG-0001 title: 101", err)
-        self.assertIn("BUG-0002 duplicate_of", err)
-
-    def test_one_bug_breaking_two_rules_reports_both(self):
-        h = "2026-10-29 Open — a. 2026-10-30 Duplicate — b."
-        for status, needle in (("Duplicate of BUG-0077", "BUG-0077"), ("Duplicate of BUG-0002", "itself")):
-            with self.subTest(status):
-                self.write_md(md_file(md_record("BUG-0001"), md_record("BUG-0002", title="t" * 101, status=status, history=h)))
-                err = self.no("import-md")
-                self.assertIn("BUG-0002 title: 101", err)
-                self.assertIn("BUG-0002 duplicate_of", err)
-                self.assertIn(needle, err)
-                self.assertFalse(self.journal.exists())
-
-    def test_unknown_history_status_and_label_stop(self):
-        self.write_md(md_file(md_record(history="2026-10-29 Open — a. 2026-10-30 Parked — b.")))
-        self.assertIn("History", self.no("import-md"))
-        self.write_md(md_file(md_record(history="nothing parsable")))
-        self.assertIn("History", self.no("import-md"))
-        self.write_md(md_file(md_record(extra="- Mystery: dropped text\n")))
-        self.assertIn("Mystery", self.no("import-md"))
-        self.assertFalse(self.journal.exists())
-
-    def test_record_and_row_must_pair_up(self):
-        r = md_record()
-        self.write_md(MD_HEADER % "BUG-0002" + r[0])
-        self.assertIn("BUG-0001", self.no("import-md"))
-        self.write_md(MD_HEADER % "BUG-0002" + r[1])
-        self.assertIn("BUG-0001", self.no("import-md"))
-
-    def test_missing_required_field_stops(self):
-        rec = md_record()
-        self.write_md(md_file((rec[0], rec[1].replace("- Evidence: log.md\n", ""))))
-        err = self.no("import-md")
-        self.assertIn("BUG-0001", err)
-        self.assertIn("evidence", err)
-
-    def test_counters_stop_rule_and_extra_rounds_carry_over(self):
-        extra = ("- Fix rounds: 3/4\n- Review rounds: 1/3\n- Stop rule: fix root-caused 2026-10-30 - extra dispatch: used\n"
-                 "- extra round: fix +2\n")
-        self.imported(md_file(md_record(extra=extra)))
+    def test_counters_read_the_round_and_stop_rule_lines(self):
         c = self.counters("BUG-0001")
-        self.assertEqual(c["fix"], {"used": 3, "cap": 4})
-        self.assertEqual(c["review"], {"used": 1, "cap": 3})
-        self.assertIn("- Stop rule: fix root-caused 2026-10-30 - extra dispatch: used", c["record"].splitlines())
-        self.assertIn("extra round: fix +2", c["record"].splitlines())
+        self.assertEqual((c["fix"], c["review"], c["settled"]), ({"used": 2, "cap": 3}, {"used": 1, "cap": 3}, False))
+        self.assertEqual(c["record"], "- Stop rule: fix root-caused 2026-10-30 - extra dispatch: unused\nextra round: fix +1")
 
-    def test_cap_above_default_without_a_record_stays_default(self):
-        self.imported(md_file(md_record(extra="- Fix rounds: 1/9\n")))
-        self.assertEqual(self.counters("BUG-0001")["fix"], {"used": 1, "cap": 2})
-
-    def test_next_id_above_the_records_keeps_the_high_water(self):
-        self.imported(md_file(md_record(), next_id="BUG-0040"))
-        self.assertEqual(self.add(), "BUG-0040")
-
-    def test_next_id_above_one_with_no_records_leaves_a_working_store(self):
-        self.imported(MD_HEADER % "BUG-0006")
+    def test_the_gap_tombstone_keeps_its_ids_spent(self):
+        for bug_id in ("BUG-0003", "BUG-0005"):
+            self.assertIn("purged", self.ok("show", bug_id))
         self.assertEqual(self.add(), "BUG-0006")
-        self.assertEqual(self.add(), "BUG-0007")
-        self.ok("list")
-        self.ok("doctor")
-        self.db_path.unlink()
-        self.assertEqual(self.add(), "BUG-0008")
 
-    def test_empty_template_imports_nothing_but_keeps_the_next_id(self):
-        self.imported("# Bugs\n\nNext ID: BUG-0001\n\n| ID | Title | Severity | Status | Feature | Owner | Regression test |\n|---|---|---|---|---|---|---|\n\n"
-                      "<!-- One record per bug. -->\n## BUG-#### — <title>\n- Repro: <steps>\n")
-        self.assertEqual(self.add(), "BUG-0001")
+    def test_doctor_and_rebuild_leave_the_bytes_alone(self):
+        self.assertEqual(self.ok("doctor"), "doctor: clean\n")
+        self.assertIn("rebuilt: 2 bugs,", self.ok("rebuild"))
+        self.assertEqual(self.journal.read_bytes(), self.raw)
 
-    def test_id_held_by_another_bug_stops(self):
-        self.add()
-        self.write_md(md_file(md_record()))
-        self.assertIn("BUG-0001", self.no("import-md"))
-        self.assertEqual(len(self.lines()), 1)
+    def test_later_writes_attach_to_an_imported_bug(self):
+        self.status("BUG-0001", "Processing", note="retry")
+        self.assertEqual(self.show("BUG-0001")["status"], "Processing")
+        self.assertTrue(self.journal.read_bytes().startswith(self.raw))
 
 
 class GitBase(Base):
@@ -2026,10 +1677,6 @@ class TestWorktree(GitBase):
         self.assertEqual(self.journal.read_bytes(), before)
         self.assertEqual(wt_journal.read_bytes(), wt_before)
 
-    def test_import_md_refused(self):
-        (self.root / ".workflow" / "bugs.md").write_text(REAL_BUGS_MD, encoding="utf-8")
-        self.assertIn("worktree", self.no("import-md", root=self.wt))
-
     def test_reads_use_the_main_checkout(self):
         self.add(title="Uncommitted on main")
         rows = json.loads(self.ok("list", "--json", root=self.wt))
@@ -2041,10 +1688,6 @@ class TestWorktree(GitBase):
 
     def test_dry_run_is_a_read(self):
         self.assertIn("would purge 0", self.ok("purge", "--dry-run", root=self.wt))
-
-    def test_bugs_md_in_the_main_checkout_blocks_the_worktree(self):
-        (self.root / ".workflow" / "bugs.md").write_text("# Bugs\n", encoding="utf-8")
-        self.assertIn("bugs.md", self.no("list", root=self.wt))
 
 
 class TestCli(Base):
@@ -2125,7 +1768,7 @@ class TestSkillContract(unittest.TestCase):
 
     def test_commands_named_in_the_skill(self):
         for cmd in ("add", "update", "set-status", "round", "extra-round", "stop-rule", "show", "list", "search", "sql", "delete",
-                    "counters", "purge", "rebuild", "doctor", "import-md", "stats"):
+                    "counters", "purge", "rebuild", "doctor", "stats"):
             self.assertIn("`%s" % cmd, self.skill, cmd)
 
     def test_skill_names_its_script_without_a_hardcoded_path(self):
@@ -2236,20 +1879,6 @@ class TestRefusalsAreRedacted(Base):
                     self.assertNotEqual(r.returncode, 0)
                     self.assertTrue(r.stderr.strip())
                     self.assertNotIn(FAKE_KEY.encode(), r.stderr + r.stdout)
-
-    def test_a_table_cell_or_label_in_import_md_is_redacted(self):
-        self.root.joinpath(".workflow").mkdir()
-        md = self.root / ".workflow" / "bugs.md"
-        long_value = secret_shapes()["long"]
-        for text in (md_file(md_record(status=FAKE_KEY)), md_file(md_record(severity=FAKE_KEY)),
-                     md_file(md_record(extra="- %s: x\n" % long_value)),
-                     md_file(md_record(history="2026-10-29 Open — 2026-10-29 Bogus %s" % long_value))):
-            md.write_text(text, encoding="utf-8")
-            err = self.no("import-md")
-            self.assertIn("import stopped", err)
-            self.assertNotIn(FAKE_KEY, err)
-            self.assertNotIn(long_value[:20], err)
-        self.assertFalse(self.journal.exists())
 
     def test_a_cut_journal_value_cannot_slip_past_the_scan(self):
         long_value = secret_shapes()["long"]
@@ -2738,14 +2367,6 @@ class TestRoundCount(Base):
                         self.assertIn("corrupt journal", err)
                         self.assertNotIn("Traceback", err)
 
-    def test_import_refuses_a_count_replay_would_refuse(self):
-        self.root.joinpath(".workflow").mkdir()
-        md = self.root / ".workflow" / "bugs.md"
-        for extra in ("- Fix rounds: 101/2\n", "- Fix rounds: 1/900\n- Extra round: fix +898\n"):
-            md.write_text(md_file(md_record(extra=extra)), encoding="utf-8")
-            self.assertIn("import stopped", self.no("import-md"))
-            self.assertFalse(self.journal.exists())
-
 
 class TestGdAttribution(Base):
     """DEF-E1-05: exactly GD on every path; whitespace variants are refused, as delete does."""
@@ -2810,19 +2431,6 @@ class TestEmptyJournal(Base):
         self.assertEqual(self.ok("doctor"), "doctor: clean\n")
         self.assertEqual(self.ok("doctor", "--fix"), "doctor: clean\n")
         self.assertEqual(self.ok("rebuild"), "rebuilt: 0 bugs, 0 events\n")
-        self.assertEqual(self.journal.read_bytes(), b"")
-
-    def test_import_md_works_with_it(self):
-        (self.root / ".workflow" / "bugs.md").write_text(REAL_BUGS_MD, encoding="utf-8")
-        self.assertIn("imported 5 bugs", self.ok("import-md"))
-        (self.root / ".workflow" / "bugs.md").unlink()
-        self.assertEqual(len(json.loads(self.ok("list", "--json"))), 5)
-
-    def test_bugs_md_refuse_rule_is_unchanged(self):
-        (self.root / ".workflow" / "bugs.md").write_text("# Bugs\n", encoding="utf-8")
-        for argv in (["list"], ["stats"], ["doctor"], ["purge"], ["add"]):
-            with self.subTest(argv):
-                self.assertIn("bugs.md", self.no(*argv, stdin=fields() if argv[0] == "add" else None))
         self.assertEqual(self.journal.read_bytes(), b"")
 
 
@@ -2960,10 +2568,6 @@ class TestDocContracts(unittest.TestCase):
         self.assertIn("`Ctx` in `bugs.py` and `Get-BugsRoot` in `common.ps1`", self.schema)
         self.assertNotIn("root comes from comparing", self.schema)
 
-    def test_an_empty_journal_lists_import_md_as_a_source(self):
-        line = next(x for x in self.schema.split("\n") if x.startswith("- **Empty journal:**"))
-        self.assertIn("zero-row `import-md`", line)
-
     def test_a_failed_git_names_its_purge_skip(self):
         line = next(x for x in self.schema.split("\n") if x.startswith("- **Git failing:**"))
         self.assertIn("`purge skipped: git failed`", line)
@@ -3070,7 +2674,7 @@ class TestDocContracts(unittest.TestCase):
         self.assertIn("redaction always runs", line)
         source = (HERE / "bugs.py").read_text(encoding="utf-8")
         self.assertIn("def shown(value, limit=40)", source)
-        for limit, call in ((60, "shown(note, 60)"), (200, "shown(ex, 200)"), (200, "shown(given, 200)"), (300, "shown(message, 300)")):
+        for limit, call in ((200, "shown(ex, 200)"), (200, "shown(given, 200)"), (300, "shown(message, 300)")):
             self.assertIn(call, source)
             self.assertIn(str(limit), line)
         self.assertIn("500", line)

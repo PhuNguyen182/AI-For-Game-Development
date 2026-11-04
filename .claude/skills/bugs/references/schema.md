@@ -8,7 +8,7 @@ Synthesized from `../scripts/bugs.py`; commands in `../SKILL.md`.
 - **Backlog:** counts as open for `stats` and `list --open`, and as settled for `counters` and QA sign-off with a `Known limitations` line. Never capped; never purged.
 
 ## Priorities
-- **Scale:** `Low` · `Medium` · `High` · `Highest`. Old Severity `Critical` maps to `Highest`.
+- **Scale:** `Low` · `Medium` · `High` · `Highest`. A QA Severity of `Critical` maps to `Highest` (`qa-standards`).
 
 ## State machine
 | From | To | Set when |
@@ -47,7 +47,7 @@ Synthesized from `../scripts/bugs.py`; commands in `../SKILL.md`.
 
 - **Checked on every text value:** control characters, Vietnamese diacritics (any Unicode form), secret shapes via `mem.py`, then PII redaction. The limit applies to the stored text.
 - **Fail closed:** a missing or broken `mem.py` (a syntax error or a failed import included) or pattern file refuses every write, `delete`, `purge` and `doctor --fix` included, with no traceback; reads do not need them.
-- **Refusal text:** one exit in `main`; secret and PII redaction always runs, so a pasted secret as an ID, a status or a JSON key never reaches stderr. A value over its limit is not echoed: 40 chars for an ID, status or key, 60 for an `import-md` History note, 200 for a SQLite message or `--root`, 300 for an argparse message. A line stops at 500. With nothing to scan, values are hidden. Unrecognized arguments are counted, never quoted. A fault in `mem.py`, `SystemExit` and `BaseException` included, refuses; an empty pattern list counts as one. An interrupt prints `bugs: interrupted`, exit 130.
+- **Refusal text:** one exit in `main`; secret and PII redaction always runs, so a pasted secret as an ID, a status or a JSON key never reaches stderr. A value over its limit is not echoed: 40 chars for an ID, status or key, 200 for a SQLite message or `--root`, 300 for an argparse message. A line stops at 500. With nothing to scan, values are hidden. Unrecognized arguments are counted, never quoted. A fault in `mem.py`, `SystemExit` and `BaseException` included, refuses; an empty pattern list counts as one. An interrupt prints `bugs: interrupted`, exit 130.
 - **Stdin encoding:** the CLI reads UTF-8. Windows PowerShell 5.1's default pipe turns each non-ASCII character into `?` first, and the CLI cannot detect the loss; run `$OutputEncoding = [Text.UTF8Encoding]::new($false)` before the pipe.
 
 ## Journal (`.workflow/bugs.jsonl`, tracked; LF, UTF-8, no BOM)
@@ -62,7 +62,7 @@ Synthesized from `../scripts/bugs.py`; commands in `../SKILL.md`.
 - **Write path:** `BEGIN IMMEDIATE`, hash check, rebuild if different, validate, apply, append, commit. A crash after the append is healed by the next hash mismatch.
 - **Hash check:** every command compares the journal's SHA-256 with the DB, which covers `git switch`, pull and merge.
 - **No journal:** reads return empty on an in-memory store; the DB appears with the first write.
-- **Empty journal:** what `/new-project`, `/feature` and a zero-row `import-md` create, so a missing one means a broken setup, which `doctor` can report only when git shows the tracked file deleted; a journal git never tracked reads as clean. Reads return empty, `doctor` is clean, the first write takes `BUG-0001`, `import-md` still runs.
+- **Empty journal:** what `/new-project` and `/feature` create, so a missing one means a broken setup, which `doctor` can report only when git shows the tracked file deleted; a journal git never tracked reads as clean. Reads return empty, `doctor` is clean, the first write takes `BUG-0001`.
 - **Duplicate ID:** two `bug_uid`s holding one ID after a merge. `counters` and writes for that ID fail closed until `doctor --fix` appends a `renumber` for the later create. Later lines attach by `bug_uid`.
 - **Purged ID:** a tombstone holds its ID. A create on it from another `bug_uid` is a duplicate; `doctor --fix` renumbers that bug. The same `bug_uid` brought back stays gone.
 - **High water:** max over creates, tombstones and renumbers. `add` takes the next one; a missing ID below it reads `purged`.
@@ -83,7 +83,7 @@ Synthesized from `../scripts/bugs.py`; commands in `../SKILL.md`.
 ## Counters (`counters <id> --json`)
 - **Shape:** `{id, found, settled, status, fix: {used, cap}, review: {used, cap}, record}`. Default caps: fix 2, review 3.
 - **Record:** `- Stop rule: <counter> root-caused <date> - extra dispatch: unused|used` and `extra round: <counter> +<n>`, the lines `round-cap.ps1` matches.
-- **Exit:** unknown or purged ID `found:false`, exit 0. Duplicate ID, corrupt journal or a remaining `bugs.md`: non-zero with stderr, and the hook fails closed.
+- **Exit:** unknown or purged ID `found:false`, exit 0. Duplicate ID or corrupt journal: non-zero with stderr, and the hook fails closed.
 - **Ledger:** Python never reads the hook's local ledger; used there is added by the hook.
 - **Hook spelling:** `round-cap.ps1` reads any case and padding (`bug-0027`, `BUG-27`, `BUG-00027`) as `BUG-0027`; the CLI takes `BUG-####` only.
 
@@ -93,11 +93,6 @@ Synthesized from `../scripts/bugs.py`; commands in `../SKILL.md`.
 - **`bug_fts`:** FTS5 `porter unicode61 remove_diacritics 2` over the text fields and notes.
 - **`meta`:** `journal_hash`, `high_water`, `last_ts`, `purged_ids`.
 - **`sql`:** `mode=ro` connection, `query_only`, an authorizer, and a leading-keyword gate; one statement, 1000 rows, 10 seconds. A BLOB prints as its literal, `x'00ff'`.
-
-## Migration (`import-md`)
-- **Mapping:** `Open` → `Request` · `Fixed` → `Resolved` · `Closed` → `Complete` · `Reopened` → `Reopen`; the other four keep their names. A status cell that is exactly `Duplicate of BUG-####` → `Duplicate` with that target, which must be another row of the table. `description` takes the old `Actual` text. Uids are `uuid5`, so a re-run adds nothing.
-- **A broken rule:** stops the whole import with a report of bug, field and length; nothing is written. Rewrite that field by hand, then re-run.
-- **Afterwards:** the caller deletes the old file; every other command refuses while it exists.
 
 ## Test clock
 - **`BUGS_NOW`:** test-only override of the CLI's clock (`2026-01-01T00:00:00Z`, optional `.mmm`). Never set it in a session: a leftover value skews event timestamps and can purge early. `purge` warns on stderr when it is set.

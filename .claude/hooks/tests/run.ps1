@@ -757,7 +757,6 @@ try {
     Check 'round-cap: a bug past its cap blocks' (Dispatch 'Fix BUG-0001') 2
     $r = ShellEdit $bugCall
     Check 'round-cap: a bugs.py command warns past the cap' ($r.Code -eq 2 -and $r.Out -match 'BUG-0001: fix 3/2' -and $r.Out -match 'past the cap') $true
-    Check 'round-cap: an edit under .workflow names no bug any more' (EditState (Join-Path $proj '.workflow/bugs.md')) 0
     Bugs 'Reopen' 1
     Check 'round-cap: a bug under its cap dispatches' (Dispatch 'Fix BUG-0001') 0
     Check 'round-cap: a bugs.py command under the cap is silent' (ShellEdit $bugCall).Code 0
@@ -863,14 +862,8 @@ exit $LASTEXITCODE
     $r = NoPython { ShellEdit $bugCall }
     Check 'round-cap: no Python on a bugs.py command gives a message only' ($r.Code -eq 2 -and $r.Out -match 'could not be read' -and $r.Out -notmatch 'Stop rule') $true
     ClearBugs
-    Check 'round-cap: no journal and no bugs.md pass without Python' (NoPython { Dispatch 'Fix BUG-0001' }) 0
+    Check 'round-cap: no journal passes without Python' (NoPython { Dispatch 'Fix BUG-0001' }) 0
     Check 'round-cap: a shell command with no journal stays silent without Python' (NoPython { (ShellEdit $bugCall).Code }) 0
-    $oldBugs = Join-Path $proj '.workflow/bugs.md'
-    Set-Content $oldBugs "# Bugs`n" -Encoding UTF8
-    $r = DispatchR 'Fix BUG-0001'
-    Check 'round-cap: a remaining bugs.md blocks a bug dispatch, naming import-md' ($r.Code -eq 2 -and $r.Out -match 'import-md') $true
-    Check 'round-cap: a remaining bugs.md leaves other dispatches alone' (Dispatch 'Explain the HUD') 0
-    Remove-Item $oldBugs
     # A merge of two branches that each filed a bug: two real create lines holding one id.
     BugCli @('add') $bugFields | Out-Null
     $oneLine = Get-Content (Join-Path $proj '.workflow/bugs.jsonl') -Raw
@@ -1119,11 +1112,7 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     Remove-Item (Join-Path $bp '.workflow/bugs.db*') -Force -ErrorAction SilentlyContinue
     $r = NoPython { Invoke-Hook 'session-start.ps1' @{} }
     Check 'session-start: no journal prints no bug line and needs no Python' ($r.Code -eq 0 -and $r.Out -notmatch 'Bugs:') $true
-    Set-Content (Join-Path $bp '.workflow/bugs.md') "# Bugs`n" -Encoding UTF8
-    $r = NoPython { Invoke-Hook 'session-start.ps1' @{} }
-    Check 'session-start: a remaining bugs.md prints one import-md line' ($r.Code -eq 0 -and @($r.Out -split '\r?\n' | Where-Object { $_ -match '^Bugs: .*import-md' }).Count -eq 1) $true
     # An empty journal, as bootstrap creates it: reads as no bugs, never as a failure.
-    Remove-Item (Join-Path $bp '.workflow/bugs.md')
     [IO.File]::WriteAllBytes($bpJournal, [byte[]]@())
     $r = Invoke-Hook 'session-start.ps1' @{}
     Check 'session-start: an empty journal reads as no bugs' ($r.Code -eq 0 -and $r.Out -match '(?m)^Bugs: 0 open \(0 High\+\)') $true

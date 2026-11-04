@@ -422,10 +422,6 @@ class Ctx:
     def db_path(self) -> Path:
         return self.workflow / "bugs.db"
 
-    @property
-    def md(self) -> Path:
-        return self.workflow / "bugs.md"
-
     def require_writable(self):
         if self.linked:
             raise Refused("writes from a linked worktree are refused: run from the main checkout %s" % self.root)
@@ -830,8 +826,8 @@ class Writer:
             raise
         return self
 
-    def emit(self, etype: str, uid: str, data: dict, by=None, note=None, ts=None, event_uid=None) -> dict:
-        ev = {"event_uid": event_uid or str(uuid.uuid4()), "bug_uid": uid, "ts": ts or next_ts(self.last_ts), "type": etype, "data": data}
+    def emit(self, etype: str, uid: str, data: dict, by=None, note=None, event_uid=None) -> dict:
+        ev = {"event_uid": event_uid or str(uuid.uuid4()), "bug_uid": uid, "ts": next_ts(self.last_ts), "type": etype, "data": data}
         if by is not None:
             ev["by"] = by
         if note is not None:
@@ -1370,262 +1366,6 @@ def cmd_doctor(ctx, a):
     return 0
 
 
-# ---------------------------------------------------------------- import-md
-
-OLD_STATUS = {"Open": "Request", "Fixed": "Resolved", "Closed": "Complete", "Reopened": "Reopen",
-              "Won't fix": "Won't fix", "Accepted": "Accepted", "As designed": "As designed", "Duplicate": "Duplicate"}
-OLD_SEVERITY = {"Critical": "Highest", "High": "High", "Medium": "Medium", "Low": "Low"}
-RX_HISTORY = re.compile(r"(?:(?<=\s)|^)(\d{4}-\d{2}-\d{2}) (Open|Fixed|Closed|Reopened|Won't fix|Accepted|As designed|Duplicate)\b(?:\s*[—–-]+\s*)?")
-RX_DATED_WORD = re.compile(r"(?:^|\s)\d{4}-\d{2}-\d{2} [A-Z]")
-RX_DUPLICATE_CELL = re.compile(r"Duplicate of (BUG-\d{4,})")  # the old lifecycle's own status form
-RX_STOP_RULE = re.compile(r"(fix|review) root-caused (\d{4}-\d{2}-\d{2}) - extra dispatch: (unused|used)\b")
-MD_LABELS = {"repro": "repro", "expected": "expected", "actual": "actual", "evidence": "evidence", "root cause": "root_cause",
-             "fix rounds": "fix_rounds", "review rounds": "review_rounds", "stop rule": "stop_rule", "history": "history", "extra round": "extra_round"}
-GAP_TS = "2000-01-01T00:00:00.000Z"
-
-
-def md_cells(line: str) -> list:
-    return [c.strip().replace("\\|", "|") for c in re.split(r"(?<!\\)\|", line.strip()[1:-1 if line.strip().endswith("|") else None])]
-
-
-def md_table(text: str, problems: list) -> dict:
-    rows, header = {}, None
-    for line in text.split("\n"):
-        if line.startswith("## "):
-            break
-        if not line.startswith("|"):
-            continue
-        cells = md_cells(line)
-        if header is None:
-            header = [c.lower() for c in cells]
-            missing = [c for c in ("id", "title", "severity", "status", "feature", "owner", "regression test") if c not in header]
-            if missing:
-                problems.append("table: missing column %s" % ", ".join(missing))  # our own names, not the file's
-                return rows
-            continue
-        if all(re.fullmatch(r":?-+:?", c) for c in cells):
-            continue
-        if len(cells) != len(header):
-            problems.append("table: row has %d cells, header has %d: %s" % (len(cells), len(header), shown(cells[0])))
-            continue
-        row = dict(zip(header, cells))
-        rows[row["id"]] = row
-    return rows
-
-
-def md_records(text: str, problems: list) -> dict:
-    records, current, bug_id, label = {}, None, None, None
-    for raw in text.split("\n"):
-        line = raw.rstrip()
-        m = re.match(r"## (BUG-\d{4,})\b", line)
-        if m:
-            bug_id, label = m.group(1), None
-            current = records.setdefault(bug_id, {})
-            continue
-        if line.startswith("## ") or line.startswith("# "):
-            current = None
-            continue
-        if current is None or not line.strip():
-            continue
-        m = re.match(r"(?:- )?([A-Za-z][A-Za-z' ]*?):\s*(.*)$", line)
-        known = m and m.group(1).strip().lower() in MD_LABELS
-        if line.startswith("- ") and not known:
-            problems.append("%s: unknown line '%s': nothing may be dropped" % (bug_id, shown(m.group(1) if m else line)))
-            continue
-        if known:
-            label = MD_LABELS[m.group(1).strip().lower()]
-            value = m.group(2).strip()
-            if label == "expected" and re.search(r"\s·\s*Actual:", value):
-                value, actual = re.split(r"\s·\s*Actual:\s*", value, maxsplit=1)
-                current["actual"] = actual.strip()
-            current[label] = value.strip()
-        elif label:
-            current[label] = current[label] + "\n" + line.strip()
-        else:
-            problems.append("%s: stray line '%s'" % (bug_id, shown(line)))
-    return records
-
-
-def md_history(bug_id: str, text: str, problems: list) -> list:
-    marks = list(RX_HISTORY.finditer(text or ""))
-    if not marks or text[:marks[0].start()].strip():
-        problems.append("%s History: no parsable events" % bug_id)
-        return []
-    out = []
-    for i, m in enumerate(marks):
-        end = marks[i + 1].start() if i + 1 < len(marks) else len(text)
-        note = text[m.end():end].strip()
-        if RX_DATED_WORD.search(note):
-            problems.append("%s History: unknown status in '%s'" % (bug_id, shown(note, 60)))
-        out.append((m.group(1), m.group(2), note))
-    return out
-
-
-def stage_record(bug_id: str, row: dict, rec: dict, cleaner: Cleaner, problems: list, row_ids) -> list:
-    """The journal lines of one bug, or nothing when it breaks a rule. Every break is reported, none is truncated."""
-    say = lambda ex: problems.append("%s %s" % (bug_id, ex))
-    fields = {}
-
-    def take(field, value, required=True):
-        try:
-            if required:
-                fields[field] = cleaner.required(field, value)
-            elif value not in (None, ""):
-                fields[field] = cleaner.clean(field, value)
-        except Refused as ex:
-            say(ex)
-
-    severity = row["severity"]
-    if severity in OLD_SEVERITY:
-        fields["priority"] = OLD_SEVERITY[severity]
-    else:
-        say("severity: unknown '%s'" % shown(severity))
-    take("title", row["title"])
-    take("description", rec.get("actual"))
-    for field in ("repro", "expected", "actual", "evidence"):
-        take(field, rec.get(field))
-    take("root_cause", rec.get("root_cause"), required=False)
-    for field, cell in (("feature", row["feature"]), ("owner", row["owner"]), ("regression_test", row["regression test"])):
-        take(field, None if cell in ("", "-", "—") else cell, required=False)
-
-    history = md_history(bug_id, rec.get("history"), problems)
-    if history and history[0][1] != "Open":
-        problems.append("%s History: must start with Open" % bug_id)
-    dup_cell = RX_DUPLICATE_CELL.fullmatch(row["status"])  # trailing text would be dropped: it stops as an unknown status
-    status = "Duplicate" if dup_cell else row["status"]
-    if status not in OLD_STATUS:
-        problems.append("%s status: unknown '%s'" % (bug_id, shown(row["status"])))
-    elif history and history[-1][1] != status:
-        problems.append("%s History: ends at %s, the table says %s" % (bug_id, history[-1][1], shown(row["status"])))
-
-    notes = []
-    for date, word, note in history:
-        try:
-            notes.append(cleaner.clean("note", note) or None)
-            parse_ts(date + "T00:00:00.000Z")
-        except Refused as ex:
-            say(ex)
-        except ValueError:
-            problems.append("%s History: bad date %s" % (bug_id, date))
-
-    extras = []
-    has_extra = "extra_round" in rec or any("extra round" in str(v).lower() for v in rec.values())
-    for counter, key in (("fix", "fix_rounds"), ("review", "review_rounds")):
-        if key not in rec:
-            continue
-        m = re.match(r"(\d+)\s*/\s*(\d+)", rec[key])
-        if not m:
-            problems.append("%s %s: expected n/cap" % (bug_id, key))
-            continue
-        used, cap = int(m.group(1)), int(m.group(2))
-        if used > MAX_COUNT or cap - DEFAULT_CAPS[counter] > MAX_COUNT:  # one journal event each: replay would refuse it
-            problems.append("%s %s: more than %d in one event" % (bug_id, key, MAX_COUNT))
-            continue
-        if used:
-            extras.append(("round", {"counter": counter, "n": used}))
-        if cap > DEFAULT_CAPS[counter]:
-            if has_extra:
-                extras.append(("extra_round", {"counter": counter, "n": cap - DEFAULT_CAPS[counter]}))
-            else:
-                print("%s: %s cap %d has no recorded extra round: the default applies, as in round-cap.ps1" % (bug_id, counter, cap), file=sys.stderr)
-    stop = None
-    if "stop_rule" in rec:
-        stop = RX_STOP_RULE.search(rec["stop_rule"])
-        if not stop:
-            problems.append("%s stop_rule: expected '<counter> root-caused <date> - extra dispatch: unused|used'" % bug_id)
-
-    dup_of = dup_cell.group(1) if dup_cell else None
-    if status == "Duplicate" and not dup_of:
-        for (_, word, _), note in zip(history, notes):  # only the Duplicate event: an earlier note may name another bug
-            m = re.search(r"BUG-\d{4,}", note or "") if word == "Duplicate" else None
-            dup_of = m.group(0) if m else dup_of
-        if not dup_of:
-            problems.append("%s History: Duplicate names no BUG-#### target" % bug_id)
-    if dup_of == bug_id:  # what set-status refuses
-        say("duplicate_of: a bug cannot duplicate itself")
-    elif dup_of and dup_of not in row_ids:
-        say("duplicate_of: %s is not in the table" % dup_of)
-
-    if problems and any(p.startswith(bug_id) for p in problems):
-        return []
-    uid = stable_uid("import/%s" % bug_id)
-    num = parse_id(bug_id)
-    events, seq, prev, last_date = [], 0, "Request", history[0][0]
-
-    def line(etype, data, date, note=None):
-        nonlocal seq
-        ts = fmt_ts(parse_ts(date + "T00:00:00.000Z") + dt.timedelta(milliseconds=seq))
-        ev = {"event_uid": stable_uid("import/%s/%d" % (bug_id, seq)), "bug_uid": uid, "ts": ts, "type": etype, "data": data, "by": "import-md"}
-        if note:
-            ev["note"] = note
-        seq += 1
-        events.append(ev)
-
-    line("create", dict(fields, id=num, status="Request"), history[0][0], notes[0])
-    for (date, word, _), note in list(zip(history, notes))[1:]:
-        to = OLD_STATUS[word]
-        data = {"from": prev, "to": to}
-        if to == "Duplicate":
-            data["duplicate_of"] = dup_of
-        line("status", data, date, note)
-        prev, last_date = to, date
-    for etype, data in extras:
-        line(etype, data, last_date)
-    if stop:
-        line("stop_rule", {"counter": stop.group(1), "extra_dispatch": stop.group(3)}, stop.group(2))
-    return events
-
-
-def cmd_import_md(ctx, a):
-    ctx.require_writable()
-    if not ctx.md.exists():
-        raise Refused(".workflow/bugs.md not found: nothing to import")
-    cleaner = Cleaner(ctx)
-    text = ctx.md.read_text(encoding="utf-8-sig").replace("\r\n", "\n")
-    problems = []
-    rows = md_table(text, problems)
-    records = md_records(text, problems)
-    for bug_id in sorted(set(rows) | set(records)):
-        if bug_id not in rows:
-            problems.append("%s: a record with no table row" % shown(bug_id))
-        elif bug_id not in records:
-            problems.append("%s: a table row with no record" % shown(bug_id))
-    staged = []
-    for bug_id in sorted(set(rows) & set(records), key=parse_id):
-        staged += stage_record(bug_id, rows[bug_id], records[bug_id], cleaner, problems, rows)
-    m = re.search(r"(?m)^Next ID:\s*BUG-(\d+)", text)
-    next_id = int(m.group(1)) if m else 1
-    if problems:
-        raise Refused("import stopped, nothing written:\n" + "\n".join(problems))
-    with Writer(ctx, create=True) as w:
-        for bug_id in sorted(set(rows) & set(records)):
-            held = w.db.execute("SELECT uid FROM bug WHERE id=?", (bug_id,)).fetchall()
-            if any(r["uid"] != stable_uid("import/%s" % bug_id) for r in held):
-                raise Refused("import stopped, nothing written:\n%s: already held by another bug_uid" % bug_id)
-        seen = {r[0] for r in w.db.execute("SELECT event_uid FROM bug_event")}
-        dead = parse_journal(read_journal(ctx))
-        dead_uids = {ev["bug_uid"] for ev in dead.events if ev["type"] == "tombstone"}
-        new_bugs = new_events = 0
-        for ev in staged:
-            if ev["event_uid"] in seen or ev["bug_uid"] in dead_uids:
-                continue
-            w.emit(ev["type"], ev["bug_uid"], ev["data"], by=ev["by"], note=ev.get("note"), ts=ev["ts"], event_uid=ev["event_uid"])
-            new_events += 1
-            new_bugs += ev["type"] == "create"
-        top = max(w.top, high_water_of(staged))
-        if next_id - 1 > top:  # Next ID above every record: IDs were spent, keep them spent.
-            uid = stable_uid("import/gap/%d" % (next_id - 1))
-            w.lines.append(encode_line({"event_uid": stable_uid("import/gap-event/%d" % (next_id - 1)), "bug_uid": uid, "ts": GAP_TS,
-                                        "type": "tombstone", "data": {"id": next_id - 1}}))
-            w.top = next_id - 1
-            w.last_ts = max(w.last_ts or "", GAP_TS)
-        if not w.lines and not ctx.journal.exists():  # zero rows: the file /release asks for must outlive the ordered delete
-            ctx.journal.write_bytes(b"")
-    cleaner.report()
-    print("imported %d bugs, %d events; delete .workflow/bugs.md next" % (new_bugs, new_events))
-    return 0
-
-
 # ---------------------------------------------------------------- main
 
 def build_parser() -> argparse.ArgumentParser:
@@ -1682,13 +1422,12 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--dry-run", dest="dry_run", action="store_true", help="list, write nothing")
     sub.add_parser("rebuild", help="rebuild the DB from the journal")
     sub.add_parser("doctor", help="report journal problems").add_argument("--fix", action="store_true", help="renumber duplicates, repair the tail, sweep inert lines")
-    sub.add_parser("import-md", help="one-way migration from .workflow/bugs.md; the caller deletes the file")
     return p
 
 
 HANDLERS = {"add": cmd_add, "update": cmd_update, "set-status": cmd_set_status, "round": cmd_round, "extra-round": cmd_extra_round,
             "stop-rule": cmd_stop_rule, "delete": cmd_delete, "show": cmd_show, "list": cmd_list, "search": cmd_search, "sql": cmd_sql,
-            "counters": cmd_counters, "stats": cmd_stats, "purge": cmd_purge, "rebuild": cmd_rebuild, "doctor": cmd_doctor, "import-md": cmd_import_md}
+            "counters": cmd_counters, "stats": cmd_stats, "purge": cmd_purge, "rebuild": cmd_rebuild, "doctor": cmd_doctor}
 
 
 def given_root(argv) -> Path:
@@ -1734,8 +1473,6 @@ def run(argv) -> int:
     try:
         a = build_parser().parse_args(argv)
         ctx = Ctx(a.root)
-        if a.cmd != "import-md" and ctx.md.exists():
-            raise Refused(".workflow/bugs.md exists: run import-md, delete the file, then retry")
         return HANDLERS[a.cmd](ctx, a)
     except UsageError as ex:
         print("bugs: %s" % refusal_text(str(ex), argv), file=sys.stderr)

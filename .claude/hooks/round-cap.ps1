@@ -171,12 +171,11 @@ function Get-FeatureCounters([string]$slug, $ledger) {
 }
 
 # Counters of one unsettled bug from bugs.py, or @() when it is settled or unknown. Throws the cause and its fix when
-# the CLI cannot answer. No journal and no old bugs.md: no bugs yet, and Python never starts.
+# the CLI cannot answer. No journal: no bugs yet, and Python never starts.
 $script:BugsRoot = $null  # resolved once, and only for a brief that names a bug
 function Get-BugCounters([string]$id, $ledger) {
     if (-not $script:BugsRoot) { $script:BugsRoot = Get-BugsRoot $root }
-    $workflow = Join-Path $script:BugsRoot '.workflow'
-    if (-not (Test-Path -LiteralPath (Join-Path $workflow 'bugs.jsonl')) -and -not (Test-Path -LiteralPath (Join-Path $workflow 'bugs.md'))) { return @() }
+    if (-not (Test-Path -LiteralPath (Join-Path $script:BugsRoot '.workflow/bugs.jsonl'))) { return @() }
     $r = Invoke-Bugs $script:BugsRoot @('counters', $id, '--json')
     if ($r.State -eq 'NoPython') { throw "no Python 3.10+ with SQLite FTS5 found. Install it, then retry (skill bugs)." }
     if ($r.State -ne 'Ok') { throw "bugs.py counters $id failed: $($r.Err). Clear that cause, then retry (skill bugs)." }

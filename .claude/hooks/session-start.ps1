@@ -46,7 +46,6 @@ if (Test-Path -LiteralPath (Join-Path $root '.claude/skills/mem/scripts/mem.py')
 # Bugs: purge past the 90-day window, then one status line, or nothing with no journal. Python starts only for a journal.
 function Get-BugsLine([string]$Root, [bool]$SkipPurge) {
     $workflow = Join-Path $Root '.workflow'
-    if (Test-Path -LiteralPath (Join-Path $workflow 'bugs.md')) { return 'Bugs: .workflow/bugs.md is still present - run bugs.py import-md, then delete the file (skill bugs).' }
     if (-not (Test-Path -LiteralPath (Join-Path $workflow 'bugs.jsonl'))) { return $null }
     # The hook has 15 s: the mem call above takes up to 8, the XERJ probe below up to 2. A purge cut short resumes next session.
     $budget = [Math]::Min(3000, 12000 - $clock.ElapsedMilliseconds)
