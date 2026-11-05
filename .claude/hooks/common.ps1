@@ -185,6 +185,23 @@ function Find-AddedSecrets([string]$Diff) {
     return $problems
 }
 
+# Advice and observed figures stay off git (skill advisory-protocol). A labelled figure or a marker line is proof that one
+# escaped; the framework's own files define those strings, so .claude/ at the root is exempt.
+function Find-AdvisoryLeaks([string]$Diff) {
+    $problems = @()
+    foreach ($section in [regex]::Split($Diff, '(?m)^\+\+\+ b/')) {
+        $nl = $section.IndexOf("`n")
+        if ($nl -lt 0) { continue }
+        $file = $section.Substring(0, $nl).TrimEnd("`r")
+        if ($file -match '^\.claude/') { continue }
+        $added = [regex]::Replace($section.Substring($nl + 1), '(?m)^(?:[^+\n].*)?(?:\n|$)', '')
+        $added = [regex]::Replace($added, '(?m)^\+', '')
+        if ($added -match '\[measured:') { $problems += "observed figure in ${file}: a [measured: ...] label; keep it in the advisory store and cite adv:<id>" }
+        if ($added -match '(?m)^\s*<!-- advisory:(begin|end) -->\s*$') { $problems += "advisory marker in ${file}: advice stays in the advisory store" }
+    }
+    return $problems
+}
+
 # A git diff/log command's whole output as one string. git writes it to a temp file (--output): PowerShell reads
 # native output one line at a time, which alone takes seconds on a multi-megabyte scene.
 # core.quotepath=off: a non-ASCII name stays `+++ b/<name>`, not a quoted header the per-file split would miss.
@@ -879,6 +896,35 @@ function Resolve-Python([string]$Root) {
 }
 
 # Runs mem.py with the resolved Python; returns its stdout lines, or $null without Python.
+# The advisers (skill advisory-protocol): read-only, so round caps and gates never apply to them.
+$AdvisoryAgents = 'product-owner', 'game-designer', 'monetization-designer'
+$AdvisoryThreadPattern = '(?im)^[\s*_>-]*Advisory-Thread[*_]*:'
+
+# SubagentStop: the brief (first user line of the agent's transcript) and its return. The report may arrive through the
+# SubagentHandback tool instead of the closing text.
+function Read-SubagentExchange($HookInput) {
+    $brief = ''
+    $ret = [string](First $HookInput.last_assistant_message '')
+    $tp = [string]$HookInput.agent_transcript_path
+    if ($tp -and (Test-Path -LiteralPath $tp)) {
+        $lines = @(Get-Content -LiteralPath $tp -Encoding UTF8)
+        foreach ($l in $lines) {
+            try { $o = $l | ConvertFrom-Json } catch { continue }
+            if ($o.type -ne 'user') { continue }
+            $c = $o.message.content
+            $brief = if ($c -is [string]) { $c } else { (@($c) | Where-Object { $_.type -eq 'text' } | ForEach-Object { $_.text }) -join "`n" }
+            break
+        }
+        for ($i = $lines.Count - 1; $i -ge 0; $i--) {
+            if ($lines[$i] -notmatch 'SubagentHandback') { continue }
+            try { $o = $lines[$i] | ConvertFrom-Json } catch { continue }
+            $h = @($o.message.content) | Where-Object { $_.type -eq 'tool_use' -and $_.name -eq 'SubagentHandback' } | Select-Object -Last 1
+            if ($h) { $ret = [string]$h.input.message + "`n" + $ret; break }
+        }
+    }
+    return [pscustomobject]@{ Brief = $brief; Return = $ret }
+}
+
 function Invoke-Mem([string]$Root, [string[]]$MemArgs) {
     # @() because PowerShell unrolls a one-element array on return.
     $py = @(Resolve-Python $Root | Where-Object { $_ })

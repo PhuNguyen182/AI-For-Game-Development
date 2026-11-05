@@ -14,6 +14,7 @@ user-invocable: false
 
 ## Scripts
 - **[mem.py](scripts/mem.py):** run `<python> -I "${CLAUDE_SKILL_DIR}/scripts/mem.py" <cmd>` → the commands under Query and Write.
+- **[adv.py](scripts/adv.py):** run `<python> -I "${CLAUDE_SKILL_DIR}/scripts/adv.py" --root <project root> <cmd>` → the commands under Advice.
 
 ## Layers
 | Layer | Id | Path, from the id | Written by |
@@ -23,6 +24,16 @@ user-invocable: false
 | K knowledge | `k:<path>#<heading>` | `<path>` at the hit's `:<line>`; docs matched by `.memory/sources.txt` | nobody new — one fact, one home |
 
 - **Note types:** `feedback` (how the main GD wants work done) · `lesson` (error prevention) · `project` (facts not in code or docs) · `reference` (external pointers).
+
+## Advice — off git, in SQLite
+- **Store:** `.memory/advisory/advisory.db`, per machine and git-ignored; `adv.py` refuses to write unless the path is ignored. Rules in `advisory-protocol`.
+- **Written by:** hook `advisory-capture.ps1`, verbatim, on each adviser's stop. Never by an LLM, and not indexed by `mem q`.
+- **Ids:** `adv:<n>` is a return, `adv:<n>.<k>` its finding.
+- **Query:** `q "<words>" [--agent A] [-n 10]` · `get <id>` · `list [--agent] [--workflow] [--thread] [--status] [-n 30]` · `rounds <thread>`.
+- **Decide:** `decide <id> accepted|rejected|deferred --by 'main GD' --note N`; `--by` must be exactly `main GD`.
+- **Mark:** `useful <id> yes|no`.
+- **Backup:** `export <path>`; a path inside the repo must be git-ignored. Nothing else restores a lost store.
+- **Check:** `lint`: integrity, secret shapes, ignore rule.
 
 ## Query
 | Need | Command |

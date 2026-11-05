@@ -7,7 +7,7 @@
 #             - a brief with "Verify: BUG-####" returns "Repro: BUG-#### reproduces".
 #             Charged only to the brief's "Feature:" line, else its "Bug:" line, else its "Target:" line, else the
 #             session. Failed returns are attempts, not rounds: never counted here.
-#   dispatch  PreToolUse Agent / Workflow: blocked when the brief's (or the workflow args') feature, bug or target
+#   dispatch  PreToolUse Agent / Workflow: an adviser always passes; anything else is blocked when the brief's (or the workflow args') feature, bug or target
 #             is past a cap. A brief without marker lines falls back to every feature path and bug id it mentions.
 #             A brief naming a bug fails closed: no Python or any bugs.py failure blocks the dispatch.
 #             A bug ID is one bug whatever its case or padding: bug-0027, BUG-27 and BUG-00027 all mean BUG-0027.
@@ -28,6 +28,8 @@ $Gates = 'code-reviewer', 'security-reviewer', 'qa-lead'
 
 $in = Read-HookInput
 if (-not $in) { exit 0 }
+# Advisers read and advise: a past-cap feature or a broken ledger must not stop a note (skill advisory-protocol). Before the ledger is read.
+if ($Mode -eq 'dispatch' -and [string]$in.tool_name -ne 'Workflow' -and $AdvisoryAgents -contains [string]$in.tool_input.subagent_type) { exit 0 }
 $root = Get-ProjectRoot $in
 $ledgerPath = Join-Path $root '.workflow/rounds.json'
 $ledgerDir = Split-Path $ledgerPath
@@ -220,26 +222,9 @@ function Format([string]$what, $c) { return "${what}: $($c.Name) $($c.Used)/$($c
 if ($Mode -eq 'count') {
     $agent = [string]$in.agent_type
     $agentId = [string](First $in.agent_id ([guid]::NewGuid().ToString('N')))
-    $brief = ''
-    $ret = [string](First $in.last_assistant_message '')
-    $tp = [string]$in.agent_transcript_path
-    if ($tp -and (Test-Path -LiteralPath $tp)) {
-        $lines = @(Get-Content -LiteralPath $tp -Encoding UTF8)
-        foreach ($l in $lines) {
-            try { $o = $l | ConvertFrom-Json } catch { continue }
-            if ($o.type -ne 'user') { continue }
-            $c = $o.message.content
-            $brief = if ($c -is [string]) { $c } else { (@($c) | Where-Object { $_.type -eq 'text' } | ForEach-Object { $_.text }) -join "`n" }
-            break
-        }
-        # The report may arrive through the SubagentHandback tool instead of the closing text.
-        for ($i = $lines.Count - 1; $i -ge 0; $i--) {
-            if ($lines[$i] -notmatch 'SubagentHandback') { continue }
-            try { $o = $lines[$i] | ConvertFrom-Json } catch { continue }
-            $h = @($o.message.content) | Where-Object { $_.type -eq 'tool_use' -and $_.name -eq 'SubagentHandback' } | Select-Object -Last 1
-            if ($h) { $ret = [string]$h.input.message + "`n" + $ret; break }
-        }
-    }
+    $exchange = Read-SubagentExchange $in
+    $brief = $exchange.Brief
+    $ret = $exchange.Return
     $v = '(?im)^[\s*_>-]*Verdict[*_]*:[*_\s]*'
     # Only the marker lines /review writes count; a slug or skill name holding "audit" or "round 2" must not.
     # Mode: workflow - review-gate's gates: the main session records those rounds from the verified verdicts.

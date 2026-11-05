@@ -62,12 +62,16 @@ if (-not $root) { exit 0 }  # an existing folder outside any repository: the com
 $problems = @()
 
 # 1. Secrets in added lines, per file.
-$problems += @(Find-AddedSecrets (Get-GitDiffText $root @('diff', '--cached', '--text', '--unified=0', '--no-color')))
+$stagedDiff = Get-GitDiffText $root @('diff', '--cached', '--text', '--unified=0', '--no-color')
+$problems += @(Find-AddedSecrets $stagedDiff)
+# 1b. Advice and observed figures stay off git (skill advisory-protocol).
+$problems += @(Find-AdvisoryLeaks $stagedDiff)
 
 # -z: a path git would quote (non-ASCII, a quote character) is read as itself.
 $changes = @(Get-GitRawChanges $root @('diff', '--cached'))
 $staged = @{}
 foreach ($c in $changes) { $staged[$c.Path] = $c.Status }
+foreach ($p in $staged.Keys) { if ($p -match '^\.memory/advisory/') { $problems += "advisory store file staged: $p" } }
 
 # 2. Files that never enter git by path or content (keystore, .env, service-account JSON), and raw evidence dumps.
 $problems += @(Find-ForbiddenFiles $root $changes)

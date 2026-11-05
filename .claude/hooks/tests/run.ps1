@@ -239,6 +239,15 @@ try {
     Check 'pre-commit allows a project folder named Library under Assets' (Invoke-Hook 'pre-commit.ps1' $secCommit).Code 0
     git -C $sec rm -q --cached -- Assets/Library/Notes.txt Assets/Library/Notes.txt.meta 2>&1 | Out-Null
     Check 'pre-commit scans a .claude/hooks folder deeper in the tree' (StagedCode 'Assets/X/.claude/hooks/key.txt' "k = `"$fakeKey`"") 2
+    # Advice and observed figures stay off git (skill advisory-protocol).
+    Check 'pre-commit blocks a measured label' (StagedCode 'docs/plan.md' 'D7 11% [measured: r.csv, 2026-10, 1.0]') 2
+    Check 'pre-commit blocks a measured label in a trace' (StagedCode '.memory/traces/2026/10/t.jsonl' '{"text":"D7 11% [measured: r.csv, 2026-10, 1.0]"}') 2
+    Check 'pre-commit blocks an advisory marker line' (StagedCode 'docs/plan.md' "x`n<!-- advisory:begin -->`ny") 2
+    Check 'pre-commit allows a marker quoted in prose' (StagedCode 'docs/plan.md' 'Use `<!-- advisory:begin -->` to mark text.') 0
+    Check 'pre-commit allows the framework to define the label' (StagedCode '.claude/skills/x/SKILL.md' 'Form: [measured: <file>, <range>, <build>]') 0
+    Check 'pre-commit checks a .claude folder deeper in the tree' (StagedCode 'Game/.claude/x.md' '[measured: r.csv]') 2
+    Check 'pre-commit blocks a staged advisory store file' (StagedCode '.memory/advisory/advisory.db' 'x') 2
+    Check 'pre-commit allows a target with a design value' (StagedCode 'docs/monetization-plan.md' 'Rollback when D7 falls below 10%. Price 4.99. See adv:12.3') 0
     Set-Content (Join-Path $sec 'release.keystore') 'x'
     git -C $sec add -f release.keystore 2>&1 | Out-Null
     foreach ($form in @('"C:/Program Files/Git/cmd/git.exe" commit -m x', 'git.exe commit -m x', '& "/c/Program Files/Git/cmd/git" commit -m x')) {
@@ -720,6 +729,18 @@ try {
     Feature 'review 9/3, QA 0/2, rework 9/6' '' 'Closed'
     Check 'round-cap: a closed feature is not checked' (Dispatch $brief) 0
     Check 'round-cap: a brief naming no state passes' (Dispatch 'Explain the HUD') 0
+    # Advisers read and advise: nothing here blocks them, and every other agent keeps its cap.
+    function DispatchAs([string]$Agent, [string]$Brief) { (Invoke-Hook 'round-cap.ps1' @{ tool_name = 'Agent'; tool_input = @{ prompt = $Brief; subagent_type = $Agent } } @('-Mode', 'dispatch')).Code }
+    Feature 'review 4/3, QA 0/2, rework 4/6'
+    foreach ($a in 'product-owner', 'game-designer', 'monetization-designer') { Check "round-cap: $a passes on a past-cap feature" (DispatchAs $a $brief) 0 }
+    Check 'round-cap: code-reviewer is still blocked on a past-cap feature' (DispatchAs 'code-reviewer' $brief) 2
+    Check 'round-cap: critic is still blocked on a past-cap feature' (DispatchAs 'critic' $brief) 2
+    $advCorrupt = Join-Path (Split-Path (Split-Path $feat)) 'rounds.corrupt-adviser-test.json'
+    Set-Content $advCorrupt '{'
+    Feature 'review 1/3, QA 0/2, rework 1/6'
+    Check 'round-cap: an adviser passes with a corrupt ledger file' (DispatchAs 'game-designer' 'Read the loop.') 0
+    Check 'round-cap: code-reviewer is still blocked by a corrupt ledger file' (DispatchAs 'code-reviewer' 'Read the loop.') 2
+    Remove-Item $advCorrupt
     # Bugs come from real bugs.py calls: the CLI owns the journal format. A copy of it, beside the mem.py copy it needs.
     $bugsDir = Join-Path $proj '.claude/skills/bugs/scripts'
     New-Item -ItemType Directory -Force $bugsDir | Out-Null
@@ -904,6 +925,36 @@ exit $LASTEXITCODE
         Set-Content $t $lines -Encoding UTF8
         (Invoke-Hook 'round-cap.ps1' @{ session_id = 'sess-1'; agent_type = $Agent; agent_id = $Id; agent_transcript_path = $t; last_assistant_message = $last } @('-Mode', 'count')).Code
     }
+    # advisory-capture: real adv.py, real git ignore rule. Fails open for the subagent, never blocks.
+    $advRoot = Join-Path $tmp 'advproj'
+    New-Item -ItemType Directory -Force (Join-Path $advRoot '.claude/skills/mem/scripts') | Out-Null
+    New-Item -ItemType Directory -Force (Join-Path $advRoot '.claude/hooks') | Out-Null
+    Copy-Item (Join-Path $hooks '../skills/mem/scripts/adv.py') (Join-Path $advRoot '.claude/skills/mem/scripts')
+    Copy-Item (Join-Path $hooks 'secret-patterns.txt') (Join-Path $advRoot '.claude/hooks')
+    git init -q $advRoot 2>&1 | Out-Null
+    Set-Content (Join-Path $advRoot '.gitignore') '.memory/advisory/'
+    function AdvStop([string]$Agent, [string]$Brief, [string]$Return, [string]$Id) {
+        $t = Join-Path $tmp "advagent-$Id.jsonl"
+        Set-Content $t (@{ type = 'user'; message = @{ role = 'user'; content = $Brief } } | ConvertTo-Json -Depth 5 -Compress) -Encoding UTF8
+        $savedProjectDir = $env:CLAUDE_PROJECT_DIR  # this section's round-cap tests point it at $proj, and it wins over cwd
+        $env:CLAUDE_PROJECT_DIR = $advRoot
+        try { (Invoke-Hook 'advisory-capture.ps1' @{ session_id = 'sess-adv'; agent_type = $Agent; agent_id = $Id; agent_transcript_path = $t; last_assistant_message = $Return }).Code }
+        finally { $env:CLAUDE_PROJECT_DIR = $savedProjectDir }
+    }
+    function AdvCli([string[]]$CliArgs) {
+        $py = @(Resolve-Python $advRoot); $rest = @($py | Select-Object -Skip 1)
+        Join-Output (& $py[0] @rest -I (Join-Path $advRoot '.claude/skills/mem/scripts/adv.py') --root $advRoot @CliArgs 2>&1)
+    }
+    $advReturn = "Status: Done`nAdvisory-Return: v1`n`n### F1 [High] Interstitial breaks the first session`nEvidence: D1 31% [measured: r.csv, 2026-10, 1.4]"
+    Check 'advisory-capture: an adviser return never blocks' (AdvStop 'product-owner' "Workflow: /product-review`nAdvisory-Thread: m2" $advReturn 'adv1') 0
+    Check 'advisory-capture: the return is stored with its thread' ((AdvCli @('list', '--thread', 'm2')) -match 'adv:1\.1 .*product-owner m2 \[High\]') $true
+    Check 'advisory-capture: the return is searchable' ((AdvCli @('q', 'interstitial')) -match 'adv:1\.1') $true
+    Check 'advisory-capture: critic with a thread marker is stored' ((AdvStop 'critic' 'Advisory-Thread: m3' "Advisory-Return: v1`nAttack holds." 'adv2'), ((AdvCli @('list', '--thread', 'm3')) -match 'critic m3') -join ' ') '0 True'
+    Check 'advisory-capture: another agent is not stored' ((AdvStop 'ui-engineer' 'Fix the HUD' 'Done' 'adv3'), ((AdvCli @('q', 'HUD')) -eq '') -join ' ') '0 True'
+    Set-Content (Join-Path $advRoot '.gitignore') ''
+    Check 'advisory-capture: not ignored still never blocks' (AdvStop 'game-designer' 'Advisory-Thread: m4' $advReturn 'adv4') 0
+    Set-Content (Join-Path $advRoot '.gitignore') '.memory/advisory/'
+    Check 'advisory-capture: ... and stores nothing' ((AdvCli @('list', '--thread', 'm4')) -eq '') $true
     # Where-Object: @($null).Count is 1, which read a missing counter as one event.
     function Count([string]$Key, [string]$Counter) { $o = Get-Content $ledger -Raw | ConvertFrom-Json; @($o.$Key.$Counter | Where-Object { $_ }).Count }
     Feature 'review 0/3, QA 0/2, rework 0/6'
