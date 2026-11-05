@@ -8,7 +8,7 @@ argument-hint: "<GDD path or text>"
 
 ## 1. Read
 - **Sources:** the GDD and `CLAUDE.md` (profile, platforms, multiplayer).
-- **Unclear basics:** unclear core loop, target session length or monetisation → one `AskUserQuestion` (≤4 questions).
+- **Unclear basics:** unclear core loop, target session length or monetisation → one `AskUserQuestion` (≤4 questions), offering `/design` or `/monet` to settle it.
 
 ## 2. Milestones
 - **Default order:** **Prototype** → **Vertical slice** → **Content** → **Soft launch** → **Launch**.
@@ -20,6 +20,11 @@ argument-hint: "<GDD path or text>"
 ## 3. Features — `technical-architect` (Size mode), one brief for the whole list
 - **Per feature:** name · milestone · size S/M/L · risk flag · depends on · first agent.
 - **Order:** core systems first in each milestone.
+
+## 3b. Order and bar — `product-owner`
+- **Brief:** the feature list, GDD, `Workflow: /plan-game`, `Advisory-Thread: plan-<milestone>`.
+- **Returns:** a proposed order within each milestone, and each milestone's "finished" bar (`product-quality-bar`).
+- **Effect:** advice only; core systems still come first, and the main GD approves at step 5.
 
 ## 4. Write `.workflow/backlog.md`
 ```

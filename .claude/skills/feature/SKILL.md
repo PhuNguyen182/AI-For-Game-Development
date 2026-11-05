@@ -43,6 +43,7 @@ argument-hint: "<the request, in the main GD's words>"
 
 ## 2. CP1 — runs per `routing.md` → Profile defaults → CP1 + `critic`
 - **No open direction question:** the main GD already set it → `CP1: n/a (direction given: …)` under `Main GD decisions`, go to step 3.
+- **Game-design question:** `CP: CP1 — next step: /design <q>`, run `/design`, then resume with its locked section as the direction. Architecture questions stay below.
 
 1. **Options:** `researcher` (Options) on the open design/architecture question.
    - **Foundation question:** a foundation question (netcode, backend, ads, analytics) → `/decide` here, the main GD's design pick as its constraint.
@@ -53,11 +54,12 @@ argument-hint: "<the request, in the main GD's words>"
 - **Spec form:** profile decides full spec vs acceptance criteria only.
 - **Long spec:** long → `.workflow/features/<slug>.spec.md`.
 - **`Open questions:`:** routed by kind:
-  - **Design:** → main GD.
+  - **Design:** → main GD, with `/design` offered as an option when CP1 did not run for this size and profile.
   - **Architecture:** → the architect settles it.
   - **Technology:** → `/decide` **only** when hard to reverse, paid, or a foundation (netcode, backend, ads, analytics).
   - **Cheap reversible technology:** a cheap reversible choice (UI system, local save format, a tween library) is the architect's, using what the project already has.
 - **`/decide` mid-spec:** `CP: CP2 — next step: /decide <q>`; afterwards re-dispatch the architect with the decision and its previous return.
+- **Adviser notes:** before the CP2 question, per `routing.md` → Advisers, in one message, each with `Workflow: /feature` and `Advisory-Thread: <slug>-cp2`: each reads the spec alone. Show them between the advisory markers; they block nothing, and a note the main GD declines goes once under `Main GD decisions`.
 - **CP2 `AskUserQuestion`:** approve / revise (what) / rethink direction (back to step 2 when it runs for this size and profile, else re-size at step 1).
 - **Build mode question:** `Lanes:` not `serial only` → second question in the same call: Build mode serial (Khuyến nghị) / lanes, stating the cost:
   - **Compile cost:** lane A loses the per-agent compile check.
@@ -142,6 +144,7 @@ argument-hint: "<the request, in the main GD's words>"
 - **Defects:** each defect → `/fix` with the bug id.
 
 ## 8. CP4 — `AskUserQuestion`
+- **Adviser notes:** as at CP2, with `Advisory-Thread: <slug>-cp4`: each reads what was built against the spec.
 - **Show:**
   - **Criteria:** each acceptance criterion → test id · mode · last result, or the gap (no passing test, `manual`).
   - **Docs:** `Docs owed` → written / missing.
@@ -153,6 +156,7 @@ argument-hint: "<the request, in the main GD's words>"
   - **Closure commit:** the closure commit (`DEBT.md`, the feature file, `backlog.md`, `.workflow/bugs.jsonl`; the `core.md` exception).
   - **Merge question:** second question in the same CP4 call: merge `feature/<slug>` into `Base:` now via `git-expert` (Khuyến nghị) / keep the branch.
   - **Push:** never push.
+  - **Milestone exit:** this was the milestone's last open row → offer `/product-review` once, before the next item.
   - **Next item:** then offer the next backlog item — the first `todo` whose dependencies are `done` (`/plan-game`).
 
 ## Change request (open feature; a closed feature takes new work instead)

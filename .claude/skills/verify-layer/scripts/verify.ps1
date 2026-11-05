@@ -57,6 +57,8 @@ $HookContracts = @{
     '.claude/skills/qa-standards/references/bug-lifecycle.md' = @('Settled: Complete, Won''t fix, Accepted, As designed, Duplicate')
     '.claude/skills/qa-standards/SKILL.md'                  = @('**Critical**', '**High**', '**Medium**')
     '.claude/rules/routing.md'                              = @('extra round')
+    # Strings adv.py, advisory-capture.ps1, mem.py and pre-commit.ps1 read.
+    '.claude/skills/advisory-protocol/SKILL.md'             = @('Advisory-Return: v1', '### F<n>', '`Advisory-Thread:`', '`Data-Period:`', '<!-- advisory:begin -->', '<!-- advisory:end -->', '[measured:')
     # Marker literals the workflows emit and round-cap.ps1 reads.
     '.claude/workflows/review-gate.js'                      = @("lines.push('Mode: workflow')", 'lines.push(`Round: ${round}`)', 'lines.push(`Tree: ${scope.tree}`)')
     '.claude/workflows/project-audit.js'                    = @('const AUDIT = ''Mode: audit\n''', '`${AUDIT}Audit ${at(m.path)}', '`${AUDIT}Scan the repository')

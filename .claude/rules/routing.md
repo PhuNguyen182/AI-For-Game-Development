@@ -12,6 +12,9 @@
 | Tests or evidence on existing work | `/qa` |
 | Technology, vendor or "what exists for X" | `/decide` |
 | New project · GDD → backlog · build/release/store | `/new-project` · `/plan-game` · `/release` |
+| Mechanic, loop, progression, difficulty or FTUE, direction undecided | `/design` |
+| Ads placement, IAP, pricing or economy, direction undecided; revenue problem | `/monet` |
+| Product health, completeness, milestone exit | `/product-review` |
 | Change to an open feature | `/feature` → change request (before CP2: re-spec, no counter) |
 | Change to a closed feature | New work: size it below (a cosmetic tweak is S) |
 | Anything else | Size it ↓ |
@@ -45,8 +48,12 @@ Escalate the size the moment the work turns out bigger; never shrink it to skip 
 ## Checkpoints — main GD approves via `AskUserQuestion`
 CP1 direction (per Profile defaults) · CP2 spec or acceptance criteria (M, L) · CP3 built vs spec (L) · CP4 closure (M, L).
 
+## Advisers — offered notes, never gates
+- `product-owner`, `game-designer`, `monetization-designer` read and advise; only the main GD decides. Their notes consume no attempt or round and block nothing. Rules: `advisory-protocol`.
+- `/feature` CP2 and CP4 (M, L): `product-owner` always; `game-designer` when player-facing; `monetization-designer` when economy, ads or IAP are touched. S work and `/fix`: none.
+
 ## Dispatch
-- Brief = goal, acceptance criteria, size + flag, profile, feature file path or bug id, files in scope, earlier agents' outputs, `mem q` hits that bear on it (id + path). Agents see only the brief and the disk.
+- Brief = goal, acceptance criteria, size + flag, profile, feature file path or bug id, files in scope, earlier agents' outputs, `mem q` hits that bear on it (id + path). Agents see only the brief and the disk; an adviser follow-up (`advisory-protocol`) also keeps its own earlier context.
 - One Editor-holding agent at a time. Read-only agents may run in parallel, and so may lane A agents (worktree, no Editor; `/feature` step 4). Never end your turn while a dispatch is still running — a headless session is not woken by it, and the agent dies holding the Editor. Lock refused (another session holds the Editor) → tell the main GD who holds it and end the turn; no retry loop.
 - An agent's `Next:` is a recommendation; you act on it. A technology choice (`Next: cto`) goes through `/decide`, never a bare `cto` dispatch.
 - `git-expert` runs on Sonnet; dispatch it with `model: opus` for forensics, recovery or a radius 3 operation.

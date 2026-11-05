@@ -1,6 +1,6 @@
 # AI-For-Game-Development
 
-A Claude Code setup for making Unity games. You direct as the Game Designer; agents write the code, review it and test it.
+A Claude Code setup for making Unity games. You direct as the main GD: advisers challenge your design, product and monetisation choices, and agents write the code, review it and test it.
 
 ## Requirements
 
@@ -92,6 +92,9 @@ The first session creates `.workflow/framework-backlog.md` from `.claude/templat
 | You want | Type |
 |---|---|
 | Plan the game from a GDD | `/plan-game <gdd>` |
+| Settle an undecided design | `/design <problem>` |
+| Work on ads, IAP, pricing, economy or revenue | `/monet <question>` |
+| Check product health at a milestone | `/product-review [scope]` |
 | Build a feature | `/feature <what you want>` |
 | Fix a bug | `/fix <bug>` |
 | Review code | `/review <path>` |
@@ -102,6 +105,8 @@ The first session creates `.workflow/framework-backlog.md` from `.claude/templat
 For anything else, just ask in plain words. It does not have to be in English.
 
 The framework sizes each request and runs the right agents. It asks before it makes a decision that is yours, and it never commits or pushes unless you ask. Progress is saved in `.workflow/`, so a new session picks up where the last one stopped.
+
+Advice from `product-owner`, `game-designer` and `monetization-designer` is kept in a local SQLite store, `.memory/advisory/`, and never enters git. It is not shared between machines: back it up with `adv.py export` (skill `mem`). Those three advise and never block; every decision stays yours.
 
 ## Output style: Game Engineer
 

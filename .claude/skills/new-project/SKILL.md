@@ -45,7 +45,7 @@ Assets/_Project/Scripts/Shared/Server/          _Project.Scripts.Shared.Server  
 - **Raw-dump globs:** keep the framework `.gitignore`'s `.workflow/evidence/**` raw-dump globs (`*.ips`, `*.crash`, `*.txt`).
 - **Both glob sets:** the signing and raw-dump globs sit outside the `Framework repo only` block and must stay in every game project.
 - **Memory and search:** per skills `mem`, `code-search`:
-  - **`.gitignore` additions:** `.gitignore` += `.memory/.index/`, `.memory/.state/`.
+  - **`.gitignore` additions:** `.gitignore` += `.memory/.index/`, `.memory/.state/`, `.memory/advisory/` (advice and data packs, skill `advisory-protocol`).
   - **`.gitattributes` addition:** `.gitattributes` += `.memory/traces/** text eol=lf linguist-generated` (never `-diff`: the pre-commit secret scan reads diffs).
   - **Copied files:** copy `.xerjignore` and `.memory/sources.txt` from the framework root.
   - **Notes:** `.memory/notes/` starts empty.
