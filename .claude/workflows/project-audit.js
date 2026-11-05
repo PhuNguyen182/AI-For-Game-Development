@@ -1,34 +1,72 @@
 export const meta = {
   name: 'project-audit',
-  description: 'Read-only audit of a Unity project: per-module risk and Core-boundary review plus one secret scan, verified and combined',
-  whenToUse: 'Adopting an existing project, before a release, or when the GD asks for a health check; never edits',
+  description:
+    'Read-only audit of a Unity project: per-module risk and Core-boundary review plus one secret scan, verified and combined',
+  whenToUse:
+    'Adopting an existing project, before a release, or when the GD asks for a health check; never edits',
   phases: [
     { title: 'Discover', detail: 'list code modules by asmdef' },
-    { title: 'Audit', detail: 'per module: perf/memory/crash risk and Core boundary; whole repo: secrets' },
-    { title: 'Verify', detail: 'one skeptic over module findings; secret-scan findings pass through' },
+    {
+      title: 'Audit',
+      detail: 'per module: perf/memory/crash risk and Core boundary; whole repo: secrets',
+    },
+    {
+      title: 'Verify',
+      detail: 'one skeptic over module findings; secret-scan findings pass through',
+    },
   ],
 }
 
-// args: { root?: '<project path>', modules?: ['Assets/_Project/Scripts/Combat', ...] } — omit modules to discover. At most MAX are audited per run.
-const MAX = 4
-const root = (args && args.root) || '.'
-const at = p => (root === '.' ? p : `${root}/${p}`)
+/*
+ * args: {
+ *   root?: '<project path>',
+ *   modules?: ['Assets/_Project/Scripts/Combat', ...], // omit to discover
+ * }
+ * At most MAX_MODULES are audited per run.
+ */
 
-const MODULES = {
+// Configuration
+
+const MAX_MODULES = 4
+const SECRETS_SCOPE = 'secrets'
+const SEVERITY_ORDER = { Critical: 0, High: 1, Medium: 2, Low: 3, Info: 4 }
+
+// Every audit brief opens with this marker line so round-cap.ps1 never counts an audit
+// as a failed review round.
+const AUDIT = 'Mode: audit\n'
+
+// A skeptic's refutation counts only when its reason cites a file:line.
+const CITATION = /[\w./\\-]+:\d+/
+
+const root = args?.root || '.'
+
+// Run state: coverage gaps and the reasons this run counts as incomplete.
+
+const notCovered = []
+const reasons = []
+
+// Output schemas
+
+const MODULES_SCHEMA = {
   type: 'object',
   properties: {
     modules: {
       type: 'array',
       items: {
         type: 'object',
-        properties: { path: { type: 'string' }, asmdef: { type: 'string' }, csFiles: { type: 'integer' } },
+        properties: {
+          path: { type: 'string' },
+          asmdef: { type: 'string' },
+          csFiles: { type: 'integer' },
+        },
         required: ['path', 'asmdef', 'csFiles'],
       },
     },
   },
   required: ['modules'],
 }
-const FINDINGS = {
+
+const FINDINGS_SCHEMA = {
   type: 'object',
   properties: {
     findings: {
@@ -50,14 +88,19 @@ const FINDINGS = {
   },
   required: ['findings', 'notCovered'],
 }
-const VERDICTS = {
+
+const VERDICTS_SCHEMA = {
   type: 'object',
   properties: {
     results: {
       type: 'array',
       items: {
         type: 'object',
-        properties: { index: { type: 'integer' }, real: { type: 'boolean' }, reason: { type: 'string' } },
+        properties: {
+          index: { type: 'integer' },
+          real: { type: 'boolean' },
+          reason: { type: 'string' },
+        },
         required: ['index', 'real', 'reason'],
       },
     },
@@ -65,69 +108,162 @@ const VERDICTS = {
   required: ['results'],
 }
 
-phase('Discover')
-const notCovered = []
-const reasons = []
-let modules = (args && args.modules) ? args.modules.map(p => ({ path: p, asmdef: '?', csFiles: 0 })) : null
-if (!modules) {
-  const found = await agent(
-    `List the code modules of the Unity project at ${root}: every folder under Assets/ (excluding Plugins, ThirdParty, ` +
-    'Packages and Library) that holds an .asmdef, with its .cs file count. Sort engine-free assemblies (noEngineReferences: true) first, then by .cs count descending. Read-only.',
-    { label: 'discover', schema: MODULES, model: 'haiku', effort: 'low' },
+// Helpers
+
+function at(path) {
+  return root === '.' ? path : `${root}/${path}`
+}
+
+function withScope(scope) {
+  return result => result && { scope, ...result }
+}
+
+function markUnverified(finding) {
+  return { ...finding, unverified: true }
+}
+
+function sortBySeverity(findings) {
+  return [...findings].sort((a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity])
+}
+
+// A finding is dropped only by an explicit real=false whose reason cites a file:line;
+// unanswered indexes stay, unverified. Returns null for a dropped finding.
+function judgeFinding(finding, verdict) {
+  if (!verdict) {
+    return markUnverified(finding)
+  }
+  if (verdict.real !== false) {
+    return finding
+  }
+  if (CITATION.test(verdict.reason || '')) {
+    return null
+  }
+  return { ...markUnverified(finding), skeptic: verdict.reason }
+}
+
+// Prompts
+
+function discoverPrompt() {
+  return (
+    `List the code modules of the Unity project at ${root}: every folder under Assets/ ` +
+    '(excluding Plugins, ThirdParty, Packages and Library) that holds an .asmdef, ' +
+    'with its .cs file count. Sort engine-free assemblies (noEngineReferences: true) first, ' +
+    'then by .cs count descending. Read-only.'
   )
+}
+
+function moduleAuditPrompt(m) {
+  return (
+    `${AUDIT}Audit ${at(m.path)} (read-only). Lenses: (1) runtime perf, memory and crash/ANR risk ` +
+    'in hot paths — the review-code-risks lens; ' +
+    '(2) the Shared Core / Client boundary — skill shared-core-boundary-audit. ' +
+    'Only findings confirmed in the file, each with path:line and the concrete fix.'
+  )
+}
+
+function secretScanPrompt() {
+  return (
+    `${AUDIT}Scan the repository at ${root} for leaked secrets and Unity supply-chain risk ` +
+    'with skill secret-and-supply-chain-scan. ' +
+    'Scan only files git can see (`git ls-files -co --exclude-standard`); ' +
+    'never open Temp/, Library/, Logs/ or UserSettings/ — Editor caches. ' +
+    'Never flag allowlisted public ids. Read-only.'
+  )
+}
+
+function skepticPrompt(findings) {
+  const list = findings
+    .map((f, i) => `${i}. [${f.severity}] ${f.file}:${f.line || '?'} — ${f.issue}`)
+    .join('\n')
+
+  return (
+    'You are a skeptic. For each finding, open the cited file and try to REFUTE it: ' +
+    'wrong line, handled elsewhere, cold path, allowlisted public id. ' +
+    'Default to real=true unless you can cite the file:line that disproves it; ' +
+    `when real=false, reason must cite that path:line. Answer every index.\n${list}`
+  )
+}
+
+// Agents
+
+async function discoverModules() {
+  const found = await agent(discoverPrompt(), {
+    label: 'discover',
+    schema: MODULES_SCHEMA,
+    model: 'haiku',
+    effort: 'low',
+  })
+
   if (!found) {
     notCovered.push('discover: agent did not return — no module was audited')
     reasons.push('discover: agent did not return')
-  } else if (found.modules.length === 0) {
-    notCovered.push('modules: discover found no .asmdef module — code outside an asmdef was not audited')
+    return []
   }
-  modules = (found && found.modules) || []
-}
-if (modules.length > MAX) {
-  const cut = modules.slice(MAX)
-  log(`Auditing ${MAX} of ${modules.length} modules; not covered: ${cut.map(m => m.path).join(', ')}. Pass args.modules to choose.`)
-  cut.forEach(m => notCovered.push(`${m.path}: not audited — over the per-run cap of ${MAX}; pass args.modules to choose`))
-  modules = modules.slice(0, MAX)
+  if (found.modules.length === 0) {
+    notCovered.push(
+      'modules: discover found no .asmdef module — code outside an asmdef was not audited',
+    )
+  }
+  return found.modules
 }
 
-// Every audit brief opens with this marker line so round-cap.ps1 never counts an audit as a failed review round.
-const AUDIT = 'Mode: audit\n'
-const audits = await parallel([
-  // Sonnet below code-reviewer's Opus default: one agent per module fans out wide, and an audit is not a gate (routing.md → Dispatch).
-  ...modules.map(m => () => agent(
-    `${AUDIT}Audit ${at(m.path)} (read-only). Lenses: (1) runtime perf, memory and crash/ANR risk in hot paths — the ` +
-    `review-code-risks lens; (2) the Shared Core / Client boundary — skill shared-core-boundary-audit. ` +
-    `Only findings confirmed in the file, each with path:line and the concrete fix.`,
-    { label: `audit:${m.path}`, phase: 'Audit', agentType: 'code-reviewer', model: 'sonnet', schema: FINDINGS },
-  ).then(r => r && { scope: m.path, ...r })),
-  () => agent(
-    `${AUDIT}Scan the repository at ${root} for leaked secrets and Unity supply-chain risk with skill secret-and-supply-chain-scan. ` +
-    'Scan only files git can see (`git ls-files -co --exclude-standard`); never open Temp/, Library/, Logs/ or UserSettings/ — Editor caches. ' +
-    'Never flag allowlisted public ids. Read-only.',
-    { label: 'audit:secrets', phase: 'Audit', agentType: 'security-reviewer', schema: FINDINGS },
-  ).then(r => r && { scope: 'secrets', ...r }),
-])
+function auditModule(m) {
+  return agent(moduleAuditPrompt(m), {
+    label: `audit:${m.path}`,
+    phase: 'Audit',
+    agentType: 'code-reviewer',
+    // Sonnet below code-reviewer's Opus default: one agent per module fans out wide,
+    // and an audit is not a gate (routing.md → Dispatch).
+    model: 'sonnet',
+    schema: FINDINGS_SCHEMA,
+  }).then(withScope(m.path))
+}
 
-const scopes = [...modules.map(m => m.path), 'secrets']
-scopes.forEach((s, i) => {
-  if (!audits[i]) {
-    notCovered.push(`${s}: agent did not return`)
-    reasons.push(`${s}: agent did not return`)
+function auditSecrets() {
+  return agent(secretScanPrompt(), {
+    label: 'audit:secrets',
+    phase: 'Audit',
+    agentType: 'security-reviewer',
+    schema: FINDINGS_SCHEMA,
+  }).then(withScope(SECRETS_SCOPE))
+}
+
+function capModules(candidates) {
+  if (candidates.length <= MAX_MODULES) {
+    return candidates
   }
-})
-const done = audits.filter(Boolean)
-done.forEach(r => notCovered.push(`${r.scope}: ${r.notCovered}`))
-const order = { Critical: 0, High: 1, Medium: 2, Low: 3, Info: 4 }
-const sort = list => list.sort((a, b) => order[a.severity] - order[b.severity])
-const all = done.flatMap(r => r.findings.map(f => ({ scope: r.scope, ...f })))
-// Secret-scan findings never go to the skeptic: they pass through as reported.
-const secrets = all.filter(f => f.scope === 'secrets')
-const sent = all.filter(f => f.scope !== 'secrets')
-const result = (findings, refuted, unverified) => {
-  if (reasons.length) log(`Incomplete: ${reasons.join('; ')}`)
+
+  const skipped = candidates.slice(MAX_MODULES)
+  const skippedPaths = skipped.map(m => m.path).join(', ')
+  log(
+    `Auditing ${MAX_MODULES} of ${candidates.length} modules; not covered: ${skippedPaths}. ` +
+      'Pass args.modules to choose.',
+  )
+  skipped.forEach(m => {
+    notCovered.push(
+      `${m.path}: not audited — over the per-run cap of ${MAX_MODULES}; ` +
+        'pass args.modules to choose',
+    )
+  })
+  return candidates.slice(0, MAX_MODULES)
+}
+
+// Discover
+
+phase('Discover')
+
+const candidates = args?.modules
+  ? args.modules.map(path => ({ path, asmdef: '?', csFiles: 0 }))
+  : await discoverModules()
+const modules = capModules(candidates)
+
+function buildResult(findings, refuted, unverified) {
+  if (reasons.length) {
+    log(`Incomplete: ${reasons.join('; ')}`)
+  }
   return {
     modules: modules.map(m => m.path),
-    findings: sort(findings),
+    findings: sortBySeverity(findings),
     refuted,
     unverified,
     notCovered,
@@ -135,33 +271,66 @@ const result = (findings, refuted, unverified) => {
     reasons,
   }
 }
-if (sent.length === 0) return result(secrets, 0, 0)
+
+// Audit
+
+const audits = await parallel([...modules.map(m => () => auditModule(m)), () => auditSecrets()])
+
+const scopes = [...modules.map(m => m.path), SECRETS_SCOPE]
+scopes.forEach((scope, i) => {
+  if (!audits[i]) {
+    notCovered.push(`${scope}: agent did not return`)
+    reasons.push(`${scope}: agent did not return`)
+  }
+})
+
+const completedAudits = audits.filter(Boolean)
+completedAudits.forEach(audit => {
+  notCovered.push(`${audit.scope}: ${audit.notCovered}`)
+})
+
+const allFindings = completedAudits.flatMap(audit =>
+  audit.findings.map(finding => ({ scope: audit.scope, ...finding })),
+)
+// Secret-scan findings never go to the skeptic: they pass through as reported.
+const secretFindings = allFindings.filter(f => f.scope === SECRETS_SCOPE)
+const moduleFindings = allFindings.filter(f => f.scope !== SECRETS_SCOPE)
+
+if (moduleFindings.length === 0) {
+  return buildResult(secretFindings, 0, 0)
+}
+
+// Verify
 
 phase('Verify')
-const list = sent.map((f, i) => `${i}. [${f.severity}] ${f.file}:${f.line || '?'} — ${f.issue}`).join('\n')
-const v = await agent(
-  `You are a skeptic. For each finding, open the cited file and try to REFUTE it: wrong line, handled elsewhere, ` +
-  `cold path, allowlisted public id. Default to real=true unless you can cite the file:line that disproves it; ` +
-  `when real=false, reason must cite that path:line. Answer every index.\n${list}`,
-  { label: 'verify', phase: 'Verify', schema: VERDICTS, effort: 'high' },
-)
-if (!v) {
+
+const skeptic = await agent(skepticPrompt(moduleFindings), {
+  label: 'verify',
+  phase: 'Verify',
+  schema: VERDICTS_SCHEMA,
+  effort: 'high',
+})
+
+if (!skeptic) {
   reasons.push('verify: skeptic did not return — findings kept unverified')
   log('Skeptic did not return — all findings kept unverified')
-  return result([...sent.map(f => ({ ...f, unverified: true })), ...secrets], 0, sent.length)
+  return buildResult(
+    [...moduleFindings.map(markUnverified), ...secretFindings],
+    0,
+    moduleFindings.length,
+  )
 }
-// A finding is dropped only by an explicit real=false whose reason cites a file:line; unanswered indexes stay, unverified.
-const CITE = /[\w./\\-]+:\d+/
-const byIndex = new Map((v.results || []).map(r => [r.index, r]))
-const kept = []
-sent.forEach((f, i) => {
-  const r = byIndex.get(i)
-  if (r && r.real === false && CITE.test(r.reason || '')) return
-  if (!r) kept.push({ ...f, unverified: true })
-  else if (r.real === false) kept.push({ ...f, unverified: true, skeptic: r.reason })
-  else kept.push(f)
-})
-const refuted = sent.length - kept.length
-const unverified = kept.filter(f => f.unverified).length
-log(`${kept.length} of ${sent.length} findings survived verification (${unverified} unverified); ${secrets.length} secret-scan findings passed through`)
-return result([...kept, ...secrets], refuted, unverified)
+
+const verdictByIndex = new Map((skeptic.results || []).map(r => [r.index, r]))
+const keptFindings = moduleFindings
+  .map((finding, i) => judgeFinding(finding, verdictByIndex.get(i)))
+  .filter(Boolean)
+const refutedCount = moduleFindings.length - keptFindings.length
+const unverifiedCount = keptFindings.filter(f => f.unverified).length
+
+log(
+  `${keptFindings.length} of ${moduleFindings.length} findings survived verification ` +
+    `(${unverifiedCount} unverified); ${secretFindings.length} secret-scan findings passed through`,
+)
+
+return buildResult([...keptFindings, ...secretFindings], refutedCount, unverifiedCount)
