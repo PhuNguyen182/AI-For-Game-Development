@@ -16,7 +16,7 @@
 #             names that counter), or an open feature file has no Rounds line. Any other command exits at once.
 # Counters: "- Rounds: review n/cap, QA n/cap, rework n/cap" in a feature file; a bug's fix and review rounds in the bug
 # database, read with "bugs.py counters". Both hold only events this hook cannot see; Used = file or database + ledger.
-# A cap above the default counts only with an "extra round" line in the feature's GD decisions or the bug's record
+# A cap above the default counts only with an "extra round" line in the feature's Main GD decisions or the bug's record
 # ("bugs.py extra-round" writes it); for target or session work, one "extra-<counter>" entry in the ledger per extra round.
 # Ledger safety: an unparsable ledger is moved to rounds.corrupt-<utc>.json (never overwritten); a lock timeout
 # parks the events in rounds.pending-<id>.json, merged on the next write; dispatch fails closed on an unreadable ledger.
@@ -55,7 +55,7 @@ function Add-Event($l, [string]$key, [string]$counter, [string]$id) {
 function Get-PendingFiles { if (Test-Path -LiteralPath $ledgerDir) { @(Get-ChildItem -LiteralPath $ledgerDir -Filter 'rounds.pending-*.json' -File) } else { @() } }
 
 # Merges parked events into $l. An unparsable parked file is renamed rounds.corrupt-pending-*.json (kept, never
-# deleted) and dropped from $files' merged set; the corrupt file then blocks dispatch until the GD resolves it.
+# deleted) and dropped from $files' merged set; the corrupt file then blocks dispatch until the main GD resolves it.
 function Merge-Pending($l, $files) {
     $merged = @()
     foreach ($f in $files) {
@@ -142,7 +142,7 @@ function Get-LedgerCount($ledger, [string]$key, [string]$counter) {
 function New-Counter([string]$name, [int]$fileUsed, [int]$cap, [int]$default, [string]$record, [int]$logged) {
     $note = ''
     if ($cap -gt $default -and $record -notmatch '(?i)extra round') {
-        $note = " (cap $cap has no recorded GD extra round; default $default applies)"
+        $note = " (cap $cap has no recorded main GD extra round; default $default applies)"
         $cap = $default
     }
     if ($logged) { $note += " (file $fileUsed + hook $logged)" }
@@ -158,7 +158,7 @@ function Get-FeatureCounters([string]$slug, $ledger) {
     if ($text -notmatch '(?m)^- Status:\s*Open') { return @() }
     $line = if ($text -match '(?m)^- Rounds:(.*)$') { $Matches[1] } else { '' }
     $size = if ($text -match '(?m)^- Size:\s*(S|M|L)\b') { $Matches[1] } else { 'M' }
-    $gd = if ($text -match '(?s)## GD decisions(.*?)(\r?\n## |$)') { $Matches[1] } else { '' }
+    $gd = if ($text -match '(?s)## (?:Main )?GD decisions(.*?)(\r?\n## |$)') { $Matches[1] } else { '' }
     $stop = (([regex]::Matches($text, '(?m)^- Stop rule:.*$') | ForEach-Object { $_.Value }) -join "`n")
     $out = @()
     foreach ($name in 'review', 'qa', 'rework') {
@@ -290,17 +290,17 @@ $ledger = Get-Ledger
 if ($script:LedgerProblem -eq 'corrupt') {
     $dest = Move-CorruptLedger
     Block ("round-cap: .workflow/rounds.json could not be parsed; moved to $dest so it is never overwritten. " +
-        'Its counts are not in the new ledger: merge them back by hand, or report the stop-rule state to the GD.')
+        'Its counts are not in the new ledger: merge them back by hand, or report the stop-rule state to the main GD.')
 }
 if ($script:LedgerProblem -eq 'unreadable') {
     if ($Mode -eq 'dispatch') { Block 'round-cap: .workflow/rounds.json is locked or unreadable; round caps cannot be checked. Retry the dispatch.' }
     exit 0
 }
-# A moved-aside ledger holds counts the live one lacks: caps cannot be trusted until the GD resolves it.
+# A moved-aside ledger holds counts the live one lacks: caps cannot be trusted until the main GD resolves it.
 $corruptFiles = @(Get-CorruptFiles)
 if ($Mode -eq 'dispatch' -and $corruptFiles.Count) {
     Block ("round-cap: $($corruptFiles.Count) unreadable ledger file(s) in .workflow/ ($(($corruptFiles | ForEach-Object Name) -join ', ')) hold " +
-        'round counts the live ledger lacks; caps cannot be checked. Report to the GD: merge their events into rounds.json by hand, or delete them on the GD''s order.')
+        'round counts the live ledger lacks; caps cannot be checked. Report to the main GD: merge their events into rounds.json by hand, or delete them on the main GD''s order.')
 }
 
 if ($Mode -eq 'dispatch') {
@@ -335,8 +335,8 @@ if ($Mode -eq 'dispatch') {
     }
     if ($over.Count) {
         Block ("Stop rule (routing.md): past the round cap - $($over -join '; '). " +
-            'Report to the GD: what was tried, last verified state, next best action. ' +
-            'Another round only on the GD''s order: for a feature, record "extra round: <counter> +n" under GD decisions and raise that cap; ' +
+            'Report to the main GD: what was tried, last verified state, next best action. ' +
+            'Another round only on the main GD''s order: for a feature, record "extra round: <counter> +n" under Main GD decisions and raise that cap; ' +
             'for a bug, run bugs.py extra-round <id> <counter> +n --note <the order> (skill bugs); ' +
             "for target or session work add one `"extra-<counter>`" entry under that key in .workflow/rounds.json per round.")
     }
@@ -367,7 +367,7 @@ else {
 }
 foreach ($c in @($hits | Where-Object { $_ })) {
     $line = Format $c.What $c
-    if ($c.Used -gt $c.Cap) { $msg += "$line - past the cap: stop and report to the GD." }
+    if ($c.Used -gt $c.Cap) { $msg += "$line - past the cap: stop and report to the main GD." }
     elseif (-not $c.Stopped) {
         $record = if ($c.What -match '^BUG-') { "run bugs.py stop-rule $($c.What) $($c.Name) --extra-dispatch unused" } else { "record '- Stop rule:'" }
         $msg += "$line - at the cap: technical-architect root-causes once ($record), the owner gets one more dispatch; another failure stops the work."

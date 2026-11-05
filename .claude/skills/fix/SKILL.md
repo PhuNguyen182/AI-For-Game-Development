@@ -1,7 +1,7 @@
 ---
 name: fix
-description: "Bug fix pipeline with a mandatory regression test. Use for any defect, from QA, the GD or production telemetry."
-argument-hint: "<bug id, or the symptom in the GD's words>"
+description: "Bug fix pipeline with a mandatory regression test. Use for any defect, from QA, the main GD or production telemetry."
+argument-hint: "<bug id, or the symptom in the main GD's words>"
 ---
 
 # /fix
@@ -16,8 +16,8 @@ argument-hint: "<bug id, or the symptom in the GD's words>"
 - **New bug:** `bugs.py add` prints the next `BUG-####`, status `Request`: title, description, priority, feature slug, repro, expected, actual, evidence, owner.
 - **Existing bug:** a match is evidence on that ID: `update` with a `note` alone adds it; the `evidence` field is replaced by an `update`, never appended.
 - **Match by status:** a terminal bug → `Reopen`; a `Backlog` bug adds evidence with `update`, as `Backlog` cannot reach `Reopen`; a `Duplicate` hit → follow `duplicate_of`, judge the target.
-- **Reopen by the GD:** a reopen the GD reports → `Reopen`, then `round <id> fix +1 --note <why>` (and the feature's `rework`).
-- **Still broken while `Resolved`:** the GD reports it → `Resolved` → `Review` → `Reopen`; a direct `Resolved` → `Reopen` is refused.
+- **Reopen by the main GD:** a reopen the main GD reports → `Reopen`, then `round <id> fix +1 --note <why>` (and the feature's `rework`).
+- **Still broken while `Resolved`:** the main GD reports it → `Resolved` → `Review` → `Reopen`; a direct `Resolved` → `Reopen` is refused.
 - **Reopen by a run:** a reopen found by a `Verify:` run is counted by the hook — never write it.
 - **Brief markers:** every brief carries `Bug: BUG-####` (one bug) and, when the bug belongs to a feature, `Feature: .workflow/features/<slug>.md`.
 - **Hook charge:** hook `round-cap.ps1` charges only the `Bug:` and `Feature:` lines and blocks past a cap.
@@ -29,12 +29,12 @@ argument-hint: "<bug id, or the symptom in the GD's words>"
 - **Tools:** Play Mode (`playtest-tester`), a test, device (`/investigate-device-crash` for a device crash).
 - **Reproduce briefs:** briefs for this step never carry `Verify:`.
 - **Production telemetry:** a `crash-anr-investigator` return with `Stages: pass` and an evidenced `Root cause:` is the repro; its `Impact:` is the hit rate.
-- **Cannot reproduce:** report that, with what was tried; ask the GD via `AskUserQuestion` (more info / keep open / close as `Won't fix`, `--by GD`, mirrored: no feature → `.workflow/DEBT.md`).
+- **Cannot reproduce:** report that, with what was tried; ask the main GD via `AskUserQuestion` (more info / keep open / close as `Won't fix`, `--by "main GD"`, mirrored: no feature → `.workflow/DEBT.md`).
 
 ## 3. Root cause
 - **Dispatch status:** dispatching the owner from `Request` or `Reopen`, here or at step 5 → `Processing`.
 - **Cause:** the owning agent finds the cause in code, not the symptom.
-- **Spec flaw:** spec itself wrong → design flaw → GD now.
+- **Spec flaw:** spec itself wrong → design flaw → main GD now.
 - **Debugging approach:** skill `superpowers:systematic-debugging` if installed.
 
 ## 4. Regression test — mandatory
@@ -50,7 +50,7 @@ argument-hint: "<bug id, or the symptom in the GD's words>"
 - **No fix delivered:** a `Failed` or `Blocked` attempt with no fix → `Request`; the next dispatch → `Processing`.
 - **Review offer:** risk flag on the touched code, or a Core assembly touched → offer `/review` on the diff (`routing.md` → Gates).
 - **Rounds without a feature:** without a feature, a workflow review round the hook cannot see → `round <id> review +1 --note <why>` (cap 3).
-- **Extra round:** the GD's order → `extra-round <id> fix|review +n --note <the order>`.
+- **Extra round:** the main GD's order → `extra-round <id> fix|review +n --note <the order>`.
 - **Stop rule:** fired → `stop-rule <id> fix|review --extra-dispatch unused`; dispatch spent → `used`.
 
 ## 6. Verify
@@ -64,11 +64,11 @@ argument-hint: "<bug id, or the symptom in the GD's words>"
   - **`reproduces`:** → `Reopen` (the hook counts the fix round), back to step 3; a cap reached → stop rule.
   - **No `Repro:` line:** → back to `Resolved`; the run settled nothing.
   - **Inside `/qa`:** the `/qa` re-run of the affected cases is this run; no offer.
-  - **Within a feature, QA declined:** no offer; CP4 lists the `Resolved` bug for the GD (accept unverified → `Accepted`, or verify).
-  - **No feature:** `AskUserQuestion` — verify now (Khuyến nghị) / accept unverified (→ `Accepted`, `--by GD`, mirror `.workflow/DEBT.md`). A `Resolved` bug never stays without one.
-  - **Needs a device build that does not exist (a production crash):** verified by the device run on the next release candidate (`/release` step 4), or accepted by the GD at `/release` step 1.
+  - **Within a feature, QA declined:** no offer; CP4 lists the `Resolved` bug for the main GD (accept unverified → `Accepted`, or verify).
+  - **No feature:** `AskUserQuestion` — verify now (Khuyến nghị) / accept unverified (→ `Accepted`, `--by "main GD"`, mirror `.workflow/DEBT.md`). A `Resolved` bug never stays without one.
+  - **Needs a device build that does not exist (a production crash):** verified by the device run on the next release candidate (`/release` step 4), or accepted by the main GD at `/release` step 1.
   - **Its marker:** `update` with the `note` `awaits device verification`, which `/release` step 1 reads with `show`; it counts only on the bug's latest move to `Resolved`, so write it after that move.
 
 ## 7. Report
 - **Reply:** cause, fix, test name, what was verified and what was not.
-- **No feature:** add "journal uncommitted": `.workflow/bugs.jsonl`, and `.workflow/DEBT.md` when this run wrote it, wait for the GD's commit order.
+- **No feature:** add "journal uncommitted": `.workflow/bugs.jsonl`, and `.workflow/DEBT.md` when this run wrote it, wait for the main GD's commit order.

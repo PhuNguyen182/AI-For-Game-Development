@@ -45,7 +45,7 @@ user-invocable: false
 12. **Funnel every `Fire` through one owner:** neither Stateless nor its Unity forks are thread-safe.
     - **Consequence:** a `Fire` from a background task or second coroutine corrupts state with no exception.
 13. **When the graph is unclear, list the illegal transitions first:** that yields the state set faster and is what a reviewer can check.
-    - **A transition whose legality is a design question:** `Needs-decision`, `Next: gd`.
+    - **A transition whose legality is a design question:** `Needs-decision`, `Next: main-gd`.
 
 ## Output
 ```

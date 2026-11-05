@@ -696,7 +696,7 @@ try {
     $feat = Join-Path $proj '.workflow/features/demo.md'
     New-Item -ItemType Directory -Force (Split-Path $feat) | Out-Null
     function Feature([string]$Rounds, [string]$Gd = '', [string]$Status = 'Open') {
-        Set-Content $feat "# Demo`n`n- Status: $Status`n- Size: M, Risk flag: no`n- Rounds: $Rounds`n`n## GD decisions`n$Gd`n`n## Spec`n" -Encoding UTF8
+        Set-Content $feat "# Demo`n`n- Status: $Status`n- Size: M, Risk flag: no`n- Rounds: $Rounds`n`n## Main GD decisions`n$Gd`n`n## Spec`n" -Encoding UTF8
     }
     function Dispatch([string]$Brief) { (Invoke-Hook 'round-cap.ps1' @{ tool_name = 'Agent'; tool_input = @{ prompt = $Brief } } @('-Mode', 'dispatch')).Code }
     function EditState([string]$Path) { (Invoke-Hook 'round-cap.ps1' @{ tool_name = 'Edit'; tool_input = @{ file_path = $Path } } @('-Mode', 'edit')).Code }
@@ -712,9 +712,11 @@ try {
     Feature 'review 1/3, QA 0/2, rework 7/6'
     Check 'round-cap: past the feature rework cap blocks' (Dispatch $brief) 2
     Feature 'review 4/5, QA 0/2, rework 4/6'
-    Check 'round-cap: a raised cap without a GD record blocks' (Dispatch $brief) 2
+    Check 'round-cap: a raised cap without a main GD record blocks' (Dispatch $brief) 2
     Feature 'review 4/5, QA 0/2, rework 4/6' '- 2026-10-29 extra round: review +2'
-    Check 'round-cap: a raised cap with a GD record dispatches' (Dispatch $brief) 0
+    Check 'round-cap: a raised cap with a main GD record dispatches' (Dispatch $brief) 0
+    Set-Content $feat "# Demo`n`n- Status: Open`n- Size: M, Risk flag: no`n- Rounds: review 4/5, QA 0/2, rework 4/6`n`n## GD decisions`n- 2026-10-29 extra round: review +2`n`n## Spec`n" -Encoding UTF8
+    Check 'round-cap: an extra round under the old heading still raises the cap' (Dispatch $brief) 0
     Feature 'review 9/3, QA 0/2, rework 9/6' '' 'Closed'
     Check 'round-cap: a closed feature is not checked' (Dispatch $brief) 0
     Check 'round-cap: a brief naming no state passes' (Dispatch 'Explain the HUD') 0
@@ -747,7 +749,7 @@ try {
                 BugCli @('add') $bugFields | Out-Null
                 BugCli @('set-status', 'BUG-0001', 'Duplicate', '--duplicate-of', 'BUG-0002', '--note', 'test move') | Out-Null
             }
-            default { BugCli @('set-status', 'BUG-0001', $Status, '--by', 'GD', '--note', 'test move') | Out-Null }
+            default { BugCli @('set-status', 'BUG-0001', $Status, '--by', 'main GD', '--note', 'test move') | Out-Null }
         }
     }
     function DispatchR([string]$Brief) { Invoke-Hook 'round-cap.ps1' @{ tool_name = 'Agent'; tool_input = @{ prompt = $Brief } } @('-Mode', 'dispatch') }
@@ -772,7 +774,7 @@ try {
     Bugs 'Reopen' 3
     $r = DispatchR 'Fix BUG-0001'
     Check 'round-cap: the past-cap block names bugs.py extra-round' ($r.Out -match 'bugs\.py extra-round') $true
-    BugCli @('extra-round', 'BUG-0001', 'fix', '+1', '--note', 'GD order') | Out-Null
+    BugCli @('extra-round', 'BUG-0001', 'fix', '+1', '--note', 'main GD order') | Out-Null
     Check 'round-cap: an extra round raises the cap' (Dispatch 'Fix BUG-0001') 0
     Bugs 'Complete' 3
     Check 'round-cap: a Complete bug is not checked' (Dispatch 'Verify BUG-0001') 0
@@ -980,7 +982,7 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     Check 'ledger: ... and is moved aside, not overwritten' (@(Get-ChildItem (Split-Path $ledger) -Filter 'rounds.corrupt-*.json').Count) 1
     Check 'ledger: dispatch stays blocked while the moved-aside ledger exists' (Dispatch $brief) 2
     Get-ChildItem (Split-Path $ledger) -Filter 'rounds.corrupt-*.json' | Remove-Item
-    Check 'ledger: once the GD resolves it, dispatch runs again' (Dispatch $brief) 0
+    Check 'ledger: once the main GD resolves it, dispatch runs again' (Dispatch $brief) 0
     Set-Content $ledger '{ broken' -Encoding UTF8
     SubStop 'code-reviewer' "Round: 1`n$fm" 'Verdict: Request changes' 'c1' | Out-Null
     Check 'ledger: a count on a corrupt ledger keeps the old file' (@(Get-ChildItem (Split-Path $ledger) -Filter 'rounds.corrupt-*.json').Count) 1
@@ -1038,7 +1040,7 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     $gate.session_id = 'sess-1'; $gate.tool_input.prompt = "Round: 5`nTarget: Assets/Other"
     Check 'count: a named target is not charged with session rounds' (Invoke-Hook 'round-cap.ps1' $gate @('-Mode', 'dispatch')).Code 0
     Remove-Item $ledger
-    Set-Content $feat "# Demo`n`n- Status: Open`n- Size: L, Risk flag: no`n`n## GD decisions`n" -Encoding UTF8
+    Set-Content $feat "# Demo`n`n- Status: Open`n- Size: L, Risk flag: no`n`n## Main GD decisions`n" -Encoding UTF8
     Check 'round-cap: an open feature without Rounds warns on edit' (EditState $feat) 2
     Check 'round-cap: an open feature without Rounds still dispatches' (Dispatch $brief) 0
 

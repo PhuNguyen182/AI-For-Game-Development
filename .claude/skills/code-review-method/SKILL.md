@@ -25,7 +25,7 @@ user-invocable: false
    - **Deliberate-looking code:** `DECISIONS.md` / `DEBT.md` before flagging code that looks deliberately wrong.
 2. **Spec drift:** map every acceptance criterion to the code that meets it.
    - **Drift finding:** unmet, partly met, or code doing what no criterion asks → finding.
-   - **Spec flaw:** the spec itself wrong → `Needs-decision`, `Next: gd`.
+   - **Spec flaw:** the spec itself wrong → `Needs-decision`, `Next: main-gd`.
 3. **Contract impact:** every changed public member, event, serialized field or asset name: Grep its callers, subscribers and references, prefabs, scenes and SOs included.
    - **Contract finding:** a changed contract with an unchanged caller is a finding.
 4. **Bugs:** the checklist below, per changed hunk.
@@ -71,5 +71,5 @@ user-invocable: false
 - **Re-review verdict:** a Medium/Low on unchanged code is listed for `DEBT.md`, verdict unaffected.
 - **`Approve`:** no finding, or Low only.
 - **Low findings:** Low findings are listed; the author fixes them without another review round.
-- **`Needs-decision`:** a placement question (`shared-core-boundary-audit` "needs placement decision", `Next: technical-architect`) or a spec flaw (`Next: gd`); list any findings alongside.
+- **`Needs-decision`:** a placement question (`shared-core-boundary-audit` "needs placement decision", `Next: technical-architect`) or a spec flaw (`Next: main-gd`); list any findings alongside.
 - **Doubts:** a doubt the files cannot settle is not a finding: drop it, or state it under `Assumptions`.

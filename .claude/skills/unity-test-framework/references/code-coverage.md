@@ -9,9 +9,9 @@ Read `Packages/manifest.json`, then `Packages/packages-lock.json` (transitive), 
 
 | State | Do |
 |---|---|
-| Absent | Tests run as usual; report `Code coverage: not installed`. Never add it unasked: that is a `Packages/` change for the GD |
+| Absent | Tests run as usual; report `Code coverage: not installed`. Never add it unasked: that is a `Packages/` change for the main GD |
 | Present, no Editor open | Commands below |
-| Present, Editor open | `unity test` refuses the project. `Needs GD: close the Editor`, or report `not run: Editor open` |
+| Present, Editor open | `unity test` refuses the project. `Needs main GD: close the Editor`, or report `not run: Editor open` |
 
 Never switch coverage on inside a live Editor from an agent: on a Release-mode Editor the first results write opens a modal dialog [s].
 
@@ -77,7 +77,7 @@ Run [coverage_gaps.py](../scripts/coverage_gaps.py) with `--changed <base>` firs
 - **Line, not branch:** branch coverage and NPath are not implemented and always read zero [m]; `coveredbranches` was 0 in [r]. A green line does not show every arm of a condition ran.
 - **Executed, not asserted:** a test with no assertion turns lines green.
 - **Editor only:** the package supports code run in the Editor, not Standalone/Player [m]. A Unity 6.6 API page mentions a Player build option for desktop [m]; not run, so treat coverage as Editor-only and report no Player figure.
-- **No target by default:** no percentage gate unless the GD or `docs/tech-stack.md` states one. A stated one is hard, and only ever on changed lines or named assemblies.
+- **No target by default:** no percentage gate unless the main GD or `docs/tech-stack.md` states one. A stated one is hard, and only ever on changed lines or named assemblies.
 
 ## Traps
 | Trap | Result | Do |
@@ -88,6 +88,6 @@ Run [coverage_gaps.py](../scripts/coverage_gaps.py) with `--changed <base>` firs
 | `--retries` | Coverage comes from the first attempt only [c] | A retry adds nothing |
 | Timing or allocation test under coverage | Overhead [m] and Debug compile change the result | Pass/fail of record is the plain run; skip with `[ConditionalIgnore("IgnoreForCoverage", "<why>")]` [m], never loosen |
 | Measuring performance with it on | "Adds some overhead" [m] | Never; `performance-budget-verification` |
-| `ProjectSettings/Packages/com.unity.testtools.codecoverage/Settings.json` | Appears after a run [r]; not this work's change | Leave unstaged unless the GD adopts project settings |
+| `ProjectSettings/Packages/com.unity.testtools.codecoverage/Settings.json` | Appears after a run [r]; not this work's change | Leave unstaged unless the main GD adopts project settings |
 | Report or XML published | Absolute machine paths and source in the output [r] | Internal artifact only; never committed; `.workflow/evidence/` gets a `.md` citing the numbers |
 | Exclusions | `[ExcludeFromCoverage]` (`UnityEngine.TestTools`), or .NET `ExcludeFromCodeCoverage` [m], hide lines from the figure | Only generated or debug-only code, with the reason stated; never to raise a number |

@@ -7,14 +7,14 @@ user-invocable: false
 # Ad Mediation & Monetization Platform
 
 - **Not for:** SDK integration and IAP wiring (`sdk-platform-engineer`).
-- **Not for:** economy/gacha/sink design (GD with `researcher`, `critic`).
+- **Not for:** economy/gacha/sink design (main GD with `researcher`, `critic`).
 - **Not for:** scoring rubric (`tco-reversibility-scoring`).
 - **Not for:** general dependency vetting (`tech-vendor-dependency-risk-assessment`).
 - **Not for:** player-data persistence (`backend-build-vs-buy`).
 
 ## Steps
 1. **Decide mediation and ledger separately:** different reversibility and downstream owners; never one bundled recommendation.
-2. **Economy design undecided or contested:** redirect that part to the GD and hold the ledger verdict; do not infer the design from the infra question.
+2. **Economy design undecided or contested:** redirect that part to the main GD and hold the ledger verdict; do not infer the design from the infra question.
 3. **Judge mediation on fill rate and eCPM for this game's regions and genre:** net of the platform's take rate (AppLovin MAX, ironSource, AdMob).
    - **Gross eCPM:** gross eCPM across vendors compares the wrong number.
 4. **Score an existing studio integration as reversibility:** switching cost already paid, not a tiebreaker.

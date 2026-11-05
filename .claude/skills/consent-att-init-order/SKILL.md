@@ -10,7 +10,7 @@ user-invocable: false
 - **Not for:** the analytics vendor (`analytics-telemetry-platform`).
 - **Not for:** Firebase API calls themselves (`firebase-unity-sdk`).
 - **Not for:** the settings screen UI (`ui-engineer`).
-- **Not for:** whether a jurisdiction's law applies (GD with legal counsel).
+- **Not for:** whether a jurisdiction's law applies (main GD with legal counsel).
 - **Docs:** UMP for Unity https://developers.google.com/admob/unity/privacy — ships in the Google Mobile Ads Unity plugin (`GoogleMobileAds.Ump.Api`).
   - **Plugin pin:** `v11.6.0` (Unity 2022.3 minimum; `AgeRestrictedTreatment` from v11.3.0).
   - **ATT:** https://developer.apple.com/documentation/apptrackingtransparency.

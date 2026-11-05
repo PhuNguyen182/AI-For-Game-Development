@@ -62,7 +62,7 @@ git shortlog -sne --no-merges HEAD
 | Who should fix this file | Who has recent commits there | Whether they still own the area |
 | Who knows this code | Where commits cluster | Knowledge of reviewers, designers, pairs (inferred) |
 | Who broke this | Which commit changed the line, at which detection level | Intent, competence, fault: the commit may implement a spec or review comment |
-| Whose performance is at fault | Nothing: route to `gd` | Everything |
+| Whose performance is at fault | Nothing: route to `main-gd` | Everything |
 | Who owns the decision a commit encodes | Nothing in the commit; it lives in the Tech Spec | Origin of the decision |
 
 Report the commit by default; name a person only if asked, with the identity field (`%an`/`%cn`), the operations that could have changed it, and the detection level.

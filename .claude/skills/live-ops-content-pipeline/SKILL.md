@@ -6,7 +6,7 @@ user-invocable: false
 
 # Live-Ops Content Pipeline
 
-- **Not for:** designing events or economy (GD).
+- **Not for:** designing events or economy (main GD).
 - **Not for:** shipping new assets (`unity-addressables`).
 - **Not for:** event analytics (`analytics-telemetry-platform`).
 - **Not for:** backend platform choice (`backend-build-vs-buy`).

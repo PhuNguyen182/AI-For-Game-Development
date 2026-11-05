@@ -289,7 +289,7 @@ class TestCrud(Base):
         self.assertIn("not found", self.no("show", "BUG-0007"))
         self.add()
         self.add()
-        self.ok("delete", "BUG-0001", "--by", "GD")
+        self.ok("delete", "BUG-0001", "--by", "main GD")
         self.assertIn("purged", self.ok("show", "BUG-0001"))
 
     def test_bad_id_format_refused(self):
@@ -340,13 +340,13 @@ class TestCrud(Base):
 
     def test_delete_needs_the_gd(self):
         self.add()
-        self.assertIn("GD", self.no("delete", "BUG-0001"))
-        self.assertIn("GD", self.no("delete", "BUG-0001", "--by", "main session"))
+        self.assertIn("main GD", self.no("delete", "BUG-0001"))
+        self.assertIn("main GD", self.no("delete", "BUG-0001", "--by", "main session"))
         self.assertEqual(self.show("BUG-0001")["id"], "BUG-0001")
 
     def test_delete_leaves_only_a_text_free_tombstone_and_never_reuses_the_id(self):
         self.add(title="Sensitive words here")
-        self.ok("delete", "BUG-0001", "--by", "GD")
+        self.ok("delete", "BUG-0001", "--by", "main GD")
         raw = self.journal.read_text(encoding="utf-8")
         self.assertNotIn("Sensitive", raw)
         self.assertEqual([e["type"] for e in self.lines()], ["tombstone"])
@@ -459,25 +459,25 @@ class TestTransitions(Base):
                     self.assertEqual(code, 0, err)
                     self.assertEqual(self.show(bug_id)["status"], to)
                     continue
-                self.assertNotEqual(code, 0, "%s -> %s must be refused without the GD" % (frm, to))
+                self.assertNotEqual(code, 0, "%s -> %s must be refused without the main GD" % (frm, to))
                 self.assertEqual(self.journal.read_bytes(), before)
                 self.assertEqual(self.show(bug_id)["status"], frm)
                 if (frm, to) in GD_MOVES:
-                    self.assertIn("GD only", err)
+                    self.assertIn("main GD only", err)
                     self.assertIn("state machine", err)
-                    code, _, err = self.attempt(bug_id, to, "--by", "GD")
+                    code, _, err = self.attempt(bug_id, to, "--by", "main GD")
                     self.assertEqual(code, 0, err)
                     self.assertEqual(self.show(bug_id)["status"], to)
                 else:
-                    code, _, _ = self.attempt(bug_id, to, "--by", "GD")
-                    self.assertNotEqual(code, 0, "the GD cannot force an illegal move %s -> %s" % (frm, to))
+                    code, _, _ = self.attempt(bug_id, to, "--by", "main GD")
+                    self.assertNotEqual(code, 0, "the main GD cannot force an illegal move %s -> %s" % (frm, to))
                     self.assertEqual(self.show(bug_id)["status"], frm)
 
     def test_gd_attribution_is_exact(self):
         self.add()
-        for by in ("gd", "G.D.", "GD please", "main session"):
-            self.assertIn("GD only", self.no("set-status", "BUG-0001", "Backlog", "--note", "x", "--by", by))
-        self.ok("set-status", "BUG-0001", "Backlog", "--note", "x", "--by", "GD")
+        for by in ("GD", "gd", "G.D.", "main GD please", "main session"):
+            self.assertIn("main GD only", self.no("set-status", "BUG-0001", "Backlog", "--note", "x", "--by", by))
+        self.ok("set-status", "BUG-0001", "Backlog", "--note", "x", "--by", "main GD")
 
     def test_unknown_status_refused(self):
         self.add()
@@ -509,7 +509,7 @@ class TestTransitions(Base):
         self.add()  # the Duplicate target
         for status in TERMINAL[1:]:
             bug_id = self.add()
-            self.status(bug_id, status, by="GD", now="2030-02-02T02:02:02Z")
+            self.status(bug_id, status, by="main GD", now="2030-02-02T02:02:02Z")
             b = self.show(bug_id)
             self.assertTrue(b["closed_at"].startswith("2030-02-02"), status)
             self.status(bug_id, "Reopen")
@@ -550,7 +550,7 @@ class TestCounters(Base):
 
     def test_purged_id_is_found_false_exit_zero(self):
         self.add()
-        self.ok("delete", "BUG-0001", "--by", "GD")
+        self.ok("delete", "BUG-0001", "--by", "main GD")
         self.assertFalse(self.counters("BUG-0001")["found"])
 
     def test_settled_covers_backlog_and_the_terminal_five(self):
@@ -561,7 +561,7 @@ class TestCounters(Base):
             self.assertTrue(bugs.is_settled(status), status)
         bug_id = self.add()
         self.assertFalse(self.counters(bug_id)["settled"])
-        self.status(bug_id, "Backlog", by="GD")
+        self.status(bug_id, "Backlog", by="main GD")
         c = self.counters(bug_id)
         self.assertTrue(c["settled"])
         self.assertEqual(c["status"], "Backlog")
@@ -588,8 +588,8 @@ class TestCounters(Base):
 
     def test_extra_round_raises_the_cap_and_writes_the_old_line_shape(self):
         self.add()
-        self.ok("extra-round", "BUG-0001", "fix", "+2", "--note", "GD ordered more rounds")
-        self.ok("extra-round", "BUG-0001", "review", "+1", "--note", "GD ordered more")
+        self.ok("extra-round", "BUG-0001", "fix", "+2", "--note", "main GD ordered more rounds")
+        self.ok("extra-round", "BUG-0001", "review", "+1", "--note", "main GD ordered more")
         c = self.counters("BUG-0001")
         self.assertEqual(c["fix"]["cap"], 4)
         self.assertEqual(c["review"]["cap"], 4)
@@ -637,7 +637,7 @@ class TestCounters(Base):
         self.add(priority="Low")
         bid = self.add(priority="High")
         done = self.add(priority="Highest")
-        self.status(bid, "Backlog", by="GD")
+        self.status(bid, "Backlog", by="main GD")
         self.status(done, "As designed")
         self.assertEqual(self.ok("stats").strip(), "Bugs: 4 open (3 High+)")
 
@@ -762,7 +762,7 @@ class TestReplay(Base):
             evs.append(event("status", uid, {"to": "Processing"}, stamp(i, 2)))
             evs.append(event("round", uid, {"counter": "fix", "n": 1}, stamp(i, 3), note="round"))
             evs.append(event("status", uid, {"to": "Request"}, stamp(i, 4)))
-        evs.append(event("extra_round", "b1", {"counter": "fix", "n": 2}, stamp(9), note="GD"))
+        evs.append(event("extra_round", "b1", {"counter": "fix", "n": 2}, stamp(9), note="main GD"))
         evs.append(event("status", "b2", {"to": "Complete"}, stamp(9, 1)))
         evs.append(event("status", "b2", {"to": "Reopen"}, stamp(9, 2)))
         evs.append(event("status", "b3", {"to": "Complete"}, stamp(9, 3)))
@@ -1017,7 +1017,7 @@ class TestDuplicateIds(Base):
                             (["round", "BUG-0001", "fix", "+1", "--note", "x"], None),
                             (["extra-round", "BUG-0001", "fix", "+1", "--note", "x"], None),
                             (["stop-rule", "BUG-0001", "fix", "--extra-dispatch", "used"], None),
-                            (["delete", "BUG-0001", "--by", "GD"], None)):
+                            (["delete", "BUG-0001", "--by", "main GD"], None)):
             self.assertIn("duplicate", self.no(*args, stdin=stdin))
 
     def test_other_ids_stay_writable_and_new_ids_clear_the_high_water(self):
@@ -1670,7 +1670,7 @@ class TestWorktree(GitBase):
         calls = [(["add"], fields()), (["update", "BUG-0001"], {"priority": "Low"}),
                  (["set-status", "BUG-0001", "Processing", "--note", "n"], None), (["round", "BUG-0001", "fix", "+1", "--note", "n"], None),
                  (["extra-round", "BUG-0001", "fix", "+1", "--note", "n"], None), (["stop-rule", "BUG-0001", "fix", "--extra-dispatch", "used"], None),
-                 (["delete", "BUG-0001", "--by", "GD"], None), (["purge"], None), (["doctor", "--fix"], None)]
+                 (["delete", "BUG-0001", "--by", "main GD"], None), (["purge"], None), (["doctor", "--fix"], None)]
         for argv, stdin in calls:
             with self.subTest(argv):
                 self.assertIn("worktree", self.no(*argv, stdin=stdin, root=self.wt))
@@ -1813,7 +1813,7 @@ class TestRefusalsAreRedacted(Base):
         yield ["set-status", "BUG-0001", "Duplicate"], {"note": "n", "duplicate_of": value}
         yield ["round", "BUG-0001", "fix", value, "--note", "n"], None
         yield ["extra-round", "BUG-0001", "fix", value, "--note", "n"], None
-        yield ["delete", value, "--by", "GD"], None
+        yield ["delete", value, "--by", "main GD"], None
         yield ["add"], dict(fields(), **{value: "x"})
         yield ["update", "BUG-0001"], {value: "x"}
         yield ["set-status", "BUG-0001", "Processing"], {"note": "n", value: "x"}
@@ -1945,7 +1945,7 @@ class TestEveryWriteNeedsThePatterns(Base):
 
     def test_delete(self):
         self.add()
-        self.assert_refused("delete", "BUG-0001", "--by", "GD")
+        self.assert_refused("delete", "BUG-0001", "--by", "main GD")
 
     def test_every_other_write_gives_a_clean_refusal_too(self):
         self.add()
@@ -2327,7 +2327,7 @@ class TestTombstoneReplay(Base):
 
     def test_delete_then_add_is_no_duplicate(self):
         self.add()
-        self.ok("delete", "BUG-0001", "--by", "GD")
+        self.ok("delete", "BUG-0001", "--by", "main GD")
         self.assertEqual(self.add(), "BUG-0002")
         self.ok("doctor")
 
@@ -2369,19 +2369,19 @@ class TestRoundCount(Base):
 
 
 class TestGdAttribution(Base):
-    """DEF-E1-05: exactly GD on every path; whitespace variants are refused, as delete does."""
+    """DEF-E1-05: exactly main GD on every path; whitespace variants are refused, as delete does."""
 
-    VARIANTS = ("GD ", " GD", "\tGD", "GD\t", " GD ", "GD ")
+    VARIANTS = ("main GD ", " main GD", "\tmain GD", "main GD\t", " main GD ", "main GD ")
 
     def test_set_status_refuses_a_padded_gd(self):
         self.add()
         before = self.journal.read_bytes()
         for by in self.VARIANTS:
             with self.subTest(by=by):
-                self.assertIn("exactly GD", self.no("set-status", "BUG-0001", "Backlog", "--note", "n", "--by", by))
+                self.assertIn("exactly main GD", self.no("set-status", "BUG-0001", "Backlog", "--note", "n", "--by", by))
                 self.assertEqual(self.show("BUG-0001")["status"], "Request")
         self.assertEqual(self.journal.read_bytes(), before)
-        self.ok("set-status", "BUG-0001", "Backlog", "--note", "n", "--by", "GD")
+        self.ok("set-status", "BUG-0001", "Backlog", "--note", "n", "--by", "main GD")
 
     def test_every_other_path_refuses_it_too(self):
         self.add()

@@ -42,7 +42,7 @@ user-invocable: false
    - **Not evidence:** a clean `git status` proves nothing.
 10. **Close the Unity Editor before any command that rewrites the working tree:** `checkout`, `switch`, `restore`, `reset --keep`, `merge`, `pull`, `rebase`, `stash pop`, `bisect`, `lfs pull`.
     - **Anchor:** use `git-safety-anchor` first.
-11. **Preview `git clean` with `-xdn`:** get that list confirmed in this conversation (dispatched: quoted in the brief); `clean -f` is GD-run.
+11. **Preview `git clean` with `-xdn`:** get that list confirmed in this conversation (dispatched: quoted in the brief); `clean -f` is main-GD-run.
     - **Why:** it deletes untracked assets that exist in no commit, stash or reflog.
 12. **Unmergeable files several people edit:** binary assets, a scene too contended to merge: mark them `lockable` and `git lfs lock` before editing, per the ignore reference.
 13. **Author in English:** ignore rules, attributes and commit messages; commits per `git-commit`.

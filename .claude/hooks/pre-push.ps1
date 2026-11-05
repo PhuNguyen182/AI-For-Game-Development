@@ -19,7 +19,7 @@ $form = Read-GateCommand $cmd $tool $cwd 'push'
 $radius = 'a force, delete, mirror, prune, all-tags or anchor-tag push is blast radius 3'
 foreach ($p in (Get-GitCalls $cmd ([string](First $cwd (Get-Location).Path)))) {
     $why = if ($p.Why) { $p.Why } elseif ($p.Verb -eq 'push') { Find-PushRadius3 $p.Globals $p.Rest }
-    if ($why) { Block "Push blocked: $why ($radius). The GD runs it: put the exact command under ``Needs GD``." }
+    if ($why) { Block "Push blocked: $why ($radius). The main GD runs it: put the exact command under ``Needs main GD``." }
 }
 if ($form.Kind -eq 'None') {
     # A push through an alias: git-guard refuses it too, but this hook holds the same line when "push" is in the text.
@@ -32,7 +32,7 @@ if ($form.Kind -eq 'None') {
 if ($form.Why) { Block "Push blocked: $($form.Why)" }
 # The parser's words as well: the regex above stops at a heredoc operator, and the rest of that line is still arguments.
 $why = Find-PushRadius3 $form.Globals $form.Rest
-if ($why) { Block "Push blocked: $why ($radius). The GD runs it: put the exact command under ``Needs GD``." }
+if ($why) { Block "Push blocked: $why ($radius). The main GD runs it: put the exact command under ``Needs main GD``." }
 
 $root = Resolve-GitRoot @($form.Dir) 'push' -AllowBare
 if (-not $root) { exit 0 }  # an existing folder outside any repository: the push itself cannot run
@@ -50,13 +50,13 @@ foreach ($t in @(Get-GitWords $form.Rest)) {
     $repo = $t; break
 }
 if ($repo -and $remotes -notcontains $repo -and $repo -match '[:/\\@.]') {
-    Block "Push blocked: $repo is not a configured remote ($($remotes -join ', ')). Push to a remote by name; adding one is the GD's call."
+    Block "Push blocked: $repo is not a configured remote ($($remotes -join ', ')). Push to a remote by name; adding one is the main GD's call."
 }
 
 # A clone made with --mirror, or a forced push refspec in config, turns a plain `git push` into radius 3.
 foreach ($row in (git -C $root config --get-regexp '^remote\..+\.(mirror|push)$' 2>$null)) {
     if ($row -match '\.mirror\s+true$' -or $row -match '\.push\s+\+') {
-        Block "Push blocked: this repository's config makes every push forced or mirrored ($row). The GD runs it: put the exact command under ``Needs GD``."
+        Block "Push blocked: this repository's config makes every push forced or mirrored ($row). The main GD runs it: put the exact command under ``Needs main GD``."
     }
 }
 

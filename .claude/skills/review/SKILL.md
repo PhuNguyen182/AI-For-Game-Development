@@ -9,7 +9,7 @@ argument-hint: "<diff range, feature slug or path>"
 ## 1. Scope
 - **Reviewed state:** the working tree, not `HEAD`: `git diff --merge-base <base>` plus untracked files (`git ls-files --others --exclude-standard`), plus its spec or acceptance criteria.
   - **`<base>`:** the feature's `Base:`; no feature → the branch the work was cut from.
-  - **Branch check:** a feature's review first checks `git branch --show-current` equals its `Branch:`, else stop, `Needs GD`.
+  - **Branch check:** a feature's review first checks `git branch --show-current` equals its `Branch:`, else stop, `Needs main GD`.
   - **Diff reading:** both gates read the diff themselves.
 - **Audit scope:** an audit has no spec — say so in the brief; `code-reviewer` runs audit mode.
 - **Marker lines:** every gate brief carries these, each on its own line:
@@ -42,14 +42,14 @@ argument-hint: "<diff range, feature slug or path>"
 ## 3. Merge
 - **Deciding field:** decide on `Verdict:`, never on `Status:`.
 - **Pass:** both `Approve` + `Clear` → done; Low findings go to the author once, with no re-review.
-- **`Needs-decision` from `code-reviewer`:** settle it with its `Next:` (`technical-architect`, or the GD for a spec flaw) before the author's round.
+- **`Needs-decision` from `code-reviewer`:** settle it with its `Next:` (`technical-architect`, or the main GD for a spec flaw) before the author's round.
   - **Failed round:** with a Critical/High/Medium finding it counts as a failed round.
 - **`Needs-decision` with `Next: cto` from `security-reviewer`:** (secret possibly in git history) → stop the round, route to `cto` (`core.md` → Security).
   - **Closure:** the review cannot close until `cto` settles it.
 - **Duplicates:** drop duplicates; keep each finding's `path:line`, issue, fix and severity.
-- **`Needs Confirmation`:** re-dispatch the author with the question, then the GD (`AskUserQuestion`): only they know whether a real key exists.
+- **`Needs Confirmation`:** re-dispatch the author with the question, then the main GD (`AskUserQuestion`): only they know whether a real key exists.
   - **Unanswered:** a `Blocked` Leaked Secret finding: the author moves the value to a secret store or credential id, `security-reviewer` re-runs.
-  - **Unanswered record:** record "Needs Confirmation unanswered — treated as secret" under the feature's `GD decisions`.
+  - **Unanswered record:** record "Needs Confirmation unanswered — treated as secret" under the feature's `Main GD decisions`.
 
 ## 4. Return to the author
 - **Findings:** both finding sets together, in one brief.
@@ -63,5 +63,5 @@ argument-hint: "<diff range, feature slug or path>"
 - **Stopping:** repeated findings, or a cap reached → stop rule (`routing.md`).
 
 ## 5. Report
-- **Audit:** findings by severity; no author, no rework loop unless the GD asks.
-- **Submission:** verdicts, findings fixed, findings accepted by the GD (cost stated).
+- **Audit:** findings by severity; no author, no rework loop unless the main GD asks.
+- **Submission:** verdicts, findings fixed, findings accepted by the main GD (cost stated).

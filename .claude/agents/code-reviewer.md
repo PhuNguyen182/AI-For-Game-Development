@@ -26,7 +26,7 @@ color: red
 ## Skills (on demand)
 - **`shared-core-boundary-audit`:** the diff touches a Core assembly or an asmdef, or Client code compares, subtracts or accumulates a gameplay value.
 - **`feature-docs`:** a feature-complete submission — which docs are owed.
-- **Risk patterns:** hot paths, memory, crash/ANR → read `.claude/skills/review-code-risks/references/risk-patterns.md` directly; never invoke `review-code-risks` (its report is for the GD).
+- **Risk patterns:** hot paths, memory, crash/ANR → read `.claude/skills/review-code-risks/references/risk-patterns.md` directly; never invoke `review-code-risks` (its report is for the main GD).
 
 ## Checklist
 - [ ] **Mode stated:** submission | audit | re-review, per `code-review-method` → Mode.

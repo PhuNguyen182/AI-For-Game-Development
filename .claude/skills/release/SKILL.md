@@ -6,13 +6,13 @@ argument-hint: "<platforms> [--dry-run]"
 
 # /release
 
-- **Invocation:** invoking `/release` is the GD's build request for the platforms named.
+- **Invocation:** invoking `/release` is the main GD's build request for the platforms named.
 - **`--dry-run`:** no tag, push or upload, and no writes — step 2 reports the next version instead of setting it, and step 4's bug status moves are reported, not written.
 - **Dry-run brief:** step 4's brief states each deferred bug's repro steps in plain words, with no `Verify:` line; the run reports that outcome, not a `Repro:` line, and the hook charges nothing.
 - **Attempts:** unsized: 2 attempts per dispatch.
 - **Risk flag:** risk flag is always set.
 
-## Gate — all must pass, or the GD accepts the gap by name
+## Gate — all must pass, or the main GD accepts the gap by name
 | # | Step | Owner | Pass |
 |---|---|---|---|
 | 0 | Content | main session | Release content committed; every feature in it closed at CP4 |
@@ -50,9 +50,9 @@ argument-hint: "<platforms> [--dry-run]"
 ## Finish — `AskUserQuestion`
 - **Tag, push, submit:** none of them runs before this `AskUserQuestion`.
 - **Show:** the gate table with results.
-- **Journal:** row 4 moved a status → add "journal uncommitted": `.workflow/bugs.jsonl`, and `.workflow/DEBT.md` when this run wrote it, wait for the GD's commit order, and a tag omits those moves until then.
-- **Options:** tag + push (recommended only when every row passes or the GD accepted each gap by name in this run; never in a dry run) / fix failures first / stop.
+- **Journal:** row 4 moved a status → add "journal uncommitted": `.workflow/bugs.jsonl`, and `.workflow/DEBT.md` when this run wrote it, wait for the main GD's commit order, and a tag omits those moves until then.
+- **Options:** tag + push (recommended only when every row passes or the main GD accepted each gap by name in this run; never in a dry run) / fix failures first / stop.
 - **Fix failures first:** each failed row goes to its route (`/fix`, `/review`, the owning agent), then re-run only the failed rows.
   - **Round count:** +1 `release` round, cap 2, recorded as `- Release rounds: n/2` in `.workflow/release-<version>.md`, then the stop rule.
 - **Release file:** `.workflow/release-<version>.md` is the gate table with results, written at every Finish; not in a dry run.
-- **Store upload:** store upload or submission is always a separate, explicit GD request.
+- **Store upload:** store upload or submission is always a separate, explicit main GD request.

@@ -110,7 +110,7 @@ function Get-GitWords([string]$Rest) {
     return $words
 }
 
-# Force, delete, mirror, prune, all-tags and anchor-tag pushes are blast radius 3: the GD runs them. A glob deny
+# Force, delete, mirror, prune, all-tags and anchor-tag pushes are blast radius 3: the main GD runs them. A glob deny
 # misses combined short flags (-uf), unique long-option prefixes (--mirr) and +/: refspecs, so read the arguments.
 $script:PushRadius3 = 'force', 'force-with-lease', 'force-if-includes', 'mirror', 'delete', 'prune', 'tags', 'receive-pack', 'exec'
 function Find-PushRadius3([string]$Globals, [string]$Rest) {
@@ -200,7 +200,7 @@ function Get-GitDiffText([string]$Root, [string[]]$GitArgs) {
 
 # Files that never enter git whatever their content: keystores, certificates and provisioning profiles, .env files,
 # SSH keys, the UPM registry auth file, service-account JSON (rule core.md -> Security). Case-insensitive.
-# Templates are allowed (GD decision): .env.example / .env.sample / .env.template and public keys (*.pub); their content
+# Templates are allowed (main GD decision): .env.example / .env.sample / .env.template and public keys (*.pub); their content
 # is still secret-scanned like any file.
 $script:SecretPathRegex = '(?i)\.(?:keystore|jks|p12|pfx|p8|pem|mobileprovision)$|(?:^|/)\.env(?:$|\.(?!(?:example|sample|template)$))|(?:^|/)id_rsa(?![^/]*\.pub$)|\.upmconfig\.toml$|service[-_]?account[^/]*\.json$'
 # Under .workflow/evidence/ only reports and screenshots are committed: raw logcat, syslog and crash dumps carry
@@ -945,7 +945,7 @@ function Get-XerjState([string]$Root) {
         try { $c = Get-Content -LiteralPath $cache -Raw | ConvertFrom-Json; if ($c.state -ne 'up' -and $now - [long]$c.at -lt 300) { return [string]$c.state } } catch {}
     }
     $state = 'none'
-    # Loopback only (GD decision): a remote node would receive the agents' queries, so it counts as no XERJ.
+    # Loopback only (main GD decision): a remote node would receive the agents' queries, so it counts as no XERJ.
     if (-not (Test-LoopbackUrl $env:XERJ_URL)) { return 'none' }
     if (Get-Command xerj -CommandType Application -ErrorAction SilentlyContinue) {
         $state = 'down'

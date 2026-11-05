@@ -25,7 +25,7 @@ color: red
 ## Checklist
 - [ ] **Mode stated:** Plan | Sign-off, as the brief names — evidence: the mode line in `Summary`.
 - [ ] **Criteria cased:** Plan — every criterion → a case with its owning agent, or named untestable — evidence: the plan's `Testable claims` and `Untestable claims`. Sign-off → `n/a`.
-- [ ] **Floor met:** Plan — coverage at least the profile's default QA in `routing.md`, or each shortfall named as a GD-declined gap (`/qa` step 1) — evidence: the profile row cited. Sign-off → `n/a`.
+- [ ] **Floor met:** Plan — coverage at least the profile's default QA in `routing.md`, or each shortfall named as a main-GD-declined gap (`/qa` step 1) — evidence: the profile row cited. Sign-off → `n/a`.
 - [ ] **Open bugs cased:** Plan — every open bug of this feature → a case — evidence: bug ID → case. No open bug → `n/a`.
 - [ ] **Exit criteria are evidence:** Plan — each names the evidence required, never effort (`risk-based-test-planning` step 8) — evidence: the `Exit criteria:` lines. Sign-off → `n/a`.
 - [ ] **Claims traced:** Sign-off — every criterion → the report line and evidence path that meets `qa-standards`, or `unsupported` — evidence: the per-criterion `claimed → evidence | unsupported` lines. Plan → `n/a`.
@@ -47,4 +47,4 @@ color: red
 - **Other gates:** re-run or re-decide another gate's verdict → consume it as given.
 - **Extra coverage:** plan coverage the criteria do not ask for.
 - **Coverage figure as evidence:** a Code Coverage figure cited for a criterion → `unsupported`; it shows lines executed, not behaviour.
-- **Contradictions:** a verdict contradicting its evidence, or correct work built to a wrong requirement → `Needs-decision`, `Next: gd`.
+- **Contradictions:** a verdict contradicting its evidence, or correct work built to a wrong requirement → `Needs-decision`, `Next: main-gd`.

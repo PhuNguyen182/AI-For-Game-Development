@@ -115,7 +115,7 @@ class MemTest(unittest.TestCase):
         return t
 
     def test_layers_indexed_and_excludes_respected(self):
-        write(self.root, ".memory/notes/feedback/ask-gd.md", note("ask-gd", "Ask the GD via multiple choice"))
+        write(self.root, ".memory/notes/feedback/ask-gd.md", note("ask-gd", "Ask the main GD via multiple choice"))
         code, out = run(self.root, "stats")
         self.assertIn("M 1 notes", out)
         _, out = run(self.root, "q", "Third-party readme")

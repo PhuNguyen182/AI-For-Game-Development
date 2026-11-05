@@ -22,13 +22,13 @@ Synthesized from `../scripts/bugs.py`; commands in `../SKILL.md`.
 | `Review` | `Reopen` | `Repro: BUG-#### reproduces` |
 | `Review` | `Resolved` | Verify run returned no `Repro:` line |
 | Any terminal | `Reopen` | A new match on a settled bug |
-| Any open | `Backlog` | **GD only** |
-| `Backlog` | `Request` | **GD only** |
-| Any open | `Won't fix`, `Accepted` | **GD only**, mirrored to `DEBT.md` |
+| Any open | `Backlog` | **Main GD only** |
+| `Backlog` | `Request` | **Main GD only** |
+| Any open | `Won't fix`, `Accepted` | **Main GD only**, mirrored to `DEBT.md` |
 | Any open | `As designed`, `Duplicate` | QA or main session (`duplicate_of` required for `Duplicate`) |
 
 - **Enforced on write only:** every other move is refused. Replay never enforces transitions: the history already happened.
-- **GD attribution:** a GD-only move needs exactly `--by GD`; a padded form is refused on every path; a note is required on every `set-status`.
+- **Main GD attribution:** a main-GD-only move needs exactly `--by "main GD"`; a padded form is refused on every path; a note is required on every `set-status`.
 - **closed_at:** set when a bug reaches terminal, cleared by any move out of it. The purge clock counts from it: from the last terminal status reached.
 
 ## Content limits (over the limit: refused with field and length, never truncated)

@@ -6,7 +6,7 @@ user-invocable: false
 
 # Build Fault Triage
 
-- **Not for:** producing, rebuilding or re-signing the build (`build-release-engineer`, only on the GD's explicit request).
+- **Not for:** producing, rebuilding or re-signing the build (`build-release-engineer`, only on the main GD's explicit request).
 - **Not for:** a CI run that failed before producing an artifact (`ci-pipeline-failure-triage`); dividing question: does a correct artifact exist to consume.
 - **Not for:** Editor testing (`playtest-scenario-execution`, `unity-test-framework`), frame/alloc/memory verdicts (`performance-budget-verification`).
 - **Not for:** released-build crashes from telemetry (`crash-anr-investigator`).

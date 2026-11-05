@@ -8,7 +8,7 @@ argument-hint: "<project path, or 'new'>"
 
 ## 1. Identity — one `AskUserQuestion` call (≤4 questions)
 - **Questions:** Profile · platforms · multiplayer · render pipeline.
-- **Answers:** write them into `CLAUDE.md`, plus its 3-line Summary from the GDD or the GD's pitch.
+- **Answers:** write them into `CLAUDE.md`, plus its 3-line Summary from the GDD or the main GD's pitch.
 - **Unity version:** from `ProjectSettings/ProjectVersion.txt`.
 
 ## 2. Project
@@ -61,7 +61,7 @@ Assets/_Project/Scripts/Shared/Server/          _Project.Scripts.Shared.Server  
 |---|---|
 | hyper-casual | 60 fps (16.6 ms) on Android low-end · 0 B GC/frame steady state · ≤ 100 draw calls · ≤ 500 MB RAM · ≤ 150 MB install |
 | mid-core | 30–60 fps on Android mid + oldest supported iOS · 0 B GC/frame steady state · ≤ 200 draw calls · ≤ 1 GB RAM |
-| hard-core | GD-defined per tier |
+| hard-core | main-GD-defined per tier |
 
 - **Answer:** write the answer into `CLAUDE.md` → Perf budget, every metric with its unit and tier.
 - **Left-out metric:** a metric left out gets no verdict from `performance-qa-engineer`.
@@ -72,7 +72,7 @@ Assets/_Project/Scripts/Shared/Server/          _Project.Scripts.Shared.Server  
 - **Code search:** `CLAUDE.md` → Code search: `xerj prefix <kebab project name>` when `xerj` is installed, else `Grep`.
 - **Tech stack:** create `docs/tech-stack.md` from `references/tech-stack-template.md`, filled from `Packages/manifest.json`, `ProjectSettings/` and the answers above.
 
-## 8. CI — only if the GD wants it now
+## 8. CI — only if the main GD wants it now
 - **Pipeline:** `ci-cd-engineer`: build + test pipeline for the build targets, manual trigger.
 
 ## 9. Report

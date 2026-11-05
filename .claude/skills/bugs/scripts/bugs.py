@@ -33,7 +33,7 @@ REFUSAL_LINE = 500
 VALUE_MARK = "\ue000"  # brackets a caller's value inside refusal text; refusal_text() is the only reader
 RX_SHOWN = re.compile("%s.*?%s" % (VALUE_MARK, VALUE_MARK), re.S)
 
-# Moves anyone with the writer's role may make; GD-only moves and "any open" moves are in move_rule().
+# Moves anyone with the writer's role may make; main-GD-only moves and "any open" moves are in move_rule().
 PLAIN_MOVES = {"Request": ("Processing",), "Reopen": ("Processing",), "Processing": ("Request", "Resolved"),
                "Resolved": ("Review",), "Review": ("Complete", "Reopen", "Resolved")}
 
@@ -315,8 +315,8 @@ def read_stdin_json(required: bool):
 def by_of(cleaner: Cleaner, a) -> str:
     if a.by is None:
         return DEFAULT_BY
-    if a.by != "GD" and a.by.strip() == "GD":  # clean() trims, which would store a padded form as the GD's attribution
-        raise Refused("by: must be exactly GD, with no padding")
+    if a.by != "main GD" and a.by.strip() == "main GD":  # clean() trims, which would store a padded form as the main GD's attribution
+        raise Refused("by: must be exactly main GD, with no padding")
     return cleaner.required("by", a.by)
 
 
@@ -953,8 +953,8 @@ def cmd_set_status(ctx, a):
         rule = move_rule(row["status"], a.status)
         if rule is None:
             raise Refused("%s: %s -> %s is not in the state machine (references/schema.md)" % (a.id, row["status"], a.status))
-        if rule == "gd" and by != "GD":
-            raise Refused("%s: %s -> %s is GD only (state machine in references/schema.md): pass --by GD on the GD's order" % (a.id, row["status"], a.status))
+        if rule == "gd" and by != "main GD":
+            raise Refused("%s: %s -> %s is main GD only (state machine in references/schema.md): pass --by 'main GD' on the main GD's order" % (a.id, row["status"], a.status))
         payload = {"from": row["status"], "to": a.status}
         if a.status == "Duplicate":
             if not dup:
@@ -1012,8 +1012,8 @@ def cmd_stop_rule(ctx, a):
 def cmd_delete(ctx, a):
     ctx.require_writable()
     parse_id(a.id)
-    if a.by != "GD":
-        raise Refused("delete is GD only: pass --by GD on the GD's order")
+    if a.by != "main GD":
+        raise Refused("delete is main GD only: pass --by 'main GD' on the main GD's order")
     with Writer(ctx) as w:
         row = live_bug(w.db, a.id)
         w.rewrite({row["uid"]}, [(parse_id(row["id"]), row["uid"])])
@@ -1376,7 +1376,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     def write_cmd(name, help_text):
         sp = sub.add_parser(name, help=help_text)
-        sp.add_argument("--by", help="who writes; GD-only moves need exactly GD (default: %s)" % DEFAULT_BY)
+        sp.add_argument("--by", help="who writes; main-GD-only moves need exactly main GD (default: %s)" % DEFAULT_BY)
         return sp
 
     write_cmd("add", "file a bug: JSON fields on stdin; prints its id")
@@ -1386,7 +1386,7 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("status")
     s.add_argument("--note")
     s.add_argument("--duplicate-of", dest="duplicate_of")
-    for name, text in (("round", "add used rounds to a counter"), ("extra-round", "raise a counter's cap on the GD's order")):
+    for name, text in (("round", "add used rounds to a counter"), ("extra-round", "raise a counter's cap on the main GD's order")):
         s = write_cmd(name, text)
         s.add_argument("id")
         s.add_argument("counter", choices=counter_choices)
@@ -1397,7 +1397,7 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("counter", choices=counter_choices)
     s.add_argument("--extra-dispatch", dest="extra_dispatch", required=True, choices=("unused", "used"))
     s.add_argument("--note")
-    write_cmd("delete", "GD order only: drop a bug, keep a tombstone").add_argument("id")
+    write_cmd("delete", "main GD order only: drop a bug, keep a tombstone").add_argument("id")
     s = sub.add_parser("show", help="one record with its events")
     s.add_argument("id")
     s.add_argument("--json", action="store_true")

@@ -4,7 +4,7 @@
 - CP: none | CP1 | CP2 | build | review | CP3 | QA | CP4 — next step: <what>
 - Session: <session id> · <utc>
 - Size: S | M | L · Risk flag: no | yes (<why>)
-- Rounds: review 0/3 · QA 0/2 · rework 0/<M 6 | L 8> (only events the hook cannot see: workflow review rounds, CP3 drift, a GD-reported reopen, CP4 fix-gaps rework)
+- Rounds: review 0/3 · QA 0/2 · rework 0/<M 6 | L 8> (only events the hook cannot see: workflow review rounds, CP3 drift, a main-GD-reported reopen, CP4 fix-gaps rework)
 - Profile: <from CLAUDE.md>
 - Feature root: <feature root from CLAUDE.md>/<Feature>/
 - Branch: feature/<slug> · Base: <branch it was cut from>
@@ -13,16 +13,16 @@
 - Worktrees: <path · branch · lane task> | none
 
 ## Request (verbatim)
-> <the GD's words>
+> <the main GD's words>
 
-## GD decisions
+## Main GD decisions
 - <date> <decision, accepted risk or waived requirement — with its stated cost>
 
 ## Spec
 <acceptance criteria, then the spec — or a link to `.workflow/features/<slug>.spec.md` when long>
 
 ## Log
-| # | Agent | Lane | Changed | Verified | Attempts n/N | Limitations / Needs GD |
+| # | Agent | Lane | Changed | Verified | Attempts n/N | Limitations / Needs main GD |
 |---|---|---|---|---|---|---|
 
 ## Tests

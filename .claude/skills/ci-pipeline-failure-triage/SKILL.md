@@ -37,8 +37,8 @@ user-invocable: false
 
 | Class | Signature | Evidence lives in | Owner |
 |---|---|---|---|
-| Agent / workspace | Node offline, disk full, checkout or LFS failure, network timeout, `Multiple Unity instances cannot open the same project` | Jenkins console before the stage's first command | `ci-cd-engineer` for the job's assumptions; `gd` for the host |
-| Licence | `Failed to activate/update license`, no seat | First 15 s of the Unity `-logFile` | `gd` (a seat is a purchase) |
+| Agent / workspace | Node offline, disk full, checkout or LFS failure, network timeout, `Multiple Unity instances cannot open the same project` | Jenkins console before the stage's first command | `ci-cd-engineer` for the job's assumptions; `main-gd` for the host |
+| Licence | `Failed to activate/update license`, no seat | First 15 s of the Unity `-logFile` | `main-gd` (a seat is a purchase) |
 | Editor provisioning | Version mismatch against `ProjectVersion.txt`, missing platform module | Hub install output, workspace `ProjectVersion.txt` | `ci-cd-engineer` |
 | Project state | Package resolution failure, `Library` damage, import errors on untouched assets | Unity log, cache-restore step | `ci-cd-engineer` for the cache key; `gameplay-engineer` for the project |
 | Compile | `error CS****` with file and line | Unity log | The agent owning that file |

@@ -58,7 +58,7 @@ user-invocable: false
 
 ## Never
 - **Mirror pass as shipped-build evidence:** reporting it as such — CoreCLR is neither the Editor's Mono nor a player's IL2CPP.
-  - **Device behaviour:** needs a Player run (`build-release-engineer`, on the GD's request).
+  - **Device behaviour:** needs a Player run (`build-release-engineer`, on the main GD's request).
 - **Mirror files at the project root:** putting the mirror's `.csproj` or `.sln` there — Unity's IDE integration regenerates `<asmdef>.csproj` and the `.sln` there and overwrites them.
 
 ## Output

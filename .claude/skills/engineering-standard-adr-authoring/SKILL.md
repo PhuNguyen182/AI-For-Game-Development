@@ -19,7 +19,7 @@ user-invocable: false
    - **Change to a standard:** an amendment, a reversal or a retirement.
    - **Unwritten standard:** a repeated review/escalation showing an assumed but unwritten standard.
    - **Call still open:** status `Proposed`, or do not write it; an Active ADR binds downstream roles.
-2. **Scope or triggering decision unclear → `Needs-decision` naming the gap:** the main session asks the GD; a standard bound to the wrong roles is worse than none.
+2. **Scope or triggering decision unclear → `Needs-decision` naming the gap:** the main session asks the main GD; a standard bound to the wrong roles is worse than none.
 3. **State the rule so a reviewer can fail a submission against it:** "gameplay code calls `IPhysicsProvider`, never the plugin" is checkable; "prefer clean abstractions" is not.
    - **Uncheckable principle:** not an ADR (coding principles live in `csharp-standards`).
 4. **Number it sequentially; never reuse a retired number:** supersession chains reference the numbers.
@@ -30,7 +30,7 @@ user-invocable: false
 8. **Cite the source decision, do not restate it:** no TCO score or trade-off analysis copied in.
    - **Length:** keep the record to about one screen.
 9. **Name the log location:** no `docs/adr/` in the project → output `open gap` and propose the path.
-10. **Write in English:** `core.md` → Language; only the closing reply to the GD is Vietnamese.
+10. **Write in English:** `core.md` → Language; only the closing reply to the main GD is Vietnamese.
 
 ## Never
 - **Prose-only standard:** leaving a binding standard only in a Technical Decision's prose; it gets a numbered record.

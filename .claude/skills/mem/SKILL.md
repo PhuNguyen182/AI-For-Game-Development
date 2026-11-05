@@ -19,10 +19,10 @@ user-invocable: false
 | Layer | Id | Path, from the id | Written by |
 |---|---|---|---|
 | T trace | `t:<date>-<sid8>#<line>` | `.memory/traces/YYYY/MM/<date>-<sid8>.jsonl`, file line `<line>` | Stop hook; never tool output |
-| M note | `m:<type>/<slug>` | `.memory/notes/<type>/<slug>.md` | `add`, when the GD confirms a mistake or preference |
+| M note | `m:<type>/<slug>` | `.memory/notes/<type>/<slug>.md` | `add`, when the main GD confirms a mistake or preference |
 | K knowledge | `k:<path>#<heading>` | `<path>` at the hit's `:<line>`; docs matched by `.memory/sources.txt` | nobody new — one fact, one home |
 
-- **Note types:** `feedback` (how the GD wants work done) · `lesson` (error prevention) · `project` (facts not in code or docs) · `reference` (external pointers).
+- **Note types:** `feedback` (how the main GD wants work done) · `lesson` (error prevention) · `project` (facts not in code or docs) · `reference` (external pointers).
 
 ## Query
 | Need | Command |

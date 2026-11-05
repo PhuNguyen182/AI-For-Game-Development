@@ -49,7 +49,7 @@ user-invocable: false
 8. **Separate exposure from cause:** `bisect` lands on the first failing commit, often an innocent change that made a latent fault reachable.
    - **Report:** state which one the report names ([attribution-honesty.md](references/attribution-honesty.md)).
 9. **Report the commit; a person only when asked:** give the identity field (`%an`/`%cn`) it came from.
-   - **Ownership data:** `shortlog` is routing information, never an assessment; a question about someone's performance routes to `gd`.
+   - **Ownership data:** `shortlog` is routing information, never an assessment; a question about someone's performance routes to `main-gd`.
 10. **Every finding carries:** location, expected, actual, evidence, and an owning agent-id (`qa-standards`).
 11. **Missing input:** dispatched agent → `Blocked` or `Needs-decision`; main session → `AskUserQuestion`.
 

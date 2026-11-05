@@ -13,7 +13,7 @@ Each state change below is anchored first (`git-safety-anchor`) and runs with th
 | Local-only, unpublished commits → `git pull --rebase` | Replays them on the upstream; conflicts per `resolve-merge-conflicts` (stages invert, step 1) |
 | Local commits already published (`git for-each-ref --contains <c> refs/remotes` lists a ref) | Never rebase them: merge, or `AskUserQuestion` / `Needs-decision` (rewriting them is radius 3) |
 | Dirty tree | Commit or anchor first; `--autostash` hides a pop conflict behind a successful pull |
-| Credentials needed | Run network commands with `GIT_TERMINAL_PROMPT=0` and, where Git Credential Manager is the helper (`git config --get credential.helper` = `manager`), `GCM_INTERACTIVE=never`: the first stops the terminal prompt, the second the GCM sign-in window. Over SSH, `GIT_SSH_COMMAND='ssh -o BatchMode=yes'` makes a passphrase or host-key prompt fail instead of wait. A failure is `Needs GD: credentials`; never write one into a URL or config |
+| Credentials needed | Run network commands with `GIT_TERMINAL_PROMPT=0` and, where Git Credential Manager is the helper (`git config --get credential.helper` = `manager`), `GCM_INTERACTIVE=never`: the first stops the terminal prompt, the second the GCM sign-in window. Over SSH, `GIT_SSH_COMMAND='ssh -o BatchMode=yes'` makes a passphrase or host-key prompt fail instead of wait. A failure is `Needs main GD: credentials`; never write one into a URL or config |
 
 ## Undo a merged change
 | Case | Command | Fact that decides |
@@ -41,8 +41,8 @@ Each state change below is anchored first (`git-safety-anchor`) and runs with th
 ## Pull requests and signing
 | Task | Fact that decides |
 |---|---|
-| Open a PR | Push first (GD-ordered), then `gh pr create --base <b> --head <branch> --title "<subject>" --body-file <file>`; the body follows the attribution the session gives. Publishing: only when the GD asked |
-| `commit.gpgsign=true` or a signing key is set | Signing may need a passphrase prompt that has no terminal here. A signing failure is `Needs GD: signing`; never `--no-gpg-sign` or `-c commit.gpgsign=false` |
+| Open a PR | Push first (main-GD-ordered), then `gh pr create --base <b> --head <branch> --title "<subject>" --body-file <file>`; the body follows the attribution the session gives. Publishing: only when the main GD asked |
+| `commit.gpgsign=true` or a signing key is set | Signing may need a passphrase prompt that has no terminal here. A signing failure is `Needs main GD: signing`; never `--no-gpg-sign` or `-c commit.gpgsign=false` |
 
 ## Windows and large-repo specifics
 | Case | Fact that decides |

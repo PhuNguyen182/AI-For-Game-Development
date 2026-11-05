@@ -40,7 +40,7 @@ Assumptions: <every gap you filled> | none
 Limitations: <what this does not do> | none
 Out of scope: <noticed, left alone, owner agent> | none
 Fixes: <bug ids> | none
-Needs GD: <config, secret, store-policy or design decision> | none
+Needs main GD: <config, secret, store-policy or design decision> | none
 Next: <agent or step you recommend> | none
 ```
 
@@ -52,5 +52,5 @@ Next: <agent or step you recommend> | none
 - **Bug verification brief:** a brief with a `Verify: BUG-####` line → add one line per bug: `Repro: BUG-#### reproduces | gone` (the hook counts `reproduces` as a failed fix round).
 - **`Repro:` limit:** reproducing a bug, or a regression test that must fail first, never uses the `Repro:` line.
 - **Proven impossible:** within the brief (a budget, platform, engine or spec limit no retry can change) → `Failed` plus `Infeasible: <the limit and the evidence>`; stop spending attempts.
-- **Design flaw:** a design flaw (the spec itself is wrong) → `Needs-decision`, `Next: gd`.
+- **Design flaw:** a design flaw (the spec itself is wrong) → `Needs-decision`, `Next: main-gd`.
 - **Implementation Note:** the `Changed` … `Fixes` fields are the Implementation Note a reviewer reads; never argue the design in it.

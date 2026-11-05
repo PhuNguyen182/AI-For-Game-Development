@@ -1,7 +1,7 @@
 ---
 name: feature
 description: "M/L feature pipeline, request to closure, with CP gates, change requests and abandonment. Use for any M/L feature."
-argument-hint: "<the request, in the GD's words>"
+argument-hint: "<the request, in the main GD's words>"
 ---
 
 # /feature
@@ -10,7 +10,7 @@ argument-hint: "<the request, in the GD's words>"
 - **Rules:** `routing.md`, `core.md`.
 - **Every git write in this skill:** each commit, the CP4 merge, first checks `git branch --show-current` equals `Branch:` (from step 4 on).
   - **Lane A commit:** a lane A worktree commit instead checks `git -C <worktree> branch --show-current` equals that `Worktrees:` entry's branch.
-  - **Mismatch:** else stop, `Needs GD` — another session moved the shared checkout's HEAD.
+  - **Mismatch:** else stop, `Needs main GD` — another session moved the shared checkout's HEAD.
 - **Feature paths (used below):** the feature root, `TestsDotnet/<Feature>/`, every path in an attempt's brief or `Changed`, with their `.meta` — never `.workflow/` (closure commit: step 8).
 
 ## 0. Open
@@ -29,10 +29,10 @@ argument-hint: "<the request, in the GD's words>"
   - **A foreign Editor lock:** `unity command editor status` → `AskUserQuestion` before deleting `.workflow/editor.lock`.
   - **`git branch --show-current` ≠ `Branch:`:** `git-expert` switches to it when the tree is clean and no other session is live; otherwise `AskUserQuestion`.
 - **New:** copy `references/feature-template.md`.
-  - **Request:** the GD's words verbatim (from a backlog item: its row and GDD section).
+  - **Request:** the main GD's words verbatim (from a backlog item: its row and GDD section).
   - **Profile:** from `CLAUDE.md`.
   - **Backlog row:** the `.workflow/backlog.md` row → `in progress`.
-- **GD answers:** every GD answer → `GD decisions` at once; an accepted gap or risk also → `Known limitations` in the same edit.
+- **Main GD answers:** every main GD answer → `Main GD decisions` at once; an accepted gap or risk also → `Known limitations` in the same edit.
 
 ## 1. Size — `technical-architect` (Size mode)
 - **State:** `Size` + `Risk flag` in one line.
@@ -42,18 +42,18 @@ argument-hint: "<the request, in the GD's words>"
 - **Everything else:** the architect's `Assumptions:`, approved together at CP2.
 
 ## 2. CP1 — runs per `routing.md` → Profile defaults → CP1 + `critic`
-- **No open direction question:** the GD already set it → `CP1: n/a (direction given: …)` under `GD decisions`, go to step 3.
+- **No open direction question:** the main GD already set it → `CP1: n/a (direction given: …)` under `Main GD decisions`, go to step 3.
 
 1. **Options:** `researcher` (Options) on the open design/architecture question.
-   - **Foundation question:** a foundation question (netcode, backend, ads, analytics) → `/decide` here, the GD's design pick as its constraint.
-2. **Pick:** GD picks one by name (unranked options, `core.md`) → `critic` attacks it.
-3. **Lock:** GD locks it, or picks again. Record the pick and accepted risks under `GD decisions`.
+   - **Foundation question:** a foundation question (netcode, backend, ads, analytics) → `/decide` here, the main GD's design pick as its constraint.
+2. **Pick:** main GD picks one by name (unranked options, `core.md`) → `critic` attacks it.
+3. **Lock:** main GD locks it, or picks again. Record the pick and accepted risks under `Main GD decisions`.
 
 ## 3. Spec + CP2 — `technical-architect` (Spec mode)
 - **Spec form:** profile decides full spec vs acceptance criteria only.
 - **Long spec:** long → `.workflow/features/<slug>.spec.md`.
 - **`Open questions:`:** routed by kind:
-  - **Design:** → GD.
+  - **Design:** → main GD.
   - **Architecture:** → the architect settles it.
   - **Technology:** → `/decide` **only** when hard to reverse, paid, or a foundation (netcode, backend, ads, analytics).
   - **Cheap reversible technology:** a cheap reversible choice (UI system, local save format, a tween library) is the architect's, using what the project already has.
@@ -61,9 +61,9 @@ argument-hint: "<the request, in the GD's words>"
 - **CP2 `AskUserQuestion`:** approve / revise (what) / rethink direction (back to step 2 when it runs for this size and profile, else re-size at step 1).
 - **Build mode question:** `Lanes:` not `serial only` → second question in the same call: Build mode serial (Khuyến nghị) / lanes, stating the cost:
   - **Compile cost:** lane A loses the per-agent compile check.
-  - **Editor cost:** the GD closes and reopens the Editor once for the merge.
+  - **Editor cost:** the main GD closes and reopens the Editor once for the merge.
   - **Mirror cost:** a mirror pass is provisional until Edit Mode agrees.
-- **Build mode answer:** answer → `Build mode:` and `GD decisions`.
+- **Build mode answer:** answer → `Build mode:` and `Main GD decisions`.
 - **Multiplayer:** a multiplayer feature approved → `Multiplayer: yes` in `CLAUDE.md`.
 
 ## 4. Build — serial, one Editor holder at a time
@@ -87,21 +87,21 @@ argument-hint: "<the request, in the GD's words>"
 - **Tests:** each implementer writes the UTF tests its `Tests:` rows name, in the same change as the code.
 - **Compile check after every implementer:** commands, the `up_to_date` trap and the no-Editor path per [build-checks.md](references/build-checks.md).
   - **Errors:** errors → same agent, next attempt.
-  - **Foreign errors:** errors only in files outside this attempt's `Changed` → not an attempt, `Needs GD` (another session's work).
+  - **Foreign errors:** errors only in files outside this attempt's `Changed` → not an attempt, `Needs main GD` (another session's work).
 - **Test run after the compile check:** filtered to the agent's test assemblies, mode per assembly; commands per [build-checks.md](references/build-checks.md).
   - **Editor open:** the configured MCP's test-run tool, polling its status tool until the run reports a result (`unity test` refuses a project open in an Editor).
-  - **No such tool:** `Needs GD: close the Editor` → `unity test` → `Needs GD: reopen it`.
-  - **Editor cost:** that costs the GD one close/reopen per implementer — say so at the first one.
+  - **No such tool:** `Needs main GD: close the Editor` → `unity test` → `Needs main GD: reopen it`.
+  - **Editor cost:** that costs the main GD one close/reopen per implementer — say so at the first one.
   - **Executed count:** more than zero executed (`unity-test-framework` step 11).
   - **Which agents:** only for an agent with `Tests:` rows; none (technical-artist, the Lanes stub pass) → `Tests: n/a` in its `Log` row.
   - **Failing test:** a failing or missing test → same agent, next attempt.
   - **Results:** record each result in the feature file's `Tests` table.
 - **Commit:** after each implementer's compile check and test run pass — the main session, per `git-commit` (the `core.md` exception), on `feature/<slug>`.
-  - **Branch check:** first `git branch --show-current` must equal `Branch:`, else stop, `Needs GD` (another session moved HEAD).
+  - **Branch check:** first `git branch --show-current` must equal `Branch:`, else stop, `Needs main GD` (another session moved HEAD).
   - **Staging:** stage only this feature's paths; another session's files stay out.
   - **Push:** never push.
   - **Next agent:** then `next step:` the next agent.
-- **Log:** log each return under `Log`: agent, `Lane`, `Changed`, `Verified`, `Attempts n/N`, `Limitations`, `Needs GD` (tell the GD at once).
+- **Log:** log each return under `Log`: agent, `Lane`, `Changed`, `Verified`, `Attempts n/N`, `Limitations`, `Needs main GD` (tell the main GD at once).
 - **Session line:** refresh `Session:` at every CP or Log write.
 
 ### Lanes — only when `Build mode: lanes`
@@ -116,12 +116,12 @@ argument-hint: "<the request, in the GD's words>"
 3. **Pending tests:** a lane B test that exercises a lane A body → `pending merge` in the `Tests` table, not a failed attempt; it runs after the merge.
 4. **Merge once, after lane B's last agent, in this order:**
    - **Worktree commits:** commit each worktree on its branch (`git-commit`).
-   - **Merge:** `git-expert` merges into `feature/<slug>` with the Editor closed (`Needs GD: close the Editor`).
-   - **Reopen:** `Needs GD: reopen the Editor`, wait for the import.
+   - **Merge:** `git-expert` merges into `feature/<slug>` with the Editor closed (`Needs main GD: close the Editor`).
+   - **Reopen:** `Needs main GD: reopen the Editor`, wait for the import.
    - **After the import:** compile check → commit the `.meta` files Unity generated.
    - **Test comparison:** the Edit Mode run compared with the mirror run (`core-tests-without-unity` step 7) and every `pending merge` test.
    - **Failure:** a failure → the lane A owner, next attempt; caps unchanged.
-   - **Earlier merge:** a merge needed earlier costs the GD one more Editor close — say so in the `AskUserQuestion` that requests it.
+   - **Earlier merge:** a merge needed earlier costs the main GD one more Editor close — say so in the `AskUserQuestion` that requests it.
 
 ## 5. Gate offer — one `AskUserQuestion`, two questions
 - **Questions:** Review? QA? Each: yes (Khuyến nghị) / no, with what skipping leaves unchecked (`routing.md` → Gates).
@@ -135,7 +135,7 @@ argument-hint: "<the request, in the GD's words>"
   - **QA again:** the affected QA cases again when QA was chosen.
 
 ## 6. CP3 — L only
-- **Built vs spec:** `technical-architect` (CP3) → GD approves, or the named drift goes back to step 4 (+1 `rework`, written in the file), then step 5's rework rule.
+- **Built vs spec:** `technical-architect` (CP3) → main GD approves, or the named drift goes back to step 4 (+1 `rework`, written in the file), then step 5's rework rule.
 
 ## 7. QA — only if chosen at step 5
 - **Run:** `/qa <slug>`, the profile's recommended QA as its plan.
@@ -156,7 +156,7 @@ argument-hint: "<the request, in the GD's words>"
   - **Next item:** then offer the next backlog item — the first `todo` whose dependencies are `done` (`/plan-game`).
 
 ## Change request (open feature; a closed feature takes new work instead)
-- **Record:** append the GD's words under `## Request` as `Change <n> (<date>)`; set `CP: CP2 — next step: rate change <n>`; halt new dispatches.
+- **Record:** append the main GD's words under `## Request` as `Change <n> (<date>)`; set `CP: CP2 — next step: rate change <n>`; halt new dispatches.
 - **Before CP2:** re-dispatch the architect with the change (back to step 2 if the direction moves); no counter.
 - **Past CP2:** `technical-architect` rates it:
   - **Minor:** edit spec + criteria, continue.
@@ -167,9 +167,9 @@ argument-hint: "<the request, in the GD's words>"
 - **`Contracts:` change:** a change to `Contracts:` during lanes → finish or remove the open worktrees, re-stub, branch again.
 
 ## Abandon
-- **GD drops it:** `Status: Abandoned`, why, last verified state.
-- **Open bugs:** `Won't fix`, `--by GD`: abandoning is the GD's order.
-- **Journal:** `.workflow/bugs.jsonl` dirty or untracked in `git status`, even with no bugs moved → add "journal uncommitted" to the report: it waits for the GD's commit order.
+- **Main GD drops it:** `Status: Abandoned`, why, last verified state.
+- **Open bugs:** `Won't fix`, `--by "main GD"`: abandoning is the main GD's order.
+- **Journal:** `.workflow/bugs.jsonl` dirty or untracked in `git status`, even with no bugs moved → add "journal uncommitted" to the report: it waits for the main GD's commit order.
 - **Backlog row:** the backlog row → `dropped`.
 - **Worktrees:** `Worktrees:` entries removed (`git-expert`).
 - **Branch:** `AskUserQuestion`: delete `feature/<slug>` via `git-expert` (Khuyến nghị) / keep it, with a `DEBT.md` entry naming the dormant code.

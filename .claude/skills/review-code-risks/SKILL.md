@@ -10,7 +10,7 @@ allowed-tools: PowerShell, Read, Grep, Glob, Bash, Skill
 - **Not for:** correctness (`code-reviewer`), measured verdict (`performance-qa-engineer`), confirmed fault (`/investigate-device-crash`), confirmed build fault (`build-fault-triage`).
 - **Additive:** additive to the `Not for:` owners: name matches as risks to verify there, never as confirmed.
 - **Input:** `$ARGUMENTS`: optional paths.
-- **Final report:** to the GD in Vietnamese, code verbatim.
+- **Final report:** to the main GD in Vietnamese, code verbatim.
 
 ## References
 - **[risk-patterns.md](references/risk-patterns.md):** scanning the scope: every pattern and the filter rules.

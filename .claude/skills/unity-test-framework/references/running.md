@@ -1,6 +1,6 @@
 # Running — Player, command line, TestRunnerApi
 
-Producing a platform build is `build-release-engineer`'s work on the GD's explicit request; this is the configuration it executes.
+Producing a platform build is `build-release-engineer`'s work on the main GD's explicit request; this is the configuration it executes.
 
 ## Where tests run
 - Editor: fastest, the only route for Edit Mode, no platform-specific behaviour.

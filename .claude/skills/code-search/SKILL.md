@@ -25,4 +25,4 @@ user-invocable: false
 
 ## XERJ down or absent
 - **Fallback:** Grep / Glob, narrowest path first.
-- **Starting a node:** the GD's call: `xerj --data-dir ~/xerj-data` (data dir outside the repo).
+- **Starting a node:** the main GD's call: `xerj --data-dir ~/xerj-data` (data dir outside the repo).

@@ -3,7 +3,7 @@ export const meta = {
   description:
     'Read-only audit of a Unity project: per-module risk and Core-boundary review plus one secret scan, verified and combined',
   whenToUse:
-    'Adopting an existing project, before a release, or when the GD asks for a health check; never edits',
+    'Adopting an existing project, before a release, or when the main GD asks for a health check; never edits',
   phases: [
     { title: 'Discover', detail: 'list code modules by asmdef' },
     {

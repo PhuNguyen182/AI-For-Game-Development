@@ -30,7 +30,7 @@ user-invocable: false
 5. **Actual ≠ expected → `pull-logs --package <app id>`:** app-only lines; `--full-buffer` only when the app's lines cannot explain it.
    - **Crash:** stop the walkthrough and `pull-logs`; never relaunch and continue silently.
 6. **Classify (Defect / Design flaw / As designed) and grade severity per `qa-standards`:** from observed impact, not the case's `Impact if this breaks`.
-   - **Design flaw:** `gd` at once.
+   - **Design flaw:** `main-gd` at once.
 7. **Timing-dependent finding → repeat it and state attempts vs reproductions:** never reliable from one run, never dropped because a later run looked clean.
 8. **Every case not reached → `Not played`:** with why (device stopped, blocked by an earlier case, time).
 

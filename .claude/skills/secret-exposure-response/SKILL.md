@@ -8,7 +8,7 @@ user-invocable: false
 
 - **Not for:** whether a match is a real secret (`security-reviewer`), locating it in history (`git-forensics`), running the rewrite (`git-recovery` via `git-expert`).
 - **Not for:** the working-tree scan (`secret-and-supply-chain-scan`), CI credential wiring (`jenkins-pipeline-authoring`).
-- **Owners:** `cto` decides and plans; the GD acts in vendor consoles; `git-expert` runs any purge.
+- **Owners:** `cto` decides and plans; the main GD acts in vendor consoles; `git-expert` runs any purge.
 - **Values:** no agent ever holds the old or the new value.
 
 ## Steps
@@ -27,8 +27,8 @@ user-invocable: false
    - **Host residue:** state that the host may keep objects in pull-request refs or caches until its support removes them.
 6. **Name how it entered and the guard that failed:** missing ignore rule, bypassed hook, CI script, copied config.
    - **Repeat:** a second occurrence of the same path → a standard via `engineering-standard-adr-authoring`.
-7. **Frame every GD action in product terms with a deadline:** what an attacker can do today, what each step costs (downtime, re-clone, store contact), who does it.
-   - **Rewrite:** the history rewrite needs the GD's ask (`core.md` → GD).
+7. **Frame every main GD action in product terms with a deadline:** what an attacker can do today, what each step costs (downtime, re-clone, store contact), who does it.
+   - **Rewrite:** the history rewrite needs the main GD's ask (`core.md` → main GD).
 
 ## Credential classes
 
@@ -37,14 +37,14 @@ user-invocable: false
 | API key, token, CI/webhook secret | Revoke or regenerate in the issuing console | — |
 | Cloud service-account JSON | Delete that key id in IAM, issue a new one | — |
 | Android upload key (Play App Signing on) | Upload-key reset in Play Console | — |
-| Android app signing key (no Play App Signing) | Not revocable | Permanent exposure: anyone can sign updates the device accepts → `Needs GD` now |
+| Android app signing key (no Play App Signing) | Not revocable | Permanent exposure: anyone can sign updates the device accepts → `Needs main GD` now |
 | iOS distribution cert / `.p12`, App Store Connect API key | Revoke in Apple Developer / App Store Connect, reissue | — |
 | Payment, IAP receipt or server-authority secret | Rotate, then audit the ledger for the exposure window | — |
-| Player PII | Not rotatable | Purge is mandatory; GDPR breach notice clock (72 h) may run → `Needs GD` now |
+| Player PII | Not rotatable | Purge is mandatory; GDPR breach notice clock (72 h) may run → `Needs main GD` now |
 
 ## Never
 - **Printing the secret:** printing, quoting or copying it; cite sha, path and line only.
-- **Pasting values:** asking the GD to paste an old or new value into chat or any file.
+- **Pasting values:** asking the main GD to paste an old or new value into chat or any file.
 - **Purge for rotation:** letting a purge, a revert or a deleted file stand in for rotation, or delaying rotation until a purge is ready.
 - **Contained from a sweep:** declaring it contained from a local sweep or from the remote no longer showing the branch.
 
@@ -57,8 +57,8 @@ user-invocable: false
 - Order: 1 revoke/rotate (<owner>) · 2 repoint <consumers> · 3 verify old rejected (<how>) · 4 audit <window, log source>
 - Purge: no — <why dead> | yes — <why>; host residue: <PR refs, caches, support request>
 - Entry path / failed guard: <...> · Standard: none | ADR via engineering-standard-adr-authoring
-- Needs GD: <actions, deadline, cost in product terms>
-- Routed to: GD (console) · git-expert (purge, radius 3) | none · sdk-platform-engineer (consumer config)
+- Needs main GD: <actions, deadline, cost in product terms>
+- Routed to: main GD (console) · git-expert (purge, radius 3) | none · sdk-platform-engineer (consumer config)
 ```
 
 ## Example
