@@ -64,9 +64,17 @@ def find_root(arg):
     return Path(arg).resolve() if arg else Path(__file__).resolve().parents[4]
 
 
+# The caller's location variables (a git hook, a worktree shell) would point git at another repository.
+GIT_LOCATION_ENV = ("GIT_DIR", "GIT_WORK_TREE", "GIT_CEILING_DIRECTORIES", "GIT_INDEX_FILE", "GIT_COMMON_DIR", "GIT_OBJECT_DIRECTORY")
+
+
+def git_env() -> dict:
+    return {k: v for k, v in os.environ.items() if k not in GIT_LOCATION_ENV}
+
+
 def require_ignored(root: Path, rel: str):
     """Fail closed: not ignored, not a repository or no git all refuse the write."""
-    r = subprocess.run([git_exe(), "-C", str(root), "check-ignore", "-q", "--", rel], capture_output=True)
+    r = subprocess.run([git_exe(), "-C", str(root), "check-ignore", "-q", "--", rel], capture_output=True, env=git_env())
     if r.returncode == 1:
         raise Refused("%s is not git-ignored: add .memory/advisory/ to .gitignore first" % rel)
     if r.returncode != 0:
@@ -284,9 +292,6 @@ def cmd_rounds(root, a):
     return 0
 
 
-GIT_LOCATION_ENV = ("GIT_DIR", "GIT_WORK_TREE", "GIT_CEILING_DIRECTORIES")
-
-
 def enclosing_repo(folder: Path):
     """The work tree holding this folder, or None only when no folder from here to the root holds a .git entry.
     Git's message is never read: it is locale-dependent, and "not a git repository" also names a .git file whose
@@ -294,8 +299,7 @@ def enclosing_repo(folder: Path):
     probe = folder
     while not probe.exists() and probe.parent != probe:
         probe = probe.parent
-    env = {k: v for k, v in os.environ.items() if k not in GIT_LOCATION_ENV}  # discovery from the folder, not the caller's env
-    r = subprocess.run([git_exe(), "-C", str(probe), "rev-parse", "--show-toplevel"], capture_output=True, env=env)
+    r = subprocess.run([git_exe(), "-C", str(probe), "rev-parse", "--show-toplevel"], capture_output=True, env=git_env())
     if r.returncode == 0:
         return Path(r.stdout.decode("utf-8", "replace").strip()).resolve()
     if not any(os.path.lexists(p / ".git") for p in (probe, *probe.parents)):

@@ -2,6 +2,7 @@
 import contextlib
 import io
 import json
+import os
 import shutil
 import sqlite3
 import subprocess
@@ -220,6 +221,25 @@ class AdvTest(unittest.TestCase):
             self.skipTest("the temp folder sits inside a repository")
         self.mock_rev_parse(128, "fatal: không phải kho git".encode("utf-8"))
         self.assertEqual(self.run_cli("export", str(d / "copy.db"))[0], 0)
+
+    def test_a_callers_git_dir_never_decides_the_ignore_check(self):  # review round 4, N2
+        other = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, other, ignore_errors=True)
+        subprocess.run(["git", "init", "-q", str(other)], check=True)
+        (other / ".git" / "info").mkdir(exist_ok=True)
+        (other / ".git" / "info" / "exclude").write_text("*\n", encoding="utf-8")  # ignores everything
+        (self.root / ".gitignore").write_text("", encoding="utf-8")  # the real repo ignores nothing
+        old = os.environ.get("GIT_DIR")
+        os.environ["GIT_DIR"] = str(other / ".git")
+        try:
+            code, _, err = self.ingest()
+        finally:
+            if old is None:
+                os.environ.pop("GIT_DIR", None)
+            else:
+                os.environ["GIT_DIR"] = old
+        self.assertEqual(code, 2)
+        self.assertIn("not git-ignored", err)
 
     def test_marker_values_are_redacted(self):
         self.ingest(brief="Advisory-Thread: t1\nTarget: report for a.b@example.com")

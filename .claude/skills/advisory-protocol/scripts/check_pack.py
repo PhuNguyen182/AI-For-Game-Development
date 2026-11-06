@@ -59,9 +59,15 @@ MAX_TEXT = 80
 LONG_NUMBER_DIGITS = 15
 
 
+NON_ASCII_WORD = "<non-ascii>"  # never on the vocabulary
+
+
 def words(header: str):
     spaced = re.sub(r"([a-z0-9])([A-Z][a-z])", r"\1 \2", header.strip())
-    return [w for w in re.split(r"[^a-z0-9]+", spaced.lower()) if w]
+    out = [w for w in re.split(r"[^a-z0-9]+", spaced.lower()) if w]
+    if any(ord(ch) > 127 and ch.isalnum() for ch in header):
+        out.append(NON_ASCII_WORD)  # splitting on ASCII would drop it and let "cohort 用户名" pass as "cohort"
+    return out
 
 
 def known(word: str) -> bool:

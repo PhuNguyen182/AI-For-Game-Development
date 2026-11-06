@@ -140,6 +140,13 @@ class PackTest(unittest.TestCase):
                 self.assertFalse(any("8.8" in p or "912" in p for p in problems), h)
         self.assertFalse(any("8.8" in p for p in self.table("level 8.8.8.8\na.b@example.com\n")))
 
+    def test_non_ascii_headers_fail_and_are_never_echoed(self):  # review round 4, security N1
+        for h in ("cohort 用户名", "level имя", "user 王小明", "user ８８８", "ｕｓｅｒ"):
+            with self.subTest(header=h):
+                problems = self.one_column(h)
+                self.assertTrue(problems, h)
+                self.assertFalse(any(h in p for p in problems), h)
+
     def test_row_numbers_count_blank_rows(self):  # review round 3, Low
         problems = self.table("segment,d1\n\npaid,0.4,x\n")
         self.assertTrue(any("row 3 has 3 cells" in p for p in problems), problems)
