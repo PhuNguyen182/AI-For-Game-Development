@@ -55,7 +55,7 @@ user-invocable: false
 - Evidence: <capture per claim; console excerpts with context>
 - Reproduction: <attempts / hits per finding>
 - Classification: <Defect / Design flaw / As designed, per finding>
-- Routed to: <agent-id per defect, gd for any design flaw>
+- Routed to: <agent-id per defect, main-gd for any design flaw>
 - Not played: <scenarios, configurations, paths not reached>
 ```
 

@@ -241,6 +241,8 @@ function Test-Paths([string]$path, [string]$text) {
     }
     if ($text -match $RetiredPaths) { Fail "$(Rel $path): references retired path '$($Matches[0])'" }
     foreach ($a in $RetiredAgents) { if ($text -match "\b$a\b") { Fail "$(Rel $path): references retired agent '$a'" } }
+    # The human role is main GD (route token main-gd); a bare gd route names nobody. %gd is a git format code (BUG-0011).
+    if ($text -cmatch '(?m)^.*(?:Next|Routed to)[*_`]*:.*(?<![%\w-])gd\b.*$' -or $text -cmatch '`gd`') { Fail "$(Rel $path): retired route 'gd' (use main-gd): '$($Matches[0].Trim())'" }
     foreach ($m in [regex]::Matches($text, '`([a-z]+(?:-[a-z]+)*-(?:engineer|tester|reviewer|lead|investigator|architect|artist|expert))`')) {
         if ($agents -notcontains $m.Groups[1].Value) { Fail "$(Rel $path): agent '$($m.Groups[1].Value)' does not exist" }
     }

@@ -65,10 +65,10 @@ user-invocable: false
 - Undo: <literal reversing command>
 - Not covered: <what this anchor cannot restore>
 - Decision: proceed | blocked
-- Routed to: <git-expert / cto / gd / none>
+- Routed to: <git-expert / cto / main-gd / none>
 ```
 
 ## Example
 - **"Squash and force-push develop, the anchor is overkill for a branch only I use":** declined — `develop` has an upstream.
   - **Why:** other clones' reflogs are out of reach and radius 3 applies whoever uses it.
-  - **Done instead:** `Decision: blocked`, `Routed to: gd`, command quoted, cost stated; nothing run.
+  - **Done instead:** `Decision: blocked`, `Routed to: main-gd`, command quoted, cost stated; nothing run.

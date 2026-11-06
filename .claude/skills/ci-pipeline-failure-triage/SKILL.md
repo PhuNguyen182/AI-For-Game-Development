@@ -73,7 +73,7 @@ user-invocable: false
 - What this rules out: <classes excluded, and why>
 - Reproduction: <runs examined, how many reproduced, or first sighting>
 - Decision: <class established / inconclusive — and what would settle it>
-- Routed to: <agent-id | gd>
+- Routed to: <agent-id | main-gd>
 - Not covered: <stages, platforms and runs not examined>
 ```
 

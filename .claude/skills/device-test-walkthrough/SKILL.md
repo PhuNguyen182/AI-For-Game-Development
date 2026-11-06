@@ -58,7 +58,7 @@ user-invocable: false
   - Classification: <Defect | Design flaw | As designed — only when Result != Pass>
   - Severity: <Critical | High | Medium | Low>
 - Crash/ANR: <no | case, pull-logs dir, routed to investigate-device-crash>
-- Routed to: <agent per failing case; gd for a design flaw>
+- Routed to: <agent per failing case; main-gd for a design flaw>
 - Not played: <case — why>
 ```
 

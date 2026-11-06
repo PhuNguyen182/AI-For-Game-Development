@@ -695,7 +695,7 @@ ADVISERS = ("product-owner", "game-designer", "monetization-designer")
 ADVISORY_POINTER = "[advisory: adv q]"
 RX_ADVISORY_THREAD = re.compile(r"(?im)^[\s*_>-]*Advisory-Thread[*_]*:")
 RX_ADVISORY_RETURN = re.compile(r"(?m)^[\s*_>-]*Advisory-Return[*_]*:")
-RX_ADVISORY_BLOCK = re.compile(r"(?ms)^[ \t]*<!-- advisory:begin -->[ \t]*$.*?(?:^[ \t]*<!-- advisory:end -->[ \t]*$|\Z)")
+RX_ADVISORY_BLOCK = re.compile(r"(?ms)^[ \t]*<!-- advisory:begin -->[ \t]*\r?$.*?(?:^[ \t]*<!-- advisory:end -->[ \t]*\r?$|\Z)")  # \r?: CRLF text (BUG-0009)
 RX_MEASURED_LINE = re.compile(r"(?m)^.*\[measured:.*$")
 
 

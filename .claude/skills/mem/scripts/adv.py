@@ -166,6 +166,11 @@ def cmd_ingest(root, a):
         data = json.loads(Path(a.file).read_text(encoding="utf-8-sig"))
     else:
         data = json.loads(sys.stdin.buffer.read().decode("utf-8-sig"))
+    if not isinstance(data, dict):
+        raise Refused("ingest needs a JSON object, got %s" % type(data).__name__)
+    for field in ("agent", "return", "brief", "session", "agent_id"):
+        if data.get(field) is not None and not isinstance(data[field], str):
+            raise Refused("ingest field %s must be a string" % field)  # BUG-0010
     agent = data.get("agent")
     body = (data.get("return") or "").strip()
     if not agent or not body:

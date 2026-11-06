@@ -160,7 +160,8 @@ function Get-FeatureCounters([string]$slug, $ledger) {
     if ($text -notmatch '(?m)^- Status:\s*Open') { return @() }
     $line = if ($text -match '(?m)^- Rounds:(.*)$') { $Matches[1] } else { '' }
     $size = if ($text -match '(?m)^- Size:\s*(S|M|L)\b') { $Matches[1] } else { 'M' }
-    $gd = if ($text -match '(?s)## (?:Main )?GD decisions(.*?)(\r?\n## |$)') { $Matches[1] } else { '' }
+    # Every decisions section counts, old heading or new: a game repo's open file may hold both (BUG-0012).
+    $gd = (@([regex]::Matches($text, '(?s)## (?:Main )?GD decisions(.*?)(?=\r?\n## |$)') | ForEach-Object { $_.Groups[1].Value })) -join "`n"
     $stop = (([regex]::Matches($text, '(?m)^- Stop rule:.*$') | ForEach-Object { $_.Value }) -join "`n")
     $out = @()
     foreach ($name in 'review', 'qa', 'rework') {
