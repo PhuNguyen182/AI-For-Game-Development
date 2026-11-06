@@ -2448,6 +2448,7 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     Check 'verify fails per file: a retired gd route' ($r.Code -eq 1 -and $r.Out -match "$(VFail 'route-gd')retired route 'gd'") $true
     VSkill 'route-main-gd' @('- **Route:** `Next: main-gd`, and git log format `%gd`.')
     Check 'verify: main-gd and %gd are not a retired route' (Verify (VRel 'route-main-gd')).Code 0
+    Remove-Item -Recurse -Force (Join-Path $vlSkills 'route-gd'), (Join-Path $vlSkills 'route-main-gd')  # later whole-layer runs count plants exactly
     VSkill 'preloaded-skill' @() 'Foo.Bar and Baz.Qux only.'
     Set-Content (Join-Path $vl '.claude/agents/fixture-agent.md') "---`nname: fixture-agent`ndescription: A fixture.`ntools: Read`nskills:`n  - preloaded-skill`n---`n`n# Fixture"
     Check 'verify: a skill an agent preloads needs no Use trigger' (Verify (VRel 'preloaded-skill')).Code 0
