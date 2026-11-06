@@ -576,6 +576,146 @@ class MemTest(unittest.TestCase):
         self.assertIn("m:lesson/from-a", run(b, "q", "alpha")[1])
 
 
+class AdvisoryScrubEdgeTest(unittest.TestCase):
+    """QA edge cases (game-production-agent, qa-lead plan C2). The helpers are the MemTest ones, without its tests."""
+    setUp = MemTest.setUp
+    tearDown = MemTest.tearDown
+    capture_lines = MemTest.capture_lines
+    assistant = staticmethod(MemTest.assistant)
+    agent_use = staticmethod(MemTest.agent_use)
+    tool_result = staticmethod(MemTest.tool_result)
+    user = staticmethod(MemTest.user)
+    BEGIN, END = "<!-- advisory:begin -->", "<!-- advisory:end -->"
+    FIG = "ARPDAU 0.083"
+    FIG2 = "CPI 1.77"
+
+    def text_of(self, out):
+        return out.read_text(encoding="utf-8")
+
+    def say(self, text, session):
+        return self.text_of(self.capture_lines([self.assistant({"type": "text", "text": text})], session=session))
+
+    def test_two_closed_blocks_in_one_turn_both_leave_a_pointer_and_the_text_between_stays(self):
+        text = self.say("a\n%s\n%s\n%s\nmid\n%s\n%s\n%s\nz" % (self.BEGIN, self.FIG, self.END, self.BEGIN, self.FIG2, self.END), "edge0001-1")
+        self.assertNotIn(self.FIG, text)
+        self.assertNotIn(self.FIG2, text)
+        self.assertEqual(text.count(mem.ADVISORY_POINTER), 2)
+        self.assertIn("mid", text)
+        self.assertIn("z", text)
+
+    def test_a_begin_inside_a_block_does_not_let_the_first_figures_out(self):
+        # begin, begin, end: everything from the first begin to the first end is replaced. (Nesting depth is not tracked:
+        # text after that end stays, which is reported as an observation, not asserted.)
+        text = self.say("Before\n%s\n%s\n%s\n%s\n%s\nAfter" % (self.BEGIN, self.FIG, self.BEGIN, self.FIG2, self.END), "edge0002-1")
+        self.assertNotIn(self.FIG, text)
+        self.assertNotIn(self.FIG2, text)
+        self.assertIn("Before", text)
+        self.assertIn("After", text)
+
+    def test_an_end_marker_with_no_begin_neither_crashes_capture_nor_swallows_the_turn(self):
+        out = self.capture_lines([self.assistant({"type": "text", "text": "Keep this.\n%s\nand this." % self.END})], session="edge0003-1")
+        text = self.text_of(out)
+        self.assertIn("Keep this.", text)
+        self.assertIn("and this.", text)
+
+    def test_an_indented_marker_and_one_with_trailing_blanks_still_strip(self):
+        text = self.say("x\n   %s   \n%s\n\t%s\t\nTailKept" % (self.BEGIN, self.FIG, self.END), "edge0004-1")
+        self.assertNotIn(self.FIG, text)
+        self.assertIn("TailKept", text)  # the text after the end marker survives
+        self.assertEqual(text.count(mem.ADVISORY_POINTER), 1)
+
+    def test_markers_with_windows_line_endings_still_strip(self):
+        # BUG-0009 (AC3): RX_ADVISORY_BLOCK once ended in [ \t]*$, and in multiline mode $ stops before \n only, so a "\r"
+        # after the marker stopped the match and CRLF text kept its figure in a committed trace.
+        crlf = "Before\n%s\n%s\n%s\nAfter" % (self.BEGIN, self.FIG, self.END)
+        text = self.say(crlf.replace("\n", "\r\n"), "edge0005-1")
+        self.assertNotIn(self.FIG, text)
+        self.assertIn("After", text)
+        self.assertEqual(text.count(mem.ADVISORY_POINTER), 1)
+
+    def test_an_unterminated_begin_with_windows_line_endings_still_strips(self):
+        # Same cause (BUG-0009), for the unterminated form.
+        crlf = "Before\n%s\n%s" % (self.BEGIN, self.FIG)
+        text = self.say(crlf.replace("\n", "\r\n"), "edge0006-1")
+        self.assertNotIn(self.FIG, text)
+        self.assertIn("Before", text)
+
+    def test_an_adviser_return_given_as_a_list_of_text_blocks_leaves_one_pointer_per_turn(self):
+        blocks = [{"type": "text", "text": "Status: Done " + self.FIG}, {"type": "text", "text": "more " + self.FIG2}]
+        out = self.capture_lines([
+            self.assistant(self.agent_use("e1", "product-owner", "Read the economy. " + self.FIG)),
+            {"type": "user", "timestamp": "2026-10-28T02:00:02Z", "message": {"content": [{"type": "tool_result", "tool_use_id": "e1", "content": blocks}]}},
+        ], session="edge0007-1")
+        text = self.text_of(out)
+        self.assertNotIn(self.FIG, text)
+        self.assertNotIn(self.FIG2, text)
+        self.assertEqual(text.count(mem.ADVISORY_POINTER), 2)
+
+    def test_a_marked_block_inside_another_agents_list_result_strips_and_the_rest_stays(self):
+        blocks = [{"type": "text", "text": "Done\n%s\n%s\n%s\nok" % (self.BEGIN, self.FIG, self.END)}]
+        out = self.capture_lines([
+            self.assistant(self.agent_use("e2", "ui-engineer", "Fix the HUD.")),
+            {"type": "user", "timestamp": "2026-10-28T02:00:02Z", "message": {"content": [{"type": "tool_result", "tool_use_id": "e2", "content": blocks}]}},
+        ], session="edge0008-1")
+        text = self.text_of(out)
+        self.assertNotIn(self.FIG, text)
+        self.assertIn("Done", text)
+        self.assertIn("ok", text)
+
+    def test_a_marked_block_in_a_list_answer_strips(self):
+        blocks = [{"type": "text", "text": "User said\n%s\n%s\n%s" % (self.BEGIN, self.FIG, self.END)}]
+        out = self.capture_lines([
+            self.assistant({"type": "tool_use", "id": "e3", "name": "AskUserQuestion", "input": {"questions": []}}),
+            {"type": "user", "timestamp": "2026-10-28T02:00:02Z", "message": {"content": [{"type": "tool_result", "tool_use_id": "e3", "content": blocks}]}},
+        ], session="edge0009-1")
+        self.assertNotIn(self.FIG, self.text_of(out))
+
+    def test_a_marker_inside_an_ordinary_tool_result_is_never_captured(self):
+        out = self.capture_lines([
+            self.assistant({"type": "tool_use", "id": "e4", "name": "Bash", "input": {"command": "cat plan.md"}}),
+            self.tool_result("e4", "%s\n%s\n%s" % (self.BEGIN, self.FIG, self.END)),
+            self.assistant({"type": "text", "text": "Read it."}),
+        ], session="edge0010-1")
+        self.assertNotIn(self.FIG, self.text_of(out))
+
+    def test_assistant_text_given_as_a_plain_string_is_not_captured(self):
+        # The parser takes assistant content only as a list of blocks, so a string-form turn cannot reach a trace.
+        out = self.capture_lines([{"type": "assistant", "timestamp": "2026-10-28T02:00:01Z", "message": {"content": "plain " + self.FIG}},
+                                  self.assistant({"type": "text", "text": "kept"})], session="edge0011-1")
+        text = self.text_of(out)
+        self.assertNotIn(self.FIG, text)
+        self.assertIn("kept", text)
+
+    def test_the_exact_label_is_replaced_whole_line_wherever_it_sits_in_the_line(self):
+        text = self.say("Keep.\nStart of line D7 11.2%% [measured: r.csv, 2026-10, 1.4.0] end of line %s\nKeep too." % self.FIG, "edge0012-1")
+        self.assertNotIn("11.2%", text)
+        self.assertNotIn(self.FIG, text)
+        self.assertIn("Keep.", text)
+        self.assertIn("Keep too.", text)
+
+    def test_no_figure_survives_anywhere_under_the_memory_folder(self):
+        # The fixture holds one known figure in every place a capture reads; the check reads the bytes of every file
+        # capture wrote (traces, state), not just the trace the assertions above look at.
+        fig = "ARPDAU 0.0831"
+        labelled = "D7 11.27%% [measured: retention.csv, 2026-10, 1.4.0] %s" % fig
+        self.capture_lines([
+            self.assistant(self.agent_use("g1", "monetization-designer", "Read. " + fig)),
+            self.tool_result("g1", "Status: Done\nAdvisory-Return: v1\n### F1 [High] x\n" + fig),
+            self.assistant({"type": "text", "text": "Before.\n%s\n%s\n%s\nAfter." % (self.BEGIN, fig, self.END)}),
+            self.assistant({"type": "text", "text": "Plain.\n" + labelled}),
+            self.assistant({"type": "tool_use", "id": "g2", "name": "AskUserQuestion", "input": {"questions": []}}),
+            self.tool_result("g2", "User answered: " + labelled),
+            self.assistant({"type": "text", "text": "Tail."}),
+        ], session="edge0013-1")
+        files = [p for p in (self.root / ".memory").rglob("*") if p.is_file()]
+        self.assertTrue(any(p.suffix == ".jsonl" for p in files), files)
+        for p in files:
+            data = p.read_bytes().decode("utf-8", "replace")
+            self.assertNotIn(fig, data, p.name)
+            self.assertNotIn("0.0831", data, p.name)
+            self.assertNotIn("11.27", data, p.name)
+
+
 CSC = Path(os.environ.get("WINDIR", "")) / "Microsoft.NET" / "Framework64" / "v4.0.30319" / "csc.exe"
 
 

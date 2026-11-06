@@ -3,8 +3,10 @@
 Every past review finding has its own named case, so a rewrite that drops a rule fails here.
 """
 import shutil
+import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -190,6 +192,151 @@ class PackTest(unittest.TestCase):
 
     def test_a_missing_folder_cannot_be_checked(self):
         self.assertEqual(check_pack.main(["check_pack.py", str(self.d / "nope")]), 2)
+
+
+class PackEdgeTest(unittest.TestCase):
+    """QA edge cases (game-production-agent, qa-lead plan C5). The helpers are the PackTest ones, without its tests."""
+    setUp = PackTest.setUp
+    table = PackTest.table
+    one_column = PackTest.one_column
+
+    def raw_table(self, data, name="x.csv"):
+        for old in self.d.glob("*.[ct]sv"):
+            old.unlink()
+        (self.d / name).write_bytes(data)
+        return check_pack.check_pack(self.d)
+
+    def test_the_user_id_header_is_a_literal_case_not_a_pattern(self):
+        self.assertIn("user_id", FAIL_IDENTIFIES)
+        problems = self.one_column("user_id")
+        self.assertEqual(problems, ["x.csv: column 1 ('user_id') identifies a person or device"])
+
+    def test_a_quoted_cell_holding_the_separator_is_one_cell(self):
+        self.assertEqual(self.table('segment,d1\n"paid, high spenders",0.4\n'), [])
+
+    def test_a_quoted_cell_holding_a_quote_and_a_newline_is_one_cell(self):
+        self.assertEqual(self.table('segment,d1\n"paid ""big""\nspenders",0.4\n'), [])
+
+    def test_an_identifier_inside_a_quoted_cell_with_a_comma_still_fails_without_echo(self):
+        problems = self.table('segment,d1\n"hello, a.b@example.com",0.4\n')
+        self.assertTrue(any("email" in p for p in problems))
+        self.assertFalse(any("example" in p for p in problems))
+
+    def test_a_quoted_header_holding_a_separator_fails_closed(self):
+        self.assertTrue(any("separator" in p for p in self.table('"user,id",d1\n1,2\n')))
+
+    def test_windows_line_endings_are_read_and_a_bad_header_still_fails(self):
+        self.assertEqual(self.raw_table(b"cohort_date,d1\r\n2026-10-01,0.4\r\n"), [])
+        self.assertEqual(self.raw_table(b"user_id,d1\r\n1,0.4\r\n"), ["x.csv: column 1 ('user_id') identifies a person or device"])
+        self.assertTrue(any("email" in p for p in self.raw_table(b"segment,d1\r\na.b@example.com,0.4\r\n")))
+
+    def test_old_mac_line_endings_are_read_too(self):
+        self.assertEqual(self.raw_table(b"cohort_date,d1\r2026-10-01,0.4\r"), [])  # a clean CR-only pack passes
+        self.assertEqual(self.raw_table(b"user_id,d1\r1,0.4\r"), ["x.csv: column 1 ('user_id') identifies a person or device"])
+
+    def test_bytes_that_are_not_utf8_are_unreadable_and_never_echoed(self):
+        for data in (b"d1\n\xff\xfe\x00\n", b"d1\n\xc3\x28\n", "d1\n1\n".encode("utf-16")):
+            with self.subTest(data=data[:6]):
+                problems = self.raw_table(data)
+                self.assertEqual(problems, ["x.csv: unreadable (UnicodeDecodeError)"])
+
+    def test_zero_width_and_full_width_headers_that_hide_a_person_word_are_rejected(self):
+        for h in ("use​r_id", "u‍ser_id", "us﻿er_id", "user​id", "ｕｓｅｒ_id", "ＵＳＥＲ", "user　id"):
+            with self.subTest(header=h):
+                self.assertTrue(any("column 1" in p for p in self.one_column(h)), h)
+
+    def test_a_full_width_header_is_never_echoed_when_it_is_outside_the_vocabulary(self):
+        for h in ("ｕｓｅｒ_id", "use​r_id", "ＵＳＥＲ"):
+            with self.subTest(header=h):
+                problems = self.one_column(h)
+                self.assertTrue(problems)
+                self.assertFalse(any(h in p or ascii(h)[1:-1] in p for p in problems), problems)
+
+    def test_a_ten_digit_full_width_run_makes_its_column_text_and_is_a_long_digit_run_without_echo(self):
+        # RX_NUMBER starts with an ASCII [1-9] or 0, so a full-width number is not a number: even under the numeric-looking
+        # header d1 the column is text and the text rule ("holds a long digit run") applies, not the numeric-id rule.
+        ten = "".join(chr(0xFF10 + int(c)) for c in "0912345678")
+        for header, table, expected in (("segment", "segment,d1\n%s,0.4\n", "x.csv: column 1 ('segment') holds a long digit run"),
+                                        ("d1", "d1\n0.4\n%s\n", "x.csv: column 1 ('d1') holds a long digit run")):
+            with self.subTest(header=header):
+                self.assertEqual(self.table(table % ten), [expected])
+
+    def test_a_fifteen_digit_full_width_number_is_a_long_digit_run_in_a_text_column_not_a_numeric_id(self):
+        cell = "".join(chr(0xFF10 + int(c)) for c in "123456789012345")
+        self.assertEqual(self.table("d1\n0.4\n%s\n" % cell), ["x.csv: column 1 ('d1') holds a long digit run"])
+
+    def test_identifying_values_fail_under_several_allowed_headers(self):
+        values = {"a UUID": "123e4567-e89b-12d3-a456-426614174000", "an email": "a.b@example.com", "an IP address": "8.8.8.8"}
+        for header in ("segment", "campaign", "placement", "country_code", "event_name"):
+            for kind, cell in values.items():
+                with self.subTest(header=header, kind=kind):
+                    problems = self.table("%s,d1\n%s,0.4\n" % (header, cell))
+                    self.assertTrue(any(kind in p for p in problems), problems)
+                    self.assertFalse(any(cell in p for p in problems))
+
+    def test_an_ipv4_shaped_value_under_a_version_or_build_header_is_allowed_by_design(self):
+        # check_pack.py exempts "version" and "build" headers so 1.0.0.140 passes; a real address there passes too.
+        self.assertEqual(self.table("app_version,d1\n1.0.0.140,0.4\n"), [])
+
+    def test_header_case_does_not_change_the_verdict(self):
+        for h in ("UsEr_Id", "USER_ID", "User_ID", "pLaYeR_iD", "DEVICE_ID", "E-Mail"):
+            with self.subTest(header=h):
+                self.assertTrue(any("identifies" in p for p in self.one_column(h)), h)
+        for h in ("Cohort_DATE", "D1_Retention", "ARPDAU", "Revenue_Per_User", "eCPM_USD"):
+            with self.subTest(header=h):
+                self.assertEqual(self.one_column(h), [], h)
+
+    def test_a_large_file_is_checked_in_bounded_time(self):
+        rows = "".join("2026-10-%02d,1.0.%d,0.4,0.15,%d,0.15\n" % (i % 28 + 1, i % 50, i) for i in range(100000))
+        start = time.monotonic()
+        problems = self.table("cohort_date,build_version,d1,d7,active_users,revenue_usd\n" + rows)
+        elapsed = time.monotonic() - start
+        self.assertEqual(problems, [])
+        self.assertLess(elapsed, 30.0, "100k rows took %.1fs" % elapsed)
+
+    def test_a_huge_cell_or_header_fails_closed_in_bounded_time(self):
+        start = time.monotonic()
+        self.assertEqual(self.table("segment\n" + "a" * 3000000 + "\n"), ["x.csv: unreadable (Error)"])
+        self.assertEqual(self.table("a" * 3000000 + "\n1\n"), ["x.csv: unreadable (Error)"])
+        self.assertLess(time.monotonic() - start, 30.0)
+
+    def test_a_wide_file_is_checked_in_bounded_time(self):
+        start = time.monotonic()
+        problems = self.table(",".join(["d1"] * 20000) + "\n" + ",".join(["1"] * 20000) + "\n")
+        self.assertEqual(problems, [])
+        self.assertLess(time.monotonic() - start, 30.0)
+
+    def run_cli(self):
+        r = subprocess.run([sys.executable, "-I", str(Path(check_pack.__file__)), str(self.d)], capture_output=True)
+        return r.returncode, r.stdout.decode("utf-8", "replace"), r.stderr.decode("utf-8", "replace")
+
+    def test_the_exit_message_holds_neither_the_unknown_word_nor_the_value(self):
+        word, value = "zebrafoo", "a.b.secret@example.com"
+        (self.d / "x.csv").write_text("%s,segment\n1,%s\n" % (word, value), encoding="utf-8")
+        code, out, err = self.run_cli()
+        self.assertEqual(code, 1)
+        self.assertIn("FAIL", out)
+        for text in (out, err):
+            self.assertNotIn(word, text)
+            self.assertNotIn(value, text)
+            self.assertNotIn("secret", text)
+            self.assertNotIn("example", text)
+        self.assertIn("column 1", out)
+
+    def test_the_exit_message_holds_no_value_for_every_identifying_cell(self):
+        for cell in ID_VALUES:
+            with self.subTest(cell=cell):
+                (self.d / "x.csv").write_text("segment,d1\n%s,0.4\n" % cell, encoding="utf-8")
+                code, out, err = self.run_cli()
+                self.assertEqual(code, 1, cell)
+                self.assertNotIn(cell, out + err)
+
+    def test_a_non_utf8_pack_exits_1_and_echoes_no_byte(self):
+        (self.d / "x.csv").write_bytes(b"d1\n\xff\xfeSENTINELVALUE\n")
+        code, out, err = self.run_cli()
+        self.assertEqual(code, 1)
+        self.assertNotIn("SENTINELVALUE", out + err)
+        self.assertNotIn("�", out + err)
 
 
 if __name__ == "__main__":

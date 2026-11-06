@@ -2743,5 +2743,65 @@ class TestPlantedGit(unittest.TestCase):
                 bugs.git_exe()
 
 
+class TestGdAttributionEdge(Base):
+    """QA edge cases (game-production-agent, qa-lead plan C6): the retired bare role GD, and the journals that still hold it."""
+
+    OLD_NAMES = ("GD", "gd", "Main GD", "main gd", "MAIN GD", "the GD", "main-GD", "main  GD")
+
+    def test_a_main_gd_only_move_refuses_the_retired_and_near_names(self):
+        self.add()
+        before = self.journal.read_bytes()
+        for by in self.OLD_NAMES:
+            with self.subTest(by=by):
+                self.assertIn("main GD", self.no("set-status", "BUG-0001", "Backlog", "--note", "n", "--by", by))
+                self.assertEqual(self.show("BUG-0001")["status"], "Request")
+        self.assertEqual(self.journal.read_bytes(), before)
+
+    def test_delete_refuses_the_retired_and_near_names_and_keeps_the_bug(self):
+        self.add()
+        before = self.journal.read_bytes()
+        for by in self.OLD_NAMES:
+            with self.subTest(by=by):
+                self.assertIn("main GD only", self.no("delete", "BUG-0001", "--by", by))
+        self.assertEqual(self.journal.read_bytes(), before)
+        self.assertEqual(self.show("BUG-0001")["status"], "Request")
+
+    def test_a_main_gd_only_move_without_by_is_refused(self):
+        self.add()
+        self.assertIn("main GD", self.no("set-status", "BUG-0001", "Backlog", "--note", "n"))
+        self.assertIn("main GD only", self.no("delete", "BUG-0001"))
+
+    def test_exactly_main_gd_is_accepted_for_every_main_gd_only_move(self):
+        self.add()
+        self.ok("set-status", "BUG-0001", "Backlog", "--note", "n", "--by", "main GD")
+        self.ok("set-status", "BUG-0001", "Request", "--note", "n", "--by", "main GD")
+        self.ok("set-status", "BUG-0001", "Won't fix", "--note", "n", "--by", "main GD")
+        self.assertEqual(self.show("BUG-0001")["events"][-1]["by"], "main GD")
+        self.ok("delete", "BUG-0001", "--by", "main GD")
+        second = self.add()  # Accepted is the fourth main-GD-only move (bugs.py:124)
+        self.ok("set-status", second, "Accepted", "--note", "n", "--by", "main GD")
+        self.assertEqual(self.show(second)["status"], "Accepted")
+        self.assertEqual(self.show(second)["events"][-1]["by"], "main GD")
+
+    def test_an_old_journal_row_attributed_to_gd_still_replays_and_is_kept_verbatim(self):
+        self.seed(create("a", 1, stamp(1)), event("status", "a", {"from": "Request", "to": "Backlog"}, stamp(2), by="GD", note="parked"),
+                  event("extra_round", "a", {"counter": "fix", "n": 1}, stamp(3), by="GD", note="GD order"))
+        raw = self.journal.read_bytes()
+        bug = self.show("BUG-0001")
+        self.assertEqual(bug["status"], "Backlog")
+        self.assertEqual([e["by"] for e in bug["events"]][-2:], ["GD", "GD"])
+        self.assertEqual(self.counters("BUG-0001")["fix"], {"used": 0, "cap": 3})
+        self.assertEqual(self.ok("doctor"), "doctor: clean\n")
+        self.assertIn("rebuilt: 1 bugs,", self.ok("rebuild"))
+        self.assertEqual(self.journal.read_bytes(), raw)
+
+    def test_a_bug_parked_by_an_old_gd_row_moves_on_only_by_the_main_gd(self):
+        self.seed(create("a", 1, stamp(1)), event("status", "a", {"from": "Request", "to": "Backlog"}, stamp(2), by="GD"))
+        self.assertIn("main GD only", self.no("set-status", "BUG-0001", "Request", "--note", "n", "--by", "GD"))
+        self.assertEqual(self.show("BUG-0001")["status"], "Backlog")  # the refused move changed nothing
+        self.ok("set-status", "BUG-0001", "Request", "--note", "n", "--by", "main GD")
+        self.assertEqual(self.show("BUG-0001")["status"], "Request")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)

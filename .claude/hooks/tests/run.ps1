@@ -52,6 +52,9 @@ function Check([string]$Name, $Actual, $Expected) {
     else { Write-Output "FAIL  $Name (got $Actual, expected $Expected)"; $script:failures++ }
 }
 
+# A behaviour the spec does not settle: printed for the reader, never a pass or a failure.
+function Observe([string]$Name, $Actual) { Write-Output "OBS   $Name -> $Actual" }
+
 function New-Repo([string]$Path) {
     New-Item -ItemType Directory -Force (Join-Path $Path 'Assets') | Out-Null
     git -C $Path init -q 2>&1 | Out-Null
@@ -214,15 +217,17 @@ try {
     $sec = Join-Path $tmp 'SecretFiles'
     New-Repo $sec
     $secCommit = @{ tool_name = 'Bash'; cwd = $sec; tool_input = @{ command = 'git commit -m x' } }
-    function StagedCode([string]$Path, [string]$Content) {
+    # StagedHook returns the whole hook result (Code and Out); StagedCode keeps the exit code alone.
+    function StagedHook([string]$Path, [string]$Content) {
         $f = Join-Path $sec $Path
         New-Item -ItemType Directory -Force (Split-Path $f) | Out-Null
         Set-Content $f $Content
         git -C $sec add -f -- $Path 2>&1 | Out-Null
-        $code = (Invoke-Hook 'pre-commit.ps1' $secCommit).Code
+        $r = Invoke-Hook 'pre-commit.ps1' $secCommit
         git -C $sec rm -q --cached -- $Path 2>&1 | Out-Null
-        return $code
+        return $r
     }
+    function StagedCode([string]$Path, [string]$Content) { return (StagedHook $Path $Content).Code }
     foreach ($bad in @('release.keystore', 'Signing/upload.JKS', 'certs/dist.p12', 'AuthKey_ABC.p8', 'ios/Game.mobileprovision',
             '.env', 'server/.env.production', 'keys/id_rsa', '.upmconfig.toml', 'Tools/my-service-account.json',
             '.workflow/evidence/x/attempt-1/logcat_full.txt', '.workflow/evidence/x/attempt-1/syslog.txt', '.workflow/evidence/x/App.ips')) {
@@ -239,6 +244,9 @@ try {
     Check 'pre-commit allows a project folder named Library under Assets' (Invoke-Hook 'pre-commit.ps1' $secCommit).Code 0
     git -C $sec rm -q --cached -- Assets/Library/Notes.txt Assets/Library/Notes.txt.meta 2>&1 | Out-Null
     Check 'pre-commit scans a .claude/hooks folder deeper in the tree' (StagedCode 'Assets/X/.claude/hooks/key.txt' "k = `"$fakeKey`"") 2
+    # The line above also trips the "asset without .meta" rule (it sits under Assets/). Same case outside Assets/, so only the secret scan can block it.
+    $deepKey = StagedHook 'Game/X/.claude/hooks/key.txt' "k = `"$fakeKey`""
+    Check 'pre-commit scans a .claude/hooks folder deeper in the tree (outside Assets/): blocked for the secret' ($deepKey.Code -eq 2 -and $deepKey.Out -match 'secret in Game/X/\.claude/hooks/key\.txt' -and $deepKey.Out -notmatch 'asset without') $true
     # Advice and observed figures stay off git (skill advisory-protocol).
     Check 'pre-commit blocks a measured label' (StagedCode 'docs/plan.md' 'D7 11% [measured: r.csv, 2026-10, 1.0]') 2
     Check 'pre-commit blocks a measured label in a trace' (StagedCode '.memory/traces/2026/10/t.jsonl' '{"text":"D7 11% [measured: r.csv, 2026-10, 1.0]"}') 2
@@ -249,6 +257,84 @@ try {
     Check 'pre-commit checks a .claude folder deeper in the tree' (StagedCode 'Game/.claude/x.md' '[measured: r.csv]') 2
     Check 'pre-commit blocks a staged advisory store file' (StagedCode '.memory/advisory/advisory.db' 'x') 2
     Check 'pre-commit allows a target with a design value' (StagedCode 'docs/monetization-plan.md' 'Rollback when D7 falls below 10%. Price 4.99. See adv:12.3') 0
+    # QA edge cases (game-production-agent, qa-lead plan C2g): the exemption is an exact, case-sensitive path, never a near name.
+    $label = 'D7 11% [measured: r.csv, 2026-10, 1.0]'
+    $marker = "x`n<!-- advisory:begin -->`ny"
+    foreach ($near in @('.claude/skills/advisory-protocol/SKILL.md.bak', '.claude/skills/advisory-protocol/references/SKILL.md', 'Game/.claude/skills/advisory-protocol/SKILL.md',
+            '.claude/skills/mem/scripts/mem2.py', '.claude/skills/mem/scripts/mem.py.orig', '.claude/skills/mem/references/schema.md.txt',
+            '.claude/hooks/common.ps1.bak', '.claude/hooks/tests/run.ps1.txt', 'x/.claude/hooks/tests/run.ps1', '.claude/skills/verify-layer/scripts/verify.ps1.old')) {
+        # The block text must name the advisory problem: a near name outside Assets/ has no other reason to be blocked.
+        $r = StagedHook $near $label
+        Check "pre-commit: a near name of an exempt file is scanned for a label: $near" ($r.Code -eq 2 -and $r.Out -match 'observed figure') $true
+        $r = StagedHook $near $marker
+        Check "pre-commit: ... and for a marker line: $near" ($r.Code -eq 2 -and $r.Out -match 'advisory marker') $true
+    }
+    foreach ($exact in @('.claude/skills/advisory-protocol/SKILL.md', '.claude/skills/mem/references/schema.md', '.claude/skills/mem/scripts/mem.py',
+            '.claude/skills/mem/scripts/adv.py', '.claude/skills/mem/scripts/test_mem.py', '.claude/skills/mem/scripts/test_adv.py',
+            '.claude/skills/verify-layer/scripts/verify.ps1', '.claude/hooks/common.ps1', '.claude/hooks/tests/run.ps1')) {
+        Check "pre-commit: the exact exempt file may define the label and the marker: $exact" (StagedCode $exact "$label`n<!-- advisory:end -->") 0
+    }
+    # CRLF: the global core.autocrlf=true of a Windows machine turns CRLF into LF at `git add`, which would make this a second LF case.
+    # So autocrlf is off in the fixture repo for this one file, the bytes are written exactly, and the staged diff is checked for a CR first.
+    git -C $sec config core.autocrlf false
+    $crlfPath = 'docs/plan-crlf.md'
+    [IO.File]::WriteAllText((Join-Path $sec $crlfPath), "x`r`n<!-- advisory:begin -->`r`ny`r`n")
+    git -C $sec add -f -- $crlfPath 2>&1 | Out-Null
+    $crlfTmp = Join-Path $tmp 'crlf-staged.diff'
+    git -C $sec diff --cached --text --unified=0 --no-color "--output=$crlfTmp" 2>&1 | Out-Null
+    Check 'pre-commit: the CRLF fixture is staged with its CR bytes (autocrlf off)' ([IO.File]::ReadAllText($crlfTmp).Contains("-->`r`n")) $true
+    $r = Invoke-Hook 'pre-commit.ps1' $secCommit
+    Check 'pre-commit: a marker line with a CRLF ending is blocked' ($r.Code -eq 2 -and $r.Out -match 'advisory marker') $true
+    git -C $sec rm -q --cached -- $crlfPath 2>&1 | Out-Null
+    git -C $sec config --unset core.autocrlf 2>&1 | Out-Null
+    Check 'pre-commit: a marker line with indentation is blocked' (StagedCode 'docs/plan.md' "x`n    <!-- advisory:end -->   `ny") 2
+    Check 'pre-commit: a staged advisory store file under a deeper folder name is not blocked by the store rule' (StagedCode 'docs/advisory/notes.md' 'Price 4.99') 0
+    Check 'pre-commit: a data pack file nested under the store is a store file' (StagedCode '.memory/advisory/data/2026-10/pack.csv' 'd1') 2
+    foreach ($v in @('[Measured: r.csv]', '[MEASURED: r.csv]', '[measured : r.csv]', '[ measured: r.csv]', '(measured: r.csv)', 'measured: r.csv')) {
+        Observe "pre-commit, label variant '$v' (0 = passes the hook, 2 = blocked)" (StagedCode 'docs/plan.md' "D7 11% $v")
+    }
+    foreach ($m in @('<!--advisory:begin-->', '<!-- ADVISORY:BEGIN -->', '<!--  advisory:begin  -->', '<!-- advisory:begin --> trailing text')) {
+        Observe "pre-commit, marker variant '$m' (0 = passes the hook, 2 = blocked)" (StagedCode 'docs/plan.md' "x`n$m`ny")
+    }
+    # A trace line holding a CRLF-marked block mid-line: this hook cannot see it; mem.py strips it at capture (BUG-0009).
+    Observe 'pre-commit, a trace line holding a CRLF-marked block and a bare figure (0 = passes the hook)' (StagedCode '.memory/traces/2026/10/t.jsonl' '{"text":"Before\r\n<!-- advisory:begin -->\r\nARPDAU 0.083\r\n<!-- advisory:end -->\r\nAfter"}')
+    # A staged rename or deletion of an advisory store file. A fixture repo with the file already committed (git, not the hook).
+    $stage = Join-Path $tmp 'AdvStageRepo'
+    New-Repo $stage
+    foreach ($seed in @('.memory/advisory/note.md', '.claude/skills/advisory-protocol/SKILL.md', 'docs/idea.md')) {
+        New-Item -ItemType Directory -Force (Split-Path (Join-Path $stage $seed)) | Out-Null
+        Set-Content (Join-Path $stage $seed) $(if ($seed -like '*SKILL.md') { 'Form: [measured: <file>, <range>, <build>]' } else { 'no figure here' })
+        git -C $stage add -f -- $seed 2>&1 | Out-Null
+    }
+    git -C $stage -c user.name=t -c user.email=t@t commit -q -m seed 2>&1 | Out-Null
+    $stageCommit = @{ tool_name = 'Bash'; cwd = $stage; tool_input = @{ command = 'git commit -m x' } }
+    Check 'pre-commit: the fixture repo starts clean' (Invoke-Hook 'pre-commit.ps1' $stageCommit).Code 0
+    git -C $stage mv .memory/advisory/note.md docs/note.md 2>&1 | Out-Null
+    Check 'pre-commit: a store file renamed out of the store is blocked' (Invoke-Hook 'pre-commit.ps1' $stageCommit).Code 2
+    git -C $stage reset -q --hard 2>&1 | Out-Null
+    git -C $stage mv docs/idea.md .memory/advisory/idea.md -f 2>&1 | Out-Null
+    Check 'pre-commit: a file renamed into the store is blocked' (Invoke-Hook 'pre-commit.ps1' $stageCommit).Code 2
+    git -C $stage reset -q --hard 2>&1 | Out-Null
+    git -C $stage rm -q --cached .memory/advisory/note.md 2>&1 | Out-Null
+    Observe 'pre-commit, a staged deletion of a committed store file (0 = allowed, 2 = blocked; forbidden-file rules allow deletions)' (Invoke-Hook 'pre-commit.ps1' $stageCommit).Code
+    git -C $stage reset -q --hard 2>&1 | Out-Null
+    git -C $stage mv .claude/skills/advisory-protocol/SKILL.md docs/skill-copy.md 2>&1 | Out-Null
+    Observe 'pre-commit, an exempt file holding the label renamed to a scanned path unchanged (0 = passes, a pure rename adds no diff line)' (Invoke-Hook 'pre-commit.ps1' $stageCommit).Code
+    git -C $stage reset -q --hard 2>&1 | Out-Null
+    # The exemption is case-sensitive. A fresh repo, so that no file of the exempt name was ever on disk: a case-insensitive
+    # file system (Windows, macOS) would otherwise hand the variant the case of the file already there.
+    $caseRepo = Join-Path $tmp 'AdvCaseRepo'
+    New-Repo $caseRepo
+    $caseCommit = @{ tool_name = 'Bash'; cwd = $caseRepo; tool_input = @{ command = 'git commit -m x' } }
+    foreach ($variant in @('.claude/skills/advisory-protocol/SKILL.MD', '.claude/skills/advisory-protocol/skill.md', '.claude/skills/mem/scripts/Mem.py', '.claude/hooks/Common.ps1')) {
+        $f = Join-Path $caseRepo $variant
+        New-Item -ItemType Directory -Force (Split-Path $f) | Out-Null
+        Set-Content $f $label
+        git -C $caseRepo add -f -- $variant 2>&1 | Out-Null
+        Check "pre-commit: a case variant of an exempt file is scanned: $variant" (Invoke-Hook 'pre-commit.ps1' $caseCommit).Code 2
+        git -C $caseRepo rm -q --cached -- $variant 2>&1 | Out-Null
+        Remove-Item -LiteralPath $f
+    }
     Set-Content (Join-Path $sec 'release.keystore') 'x'
     git -C $sec add -f release.keystore 2>&1 | Out-Null
     foreach ($form in @('"C:/Program Files/Git/cmd/git.exe" commit -m x', 'git.exe commit -m x', '& "/c/Program Files/Git/cmd/git" commit -m x')) {
@@ -743,6 +829,67 @@ try {
     Check 'round-cap: an adviser passes with a corrupt ledger file' (DispatchAs 'game-designer' 'Read the loop.') 0
     Check 'round-cap: code-reviewer is still blocked by a corrupt ledger file' (DispatchAs 'code-reviewer' 'Read the loop.') 2
     Remove-Item $advCorrupt
+    # QA edge cases (game-production-agent, qa-lead plan C3): the exemption is the exact subagent_type, nothing near it, nothing in a brief.
+    Feature 'review 4/3, QA 0/2, rework 4/6'
+    foreach ($near in @('product-owner-x', 'x-product-owner', 'product-owner ', ' product-owner', 'product-owner2', 'product_owner', 'PRODUCT-OWNER',
+            'game-designer-v2', 'monetization-designer-', 'monetization_designer', 'product-owner,game-designer', 'critic', 'researcher', '')) {
+        Check "round-cap: '$near' is not an adviser and stays capped" (DispatchAs $near $brief) 2
+    }
+    $namedAdvisers = "$brief`nAdvisory-Thread: m2`nSubagent: product-owner`nAgent: game-designer`nsubagent_type: monetization-designer"
+    foreach ($gate in 'code-reviewer', 'security-reviewer', 'qa-lead') {
+        Check "round-cap: adviser names and an Advisory-Thread line in a $gate brief do not exempt it" (DispatchAs $gate $namedAdvisers) 2
+    }
+    $noMarker = 'Read the loop. State is in .workflow/features/demo.md (no Feature: line).'
+    Check 'round-cap: an adviser with no Feature: line passes' (DispatchAs 'product-owner' $noMarker) 0
+    Check 'round-cap: ... a gate with the same brief is capped through the path it names' (DispatchAs 'code-reviewer' $noMarker) 2
+    Check 'round-cap: an adviser with an empty brief passes' (DispatchAs 'game-designer' '') 0
+    Check 'round-cap: an adviser with a Feature: line that names no feature file passes' (DispatchAs 'monetization-designer' "Feature: none`nBug: BUG-9999") 0
+    function WorkflowLaunch([hashtable]$ToolInput) { (Invoke-Hook 'round-cap.ps1' @{ tool_name = 'Workflow'; tool_input = $ToolInput } @('-Mode', 'dispatch')).Code }
+    $wfArgs = @{ feature = '.workflow/features/demo.md'; round = 5 }
+    Check 'round-cap: a Workflow launch past the cap is blocked' (WorkflowLaunch @{ name = 'review-gate'; args = $wfArgs }) 2
+    Check 'round-cap: ... with the args given as a JSON string' (WorkflowLaunch @{ name = 'review-gate'; args = ($wfArgs | ConvertTo-Json -Compress) }) 2
+    foreach ($a in 'product-owner', 'game-designer', 'monetization-designer') {
+        Check "round-cap: a Workflow launch carrying subagent_type $a is still capped" (WorkflowLaunch @{ name = 'review-gate'; subagent_type = $a; args = $wfArgs }) 2
+    }
+    Check 'round-cap: a Workflow launch naming a target and no feature is not checked against the feature cap' (WorkflowLaunch @{ name = 'review-gate'; args = @{ target = 'Assets/' } }) 0
+    Feature 'review 1/3, QA 0/2, rework 1/6'
+    Check 'round-cap: a Workflow launch under the cap passes' (WorkflowLaunch @{ name = 'review-gate'; args = $wfArgs }) 0
+    # QA edge cases (game-production-agent, qa-lead plan C6): a feature file holding the old and the new heading.
+    function FeatureWith([string]$Body) { Set-Content $feat "# Demo`n`n- Status: Open`n- Size: M, Risk flag: no`n- Rounds: $($Body.Split('|')[0])`n`n$($Body.Split('|')[1])`n`n## Spec`n" -Encoding UTF8 }
+    $oldH = "## GD decisions`n- 2026-10-29 extra round: review +2"
+    $newH = "## Main GD decisions`n- 2026-10-30 extra round: review +2"
+    $emptyOld = "## GD decisions`n- 2026-10-29 CP2 approved"
+    $emptyNew = "## Main GD decisions`n- 2026-10-30 CP2 approved"
+    FeatureWith "review 4/5, QA 0/2, rework 4/6|$newH`n`n$emptyOld"
+    Check 'round-cap: both headings, the extra round under the new one, new one first: honored' (Dispatch $brief) 0
+    FeatureWith "review 4/5, QA 0/2, rework 4/6|$oldH`n`n$emptyNew"
+    Check 'round-cap: both headings, the extra round under the old one, old one first: honored' (Dispatch $brief) 0
+    FeatureWith "review 4/5, QA 0/2, rework 4/6|$emptyOld`n`n$newH"
+    # BUG-0012 (fixed): an extra round under the second heading must be honored; both headings are read.
+    Check 'round-cap: both headings, the extra round only under the new one, which comes second: honored (BUG-0012)' (Dispatch $brief) 0
+    FeatureWith "review 4/5, QA 0/2, rework 4/6|$emptyNew`n`n$oldH"
+    Check 'round-cap: both headings, the extra round only under the old one, which comes second: honored (BUG-0012)' (Dispatch $brief) 0
+    FeatureWith "review 4/5, QA 0/2, rework 4/6|$emptyOld`n`n$emptyNew"
+    Check 'round-cap: both headings, no extra round anywhere: a raised cap is refused' (Dispatch $brief) 2
+    FeatureWith "review 5/5, QA 0/2, rework 5/6|$oldH`n`n$newH"
+    Check 'round-cap: both headings each with an extra round: at the cap still dispatches' (Dispatch $brief) 0
+    FeatureWith "review 6/5, QA 0/2, rework 6/6|$oldH`n`n$newH"
+    Check 'round-cap: ... and past it blocks: the second heading adds no capacity' (Dispatch $brief) 2
+    FeatureWith "review 6/5, QA 0/2, rework 6/6|$newH`n`n$oldH"
+    Check 'round-cap: ... in the other heading order too' (Dispatch $brief) 2
+    FeatureWith "review 4/5, QA 0/2, rework 4/6|$oldH"
+    Set-Content $feat ((Get-Content $feat -Raw) -replace "`r?`n", "`r`n") -NoNewline -Encoding UTF8
+    Check 'round-cap: an old heading in a CRLF file is honored' (Dispatch $brief) 0
+    FeatureWith "review 4/5, QA 0/2, rework 4/6|$newH"
+    Set-Content $feat ((Get-Content $feat -Raw) -replace "`r?`n", "`r`n") -NoNewline -Encoding UTF8
+    Check 'round-cap: a new heading in a CRLF file is honored' (Dispatch $brief) 0
+    FeatureWith "review 4/5, QA 0/2, rework 4/6|$($newH -replace '^## ', '### ')"
+    Observe 'round-cap, an extra round under a level-3 heading (0 = honored)' (Dispatch $brief)
+    FeatureWith "review 4/5, QA 0/2, rework 4/6|$($newH -replace '## Main GD decisions', '## main gd decisions')"
+    Observe 'round-cap, an extra round under a lower-case heading (0 = honored)' (Dispatch $brief)
+    FeatureWith "review 4/5, QA 0/2, rework 4/6|## Decisions`n- extra round: review +2"
+    Check 'round-cap: an extra round under an unrelated heading is not a main GD record' (Dispatch $brief) 2
+    Feature 'review 1/3, QA 0/2, rework 1/6'
     # Bugs come from real bugs.py calls: the CLI owns the journal format. A copy of it, beside the mem.py copy it needs.
     $bugsDir = Join-Path $proj '.claude/skills/bugs/scripts'
     New-Item -ItemType Directory -Force $bugsDir | Out-Null
@@ -2295,6 +2442,12 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     $f = Join-Path $vlSkills 'trigger-field/SKILL.md'
     Set-Content $f ((Get-Content $f -Raw) -replace 'user-invocable: false', "when_to_use: `"checking the fixture`"`nuser-invocable: false")
     Check 'verify: when_to_use counts as the Use trigger' (Verify (VRel 'trigger-field')).Code 0
+    # The retired route token (BUG-0011): a bare gd route names nobody; main-gd and git's %gd format pass.
+    VSkill 'route-gd' @('- **Route:** `Routed to: <agent | gd>` per finding.')
+    $r = Verify (VRel 'route-gd')
+    Check 'verify fails per file: a retired gd route' ($r.Code -eq 1 -and $r.Out -match "$(VFail 'route-gd')retired route 'gd'") $true
+    VSkill 'route-main-gd' @('- **Route:** `Next: main-gd`, and git log format `%gd`.')
+    Check 'verify: main-gd and %gd are not a retired route' (Verify (VRel 'route-main-gd')).Code 0
     VSkill 'preloaded-skill' @() 'Foo.Bar and Baz.Qux only.'
     Set-Content (Join-Path $vl '.claude/agents/fixture-agent.md') "---`nname: fixture-agent`ndescription: A fixture.`ntools: Read`nskills:`n  - preloaded-skill`n---`n`n# Fixture"
     Check 'verify: a skill an agent preloads needs no Use trigger' (Verify (VRel 'preloaded-skill')).Code 0
