@@ -25,8 +25,15 @@ FAIL_IDENTIFIES = [
     "user_agent", "latitude", "lat", "lng", "username", "nickname", "display_name", "first_name", "gamertag", "phone_number",
     "msisdn", "imei", "mac_address", "zip_code", "referral_code",
     "revenue_per_user_id",
+    "user 8.8.8.8",  # review round 3, S1
 ]
-FAIL_VOCABULARY = ["playerbase", "foo_metric", "Mã người chơi"]
+# Review round 3, S1: digit groups are an open set, so a header made of them is a value, never a name.
+FAIL_VOCABULARY = ["playerbase", "foo_metric", "Mã người chơi", "8.8.8.8", "+84 912 345 678", "2026-10-01", "level 1 2 3"]
+# Identifying values: each fails in a text column and in an otherwise numeric one (review round 3, High: the numeric shortcut).
+ID_VALUES = ["a.b@example.com", "8.8.8.8", "8.8.8.8:53", "2001:db8::1", "fe80::1ff:fe23:4567:890a", "+84 912 345 678",
+             "+84912345678", "+14155552671", "0912345678", "0912 345 678", "091 234 5678", "(091) 234-5678",
+             "123e4567-e89b-12d3-a456-426614174000", "0123456789abcdef0123456789abcdef", "a1b2c3d4e5f6a7b8",
+             "id 123456789", "xXSlayer99Xx", "x" * 81, "1.0.0.140"]
 PASS_HEADERS = [
     "cohort_date", "build_id", "level_id", "sku_id", "placement_id", "ad_unit_id", "ad_unit_name", "level_name", "event_name",
     "country_code", "currency_code", "app_version", "build_version", "platform", "os",
@@ -34,6 +41,7 @@ PASS_HEADERS = [
     "fill_rate", "revenue_usd", "iap_revenue", "is_paid",
     "active_users", "new_users", "users_active", "paying_users", "installs", "payers", "crash_free_users",
     "Avg. engagement time per active user", "Event count per user", "revenue_per_user",
+    "level 10", "season 2026", "level 1-10",
 ]
 
 
@@ -105,13 +113,37 @@ class PackTest(unittest.TestCase):
         self.assertFalse(any("a.b@example.com" in p for p in problems))
 
     def test_identifying_values_fail_without_echo(self):
-        for cell in ("a.b@example.com", "8.8.8.8", "8.8.8.8:53", "2001:db8::1", "fe80::1ff:fe23:4567:890a", "+84 912 345 678",
-                     "0912345678", "123e4567-e89b-12d3-a456-426614174000", "0123456789abcdef0123456789abcdef",
-                     "a1b2c3d4e5f6a7b8", "id 123456789", "xXSlayer99Xx", "x" * 81, "1.0.0.140"):
+        for cell in ID_VALUES:
             with self.subTest(cell=cell):
                 problems = self.table("segment,d1\n%s,0.4\n" % cell)
                 self.assertTrue(problems, cell)
                 self.assertFalse(any(cell in p for p in problems), cell)
+
+    def test_an_identifier_in_a_numeric_column_still_fails(self):  # review round 3, High
+        for cell in ID_VALUES:
+            with self.subTest(cell=cell):
+                problems = self.table('d1\n0.4\n"%s"\n' % cell)
+                self.assertTrue(problems, cell)
+                self.assertFalse(any(cell in p for p in problems), cell)
+
+    def test_number_grammar(self):
+        self.assertIsNone(check_pack.RX_NUMBER.match("+84912345678"))
+        for n in ("-0.5", "12%", "1e-05", "0", "1234567890123"):
+            with self.subTest(n=n):
+                self.assertTrue(check_pack.RX_NUMBER.match(n), n)
+
+    def test_a_numeric_header_is_never_echoed(self):  # review round 3, S1
+        for h in ("8.8.8.8", "+84 912 345 678", "user 8.8.8.8"):
+            with self.subTest(header=h):
+                problems = self.one_column(h)
+                self.assertTrue(problems)
+                self.assertFalse(any("8.8" in p or "912" in p for p in problems), h)
+        self.assertFalse(any("8.8" in p for p in self.table("level 8.8.8.8\na.b@example.com\n")))
+
+    def test_row_numbers_count_blank_rows(self):  # review round 3, Low
+        problems = self.table("segment,d1\n\npaid,0.4,x\n")
+        self.assertTrue(any("row 3 has 3 cells" in p for p in problems), problems)
+        self.assertFalse(any("row 2 has" in p for p in problems))
 
     def test_a_long_number_fails_in_a_numeric_column(self):
         self.assertTrue(any("long numeric id" in p for p in self.table("d1\n76561198000000000\n")))
@@ -123,7 +155,8 @@ class PackTest(unittest.TestCase):
         for header, cell in (("build_version", "1.0.0.140"), ("cohort_date", "2026-10-01"), ("cohort_date", "2026-10-01 13:00"),
                              ("cohort_date", "20261001"), ("d1", "0.15000000000000002"), ("revenue_usd", "1234567890123"),
                              ("placement", "rewarded_video"), ("country_code", "VN"), ("app_version", "1.4.0"),
-                             ("level_name", "Level 10"), ("cohort_date", "13:00:00")):
+                             ("level_name", "Level 10"), ("cohort_date", "13:00:00"), ("d1", "-0.5"), ("d1", "12%"),
+                             ("d1", "1e-05"), ("cohort_date", "05/10/2026")):
             with self.subTest(cell=cell):
                 self.assertEqual(self.table("%s\n%s\n" % (header, cell)), [], cell)
 

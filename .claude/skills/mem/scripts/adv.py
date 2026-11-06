@@ -284,19 +284,23 @@ def cmd_rounds(root, a):
     return 0
 
 
+GIT_LOCATION_ENV = ("GIT_DIR", "GIT_WORK_TREE", "GIT_CEILING_DIRECTORIES")
+
+
 def enclosing_repo(folder: Path):
-    """The work tree holding this folder, or None only when git says there is none. Any other git failure (dubious
-    ownership, a damaged .git) refuses: an export into a repository must land on an ignored path."""
+    """The work tree holding this folder, or None only when no folder from here to the root holds a .git entry.
+    Git's message is never read: it is locale-dependent, and "not a git repository" also names a .git file whose
+    gitdir is missing. Any git failure under a .git entry refuses: an export into a repository must land on an ignored path."""
     probe = folder
     while not probe.exists() and probe.parent != probe:
         probe = probe.parent
-    r = subprocess.run([git_exe(), "-C", str(probe), "rev-parse", "--show-toplevel"], capture_output=True)
+    env = {k: v for k, v in os.environ.items() if k not in GIT_LOCATION_ENV}  # discovery from the folder, not the caller's env
+    r = subprocess.run([git_exe(), "-C", str(probe), "rev-parse", "--show-toplevel"], capture_output=True, env=env)
     if r.returncode == 0:
         return Path(r.stdout.decode("utf-8", "replace").strip()).resolve()
-    err = r.stderr.decode("utf-8", "replace")
-    if "not a git repository" in err.lower():
+    if not any(os.path.lexists(p / ".git") for p in (probe, *probe.parents)):
         return None
-    raise Refused("cannot tell whether %s is inside a repository: %s" % (folder, err.strip()))
+    raise Refused("cannot tell whether %s is inside a repository: %s" % (folder, r.stderr.decode("utf-8", "replace").strip()))
 
 
 def cmd_export(root, a):

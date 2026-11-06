@@ -182,21 +182,44 @@ class AdvTest(unittest.TestCase):
         self.assertEqual(self.run_cli("export", str(target))[0], 2)
         self.assertFalse((self.root / "docs").exists())
 
-    def test_export_refuses_when_git_cannot_answer(self):
-        self.ingest()
+    def mock_rev_parse(self, code, err):
         real = adv.subprocess.run
 
-        def broken(cmd, **kw):
+        def fake(cmd, **kw):
             if "rev-parse" in cmd:
-                return subprocess.CompletedProcess(cmd, 128, b"", b"fatal: detected dubious ownership in repository")
+                return subprocess.CompletedProcess(cmd, code, b"", err)
             return real(cmd, **kw)
-        adv.subprocess.run = broken
-        try:
-            code, _, err = self.run_cli("export", str(Path(tempfile.gettempdir()) / "adv-export-probe.db"))
-        finally:
-            adv.subprocess.run = real
+        adv.subprocess.run = fake
+        self.addCleanup(setattr, adv.subprocess, "run", real)
+
+    def test_export_refuses_when_git_cannot_answer(self):
+        self.ingest()
+        other = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, other, ignore_errors=True)
+        subprocess.run(["git", "init", "-q", str(other)], check=True)
+        self.mock_rev_parse(128, b"fatal: detected dubious ownership in repository")
+        code, _, err = self.run_cli("export", str(other / "copy.db"))
         self.assertEqual(code, 2)
         self.assertIn("cannot tell", err)
+
+    def test_export_refuses_a_gitfile_to_a_missing_gitdir(self):  # review round 3, S2: real git, no mock
+        self.ingest()
+        d = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, d, ignore_errors=True)
+        (d / ".git").write_text("gitdir: %s\n" % (d / "missing"), encoding="utf-8")
+        code, _, err = self.run_cli("export", str(d / "copy.db"))
+        self.assertEqual(code, 2)
+        self.assertIn("cannot tell", err)
+        self.assertFalse((d / "copy.db").exists())
+
+    def test_no_repository_does_not_depend_on_git_message_text(self):  # review round 3, S2: locale
+        self.ingest()
+        d = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, d, ignore_errors=True)
+        if any((p / ".git").exists() for p in (d, *d.parents)):
+            self.skipTest("the temp folder sits inside a repository")
+        self.mock_rev_parse(128, "fatal: không phải kho git".encode("utf-8"))
+        self.assertEqual(self.run_cli("export", str(d / "copy.db"))[0], 0)
 
     def test_marker_values_are_redacted(self):
         self.ingest(brief="Advisory-Thread: t1\nTarget: report for a.b@example.com")

@@ -39,12 +39,17 @@ earned spent sinks sources balance coins gems gold crash crashes free anr anrs e
 downloads uninstalls reinstalls playtime engagement length duration seconds sec minutes ms depth progress progression reached
 rewarded interstitial banner video native appopen frequency transactions orders""".split())
 ALLOWED = DIMENSIONS | TAILS | COUNT | METRICS
-RX_PATTERN_WORD = re.compile(r"^(\d{1,4}|[dwm]\d{1,3}|p\d{2})$")
+RX_PATTERN_WORD = re.compile(r"^([dwm]\d{1,3}|p\d{2})$")
+# Bare numbers are an open set: a few short ones may sit beside words (level 10, season 2026), never make up a name.
+RX_NUMBER_WORD = re.compile(r"^\d{1,4}$")
+MAX_NUMBER_WORDS = 2
+MAX_NUMBER_DIGITS = 4
 
-RX_NUMBER = re.compile(r"^[+-]?(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?%?$")
+RX_NUMBER = re.compile(r"^-?(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?%?$")
 RX_EMAIL = re.compile(r"\b[\w.+-]+@[\w-]+(?:\.[\w-]+)*\.[A-Za-z]{2,}\b")
 RX_IPV4 = re.compile(r"(?<![\d.])(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)(?![\d.])")
 RX_PHONE = re.compile(r"(?<![\w+])\+\d[\d ()-]{8,}\d\b")
+RX_NATIONAL_PHONE = re.compile(r"(?<![\d.-])\(?0\d{1,4}\)?[ -]?\d{2,4}[ -]?\d{3,4}(?![\d-])")
 RX_UUID = re.compile(r"\b[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\b")
 RX_IPV6_TOKEN = re.compile(r"[0-9A-Fa-f:]{2,}")
 RX_DIGIT_RUN = re.compile(r"\d{9,}")
@@ -60,7 +65,15 @@ def words(header: str):
 
 
 def known(word: str) -> bool:
-    return word in ALLOWED or word in NEVER or bool(RX_PATTERN_WORD.match(word))
+    return word in ALLOWED or word in NEVER or bool(RX_PATTERN_WORD.match(word)) or bool(RX_NUMBER_WORD.match(word))
+
+
+def named(parts) -> bool:
+    """Every word known, and bare numbers few, short and beside a word: a header made of digit groups
+    (8.8.8.8, +84 912 345 678) is a value, never a name, and is never printed."""
+    numbers = [p for p in parts if RX_NUMBER_WORD.match(p)]
+    return (all(known(p) for p in parts) and len(numbers) < len(parts)
+            and len(numbers) <= MAX_NUMBER_WORDS and sum(map(len, numbers)) <= MAX_NUMBER_DIGITS)
 
 
 def header_problem(header: str):
@@ -70,21 +83,21 @@ def header_problem(header: str):
         return "has no header", False
     for i, w in enumerate(parts):
         if w in NEVER and not (w in PER_OK and i == len(parts) - 1 and "per" in parts[:i]):
-            return "identifies a person or device", all(known(p) for p in parts)
+            return "identifies a person or device", named(parts)
         if w in TAILS and (i == 0 or any(p not in DIMENSIONS for p in parts[:i])):
-            return "identifies a person or device", all(known(p) for p in parts)
-    if any(not known(w) for w in parts):
+            return "identifies a person or device", named(parts)
+    if not named(parts):
         return "uses a word outside the vocabulary; rename it or add the word in a reviewed change", False
     return None
 
 
 def cell_problem(cell: str, numeric: bool, header_words):
     if numeric:
-        integer = re.sub(r"^[+-]", "", cell).split(".")[0].split("e")[0].split("E")[0].rstrip("%")
+        integer = cell.lstrip("-").split(".")[0].split("e")[0].split("E")[0].rstrip("%")
         return "holds a long numeric id" if len(integer) >= LONG_NUMBER_DIGITS else None
     if len(cell) > MAX_TEXT:
         return "holds text over %d characters" % MAX_TEXT
-    for what, rx in (("an email", RX_EMAIL), ("a phone number", RX_PHONE), ("a UUID", RX_UUID)):
+    for what, rx in (("an email", RX_EMAIL), ("a phone number", RX_PHONE), ("a phone number", RX_NATIONAL_PHONE), ("a UUID", RX_UUID)):
         if rx.search(cell):
             return "holds " + what
     if RX_IPV4.search(cell) and not ({"version", "build"} & set(header_words)):
@@ -125,7 +138,7 @@ def check_csv(path: Path):
         return ["%s: unreadable (%s)" % (path.name, type(ex).__name__)]
     if not rows or not rows[0]:
         return ["%s: no header row" % path.name]
-    headers, body = rows[0], [r for r in rows[1:] if any(c.strip() for c in r)]
+    headers, body = rows[0], [(r, row) for r, row in enumerate(rows[1:], 2) if any(c.strip() for c in row)]
     problems = []
     for n, h in enumerate(headers, 1):
         if any(s in h for s in SEPARATORS):
@@ -134,12 +147,12 @@ def check_csv(path: Path):
         hp = header_problem(h)
         if hp:
             problems.append("%s: %s %s" % (path.name, label(n, h, hp[1]), hp[0]))
-    for r, row in enumerate(body, 2):
+    for r, row in body:
         if len(row) != len(headers):
             problems.append("%s: row %d has %d cells; the header has %d" % (path.name, r, len(row), len(headers)))
     reported = set()
     for n, h in enumerate(headers, 1):
-        cells = [row[n - 1].strip() for row in body if n - 1 < len(row) and row[n - 1].strip()]
+        cells = [row[n - 1].strip() for _, row in body if n - 1 < len(row) and row[n - 1].strip()]
         numeric = bool(cells) and all(RX_NUMBER.match(c) for c in cells)
         hw = words(h)
         if COUNT & set(hw) and cells and not numeric:
@@ -150,7 +163,7 @@ def check_csv(path: Path):
             if cp and (n, cp) not in reported:
                 reported.add((n, cp))
                 problems.append("%s: %s %s" % (path.name, label(n, h, safe), cp))  # never the value itself
-    for row in body:  # cells past the header width: scanned too, named by position
+    for _, row in body:  # cells past the header width: scanned too, named by position
         for n in range(len(headers) + 1, len(row) + 1):
             cp = cell_problem(row[n - 1].strip(), False, []) if row[n - 1].strip() else None
             if cp and (n, cp) not in reported:
