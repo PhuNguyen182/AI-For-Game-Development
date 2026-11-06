@@ -35,7 +35,7 @@ argument-hint: "<the design problem, in the main GD's words>"
 - **`AskUserQuestion`:** lock / revise (what) / pick again.
 - **Write:** the GDD section at `CLAUDE.md` → GDD path; no GDD yet → create it at that path. Decided values and targets only.
 - **Decisions:** `adv decide` on each finding the main GD ruled on.
-- **Usefulness:** the main GD marks findings `adv useful <id> yes|no`; under half useful in a run → revise that adviser's method skill before the next one.
+- **Usefulness:** the main GD marks findings `adv useful <id> yes|no`; under half of an adviser's findings in a run marked useful → revise that adviser's method skill before the next run.
 
 ## 7. Hand-off
 - **New work:** `/plan-game` re-plan on the changed part, or `/feature` recording `CP1: n/a (direction given: /design <date>)`.

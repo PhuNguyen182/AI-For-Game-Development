@@ -36,7 +36,7 @@ argument-hint: "<the question or revenue problem>"
 - **`AskUserQuestion`:** lock / pick again / stop.
 - **Plan:** `docs/monetization-plan.md`: design parameters, success metric, measurement window, rollback threshold, `adv:<id>` references. Never an observed figure.
 - **Decisions:** `adv decide` on each finding the main GD ruled on.
-- **Usefulness:** the main GD marks findings `adv useful <id> yes|no`; under half useful in a run → revise that adviser's method skill before the next one.
+- **Usefulness:** the main GD marks findings `adv useful <id> yes|no`; under half of an adviser's findings in a run marked useful → revise that adviser's method skill before the next run.
 
 ## 7. Hand-off
 - **Build:** `/feature` recording `CP1: n/a (direction given: /monet <date>)`; real-money IAP sets the risk flag.

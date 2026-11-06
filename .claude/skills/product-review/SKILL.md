@@ -38,5 +38,5 @@ argument-hint: "[scope or milestone]"
 
 ## 6. Close
 - **Decisions:** `adv decide <id> accepted|rejected|deferred --by 'main GD' --note <why>` for each finding the main GD ruled on.
-- **Usefulness:** the main GD marks findings `adv useful <id> yes|no`; under half useful in a run → revise that adviser's method skill before the next one.
+- **Usefulness:** the main GD marks findings `adv useful <id> yes|no`; under half of an adviser's findings in a run marked useful → revise that adviser's method skill before the next run.
 - **Backlog:** accepted items → `technical-architect` (Size mode), its brief carrying the thread's `Advisory-Thread:` line and naming findings by `adv:<id>` → `.workflow/backlog.md` rows citing `adv:<id>`, no observed figure.

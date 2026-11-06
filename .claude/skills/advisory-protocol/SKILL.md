@@ -36,7 +36,7 @@ user-invocable: false
 
 ## Brief markers
 - **Who:** the main session writes these lines; the capture hook and `adv.py` read them.
-- **Workflow line:** `Workflow:` then `/product-review`, `/design`, `/monet` or `/feature`.
+- **Workflow line:** `Workflow:` then `/product-review`, `/design`, `/monet`, `/plan-game` or `/feature`.
 - **Thread line:** `Advisory-Thread:` then a kebab-case topic; follow-ups keep it.
 - **Other agents:** any agent whose brief carries the thread line is captured off git too (`critic`, `researcher`).
 - **Period line:** `Data-Period:` then the pack's folder name, or `none`.
