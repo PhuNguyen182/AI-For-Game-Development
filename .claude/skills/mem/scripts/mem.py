@@ -772,7 +772,8 @@ def parse_transcript(root: Path, transcript: Path) -> list[dict]:
             use = re.search(r"<tool-use-id>(.*?)</tool-use-id>", raw)
             kind = special.get(use.group(1).strip()) if use else None
             agent = kind[1] if kind and kind[0] == "agent" else None
-            advisory = bool(use) and use.group(1).strip() in advisory_uses
+            task = re.search(r"<task-id>(.*?)</task-id>", raw)
+            advisory = (bool(use) and use.group(1).strip() in advisory_uses) or (bool(task) and task.group(1).strip() in advisory_ids)
             role, text = "agent", ((summ.group(1).strip() + "\n\n") if summ else "") + unwrap_agent(res.group(1))
         else:
             role, text = "user", clean_prompt(raw)
@@ -843,6 +844,8 @@ def parse_transcript(root: Path, transcript: Path) -> list[dict]:
                                           "text": (inp.get("description", "") + "\n\n" + inp.get("prompt", "")).strip()})
                         elif name == "AskUserQuestion":
                             special[b.get("id")] = ("answer", None)
+                        elif name == "SendMessage" and str(inp.get("to", "")).strip() in advisory_ids:
+                            advisory_uses.add(b.get("id"))  # a follow-up's notification carries this call's id
             elif e.get("type") == "user":
                 if isinstance(content, str):
                     blocks = [{"type": "text", "text": content}]
@@ -856,6 +859,9 @@ def parse_transcript(root: Path, transcript: Path) -> list[dict]:
                         if not kind:
                             continue
                         text = block_text(b.get("content")).strip()
+                        if b.get("tool_use_id") in advisory_uses:
+                            for rid in re.findall(r"agentId:\s*([\w-]+)", text):  # foreground results name it too
+                                advisory_ids.add(rid)
                         if kind[0] == "agent" and text.startswith("Async agent launched"):
                             rid = re.search(r"agentId:\s*([\w-]+)", text)
                             if rid:

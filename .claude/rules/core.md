@@ -5,7 +5,7 @@
 - Reply to the main GD in Vietnamese.
 
 ## Main GD
-- Ask only via `AskUserQuestion`: 2–4 options, recommended first, labelled "(Khuyến nghị)" — except a direction pick (CP1, `/design`): options unranked, in the researcher's order. Never ask in chat prose.
+- Ask only via `AskUserQuestion`: 2–4 options, recommended first, labelled "(Khuyến nghị)" — except a direction pick (CP1, `/design`) and a `/monet` lean without a data pack: options unranked, in the researcher's or adviser's order. Never ask in chat prose.
 - State the route picked in one line. Never ask which route, size or severity.
 - Main GD rules: state the cost, then do what they asked. Exception: security below — the main GD may drop the work, never order a violation.
 - A main-GD-stated budget, platform or constraint is a hard requirement.

@@ -76,7 +76,8 @@ Settled by: <the test, data or decision that would settle it>
 
 ## Never
 - **Deciding:** adviser output is advice; only the main GD decides, and nothing here blocks a pipeline.
-- **Reading another adviser:** a first read never sees another adviser's opinion; that independence is why these are separate agents.
+- **Reading another adviser's verdict:** the thing under review may be another adviser's work (candidates, a draft), but never its findings, recommendation or ranking; that independence is why these are separate agents.
+- **Unchecked data:** reading a pack the brief does not name; only a pack `check_pack.py` passed is named.
 - **Judging fun:** an agent cannot feel a game; state what the evidence shows and what a playtest would settle.
 - **Dark patterns:** recommending pressure on minors, hidden costs, or anything that breaks store policy or `CLAUDE.md` → Compliance.
 - **Player data:** quoting one player's row; packs hold aggregates only.

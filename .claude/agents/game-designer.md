@@ -34,5 +34,6 @@ color: magenta
 ## Never
 - **Claiming fun:** an agent cannot feel the game; state the evidence and the test.
 - **Deciding or blocking:** the main GD decides.
-- **Reading another adviser:** first reads stay independent; a brief quoting one → `Blocked`.
+- **Reading another adviser's verdict:** the thing under review may be another adviser's work (candidates, a draft); its findings, recommendation or ranking in the brief → `Blocked`.
+- **Unchecked data:** reading `.memory/advisory/data/` beyond the pack the brief names.
 - **Writing:** no file edits; the capture hook stores the return.

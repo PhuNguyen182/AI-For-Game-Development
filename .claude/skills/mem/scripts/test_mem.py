@@ -313,6 +313,35 @@ class MemTest(unittest.TestCase):
         ], session="adv00009-1")
         self.assertNotIn("11.2%", out.read_text(encoding="utf-8"))
 
+    def test_a_foreground_adviser_continued_by_message_leaves_a_pointer(self):
+        out = self.capture_lines([
+            self.assistant(self.agent_use("f1", "game-designer", "Read the loop.")),
+            self.tool_result("f1", "Status: Done\nAdvisory-Return: v1\n\nagentId: fg1 (use SendMessage to continue)"),
+            self.user('<agent-message from="fg1">Plain follow-up, ' + self.FIGURE_BARE + "</agent-message>"),
+        ], session="adv00011-1")
+        self.assertNotIn(self.FIGURE_BARE, out.read_text(encoding="utf-8"))
+
+    def test_a_follow_up_notification_under_the_message_id_leaves_a_pointer(self):
+        out = self.capture_lines([
+            self.assistant(self.agent_use("a5", "critic", "Advisory-Thread: pricing\nAttack.")),
+            self.tool_result("a5", "Async agent launched successfully.\nagentId: bg5"),
+            self.assistant({"type": "tool_use", "id": "s5", "name": "SendMessage", "input": {"to": "bg5", "message": "again"}}),
+            {"type": "attachment", "timestamp": "2026-10-28T02:00:04Z", "attachment": {"type": "queued_command", "prompt":
+                "<task-notification><task-id>other</task-id><tool-use-id>s5</tool-use-id><summary>done</summary><result>Bare "
+                + self.FIGURE_BARE + "</result></task-notification>"}},
+        ], session="adv00012-1")
+        self.assertNotIn(self.FIGURE_BARE, out.read_text(encoding="utf-8"))
+
+    def test_a_notification_naming_an_adviser_task_leaves_a_pointer(self):
+        out = self.capture_lines([
+            self.assistant(self.agent_use("a6", "product-owner", "Read.")),
+            self.tool_result("a6", "Async agent launched successfully.\nagentId: bg6"),
+            {"type": "attachment", "timestamp": "2026-10-28T02:00:04Z", "attachment": {"type": "queued_command", "prompt":
+                "<task-notification><task-id>bg6</task-id><tool-use-id>unknown</tool-use-id><summary>done</summary><result>"
+                + self.FIGURE_BARE + "</result></task-notification>"}},
+        ], session="adv00013-1")
+        self.assertNotIn(self.FIGURE_BARE, out.read_text(encoding="utf-8"))
+
     def test_other_agents_keep_their_text(self):
         out = self.capture_lines([
             self.assistant(self.agent_use("a4", "ui-engineer", "Fix the HUD bar.")),

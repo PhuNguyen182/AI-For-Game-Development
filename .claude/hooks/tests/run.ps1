@@ -244,7 +244,8 @@ try {
     Check 'pre-commit blocks a measured label in a trace' (StagedCode '.memory/traces/2026/10/t.jsonl' '{"text":"D7 11% [measured: r.csv, 2026-10, 1.0]"}') 2
     Check 'pre-commit blocks an advisory marker line' (StagedCode 'docs/plan.md' "x`n<!-- advisory:begin -->`ny") 2
     Check 'pre-commit allows a marker quoted in prose' (StagedCode 'docs/plan.md' 'Use `<!-- advisory:begin -->` to mark text.') 0
-    Check 'pre-commit allows the framework to define the label' (StagedCode '.claude/skills/x/SKILL.md' 'Form: [measured: <file>, <range>, <build>]') 0
+    Check 'pre-commit allows the framework to define the label' (StagedCode '.claude/skills/advisory-protocol/SKILL.md' 'Form: [measured: <file>, <range>, <build>]') 0
+    Check 'pre-commit checks any other .claude file' (StagedCode '.claude/skills/x/SKILL.md' 'D7 11% [measured: r.csv, 2026-10, 1.0]') 2
     Check 'pre-commit checks a .claude folder deeper in the tree' (StagedCode 'Game/.claude/x.md' '[measured: r.csv]') 2
     Check 'pre-commit blocks a staged advisory store file' (StagedCode '.memory/advisory/advisory.db' 'x') 2
     Check 'pre-commit allows a target with a design value' (StagedCode 'docs/monetization-plan.md' 'Rollback when D7 falls below 10%. Price 4.99. See adv:12.3') 0
@@ -735,6 +736,7 @@ try {
     foreach ($a in 'product-owner', 'game-designer', 'monetization-designer') { Check "round-cap: $a passes on a past-cap feature" (DispatchAs $a $brief) 0 }
     Check 'round-cap: code-reviewer is still blocked on a past-cap feature' (DispatchAs 'code-reviewer' $brief) 2
     Check 'round-cap: critic is still blocked on a past-cap feature' (DispatchAs 'critic' $brief) 2
+    Check 'round-cap: an adviser name in another case is not exempt' (DispatchAs 'Product-Owner' $brief) 2
     $advCorrupt = Join-Path (Split-Path (Split-Path $feat)) 'rounds.corrupt-adviser-test.json'
     Set-Content $advCorrupt '{'
     Feature 'review 1/3, QA 0/2, rework 1/6'
@@ -955,6 +957,19 @@ exit $LASTEXITCODE
     Check 'advisory-capture: not ignored still never blocks' (AdvStop 'game-designer' 'Advisory-Thread: m4' $advReturn 'adv4') 0
     Set-Content (Join-Path $advRoot '.gitignore') '.memory/advisory/'
     Check 'advisory-capture: ... and stores nothing' ((AdvCli @('list', '--thread', 'm4')) -eq '') $true
+    # A continued agent: round 1 handed back, round 2 answered in plain text. Round 1's report must not join round 2's.
+    $t2 = Join-Path $tmp 'advagent-cont.jsonl'
+    $old = "Advisory-Return: v1`n### F1 [High] OLDROUND finding"
+    Set-Content $t2 @(
+        (@{ type = 'user'; message = @{ role = 'user'; content = 'Advisory-Thread: m5' } } | ConvertTo-Json -Depth 5 -Compress),
+        (@{ type = 'assistant'; message = @{ role = 'assistant'; content = @(@{ type = 'tool_use'; name = 'SubagentHandback'; input = @{ message = $old } }) } } | ConvertTo-Json -Depth 6 -Compress),
+        (@{ type = 'user'; message = @{ role = 'user'; content = @(@{ type = 'text'; text = 'Follow-up question' }) } } | ConvertTo-Json -Depth 6 -Compress)
+    ) -Encoding UTF8
+    $savedProjectDir = $env:CLAUDE_PROJECT_DIR; $env:CLAUDE_PROJECT_DIR = $advRoot
+    try { Invoke-Hook 'advisory-capture.ps1' @{ session_id = 'sess-adv'; agent_type = 'game-designer'; agent_id = 'cont'; agent_transcript_path = $t2; last_assistant_message = "Advisory-Return: v1`n### F1 [Low] NEWROUND finding" } | Out-Null }
+    finally { $env:CLAUDE_PROJECT_DIR = $savedProjectDir }
+    $m5 = AdvCli @('list', '--thread', 'm5')
+    Check 'advisory-capture: a continued round stores only its own report' (($m5 -match 'NEWROUND') -and ($m5 -notmatch 'OLDROUND')) $true
     # Where-Object: @($null).Count is 1, which read a missing counter as one event.
     function Count([string]$Key, [string]$Counter) { $o = Get-Content $ledger -Raw | ConvertFrom-Json; @($o.$Key.$Counter | Where-Object { $_ }).Count }
     Feature 'review 0/3, QA 0/2, rework 0/6'

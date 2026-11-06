@@ -165,6 +165,21 @@ class AdvTest(unittest.TestCase):
         self.assertEqual(db.execute("SELECT COUNT(*) FROM finding").fetchone()[0], 2)
         db.close()
 
+    def test_export_into_another_repository_must_be_ignored_there(self):
+        self.ingest()
+        other = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, other, ignore_errors=True)
+        subprocess.run(["git", "init", "-q", str(other)], check=True)
+        code, _, err = self.run_cli("export", str(other / "copy.db"))
+        self.assertEqual(code, 2)
+        self.assertIn("not git-ignored", err)
+        (other / ".gitignore").write_text("*.db\n", encoding="utf-8")
+        self.assertEqual(self.run_cli("export", str(other / "copy.db"))[0], 0)
+
+    def test_marker_values_are_redacted(self):
+        self.ingest(brief="Advisory-Thread: t1\nTarget: report for a.b@example.com")
+        self.assertNotIn("a.b@example.com", self.run_cli("get", "adv:1")[1])
+
     def test_lint_passes_clean_and_fails_a_secret_or_a_lost_ignore_rule(self):
         self.ingest()
         self.assertEqual(self.run_cli("lint")[0], 0)

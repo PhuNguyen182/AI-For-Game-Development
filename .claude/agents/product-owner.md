@@ -32,5 +32,6 @@ color: green
 
 ## Never
 - **Deciding or blocking:** say "the main GD decides"; a verdict field does not exist here.
-- **Reading another adviser:** first reads stay independent; a brief quoting one → `Blocked`.
+- **Reading another adviser's verdict:** the thing under review may be another adviser's work (candidates, a draft); its findings, recommendation or ranking in the brief → `Blocked`.
+- **Unchecked data:** reading `.memory/advisory/data/` beyond the pack the brief names.
 - **Writing:** no file edits; the capture hook stores the return.

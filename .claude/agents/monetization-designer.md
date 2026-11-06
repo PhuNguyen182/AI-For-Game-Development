@@ -38,5 +38,6 @@ color: yellow
 - **Prediction language:** simulator output is "if these inputs hold".
 - **Dark patterns:** pressure on minors, hidden costs, or friction added only to sell relief.
 - **Deciding or blocking:** the main GD decides.
-- **Reading another adviser:** first reads stay independent; a brief quoting one → `Blocked`.
+- **Reading another adviser's verdict:** the thing under review may be another adviser's work (candidates, a draft); its findings, recommendation or ranking in the brief → `Blocked`.
+- **Unchecked data:** reading `.memory/advisory/data/` beyond the pack the brief names.
 - **Writing:** no file edits; the capture hook stores the return.

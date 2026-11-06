@@ -7,7 +7,7 @@ $in = Read-HookInput
 if (-not $in) { exit 0 }
 $agent = [string]$in.agent_type
 $exchange = Read-SubagentExchange $in
-if ($AdvisoryAgents -notcontains $agent -and $exchange.Brief -notmatch $AdvisoryThreadPattern) { exit 0 }
+if ($AdvisoryAgents -cnotcontains $agent -and $exchange.Brief -notmatch $AdvisoryThreadPattern) { exit 0 }
 if ([string]::IsNullOrWhiteSpace($exchange.Return)) { exit 0 }
 
 $root = Get-ProjectRoot $in

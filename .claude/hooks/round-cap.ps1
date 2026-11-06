@@ -29,7 +29,7 @@ $Gates = 'code-reviewer', 'security-reviewer', 'qa-lead'
 $in = Read-HookInput
 if (-not $in) { exit 0 }
 # Advisers read and advise: a past-cap feature or a broken ledger must not stop a note (skill advisory-protocol). Before the ledger is read.
-if ($Mode -eq 'dispatch' -and [string]$in.tool_name -ne 'Workflow' -and $AdvisoryAgents -contains [string]$in.tool_input.subagent_type) { exit 0 }
+if ($Mode -eq 'dispatch' -and [string]$in.tool_name -ne 'Workflow' -and $AdvisoryAgents -ccontains [string]$in.tool_input.subagent_type) { exit 0 }
 $root = Get-ProjectRoot $in
 $ledgerPath = Join-Path $root '.workflow/rounds.json'
 $ledgerDir = Split-Path $ledgerPath

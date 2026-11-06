@@ -173,15 +173,15 @@ def cmd_ingest(root, a):
         return 0
     with db:
         cur = db.execute("INSERT INTO advice(ts,session,agent,agent_id,workflow,thread,target,data_period,brief,body,digest) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
-                         (now(), data.get("session"), agent, data.get("agent_id"), marker(brief, "workflow"), marker(brief, "thread"),
-                          marker(brief, "target") or marker(brief, "feature"), marker(brief, "data_period"), brief_clean, body_clean, digest))
+                         (now(), data.get("session"), agent, data.get("agent_id"), marker(brief_clean, "workflow"), marker(brief_clean, "thread"),
+                          marker(brief_clean, "target") or marker(brief_clean, "feature"), marker(brief_clean, "data_period"), brief_clean, body_clean, digest))
         rid = cur.lastrowid
         findings = split_findings(body_clean)
         for f in findings:
             db.execute("INSERT INTO finding(advice,k,severity,title,body) VALUES(?,?,?,?,?)", (rid, f["k"], f["severity"], f["title"], f["body"]))
             db.execute("INSERT INTO fts(ref,agent,title,body) VALUES(?,?,?,?)", ("adv:%d.%d" % (rid, f["k"]), agent, f["title"], f["body"]))
         if not findings:
-            db.execute("INSERT INTO fts(ref,agent,title,body) VALUES(?,?,?,?)", ("adv:%d" % rid, agent, marker(brief, "thread") or "", body_clean))
+            db.execute("INSERT INTO fts(ref,agent,title,body) VALUES(?,?,?,?)", ("adv:%d" % rid, agent, marker(brief_clean, "thread") or "", body_clean))
     print("adv:%d (%d findings)" % (rid, len(findings)))
     return 0
 
@@ -284,18 +284,21 @@ def cmd_rounds(root, a):
     return 0
 
 
+def enclosing_repo(folder: Path):
+    """The work tree holding this folder, or None: an export into any repository must land on an ignored path."""
+    r = subprocess.run([git_exe(), "-C", str(folder), "rev-parse", "--show-toplevel"], capture_output=True)
+    return Path(r.stdout.decode("utf-8", "replace").strip()).resolve() if r.returncode == 0 else None
+
+
 def cmd_export(root, a):
     target = Path(a.path).resolve()
-    try:
-        rel = target.relative_to(root).as_posix()
-    except ValueError:
-        rel = None
-    if rel:
-        require_ignored(root, rel)
     db = open_db(root, False)
     if not db:
         raise Refused("no advisory store yet")
     target.parent.mkdir(parents=True, exist_ok=True)
+    repo = enclosing_repo(target.parent)
+    if repo:
+        require_ignored(repo, target.relative_to(repo).as_posix())
     out = sqlite3.connect(str(target))
     with out:
         db.backup(out)

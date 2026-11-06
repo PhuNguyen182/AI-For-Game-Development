@@ -186,14 +186,15 @@ function Find-AddedSecrets([string]$Diff) {
 }
 
 # Advice and observed figures stay off git (skill advisory-protocol). A labelled figure or a marker line is proof that one
-# escaped; the framework's own files define those strings, so .claude/ at the root is exempt.
+# escaped. Only the framework files that define or test those strings are exempt, by exact path.
+$script:AdvisoryLeakExempt = '^\.claude/(skills/advisory-protocol/SKILL\.md|skills/mem/references/schema\.md|skills/mem/scripts/(mem|adv|test_mem|test_adv)\.py|skills/verify-layer/scripts/verify\.ps1|hooks/common\.ps1|hooks/tests/run\.ps1)$'
 function Find-AdvisoryLeaks([string]$Diff) {
     $problems = @()
     foreach ($section in [regex]::Split($Diff, '(?m)^\+\+\+ b/')) {
         $nl = $section.IndexOf("`n")
         if ($nl -lt 0) { continue }
         $file = $section.Substring(0, $nl).TrimEnd("`r")
-        if ($file -match '^\.claude/') { continue }
+        if ($file -cmatch $script:AdvisoryLeakExempt) { continue }
         $added = [regex]::Replace($section.Substring($nl + 1), '(?m)^(?:[^+\n].*)?(?:\n|$)', '')
         $added = [regex]::Replace($added, '(?m)^\+', '')
         if ($added -match '\[measured:') { $problems += "observed figure in ${file}: a [measured: ...] label; keep it in the advisory store and cite adv:<id>" }
@@ -895,27 +896,31 @@ function Resolve-Python([string]$Root) {
     return $null
 }
 
-# Runs mem.py with the resolved Python; returns its stdout lines, or $null without Python.
 # The advisers (skill advisory-protocol): read-only, so round caps and gates never apply to them.
 $AdvisoryAgents = 'product-owner', 'game-designer', 'monetization-designer'
 $AdvisoryThreadPattern = '(?im)^[\s*_>-]*Advisory-Thread[*_]*:'
 
 # SubagentStop: the brief (first user line of the agent's transcript) and its return. The report may arrive through the
-# SubagentHandback tool instead of the closing text.
+# SubagentHandback tool instead of the closing text. A continued agent holds earlier rounds too: the handback is read only
+# after the last prompt (a user line with text, not a tool result), so an old round's report never joins a new one.
 function Read-SubagentExchange($HookInput) {
     $brief = ''
     $ret = [string](First $HookInput.last_assistant_message '')
     $tp = [string]$HookInput.agent_transcript_path
     if ($tp -and (Test-Path -LiteralPath $tp)) {
         $lines = @(Get-Content -LiteralPath $tp -Encoding UTF8)
-        foreach ($l in $lines) {
-            try { $o = $l | ConvertFrom-Json } catch { continue }
+        $lastPrompt = -1
+        for ($i = 0; $i -lt $lines.Count; $i++) {
+            if ($lines[$i] -notmatch '"type"\s*:\s*"user"') { continue }
+            try { $o = $lines[$i] | ConvertFrom-Json } catch { continue }
             if ($o.type -ne 'user') { continue }
             $c = $o.message.content
-            $brief = if ($c -is [string]) { $c } else { (@($c) | Where-Object { $_.type -eq 'text' } | ForEach-Object { $_.text }) -join "`n" }
-            break
+            $text = if ($c -is [string]) { $c } else { (@($c) | Where-Object { $_.type -eq 'text' } | ForEach-Object { $_.text }) -join "`n" }
+            if (-not $text) { continue }
+            if ($lastPrompt -lt 0) { $brief = $text }
+            $lastPrompt = $i
         }
-        for ($i = $lines.Count - 1; $i -ge 0; $i--) {
+        for ($i = $lines.Count - 1; $i -gt $lastPrompt; $i--) {
             if ($lines[$i] -notmatch 'SubagentHandback') { continue }
             try { $o = $lines[$i] | ConvertFrom-Json } catch { continue }
             $h = @($o.message.content) | Where-Object { $_.type -eq 'tool_use' -and $_.name -eq 'SubagentHandback' } | Select-Object -Last 1
@@ -925,6 +930,7 @@ function Read-SubagentExchange($HookInput) {
     return [pscustomobject]@{ Brief = $brief; Return = $ret }
 }
 
+# Runs mem.py with the resolved Python; returns its stdout lines, or $null without Python.
 function Invoke-Mem([string]$Root, [string[]]$MemArgs) {
     # @() because PowerShell unrolls a one-element array on return.
     $py = @(Resolve-Python $Root | Where-Object { $_ })

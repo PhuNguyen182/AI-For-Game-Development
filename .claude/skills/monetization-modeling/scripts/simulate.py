@@ -1,8 +1,9 @@
 """Monetisation arithmetic over three labelled input sets. Stdlib only, deterministic, no randomness.
 
 Not a prediction: bands come only from the low, base and high sets the adviser supplies. Every figure carries the
-weakest label among its inputs. `proposed` values (a candidate's new price or placement) are design choices, so
-they stay out of that propagation and are named instead.
+weakest label among the inputs it uses, and no other. `proposed` values (a candidate's new price or placement) are
+design choices, so they stay out of that propagation and are named instead. A horizon past the last supplied
+retention day holds retention flat, which is invented: those figures are `assumption` and say where the data ends.
 
 Run: python -I simulate.py <input.json>. Prints JSON. Exit 2 on invalid input. Tests: python -I test_simulate.py.
 """
@@ -22,7 +23,7 @@ class Invalid(Exception):
 
 
 class Inputs:
-    """Reads labelled values and remembers which labels and proposed names the current figure used."""
+    """Reads labelled values and remembers which labels and proposed names a figure used."""
 
     def __init__(self):
         self.labels = []
@@ -45,16 +46,23 @@ class Inputs:
             raise Invalid("%s: must be a number >= 0" % name)
         return float(value)
 
-    def stamp(self, value):
-        real = [x for x in self.labels if x != "proposed"]
-        # Nothing but proposed values means nothing was observed or sourced: that is an assumption.
-        label = max(real, key=STRENGTH.get) if real else "assumption"
-        return {"value": round(value, 6), "label": label, "proposed": sorted(set(self.proposed))}
+
+def stamp(value, *ledgers, extrapolated_past=None):
+    """The weakest label of exactly the ledgers this figure used; flat-held retention counts as an assumption."""
+    labels = [x for ledger in ledgers for x in ledger.labels if x != "proposed"]
+    if extrapolated_past is not None:
+        labels.append("assumption")
+    # Nothing but proposed values means nothing was observed or sourced: that is an assumption.
+    label = max(labels, key=STRENGTH.get) if labels else "assumption"
+    out = {"value": round(value, 6), "label": label, "proposed": sorted({n for ledger in ledgers for n in ledger.proposed})}
+    if extrapolated_past is not None:
+        out["extrapolated_past_day"] = extrapolated_past
+    return out
 
 
 def retention_curve(points):
-    """Daily retention: log-linear between the given days, day 0 is 1, flat decay past the last point."""
-    if not points:
+    """Daily retention, log-linear between the given days, day 0 is 1. Returns (curve, last supplied day)."""
+    if not isinstance(points, dict) or not points:
         raise Invalid("retention: needs at least one day")
     days = {}
     for day, rate in points.items():
@@ -75,44 +83,46 @@ def retention_curve(points):
             if d0 <= day <= d1:
                 t = (day - d0) / (d1 - d0)
                 return math.exp(math.log(r0) + t * (math.log(r1) - math.log(r0)))
-        return known[-1][1]  # past the last point: held flat, which overstates a long horizon
-    return at
+        return known[-1][1]  # past the last point: held flat, flagged by the caller
+    return at, known[-1][0]
 
 
 def band(data):
-    ledger = Inputs()
+    money = Inputs()
     placements = data.get("ads") or {}
     ad_rev = 0.0
     for name in sorted(placements):
         p = placements[name]
-        ad_rev += ledger.number("ads.%s.impressions_per_dau" % name, p.get("impressions_per_dau")) * \
-            ledger.number("ads.%s.ecpm" % name, p.get("ecpm")) / 1000.0
+        ad_rev += money.number("ads.%s.impressions_per_dau" % name, p.get("impressions_per_dau")) * \
+            money.number("ads.%s.ecpm" % name, p.get("ecpm")) / 1000.0
     iap = data.get("iap") or {}
     iap_rev = 0.0
     if iap:
-        iap_rev = ledger.number("iap.purchases_per_dau", iap.get("purchases_per_dau")) * ledger.number("iap.revenue_per_purchase", iap.get("revenue_per_purchase"))
+        iap_rev = money.number("iap.purchases_per_dau", iap.get("purchases_per_dau")) * money.number("iap.revenue_per_purchase", iap.get("revenue_per_purchase"))
     arpdau = ad_rev + iap_rev
-    curve = retention_curve(ledger.take("retention", data.get("retention")))
-    result = {"arpdau": ledger.stamp(arpdau)}
+    retention = Inputs()
+    curve, last_day = retention_curve(retention.take("retention", data.get("retention")))
+    result = {"arpdau": stamp(arpdau, money), "retention_last_day": last_day}
     for horizon in HORIZONS:
         active_days = sum(curve(d) for d in range(horizon))
-        result["active_days_d%d" % horizon] = round(active_days, 6)
-        result["arpu_d%d" % horizon] = ledger.stamp(active_days * arpdau)
-    result["currency"] = currency(data.get("economy") or {}, curve)
+        past = last_day if horizon - 1 > last_day else None
+        result["active_days_d%d" % horizon] = stamp(active_days, retention, extrapolated_past=past)
+        result["arpu_d%d" % horizon] = stamp(active_days * arpdau, money, retention, extrapolated_past=past)
+    result["currency"] = currency(data.get("economy") or {}, curve, last_day, retention)
     return result
 
 
-def currency(economy, curve):
-    """Net currency per active day and per retained player, sources minus sinks."""
-    ledger = Inputs()
+def currency(economy, curve, last_day, retention):
+    """Net currency per active day (economy only) and per retained player over 30 days (economy and retention)."""
+    eco = Inputs()
     net = 0.0
     for sign, group in ((1, "sources"), (-1, "sinks")):
         items = economy.get(group) or {}
         for name in sorted(items):
-            net += sign * ledger.number("economy.%s.%s" % (group, name), items[name])
-    out = {"net_per_active_day": ledger.stamp(net)}
-    out["balance_d30"] = ledger.stamp(net * sum(curve(d) for d in range(30)))
-    return out
+            net += sign * eco.number("economy.%s.%s" % (group, name), items[name])
+    past = last_day if 30 - 1 > last_day else None
+    return {"net_per_active_day": stamp(net, eco),
+            "balance_d30": stamp(net * sum(curve(d) for d in range(30)), eco, retention, extrapolated_past=past)}
 
 
 def simulate(spec):
