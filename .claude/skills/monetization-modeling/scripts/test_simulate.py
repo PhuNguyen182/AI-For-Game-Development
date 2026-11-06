@@ -103,7 +103,12 @@ class SimulateTest(unittest.TestCase):
         self.assertEqual(got["proposed"], ["iap.revenue_per_purchase"])
 
     def test_only_proposed_inputs_count_as_assumption(self):
-        self.assertEqual(base({"retention": lab({"1": 0.5}, "proposed")})["arpdau"]["label"], "assumption")
+        out = base(one_set(iap={"purchases_per_dau": lab(0.01, "proposed"), "revenue_per_purchase": lab(4.99, "proposed")}, ads={}))
+        self.assertEqual(out["arpdau"]["label"], "assumption")
+        self.assertEqual(out["arpdau"]["proposed"], ["iap.purchases_per_dau", "iap.revenue_per_purchase"])
+
+    def test_no_inputs_count_as_assumption(self):
+        self.assertEqual(base(one_set(ads={}, iap={}))["arpdau"]["label"], "assumption")
 
     def test_invalid_inputs_are_refused(self):
         cases = [

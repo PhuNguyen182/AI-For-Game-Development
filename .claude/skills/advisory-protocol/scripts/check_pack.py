@@ -1,82 +1,161 @@
-"""Check a data pack before any adviser reads it: aggregated data only. Stdlib only. Fails closed.
+"""Check a data pack before any adviser reads it: aggregated data only. Stdlib only. Default deny, fails closed.
 
-Headers are split on every separator a spreadsheet writes (, ; tab |), so a locale's CSV cannot hide a column.
-A header naming a person, device or connection fails, and so does any cell shaped like an email, IP, phone or UUID.
+Identifier names and values are open sets, so nothing here lists what to block and lets the rest through.
+A header passes only when every word is on a finite vocabulary of aggregate dimensions and metrics; a cell passes
+only when it does not look like an identifier. The fix for a false positive is to rename the column, or to add the
+word here in a reviewed change. Problems name the file and column number, and never print a value or an unknown word.
 Run: python -I check_pack.py <pack folder>. Exit 0 clean, 1 problems, 2 cannot check. Tests: python -I test_check_pack.py.
 """
 import csv
+import ipaddress
 import re
 import sys
 from pathlib import Path
 
 SEPARATORS = (",", ";", "\t", "|")
-# Whole normalised names (lower case, separators removed) that identify one player, device or connection.
-DENY_EXACT = {
-    "uid", "user", "username", "player", "playername", "account", "customer", "member", "email", "emailaddress", "mail",
-    "phone", "phonenumber", "name", "fullname", "firstname", "lastname", "address", "adid", "gaid", "aaid", "idfa", "idfv",
-    "steamid", "playfabid", "gamecenterid", "pushtoken", "fcmtoken", "apnstoken", "useragent", "latitude", "longitude",
-    "lat", "lon", "lng", "ip", "ipaddress", "clientip", "receipt", "purchasetoken", "userhash", "userpseudoid", "pseudoid",
-}
-# A header whose last word is one of these names one thing, unless the words before it name a dimension, not a person.
-ID_WORDS = {"id", "uuid", "guid", "hash", "token", "key"}
-DIMENSIONS = {
-    "build", "level", "cohort", "sku", "placement", "product", "item", "campaign", "unit", "adunit", "event", "stage",
-    "world", "chapter", "quest", "offer", "experiment", "variant", "segment", "country", "platform", "store", "version",
-    "bundle", "network", "mediation", "currency", "reward", "pack", "mode", "map", "season", "tier",
-}
+
+# The only words allowed before a tail word: a tail after them names a thing in the game, not a person.
+DIMENSIONS = set("""app build version platform os store country region language locale currency level stage world chapter quest
+mission event screen step funnel sku product item offer bundle pack reward campaign creative source medium channel network
+mediation placement ad unit format type category segment cohort experiment variant group tier season mode map model brand""".split())
+TAILS = {"id", "name", "code", "number"}
+# Counts of people: allowed as a word, but the column must be numeric.
+COUNT = set("users players accounts devices installs sessions payers buyers spenders purchasers".split())
+# A person word allowed only as the last word after "per" (revenue_per_user).
+PER_OK = set("user player account device install session payer".split())
+# Never allowed, whatever surrounds it (PER_OK words excepted as above).
+NEVER = set("""user player account customer member payer buyer email mail phone mobile msisdn imei imsi mac ip ipv4 ipv6 idfa
+idfv gaid aaid adid advertising pseudo uid uuid guid token hash key receipt username nickname gamertag firstname lastname
+fullname surname displayname login password address latitude longitude lat lon lng gps agent useragent device install
+installation instance session steam steamid playfab gamecenter facebook fb external order transaction birth birthday dob zip
+postcode postal street userid playerid deviceid""".split())
+METRICS = set("""date day days week weeks month months year hour hours time period start end first last new active returning
+paying paid unique total net gross daily weekly monthly cumulative avg average mean median min max sum count rate ratio share
+percent pct per of by in at to from and vs is has with all other local usd retention retained churn churned conversion
+conversions converted revenue proceeds refunds refunded sales iap ads impressions impression imps ipm clicks ctr ecpm cpm cpi
+cpc arpu arppu arpdau ltv roas dau wau mau stickiness fill requests matched shown shows views watched completed completion
+completions started starts open opens wins losses attempts fails failures success purchases quantity price amount value
+earned spent sinks sources balance coins gems gold crash crashes free anr anrs errors rating ratings reviews score stars
+downloads uninstalls reinstalls playtime engagement length duration seconds sec minutes ms depth progress progression reached
+rewarded interstitial banner video native appopen frequency transactions orders""".split())
+ALLOWED = DIMENSIONS | TAILS | COUNT | METRICS
+RX_PATTERN_WORD = re.compile(r"^(\d{1,4}|[dwm]\d{1,3}|p\d{2})$")
+
+RX_NUMBER = re.compile(r"^[+-]?(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?%?$")
 RX_EMAIL = re.compile(r"\b[\w.+-]+@[\w-]+(?:\.[\w-]+)*\.[A-Za-z]{2,}\b")
 RX_IPV4 = re.compile(r"(?<![\d.])(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)(?![\d.])")
 RX_PHONE = re.compile(r"(?<![\w+])\+\d[\d ()-]{8,}\d\b")
 RX_UUID = re.compile(r"\b[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\b")
-CELL_SHAPES = (("an email", RX_EMAIL), ("an IP address", RX_IPV4), ("a phone number", RX_PHONE), ("a UUID", RX_UUID))
+RX_IPV6_TOKEN = re.compile(r"[0-9A-Fa-f:]{2,}")
+RX_DIGIT_RUN = re.compile(r"\d{9,}")
+RX_ALNUM_RUN = re.compile(r"[A-Za-z0-9]{12,}")
+RX_HEX_RUN = re.compile(r"[0-9A-Fa-f]{16,}")
+MAX_TEXT = 80
+LONG_NUMBER_DIGITS = 15
 
 
 def words(header: str):
-    spaced = re.sub(r"([a-z0-9])([A-Z])", r"\1 \2", header.strip())
+    spaced = re.sub(r"([a-z0-9])([A-Z][a-z])", r"\1 \2", header.strip())
     return [w for w in re.split(r"[^a-z0-9]+", spaced.lower()) if w]
 
 
-def banned(header: str) -> bool:
+def known(word: str) -> bool:
+    return word in ALLOWED or word in NEVER or bool(RX_PATTERN_WORD.match(word))
+
+
+def header_problem(header: str):
+    """None, or (rule, safe to print). Every word is checked before the decision."""
     parts = words(header)
     if not parts:
-        return False
-    if "".join(parts) in DENY_EXACT:
-        return True
-    if parts[-1] in ID_WORDS:
-        return not any(p in DIMENSIONS for p in parts[:-1])
-    joined = "".join(parts)
-    return any(joined.endswith(w) and joined != w and joined[:-len(w)] in DENY_EXACT | {"device", "android", "installation", "instance", "advertising", "firebaseinstance", "appinstance", "order", "transaction"}
-               for w in ID_WORDS)
+        return "has no header", False
+    for i, w in enumerate(parts):
+        if w in NEVER and not (w in PER_OK and i == len(parts) - 1 and "per" in parts[:i]):
+            return "identifies a person or device", all(known(p) for p in parts)
+        if w in TAILS and (i == 0 or any(p not in DIMENSIONS for p in parts[:i])):
+            return "identifies a person or device", all(known(p) for p in parts)
+    if any(not known(w) for w in parts):
+        return "uses a word outside the vocabulary; rename it or add the word in a reviewed change", False
+    return None
 
 
-def separator(first_line: str) -> str:
+def cell_problem(cell: str, numeric: bool, header_words):
+    if numeric:
+        integer = re.sub(r"^[+-]", "", cell).split(".")[0].split("e")[0].split("E")[0].rstrip("%")
+        return "holds a long numeric id" if len(integer) >= LONG_NUMBER_DIGITS else None
+    if len(cell) > MAX_TEXT:
+        return "holds text over %d characters" % MAX_TEXT
+    for what, rx in (("an email", RX_EMAIL), ("a phone number", RX_PHONE), ("a UUID", RX_UUID)):
+        if rx.search(cell):
+            return "holds " + what
+    if RX_IPV4.search(cell) and not ({"version", "build"} & set(header_words)):
+        return "holds an IP address"
+    for token in RX_IPV6_TOKEN.findall(cell):
+        if token.count(":") >= 2:
+            try:
+                ipaddress.ip_address(token)
+                return "holds an IP address"
+            except ValueError:
+                pass
+    if RX_DIGIT_RUN.search(cell):
+        return "holds a long digit run"
+    if any(re.search(r"[A-Za-z]", run) and re.search(r"\d", run) for run in RX_ALNUM_RUN.findall(cell)):
+        return "holds an id-shaped letter and digit run"
+    if RX_HEX_RUN.search(cell):
+        return "holds a hex id"
+    return None
+
+
+def separator(path: Path, first_line: str) -> str:
+    if path.suffix.lower() == ".tsv":
+        return "\t"
     return max(SEPARATORS, key=first_line.count)
 
 
+def label(n: int, header: str, safe: bool) -> str:
+    return "column %d (%r)" % (n, header) if safe else "column %d" % n
+
+
 def check_csv(path: Path):
-    problems = []
     try:
         with open(path, encoding="utf-8-sig", newline="") as f:
             first = f.readline()
             f.seek(0)
-            reader = csv.reader(f, delimiter=separator(first))
-            headers = next(reader, None)
-            if not headers:
-                return ["%s: no header row" % path.name]
-            for h in headers:
-                if any(s in h for s in SEPARATORS):
-                    problems.append("%s: header %r still holds a separator; the columns cannot be read" % (path.name, h))
-                elif banned(h):
-                    problems.append("%s: column %r identifies a person or device" % (path.name, h))
-            flagged = set()
-            for row in reader:
-                for col, cell in zip(headers, row):
-                    for what, rx in CELL_SHAPES:
-                        if (col, what) not in flagged and rx.search(cell):
-                            flagged.add((col, what))
-                            problems.append("%s: column %r holds %s" % (path.name, col, what))  # never the value itself
+            rows = list(csv.reader(f, delimiter=separator(path, first)))
     except (csv.Error, UnicodeDecodeError) as ex:
-        return ["%s: unreadable (%s)" % (path.name, ex)]
+        return ["%s: unreadable (%s)" % (path.name, type(ex).__name__)]
+    if not rows or not rows[0]:
+        return ["%s: no header row" % path.name]
+    headers, body = rows[0], [r for r in rows[1:] if any(c.strip() for c in r)]
+    problems = []
+    for n, h in enumerate(headers, 1):
+        if any(s in h for s in SEPARATORS):
+            problems.append("%s: column %d header still holds a separator; the columns cannot be read" % (path.name, n))
+            continue
+        hp = header_problem(h)
+        if hp:
+            problems.append("%s: %s %s" % (path.name, label(n, h, hp[1]), hp[0]))
+    for r, row in enumerate(body, 2):
+        if len(row) != len(headers):
+            problems.append("%s: row %d has %d cells; the header has %d" % (path.name, r, len(row), len(headers)))
+    reported = set()
+    for n, h in enumerate(headers, 1):
+        cells = [row[n - 1].strip() for row in body if n - 1 < len(row) and row[n - 1].strip()]
+        numeric = bool(cells) and all(RX_NUMBER.match(c) for c in cells)
+        hw = words(h)
+        if COUNT & set(hw) and cells and not numeric:
+            problems.append("%s: column %d is a count column holding text" % (path.name, n))
+        safe = header_problem(h) is None
+        for c in cells:
+            cp = cell_problem(c, numeric, hw)
+            if cp and (n, cp) not in reported:
+                reported.add((n, cp))
+                problems.append("%s: %s %s" % (path.name, label(n, h, safe), cp))  # never the value itself
+    for row in body:  # cells past the header width: scanned too, named by position
+        for n in range(len(headers) + 1, len(row) + 1):
+            cp = cell_problem(row[n - 1].strip(), False, []) if row[n - 1].strip() else None
+            if cp and (n, cp) not in reported:
+                reported.add((n, cp))
+                problems.append("%s: column %d (past the header) %s" % (path.name, n, cp))
     return problems
 
 

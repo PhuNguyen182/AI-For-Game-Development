@@ -176,6 +176,28 @@ class AdvTest(unittest.TestCase):
         (other / ".gitignore").write_text("*.db\n", encoding="utf-8")
         self.assertEqual(self.run_cli("export", str(other / "copy.db"))[0], 0)
 
+    def test_a_refused_export_leaves_no_folders(self):
+        self.ingest()
+        target = self.root / "docs" / "deep" / "copy.db"
+        self.assertEqual(self.run_cli("export", str(target))[0], 2)
+        self.assertFalse((self.root / "docs").exists())
+
+    def test_export_refuses_when_git_cannot_answer(self):
+        self.ingest()
+        real = adv.subprocess.run
+
+        def broken(cmd, **kw):
+            if "rev-parse" in cmd:
+                return subprocess.CompletedProcess(cmd, 128, b"", b"fatal: detected dubious ownership in repository")
+            return real(cmd, **kw)
+        adv.subprocess.run = broken
+        try:
+            code, _, err = self.run_cli("export", str(Path(tempfile.gettempdir()) / "adv-export-probe.db"))
+        finally:
+            adv.subprocess.run = real
+        self.assertEqual(code, 2)
+        self.assertIn("cannot tell", err)
+
     def test_marker_values_are_redacted(self):
         self.ingest(brief="Advisory-Thread: t1\nTarget: report for a.b@example.com")
         self.assertNotIn("a.b@example.com", self.run_cli("get", "adv:1")[1])

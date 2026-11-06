@@ -285,9 +285,18 @@ def cmd_rounds(root, a):
 
 
 def enclosing_repo(folder: Path):
-    """The work tree holding this folder, or None: an export into any repository must land on an ignored path."""
-    r = subprocess.run([git_exe(), "-C", str(folder), "rev-parse", "--show-toplevel"], capture_output=True)
-    return Path(r.stdout.decode("utf-8", "replace").strip()).resolve() if r.returncode == 0 else None
+    """The work tree holding this folder, or None only when git says there is none. Any other git failure (dubious
+    ownership, a damaged .git) refuses: an export into a repository must land on an ignored path."""
+    probe = folder
+    while not probe.exists() and probe.parent != probe:
+        probe = probe.parent
+    r = subprocess.run([git_exe(), "-C", str(probe), "rev-parse", "--show-toplevel"], capture_output=True)
+    if r.returncode == 0:
+        return Path(r.stdout.decode("utf-8", "replace").strip()).resolve()
+    err = r.stderr.decode("utf-8", "replace")
+    if "not a git repository" in err.lower():
+        return None
+    raise Refused("cannot tell whether %s is inside a repository: %s" % (folder, err.strip()))
 
 
 def cmd_export(root, a):
@@ -295,10 +304,10 @@ def cmd_export(root, a):
     db = open_db(root, False)
     if not db:
         raise Refused("no advisory store yet")
-    target.parent.mkdir(parents=True, exist_ok=True)
     repo = enclosing_repo(target.parent)
     if repo:
         require_ignored(repo, target.relative_to(repo).as_posix())
+    target.parent.mkdir(parents=True, exist_ok=True)  # only after the checks: a refusal leaves no folders behind
     out = sqlite3.connect(str(target))
     with out:
         db.backup(out)

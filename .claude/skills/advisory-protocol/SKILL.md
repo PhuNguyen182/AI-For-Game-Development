@@ -31,6 +31,7 @@ user-invocable: false
 - **Location:** `.memory/advisory/data/<period>/`, git-ignored.
 - **Contents:** `manifest.md` (source, date range, filters, build versions) plus aggregated CSV or TSV files.
 - **Gate:** the main session runs `check_pack.py` before any brief names a pack; a failed pack reaches no agent.
+- **Default deny:** a header passes only when every word is on the script's vocabulary, and a cell only when it is not id-shaped. A false positive → rename the column, or add the word to the vocabulary in a reviewed change.
 - **No pack:** no figure can be `measured`, and no return may conclude anything about revenue; state what to measure instead.
 
 ## Brief markers
