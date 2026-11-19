@@ -153,6 +153,9 @@ class Base(unittest.TestCase):
         scripts = base / ".claude" / "skills" / "bugs" / "scripts"
         scripts.mkdir(parents=True)
         shutil.copy(HERE / "bugs.py", scripts / "bugs.py")
+        engine = base / ".claude" / "skills" / "records" / "scripts"  # the shared journal engine bugs.py loads by path
+        engine.mkdir(parents=True)
+        shutil.copy(SKILL_DIR.parent / "records" / "scripts" / "journal.py", engine / "journal.py")
         if with_mem:
             m = base / ".claude" / "skills" / "mem" / "scripts"
             m.mkdir(parents=True)
@@ -2226,6 +2229,9 @@ class TestRootRule(GitBase):
             scripts = folder / ".claude" / "skills" / "bugs" / "scripts"
             scripts.mkdir(parents=True)
             shutil.copy(HERE / "bugs.py", scripts / "bugs.py")
+            engine = folder / ".claude" / "skills" / "records" / "scripts"  # the shared journal engine bugs.py loads by path
+            engine.mkdir(parents=True)
+            shutil.copy(SKILL_DIR.parent / "records" / "scripts" / "journal.py", engine / "journal.py")
             with self.subTest(folder.name):
                 r = subprocess.run([sys.executable, "-I", str(scripts / "bugs.py"), "stats"], input=b"", capture_output=True, cwd=self.tmp)
                 self.assertEqual(r.returncode, 0, r.stderr)
@@ -2672,7 +2678,7 @@ class TestDocContracts(unittest.TestCase):
         line = self.line(self.schema, "**Refusal text:**")
         self.assertNotIn("over 40 chars is not echoed", line)
         self.assertIn("redaction always runs", line)
-        source = (HERE / "bugs.py").read_text(encoding="utf-8")
+        source = (HERE / "bugs.py").read_text(encoding="utf-8") + (SKILL_DIR.parent / "records" / "scripts" / "journal.py").read_text(encoding="utf-8")
         self.assertIn("def shown(value, limit=40)", source)
         for limit, call in ((200, "shown(ex, 200)"), (200, "shown(given, 200)"), (300, "shown(message, 300)")):
             self.assertIn(call, source)

@@ -894,6 +894,9 @@ try {
     $bugsDir = Join-Path $proj '.claude/skills/bugs/scripts'
     New-Item -ItemType Directory -Force $bugsDir | Out-Null
     Copy-Item (Join-Path $hooks '../skills/bugs/scripts/bugs.py') $bugsDir
+    # bugs.py loads the shared journal engine by path: it goes beside the copy.
+    New-Item -ItemType Directory -Force (Join-Path $proj '.claude/skills/records/scripts') | Out-Null
+    Copy-Item (Join-Path $hooks '../skills/records/scripts/journal.py') (Join-Path $proj '.claude/skills/records/scripts')
     $bugPy = @(Resolve-Python $proj)
     $bugRoot = $proj
     $bugFields = '{"title":"HUD bar wrong","description":"The HUD bar shows the wrong value.","priority":"High","repro":"not yet","expected":"Value per the GDD","actual":"Wrong value","evidence":"none yet"}'
@@ -1263,6 +1266,9 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     New-Repo $bp
     New-Item -ItemType Directory -Force (Join-Path $bp '.claude/skills/bugs/scripts'), (Join-Path $bp '.claude/skills/mem/scripts'), (Join-Path $bp '.claude/hooks') | Out-Null
     Copy-Item (Join-Path $hooks '../skills/bugs/scripts/bugs.py') (Join-Path $bp '.claude/skills/bugs/scripts')
+    # bugs.py loads the shared journal engine by path: it goes beside the copy.
+    New-Item -ItemType Directory -Force (Join-Path $bp '.claude/skills/records/scripts') | Out-Null
+    Copy-Item (Join-Path $hooks '../skills/records/scripts/journal.py') (Join-Path $bp '.claude/skills/records/scripts')
     Copy-Item (Join-Path $hooks '../skills/mem/scripts/mem.py') (Join-Path $bp '.claude/skills/mem/scripts')
     Copy-Item (Join-Path $hooks 'secret-patterns.txt') (Join-Path $bp '.claude/hooks')
     $bugRoot = $bp
@@ -1340,6 +1346,9 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     New-Repo $bw
     New-Item -ItemType Directory -Force (Join-Path $bw '.claude/skills/bugs/scripts'), (Join-Path $bw '.claude/skills/mem/scripts'), (Join-Path $bw '.claude/hooks') | Out-Null
     Copy-Item (Join-Path $hooks '../skills/bugs/scripts/bugs.py') (Join-Path $bw '.claude/skills/bugs/scripts')
+    # bugs.py loads the shared journal engine by path: it goes beside the copy.
+    New-Item -ItemType Directory -Force (Join-Path $bw '.claude/skills/records/scripts') | Out-Null
+    Copy-Item (Join-Path $hooks '../skills/records/scripts/journal.py') (Join-Path $bw '.claude/skills/records/scripts')
     Copy-Item (Join-Path $hooks '../skills/mem/scripts/mem.py') (Join-Path $bw '.claude/skills/mem/scripts')
     Copy-Item (Join-Path $hooks 'secret-patterns.txt') (Join-Path $bw '.claude/hooks')
     $bwGit = @('-C', $bw, '-c', 'user.name=t', '-c', 'user.email=t@example.com', '-c', 'core.autocrlf=false')
@@ -1509,9 +1518,9 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     $brHooks = Join-Path $brRoot '.claude/hooks'
     $brWorkflow = Join-Path $brRoot '.workflow'
     New-Repo $brRoot
-    New-Item -ItemType Directory -Force $brHooks, (Join-Path $brRoot '.claude/skills/bugs/scripts'), (Join-Path $brRoot '.claude/skills/mem/scripts'), (Join-Path $brRoot '.claude/templates'), (Join-Path $brWorkflow 'features') | Out-Null
+    New-Item -ItemType Directory -Force $brHooks, (Join-Path $brRoot '.claude/skills/bugs/scripts'), (Join-Path $brRoot '.claude/skills/mem/scripts'), (Join-Path $brRoot '.claude/skills/records/scripts'), (Join-Path $brRoot '.claude/templates'), (Join-Path $brWorkflow 'features') | Out-Null
     foreach ($f in 'common.ps1', 'round-cap.ps1', 'session-start.ps1', 'secret-patterns.txt', 'pre-commit.ps1', 'editor-lock.ps1', 'search-guard.ps1', 'verify-on-edit.ps1') { [IO.File]::Copy((Join-Path $hooks $f), (Join-Path $brHooks $f)) }
-    foreach ($f in 'skills/bugs/scripts/bugs.py', 'skills/mem/scripts/mem.py', 'templates/framework-backlog.md') { [IO.File]::Copy((Join-Path $hooks "../$f"), (Join-Path $brRoot ".claude/$f")) }
+    foreach ($f in 'skills/bugs/scripts/bugs.py', 'skills/records/scripts/journal.py', 'skills/mem/scripts/mem.py', 'templates/framework-backlog.md') { [IO.File]::Copy((Join-Path $hooks "../$f"), (Join-Path $brRoot ".claude/$f")) }
     function InBrackets([scriptblock]$Body) { $hooks = $brHooks; & $Body }
     function BrFeature([string]$Slug, [string]$Lines) { [IO.File]::WriteAllText((Join-Path $brWorkflow "features/$Slug.md"), "# $Slug`n`n- Status: Open`n- CP: 2`n- Size: M, Risk flag: no`n$Lines`n") }
     $bugRoot = $brRoot
@@ -2303,6 +2312,9 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     $bugRoot = Join-Path $lyAbove 'Proj'
     New-Item -ItemType Directory -Force (Join-Path $bugRoot '.claude/skills/bugs/scripts'), (Join-Path $bugRoot '.claude/skills/mem/scripts'), (Join-Path $bugRoot '.claude/hooks') | Out-Null
     Copy-Item (Join-Path $hooks '../skills/bugs/scripts/bugs.py') (Join-Path $bugRoot '.claude/skills/bugs/scripts')
+    # bugs.py loads the shared journal engine by path: it goes beside the copy.
+    New-Item -ItemType Directory -Force (Join-Path $bugRoot '.claude/skills/records/scripts') | Out-Null
+    Copy-Item (Join-Path $hooks '../skills/records/scripts/journal.py') (Join-Path $bugRoot '.claude/skills/records/scripts')
     Copy-Item (Join-Path $hooks '../skills/mem/scripts/mem.py') (Join-Path $bugRoot '.claude/skills/mem/scripts')
     Copy-Item (Join-Path $hooks 'secret-patterns.txt') (Join-Path $bugRoot '.claude/hooks')
     [IO.File]::WriteAllText((Join-Path $lyAbove '.git'), "gitdir: $(LyAdmin 'WtHooks')`n")
