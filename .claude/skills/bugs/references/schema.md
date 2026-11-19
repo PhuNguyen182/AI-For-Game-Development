@@ -5,7 +5,7 @@ Synthesized from `../scripts/bugs.py`; commands in `../SKILL.md`.
 ## Statuses
 - **Open (every status but the terminal five):** `Request` · `Processing` · `Resolved` · `Review` · `Reopen` · `Backlog`.
 - **Terminal (settled, purgeable):** `Complete` · `Won't fix` · `Accepted` · `As designed` · `Duplicate`.
-- **Backlog:** counts as open for `stats` and `list --open`, and as settled for `counters` and QA sign-off with a `Known limitations` line. Never capped; never purged.
+- **Backlog:** counts as open for `stats` and `list --open`, and as settled for `counters` and QA sign-off with a feature `limitations` row. Never capped; never purged.
 
 ## Priorities
 - **Scale:** `Low` · `Medium` · `High` · `Highest`. A QA Severity of `Critical` maps to `Highest` (`qa-standards`).
@@ -24,7 +24,7 @@ Synthesized from `../scripts/bugs.py`; commands in `../SKILL.md`.
 | Any terminal | `Reopen` | A new match on a settled bug |
 | Any open | `Backlog` | **Main GD only** |
 | `Backlog` | `Request` | **Main GD only** |
-| Any open | `Won't fix`, `Accepted` | **Main GD only**, mirrored to `DEBT.md` |
+| Any open | `Won't fix`, `Accepted` | **Main GD only**, mirrored to the feature root's `DEBT.csv` or a `debt` record |
 | Any open | `As designed`, `Duplicate` | QA or main session (`duplicate_of` required for `Duplicate`) |
 
 - **Enforced on write only:** every other move is refused. Replay never enforces transitions: the history already happened.

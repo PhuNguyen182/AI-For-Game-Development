@@ -7,7 +7,8 @@ user-invocable: false
 # Product quality bar
 
 - **Not for:** mechanics and feel (`game-design-lens`), revenue maths (`monetization-modeling`), code quality (`/review`).
-- **Sources:** `CLAUDE.md` (Profile, KPI targets, Platforms, Compliance), the GDD, `.workflow/backlog.md`, `DEBT.md`, known limitations.
+- **Sources:** `CLAUDE.md` (Profile, KPI targets, Platforms, Compliance), the GDD, the backlog, debt and known limitations.
+  - **Records:** `records.py backlog render`, `debt render`, each feature root's `DEBT.csv`, `csv render limitations --feature <slug>`.
 
 ## Steps
 1. **State the goal:** the milestone's purpose from the backlog; `KPI targets` unset → your targets are `[assumption: ...]` and you say so.

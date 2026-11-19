@@ -370,7 +370,7 @@ else {
         try { $counters = @(Get-FeatureCounters $slug $null) }
         catch { if (-not $script:LedgerBusy) { $unread += "round-cap: the round caps of feature $slug could not be read: $($_.Exception.Message)" } }
         if ($counters.Count -and $counters[0].Source -eq 'md' -and (Get-Content -LiteralPath $path -Raw -Encoding UTF8) -notmatch '(?m)^- Rounds:') {
-            $msg += "feature ${slug}: no '- Rounds:' line (template in /feature); default caps apply."
+            $msg += "feature ${slug}: no '- Rounds:' line and not in the feature registry (records.py migrate --from-md, skill records); default caps apply."
         }
         if ($counters.Count -and $counters[0].Source -eq 'none') {
             $msg += "feature ${slug}: not in the feature registry (records.py feature add, skill records); default caps apply."

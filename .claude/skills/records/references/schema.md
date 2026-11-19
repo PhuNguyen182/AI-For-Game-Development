@@ -124,6 +124,7 @@ Synthesized from `../scripts/records.py` and `../scripts/journal.py`; commands i
 | `<feature_root>/DEBT.md`, `NOTES.md` bullets | `DEBT.csv` (a leading `Workaround:`, `Limitation:` or `Accepted gap:` sets the kind, default `limitation`), `NOTES.csv` (a leading `**topic**`) |
 | `.workflow/rounds.json` | `ledger migrate` |
 
+- **Until migrated:** `round-cap.ps1` reads a feature the registry does not hold from its md: `- Status: Open`, `- Size:`, `- Rounds: review n/cap, QA n/cap, rework n/cap`, `## Main GD decisions` (and `## GD decisions`) bullets with `extra round: <counter> +<n>`, and `- Stop rule:` lines.
 - **Feature md rewrite:** the header lines become `- State: records.py feature show <slug>`; each migrated section keeps its heading, gets `- Rows: records.py csv render <table> --feature <slug>`, and keeps its unmigrated lines; every other section, `## Bugs` included, stays as it was; line ends and BOM kept. A file holding the State line is skipped.
 - **Renamed:** the other sources become `<name>.migrated-<utc>.md`; `rounds.json` becomes `rounds.migrated-<utc>.json`. Other sections of `framework-backlog.md` stay in the renamed file.
 - **Staging:** every write lands in a temp folder through the root's rules; the cache there is thrown away.

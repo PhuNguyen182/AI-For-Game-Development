@@ -435,7 +435,7 @@ return {
   round,
   tree: scope.tree,
   // This round's id: the main session records it (Mode: workflow keeps the hook from counting);
-  // for a Target key it is the entry added to .workflow/rounds.json.
+  // for a Target key it is the id /review adds to the round ledger (records.py ledger add --json).
   roundId: round ? `round-${round}${treeSuffix}` : null,
   verdicts: Object.fromEntries(gates.map((gate, i) => [gate.key, gateVerdict(results[i])])),
   next: Object.fromEntries(

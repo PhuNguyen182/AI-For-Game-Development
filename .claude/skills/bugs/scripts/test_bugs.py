@@ -2555,15 +2555,15 @@ class TestDocContracts(unittest.TestCase):
                 self.assertIn("`show`", line)
                 self.assertIn("latest move to `Resolved`", line)
 
-    def test_uncommitted_reports_name_the_no_feature_debt_file(self):
+    def test_uncommitted_reports_name_the_no_feature_debt_journal(self):
         for name, text in (("fix", self.fix), ("qa", self.qa), ("release", self.release)):
             line = next(x for x in text.split("\n") if "journal uncommitted" in x and "`.workflow/bugs.jsonl`" in x)
             with self.subTest(name):
-                self.assertIn("`.workflow/DEBT.md`", line)
+                self.assertIn("`.workflow/debt.jsonl`", line)
 
-    def test_known_debt_is_read_from_the_no_feature_file_too(self):
+    def test_known_debt_is_read_from_the_no_feature_store_too(self):
         line = next(x for x in self.feature_docs.split("\n") if x.startswith("- **Before filing a bug"))
-        self.assertIn("`.workflow/DEBT.md`", line)
+        self.assertIn("`records.py debt list --open`", line)
 
     def test_the_eol_check_is_documented(self):
         line = next(x for x in self.schema.split("\n") if x.startswith("- **Attributes:**"))
@@ -2643,11 +2643,11 @@ class TestDocContracts(unittest.TestCase):
         self.assertIn("`evidence` field is replaced", line)
 
     def test_e3_07_a_no_feature_mirror_has_a_home_and_row_0b_reads_it(self):
-        self.assertIn(".workflow/DEBT.md", self.line(self.skill, "**Mirror:**"))
-        self.assertIn(".workflow/DEBT.md", self.line(self.release, "| 0b |"))
-        self.assertIn(".workflow/DEBT.md", self.line(self.lifecycle, "**Won't fix**"))
-        self.assertIn(".workflow/DEBT.md", self.line(self.fix, "**No feature:** `AskUserQuestion`"))
-        self.assertIn(".workflow/DEBT.md", self.line(self.fix, "**Cannot reproduce:**"))
+        self.assertIn(".workflow/debt.jsonl", self.line(self.skill, "**Mirror:**"))
+        self.assertIn("records.py debt list --open", self.line(self.release, "| 0b |"))
+        self.assertIn(".workflow/debt.jsonl", self.line(self.lifecycle, "**Won't fix**"))
+        self.assertIn(".workflow/debt.jsonl", self.line(self.fix, "**No feature:** `AskUserQuestion`"))
+        self.assertIn(".workflow/debt.jsonl", self.line(self.fix, "**Cannot reproduce:**"))
 
     def test_e3_09_qa_plan_command_has_its_filters(self):
         self.assertIn("`bugs.py list --feature <slug> --open`", self.line(self.qa, "**Brief:** `Feature:"))
@@ -2658,7 +2658,7 @@ class TestDocContracts(unittest.TestCase):
     def test_e3_11_routing_names_the_bug_record_beside_the_state_file(self):
         line = self.line(self.routing, "The state file")
         self.assertIn("bug record", line)
-        self.assertIn("used = file or database + hook", line)
+        self.assertIn("used = registry or bug database + hook", line)
 
     def test_e3_12_the_device_exception_has_a_marker(self):
         marker = "awaits device verification"

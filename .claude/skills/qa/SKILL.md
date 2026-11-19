@@ -36,7 +36,7 @@ argument-hint: "<feature slug, or what to test>"
 ## 3. File
 - **Defects:** each defect → `/fix` step 1 (record).
 - **Design flaw:** a design flaw → main GD now.
-- **Stated gaps:** every gap a run states → feature file `Known limitations` candidate.
+- **Stated gaps:** every gap a run states → a `limitations` row candidate (`records.py csv add limitations --feature <slug>` once the main GD accepts it).
 
 ## 4. Sign-off — `qa-lead` (Sign-off)
 - **Brief:** `Feature:` line, the plan verbatim, every report, review verdicts, `bugs.py show` output for each bug whose Feature is this slug (`qa-lead` has no shell).
@@ -47,5 +47,5 @@ argument-hint: "<feature slug, or what to test>"
 - **Per acceptance criterion:** evidence | gap.
 - **Bugs:** bugs by status.
 - **Not run:** what did not run, and why.
-- **No feature:** a run that moved a status → add "journal uncommitted": `.workflow/bugs.jsonl`, and `.workflow/DEBT.md` when this run wrote it, wait for the main GD's commit order.
+- **No feature:** a run that moved a status → add "journal uncommitted": `.workflow/bugs.jsonl`, and `.workflow/debt.jsonl` when this run wrote it, wait for the main GD's commit order.
 - **Code coverage:** changed lines executed, gaps by owner, or why it did not run; never evidence for a criterion.

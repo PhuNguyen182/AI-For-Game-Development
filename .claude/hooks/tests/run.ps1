@@ -705,7 +705,8 @@ try {
     $recJournals = 'backlog.jsonl', 'debt.jsonl', 'features.jsonl', 'framework-backlog.jsonl'
     Check 'session-start creates each records journal, empty' (@($recJournals | Where-Object { $f = Join-Path $proj ".workflow/$_"; (Test-Path $f) -and (Get-Item $f).Length -eq 0 }).Count) 4
     New-Item -ItemType Directory -Force (Join-Path $proj '.claude/templates') | Out-Null
-    Copy-Item (Join-Path $hooks '../templates/framework-backlog.md') (Join-Path $proj '.claude/templates/framework-backlog.md')
+    # The retired template, as an older framework copy still holds it: a stub stands in for it.
+    Set-Content (Join-Path $proj '.claude/templates/framework-backlog.md') '# Framework backlog'
     $fb = Join-Path $proj '.workflow/framework-backlog.md'
     Remove-Item (Join-Path $proj '.workflow/framework-backlog.jsonl')
     $r = Invoke-Hook 'session-start.ps1' @{}
@@ -1712,7 +1713,8 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     New-Repo $brRoot
     New-Item -ItemType Directory -Force $brHooks, (Join-Path $brRoot '.claude/skills/bugs/scripts'), (Join-Path $brRoot '.claude/skills/mem/scripts'), (Join-Path $brRoot '.claude/skills/records/scripts'), (Join-Path $brRoot '.claude/templates'), (Join-Path $brWorkflow 'features') | Out-Null
     foreach ($f in 'common.ps1', 'round-cap.ps1', 'session-start.ps1', 'secret-patterns.txt', 'pre-commit.ps1', 'editor-lock.ps1', 'search-guard.ps1', 'verify-on-edit.ps1') { [IO.File]::Copy((Join-Path $hooks $f), (Join-Path $brHooks $f)) }
-    foreach ($f in 'skills/bugs/scripts/bugs.py', 'skills/records/scripts/journal.py', 'skills/records/scripts/records.py', 'skills/mem/scripts/mem.py', 'templates/framework-backlog.md') { [IO.File]::Copy((Join-Path $hooks "../$f"), (Join-Path $brRoot ".claude/$f")) }
+    foreach ($f in 'skills/bugs/scripts/bugs.py', 'skills/records/scripts/journal.py', 'skills/records/scripts/records.py', 'skills/mem/scripts/mem.py') { [IO.File]::Copy((Join-Path $hooks "../$f"), (Join-Path $brRoot ".claude/$f")) }
+    [IO.File]::WriteAllText((Join-Path $brRoot '.claude/templates/framework-backlog.md'), "# Framework backlog`n")  # the retired template, as an older copy holds it
     function InBrackets([scriptblock]$Body) { $hooks = $brHooks; & $Body }
     function BrFeature([string]$Slug, [string]$Lines) { [IO.File]::WriteAllText((Join-Path $brWorkflow "features/$Slug.md"), "# $Slug`n`n- Status: Open`n- CP: 2`n- Size: M, Risk flag: no`n$Lines`n") }
     $bugRoot = $brRoot
@@ -2926,8 +2928,8 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     $contractRule = Join-Path $vl '.claude/rules/routing.md'
     Set-Content $contractRule '# Routing'
     $r = Verify '.claude/rules/routing.md'
-    Check 'verify fails per file: a file missing a hook contract string' ($r.Code -eq 1 -and $r.Out -match "FAIL  \.claude/rules/routing\.md: lost 'extra round', which hooks/round-cap\.ps1 counts on") $true
-    Set-Content $contractRule '# Routing - extra round'
+    Check 'verify fails per file: a file missing a hook contract string' ($r.Code -eq 1 -and $r.Out -match "FAIL  \.claude/rules/routing\.md: lost '``records\.py feature extra-round <slug> <counter> \+n --note <the order> --by `"main GD`"``', which hooks/round-cap\.ps1 counts on") $true
+    Set-Content $contractRule '# Routing - `records.py feature extra-round <slug> <counter> +n --note <the order> --by "main GD"` - `records.py feature stop-rule <slug> <counter> --extra-dispatch unused`'
     Check 'verify: the same file with the string passes' (Verify '.claude/rules/routing.md').Code 0
     Remove-Item $contractRule
     $workflows = Join-Path $vl '.claude/workflows'

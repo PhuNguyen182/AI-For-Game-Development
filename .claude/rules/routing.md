@@ -33,7 +33,7 @@ Escalate the size the moment the work turns out bigger; never shrink it to skip 
 ## Gates — offered, never imposed
 - Review and QA are the main GD's choice: one `AskUserQuestion` when the code is built — recommendation first, the concrete cost of skipping stated. Recommend yes for M/L, the risk flag or a Core assembly.
 - S work that changed code: offer `/review` only with the risk flag.
-- Declined → `Known limitations` ("not reviewed" / "not QA'd"), shown again at CP4. Never re-ask at the same point.
+- Declined → a `limitations` row ("not reviewed" / "not QA'd"), shown again at CP4. Never re-ask at the same point.
 - Always on, not a gate: the supply-chain check before a third-party package lands, the secret hooks, and the per-criterion UTF tests (`/feature` step 4).
 
 ## Profile defaults (`CLAUDE.md` → Profile; unset → ask once, write it there)
@@ -61,11 +61,11 @@ CP1 direction (per Profile defaults) · CP2 spec or acceptance criteria (M, L) �
 
 ## Stop rule
 - Attempts per task, across re-dispatches of the same task: S 2, M 3, L 4; `/fix` sizes by what the fix touches; other unsized routes 2. The main session's failed compile check or test run after a `Done` return counts as one attempt. Budget used up → `technical-architect` root-causes once (brief: every attempt's return + `git diff` of the touched paths) → the owner gets one more dispatch → fails → stop. A failed fix verification is a fix round, not also an attempt; a change-request rework item is a new task with a fresh budget.
-- Round caps: review 3 · QA sign-off 2 · per bug: fix 2, review 3 · feature rework M 6, L 8 (work sent back after any gate, CP3 drift or a reopened bug). Hook `round-cap.ps1` counts the events it sees — a failed gate round, `Not signed off`, a `Verify:` brief whose `Repro:` reproduces — charged by the brief's `Feature:` / `Bug:` / `Target:` line; it blocks dispatches and workflow launches past a cap. The state file or bug record holds only events the hook cannot see (workflow review rounds, CP3 drift, a main-GD-reported reopen, CP4 fix-gaps rework); used = file or database + hook. `Failed` returns are attempts, not rounds.
-- Same step fails twice for the same cause (repeated findings, same failing test, reopened bug), or a counter reaches its cap → `technical-architect` root-causes once (record `- Stop rule:` in the feature file, or `bugs.py stop-rule`) → the owner gets one more dispatch → fails again → stop. Report to the main GD: what was tried, last verified state, next best action.
+- Round caps: review 3 · QA sign-off 2 · per bug: fix 2, review 3 · feature rework M 6, L 8 (work sent back after any gate, CP3 drift or a reopened bug). Hook `round-cap.ps1` counts the events it sees — a failed gate round, `Not signed off`, a `Verify:` brief whose `Repro:` reproduces — charged by the brief's `Feature:` / `Bug:` / `Target:` line; it blocks dispatches and workflow launches past a cap. The state file (feature registry) or bug record holds only events the hook cannot see (workflow review rounds, CP3 drift, a main-GD-reported reopen, CP4 fix-gaps rework); used = registry or bug database + hook. `Failed` returns are attempts, not rounds.
+- Same step fails twice for the same cause (repeated findings, same failing test, reopened bug), or a counter reaches its cap → `technical-architect` root-causes once (`records.py feature stop-rule <slug> <counter> --extra-dispatch unused`, or `bugs.py stop-rule`) → the owner gets one more dispatch → fails again → stop. Report to the main GD: what was tried, last verified state, next best action.
 - `Infeasible:` in a return (a budget, platform, engine or spec limit no retry can change) → no retry; `technical-architect` confirms it → main GD: drop, waive the constraint, or change direction.
-- The main GD may order another round; state the cost first, record "extra round: <counter> +n" under `Main GD decisions` and raise that cap (a bug: `bugs.py extra-round`, which does both).
+- The main GD may order an extra round; state the cost first, then `records.py feature extra-round <slug> <counter> +n --note <the order> --by "main GD"`, which records it and raises that cap (a bug: `bugs.py extra-round`, which does both).
 
 ## State (main session is the only writer)
-- `.workflow/features/<slug>.md` per M/L feature — template in `/feature`. Bugs: `bugs.py` (skill `bugs`) over tracked `.workflow/bugs.jsonl`; `.workflow/bugs.db` is its cache.
-- Resume a session from the feature file's `CP:` line.
+- Per M/L feature (skill `records`): its registry record over tracked `.workflow/features.jsonl`, its rows in `.workflow/features/<slug>/*.csv`, its Request and Spec in `.workflow/features/<slug>.md` — template in `/feature`. Bugs: `bugs.py` (skill `bugs`) over tracked `.workflow/bugs.jsonl`, `bugs.py list --feature <slug>`; `.workflow/bugs.db` is its cache.
+- Resume a session from `records.py feature show <slug>` (`cp`, `next_step`); an un-migrated file from its `CP:` line.

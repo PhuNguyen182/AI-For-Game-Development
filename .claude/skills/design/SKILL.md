@@ -39,4 +39,4 @@ argument-hint: "<the design problem, in the main GD's words>"
 
 ## 7. Hand-off
 - **New work:** `/plan-game` re-plan on the changed part, or `/feature` recording `CP1: n/a (direction given: /design <date>)`.
-- **Called from `/feature`:** return to its `CP:` line with the locked section as the direction.
+- **Called from `/feature`:** return to its `cp` and `next_step` (`records.py feature show <slug>`) with the locked section as the direction.
