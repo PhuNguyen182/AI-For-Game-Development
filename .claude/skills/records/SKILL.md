@@ -80,6 +80,7 @@ user-invocable: false
 | `notes` | `<feature root>/NOTES.csv` | `N-001` |
 
 - **Columns:** fixed per table (schema.md); every value one line, 1000 chars, through the same content rules as the stores.
+- **Formula prefix:** a value starting with `=`, `+`, `@`, TAB or CR, or with `-` before anything but a space or `-`, is refused (a spreadsheet would run it); reword it. `- item` and `--by` stay legal.
 - **Feature root:** `debt` and `notes` need the registry's `feature_root`; with none, the refusal prints the `feature update` command.
 - **Journal-backed rows:** a `decisions` row of kind `extra-round` or `stop-rule` comes only from `feature extra-round` or `feature stop-rule`.
 - **Counters:** the `features.jsonl` journal is the only source of `feature counters`; `decisions.csv` `extra-round` and `stop-rule` rows are a readable copy, never counted.
@@ -90,7 +91,7 @@ user-invocable: false
 | Change a row | `csv update <table> <id> --feature <slug>`, stdin: the changed columns |
 | Rows | `csv list <table> --feature <slug> [--json]` |
 | Markdown table for a CP report | `csv render <table> --feature <slug>` |
-| Report a broken file: header, columns, duplicate ids, BOM, CRLF, values | `csv doctor [<table>] --feature <slug>` |
+| Report a broken file: header, columns, duplicate ids, BOM, CRLF, values (a formula-prefix cell included) | `csv doctor [<table>] --feature <slug>` |
 | Repair it: later duplicates renumbered, BOM and CRLF dropped | `csv doctor [<table>] --feature <slug> --fix` |
 | Closure: unmirrored limitations into the feature root's `DEBT.csv` | `csv mirror --feature <slug>` |
 
