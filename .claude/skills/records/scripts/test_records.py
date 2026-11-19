@@ -1031,9 +1031,8 @@ ALPHA_AFTER = """# Alpha feature
 - Rows: records.py csv render tests --feature alpha-feature
 
 ## Bugs
-| ID | Title | Priority |
-|---|---|---|
-| BUG-0009 | Something | Medium |
+
+- Bugs: bugs.py list --feature alpha-feature
 
 ## Known limitations
 
@@ -1276,6 +1275,67 @@ class TestMigrate(MigrateBase):
         self.assertIn("framework-backlog.md: absent", out)
         self.assertIn("no feature files", out)
         self.assertIn("usage", self.no("migrate", code=2).lower())
+
+
+GAMMA_MD = """# Gamma feature
+
+- Status: Open
+- Size: M
+- Rounds: review 1/3 · QA 0/2 · rework 0/6
+
+## Bugs
+Found in QA round 1:
+| ID | Title | Status |
+|---|---|---|
+| BUG-0001 | Crash on load | Fixed |
+| BUG-0002 | Wrong label | Open |
+
+## Notes
+free text
+"""
+
+GAMMA_AFTER = """# Gamma feature
+
+- State: records.py feature show gamma-feature
+
+## Bugs
+
+- Bugs: bugs.py list --feature gamma-feature
+
+Found in QA round 1:
+
+## Notes
+free text
+"""
+
+
+class TestMigrateBugsSection(MigrateBase):
+    def write(self, text):
+        p = self.wf / "features" / "gamma-feature.md"
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_bytes(text.encode("utf-8"))
+        return p
+
+    def test_the_bugs_table_is_dropped_and_its_other_lines_kept(self):
+        p = self.write(GAMMA_MD)
+        before = self.snapshot()
+        out = self.ok("migrate", "--from-md", "--dry-run")
+        self.assertEqual(self.snapshot(), before)
+        self.assertIn(".workflow/features/gamma-feature.md: registry 1 (Open) · decisions 0 · log 0 · tests 0 · limitations 0 · "
+                      "journal round 1, extra_round 0, stop_rule 0 · 1 other lines kept · bugs table rows dropped 2 (bugs.py holds them)", out)
+        self.assertIn("counters equal for 1 open feature(s)", out)
+        self.ok("migrate", "--from-md")
+        self.assertEqual(p.read_bytes(), GAMMA_AFTER.encode("utf-8"))
+        self.assertFalse((self.wf / "features" / "gamma-feature").exists())  # no CSV for the bugs table
+        c = json.loads(self.ok("feature", "counters", "gamma-feature", "--json"))
+        self.assertEqual((c["review"], c["qa"], c["rework"]), ({"used": 1, "cap": 3}, {"used": 0, "cap": 2}, {"used": 0, "cap": 6}))
+
+    def test_a_bugs_section_without_a_table_gets_the_pointer_line(self):
+        lines = GAMMA_MD.split("\n")
+        p = self.write("\n".join(lines[:7] + ["No bugs filed."] + lines[12:]))
+        out = self.ok("migrate", "--from-md")
+        self.assertNotIn("bugs table rows dropped", out)
+        self.assertEqual(p.read_bytes(), GAMMA_AFTER.replace("Found in QA round 1:", "No bugs filed.").encode("utf-8"))
 
 
 if __name__ == "__main__":
