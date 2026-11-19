@@ -57,6 +57,9 @@ $HookContracts = @{
     '.claude/skills/qa-standards/references/bug-lifecycle.md' = @('Settled: Complete, Won''t fix, Accepted, As designed, Duplicate')
     '.claude/skills/qa-standards/SKILL.md'                  = @('**Critical**', '**High**', '**Medium**')
     '.claude/rules/routing.md'                              = @('extra round')
+    # records.py commands and output shapes round-cap.ps1 and session-start.ps1 read, and the commands their messages name.
+    '.claude/skills/records/SKILL.md'                       = @('`feature counters <slug> --json`', '`ledger get --json`', '`ledger add --json`', '`stats --json`', '`feature extra-round <slug> <counter> +n --note N --by "main GD"`', '`feature stop-rule <slug> <counter> --extra-dispatch unused\|used`', '`migrate --from-md --dry-run`')
+    '.claude/skills/records/references/schema.md'           = @('`- Stop rule: <counter> root-caused <date>', '`extra round: <counter> +<n>`', '`{"<key>": {"<counter>": ["<id>", ...]}}`', '`[{"key","counter","id"}]`', '`{"line": "<that line>", "open_features": [{"slug", "cp", "next_step"}]}`', '| 3 | `ledger get`', '| 75 | `ledger add` or `migrate`', '`rounds.pending-*.json`', '`ledger.corrupt-<utc>.db`')
     # Strings adv.py, advisory-capture.ps1, mem.py and pre-commit.ps1 read.
     '.claude/skills/mem/scripts/mem.py'                     = @('ADVISERS = ("product-owner", "game-designer", "monetization-designer")')
     '.claude/hooks/common.ps1'                              = @("`$AdvisoryAgents = 'product-owner', 'game-designer', 'monetization-designer'")

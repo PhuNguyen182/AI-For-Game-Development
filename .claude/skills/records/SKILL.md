@@ -56,7 +56,7 @@ user-invocable: false
 | Records | `<store> list [--state S] [--open] [--json]` |
 | Check existing records | `<store> search "<words>" [-n 10]` |
 | Markdown table for a CP report | `<store> render` |
-| One line | `<store> stats`, or `stats` for every store |
+| One line | `<store> stats`, or `stats` for every store; `stats --json` adds the open features (session start) |
 | Hook counters | `feature counters <slug> --json` |
 | Hook ledger | `ledger get --json` |
 | Anything else, read-only | `sql "SELECT ..." [--json]` |

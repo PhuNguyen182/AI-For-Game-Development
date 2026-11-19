@@ -7,3 +7,13 @@
 
 # Bug journal: the truth behind .workflow/bugs.db (skill bugs). Branches append; a union merge keeps both sides.
 .workflow/bugs.jsonl text eol=lf merge=union
+
+# Workflow records (skill records): the journals behind .workflow/records.db and the feature CSV tables. Branches append
+# rows; a union merge keeps both sides (records.py doctor and csv doctor repair a duplicate id or a repeated header).
+.workflow/backlog.jsonl text eol=lf merge=union
+.workflow/debt.jsonl text eol=lf merge=union
+.workflow/features.jsonl text eol=lf merge=union
+.workflow/framework-backlog.jsonl text eol=lf merge=union
+.workflow/features/*/*.csv text eol=lf merge=union
+**/DEBT.csv text eol=lf merge=union
+**/NOTES.csv text eol=lf merge=union

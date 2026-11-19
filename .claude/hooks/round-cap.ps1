@@ -1,5 +1,5 @@
 # Round caps of the stop rule (routing.md). Brief marker lines: /review, /fix and /qa write them.
-#   count     SubagentStop: adds a failed round to the ledger .workflow/rounds.json when
+#   count     SubagentStop: adds a failed round to the round ledger .workflow/ledger.db (records.py ledger add) when
 #             - a review gate fails (code-reviewer Request changes, or Needs-decision with a Critical/High/Medium
 #               finding; security-reviewer Blocked), unless the brief says "Mode: audit", "Mode: test-code" or
 #               "Mode: workflow" (review-gate's gates: the main session records those rounds itself);
@@ -9,17 +9,23 @@
 #             session. Failed returns are attempts, not rounds: never counted here.
 #   dispatch  PreToolUse Agent / Workflow: an adviser always passes; anything else is blocked when the brief's (or the workflow args') feature, bug or target
 #             is past a cap. A brief without marker lines falls back to every feature path and bug id it mentions.
-#             A brief naming a bug fails closed: no Python or any bugs.py failure blocks the dispatch.
+#             Each counter checked needs Python: no Python, or any records.py or bugs.py failure, blocks the dispatch.
+#             A dispatch with nothing to count (no feature, bug or target found, not a gate agent) starts no Python.
 #             A bug ID is one bug whatever its case or padding: bug-0027, BUG-27 and BUG-00027 all mean BUG-0027.
 #   edit      PostToolUse Edit/Write under .workflow/, and Bash/PowerShell commands that call bugs.py (for the bug ids in
-#             the command): tells Claude when a counter reaches or passes its cap (silent at the cap once a Stop rule
-#             names that counter), or an open feature file has no Rounds line. Any other command exits at once.
-# Counters: "- Rounds: review n/cap, QA n/cap, rework n/cap" in a feature file; a bug's fix and review rounds in the bug
-# database, read with "bugs.py counters". Both hold only events this hook cannot see; Used = file or database + ledger.
-# A cap above the default counts only with an "extra round" line in the feature's Main GD decisions or the bug's record
-# ("bugs.py extra-round" writes it); for target or session work, one "extra-<counter>" entry in the ledger per extra round.
-# Ledger safety: an unparsable ledger is moved to rounds.corrupt-<utc>.json (never overwritten); a lock timeout
-# parks the events in rounds.pending-<id>.json, merged on the next write; dispatch fails closed on an unreadable ledger.
+#             the command) or records.py (for the feature slugs in it): tells Claude when a counter reaches or passes its
+#             cap (silent at the cap once a Stop rule names that counter), or an open feature has no Rounds line or no
+#             registry record. Any other command exits at once.
+# Counters: a feature's file-only rounds from "records.py feature counters <slug> --json" (the feature registry), or, for a
+# feature the registry does not hold, its un-migrated file's "- Rounds: review n/cap, QA n/cap, rework n/cap" line; a bug's
+# fix and review rounds from "bugs.py counters". Both hold only events this hook cannot see; Used = file or database +
+# ledger. A cap above the default counts only with an "extra round" line in the counters' record ("records.py feature
+# extra-round" and "bugs.py extra-round" write it; an un-migrated file's Main GD decisions); for target or session work,
+# one "extra-<counter>" entry in the ledger per extra round.
+# Ledger: "records.py ledger get --json" and "ledger add --json", rooted like bugs.py (a linked worktree reads and writes the
+# main checkout's). A busy ledger, no Python or a failed add parks the events in .workflow/rounds.pending-<id>.json, merged
+# on the next add; an unreadable ledger.db is moved aside to ledger.corrupt-<utc>.db by the next add, never overwritten;
+# dispatch fails closed while the ledger cannot be read or a moved-aside file is left.
 param([Parameter(Mandatory)][ValidateSet('count', 'dispatch', 'edit')][string]$Mode)
 . "$PSScriptRoot/common.ps1"
 
@@ -31,114 +37,78 @@ if (-not $in) { exit 0 }
 # Advisers read and advise: a past-cap feature or a broken ledger must not stop a note (skill advisory-protocol). Before the ledger is read.
 if ($Mode -eq 'dispatch' -and [string]$in.tool_name -ne 'Workflow' -and $AdvisoryAgents -ccontains [string]$in.tool_input.subagent_type) { exit 0 }
 $root = Get-ProjectRoot $in
-$ledgerPath = Join-Path $root '.workflow/rounds.json'
-$ledgerDir = Split-Path $ledgerPath
 $sessionKey = "session:$([string]$in.session_id)"
 $stamp = (Get-Date).ToUniversalTime().ToString('yyyyMMddTHHmmssfff')
+$utf8 = New-Object Text.UTF8Encoding $false
+$UnreadableOutput = 'returned unreadable output. Run it by hand to see why, then retry (skill records).'
 
-# Ledger: { key: { counter: [event ids] } }. Throws on invalid JSON.
-function ConvertTo-Ledger([string]$raw) {
+# The checkout whose .workflow holds the ledger and the registry: the bugs root rule. Resolved once, when first needed; throws.
+$script:RecordsRoot = $null
+function Get-RecordsRoot { if (-not $script:RecordsRoot) { $script:RecordsRoot = Get-BugsRoot $root }; return $script:RecordsRoot }
+function Test-JsonObject($o) { return $null -ne $o -and $o.GetType().FullName -eq 'System.Management.Automation.PSCustomObject' }
+
+# The ledger { key: { counter: [event ids] } }, read once, and only when a counter needs it. Throws the cause and its fix.
+$script:Ledger = $null
+$script:LedgerBusy = $false
+function Get-LedgerView {
+    if ($null -ne $script:Ledger) { return $script:Ledger }
+    $r = Invoke-Records (Get-RecordsRoot) @('ledger', 'get', '--json')
+    if ($r.State -eq 'NoPython') { throw 'no Python 3.10+ with SQLite FTS5 found, so the round ledger .workflow/ledger.db cannot be read. Install it, then retry (skill records).' }
+    if ($r.State -ne 'Ok') {
+        if ($r.Code -eq 75) { $script:LedgerBusy = $true; throw '.workflow/ledger.db is locked or busy. Retry the dispatch.' }
+        if ($r.Code -eq 3) { throw "the round ledger is unreadable ($($r.Err)). Its counts cannot be trusted until that file is resolved: report the stop-rule state to the main GD (skill records)." }
+        throw "records.py ledger get failed: $($r.Err). Clear that cause, then retry (skill records)."
+    }
+    $o = $null
+    try { $o = $r.Out | ConvertFrom-Json -ErrorAction Stop } catch {}
+    # A shape this hook does not know must not read as 0 rounds.
+    if (-not (Test-JsonObject $o)) { throw "records.py ledger get $UnreadableOutput" }
     $l = @{}
-    if ([string]::IsNullOrWhiteSpace($raw)) { return $l }
-    $o = $raw | ConvertFrom-Json -ErrorAction Stop
     foreach ($k in $o.PSObject.Properties) {
+        if (-not (Test-JsonObject $k.Value)) { throw "records.py ledger get $UnreadableOutput" }
         $l[$k.Name] = @{}
-        foreach ($c in $k.Value.PSObject.Properties) { $l[$k.Name][$c.Name] = @($c.Value) }
+        foreach ($c in $k.Value.PSObject.Properties) { $l[$k.Name][$c.Name] = @($c.Value | Where-Object { $null -ne $_ }) }
     }
+    $script:Ledger = $l
     return $l
 }
 
-function Add-Event($l, [string]$key, [string]$counter, [string]$id) {
-    if (-not $l.ContainsKey($key)) { $l[$key] = @{} }
-    if (-not $l[$key].ContainsKey($counter)) { $l[$key][$counter] = @() }
-    if (@($l[$key][$counter]) -notcontains $id) { $l[$key][$counter] = @($l[$key][$counter]) + $id }
+# $ledger is kept for the callers' shape: the ledger itself is read lazily, once per run.
+function Get-LedgerCount($ledger, [string]$key, [string]$counter) {
+    $l = Get-LedgerView
+    if (-not $l.ContainsKey($key) -or -not $l[$key].ContainsKey($counter)) { return 0 }
+    return @($l[$key][$counter]).Count
 }
 
-function Get-PendingFiles { if (Test-Path -LiteralPath $ledgerDir) { @(Get-ChildItem -LiteralPath $ledgerDir -Filter 'rounds.pending-*.json' -File) } else { @() } }
-
-# Merges parked events into $l. An unparsable parked file is renamed rounds.corrupt-pending-*.json (kept, never
-# deleted) and dropped from $files' merged set; the corrupt file then blocks dispatch until the main GD resolves it.
-function Merge-Pending($l, $files) {
-    $merged = @()
-    foreach ($f in $files) {
-        try {
-            foreach ($e in @([IO.File]::ReadAllText($f.FullName) | ConvertFrom-Json -ErrorAction Stop)) {
-                Add-Event $l ([string]$e.key) ([string]$e.counter) ([string]$e.id)
-            }
-            $merged += $f
-        } catch {
-            try { Move-Item -LiteralPath $f.FullName -Destination (Join-Path $ledgerDir ("rounds.corrupt-pending-" + $f.Name.Substring(15))) -Force -ErrorAction Stop } catch {}
-        }
-    }
-    return $merged
+# Files a broken ledger left for the main GD (records.py ledger get refuses on the same names). Listed without Python, so a
+# dispatch with nothing to count still stops on them, as it always has.
+function Get-LedgerMarks {
+    $dir = Join-Path $root '.workflow'
+    try { $dir = Join-Path (Get-RecordsRoot) '.workflow' } catch {}  # a link that leads nowhere blocks once a counter needs the root
+    if (-not (Test-Path -LiteralPath $dir -PathType Container)) { return @() }
+    return @(Get-ChildItem -LiteralPath $dir -File | Where-Object { $_.Name -like 'ledger.corrupt-*.db' -or $_.Name -like 'rounds.corrupt-*.json' })
 }
 
-function Get-CorruptFiles { if (Test-Path -LiteralPath $ledgerDir) { @(Get-ChildItem -LiteralPath $ledgerDir -Filter 'rounds.corrupt-*.json' -File) } else { @() } }
-
-function Move-CorruptLedger {
-    $dest = Join-Path $ledgerDir "rounds.corrupt-$stamp.json"
-    try { Move-Item -LiteralPath $ledgerPath -Destination $dest -Force -ErrorAction Stop; return $dest } catch { return $null }
+# Parks events where the next ledger add merges them: [{key, counter, id}], UTF-8 with no BOM.
+function Save-Pending([string]$Dir, [string]$Json, [string]$Why) {
+    $wf = Join-Path $Dir '.workflow'
+    New-Item -ItemType Directory -Force $wf | Out-Null
+    $p = Join-Path $wf "rounds.pending-$stamp-$([guid]::NewGuid().ToString('N').Substring(0, 8)).json"
+    [IO.File]::WriteAllText($p, $Json, $utf8)
+    [Console]::Error.WriteLine("round-cap: $Why; events parked in $p")
 }
 
-# Read-only view: ledger + parked events. Sets $script:LedgerProblem to 'unreadable' or 'corrupt' and returns $null.
-$script:LedgerProblem = $null
-function Get-Ledger {
-    $l = @{}
-    if (Test-Path -LiteralPath $ledgerPath) {
-        $raw = $null
-        for ($i = 0; $i -lt 5 -and $null -eq $raw; $i++) {
-            try { $raw = [IO.File]::ReadAllText($ledgerPath) } catch { Start-Sleep -Milliseconds 100 }
-        }
-        if ($null -eq $raw) { $script:LedgerProblem = 'unreadable'; return $null }
-        try { $l = ConvertTo-Ledger $raw } catch { $script:LedgerProblem = 'corrupt'; return $null }
-    }
-    $null = Merge-Pending $l (Get-PendingFiles)
-    return $l
-}
-
-function Save-Pending([object[]]$events, [string]$why) {
-    New-Item -ItemType Directory -Force $ledgerDir | Out-Null
-    $p = Join-Path $ledgerDir "rounds.pending-$stamp-$([guid]::NewGuid().ToString('N').Substring(0, 8)).json"
-    ConvertTo-Json -InputObject @($events) -Depth 4 | Set-Content -LiteralPath $p -Encoding UTF8
-    [Console]::Error.WriteLine("round-cap: $why; events parked in $p")
-}
-
-# Applies events under an exclusive handle: parallel gates stop at the same time.
+# One records.py ledger add: INSERT OR IGNORE, so parallel gates stopping at once, or a repeated event, count once.
 function Save-Events([object[]]$events) {
-    New-Item -ItemType Directory -Force $ledgerDir | Out-Null
-    $fs = $null
-    for ($i = 0; $i -lt 50 -and -not $fs; $i++) {
-        try { $fs = [IO.File]::Open($ledgerPath, 'OpenOrCreate', 'ReadWrite', 'None') } catch { Start-Sleep -Milliseconds 100 }
-    }
-    if (-not $fs) { Save-Pending $events 'ledger locked'; return }
-    $corrupt = $false
-    $merged = @()
-    $pending = @(Get-PendingFiles)
-    try {
-        $sr = New-Object IO.StreamReader($fs, (New-Object Text.UTF8Encoding $false), $true, 4096, $true)
-        $l = $null
-        try { $l = ConvertTo-Ledger $sr.ReadToEnd() } catch { $corrupt = $true }
-        if (-not $corrupt) {
-            $merged = @(Merge-Pending $l $pending)
-            foreach ($e in $events) { Add-Event $l $e.key $e.counter $e.id }
-            $bytes = (New-Object Text.UTF8Encoding $false).GetBytes(($l | ConvertTo-Json -Depth 5))
-            $fs.SetLength(0)
-            $fs.Write($bytes, 0, $bytes.Length)
-        }
-    } finally { $fs.Dispose() }
-    if ($corrupt) {
-        $dest = Move-CorruptLedger
-        if (-not $dest) { Save-Pending $events 'ledger unparsable and could not be moved'; return }
-        [Console]::Error.WriteLine("round-cap: unparsable ledger moved to $dest; a new one starts")
-        Save-Events $events
+    $json = '[' + (@($events | ForEach-Object { ConvertTo-Json -Compress -InputObject ([ordered]@{ key = [string]$_.key; counter = [string]$_.counter; id = [string]$_.id }) }) -join ',') + ']'
+    try { $rr = Get-RecordsRoot } catch { Save-Pending $root $json "the ledger's checkout cannot be found ($($_.Exception.Message))"; return }
+    $r = Invoke-Records $rr @('ledger', 'add', '--json') 15000 $json
+    if ($r.State -eq 'Ok') {
+        if ($r.Err) { [Console]::Error.WriteLine("round-cap: $($r.Err)") }  # an unreadable ledger.db moved aside
         return
     }
-    foreach ($f in $merged) { Remove-Item -LiteralPath $f.FullName -ErrorAction SilentlyContinue }
-}
-
-function Get-LedgerCount($ledger, [string]$key, [string]$counter) {
-    if (-not $ledger -or -not $ledger.ContainsKey($key) -or -not $ledger[$key].ContainsKey($counter)) { return 0 }
-    return @($ledger[$key][$counter]).Count
+    $why = if ($r.State -eq 'NoPython') { 'no Python 3.10+ with SQLite FTS5 found' } elseif ($r.Code -eq 75) { 'ledger busy' } else { "records.py ledger add failed: $($r.Err)" }
+    Save-Pending $rr $json $why
 }
 
 function New-Counter([string]$name, [int]$fileUsed, [int]$cap, [int]$default, [string]$record, [int]$logged) {
@@ -152,23 +122,63 @@ function New-Counter([string]$name, [int]$fileUsed, [int]$cap, [int]$default, [s
     return [pscustomobject]@{ Name = $name; Used = $fileUsed + $logged; Cap = $cap; Note = $note; Stopped = $stopped }
 }
 
-# Counters of an open feature file, or @(). Missing counters start at 0 with the default cap.
+# The registry's counters of a slug, or $null when the registry cannot hold it: no or an empty features.jsonl (Python
+# never starts), or a name records.py refuses. Throws the cause and its fix when the CLI cannot answer.
+function Get-RegistryCounters([string]$slug) {
+    if ($slug -cnotmatch '^[a-z0-9]+(?:-[a-z0-9]+)*$' -or $slug.Length -gt 100) { return $null }
+    $rr = Get-RecordsRoot
+    $journal = Join-Path $rr '.workflow/features.jsonl'
+    if (-not (Test-Path -LiteralPath $journal -PathType Leaf) -or (Get-Item -LiteralPath $journal).Length -eq 0) { return $null }
+    $r = Invoke-Records $rr @('feature', 'counters', $slug, '--json')
+    if ($r.State -eq 'NoPython') { throw 'no Python 3.10+ with SQLite FTS5 found. Install it, then retry (skill records).' }
+    if ($r.State -ne 'Ok') { throw "records.py feature counters $slug failed: $($r.Err). Clear that cause, then retry (skill records)." }
+    $j = $null
+    try { $j = $r.Out | ConvertFrom-Json -ErrorAction Stop } catch {}
+    # A shape this hook does not know must not read as 0 rounds.
+    if (-not (Test-JsonObject $j) -or $j.found -isnot [bool] -or $j.open -isnot [bool] -or $null -eq $j.review.used -or $null -eq $j.review.cap -or
+        $null -eq $j.qa.used -or $null -eq $j.qa.cap -or $null -eq $j.rework.used -or $null -eq $j.rework.cap) {
+        throw "records.py feature counters $slug $UnreadableOutput"
+    }
+    return $j
+}
+
+# Counters of an open feature, or @(). Each carries its Source: 'registry' (records.py); 'md', an un-migrated feature file's
+# header (- Status:, - Rounds:, Main GD decisions, - Stop rule:) for a slug the registry does not hold; 'none', a feature
+# file with no such header and no registry record: default caps. No registry record and no file: @().
 function Get-FeatureCounters([string]$slug, $ledger) {
+    $reg = Get-RegistryCounters $slug
+    $out = @()
+    if ($reg -and $reg.found) {
+        if (-not $reg.open) { return @() }
+        $size = First $reg.size 'M'
+        foreach ($name in 'review', 'qa', 'rework') {
+            $default = if ($name -eq 'rework') { First $Defaults["rework-$size"] $Defaults['rework-M'] } else { $Defaults[$name] }
+            $c = New-Counter $name ([int]$reg.$name.used) ([int]$reg.$name.cap) $default ([string]$reg.record) (Get-LedgerCount $ledger "feature:$slug" $name)
+            $out += $c | Add-Member -PassThru NoteProperty Source 'registry' | Add-Member -PassThru NoteProperty Slug $slug
+        }
+        return $out
+    }
     $path = Join-Path $root ".workflow/features/$slug.md"
     if (-not (Test-Path -LiteralPath $path)) { return @() }
     $text = Get-Content -LiteralPath $path -Raw -Encoding UTF8
-    if ($text -notmatch '(?m)^- Status:\s*Open') { return @() }
-    $line = if ($text -match '(?m)^- Rounds:(.*)$') { $Matches[1] } else { '' }
-    $size = if ($text -match '(?m)^- Size:\s*(S|M|L)\b') { $Matches[1] } else { 'M' }
-    # Every decisions section counts, old heading or new: a game repo's open file may hold both (BUG-0012).
-    $gd = (@([regex]::Matches($text, '(?s)## (?:Main )?GD decisions(.*?)(?=\r?\n## |$)') | ForEach-Object { $_.Groups[1].Value })) -join "`n"
-    $stop = (([regex]::Matches($text, '(?m)^- Stop rule:.*$') | ForEach-Object { $_.Value }) -join "`n")
-    $out = @()
+    $legacy = $text -match '(?m)^- (Status|Rounds):'
+    if ($legacy -and $text -notmatch '(?m)^- Status:\s*Open') { return @() }
+    $line = if ($legacy -and $text -match '(?m)^- Rounds:(.*)$') { $Matches[1] } else { '' }
+    $size = if ($legacy -and $text -match '(?m)^- Size:\s*(S|M|L)\b') { $Matches[1] } else { 'M' }
+    $record = ''
+    if ($legacy) {
+        # Every decisions section counts, old heading or new: a game repo's open file may hold both (BUG-0012).
+        $gd = (@([regex]::Matches($text, '(?s)## (?:Main )?GD decisions(.*?)(?=\r?\n## |$)') | ForEach-Object { $_.Groups[1].Value })) -join "`n"
+        $stop = (([regex]::Matches($text, '(?m)^- Stop rule:.*$') | ForEach-Object { $_.Value }) -join "`n")
+        $record = "$gd`n$stop"
+    }
+    $source = if ($legacy) { 'md' } else { 'none' }
     foreach ($name in 'review', 'qa', 'rework') {
         $default = if ($name -eq 'rework') { First $Defaults["rework-$size"] $Defaults['rework-M'] } else { $Defaults[$name] }
         $used = 0; $cap = $default
         if ($line -match "(?i)\b$name\s*:?\s*(\d+)\s*/\s*(\d+)") { $used = [int]$Matches[1]; $cap = [int]$Matches[2] }
-        $out += New-Counter $name $used $cap $default "$gd`n$stop" (Get-LedgerCount $ledger "feature:$slug" $name)
+        $c = New-Counter $name $used $cap $default $record (Get-LedgerCount $ledger "feature:$slug" $name)
+        $out += $c | Add-Member -PassThru NoteProperty Source $source | Add-Member -PassThru NoteProperty Slug $slug
     }
     return $out
 }
@@ -218,6 +228,12 @@ function Get-TargetKey([string]$text) { $v = Get-Marker $text 'Target'; if ($v) 
 function Get-VerifyIds([string]$text) { @([regex]::Matches($text, '(?im)^[\s*_>-]*Verify[*_]*:[*_\s]*(BUG-[0-9]+)\b') | ForEach-Object { ConvertTo-BugId $_.Groups[1].Value } | Select-Object -Unique) }
 function Get-Slugs([string]$text) { [regex]::Matches($text, '\.workflow[\\/]features[\\/]([A-Za-z0-9_-]+)\.md') | ForEach-Object { $_.Groups[1].Value } | Select-Object -Unique }
 function Get-BugIds([string]$text) { [regex]::Matches($text, '\bBUG-[0-9]+\b', 'IgnoreCase') | ForEach-Object { ConvertTo-BugId $_.Value } | Select-Object -Unique }
+# The feature slugs a records.py command acts on: "feature <command> <slug>" and "--feature <slug>".
+function Get-CommandSlugs([string]$text) {
+    $a = [regex]::Matches($text, '\bfeature\s+(?:round|extra-round|stop-rule|update|set-state|show|counters)\s+["'']?([a-z0-9]+(?:-[a-z0-9]+)*)(?![A-Za-z0-9_-])')
+    $b = [regex]::Matches($text, '--feature(?:\s+|=)["'']?([a-z0-9]+(?:-[a-z0-9]+)*)(?![A-Za-z0-9_-])')
+    @(@($a) + @($b) | ForEach-Object { $_.Groups[1].Value } | Select-Object -Unique)
+}
 function Format([string]$what, $c) { return "${what}: $($c.Name) $($c.Used)/$($c.Cap)$($c.Note)" }
 
 if ($Mode -eq 'count') {
@@ -265,31 +281,24 @@ if ($Mode -eq 'count') {
 
 # Runs for every shell command the settings filter lets through: no Python and no ledger before this test.
 $shellIds = @()
+$shellSlugs = @()
 if ($Mode -eq 'edit' -and 'Bash', 'PowerShell' -contains [string]$in.tool_name) {
     $command = [string]$in.tool_input.command
-    if ($command -notmatch '(?i)\bbugs\.py\b') { exit 0 }
-    $shellIds = @(Get-BugIds $command)
-    if (-not $shellIds.Count) { exit 0 }
-}
-
-$ledger = Get-Ledger
-if ($script:LedgerProblem -eq 'corrupt') {
-    $dest = Move-CorruptLedger
-    Block ("round-cap: .workflow/rounds.json could not be parsed; moved to $dest so it is never overwritten. " +
-        'Its counts are not in the new ledger: merge them back by hand, or report the stop-rule state to the main GD.')
-}
-if ($script:LedgerProblem -eq 'unreadable') {
-    if ($Mode -eq 'dispatch') { Block 'round-cap: .workflow/rounds.json is locked or unreadable; round caps cannot be checked. Retry the dispatch.' }
-    exit 0
-}
-# A moved-aside ledger holds counts the live one lacks: caps cannot be trusted until the main GD resolves it.
-$corruptFiles = @(Get-CorruptFiles)
-if ($Mode -eq 'dispatch' -and $corruptFiles.Count) {
-    Block ("round-cap: $($corruptFiles.Count) unreadable ledger file(s) in .workflow/ ($(($corruptFiles | ForEach-Object Name) -join ', ')) hold " +
-        'round counts the live ledger lacks; caps cannot be checked. Report to the main GD: merge their events into rounds.json by hand, or delete them on the main GD''s order.')
+    $callsBugs = $command -match '(?i)\bbugs\.py\b'
+    $callsRecords = $command -match '(?i)\brecords\.py\b'
+    if (-not ($callsBugs -or $callsRecords)) { exit 0 }
+    if ($callsBugs) { $shellIds = @(Get-BugIds $command) }
+    if ($callsRecords) { $shellSlugs = @(Get-CommandSlugs $command) }
+    if (-not ($shellIds.Count -or $shellSlugs.Count)) { exit 0 }
 }
 
 if ($Mode -eq 'dispatch') {
+    # A moved-aside ledger holds counts the live one lacks: caps cannot be trusted until the main GD resolves it.
+    $marks = @(Get-LedgerMarks)
+    if ($marks.Count) {
+        Block ("round-cap: $($marks.Count) unreadable ledger file(s) in .workflow/ ($(($marks | ForEach-Object Name) -join ', ')) hold " +
+            'round counts the live ledger lacks; caps cannot be checked. Report to the main GD: merge their events into .workflow/ledger.db by hand (records.py ledger add --json, skill records), or delete them on the main GD''s order.')
+    }
     $tool = [string]$in.tool_name
     if ($tool -eq 'Workflow') {
         $a = $in.tool_input.args
@@ -309,44 +318,62 @@ if ($Mode -eq 'dispatch') {
     $slugs = @(if ($slug) { $slug } elseif (-not $marked) { Get-Slugs $brief })
     $bugs = @(if ($bug) { $bug } elseif (-not $marked) { Get-BugIds $brief })
     $over = @()
-    foreach ($s in $slugs) { foreach ($c in Get-FeatureCounters $s $ledger) { if ($c.Used -gt $c.Cap) { $over += Format "feature $s" $c } } }
+    foreach ($s in $slugs) {
+        try { $counters = @(Get-FeatureCounters $s $null) }
+        catch { Block "round-cap: the brief names feature $s but its round caps cannot be checked: $($_.Exception.Message)" }
+        foreach ($c in $counters) { if ($c.Used -gt $c.Cap) { $over += Format "feature $s" $c } }
+    }
     foreach ($b in $bugs) {
-        try { $counters = @(Get-BugCounters $b $ledger) }
+        try { $counters = @(Get-BugCounters $b $null) }
         catch { Block "round-cap: the brief names $b but its round caps cannot be checked: $($_.Exception.Message)" }
         foreach ($c in $counters) { if ($c.Used -gt $c.Cap) { $over += Format $b $c } }
     }
-    if ($tkey) { foreach ($c in Get-KeyCounters $tkey $ledger) { if ($c.Used -gt $c.Cap) { $over += Format $tkey $c } } }
+    if ($tkey) {
+        try { $counters = @(Get-KeyCounters $tkey $null) }
+        catch { Block "round-cap: the brief names $tkey but its round caps cannot be checked: $($_.Exception.Message)" }
+        foreach ($c in $counters) { if ($c.Used -gt $c.Cap) { $over += Format $tkey $c } }
+    }
     if (-not $marked -and -not $slugs.Count -and -not $bugs.Count -and $Gates -contains $agent) {
-        foreach ($c in Get-KeyCounters $sessionKey $ledger) { if ($c.Used -gt $c.Cap) { $over += Format 'this session (no feature, bug or target named)' $c } }
+        try { $counters = @(Get-KeyCounters $sessionKey $null) }
+        catch { Block "round-cap: a $agent dispatch is capped per session, but its round caps cannot be checked: $($_.Exception.Message)" }
+        foreach ($c in $counters) { if ($c.Used -gt $c.Cap) { $over += Format 'this session (no feature, bug or target named)' $c } }
     }
     if ($over.Count) {
         Block ("Stop rule (routing.md): past the round cap - $($over -join '; '). " +
             'Report to the main GD: what was tried, last verified state, next best action. ' +
-            'Another round only on the main GD''s order: for a feature, record "extra round: <counter> +n" under Main GD decisions and raise that cap; ' +
+            'Another round only on the main GD''s order: for a feature, run records.py feature extra-round <slug> <counter> +n --note <the order> --by "main GD" (skill records; ' +
+            'a feature file not yet migrated: record "extra round: <counter> +n" under Main GD decisions and raise that cap); ' +
             'for a bug, run bugs.py extra-round <id> <counter> +n --note <the order> (skill bugs); ' +
-            "for target or session work add one `"extra-<counter>`" entry under that key in .workflow/rounds.json per round.")
+            'for target or session work run records.py ledger add --json with one {"key": "<target:path or session:id>", "counter": "extra-<counter>", "id": "<the order>"} per round.')
     }
     exit 0
 }
 
-# edit. Exit 2 here only hands Claude the message: the tool has already run.
+# edit. Exit 2 here only hands Claude the message: the tool has already run. A busy ledger stays silent, as a lock always has.
 $msg = @()
 $hits = @()
 $unread = @()
-if ($shellIds.Count) {
-    $hits = foreach ($id in $shellIds) {
-        try { foreach ($c in Get-BugCounters $id $ledger) { if ($c.Used -ge $c.Cap) { $c | Add-Member -PassThru NoteProperty What $id } } }
-        catch { $unread += "round-cap: the round caps of $id could not be read: $($_.Exception.Message)" }
-    }
+function Get-Hits([string]$What, [scriptblock]$Read) {
+    try { foreach ($c in (& $Read)) { if ($c.Used -ge $c.Cap) { $c | Add-Member -PassThru NoteProperty What $What } } }
+    catch { if (-not $script:LedgerBusy) { $script:unread += "round-cap: the round caps of $What could not be read: $($_.Exception.Message)" } }
+}
+if ($shellIds.Count -or $shellSlugs.Count) {
+    $hits = @(foreach ($id in $shellIds) { Get-Hits $id { Get-BugCounters $id $null } }) +
+        @(foreach ($s in $shellSlugs) { Get-Hits "feature $s" { Get-FeatureCounters $s $null } })
 }
 else {
     $path = [string](First $in.tool_input.file_path '')
     if ($path -notmatch '[\\/]\.workflow[\\/]') { exit 0 }
     if ($path -match '[\\/]features[\\/]([A-Za-z0-9_-]+)\.md$') {
         $slug = $Matches[1]
-        $counters = @(Get-FeatureCounters $slug $ledger)
-        if ($counters.Count -and (Get-Content -LiteralPath $path -Raw -Encoding UTF8) -notmatch '(?m)^- Rounds:') {
+        $counters = @()
+        try { $counters = @(Get-FeatureCounters $slug $null) }
+        catch { if (-not $script:LedgerBusy) { $unread += "round-cap: the round caps of feature $slug could not be read: $($_.Exception.Message)" } }
+        if ($counters.Count -and $counters[0].Source -eq 'md' -and (Get-Content -LiteralPath $path -Raw -Encoding UTF8) -notmatch '(?m)^- Rounds:') {
             $msg += "feature ${slug}: no '- Rounds:' line (template in /feature); default caps apply."
+        }
+        if ($counters.Count -and $counters[0].Source -eq 'none') {
+            $msg += "feature ${slug}: not in the feature registry (records.py feature add, skill records); default caps apply."
         }
         $hits = foreach ($c in $counters) { if ($c.Used -ge $c.Cap) { $c | Add-Member -PassThru NoteProperty What "feature $slug" } }
     }
@@ -355,7 +382,9 @@ foreach ($c in @($hits | Where-Object { $_ })) {
     $line = Format $c.What $c
     if ($c.Used -gt $c.Cap) { $msg += "$line - past the cap: stop and report to the main GD." }
     elseif (-not $c.Stopped) {
-        $record = if ($c.What -match '^BUG-') { "run bugs.py stop-rule $($c.What) $($c.Name) --extra-dispatch unused" } else { "record '- Stop rule:'" }
+        $record = if ($c.What -match '^BUG-') { "run bugs.py stop-rule $($c.What) $($c.Name) --extra-dispatch unused" }
+        elseif ($c.Source -eq 'md') { "record '- Stop rule:'" }
+        else { "run records.py feature stop-rule $($c.Slug) $($c.Name) --extra-dispatch unused" }
         $msg += "$line - at the cap: technical-architect root-causes once ($record), the owner gets one more dispatch; another failure stops the work."
     }
 }

@@ -685,6 +685,12 @@ try {
     $env:CLAUDE_PROJECT_DIR = $proj
     Remove-Item Env:HOOK_TEST_EDITOR_STATE
 
+    # records.py and its engine in the project, where the hooks look for them: session-start creates the journals and prints
+    # the Records line from it, round-cap reads the ledger and the feature registry through it. bugs.py loads the same engine.
+    New-Item -ItemType Directory -Force (Join-Path $proj '.claude/skills/records/scripts') | Out-Null
+    Copy-Item (Join-Path $hooks '../skills/records/scripts/journal.py') (Join-Path $proj '.claude/skills/records/scripts')
+    Copy-Item (Join-Path $hooks '../skills/records/scripts/records.py') (Join-Path $proj '.claude/skills/records/scripts')
+
     # session-start
     New-Item -ItemType Directory -Force (Join-Path $proj '.workflow/features') | Out-Null
     Set-Content (Join-Path $proj '.workflow/features/open-one.md') "# Open one`n`n- Status: Open`n- CP: build"
@@ -695,15 +701,22 @@ try {
     Check 'session-start skips closed features' ($r.Out -match 'done-one') $false
     Check 'session-start reports Grep without XERJ' ($r.Out -match 'Search: Grep') $true
 
-    # session-start: the framework backlog comes from its template when missing, and an existing one is kept
+    # session-start: an empty journal per records store when missing, never the old framework backlog template copy
+    $recJournals = 'backlog.jsonl', 'debt.jsonl', 'features.jsonl', 'framework-backlog.jsonl'
+    Check 'session-start creates each records journal, empty' (@($recJournals | Where-Object { $f = Join-Path $proj ".workflow/$_"; (Test-Path $f) -and (Get-Item $f).Length -eq 0 }).Count) 4
     New-Item -ItemType Directory -Force (Join-Path $proj '.claude/templates') | Out-Null
     Copy-Item (Join-Path $hooks '../templates/framework-backlog.md') (Join-Path $proj '.claude/templates/framework-backlog.md')
     $fb = Join-Path $proj '.workflow/framework-backlog.md'
+    Remove-Item (Join-Path $proj '.workflow/framework-backlog.jsonl')
     $r = Invoke-Hook 'session-start.ps1' @{}
-    Check 'session-start creates the framework backlog from its template' ((Test-Path $fb) -and ($r.Out -match 'Framework backlog: created')) $true
-    Add-Content $fb '| A row this repo found | Open |'
-    $r = Invoke-Hook 'session-start.ps1' @{}
-    Check 'session-start keeps an existing framework backlog' (((Get-Content $fb -Raw) -match 'A row this repo found') -and ($r.Out -notmatch 'Framework backlog')) $true
+    Check 'session-start no longer copies the framework backlog template' ((Test-Path $fb) -or ($r.Out -cmatch 'Framework backlog:')) $false
+    Check 'session-start: ... and recreates the missing journal' (Test-Path (Join-Path $proj '.workflow/framework-backlog.jsonl')) $true
+    [IO.File]::WriteAllText((Join-Path $proj '.workflow/debt.jsonl'), "kept`n")
+    Invoke-Hook 'session-start.ps1' @{} | Out-Null
+    Check 'session-start keeps an existing journal as it is' ([IO.File]::ReadAllText((Join-Path $proj '.workflow/debt.jsonl'))) "kept`n"
+    [IO.File]::WriteAllBytes((Join-Path $proj '.workflow/debt.jsonl'), [byte[]]@())
+    Check 'session-start prints the Records line, ASCII' ($r.Out -match '(?m)^Records: backlog 0 open, framework backlog 0 open, debt 0 open, features 0 open\s*$') $true
+    Check 'session-start: ... and names the migrate command for the un-migrated feature file' ($r.Out -match "(?m)^Records: not migrated - 2 feature file\(s\) with a '- Status:' line\. Preview: \S+.* -I \.claude/skills/records/scripts/records\.py --root `"[^`"]+`" migrate --from-md --dry-run") $true
 
     # memory: capture (Stop hook) and the session-start status line, against a copy of mem.py
     $memDir = Join-Path $proj '.claude/skills/mem/scripts'
@@ -788,7 +801,8 @@ try {
     Check 'probe: a non-loopback node counts as no XERJ' ((Invoke-Hook 'session-start.ps1' @{}).Out -match 'not loopback') $true
     Remove-Item Env:XERJ_URL
 
-    # round-cap ($proj is CLAUDE_PROJECT_DIR)
+    # round-cap ($proj is CLAUDE_PROJECT_DIR). First an un-migrated feature file: the registry journal is empty, so its
+    # header counts, and records.py starts only for the ledger.
     $feat = Join-Path $proj '.workflow/features/demo.md'
     New-Item -ItemType Directory -Force (Split-Path $feat) | Out-Null
     function Feature([string]$Rounds, [string]$Gd = '', [string]$Status = 'Open') {
@@ -890,14 +904,93 @@ try {
     FeatureWith "review 4/5, QA 0/2, rework 4/6|## Decisions`n- extra round: review +2"
     Check 'round-cap: an extra round under an unrelated heading is not a main GD record' (Dispatch $brief) 2
     Feature 'review 1/3, QA 0/2, rework 1/6'
+
+    # round-cap on the feature registry: records.py writes it, "feature counters" reads it; no feature file is needed.
+    $recPy = @(Resolve-Python $proj)
+    function RecCli([string[]]$CliArgs, [string]$Stdin = '', [string]$Root = $proj) {
+        $rest = @($recPy | Select-Object -Skip 1)
+        $cli = Join-Path $Root '.claude/skills/records/scripts/records.py'
+        $out = if ($Stdin) { $Stdin | & $recPy[0] @rest -I $cli --root $Root @CliArgs 2>&1 } else { & $recPy[0] @rest -I $cli --root $Root @CliArgs 2>&1 }
+        if ($LASTEXITCODE -ne 0) { Write-Host "FAIL  fixture: records.py $($CliArgs -join ' '): $out"; $script:failures++ }
+        return (Join-Output $out)
+    }
+    function RecEdit([string]$Command) { Invoke-Hook 'round-cap.ps1' @{ tool_name = 'PowerShell'; tool_input = @{ command = $Command } } @('-Mode', 'edit') }
+    function DispatchOut([string]$Brief) { Invoke-Hook 'round-cap.ps1' @{ tool_name = 'Agent'; tool_input = @{ prompt = $Brief } } @('-Mode', 'dispatch') }
+    function ClearRegistry {
+        Remove-Item (Join-Path $proj '.workflow/records.db*') -Force -ErrorAction SilentlyContinue
+        [IO.File]::WriteAllBytes((Join-Path $proj '.workflow/features.jsonl'), [byte[]]@())
+        Get-ChildItem (Join-Path $proj '.workflow/features') | Where-Object { $_.Name -like 'reg-*' } | Remove-Item -Recurse -Force
+    }
+    RecCli @('feature', 'add') '{"slug":"reg-demo","size":"M"}' | Out-Null
+    $regBrief = 'Feature: .workflow/features/reg-demo.md'
+    Check 'registry: a registered feature with no feature file, under every cap, dispatches' (Dispatch $regBrief) 0
+    RecCli @('feature', 'round', 'reg-demo', 'review', '+3', '--note', 'test round') | Out-Null
+    Check 'registry: at a cap still dispatches' (Dispatch $regBrief) 0
+    $regCmd = 'python -I .claude/skills/records/scripts/records.py --root . feature round reg-demo review +1 --note x'
+    $r = RecEdit $regCmd
+    Check 'registry: a records.py command naming the feature warns at the cap' ($r.Code -eq 2 -and $r.Out -match 'feature reg-demo: review 3/3' -and $r.Out -match 'at the cap') $true
+    Check 'registry: ... and names the records.py stop-rule command' ($r.Out -match 'records\.py feature stop-rule reg-demo review --extra-dispatch unused' -and $r.Out -notmatch "record '- Stop rule:'") $true
+    $r = RecEdit 'python -I records.py csv add decisions --feature reg-demo'
+    Check 'registry: ... and so does one naming it with --feature' ($r.Code -eq 2 -and $r.Out -match 'feature reg-demo: review 3/3') $true
+    $r = RecEdit 'python -I records.py backlog list --open'
+    Check 'registry: a records.py command naming no feature is silent' ($r.Code -eq 0 -and -not $r.Out.Trim()) $true
+    $r = RecEdit 'git log --grep reg-demo'
+    Check 'registry: a command that calls neither CLI is silent' ($r.Code -eq 0 -and -not $r.Out.Trim()) $true
+    RecCli @('feature', 'stop-rule', 'reg-demo', 'review', '--extra-dispatch', 'unused', '--note', 'test') | Out-Null
+    Check 'registry: a recorded stop rule silences the at-cap message' (RecEdit $regCmd).Code 0
+    RecCli @('feature', 'round', 'reg-demo', 'review', '+1', '--note', 'test round') | Out-Null
+    $r = DispatchOut $regBrief
+    Check 'registry: past the cap blocks' ($r.Code -eq 2 -and $r.Out -match 'feature reg-demo: review 4/3') $true
+    Check 'registry: ... naming records.py feature extra-round' ($r.Out -match 'records\.py feature extra-round <slug> <counter> \+n --note <the order> --by "main GD"') $true
+    Check 'registry: ... and the past-cap edit message is never silenced' ((RecEdit $regCmd).Out -match 'past the cap') $true
+    RecCli @('feature', 'extra-round', 'reg-demo', 'review', '+1', '--note', 'main GD order', '--by', 'main GD') | Out-Null
+    Check 'registry: a main GD extra round raises the cap' (Dispatch $regBrief) 0
+    Check 'registry: a Workflow launch reads the registry too' (WorkflowLaunch @{ name = 'review-gate'; args = @{ feature = '.workflow/features/reg-demo.md'; round = 6 } }) 0
+    RecCli @('feature', 'round', 'reg-demo', 'qa', '+3', '--note', 'test round') | Out-Null
+    Check 'registry: past the QA cap blocks' (Dispatch $regBrief) 2
+    Check 'registry: ... and an adviser still passes' (DispatchAs 'product-owner' $regBrief) 0
+    RecCli @('feature', 'set-state', 'reg-demo', 'Closed', '--note', 'done') | Out-Null
+    Check 'registry: a closed feature is not checked' (Dispatch $regBrief) 0
+    RecCli @('feature', 'add') '{"slug":"reg-large","size":"L"}' | Out-Null
+    RecCli @('feature', 'round', 'reg-large', 'rework', '+8', '--note', 'test round') | Out-Null
+    Check 'registry: an L feature takes the rework cap 8' (Dispatch 'Feature: .workflow/features/reg-large.md') 0
+    RecCli @('feature', 'round', 'reg-large', 'rework', '+1', '--note', 'test round') | Out-Null
+    Check 'registry: ... and blocks past it' (Dispatch 'Feature: .workflow/features/reg-large.md') 2
+    # The registry wins a slug an un-migrated header also holds; that file then needs no Rounds line.
+    RecCli @('feature', 'add') '{"slug":"reg-both","size":"M"}' | Out-Null
+    $regBoth = Join-Path $proj '.workflow/features/reg-both.md'
+    Set-Content $regBoth "# Both`n`n- Status: Open`n- Size: M`n- Rounds: review 9/3, QA 0/2, rework 9/6`n" -Encoding UTF8
+    Check 'registry: the registry wins over a feature file header' (Dispatch 'Feature: .workflow/features/reg-both.md') 0
+    Set-Content $regBoth "# Both`n`n- Status: Open`n" -Encoding UTF8
+    Check 'registry: ... and a registered feature''s file needs no Rounds line' (EditState $regBoth) 0
+    # A migrated file (no header) the registry does not hold: default caps, and the edit says so.
+    $regMissing = Join-Path $proj '.workflow/features/reg-missing.md'
+    Set-Content $regMissing "# Missing`n`n- State: records.py feature show reg-missing`n" -Encoding UTF8
+    $r = Invoke-Hook 'round-cap.ps1' @{ tool_name = 'Edit'; tool_input = @{ file_path = $regMissing } } @('-Mode', 'edit')
+    Check 'registry: a feature file the registry does not hold warns on edit' ($r.Code -eq 2 -and $r.Out -match 'feature reg-missing: not in the feature registry') $true
+    Check 'registry: ... and dispatches under the default caps' (Dispatch 'Feature: .workflow/features/reg-missing.md') 0
+    Check 'registry: a slug with no record and no file passes' (Dispatch 'Feature: .workflow/features/reg-nowhere.md') 0
+    # A name records.py refuses never reaches it: its feature file alone counts.
+    $regUpper = Join-Path $proj '.workflow/features/Reg_Upper.md'
+    Set-Content $regUpper "# U`n`n- Status: Open`n- Rounds: review 4/3, QA 0/2, rework 0/6`n" -Encoding UTF8
+    $r = DispatchOut 'Feature: .workflow/features/Reg_Upper.md'
+    Check 'registry: a slug records.py cannot hold falls back to its feature file' ($r.Code -eq 2 -and $r.Out -match 'feature Reg_Upper: review 4/3') $true
+    Remove-Item $regUpper
+    # Fail closed on a registry the CLI cannot read.
+    $featJournal = Join-Path $proj '.workflow/features.jsonl'
+    $savedReg = [IO.File]::ReadAllText($featJournal)
+    [IO.File]::AppendAllText($featJournal, "{ not json`n")
+    $r = DispatchOut 'Feature: .workflow/features/reg-large.md'
+    Check 'registry: a malformed journal blocks, naming the records.py call' ($r.Code -eq 2 -and $r.Out -match 'cannot be checked' -and $r.Out -match 'records\.py feature counters reg-large failed') $true
+    $r = Invoke-Hook 'round-cap.ps1' @{ tool_name = 'Edit'; tool_input = @{ file_path = $regBoth } } @('-Mode', 'edit')
+    Check 'registry: ... and an edit gets the message only' ($r.Code -eq 2 -and $r.Out -match 'could not be read' -and $r.Out -notmatch 'Stop rule') $true
+    [IO.File]::WriteAllText($featJournal, $savedReg)
+    ClearRegistry
     # Bugs come from real bugs.py calls: the CLI owns the journal format. A copy of it, beside the mem.py copy it needs.
     $bugsDir = Join-Path $proj '.claude/skills/bugs/scripts'
     New-Item -ItemType Directory -Force $bugsDir | Out-Null
     Copy-Item (Join-Path $hooks '../skills/bugs/scripts/bugs.py') $bugsDir
-    # bugs.py loads the shared journal engine by path: it goes beside the copy. So does records.py: an Accepted move mirrors into debt.
-    New-Item -ItemType Directory -Force (Join-Path $proj '.claude/skills/records/scripts') | Out-Null
-    Copy-Item (Join-Path $hooks '../skills/records/scripts/journal.py') (Join-Path $proj '.claude/skills/records/scripts')
-    Copy-Item (Join-Path $hooks '../skills/records/scripts/records.py') (Join-Path $proj '.claude/skills/records/scripts')
+    # bugs.py loads the shared journal engine by path, and records.py for the debt mirror: both were copied above.
     $bugPy = @(Resolve-Python $proj)
     $bugRoot = $proj
     $bugFields = '{"title":"HUD bar wrong","description":"The HUD bar shows the wrong value.","priority":"High","repro":"not yet","expected":"Value per the GDD","actual":"Wrong value","evidence":"none yet"}'
@@ -1040,6 +1133,18 @@ exit $LASTEXITCODE
     ClearBugs
     Check 'round-cap: no journal passes without Python' (NoPython { Dispatch 'Fix BUG-0001' }) 0
     Check 'round-cap: a shell command with no journal stays silent without Python' (NoPython { (ShellEdit $bugCall).Code }) 0
+    # Every other counter reads the ledger, which needs Python: the cost the main GD accepted.
+    $r = NoPython { DispatchOut $brief }
+    Check 'round-cap: no Python on a feature dispatch blocks, naming the fix' ($r.Code -eq 2 -and $r.Out -match 'feature demo' -and $r.Out -match 'Python 3\.10') $true
+    $r = NoPython { Invoke-Hook 'round-cap.ps1' @{ session_id = 'np'; tool_name = 'Agent'; tool_input = @{ subagent_type = 'code-reviewer'; prompt = 'Review the diff' } } @('-Mode', 'dispatch') }
+    Check 'round-cap: no Python on a gate naming no state blocks: its session cap needs the ledger' ($r.Code -eq 2 -and $r.Out -match 'Python 3\.10') $true
+    Check 'round-cap: no Python still lets an adviser pass' (NoPython { DispatchAs 'game-designer' $brief }) 0
+    $r = NoPython { Invoke-Hook 'round-cap.ps1' @{ tool_name = 'Edit'; tool_input = @{ file_path = $feat } } @('-Mode', 'edit') }
+    Check 'round-cap: no Python on a feature file edit gives a message only' ($r.Code -eq 2 -and $r.Out -match 'could not be read' -and $r.Out -notmatch 'Stop rule') $true
+    RecCli @('feature', 'add') '{"slug":"reg-np"}' | Out-Null
+    $r = NoPython { DispatchOut 'Feature: .workflow/features/reg-np.md' }
+    Check 'round-cap: no Python on a registered feature blocks' ($r.Code -eq 2 -and $r.Out -match 'Python 3\.10') $true
+    ClearRegistry
     # A merge of two branches that each filed a bug: two real create lines holding one id.
     BugCli @('add') $bugFields | Out-Null
     $oneLine = Get-Content (Join-Path $proj '.workflow/bugs.jsonl') -Raw
@@ -1053,22 +1158,23 @@ exit $LASTEXITCODE
     $r = ShellEdit $bugCall
     Check 'round-cap: a CLI failure on a bugs.py command gives its message' ($r.Code -eq 2 -and $r.Out -match 'could not be read' -and $r.Out -match 'duplicate id') $true
     ClearBugs
-    # A shell command that does not call bugs.py: nothing runs, not even the ledger step that moves a corrupt file aside.
+    # A shell command that calls neither CLI: nothing runs, not even a ledger read.
     $ledgerProbe = Join-Path $proj '.workflow/rounds.json'
     Set-Content $ledgerProbe '{ broken' -Encoding UTF8
     $r = NoPython { ShellEdit 'git log --grep BUG-0001' }
     Check 'round-cap: another shell command is silent' ($r.Code -eq 0 -and -not $r.Out.Trim()) $true
-    Check 'round-cap: ... and leaves the ledger alone' ((Test-Path $ledgerProbe) -and -not @(Get-ChildItem (Split-Path $ledgerProbe) -Filter 'rounds.corrupt-*.json').Count) $true
+    Check 'round-cap: ... and leaves the ledger alone' ((Test-Path $ledgerProbe) -and -not @(Get-ChildItem (Split-Path $ledgerProbe) -Filter '*.corrupt-*').Count) $true
     $r = NoPython { ShellEdit 'python -I bugs.py list --open' 'Bash' }
     Check 'round-cap: a bugs.py command naming no id is silent' ($r.Code -eq 0 -and -not $r.Out.Trim()) $true
     Remove-Item $ledgerProbe
     Feature 'review 1/3, QA 0/2, rework 1/6'
     Check 'round-cap: edits outside .workflow are ignored' (EditState "$proj/Assets/A.cs") 0
 
-    # round-cap count: the ledger counts failed gates the state files missed
-    $ledger = Join-Path $proj '.workflow/rounds.json'
-    Remove-Item $ledger -ErrorAction SilentlyContinue
-    function SubStop([string]$Agent, [string]$Brief, [string]$Return, [string]$Id, [switch]$Handback) {
+    # round-cap count: the ledger .workflow/ledger.db (records.py ledger) counts failed gates the state files missed
+    $ledger = Join-Path $proj '.workflow/ledger.db'
+    function ClearLedger { Get-ChildItem (Join-Path $proj '.workflow') -File | Where-Object { $_.Name -like 'ledger.*' -or $_.Name -like 'rounds.*' } | Remove-Item -Force }
+    ClearLedger
+    function SubStop([string]$Agent, [string]$Brief, [string]$Return, [string]$Id, [switch]$Handback, [switch]$Full) {
         $t = Join-Path $tmp "agent-$Id.jsonl"
         $first = @{ type = 'user'; message = @{ role = 'user'; content = $Brief } } | ConvertTo-Json -Depth 5 -Compress
         $lines = @($first)
@@ -1076,7 +1182,8 @@ exit $LASTEXITCODE
         if ($Handback) { $lines += (@{ type = 'assistant'; message = @{ role = 'assistant'; content = @(@{ type = 'tool_use'; name = 'SubagentHandback'; input = @{ message = $Return } }) } } | ConvertTo-Json -Depth 6 -Compress) }
         else { $last = $Return }
         Set-Content $t $lines -Encoding UTF8
-        (Invoke-Hook 'round-cap.ps1' @{ session_id = 'sess-1'; agent_type = $Agent; agent_id = $Id; agent_transcript_path = $t; last_assistant_message = $last } @('-Mode', 'count')).Code
+        $res = Invoke-Hook 'round-cap.ps1' @{ session_id = 'sess-1'; agent_type = $Agent; agent_id = $Id; agent_transcript_path = $t; last_assistant_message = $last } @('-Mode', 'count')
+        if ($Full) { $res } else { $res.Code }
     }
     # advisory-capture: real adv.py, real git ignore rule. Fails open for the subagent, never blocks.
     $advRoot = Join-Path $tmp 'advproj'
@@ -1122,7 +1229,19 @@ exit $LASTEXITCODE
     $m5 = AdvCli @('list', '--thread', 'm5')
     Check 'advisory-capture: a continued round stores only its own report' (($m5 -match 'NEWROUND') -and ($m5 -notmatch 'OLDROUND')) $true
     # Where-Object: @($null).Count is 1, which read a missing counter as one event.
-    function Count([string]$Key, [string]$Counter) { $o = Get-Content $ledger -Raw | ConvertFrom-Json; @($o.$Key.$Counter | Where-Object { $_ }).Count }
+    # The hook's own view: records.py ledger get --json (the DB, parked files and an un-migrated rounds.json).
+    function LedgerView {
+        $o = Invoke-Records $proj @('ledger', 'get', '--json')
+        if ($o.State -ne 'Ok') { Write-Host "FAIL  fixture: records.py ledger get: $($o.Err)"; $script:failures++; return $null }
+        return ($o.Out | ConvertFrom-Json)
+    }
+    function Count([string]$Key, [string]$Counter) { $o = LedgerView; @($o.$Key.$Counter | Where-Object { $_ }).Count }
+    function LedgerIds([string]$Key, [string]$Counter) { $o = LedgerView; @($o.$Key.$Counter | Where-Object { $_ }) }
+    # The DB alone, read with sqlite3: while a moved-aside file is left, ledger get refuses by design.
+    function DbCount([string]$Key, [string]$Counter) {
+        $rest = @($recPy | Select-Object -Skip 1)
+        [int][string](& $recPy[0] @rest -I -c 'import sqlite3,sys; db=sqlite3.connect(sys.argv[1]); print(db.execute(''SELECT COUNT(*) FROM round_event WHERE key=? AND counter=?'', sys.argv[2:4]).fetchone()[0])' $ledger $Key $Counter 2>&1)
+    }
     Feature 'review 0/3, QA 0/2, rework 0/6'
     $fm = 'Feature: .workflow/features/demo.md'
     $rb = "Round: 1`n$fm`nReview the HUD diff (skill shared-core-boundary-audit)."
@@ -1151,13 +1270,13 @@ exit $LASTEXITCODE
     foreach ($n in 3..4) { SubStop 'code-reviewer' "Round: $n`n$fm`nPrevious: round 1 findings." 'Verdict: Request changes' "r$n" | Out-Null }
     Check 'count: the ledger blocks although the file says 0' (Dispatch $brief) 2
     Feature 'review 1/3, QA 0/2, rework 1/6'
-    Remove-Item $ledger
+    ClearLedger
     SubStop 'code-reviewer' "Round: 1`n$fm" 'Verdict: Request changes' 'u1' | Out-Null
     SubStop 'code-reviewer' "Round: 2`n$fm" 'Verdict: Request changes' 'u2' | Out-Null
     SubStop 'code-reviewer' "Round: 3`n$fm" 'Verdict: Request changes' 'u3' | Out-Null
     Check 'count: used = file + hook (1 + 3 > 3) blocks' (Dispatch "$fm`nNext attempt") 2
     Feature 'review 0/3, QA 0/2, rework 0/6'
-    Remove-Item $ledger
+    ClearLedger
     Bugs 'Reopen' 0
     foreach ($n in 1..3) { SubStop 'gameplay-engineer' "Bug: BUG-0001`n$fm" "Status: Failed`nAttempts: 3/3" "f$n" | Out-Null }
     Check 'count: Failed returns are attempts, not rounds' (Dispatch 'Bug: BUG-0001') 0
@@ -1176,7 +1295,7 @@ exit $LASTEXITCODE
     Check 'count: used = database + ledger (0 + 3 past the cap blocks)' (Dispatch 'Bug: BUG-0001') 2
     Check 'count: an over-padded marker reads the same ledger key' (Dispatch 'Bug: BUG-00001') 2
     Check 'count: a short lowercase id in free text reads it too' (Dispatch 'Fix bug-1') 2
-    Remove-Item $ledger
+    ClearLedger
     Bugs 'Reopen' 0
     SubStop 'playtest-tester' "Verify: bug-1" "Status: Done`nRepro: BUG-0001 reproduces" 'c1' | Out-Null
     SubStop 'playtest-tester' "Verify: BUG-00001" "Status: Done`nRepro: bug-0001 reproduces" 'c2' | Out-Null
@@ -1187,24 +1306,42 @@ exit $LASTEXITCODE
     SubStop 'code-reviewer' "Round: 1`
 Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     Check 'count: a Bug marker spelling charges the canonical key' (Count 'bug:BUG-0001' 'review') 1
-    Remove-Item $ledger
+    ClearLedger
     foreach ($n in 1..4) { SubStop 'code-reviewer' "Round: $n`nTarget: Assets/Shop" 'Verdict: Request changes' "t$n" | Out-Null }
     Check 'count: target work past the cap blocks the gate' (Dispatch "Round: 5`nTarget: Assets/Shop") 2
     Check 'count: another target starts clean' (Dispatch "Round: 1`nTarget: Assets/Hud") 0
-    Remove-Item $ledger
-    # Ledger safety
-    New-Item -ItemType Directory -Force (Split-Path $ledger) | Out-Null
-    Set-Content $ledger '{ not json' -Encoding UTF8
-    Check 'ledger: an unparsable ledger blocks the dispatch' (Dispatch $brief) 2
-    Check 'ledger: ... and is moved aside, not overwritten' (@(Get-ChildItem (Split-Path $ledger) -Filter 'rounds.corrupt-*.json').Count) 1
-    Check 'ledger: dispatch stays blocked while the moved-aside ledger exists' (Dispatch $brief) 2
-    Get-ChildItem (Split-Path $ledger) -Filter 'rounds.corrupt-*.json' | Remove-Item
-    Check 'ledger: once the main GD resolves it, dispatch runs again' (Dispatch $brief) 0
-    Set-Content $ledger '{ broken' -Encoding UTF8
+    ClearLedger
+    # Ledger safety. A corrupt ledger.db: ledger get refuses (exit 3), so a gated dispatch blocks; the next add moves it aside.
+    $wfDir = Split-Path $ledger
+    function Marks([string]$Like) { @(Get-ChildItem $wfDir -File | Where-Object { $_.Name -like $Like }).Count }
+    [IO.File]::WriteAllText($ledger, '{ not a database, not json')
+    $r = DispatchOut $brief
+    Check 'ledger: an unreadable ledger.db blocks the dispatch' ($r.Code -eq 2 -and $r.Out -match 'feature demo' -and $r.Out -match 'unreadable') $true
+    Check 'ledger: ... and the read leaves it in place' ((Test-Path $ledger) -and -not (Marks 'ledger.corrupt-*')) $true
+    Check 'ledger: ... a dispatch with nothing to count still passes' (Dispatch 'Explain the HUD') 0
+    $r = Invoke-Hook 'round-cap.ps1' @{ tool_name = 'Edit'; tool_input = @{ file_path = $feat } } @('-Mode', 'edit')
+    Check 'ledger: ... and an edit gets the message' ($r.Code -eq 2 -and $r.Out -match 'could not be read' -and $r.Out -match 'unreadable') $true
     SubStop 'code-reviewer' "Round: 1`n$fm" 'Verdict: Request changes' 'c1' | Out-Null
-    Check 'ledger: a count on a corrupt ledger keeps the old file' (@(Get-ChildItem (Split-Path $ledger) -Filter 'rounds.corrupt-*.json').Count) 1
-    Check 'ledger: ... and records the new event' (Count 'feature:demo' 'review') 1
-    Get-ChildItem (Split-Path $ledger) -Filter 'rounds.corrupt-*.json' | Remove-Item
+    $moved = @(Get-ChildItem $wfDir -File | Where-Object { $_.Name -like 'ledger.corrupt-*.db' })
+    Check 'ledger: a count on a corrupt ledger.db moves it aside, never overwriting it' ($moved.Count -eq 1 -and [IO.File]::ReadAllText($moved[0].FullName) -eq '{ not a database, not json') $true
+    Check 'ledger: ... and records the new event in a new one' (DbCount 'feature:demo' 'review') 1
+    $r = DispatchOut 'Explain the HUD'
+    Check 'ledger: every dispatch stays blocked while the moved-aside file exists' ($r.Code -eq 2 -and $r.Out -match 'unreadable ledger file' -and $r.Out -match 'ledger\.corrupt-') $true
+    Check 'ledger: ... an adviser still passes' (DispatchAs 'monetization-designer' 'Explain the HUD') 0
+    Get-ChildItem $wfDir -File | Where-Object { $_.Name -like 'ledger.corrupt-*' } | Remove-Item
+    Check 'ledger: once the main GD resolves it, dispatch runs again' (Dispatch $brief) 0
+    Check 'ledger: ... and reads the new event' (Count 'feature:demo' 'review') 1
+    # An un-migrated rounds.json is read with the DB, never written; an unparsable one blocks and stays where it is.
+    [IO.File]::WriteAllText((Join-Path $wfDir 'rounds.json'), '{"feature:demo": {"review": ["round-7", "round-8", "round-9"]}}')
+    Check 'ledger: an un-migrated rounds.json counts with ledger.db' (Count 'feature:demo' 'review') 4
+    Check 'ledger: ... so its rounds still cap a dispatch' (Dispatch "$fm`nNext") 2
+    [IO.File]::WriteAllText((Join-Path $wfDir 'rounds.json'), '{ broken')
+    $r = DispatchOut $brief
+    Check 'ledger: an unparsable rounds.json blocks the dispatch' ($r.Code -eq 2 -and $r.Out -match 'rounds\.json is unparsable') $true
+    SubStop 'code-reviewer' "Round: 5`n$fm" 'Verdict: Request changes' 'c1j' | Out-Null
+    Check 'ledger: ... a count still records into ledger.db and leaves rounds.json alone' ((DbCount 'feature:demo' 'review') -eq 2 -and [IO.File]::ReadAllText((Join-Path $wfDir 'rounds.json')) -eq '{ broken') $true
+    ClearLedger
+    SubStop 'code-reviewer' "Round: 1`n$fm" 'Verdict: Request changes' 'c1' | Out-Null
     Set-Content (Join-Path (Split-Path $ledger) 'rounds.pending-x.json') '[{"key":"feature:demo","counter":"review","id":"round-9"}]' -Encoding UTF8
     Check 'ledger: parked events count before they are merged' ((Invoke-Hook 'round-cap.ps1' @{ tool_name = 'Edit'; tool_input = @{ file_path = $feat } } @('-Mode', 'edit')).Code) 0
     SubStop 'code-reviewer' "Round: 2`n$fm" 'Verdict: Request changes' 'c2' | Out-Null
@@ -1216,32 +1353,62 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     Check 'ledger: an unparsable parked file is kept as corrupt, not deleted' (Test-Path (Join-Path (Split-Path $ledger) 'rounds.corrupt-pending-bad.json')) $true
     Check 'ledger: ... and blocks dispatch until resolved' (Dispatch $brief) 2
     Remove-Item (Join-Path (Split-Path $ledger) 'rounds.corrupt-pending-bad.json')
+    # Another writer holding the ledger past the 5 s busy timeout: the events are parked, a read still works, the next add merges.
+    ClearLedger
+    SubStop 'code-reviewer' "Round: 1`n$fm" 'Verdict: Request changes' 'k1' | Out-Null
+    $holdPy = Join-Path $tmp 'ledger-hold.py'
+    [IO.File]::WriteAllText($holdPy, "import sqlite3, sys, time`ndb = sqlite3.connect(sys.argv[1], isolation_level=None)`ndb.execute('BEGIN IMMEDIATE')`nopen(sys.argv[2], 'w').close()`ntime.sleep(float(sys.argv[3]))`ndb.execute('ROLLBACK')`n")
+    $lockFlag = Join-Path $tmp 'ledger-held.flag'
+    $holder = Start-Process -FilePath $recPy[0] -ArgumentList (@($recPy | Select-Object -Skip 1) + @('-I', "`"$holdPy`"", "`"$ledger`"", "`"$lockFlag`"", '9')) -PassThru -NoNewWindow
+    for ($i = 0; $i -lt 100 -and -not (Test-Path $lockFlag); $i++) { Start-Sleep -Milliseconds 100 }
+    $r = SubStop 'code-reviewer' "Round: 2`n$fm" 'Verdict: Request changes' 'k2' -Full
+    Check 'ledger: a busy ledger parks the event' ($r.Code -eq 0 -and $r.Out -match 'ledger busy; events parked' -and (Marks 'rounds.pending-*.json') -eq 1) $true
+    Check 'ledger: ... a read still sees both while the writer holds it' (Count 'feature:demo' 'review') 2
+    Check 'ledger: ... and a dispatch is not blocked by it' (Dispatch $brief) 0
+    $holder.WaitForExit()
+    SubStop 'code-reviewer' "Round: 3`n$fm" 'Verdict: Request changes' 'k3' | Out-Null
+    Check 'ledger: ... the next add merges the parked event' ((Count 'feature:demo' 'review') -eq 3 -and -not (Marks 'rounds.pending-*.json')) $true
+    # No Python: the event is parked too, never lost.
+    $r = NoPython { SubStop 'code-reviewer' "Round: 7`n$fm" 'Verdict: Request changes' 'np1' -Full }
+    Check 'count: no Python parks the event' ($r.Code -eq 0 -and $r.Out -match 'no Python' -and (Marks 'rounds.pending-*.json') -eq 1) $true
+    SubStop 'code-reviewer' "Round: 8`n$fm" 'Verdict: Request changes' 'np2' | Out-Null
+    Check 'count: ... and the next add merges it' (((LedgerIds 'feature:demo' 'review') -contains 'round-7') -and -not (Marks 'rounds.pending-*.json')) $true
+    # A registered feature: used = registry rounds + hook rounds.
+    ClearLedger
+    RecCli @('feature', 'add') '{"slug":"reg-count","size":"M"}' | Out-Null
+    RecCli @('feature', 'round', 'reg-count', 'review', '+2', '--note', 'test round') | Out-Null
+    SubStop 'code-reviewer' "Round: 1`nFeature: .workflow/features/reg-count.md" 'Verdict: Request changes' 'rc1' | Out-Null
+    Check 'count: a registered feature: used = registry + hook (2 + 1 is at the cap)' (Dispatch 'Feature: .workflow/features/reg-count.md') 0
+    SubStop 'code-reviewer' "Round: 2`nFeature: .workflow/features/reg-count.md" 'Verdict: Request changes' 'rc2' | Out-Null
+    $r = DispatchOut 'Feature: .workflow/features/reg-count.md'
+    Check 'count: ... and 2 + 2 blocks, naming both parts' ($r.Code -eq 2 -and $r.Out -match 'review 4/3 \(file 2 \+ hook 2\)') $true
+    ClearRegistry
     # A repeated Round number on new code (a resumed session restarting at 1) still counts.
-    Remove-Item $ledger
+    ClearLedger
     SubStop 'code-reviewer' "Round: 1`nTree: 1111111111111111`n$fm" 'Verdict: Request changes' 'rt1' | Out-Null
     SubStop 'security-reviewer' "Round: 1`nTree: 1111111111111111`n$fm" 'Verdict: Blocked' 'rt2' | Out-Null
     SubStop 'code-reviewer' "Round: 1`nTree: 2222222222222222`n$fm" 'Verdict: Request changes' 'rt3' | Out-Null
     Check 'round: two gates on the same round and tree count once, a repeated number on a new tree counts again' (Count 'feature:demo' 'review') 2
     SubStop 'code-reviewer' "Round: 2`nTree: 3333333333333333`nPrevious tree: 2222222222222222`n$fm" 'Verdict: Request changes' 'rt4' | Out-Null
-    Check 'round: the dedupe key is the current Tree, never the Previous tree line' (@((Get-Content $ledger -Raw | ConvertFrom-Json).'feature:demo'.review) -contains 'round-2-333333333333') $true
+    Check 'round: the dedupe key is the current Tree, never the Previous tree line' ((LedgerIds 'feature:demo' 'review') -contains 'round-2-333333333333') $true
     Check 'round: a short Tree sha does not break the count' (SubStop 'code-reviewer' "Round: 3`nTree: abcdef1`n$fm" 'Verdict: Request changes' 'rt5') 0
-    Check 'round: ... and keys on the whole short sha' (@((Get-Content $ledger -Raw | ConvertFrom-Json).'feature:demo'.review) -contains 'round-3-abcdef1') $true
+    Check 'round: ... and keys on the whole short sha' ((LedgerIds 'feature:demo' 'review') -contains 'round-3-abcdef1') $true
     SubStop 'code-reviewer' "Round: 4`nTree: $('a1' * 20)`n$fm" 'Verdict: Request changes' 'rt6' | Out-Null
     SubStop 'code-reviewer' "Round: 5`nTree: $('b2' * 32)`n$fm" 'Verdict: Request changes' 'rt7' | Out-Null
-    $ids = @((Get-Content $ledger -Raw | ConvertFrom-Json).'feature:demo'.review)
+    $ids = LedgerIds 'feature:demo' 'review'
     Check 'round: a 40- and a 64-char sha both key on their first 12 chars' (($ids -contains 'round-4-a1a1a1a1a1a1') -and ($ids -contains 'round-5-b2b2b2b2b2b2')) $true
     SubStop 'code-reviewer' "- Round: 6`n- Tree: cccccccccccc`n$fm" 'Verdict: Request changes' 'rt8' | Out-Null
     SubStop 'security-reviewer' "- **Round:** 6`n- **Tree:** cccccccccccc`n$fm" 'Verdict: Blocked' 'rt9' | Out-Null
-    $ids = @((Get-Content $ledger -Raw | ConvertFrom-Json).'feature:demo'.review)
+    $ids = LedgerIds 'feature:demo' 'review'
     Check 'round: bulleted Round/Tree markers dedupe the two gates of one round' (@($ids | Where-Object { $_ -eq 'round-6-cccccccccccc' }).Count) 1
     # Workflow launches and the stop-rule record (fresh ledger: 3 failed rounds is at the cap, 4 is past it)
-    Remove-Item $ledger
+    ClearLedger
     foreach ($n in 1..3) { SubStop 'code-reviewer' "Round: $n`n$fm" 'Verdict: Request changes' "w$n" | Out-Null }
     Check 'workflow: a launch under the feature cap passes' (Invoke-Hook 'round-cap.ps1' @{ tool_name = 'Workflow'; tool_input = @{ name = 'review-gate'; args = @{ feature = '.workflow/features/demo.md'; round = 4 } } } @('-Mode', 'dispatch')).Code 0
     SubStop 'code-reviewer' "Round: 4`n$fm" 'Verdict: Request changes' 'c4' | Out-Null
     Check 'workflow: a launch past the feature cap blocks' (Invoke-Hook 'round-cap.ps1' @{ tool_name = 'Workflow'; tool_input = @{ name = 'review-gate'; args = @{ feature = '.workflow/features/demo.md'; round = 5 } } } @('-Mode', 'dispatch')).Code 2
     Check 'workflow: a launch naming no target is not checked' (Invoke-Hook 'round-cap.ps1' @{ tool_name = 'Workflow'; tool_input = @{ name = 'project-audit'; args = @{ root = '.' } } } @('-Mode', 'dispatch')).Code 0
-    Remove-Item $ledger
+    ClearLedger
     Feature 'review 3/3, QA 0/2, rework 3/6'
     Check 'stop rule: at the cap the edit warns' (EditState $feat) 2
     Add-Content $feat "`n- Stop rule: review root-caused 2026-10-30 - extra dispatch: unused" -Encoding UTF8
@@ -1256,10 +1423,32 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     Check 'count: another session starts clean' (Invoke-Hook 'round-cap.ps1' $gate @('-Mode', 'dispatch')).Code 0
     $gate.session_id = 'sess-1'; $gate.tool_input.prompt = "Round: 5`nTarget: Assets/Other"
     Check 'count: a named target is not charged with session rounds' (Invoke-Hook 'round-cap.ps1' $gate @('-Mode', 'dispatch')).Code 0
-    Remove-Item $ledger
+    ClearLedger
     Set-Content $feat "# Demo`n`n- Status: Open`n- Size: L, Risk flag: no`n`n## Main GD decisions`n" -Encoding UTF8
     Check 'round-cap: an open feature without Rounds warns on edit' (EditState $feat) 2
     Check 'round-cap: an open feature without Rounds still dispatches' (Dispatch $brief) 0
+
+    # session-start: the Records line, the registry's in-flight features, and the markdown stores left to migrate
+    $env:HOOK_TEST_XERJ = 'none'
+    ClearLedger
+    RecCli @('feature', 'add') '{"slug":"reg-flight","cp":"build","next_step":"review the diff"}' | Out-Null
+    $r = Invoke-Hook 'session-start.ps1' @{}
+    Check 'session-start: a registered open feature is listed in flight with its CP and next step' ($r.Out -match '(?m)^- reg-flight - CP: build - next step: review the diff\s*$') $true
+    # Debt holds the earlier Accepted bug's mirror record.
+    Check 'session-start: ... and counted on the Records line' ($r.Out -match '(?m)^Records: backlog 0 open, framework backlog 0 open, debt \d+ open, features 1 open\s*$') $true
+    Check 'session-start: ... an un-migrated open feature file is still listed' ($r.Out -match '(?m)^- open-one - CP: build') $true
+    $mdStores = 'framework-backlog.md', 'backlog.md', 'DEBT.md', 'rounds.json'
+    foreach ($n in $mdStores) { [IO.File]::WriteAllText((Join-Path $proj ".workflow/$n"), "x`n") }
+    $r = Invoke-Hook 'session-start.ps1' @{}
+    Check 'session-start: every un-migrated store is named on one line with the migrate command' ($r.Out -match '(?m)^Records: not migrated - \.workflow/framework-backlog\.md, \.workflow/backlog\.md, \.workflow/DEBT\.md, \.workflow/rounds\.json, \d+ feature file\(s\) with a ''- Status:'' line\. Preview: .* migrate --from-md --dry-run, then the same without --dry-run') $true
+    foreach ($n in $mdStores) { Remove-Item (Join-Path $proj ".workflow/$n") }
+    $r = NoPython { Invoke-Hook 'session-start.ps1' @{} }
+    Check 'session-start: no Python prints a short Records line and never fails' ($r.Code -eq 0 -and $r.Out -match '(?m)^Records: unavailable - install Python' -and $r.Out -match 'Search: Grep') $true
+    Check 'session-start: ... the un-migrated feature files are still listed' ($r.Out -match '(?m)^- open-one - CP: build') $true
+    [IO.File]::AppendAllText((Join-Path $proj '.workflow/features.jsonl'), "{ not json`n")
+    $r = Invoke-Hook 'session-start.ps1' @{}
+    Check 'session-start: a CLI error prints a short Records line, never a traceback' ($r.Code -eq 0 -and $r.Out -match '(?m)^Records: unavailable - records: ' -and $r.Out -notmatch 'Traceback' -and $r.Out -match 'Search: Grep') $true
+    ClearRegistry
 
     # session-start: the bug line and the purge trigger, in a real repo holding a journal built by the CLI
     ClearBugs
@@ -1267,9 +1456,10 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     New-Repo $bp
     New-Item -ItemType Directory -Force (Join-Path $bp '.claude/skills/bugs/scripts'), (Join-Path $bp '.claude/skills/mem/scripts'), (Join-Path $bp '.claude/hooks') | Out-Null
     Copy-Item (Join-Path $hooks '../skills/bugs/scripts/bugs.py') (Join-Path $bp '.claude/skills/bugs/scripts')
-    # bugs.py loads the shared journal engine by path: it goes beside the copy.
+    # bugs.py loads the shared journal engine by path, and round-cap reads the ledger through records.py: both go beside it.
     New-Item -ItemType Directory -Force (Join-Path $bp '.claude/skills/records/scripts') | Out-Null
     Copy-Item (Join-Path $hooks '../skills/records/scripts/journal.py') (Join-Path $bp '.claude/skills/records/scripts')
+    Copy-Item (Join-Path $hooks '../skills/records/scripts/records.py') (Join-Path $bp '.claude/skills/records/scripts')
     Copy-Item (Join-Path $hooks '../skills/mem/scripts/mem.py') (Join-Path $bp '.claude/skills/mem/scripts')
     Copy-Item (Join-Path $hooks 'secret-patterns.txt') (Join-Path $bp '.claude/hooks')
     $bugRoot = $bp
@@ -1347,9 +1537,10 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     New-Repo $bw
     New-Item -ItemType Directory -Force (Join-Path $bw '.claude/skills/bugs/scripts'), (Join-Path $bw '.claude/skills/mem/scripts'), (Join-Path $bw '.claude/hooks') | Out-Null
     Copy-Item (Join-Path $hooks '../skills/bugs/scripts/bugs.py') (Join-Path $bw '.claude/skills/bugs/scripts')
-    # bugs.py loads the shared journal engine by path: it goes beside the copy.
+    # bugs.py loads the shared journal engine by path, and round-cap reads the ledger through records.py: both go beside it.
     New-Item -ItemType Directory -Force (Join-Path $bw '.claude/skills/records/scripts') | Out-Null
     Copy-Item (Join-Path $hooks '../skills/records/scripts/journal.py') (Join-Path $bw '.claude/skills/records/scripts')
+    Copy-Item (Join-Path $hooks '../skills/records/scripts/records.py') (Join-Path $bw '.claude/skills/records/scripts')
     Copy-Item (Join-Path $hooks '../skills/mem/scripts/mem.py') (Join-Path $bw '.claude/skills/mem/scripts')
     Copy-Item (Join-Path $hooks 'secret-patterns.txt') (Join-Path $bw '.claude/hooks')
     $bwGit = @('-C', $bw, '-c', 'user.name=t', '-c', 'user.email=t@example.com', '-c', 'core.autocrlf=false')
@@ -1521,7 +1712,7 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     New-Repo $brRoot
     New-Item -ItemType Directory -Force $brHooks, (Join-Path $brRoot '.claude/skills/bugs/scripts'), (Join-Path $brRoot '.claude/skills/mem/scripts'), (Join-Path $brRoot '.claude/skills/records/scripts'), (Join-Path $brRoot '.claude/templates'), (Join-Path $brWorkflow 'features') | Out-Null
     foreach ($f in 'common.ps1', 'round-cap.ps1', 'session-start.ps1', 'secret-patterns.txt', 'pre-commit.ps1', 'editor-lock.ps1', 'search-guard.ps1', 'verify-on-edit.ps1') { [IO.File]::Copy((Join-Path $hooks $f), (Join-Path $brHooks $f)) }
-    foreach ($f in 'skills/bugs/scripts/bugs.py', 'skills/records/scripts/journal.py', 'skills/mem/scripts/mem.py', 'templates/framework-backlog.md') { [IO.File]::Copy((Join-Path $hooks "../$f"), (Join-Path $brRoot ".claude/$f")) }
+    foreach ($f in 'skills/bugs/scripts/bugs.py', 'skills/records/scripts/journal.py', 'skills/records/scripts/records.py', 'skills/mem/scripts/mem.py', 'templates/framework-backlog.md') { [IO.File]::Copy((Join-Path $hooks "../$f"), (Join-Path $brRoot ".claude/$f")) }
     function InBrackets([scriptblock]$Body) { $hooks = $brHooks; & $Body }
     function BrFeature([string]$Slug, [string]$Lines) { [IO.File]::WriteAllText((Join-Path $brWorkflow "features/$Slug.md"), "# $Slug`n`n- Status: Open`n- CP: 2`n- Size: M, Risk flag: no`n$Lines`n") }
     $bugRoot = $brRoot
@@ -1535,16 +1726,18 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     Check 'session-start: ... and the status line prints' ($r.Code -eq 0 -and $r.Out -match '(?m)^Bugs: 1 open \(1 High\+\); purge skipped, journal uncommitted\s*$') $true
     Check 'session-start: ... the memory line too' ($r.Out -match '(?m)^Memory: ' -and $r.Out -notmatch 'Memory: unavailable') $true
     Check 'session-start: ... an in-flight feature is listed' ($r.Out -match '(?m)^- past-cap - CP: 2') $true
-    Check 'session-start: ... the framework backlog is created' ($r.Out -match 'Framework backlog: created' -and [IO.File]::Exists((Join-Path $brWorkflow 'framework-backlog.md'))) $true
+    Check 'session-start: ... the records journals are created, the old template is not copied' ([IO.File]::Exists((Join-Path $brWorkflow 'features.jsonl')) -and -not [IO.File]::Exists((Join-Path $brWorkflow 'framework-backlog.md'))) $true
+    Check 'session-start: ... the Records line prints' ($r.Out -match '(?m)^Records: backlog 0 open, ') $true
+    Check 'session-start: ... and the feature file is named for migration' ($r.Out -match "(?m)^Records: not migrated - 1 feature file\(s\)") $true
     Check 'session-start: ... and the Python found is cached' ([IO.File]::Exists((Join-Path $brRoot '.memory/.state/python.txt'))) $true
     $r = InBrackets { DispatchR 'Feature: .workflow/features/past-cap.md' }
     Check 'round-cap: ... a past-cap feature blocks' ($r.Code -eq 2 -and $r.Out -match 'review 4/3') $true
     BrFeature 'no-rounds' ''
     $r = InBrackets { Invoke-Hook 'round-cap.ps1' @{ tool_name = 'Edit'; tool_input = @{ file_path = (Join-Path $brWorkflow 'features/no-rounds.md') } } @('-Mode', 'edit') }
     Check 'round-cap: ... an edit reads the feature file' ($r.Code -eq 2 -and $r.Out -match 'no-rounds' -and $r.Out -match 'no ''- Rounds:'' line') $true
-    # The ledger: parked events, a brief read from a transcript, a locked ledger, a corrupt one.
+    # The ledger: parked events, a brief read from a transcript, the registry, a corrupt ledger.db and the file moved aside.
     $brPending = Join-Path $brWorkflow 'rounds.pending-x.json'
-    $brLedger = Join-Path $brWorkflow 'rounds.json'
+    $brLedger = Join-Path $brWorkflow 'ledger.db'
     BrFeature 'parked' '- Rounds: review 3/3, QA 0/2, rework 0/6'
     [IO.File]::WriteAllText($brPending, '[{"key":"feature:parked","counter":"review","id":"round-9"}]')
     $r = InBrackets { DispatchR 'Feature: .workflow/features/parked.md' }
@@ -1553,14 +1746,18 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     [IO.File]::WriteAllText($brTranscript, (@{ type = 'user'; message = @{ role = 'user'; content = "Round: 1`nFeature: .workflow/features/parked.md" } } | ConvertTo-Json -Depth 5 -Compress))
     function BrCount([string]$Id) { InBrackets { Invoke-Hook 'round-cap.ps1' @{ session_id = 'br'; agent_type = 'code-reviewer'; agent_id = $Id; agent_transcript_path = $brTranscript; last_assistant_message = 'Verdict: Request changes' } @('-Mode', 'count') } }
     BrCount 'br1' | Out-Null
-    Check 'round-cap: ... a transcript in the checkout charges its feature, and parked events merge' (@(([IO.File]::ReadAllText($brLedger) | ConvertFrom-Json).'feature:parked'.review).Count) 2
+    $brView = Invoke-Records $brRoot @('ledger', 'get', '--json')
+    Check 'round-cap: ... a transcript in the checkout charges its feature, and parked events merge' ($brView.State -eq 'Ok' -and @(($brView.Out | ConvertFrom-Json).'feature:parked'.review).Count -eq 2) $true
     Check 'round-cap: ... and the parked file is removed' ([IO.File]::Exists($brPending)) $false
-    $brHold = [IO.File]::Open($brLedger, 'Open', 'ReadWrite', 'None')
-    try { $r = BrCount 'br2' } finally { $brHold.Dispose() }
-    Check 'round-cap: ... a locked ledger parks the event' ($r.Out -match 'ledger locked' -and @([IO.Directory]::GetFiles($brWorkflow, 'rounds.pending-*.json')).Count -eq 1) $true
-    [IO.File]::WriteAllText($brLedger, '{ not json')
-    $r = InBrackets { DispatchR 'Explain the HUD' }
-    Check 'round-cap: ... a corrupt ledger blocks and is moved aside' ($r.Code -eq 2 -and $r.Out -match 'could not be parsed' -and -not [IO.File]::Exists($brLedger) -and @([IO.Directory]::GetFiles($brWorkflow, 'rounds.corrupt-*.json')).Count -eq 1) $true
+    RecCli @('feature', 'add') '{"slug":"br-reg","size":"M"}' $brRoot | Out-Null
+    RecCli @('feature', 'round', 'br-reg', 'review', '+4', '--note', 'test round') '' $brRoot | Out-Null
+    $r = InBrackets { DispatchR 'Feature: .workflow/features/br-reg.md' }
+    Check 'round-cap: ... a past-cap registered feature blocks' ($r.Code -eq 2 -and $r.Out -match 'feature br-reg: review 4/3') $true
+    [IO.File]::WriteAllText($brLedger, '{ not a database')
+    $r = InBrackets { DispatchR 'Feature: .workflow/features/past-cap.md' }
+    Check 'round-cap: ... an unreadable ledger.db blocks' ($r.Code -eq 2 -and $r.Out -match 'unreadable') $true
+    BrCount 'br2' | Out-Null
+    Check 'round-cap: ... the next count moves it aside and starts a new one' (@([IO.Directory]::GetFiles($brWorkflow, 'ledger.corrupt-*.db')).Count -eq 1 -and [IO.File]::Exists($brLedger)) $true
     $r = InBrackets { DispatchR 'Explain the HUD' }
     Check 'round-cap: ... and the moved file keeps blocking' ($r.Code -eq 2 -and $r.Out -match 'unreadable ledger file') $true
     # The other hooks in the same checkout: each read a project file as absent.
@@ -2313,9 +2510,10 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     $bugRoot = Join-Path $lyAbove 'Proj'
     New-Item -ItemType Directory -Force (Join-Path $bugRoot '.claude/skills/bugs/scripts'), (Join-Path $bugRoot '.claude/skills/mem/scripts'), (Join-Path $bugRoot '.claude/hooks') | Out-Null
     Copy-Item (Join-Path $hooks '../skills/bugs/scripts/bugs.py') (Join-Path $bugRoot '.claude/skills/bugs/scripts')
-    # bugs.py loads the shared journal engine by path: it goes beside the copy.
+    # bugs.py loads the shared journal engine by path, and round-cap reads the ledger through records.py: both go beside it.
     New-Item -ItemType Directory -Force (Join-Path $bugRoot '.claude/skills/records/scripts') | Out-Null
     Copy-Item (Join-Path $hooks '../skills/records/scripts/journal.py') (Join-Path $bugRoot '.claude/skills/records/scripts')
+    Copy-Item (Join-Path $hooks '../skills/records/scripts/records.py') (Join-Path $bugRoot '.claude/skills/records/scripts')
     Copy-Item (Join-Path $hooks '../skills/mem/scripts/mem.py') (Join-Path $bugRoot '.claude/skills/mem/scripts')
     Copy-Item (Join-Path $hooks 'secret-patterns.txt') (Join-Path $bugRoot '.claude/hooks')
     [IO.File]::WriteAllText((Join-Path $lyAbove '.git'), "gitdir: $(LyAdmin 'WtHooks')`n")
@@ -2383,6 +2581,32 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
         Check 'framework-sync: a dry run on a fresh target has no false warning and writes nothing' ($t.Code -eq 0 -and $t.Out -notmatch '(?i)warning' -and -not (Test-Path (Join-Path $t.Path '.gitattributes'))) $true
         $t = SyncTarget 'dry-ignored' $null ".workflow/`n" @('-DryRun')
         Check 'framework-sync: a dry run still warns about an ignored journal' ($t.Out -match 'ignored') $true
+        # The framework's own .gitignore and .gitattributes: the records lines reach a target, the framework-only block does not.
+        $savedSrc = $syncSrc
+        $syncSrc = Join-Path $tmp 'SyncSourceReal'
+        New-Repo $syncSrc
+        New-Item -ItemType Directory -Force (Join-Path $syncSrc '.claude') | Out-Null
+        [IO.File]::WriteAllText((Join-Path $syncSrc '.claude/settings.json'), '{}')
+        [IO.File]::WriteAllText((Join-Path $syncSrc '.claude/x.md'), "x`n")
+        Copy-Item (Join-Path $hooks '../../.gitignore'), (Join-Path $hooks '../../.gitattributes') $syncSrc
+        git -C $syncSrc add .claude .gitignore .gitattributes 2>&1 | Out-Null
+        $t = SyncTarget 'records' $null $null
+        $gi = SyncText $t '.gitignore'
+        $missing = @('.workflow/records.db*', '.workflow/ledger.db*', '.workflow/ledger.corrupt-*.db*', '.workflow/rounds.migrated-*.json', '.workflow/rounds.pending-*.json') | Where-Object { $gi -notmatch "(?m)^$([regex]::Escape($_))\r?$" }
+        Check 'framework-sync: the records ignore lines reach the target' (@($missing) -join ', ') ''
+        Check 'framework-sync: ... the framework-only lines do not' ($gi -match 'framework-backlog') $false
+        $bad = foreach ($j in '.workflow/bugs.jsonl', '.workflow/backlog.jsonl', '.workflow/debt.jsonl', '.workflow/features.jsonl', '.workflow/framework-backlog.jsonl', '.workflow/features/x/log.csv', 'Assets/X/DEBT.csv', 'Assets/X/NOTES.csv') {
+            $attrs = [string](git -C $t.Path check-attr merge eol -- $j)
+            if ($attrs -notmatch 'merge: union' -or $attrs -notmatch 'eol: lf') { $j }
+            git -C $t.Path check-ignore -q -- $j 2>$null
+            if ($LASTEXITCODE -eq 0) { "$j ignored" }
+        }
+        Check 'framework-sync: ... every journal and CSV table there is union, LF and tracked' (@($bad) -join ', ') ''
+        Check 'framework-sync: ... ledger.db and records.db are ignored there' (@(git -C $t.Path check-ignore .workflow/ledger.db .workflow/records.db) -join ',') '.workflow/ledger.db,.workflow/records.db'
+        Check 'framework-sync: ... with no warning' ($t.Out -match '(?i)warning') $false
+        $t = SyncTarget 'records-ignored' $null ".workflow/*.jsonl`n"
+        Check 'framework-sync: an ignored records journal warns, naming it' ($t.Out -match 'features\.jsonl is ignored' -and $t.Out -match 'feature registry journal') $true
+        $syncSrc = $savedSrc
     }
     $env:CLAUDE_PROJECT_DIR = $proj
     Remove-Item Env:HOOK_TEST_XERJ

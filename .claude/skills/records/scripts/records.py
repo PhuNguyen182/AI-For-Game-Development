@@ -963,7 +963,14 @@ def cmd_stats(ctx, a):
         marks = ",".join("?" * len(s.open_states))
         n = db.execute("SELECT COUNT(*) FROM %s WHERE %s IN (%s)" % (s.name, s.state_field, marks), s.open_states).fetchone()[0]
         parts.append("%s %d open" % (s.title.lower(), n))
-    print("Records: " + " · ".join(parts))
+    line = "Records: " + " · ".join(parts)
+    if not a.json:
+        print(line)
+        return 0
+    # session-start.ps1: the line and the in-flight features in one Python start. ASCII JSON, as counters.
+    features = [{"slug": r["slug"], "cp": r["cp"], "next_step": r["next_step"]}
+                for r in db.execute("SELECT slug, cp, next_step FROM feature WHERE status='Open' ORDER BY slug")]
+    print(json.dumps({"line": line, "open_features": features}))
     return 0
 
 
@@ -2819,7 +2826,7 @@ def build_parser() -> argparse.ArgumentParser:
     s = top.add_parser("sql", help="one read-only SELECT over every table")
     s.add_argument("query")
     s.add_argument("--json", action="store_true")
-    top.add_parser("stats", help="one line: Records: ... open per store")
+    top.add_parser("stats", help="one line: Records: ... open per store").add_argument("--json", action="store_true", help="{line, open_features}")
     sp = top.add_parser("ledger", help="the local round ledger .workflow/ledger.db")
     sub = sp.add_subparsers(dest="cmd", required=True)
     sub.add_parser("get", help="the ledger as {key: {counter: [ids]}}").add_argument("--json", action="store_true", help="always JSON")

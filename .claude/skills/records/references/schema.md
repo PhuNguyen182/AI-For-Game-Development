@@ -63,6 +63,10 @@ Synthesized from `../scripts/records.py` and `../scripts/journal.py`; commands i
 - **Not a source:** `decisions.csv`. Its `extra-round` and `stop-rule` rows are the readable copy `feature extra-round` and `feature stop-rule` append; a hand-written row changes no cap.
 - **Used:** file-only rounds here; the hook adds the ledger's count.
 
+## Stats (`stats`)
+- **Line:** `Records: backlog <n> open · framework backlog <n> open · debt <n> open · features <n> open`.
+- **`stats --json`:** `{"line": "<that line>", "open_features": [{"slug", "cp", "next_step"}]}`, slugs sorted, ASCII JSON: what `session-start.ps1` prints.
+
 ## Feature CSV tables (`records.py csv`)
 | Table | File | Columns |
 |---|---|---|

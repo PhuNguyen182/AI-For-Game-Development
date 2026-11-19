@@ -328,6 +328,17 @@ class TestJournal(Base):
         self.assertIn("Records: backlog 0 open", self.ok("stats"))
         self.assertFalse(self.wf.exists())
 
+    def test_stats_json_holds_the_line_and_the_open_features(self):
+        self.assertEqual(json.loads(self.ok("stats", "--json")), {"line": self.ok("stats").strip(), "open_features": []})
+        self.ok("feature", "add", stdin={"slug": "b-two", "cp": "build", "next_step": "review"})
+        self.ok("feature", "add", stdin={"slug": "a-one"})
+        self.ok("feature", "add", stdin={"slug": "c-done"})
+        self.ok("feature", "set-state", "c-done", "Closed", "--note", "n")
+        got = json.loads(self.ok("stats", "--json"))
+        self.assertIn("features 2 open", got["line"])
+        self.assertEqual(got["open_features"], [{"slug": "a-one", "cp": None, "next_step": None},
+                                                {"slug": "b-two", "cp": "build", "next_step": "review"}])
+
     def test_sql_is_read_only(self):
         self.ok("backlog", "add", stdin=bl())
         self.assertIn("sql is read-only", self.no("sql", "DELETE FROM backlog"))
