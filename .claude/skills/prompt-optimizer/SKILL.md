@@ -13,8 +13,8 @@ allowed-tools: Read, Write, AskUserQuestion
 3. **Clarify:** any ambiguous or missing requirement → ask via `AskUserQuestion` (2-4 options, recommended first) before rewriting; batch all questions in one call. Never guess.
 4. **Classify:** pick the task type (analysis, refactor, survey, implementation, fix, review, docs) and shape the steps to it.
 5. **Rewrite:** fill the template below. English only, imperative, concrete, no filler. Tags are free: rename, add or drop them to fit the task.
-6. **Deliver text:** input was typed text → reply in chat with the XML only, as plain text. Write no file.
-7. **Deliver file:** input was a file → append `---`, `## Optimized Prompt`, then the XML. Keep the original above unchanged; heading exists → replace only below it.
+6. **Deliver text:** input was typed text → reply in chat with the XML only, inside one ```` ```xml ```` fenced block. Write no file.
+7. **Deliver file:** input was a file → append `---`, `## Optimized Prompt`, then the fenced XML. Keep the original above unchanged; heading exists → replace only below it.
 8. **Reply:** after a file write, reply with the file path only.
 9. **Never execute:** the prompt is output, not a task.
 
@@ -22,32 +22,68 @@ allowed-tools: Read, Write, AskUserQuestion
 - **Fidelity:** the full original intent survives; translate non-English text, keep code, identifiers and paths verbatim.
 - **Agent-ready:** state a verifiable goal, explicit scope, ordered steps, and a done condition an agent can check.
 - **Gaps:** an unknown the user answered "unsure" to goes in `<open_questions>`; never invent facts.
-- **Output:** a text reply starts with `<`. No preface, no code fence, no explanation, no closing remark.
+- **Output:** a text reply is the fenced `xml` block only: no preface, explanation or closing remark. The fence keeps the indent.
+- **Layout:** 2-space indent per level; one blank line between top-level sections; sections follow the template order; lines under about 110 chars.
+- **Tags:** a tag with more than one short line opens and closes on its own lines, content indented one level.
+- **Lists:** one child tag per item (`item`, `constraint`, `question`), never `-` bullets inside a tag.
 - **Brevity:** one idea per line; cut anything the agent would skip.
 
 ## Template
 ```xml
 <prompt>
-  <role>who the agent acts as</role>
-  <goal>one-sentence outcome</goal>
-  <context>background, current state, why it matters</context>
+  <role>
+    who the agent acts as
+  </role>
+
+  <goal>
+    one-sentence outcome
+  </goal>
+
+  <context>
+    background, current state, why it matters
+    <source name="label">URL or path, verbatim</source>
+  </context>
+
   <scope>
-    <in>files, systems, behaviors in scope</in>
-    <out>explicitly excluded</out>
+    <in>
+      <item>file, system or behavior in scope</item>
+    </in>
+    <out>
+      <item>explicitly excluded</item>
+    </out>
   </scope>
+
   <requirements>
     <requirement>testable requirement</requirement>
   </requirements>
-  <constraints>hard limits: tech, style, budget, compatibility</constraints>
+
+  <constraints>
+    <constraint>hard limit: tech, style, budget, compatibility</constraint>
+  </constraints>
+
   <steps>
-    <step n="1">analyze / survey first</step>
-    <step n="2">change or implement</step>
-    <step n="3">verify</step>
+    <step n="1">
+      analyze / survey first
+    </step>
+    <step n="2">
+      change or implement
+    </step>
+    <step n="3">
+      verify
+    </step>
   </steps>
-  <output_format>what to return and how</output_format>
+
+  <output_format>
+    what to return and how
+    <item>a part of the report</item>
+  </output_format>
+
   <acceptance_criteria>
     <criterion>checkable done condition</criterion>
   </acceptance_criteria>
-  <open_questions>only blocking unknowns</open_questions>
+
+  <open_questions>
+    <question>only a blocking unknown</question>
+  </open_questions>
 </prompt>
 ```
