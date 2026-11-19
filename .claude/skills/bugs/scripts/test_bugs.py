@@ -2809,5 +2809,104 @@ class TestGdAttributionEdge(Base):
         self.assertEqual(self.show("BUG-0001")["status"], "Request")
 
 
+RECORDS = SKILL_DIR.parent / "records" / "scripts" / "records.py"
+
+
+class TestDebtMirror(Base):
+    """Won't fix and Accepted append the debt entry themselves: the feature root's DEBT.csv, else a debt record."""
+
+    def records(self, *argv, stdin=b""):
+        data = stdin if isinstance(stdin, bytes) else json.dumps(stdin).encode("utf-8")
+        return subprocess.run([sys.executable, "-I", str(RECORDS), "--root", str(self.root)] + list(argv), input=data, capture_output=True)
+
+    def register(self, slug="shop", **over):
+        r = self.records("feature", "add", stdin=dict({"slug": slug, "size": "M"}, **over))
+        self.assertEqual(r.returncode, 0, r.stderr)
+
+    def move(self, bug_id, to, note="next: rework the shop"):
+        return self.ok("set-status", bug_id, to, "--note", note, "--by", "main GD", now=T0)
+
+    def moved_on(self, bug_id):
+        """The mirror's date: the day of the status event (real clock here: the bug was filed on it)."""
+        return self.show(bug_id)["events"][-1]["ts"][:10]
+
+    def debt_csv(self):
+        return (self.root / "Assets" / "Shop" / "DEBT.csv").read_text(encoding="utf-8")
+
+    def debt_store(self):
+        r = self.records("debt", "list", "--json")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        return json.loads(r.stdout)
+
+    def test_a_feature_with_a_root_gets_a_debt_csv_row_once(self):
+        self.register(feature_root="Assets/Shop")
+        self.add(feature="shop")
+        self.assertIn("debt mirror: BUG-0001 added as DEBT-001 in Assets/Shop/DEBT.csv", self.move("BUG-0001", "Won't fix"))
+        self.assertEqual(self.debt_csv(), "id,date,kind,text,source,accepted_by,next_step,state\n"
+                                          "DEBT-001,%s,accepted-gap,Save slot overwrite drops coins,BUG-0001,main GD,next: rework the shop,Open\n"
+                                          % self.moved_on("BUG-0001"))
+        self.status("BUG-0001", "Reopen")
+        self.assertIn("debt mirror: BUG-0001 is already DEBT-001", self.move("BUG-0001", "Accepted"))
+        self.assertEqual(self.debt_csv().count("BUG-0001"), 1)
+        self.assertFalse((self.root / ".workflow" / "debt.jsonl").exists())
+
+    def test_no_feature_root_records_a_debt_store_entry_once(self):
+        self.add()
+        self.add(feature="Free text feature name")
+        self.register("plain")
+        self.add(feature="plain")
+        self.assertIn("added as DEBT-0001 (.workflow/debt.jsonl)", self.move("BUG-0001", "Accepted", note="accepted at CP4"))
+        self.assertIn("added as DEBT-0002", self.move("BUG-0002", "Won't fix"))
+        self.assertIn("added as DEBT-0003", self.move("BUG-0003", "Won't fix"))
+        rows = self.debt_store()
+        self.assertEqual([(r["id"], r["source"], r["text"], r["accepted_by"], r["next_step"], r["date"], r["state"]) for r in rows][0],
+                         ("DEBT-0001", "BUG-0001", "Save slot overwrite drops coins", "main GD", "accepted at CP4", self.moved_on("BUG-0001"), "Open"))
+        self.assertEqual([r["source"] for r in rows], ["BUG-0001", "BUG-0002", "BUG-0003"])
+        self.status("BUG-0001", "Reopen")
+        self.assertIn("debt mirror: BUG-0001 is already DEBT-0001", self.move("BUG-0001", "Won't fix"))
+        self.assertEqual(len(self.debt_store()), 3)
+
+    def test_other_terminal_moves_add_no_debt(self):
+        self.add()
+        out = self.status("BUG-0001", "As designed")
+        self.assertNotIn("debt mirror", out)
+        self.assertFalse((self.root / ".workflow" / "debt.jsonl").exists())
+
+    def test_a_failed_mirror_keeps_the_move_and_names_the_repair(self):
+        self.register(feature_root="Assets/Shop")
+        self.add(feature="shop")
+        broken = self.root / "Assets" / "Shop" / "DEBT.csv"
+        broken.parent.mkdir(parents=True)
+        broken.write_text("id,text\nDEBT-001,x\n", encoding="utf-8")
+        code, out, err = self.run_cli("set-status", "BUG-0001", "Won't fix", "--note", "n", "--by", "main GD", now=T0)
+        self.assertEqual(code, 1)
+        self.assertIn("BUG-0001 Request -> Won't fix", out)
+        self.assertTrue(err.startswith("bugs: moved, but the debt mirror failed: "), err)
+        self.assertIn("header is", err)
+        self.assertIn('records.py" --root "%s" bug-mirror BUG-0001' % self.root.resolve(), err)
+        self.assertEqual(self.show("BUG-0001")["status"], "Won't fix")
+        broken.unlink()
+        r = self.records("bug-mirror", "BUG-0001")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn(b"debt mirror: BUG-0001 added as DEBT-001 in Assets/Shop/DEBT.csv", r.stdout)
+        self.assertIn("next_step,state\nDEBT-001,%s,accepted-gap,Save slot overwrite drops coins,BUG-0001,main GD,n,Open\n" % self.moved_on("BUG-0001"),
+                      self.debt_csv())
+        self.assertIn(b"is already DEBT-001", self.records("bug-mirror", "BUG-0001").stdout)
+        self.add()
+        r = self.records("bug-mirror", "BUG-0002")
+        self.assertEqual(r.returncode, 1)
+        self.assertIn(b"only a bug in Won't fix or Accepted", r.stderr)
+
+    def test_a_missing_records_cli_is_named(self):
+        self.add()
+        with mock.patch.object(bugs, "RECORDS_PATH", Path(self.tmp) / "gone" / "records.py"):
+            code, out, err = self.run_cli("set-status", "BUG-0001", "Accepted", "--note", "n", "--by", "main GD")
+        self.assertEqual(code, 1)
+        self.assertIn("bugs: moved, but the debt mirror failed: ", err)
+        self.assertIn("is missing (skill records)", err)
+        self.assertIn("bug-mirror BUG-0001", err)
+        self.assertEqual(self.show("BUG-0001")["status"], "Accepted")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)

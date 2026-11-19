@@ -894,9 +894,10 @@ try {
     $bugsDir = Join-Path $proj '.claude/skills/bugs/scripts'
     New-Item -ItemType Directory -Force $bugsDir | Out-Null
     Copy-Item (Join-Path $hooks '../skills/bugs/scripts/bugs.py') $bugsDir
-    # bugs.py loads the shared journal engine by path: it goes beside the copy.
+    # bugs.py loads the shared journal engine by path: it goes beside the copy. So does records.py: an Accepted move mirrors into debt.
     New-Item -ItemType Directory -Force (Join-Path $proj '.claude/skills/records/scripts') | Out-Null
     Copy-Item (Join-Path $hooks '../skills/records/scripts/journal.py') (Join-Path $proj '.claude/skills/records/scripts')
+    Copy-Item (Join-Path $hooks '../skills/records/scripts/records.py') (Join-Path $proj '.claude/skills/records/scripts')
     $bugPy = @(Resolve-Python $proj)
     $bugRoot = $proj
     $bugFields = '{"title":"HUD bar wrong","description":"The HUD bar shows the wrong value.","priority":"High","repro":"not yet","expected":"Value per the GDD","actual":"Wrong value","evidence":"none yet"}'

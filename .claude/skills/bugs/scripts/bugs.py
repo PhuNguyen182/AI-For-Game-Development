@@ -587,10 +587,49 @@ def cmd_set_status(ctx, a):
             if target > w.top:
                 raise Refused("duplicate_of: %s not found" % dup)
             payload["duplicate_of"] = fmt_id(target)
-        w.emit("status", row["uid"], payload, by=by, note=note)
+        ev = w.emit("status", row["uid"], payload, by=by, note=note)
     cleaner.report()
     print("%s %s -> %s" % (a.id, row["status"], a.status))
+    if a.status in MIRRORED:
+        mirror_debt(ctx, row, by, note, ev["ts"])
     return 0
+
+
+MIRRORED = ("Won't fix", "Accepted")  # a bug the main GD leaves unfixed is debt: records.py mirrors it, no hand step
+RECORDS_PATH = Path(__file__).resolve().parents[2] / "records" / "scripts" / "records.py"
+
+
+def _load_records():
+    """records.py, by path like the engine: its mirror_bug writes the feature root's DEBT.csv or a debt record."""
+    name = "bugs_records"
+    module = sys.modules.get(name)
+    if module is not None and Path(getattr(module, "__file__", "")).resolve() == RECORDS_PATH:
+        return module
+    if not RECORDS_PATH.exists():
+        raise Refused("%s is missing (skill records)" % RECORDS_PATH)
+    spec = importlib.util.spec_from_file_location(name, RECORDS_PATH)
+    module = importlib.util.module_from_spec(spec)
+    keep, sys.dont_write_bytecode = sys.dont_write_bytecode, True
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.dont_write_bytecode = keep
+    sys.modules[name] = module
+    return module
+
+
+def mirror_debt(ctx: Ctx, row, by: str, note, ts: str):
+    """After the move committed. A failure here cannot undo the move, so it names the one command that finishes the job."""
+    command = '"%s" -I "%s" --root "%s" bug-mirror %s' % (sys.executable, RECORDS_PATH, ctx.root, row["id"])
+    try:
+        records = _load_records()
+        print(records.mirror_bug(records.Ctx(str(ctx.root)), row["id"], row["title"], row["feature"], by, note, ts[:10]))
+    except KeyboardInterrupt:
+        raise
+    except (Refused, Corrupt) as ex:
+        raise Refused("moved, but the debt mirror failed: %s; run %s" % (ex, command)) from None
+    except (Exception, SystemExit) as ex:  # whatever broke in the other CLI, the move stands and the repair is named
+        raise Refused("moved, but the debt mirror failed: %s: %s; run %s" % (type(ex).__name__, shown(ex, 200), command)) from None
 
 
 def counter_write(ctx, a, etype):

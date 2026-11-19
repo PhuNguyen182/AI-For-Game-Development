@@ -39,6 +39,7 @@ Synthesized from `../scripts/records.py` and `../scripts/journal.py`; commands i
 ## Journals (`.workflow/<journal>.jsonl`, LF, UTF-8, no BOM)
 - **Line:** `{event_uid, uid, ts, type, data, by?, note?}`; `ts` is UTC `YYYY-MM-DDTHH:MM:SS.mmmZ`, always `max(now, last + 1 ms)` per journal.
 - **Types:** `create` (`id` or `slug`, fields, state) · `update` (changed fields) · `state` (`from`, `to`, `ref?`) · `renumber` (`from`, `to`, numbered stores) · `round` and `extra_round` (`counter`, `n`) · `stop_rule` (`counter`, `extra_dispatch`), the last three on `feature` only.
+- **Migrated date:** an `extra_round` or `stop_rule` written by `migrate` may carry `date` (`YYYY-MM-DD`, its source line's); the record line shows it instead of the event's own day.
 - **Replay:** sort by `(ts, event_uid)`, one copy per `event_uid`, creates first. A malformed line refuses every command on that store with its line number; other stores still read.
 - **Torn tail:** a final line with no newline is kept when it is a whole event; otherwise skipped and removed by the next write or `doctor --fix`.
 - **Feature uid:** derived from the slug, and the create's `event_uid` too: two branches registering one slug merge into one record with both sides' events.
@@ -58,8 +59,75 @@ Synthesized from `../scripts/records.py` and `../scripts/journal.py`; commands i
 - **Caps:** review 3, QA 2, rework 6 (S, M) or 8 (L), each plus its extra rounds; a size change moves the rework base.
 - **Unknown slug:** `found:false`, `open:false`, `size:null`, default caps, rework 6, exit 0.
 - **Record:** `- Stop rule: <counter> root-caused <date> · extra dispatch: unused|used` (the last per counter), then one `extra round: <counter> +<n>` per extra round: the lines `round-cap.ps1` matches.
-- **Sources:** `COUNTER_SOURCES` in `records.py`: functions `(ctx, slug)` returning extra-round and stop-rule events beside the journal's; each adds to the cap and the record.
+- **Sources:** `COUNTER_SOURCES` in `records.py`: functions `(ctx, slug)` returning extra-round and stop-rule events beside the journal's; each adds to the cap and the record. Empty: the journal is the only source.
+- **Not a source:** `decisions.csv`. Its `extra-round` and `stop-rule` rows are the readable copy `feature extra-round` and `feature stop-rule` append; a hand-written row changes no cap.
 - **Used:** file-only rounds here; the hook adds the ledger's count.
+
+## Feature CSV tables (`records.py csv`)
+| Table | File | Columns |
+|---|---|---|
+| `log` | `.workflow/features/<slug>/log.csv` | `id, agent, lane, changed, verified, attempts, limitations` |
+| `tests` | `.workflow/features/<slug>/tests.csv` | `id, criterion, test_id, mode, owner, last_result` |
+| `decisions` | `.workflow/features/<slug>/decisions.csv` | `id, date, kind, decision, cost` |
+| `limitations` | `.workflow/features/<slug>/limitations.csv` | `id, date, text, accepted_by, mirrored` |
+| `debt` | `<feature_root>/DEBT.csv` | `id, date, kind, text, source, accepted_by, next_step, state` |
+| `notes` | `<feature_root>/NOTES.csv` | `id, date, topic, text, anchor, state` |
+
+| Column | Rule |
+|---|---|
+| `id` | `<prefix>-###` (`L`, `T`, `D`, `LIM`, `DEBT`, `N`), assigned as the file's highest + 1, never given, never updated |
+| required | `log.agent`, `tests.criterion`, `decisions.kind` (default `decision`) and `.decision`, `limitations.text`, `debt.kind` and `.text`, `notes.text` |
+| `date` | `YYYY-MM-DD`, a real date; `add` fills today (UTC) when absent; a migrated row may hold none |
+| `decisions.kind` | `decision` · `extra-round` · `stop-rule` · `waiver` · `accepted-gap`; `extra-round` and `stop-rule` are refused on `add` and `update` |
+| `debt.kind`, `debt.state` | `workaround` · `limitation` · `accepted-gap`; `Open` (default) · `Paid` |
+| `debt.source` | Optional: `BUG-####`, a feature slug, or `framework` |
+| `notes.state` | `Open` (default) · `Debt` · `Promoted:<doc>` |
+| `limitations.mirrored` | Set only by `csv mirror` (the `DEBT.csv` id) or `migrate` (`pre-migration` on a closed feature) |
+| every value | One line, 1000 chars; control characters, Vietnamese diacritics and secret shapes refused, PII redacted; fail closed without `mem.py` or its patterns |
+
+- **File:** a header row, UTF-8 with no BOM, LF, RFC 4180 quoting by Python `csv`; written to a temp file beside it, then `os.replace`. A header-only file is never written.
+- **Feature:** `log`, `tests`, `decisions`, `limitations` need a registry row or `.workflow/features/<slug>.md`; `debt` and `notes` need the registry's `feature_root`, a folder inside the project root.
+- **Writes:** refused from a linked worktree, and on a file with a blocking problem; `update` on a duplicated id is refused, `add` is not.
+- **Feature commands:** `feature extra-round` appends `kind extra-round`, decision `<counter> +<n>: <note>`; `feature stop-rule` appends `kind stop-rule`, decision `<counter> root-caused · extra dispatch: <v>`. The row is staged before the journal write and moved in after it; if that move fails the journal stands and the refusal names `csv add decisions`.
+
+### `csv doctor`
+| Problem | Kind | `--fix` |
+|---|---|---|
+| Header not the table's columns, wrong value count, a line break in a value, a bad id, not UTF-8 | blocking | Reported for a hand fix; the row is written back unchanged |
+| Duplicate id (a union merge of two branches) | duplicate | Later rows renumbered past the high water |
+| BOM, CRLF, blank line, a repeated header row, a header-only or empty file | repairable | Normalized; a file with no rows is deleted |
+| A value a write would refuse, redact or trim | value | Reported for a hand fix |
+
+- **Exit:** 1 while any problem is left, one stderr line each; values are never echoed.
+
+## Mirrors
+- **`csv mirror --feature <slug>`:** each `limitations.csv` row with `mirrored` empty becomes a `DEBT.csv` row (`kind accepted-gap`, `source` the slug, its date and `accepted_by`), and `mirrored` takes the new id. A `DEBT.csv` row with the same source and text is reused, so a run cut short never copies twice.
+- **Bug mirror:** `bugs.py set-status` into `Won't fix` or `Accepted` calls `mirror_bug` after the move commits. The bug's `feature` is a registry slug with a `feature_root` → a `DEBT.csv` row (`kind accepted-gap`, `source` the bug id, `text` its title, `accepted_by` the move's `--by`, `next_step` its note, the move's date); otherwise a `debt` record with the same values.
+- **Once per bug:** a row or record whose `source` is the bug id already exists → nothing is added.
+- **Failure:** `bugs.py` exits 1 with `bugs: moved, but the debt mirror failed: <cause>; run "<python>" -I "<records.py>" --root "<root>" bug-mirror BUG-####`. `bug-mirror` reads the bug, its last move into that status, and mirrors it; a bug in another status is refused.
+
+## Migration (`migrate --from-md [--dry-run]`)
+| Source | Target |
+|---|---|
+| `.workflow/framework-backlog.md`: the `\| Item \| State \|` table before the first `##` and the one under `## Deferred and recorded` | `fwbacklog` in file order; `Done: <ref>` → `Done` + ref, `Recorded: <x>` → `Recorded` + ref, `Recorded (GD decision)` → `Recorded (main GD decision)` |
+| `.workflow/backlog.md` (the `/plan-game` table) | `backlog` with its own numbers; refused when `backlog.jsonl` holds records |
+| `.workflow/DEBT.md` bullets | `debt`: source a leading `BUG-####:`, `<slug> (...):` or `<slug>:`, else `framework`; ` Next: ` → `next_step`; the first date or today; `accepted_by main GD` |
+| `.workflow/features/<slug>.md` header (`- Status:` … `- Worktrees:`) | the registry; `Rounds` used counts → `round` events |
+| `## Main GD decisions` and `## GD decisions` bullets | `decisions.csv`; a leading date → `date`; an `extra round: <counter> +<n>` phrase → kind `extra-round` and an `extra_round` event per phrase |
+| `- Stop rule:` lines, any section | `decisions.csv` kind `stop-rule`, and a `stop_rule` event per counter word in the line (`extra dispatch:` value, its date) |
+| `## Log`, `## Tests` tables | `log.csv`, `tests.csv`, columns by header; `#` dropped; blank lines between row groups stay in the table |
+| `## Known limitations` bullets | `limitations.csv`, `accepted_by main GD`, `mirrored` empty (open feature) or `pre-migration` |
+| `<feature_root>/DEBT.md`, `NOTES.md` bullets | `DEBT.csv` (a leading `Workaround:`, `Limitation:` or `Accepted gap:` sets the kind, default `limitation`), `NOTES.csv` (a leading `**topic**`) |
+| `.workflow/rounds.json` | `ledger migrate` |
+
+- **Feature md rewrite:** the header lines become `- State: records.py feature show <slug>`; each migrated section keeps its heading, gets `- Rows: records.py csv render <table> --feature <slug>`, and keeps its unmigrated lines; every other section, `## Bugs` included, stays as it was; line ends and BOM kept. A file holding the State line is skipped.
+- **Renamed:** the other sources become `<name>.migrated-<utc>.md`; `rounds.json` becomes `rounds.migrated-<utc>.json`. Other sections of `framework-backlog.md` stay in the renamed file.
+- **Staging:** every write lands in a temp folder through the root's rules; the cache there is thrown away.
+- **Verification:** each target's `render` is parsed back and must hold every source row's cleaned values; the registry record must equal the header; for an open feature, `feature counters` (used, cap, stopped) must equal what `round-cap.ps1` read from the md.
+- **All or nothing:** a refused line is collected and the next one read; any refusal or mismatch exits 1 with `migrate refused, nothing was changed:` and every line (`<file>:<line>: <cause>`, 50 at most), and the root is untouched.
+- **Swap:** the ledger first (busy → refused, root unchanged), then each staged file written beside its target and moved in, then the renames. A failure there exits 1 with `migrate failed during the swap:` naming what changed.
+- **Dry run:** stages, verifies, prints the per-source counts and `dry run: nothing written`.
+- **Worktree:** a write run from a linked worktree is refused; a dry run is not.
 
 ## Ledger (`.workflow/ledger.db`, local, gitignored, not journaled)
 - **Table:** `round_event(key, counter, event_id, ts, UNIQUE(key, counter, event_id))`, WAL, `busy_timeout` 5000 ms.
@@ -73,7 +141,7 @@ Synthesized from `../scripts/records.py` and `../scripts/journal.py`; commands i
 | Code | When |
 |---|---|
 | 0 | Done |
-| 1 | Refused, corrupt journal, or an error; one stderr line per problem |
+| 1 | Refused, corrupt journal, a broken CSV file, a refused or unverified migration, or an error; one stderr line per problem |
 | 2 | Bad arguments |
 | 3 | `ledger get`: an unreadable `ledger.db`, an unparsable parked file or `rounds.json`, or any `ledger.corrupt-*.db` or `rounds.corrupt-*.json` in `.workflow/`; one stderr line |
 | 75 | `ledger add` or `migrate`: `SQLITE_BUSY` past the timeout; the hook parks the events |
@@ -82,4 +150,4 @@ Synthesized from `../scripts/records.py` and `../scripts/journal.py`; commands i
 ## Test clock
 - **`RECORDS_NOW`:** test-only override of the clock (`2026-01-01T00:00:00Z`, optional `.mmm`), like `BUGS_NOW`. Never set it in a session.
 
-Tests: `python -I .claude/skills/records/scripts/test_records.py`.
+Tests: `python -I .claude/skills/records/scripts/test_records.py`; the bug mirror's are in `test_bugs.py` (`TestDebtMirror`).
