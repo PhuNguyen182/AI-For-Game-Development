@@ -109,29 +109,47 @@ def check_english(field: str, text: str):
         raise Refused("%s: Vietnamese diacritics ('%s'): the database is English only, translate first" % (field, m.group(0)))
 
 
+def load_by_path(name: str, path, missing: str = ""):
+    """Another framework script as a module, by path: -I removes the script dir from sys.path, hence importlib. Cached in
+    sys.modules under `name` only while that entry came from this same file; a file that fails to run is never cached.
+    Writes no .pyc beside the framework. A missing file refuses, naming it; `missing` says what that costs the caller.
+    The two bootstrap loaders that fetch this file keep their own copy: they run before this function exists."""
+    path = Path(path).resolve()
+    module = sys.modules.get(name)
+    file = getattr(module, "__file__", None)
+    if file and Path(file).resolve() == path:
+        return module
+    if not path.is_file():
+        raise Refused("%s is missing%s" % (path, missing))
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    keep, sys.dont_write_bytecode = sys.dont_write_bytecode, True
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.dont_write_bytecode = keep
+    sys.modules[name] = module
+    return module
+
+
 _mem = None
 
 
 def mem_module(name: str = "journal_mem"):
-    """mem.py owns the secret patterns and PII rules. -I removes the script dir from sys.path, hence importlib."""
+    """mem.py owns the secret patterns and PII rules. Any fault in loading it refuses the write, never a traceback."""
     global _mem
     if _mem is None:
         path = Path(__file__).resolve().parents[2] / "mem" / "scripts" / "mem.py"
         if not path.exists():
             raise Refused("write refused: %s is missing, so secret shapes cannot be checked" % path)
-        spec = importlib.util.spec_from_file_location(name, path)
-        module = importlib.util.module_from_spec(spec)
-        keep, sys.dont_write_bytecode = sys.dont_write_bytecode, True
         try:
-            spec.loader.exec_module(module)
+            module = load_by_path(name, path)
             for attr in MEM_API:
                 getattr(module, attr)
         except KeyboardInterrupt:
             raise
         except BaseException as ex:  # whatever the fault in that file, a SyntaxError or a sys.exit too: it leaves through main()
             raise Refused("write refused: %s cannot be loaded (%s), so secret shapes cannot be checked" % (path, type(ex).__name__)) from None
-        finally:
-            sys.dont_write_bytecode = keep
         _mem = module
     return _mem
 

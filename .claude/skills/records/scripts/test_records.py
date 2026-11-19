@@ -1290,5 +1290,77 @@ class TestMigrate(MigrateBase):
         self.assertIn("usage", self.no("migrate", code=2).lower())
 
 
+# ---------------------------------------------------------------- loading a framework script by path
+
+class TestLoadByPath(Base):
+    """journal.load_by_path: one sys.modules entry per name and file, no .pyc, nothing cached from a file that fails."""
+
+    def setUp(self):
+        super().setUp()
+        self.name = "records_test_loaded_%s" % Path(self.tmp).name.replace("-", "_")
+        self.addCleanup(sys.modules.pop, self.name, None)
+        self.load = records.journal.load_by_path
+
+    def script(self, text, name="mod.py"):
+        path = Path(self.tmp) / name
+        path.write_text(text, encoding="utf-8")
+        return path
+
+    def test_a_second_load_of_the_same_file_is_the_cached_module(self):
+        path = self.script("VALUE = object()\n")
+        first = self.load(self.name, path)
+        self.assertIs(sys.modules[self.name], first)
+        self.assertIs(self.load(self.name, Path(self.tmp) / "." / "mod.py"), first)  # keyed by the resolved path
+        self.assertFalse((Path(self.tmp) / "__pycache__").exists())
+
+    def test_a_cached_entry_from_another_file_is_replaced(self):
+        first = self.load(self.name, self.script("WHO = 'a'\n", "a.py"))
+        second = self.load(self.name, self.script("WHO = 'b'\n", "b.py"))
+        self.assertIsNot(first, second)
+        self.assertEqual(second.WHO, "b")
+        self.assertIs(sys.modules[self.name], second)
+
+    def test_a_missing_file_refuses_and_names_it(self):
+        path = Path(self.tmp) / "gone" / "mod.py"
+        with self.assertRaises(records.Refused) as caught:
+            self.load(self.name, path, " (skill test)")
+        self.assertEqual(str(caught.exception), "%s is missing (skill test)" % path.resolve())
+        self.assertNotIn(self.name, sys.modules)
+
+    def test_a_file_that_fails_is_not_cached_and_the_bytecode_flag_is_restored(self):
+        path = self.script("raise RuntimeError('broken')\n")
+        for flag in (False, True):
+            with self.subTest(dont_write_bytecode=flag), mock.patch.object(sys, "dont_write_bytecode", flag):
+                with self.assertRaises(RuntimeError):
+                    self.load(self.name, path)
+                self.assertIs(sys.dont_write_bytecode, flag)
+                self.assertNotIn(self.name, sys.modules)
+        path.write_text("OK = 1\n", encoding="utf-8")
+        with mock.patch.object(sys, "dont_write_bytecode", False):
+            self.assertEqual(self.load(self.name, path).OK, 1)
+            self.assertFalse(sys.dont_write_bytecode)
+
+    def test_load_bugs_is_cached(self):
+        self.addCleanup(sys.modules.pop, "records_bugs", None)
+        bugs = records.load_bugs()
+        self.assertIs(records.load_bugs(), bugs)
+        self.assertIs(sys.modules["records_bugs"], bugs)
+        self.assertIs(bugs.journal, records.journal)  # one engine, so one Refused class across both CLIs
+
+    def test_a_broken_mem_module_refuses_every_write_without_a_traceback(self):
+        for body in ("raise SystemExit(3)\n", "def broken(:\n", "# no API\n"):
+            with self.subTest(body=body):
+                shutil.rmtree(Path(self.tmp) / "framework", ignore_errors=True)
+                script = TestFailClosed.copy(self)
+                (script.parents[2] / "mem" / "scripts" / "mem.py").write_text(body, encoding="utf-8")
+                r = TestFailClosed.cli(self, script, "backlog", "add", stdin=json.dumps(bl()).encode())
+                self.assertEqual(r.returncode, 1, r.stdout)
+                self.assertIn(b"write refused", r.stderr)
+                self.assertIn(b"cannot be loaded", r.stderr)
+                self.assertNotIn(b"Traceback", r.stderr)
+                self.assertEqual(TestFailClosed.cli(self, script, "backlog", "list").returncode, 0)
+        self.assertFalse((self.wf / "backlog.jsonl").exists())
+
+
 if __name__ == "__main__":
     unittest.main()

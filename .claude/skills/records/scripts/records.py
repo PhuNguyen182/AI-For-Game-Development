@@ -1896,18 +1896,9 @@ def mirror_bug(ctx, bug_id: str, title: str, feature, by: str, note, date: str) 
 
 
 def load_bugs():
-    """bugs.py beside this skill, by path, for bug-mirror's repair run. -I removes the script dir from sys.path."""
+    """bugs.py beside this skill, by path, for bug-mirror's repair run."""
     path = Path(__file__).resolve().parents[2] / "bugs" / "scripts" / "bugs.py"
-    if not path.exists():
-        raise Refused("%s is missing, so the bug cannot be read" % path)
-    spec = importlib.util.spec_from_file_location("records_bugs", path)
-    module = importlib.util.module_from_spec(spec)
-    keep, sys.dont_write_bytecode = sys.dont_write_bytecode, True
-    try:
-        spec.loader.exec_module(module)
-    finally:
-        sys.dont_write_bytecode = keep
-    return module
+    return journal.load_by_path("records_bugs", path, ", so the bug cannot be read")
 
 
 def cmd_bug_mirror(ctx, a):

@@ -601,21 +601,7 @@ RECORDS_PATH = Path(__file__).resolve().parents[2] / "records" / "scripts" / "re
 
 def _load_records():
     """records.py, by path like the engine: its mirror_bug writes the feature root's DEBT.csv or a debt record."""
-    name = "bugs_records"
-    module = sys.modules.get(name)
-    if module is not None and Path(getattr(module, "__file__", "")).resolve() == RECORDS_PATH:
-        return module
-    if not RECORDS_PATH.exists():
-        raise Refused("%s is missing (skill records)" % RECORDS_PATH)
-    spec = importlib.util.spec_from_file_location(name, RECORDS_PATH)
-    module = importlib.util.module_from_spec(spec)
-    keep, sys.dont_write_bytecode = sys.dont_write_bytecode, True
-    try:
-        spec.loader.exec_module(module)
-    finally:
-        sys.dont_write_bytecode = keep
-    sys.modules[name] = module
-    return module
+    return journal.load_by_path("bugs_records", RECORDS_PATH, " (skill records)")
 
 
 def mirror_debt(ctx: Ctx, row, by: str, note, ts: str):
