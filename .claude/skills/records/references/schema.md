@@ -62,6 +62,8 @@ Synthesized from `../scripts/records.py` and `../scripts/journal.py`; commands i
 - **Sources:** `COUNTER_SOURCES` in `records.py`: functions `(ctx, slug)` returning extra-round and stop-rule events beside the journal's; each adds to the cap and the record. Empty: the journal is the only source.
 - **Not a source:** `decisions.csv`. Its `extra-round` and `stop-rule` rows are the readable copy `feature extra-round` and `feature stop-rule` append; a hand-written row changes no cap.
 - **Used:** file-only rounds here; the hook adds the ledger's count.
+- **`--with-ledger`:** adds `"ledger"`, exactly what `ledger get --json` prints, and exits 3 or 75 as `ledger get` does: `round-cap.ps1`'s dispatch starts one Python, not two.
+- **Hook budget:** `feature counters` and `ledger get` run no git and wait 2000 ms at most on a lock (`READ_BUSY_MS`; every other command 10 s on `records.db`), then exit 1 or 75; `round-cap.ps1` shares 8 s across its calls of one run, 8 s for `ledger add`, inside the 15 s hook timeout.
 
 ## Stats (`stats`)
 - **Line:** `Records: backlog <n> open · framework backlog <n> open · debt <n> open · features <n> open`.
@@ -135,10 +137,13 @@ Synthesized from `../scripts/records.py` and `../scripts/journal.py`; commands i
 - **Worktree:** a write run from a linked worktree is refused; a dry run is not.
 
 ## Ledger (`.workflow/ledger.db`, local, gitignored, not journaled)
-- **Table:** `round_event(key, counter, event_id, ts, UNIQUE(key, counter, event_id))`, WAL, `busy_timeout` 5000 ms.
-- **`get --json`:** `{"<key>": {"<counter>": ["<id>", ...]}}`, ids in insertion order, ASCII JSON; merged read-only with every `rounds.pending-*.json` (`[{"key","counter","id"}]`, one object accepted) and an un-migrated `rounds.json`.
-- **`add --json`:** stdin `[{"key","counter","id"}]`; `INSERT OR IGNORE`, then each parsable parked file is imported and deleted in the same transaction; an unparsable one is renamed `rounds.corrupt-pending-<rest>` and kept.
-- **`migrate`:** imports `rounds.json` and parked files, renames it `rounds.migrated-<utc>.json`; idempotent; an unparsable `rounds.json` is refused and left in place.
+- **Table:** `round_event(key, counter, event_id, ts, UNIQUE(key, counter, event_id))`, WAL, `busy_timeout` 5000 ms (the reads of `get` and `--with-ledger`: 2000 ms).
+- **Event:** `key`, `counter`, `id` each one-line text of 1 to 300 chars; each event is checked on its own, so a refused one never refuses its batch or its file.
+- **Keys:** `feature:<slug>`, `bug:BUG-####`, `session:<id>`, `target:<the Target line, / separators, lower-cased>`; a target key over 280 chars is `target:<its first 200 chars>#<first 16 hex of the SHA-256 of the whole lower-cased line, UTF-8>`.
+- **`get --json`:** `{"<key>": {"<counter>": ["<id>", ...]}}`, ids in insertion order, ASCII JSON; merged read-only with every `rounds.pending-*.json` (`[{"key","counter","id"}]`, one object accepted) and an un-migrated `rounds.json`; a refused event there is left out, with one stderr line.
+- **`add --json`:** stdin `[{"key","counter","id"}]`; `INSERT OR IGNORE` of the valid events, then each parsable parked file's valid events are imported and the file deleted in the same transaction; an unparsable one is renamed `rounds.corrupt-pending-<rest>` and kept.
+- **Refused events:** from stdin, parked files or `rounds.json`, kept after the commit in one `rounds.rejected-<utc>-<8 hex>.json` (the items as given), named on one stderr line, never counted; it blocks no command and no dispatch. Refused on stdin → exit 4, the rest recorded.
+- **`migrate`:** imports `rounds.json` and parked files, renames it `rounds.migrated-<utc>.json`; idempotent; an unparsable `rounds.json` is refused and left in place; `migrate --from-md` refuses a `rounds.json` holding a refused event.
 - **Corrupt DB on `add`:** moved to `ledger.corrupt-<utc>.db` (its `-wal`, `-shm` beside it), a new DB records the events, one stderr line, exit 0.
 - **No git, no patterns:** ledger commands need neither; a linked worktree's `add` and `migrate` are refused.
 
@@ -148,7 +153,8 @@ Synthesized from `../scripts/records.py` and `../scripts/journal.py`; commands i
 | 0 | Done |
 | 1 | Refused, corrupt journal, a broken CSV file, a refused or unverified migration, or an error; one stderr line per problem |
 | 2 | Bad arguments |
-| 3 | `ledger get`: an unreadable `ledger.db`, an unparsable parked file or `rounds.json`, or any `ledger.corrupt-*.db` or `rounds.corrupt-*.json` in `.workflow/`; one stderr line |
+| 3 | `ledger get` (and `feature counters --with-ledger`): an unreadable `ledger.db`, an unparsable parked file or `rounds.json`, or any `ledger.corrupt-*.db` or `rounds.corrupt-*.json` in `.workflow/`; one stderr line |
+| 4 | `ledger add`: a stdin event refused; the valid ones are recorded, the refused ones kept in `rounds.rejected-*.json` |
 | 75 | `ledger add` or `migrate`: `SQLITE_BUSY` past the timeout; the hook parks the events |
 | 130 | Interrupted |
 

@@ -117,6 +117,7 @@ __pycache__/
 .workflow/rounds.json
 .workflow/rounds.pending-*.json
 .workflow/rounds.corrupt-*.json
+.workflow/rounds.rejected-*.json
 .workflow/rounds.migrated-*.json
 .workflow/bugs.db*
 # Workflow records (skill records): the cache, the local round ledger and a ledger moved aside. The journals are tracked.

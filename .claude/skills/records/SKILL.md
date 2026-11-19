@@ -46,7 +46,7 @@ user-invocable: false
 | Used file-only round; `+n` is 1 to 100 | `feature round <slug> review\|qa\|rework +n --note N` |
 | main GD's extra round, raises the cap | `feature extra-round <slug> <counter> +n --note N --by "main GD"` |
 | Stop rule fired or spent | `feature stop-rule <slug> <counter> --extra-dispatch unused\|used` |
-| Hook-counted rounds | `ledger add --json`, stdin `[{"key","counter","id"}]` |
+| Hook-counted rounds | `ledger add --json`, stdin `[{"key","counter","id"}]`; exit 4: the refused ones kept in `rounds.rejected-*.json`, the rest recorded |
 | Import `rounds.json` | `ledger migrate` |
 
 ## Query
@@ -58,6 +58,7 @@ user-invocable: false
 | Markdown table for a CP report | `<store> render` |
 | One line | `<store> stats`, or `stats` for every store; `stats --json` adds the open features (session start) |
 | Hook counters | `feature counters <slug> --json` |
+| Hook counters and ledger in one call (round-cap's dispatch) | `feature counters <slug> --json --with-ledger` |
 | Hook ledger | `ledger get --json` |
 | Anything else, read-only | `sql "SELECT ..." [--json]` |
 

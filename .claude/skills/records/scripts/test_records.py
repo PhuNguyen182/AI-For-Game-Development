@@ -522,7 +522,7 @@ class TestLedger(Base):
             self.assertEqual(db.execute("PRAGMA journal_mode").fetchone()[0], "wal")
         finally:
             db.close()
-        self.assertIn("ledger add", self.no("ledger", "add", "--json", stdin=[{"key": "k", "counter": "qa"}]))
+        self.assertIn("1 event(s) refused", self.no("ledger", "add", "--json", stdin=[{"key": "k", "counter": "qa"}], code=4))
         self.assertIn("JSON list", self.no("ledger", "add", "--json", stdin={"key": "k"}))
 
     def test_pending_files_merge_on_get_and_import_on_add(self):
@@ -1288,6 +1288,144 @@ class TestMigrate(MigrateBase):
         self.assertIn("framework-backlog.md: absent", out)
         self.assertIn("no feature files", out)
         self.assertIn("usage", self.no("migrate", code=2).lower())
+
+
+# ---------------------------------------------------------------- ledger batches and the hook's budget
+
+class TestLedgerBatch(Base):
+    """One refused event never refuses its batch: the valid ones count, the refused ones wait in one rounds.rejected file."""
+
+    LONG = "target:" + "a" * 300
+
+    def get(self):
+        return json.loads(self.ok("ledger", "get", "--json"))
+
+    def park(self, name, body):
+        self.wf.mkdir(parents=True, exist_ok=True)
+        (self.wf / name).write_bytes(json.dumps(body).encode("utf-8"))
+        return self.wf / name
+
+    def rejected(self):
+        return sorted(self.wf.glob("rounds.rejected-*.json"))
+
+    def test_add_records_the_valid_events_and_keeps_the_refused_ones(self):
+        code, out, err = self.run_cli("ledger", "add", "--json", stdin=[
+            {"key": "feature:a", "counter": "review", "id": "r1"}, {"key": self.LONG, "counter": "review", "id": "r1"},
+            {"key": "k", "counter": "qa"}, {"key": "feature:a", "counter": "qa", "id": "q1"}])
+        self.assertEqual(code, 4, err)
+        self.assertIn("ledger: 2 new", out)
+        files = self.rejected()
+        self.assertEqual(len(files), 1)
+        self.assertIn("2 event(s) refused", err)
+        self.assertIn(files[0].name, err)
+        self.assertNotIn("a" * 41, err)  # the refused value is never echoed
+        self.assertEqual(json.loads(files[0].read_bytes()), [{"key": self.LONG, "counter": "review", "id": "r1"}, {"key": "k", "counter": "qa"}])
+        self.assertEqual(self.get(), {"feature:a": {"review": ["r1"], "qa": ["q1"]}})  # exit 0: a reject file blocks nothing
+        self.assertEqual(records.ledger_marks(records.Ctx(str(self.root), use_git=False)), [])
+
+    def test_a_refused_event_in_a_parked_file_does_not_poison_it(self):
+        p = self.park("rounds.pending-20260101T000000000-aaaa.json",
+                      [{"key": self.LONG, "counter": "review", "id": "round-1"}, {"key": "feature:a", "counter": "review", "id": "round-1"}])
+        code, out, err = self.run_cli("ledger", "get", "--json")
+        self.assertEqual(code, 0, err)
+        self.assertEqual(json.loads(out), {"feature:a": {"review": ["round-1"]}})
+        self.assertIn("1 parked event(s) a write refuses are not counted", err)
+        self.assertTrue(p.exists())  # get is read-only
+        code, out, err = self.run_cli("ledger", "add", "--json", stdin=[{"key": "feature:a", "counter": "qa", "id": "q1"}])
+        self.assertEqual(code, 0, err)  # the caller's own events were all valid
+        self.assertFalse(p.exists())
+        self.assertEqual(list(self.wf.glob("rounds.corrupt-*")), [])
+        self.assertEqual(len(self.rejected()), 1)
+        self.assertIn(self.rejected()[0].name, err)
+        self.assertEqual(self.get(), {"feature:a": {"review": ["round-1"], "qa": ["q1"]}})
+
+    def test_parked_and_stdin_refusals_share_one_reject_file(self):
+        self.park("rounds.pending-20260101T000000000-bbbb.json", [{"key": self.LONG, "counter": "qa", "id": "x"}])
+        self.park("rounds.pending-20260101T000000001-cccc.json", {"key": "k", "counter": "qa", "id": "y\nz"})
+        code, _, err = self.run_cli("ledger", "add", "--json", stdin=[{"key": "k", "counter": "qa", "id": ""}])
+        self.assertEqual(code, 4, err)
+        self.assertEqual(len(self.rejected()), 1)
+        self.assertEqual(len(json.loads(self.rejected()[0].read_bytes())), 3)
+        self.assertEqual(list(self.wf.glob("rounds.pending-*")), [])
+
+    def test_a_failed_reject_write_keeps_the_parked_file_for_the_next_add(self):
+        p = self.park("rounds.pending-20260101T000000000-dddd.json",
+                      [{"key": self.LONG, "counter": "qa", "id": "x"}, {"key": "k", "counter": "qa", "id": "good"}])
+        with mock.patch.object(records, "save_rejected", side_effect=OSError("disk full")):
+            self.no("ledger", "add", "--json", stdin=[{"key": "k", "counter": "qa", "id": "mine"}], code=1)
+        self.assertTrue(p.exists())
+        self.assertEqual(self.get(), {"k": {"qa": ["mine", "good"]}})  # committed once; the parked copy dedupes
+        self.ok("ledger", "add", "--json", stdin=[])
+        self.assertFalse(p.exists())
+        self.assertEqual(len(self.rejected()), 1)
+        self.assertEqual(self.get(), {"k": {"qa": ["mine", "good"]}})
+
+    def test_rounds_json_with_a_refused_event_still_reads_and_migrates(self):
+        self.park("rounds.json", {"feature:a": {"review": ["r1"]}, self.LONG: {"review": ["r2"]}})
+        self.assertEqual(self.get(), {"feature:a": {"review": ["r1"]}})
+        out = self.run_cli("ledger", "migrate")
+        self.assertEqual(out[0], 0, out[2])
+        self.assertIn("migrated 1 event(s) from rounds.json", out[1])
+        self.assertEqual(len(self.rejected()), 1)
+        self.assertEqual(self.get(), {"feature:a": {"review": ["r1"]}})
+        with self.assertRaises(ValueError):  # migrate --from-md still refuses the source
+            records.parse_rounds_json(json.dumps({self.LONG: {"review": ["r2"]}}).encode())
+
+    def test_an_unparsable_parked_file_still_blocks(self):
+        (self.wf).mkdir(parents=True, exist_ok=True)
+        (self.wf / "rounds.pending-20260101T000000000-eeee.json").write_bytes(b"[{ broken")
+        self.ok("ledger", "add", "--json", stdin=[{"key": "k", "counter": "qa", "id": "1"}])
+        self.assertTrue((self.wf / "rounds.corrupt-pending-20260101T000000000-eeee.json").exists())
+        self.no("ledger", "get", "--json", code=3)
+
+
+class TestHookBudget(GitBase):
+    """round-cap.ps1 starts one Python per registered-feature dispatch, and its reads never run git or wait long on a lock."""
+
+    def setUp(self):
+        super().setUp()
+        self.ok("feature", "add", stdin={"slug": "demo", "size": "M"})
+        self.ok("ledger", "add", "--json", stdin=[{"key": "feature:demo", "counter": "review", "id": "round-1"}])
+
+    def test_counters_with_ledger_embeds_the_ledger_view(self):
+        plain = json.loads(self.ok("feature", "counters", "demo", "--json"))
+        both = json.loads(self.ok("feature", "counters", "demo", "--json", "--with-ledger"))
+        self.assertNotIn("ledger", plain)
+        self.assertEqual(both.pop("ledger"), json.loads(self.ok("ledger", "get", "--json")))
+        self.assertEqual(both, plain)
+        unknown = json.loads(self.ok("feature", "counters", "nope", "--json", "--with-ledger"))
+        self.assertEqual((unknown["found"], unknown["ledger"]), (False, {"feature:demo": {"review": ["round-1"]}}))
+
+    def test_with_ledger_exits_as_ledger_get_does(self):
+        (self.wf / "rounds.corrupt-pending-x.json").write_bytes(b"[")
+        self.assertIn("unreadable ledger file", self.no("feature", "counters", "demo", "--json", "--with-ledger", code=3))
+        self.ok("feature", "counters", "demo", "--json")  # without the flag the ledger is not read
+        (self.wf / "rounds.corrupt-pending-x.json").unlink()
+        with mock.patch.object(records, "ledger_rows", side_effect=records.LedgerBusy()):
+            self.assertIn("ledger busy past 2000 ms", self.no("feature", "counters", "demo", "--json", "--with-ledger", code=75))
+
+    def test_the_hook_reads_never_run_git(self):
+        with mock.patch.object(records, "run_git", wraps=records.run_git) as spy:
+            self.ok("feature", "counters", "demo", "--json", "--with-ledger")
+            self.ok("ledger", "get", "--json")
+            self.ok("ledger", "add", "--json", stdin=[])
+            self.assertEqual(spy.call_count, 0)
+            self.ok("feature", "list")
+            self.assertGreater(spy.call_count, 0)  # every other command keeps the git cross-check
+
+    def test_the_hook_reads_wait_briefly_on_a_locked_cache(self):
+        self.assertEqual((records.READ_BUSY_MS, records.journal.BUSY_SECONDS, records.LEDGER_BUSY_MS), (2000, 10, 5000))
+        holder = sqlite3.connect(str(self.wf / "records.db"), isolation_level=None)
+        try:
+            holder.execute("BEGIN EXCLUSIVE")
+            import time
+            t0 = time.monotonic()
+            self.assertIn("locked", self.no("feature", "counters", "demo", "--json", "--with-ledger", code=1))
+            self.assertLess(time.monotonic() - t0, 5)  # READ_BUSY_MS, not the 10 s every other command waits
+        finally:
+            holder.execute("ROLLBACK")
+            holder.close()
+        self.ok("feature", "counters", "demo", "--json", "--with-ledger")
 
 
 if __name__ == "__main__":

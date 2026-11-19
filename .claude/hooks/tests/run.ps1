@@ -1429,6 +1429,73 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     Check 'round-cap: an open feature without Rounds warns on edit' (EditState $feat) 2
     Check 'round-cap: an open feature without Rounds still dispatches' (Dispatch $brief) 0
 
+    # A Target line of any length charges one bounded ledger key: target:<first 200 chars>#<16 hex of its SHA-256>.
+    ClearLedger
+    $longTarget = 'Assets/' + ('Deep/' * 70) + 'Shop.cs'
+    foreach ($n in 1..4) { SubStop 'code-reviewer' "Round: $n`nTarget: $longTarget" 'Verdict: Request changes' "lt$n" | Out-Null }
+    $tk = @((LedgerView).PSObject.Properties.Name | Where-Object { $_ -like 'target:*' })
+    $lower = $longTarget.ToLowerInvariant()
+    $rest = @($recPy | Select-Object -Skip 1)
+    # No double quote in the code: Windows PowerShell drops them from a native argument. encode() is UTF-8.
+    $pyHex = "$(& $recPy[0] @rest -I -c 'import hashlib,sys; print(hashlib.sha256(sys.argv[1].encode()).hexdigest()[:16])' $lower)".Trim()
+    Check 'target key: a Target line over 280 chars is one key, its first 200 chars + # + 16 hex of the SHA-256 of the whole lower-cased line' ($pyHex.Length -eq 16 -and $tk.Count -eq 1 -and $tk[0] -ceq ('target:' + $lower.Substring(0, 200) + '#' + $pyHex)) $true
+    Check 'target key: ... all four rounds counted, nothing parked, corrupt or rejected' ((Count $tk[0] 'review') -eq 4 -and -not ((Marks 'rounds.pending-*') + (Marks 'rounds.corrupt-*') + (Marks 'rounds.rejected-*'))) $true
+    Check 'target key: ... so the same long Target is past its cap' (Dispatch "Round: 5`nTarget: $longTarget") 2
+    Check 'target key: ... in another case and with \ separators too' (Dispatch "Round: 5`nTarget: $($longTarget.ToUpperInvariant() -replace '/', '\')") 2
+    Check 'target key: ... a long Target with the same first 200 chars is another key' (Dispatch "Round: 1`nTarget: $longTarget.bak") 0
+    Check 'target key: a Target line at 280 chars or under keeps its plain key' (Dispatch "Round: 1`nTarget: Assets/Shop") 0
+    # A refused event in a parked file blocks nothing: the next add records the rest and keeps it in one reject file.
+    ClearLedger
+    [IO.File]::WriteAllText((Join-Path $wfDir 'rounds.pending-long.json'), ('[{"key":"target:' + ('x' * 400) + '","counter":"review","id":"round-1"},{"key":"feature:demo","counter":"review","id":"round-1"}]'))
+    Check 'ledger: a parked file holding a refused event does not block a dispatch' (Dispatch $brief) 0
+    $r = SubStop 'code-reviewer' "Round: 2`n$fm" 'Verdict: Request changes' 'rj1' -Full
+    Check 'ledger: ... the next add keeps the refused event in one reject file and names it' ($r.Code -eq 0 -and $r.Out -match 'rounds\.rejected-' -and (Marks 'rounds.rejected-*.json') -eq 1 -and -not (Marks 'rounds.corrupt-*') -and -not (Marks 'rounds.pending-*')) $true
+    Check 'ledger: ... records the valid one beside it' (Count 'feature:demo' 'review') 2
+    Check 'ledger: ... and the reject file blocks no dispatch' (Dispatch $brief) 0
+    ClearLedger
+    # One Python start per dispatch: a registered feature reads its counters and the ledger in one call. A shim interpreter
+    # logs each start, then runs the script.
+    RecCli @('feature', 'add') '{"slug":"reg-one","size":"M"}' | Out-Null
+    $startLog = Join-Path $tmp 'python-starts.log'
+    $countPy = Join-Path $tmp 'count-python.py'
+    [IO.File]::WriteAllText($countPy, "import runpy, sys`nopen(r'$startLog', 'a').write(' '.join(sys.argv[5:]) + '\n')`nsys.argv = sys.argv[2:]`nrunpy.run_path(sys.argv[0], run_name='__main__')`n")
+    $slowPy = Join-Path $tmp 'slow-python.py'
+    [IO.File]::WriteAllText($slowPy, "import time`ntime.sleep(30)`n")
+    function WithPython([string]$Shim, [scriptblock]$Body) {
+        New-Item -ItemType Directory -Force (Split-Path $pyCache) | Out-Null
+        Set-Content -LiteralPath $pyCache -Value (@($recPy) + @($Shim)) -Encoding UTF8
+        try { & $Body } finally { Remove-Item $pyCache -ErrorAction SilentlyContinue }
+    }
+    function Starts([scriptblock]$Body) {
+        Remove-Item $startLog -ErrorAction SilentlyContinue
+        $code = WithPython $countPy $Body
+        $lines = if (Test-Path $startLog) { @(Get-Content $startLog | Where-Object { $_ }) } else { @() }
+        return "$code/$($lines.Count)/$($lines -join ';')"
+    }
+    SubStop 'code-reviewer' "Round: 1`nFeature: .workflow/features/reg-one.md" 'Verdict: Request changes' 'one1' | Out-Null
+    Check 'budget: a registered-feature dispatch starts Python once, counters and ledger together' (Starts { Dispatch 'Feature: .workflow/features/reg-one.md' }) '0/1/feature counters reg-one --json --with-ledger'
+    Check 'budget: ... an un-migrated feature file starts it once too' (Starts { Dispatch $brief }) '0/1/feature counters demo --json --with-ledger'
+    Check 'budget: ... and the ledger it read counts' ((DispatchOut 'Feature: .workflow/features/reg-one.md').Code) 0
+    foreach ($n in 2..4) { SubStop 'code-reviewer' "Round: $n`nFeature: .workflow/features/reg-one.md" 'Verdict: Request changes' "one$n" | Out-Null }
+    $r = DispatchOut 'Feature: .workflow/features/reg-one.md'
+    Check 'budget: ... past the cap from the combined call''s ledger blocks' ($r.Code -eq 2 -and $r.Out -match 'feature reg-one: review 4/3 \(file 0 \+ hook 4\)') $true
+    [IO.File]::WriteAllText($ledger, '{ not a database')
+    $r = DispatchOut 'Feature: .workflow/features/reg-one.md'
+    Check 'budget: an unreadable ledger.db read by the combined call blocks' ($r.Code -eq 2 -and $r.Out -match 'feature reg-one' -and $r.Out -match 'round ledger is unreadable') $true
+    ClearLedger
+    # A stalled Python: the hook's own 8 s budget ends the call well inside the 15 s hook timeout, dispatch fails closed,
+    # and a count still parks its events.
+    $sw = [Diagnostics.Stopwatch]::StartNew()
+    $r = WithPython $slowPy { DispatchOut 'Feature: .workflow/features/reg-one.md' }
+    $sw.Stop()
+    Check 'budget: a stalled Python blocks the dispatch inside the hook timeout' ($r.Code -eq 2 -and $r.Out -match 'timed out after \d+ s' -and $sw.Elapsed.TotalSeconds -lt 13) $true
+    $sw = [Diagnostics.Stopwatch]::StartNew()
+    $r = WithPython $slowPy { SubStop 'code-reviewer' "Round: 1`nFeature: .workflow/features/reg-one.md" 'Verdict: Request changes' 'slow1' -Full }
+    $sw.Stop()
+    Check 'budget: a stalled ledger add parks the event inside the hook timeout' ($r.Code -eq 0 -and $r.Out -match 'timed out after 8 s; events parked' -and (Marks 'rounds.pending-*.json') -eq 1 -and $sw.Elapsed.TotalSeconds -lt 13) $true
+    ClearLedger
+    ClearRegistry
+
     # session-start: the Records line, the registry's in-flight features, and the markdown stores left to migrate
     $env:HOOK_TEST_XERJ = 'none'
     ClearLedger

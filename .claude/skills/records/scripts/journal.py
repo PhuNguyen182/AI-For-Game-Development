@@ -491,10 +491,11 @@ def replace_journal(path: Path, tmp: Path, raw: bytes):
 # ---------------------------------------------------------------- database
 
 _connections = []  # closed by each CLI's main()
+BUSY_SECONDS = 10  # a lock wait on the cache; a Ctx with busy_seconds (a hook's read) waits that long instead
 
 
-def connect(target: str, **kw) -> sqlite3.Connection:
-    db = sqlite3.connect(target, timeout=10, isolation_level=None, **kw)
+def connect(target: str, timeout: float = BUSY_SECONDS, **kw) -> sqlite3.Connection:
+    db = sqlite3.connect(target, timeout=timeout, isolation_level=None, **kw)
     db.row_factory = sqlite3.Row
     _connections.append(db)
     return db
@@ -536,7 +537,7 @@ def open_db(ctx: Ctx, schema, version: int, create=False, journals=None) -> sqli
     ctx.workflow.mkdir(parents=True, exist_ok=True)
     for _ in range(2):
         try:
-            db = connect(str(ctx.db_path))
+            db = connect(str(ctx.db_path), getattr(ctx, "busy_seconds", BUSY_SECONDS))
             got = db.execute("PRAGMA user_version").fetchone()[0]
             if got not in (0, version):
                 raise sqlite3.DatabaseError("schema version %d" % got)

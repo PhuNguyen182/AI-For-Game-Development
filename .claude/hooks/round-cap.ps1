@@ -23,9 +23,11 @@
 # extra-round" and "bugs.py extra-round" write it; an un-migrated file's Main GD decisions); for target or session work,
 # one "extra-<counter>" entry in the ledger per extra round.
 # Ledger: "records.py ledger get --json" and "ledger add --json", rooted like bugs.py (a linked worktree reads and writes the
-# main checkout's). A busy ledger, no Python or a failed add parks the events in .workflow/rounds.pending-<id>.json, merged
-# on the next add; an unreadable ledger.db is moved aside to ledger.corrupt-<utc>.db by the next add, never overwritten;
-# dispatch fails closed while the ledger cannot be read or a moved-aside file is left.
+# main checkout's); a registered feature reads it with its counters in one call ("feature counters <slug> --json
+# --with-ledger"). A busy ledger, no Python or a failed add parks the events in .workflow/rounds.pending-<id>.json, merged
+# on the next add; an event the ledger refuses lands in one rounds.rejected-<id>.json, which blocks nothing; an unreadable
+# ledger.db is moved aside to ledger.corrupt-<utc>.db by the next add, never overwritten; dispatch fails closed while the
+# ledger cannot be read or a moved-aside file is left. Budget: 8 s for all calls of one run, inside the 15 s hook timeout.
 param([Parameter(Mandatory)][ValidateSet('count', 'dispatch', 'edit')][string]$Mode)
 . "$PSScriptRoot/common.ps1"
 
@@ -47,30 +49,49 @@ $script:RecordsRoot = $null
 function Get-RecordsRoot { if (-not $script:RecordsRoot) { $script:RecordsRoot = Get-BugsRoot $root }; return $script:RecordsRoot }
 function Test-JsonObject($o) { return $null -ne $o -and $o.GetType().FullName -eq 'System.Management.Automation.PSCustomObject' }
 
-# The ledger { key: { counter: [event ids] } }, read once, and only when a counter needs it. Throws the cause and its fix.
+# Hook budget: settings.json gives each round-cap hook 15 s, and a hook killed at its timeout does not block (fail open).
+# Every records.py and bugs.py call of dispatch and edit shares one 8 s budget from here; past it the check throws, and a
+# dispatch blocks (fail closed). count gives its one ledger add 8 s, so a stalled Python still leaves time to park.
+$BudgetMs = 8000
+$script:Clock = [Diagnostics.Stopwatch]::StartNew()
+function Get-CallTimeout {
+    $left = $BudgetMs - [int]$script:Clock.ElapsedMilliseconds
+    if ($left -lt 500) { throw "the round-cap check used up its $([int]($BudgetMs / 1000)) s budget before every counter was read. Retry; if it recurs, run the records.py or bugs.py counters command by hand to see what is slow (skill records)." }
+    return $left
+}
+
+# The ledger { key: { counter: [event ids] } }, read once, and only when a counter needs it: from the registry's
+# counters call (--with-ledger) when a registered feature comes first, else from ledger get. Throws the cause and its fix.
 $script:Ledger = $null
 $script:LedgerBusy = $false
-function Get-LedgerView {
-    if ($null -ne $script:Ledger) { return $script:Ledger }
-    $r = Invoke-Records (Get-RecordsRoot) @('ledger', 'get', '--json')
-    if ($r.State -eq 'NoPython') { throw 'no Python 3.10+ with SQLite FTS5 found, so the round ledger .workflow/ledger.db cannot be read. Install it, then retry (skill records).' }
-    if ($r.State -ne 'Ok') {
-        if ($r.Code -eq 75) { $script:LedgerBusy = $true; throw '.workflow/ledger.db is locked or busy. Retry the dispatch.' }
-        if ($r.Code -eq 3) { throw "the round ledger is unreadable ($($r.Err)). Its counts cannot be trusted until that file is resolved: report the stop-rule state to the main GD (skill records)." }
-        throw "records.py ledger get failed: $($r.Err). Clear that cause, then retry (skill records)."
-    }
-    $o = $null
-    try { $o = $r.Out | ConvertFrom-Json -ErrorAction Stop } catch {}
-    # A shape this hook does not know must not read as 0 rounds.
-    if (-not (Test-JsonObject $o)) { throw "records.py ledger get $UnreadableOutput" }
+# records.py exit 75 or 3 from a call that read the ledger: the same message whichever call it was.
+function Assert-LedgerRead($r) {
+    if ($r.Code -eq 75) { $script:LedgerBusy = $true; throw '.workflow/ledger.db is locked or busy. Retry the dispatch.' }
+    if ($r.Code -eq 3) { throw "the round ledger is unreadable ($($r.Err)). Its counts cannot be trusted until that file is resolved: report the stop-rule state to the main GD (skill records)." }
+}
+# The ledger view from parsed JSON, or a throw: a shape this hook does not know must not read as 0 rounds.
+function Set-LedgerView($o, [string]$What) {
+    if (-not (Test-JsonObject $o)) { throw "records.py $What $UnreadableOutput" }
     $l = @{}
     foreach ($k in $o.PSObject.Properties) {
-        if (-not (Test-JsonObject $k.Value)) { throw "records.py ledger get $UnreadableOutput" }
+        if (-not (Test-JsonObject $k.Value)) { throw "records.py $What $UnreadableOutput" }
         $l[$k.Name] = @{}
         foreach ($c in $k.Value.PSObject.Properties) { $l[$k.Name][$c.Name] = @($c.Value | Where-Object { $null -ne $_ }) }
     }
     $script:Ledger = $l
     return $l
+}
+function Get-LedgerView {
+    if ($null -ne $script:Ledger) { return $script:Ledger }
+    $r = Invoke-Records (Get-RecordsRoot) @('ledger', 'get', '--json') (Get-CallTimeout)
+    if ($r.State -eq 'NoPython') { throw 'no Python 3.10+ with SQLite FTS5 found, so the round ledger .workflow/ledger.db cannot be read. Install it, then retry (skill records).' }
+    if ($r.State -ne 'Ok') {
+        Assert-LedgerRead $r
+        throw "records.py ledger get failed: $($r.Err). Clear that cause, then retry (skill records)."
+    }
+    $o = $null
+    try { $o = $r.Out | ConvertFrom-Json -ErrorAction Stop } catch {}
+    return (Set-LedgerView $o 'ledger get')
 }
 
 # $ledger is kept for the callers' shape: the ledger itself is read lazily, once per run.
@@ -102,9 +123,11 @@ function Save-Pending([string]$Dir, [string]$Json, [string]$Why) {
 function Save-Events([object[]]$events) {
     $json = '[' + (@($events | ForEach-Object { ConvertTo-Json -Compress -InputObject ([ordered]@{ key = [string]$_.key; counter = [string]$_.counter; id = [string]$_.id }) }) -join ',') + ']'
     try { $rr = Get-RecordsRoot } catch { Save-Pending $root $json "the ledger's checkout cannot be found ($($_.Exception.Message))"; return }
-    $r = Invoke-Records $rr @('ledger', 'add', '--json') 15000 $json
-    if ($r.State -eq 'Ok') {
-        if ($r.Err) { [Console]::Error.WriteLine("round-cap: $($r.Err)") }  # an unreadable ledger.db moved aside
+    # 8 s inside the 15 s hook: a stalled Python is killed with time left to park its events.
+    $r = Invoke-Records $rr @('ledger', 'add', '--json') $BudgetMs $json
+    # Exit 4: the valid events are recorded and the refused ones kept in a rounds.rejected-*.json; parking would repeat them.
+    if ($r.State -eq 'Ok' -or $r.Code -eq 4) {
+        if ($r.Err) { [Console]::Error.WriteLine("round-cap: $($r.Err)") }  # an unreadable ledger.db moved aside, a reject file
         return
     }
     $why = if ($r.State -eq 'NoPython') { 'no Python 3.10+ with SQLite FTS5 found' } elseif ($r.Code -eq 75) { 'ledger busy' } else { "records.py ledger add failed: $($r.Err)" }
@@ -129,9 +152,15 @@ function Get-RegistryCounters([string]$slug) {
     $rr = Get-RecordsRoot
     $journal = Join-Path $rr '.workflow/features.jsonl'
     if (-not (Test-Path -LiteralPath $journal -PathType Leaf) -or (Get-Item -LiteralPath $journal).Length -eq 0) { return $null }
-    $r = Invoke-Records $rr @('feature', 'counters', $slug, '--json')
+    # One Python start for the counters and the ledger together, while the ledger is still unread.
+    $withLedger = $null -eq $script:Ledger
+    $cmd = @('feature', 'counters', $slug, '--json') + @(if ($withLedger) { '--with-ledger' })
+    $r = Invoke-Records $rr $cmd (Get-CallTimeout)
     if ($r.State -eq 'NoPython') { throw 'no Python 3.10+ with SQLite FTS5 found. Install it, then retry (skill records).' }
-    if ($r.State -ne 'Ok') { throw "records.py feature counters $slug failed: $($r.Err). Clear that cause, then retry (skill records)." }
+    if ($r.State -ne 'Ok') {
+        if ($withLedger) { Assert-LedgerRead $r }
+        throw "records.py feature counters $slug failed: $($r.Err). Clear that cause, then retry (skill records)."
+    }
     $j = $null
     try { $j = $r.Out | ConvertFrom-Json -ErrorAction Stop } catch {}
     # A shape this hook does not know must not read as 0 rounds.
@@ -139,6 +168,7 @@ function Get-RegistryCounters([string]$slug) {
         $null -eq $j.qa.used -or $null -eq $j.qa.cap -or $null -eq $j.rework.used -or $null -eq $j.rework.cap) {
         throw "records.py feature counters $slug $UnreadableOutput"
     }
+    if ($withLedger) { Set-LedgerView $j.ledger "feature counters $slug --with-ledger" | Out-Null }
     return $j
 }
 
@@ -189,7 +219,7 @@ $script:BugsRoot = $null  # resolved once, and only for a brief that names a bug
 function Get-BugCounters([string]$id, $ledger) {
     if (-not $script:BugsRoot) { $script:BugsRoot = Get-BugsRoot $root }
     if (-not (Test-Path -LiteralPath (Join-Path $script:BugsRoot '.workflow/bugs.jsonl'))) { return @() }
-    $r = Invoke-Bugs $script:BugsRoot @('counters', $id, '--json')
+    $r = Invoke-Bugs $script:BugsRoot @('counters', $id, '--json') (Get-CallTimeout)
     if ($r.State -eq 'NoPython') { throw "no Python 3.10+ with SQLite FTS5 found. Install it, then retry (skill bugs)." }
     if ($r.State -ne 'Ok') { throw "bugs.py counters $id failed: $($r.Err). Clear that cause, then retry (skill bugs)." }
     $j = $null
@@ -224,7 +254,17 @@ function Get-FeatureMarker([string]$text) {
 # ledger key both use it, so a marker, free text, Verify and Repro all reach the same counters.
 function ConvertTo-BugId([string]$Text) { return 'BUG-' + $Text.Substring(4).TrimStart('0').PadLeft(4, '0') }
 function Get-BugMarker([string]$text) { $v = Get-Marker $text 'Bug'; if ($v -and $v -match '(?i)^(BUG-[0-9]+)\b') { return (ConvertTo-BugId $Matches[1]) }; return $null }
-function Get-TargetKey([string]$text) { $v = Get-Marker $text 'Target'; if ($v) { return 'target:' + ($v -replace '\\', '/').ToLowerInvariant() }; return $null }
+# target:<the Target line, / separators, lower-cased>. Over 280 chars: target:<its first 200 chars>#<16 hex of its SHA-256>,
+# so a long line stays one key the ledger accepts (300 chars at most) and never refuses the batch it rides in.
+function Get-TargetKey([string]$text) {
+    $v = Get-Marker $text 'Target'
+    if (-not $v) { return $null }
+    $v = ($v -replace '\\', '/').ToLowerInvariant()
+    if (('target:' + $v).Length -le 280) { return 'target:' + $v }
+    $sha = [Security.Cryptography.SHA256]::Create()
+    try { $hex = -join ($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($v)) | ForEach-Object { $_.ToString('x2') }) } finally { $sha.Dispose() }
+    return 'target:' + $v.Substring(0, 200) + '#' + $hex.Substring(0, 16)
+}
 function Get-VerifyIds([string]$text) { @([regex]::Matches($text, '(?im)^[\s*_>-]*Verify[*_]*:[*_\s]*(BUG-[0-9]+)\b') | ForEach-Object { ConvertTo-BugId $_.Groups[1].Value } | Select-Object -Unique) }
 function Get-Slugs([string]$text) { [regex]::Matches($text, '\.workflow[\\/]features[\\/]([A-Za-z0-9_-]+)\.md') | ForEach-Object { $_.Groups[1].Value } | Select-Object -Unique }
 function Get-BugIds([string]$text) { [regex]::Matches($text, '\bBUG-[0-9]+\b', 'IgnoreCase') | ForEach-Object { ConvertTo-BugId $_.Value } | Select-Object -Unique }

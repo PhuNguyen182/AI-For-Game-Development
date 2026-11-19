@@ -35,6 +35,7 @@ argument-hint: "<diff range, feature slug or path>"
     - **Feature:** `records.py feature round <slug> review +1 --note <why>` and `feature round <slug> rework +1 --note <why>`.
     - **Bug:** `bugs.py round <id> review +1 --note <why>`.
   - **Target record:** a `Target:` (no record) → `records.py ledger add --json`, stdin `[{"key": "target:<path, lower-cased, / separators>", "counter": "review", "id": "<the result's roundId>"}]`.
+    - **Long key:** over 280 chars → `target:<first 200 chars>#<16 hex>`, the hex from the SHA-256 of the whole lower-cased path (the hook's form, records schema).
   - **Missing result:** a result `incomplete`, `no result` for a gate, or `nothing to review` on a non-empty change → re-run only the missing gate.
     - **Re-run args:** `args.gates` (`['code']` or `['security']`; both when no gate ran), the same `args.round` and an unchanged tree.
     - **Unchanged tree:** same `git rev-parse <tree>^{tree}` — the `stash create` sha itself changes.

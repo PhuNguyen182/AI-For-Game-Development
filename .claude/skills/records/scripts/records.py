@@ -60,8 +60,12 @@ SQL_SECONDS = 10
 DEFAULT_BY = journal.DEFAULT_BY
 DEFAULT_ROOT = Path(__file__).resolve().parents[4]
 EXIT_LEDGER_CORRUPT = 3
+EXIT_LEDGER_PARTIAL = 4
 EXIT_BUSY = 75
 LEDGER_BUSY_MS = 5000
+# The commands round-cap.ps1 runs inside its hook budget wait this long on a lock, then fail (the hook blocks): a read never
+# outlives the hook and fails open.
+READ_BUSY_MS = 2000
 
 RX_SLUG = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 RX_DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
@@ -767,9 +771,13 @@ def feature_counters(ctx: Ctx, db, slug: str) -> dict:
 
 
 def cmd_counters(ctx, store, a):
+    """--with-ledger adds "ledger", what `ledger get --json` prints: round-cap.ps1's dispatch starts one Python, not two."""
     slug = store.parse_id(a.id)
     db = open_read(ctx, [store])
-    print(json.dumps(feature_counters(ctx, db, slug)))  # ASCII: a console code page cannot mangle what the hook parses
+    out = feature_counters(ctx, db, slug)
+    if a.with_ledger:
+        out["ledger"] = ledger_get_view(ctx)
+    print(json.dumps(out))  # ASCII: a console code page cannot mangle what the hook parses
     return 0
 
 
@@ -1113,24 +1121,44 @@ def ledger_event(e) -> tuple:
     return vals
 
 
-def parse_event_list(raw: bytes) -> list:
-    """The hook's parked-file shape: a JSON list of {key, counter, id}; one object counts as a list of one."""
+def split_events(items) -> tuple[list, list]:
+    """(the valid events as tuples, the refused items as given): one bad event never refuses its batch."""
+    valid, refused = [], []
+    for e in items:
+        try:
+            valid.append(ledger_event(e))
+        except ValueError:
+            refused.append(e)
+    return valid, refused
+
+
+def parse_event_list(raw: bytes) -> tuple[list, list]:
+    """The hook's parked-file shape: a JSON list of {key, counter, id}; one object counts as a list of one.
+    (valid events, refused items); ValueError only when the file is not that shape at all."""
     data = json.loads(raw.decode("utf-8-sig")) if raw.strip() else []
     if isinstance(data, dict):
         data = [data]
     if not isinstance(data, list):
         raise ValueError("not a list")
-    return [ledger_event(e) for e in data]
+    return split_events(data)
 
 
 def parse_rounds_json(raw: bytes) -> list:
-    """Today's .workflow/rounds.json: { key: { counter: [ids] } }, in file order."""
+    """rounds.json for `migrate --from-md`, which refuses the source on any bad event: the valid events, or ValueError."""
+    events, refused = split_rounds_json(raw)
+    if refused:
+        raise ValueError("key, counter and id must be one-line text")
+    return events
+
+
+def split_rounds_json(raw: bytes) -> tuple[list, list]:
+    """Today's .workflow/rounds.json: { key: { counter: [ids] } }, in file order. (valid events, refused items)."""
     if not raw.strip():
-        return []
+        return [], []
     data = json.loads(raw.decode("utf-8-sig"))
     if not isinstance(data, dict):
         raise ValueError("not an object")
-    out = []
+    items = []
     for key, counters in data.items():
         if not isinstance(counters, dict):
             raise ValueError("key %s holds no counters" % shown(key))
@@ -1138,9 +1166,17 @@ def parse_rounds_json(raw: bytes) -> list:
             ids = [ids] if isinstance(ids, str) else ids
             if not isinstance(ids, list):
                 raise ValueError("bad ids")
-            for i in ids:
-                out.append(ledger_event({"key": key, "counter": counter, "id": i}))
-    return out
+            items += [{"key": key, "counter": counter, "id": i} for i in ids]
+    return split_events(items)
+
+
+def save_rejected(ctx: Ctx, refused: list) -> str:
+    """Refused events kept for the main GD in one rounds.rejected-<utc>-<8 hex>.json: never counted, never blocking.
+    Returns the stderr line naming it."""
+    name = "rounds.rejected-%s-%s.json" % (utc_stamp(), uuid.uuid4().hex[:8])
+    write_atomic(ctx.workflow / name, json.dumps(refused, ensure_ascii=True).encode("utf-8"))
+    return ("records: ledger: %d event(s) refused (key, counter and id must be one-line text of 1 to 300 chars): "
+            "not counted, kept in .workflow/%s" % (len(refused), name))
 
 
 def ledger_files(ctx: Ctx, pattern: str) -> list:
@@ -1151,22 +1187,23 @@ def ledger_marks(ctx: Ctx) -> list:
     return ledger_files(ctx, "ledger.corrupt-*.db") + ledger_files(ctx, "rounds.corrupt-*.json")
 
 
-def ledger_connect(path: Path, create: bool) -> sqlite3.Connection:
+def ledger_connect(path: Path, create: bool, busy_ms: int | None = None) -> sqlite3.Connection:
+    busy_ms = LEDGER_BUSY_MS if busy_ms is None else busy_ms
     if create:
-        db = sqlite3.connect(str(path), timeout=LEDGER_BUSY_MS / 1000, isolation_level=None)
+        db = sqlite3.connect(str(path), timeout=busy_ms / 1000, isolation_level=None)
     else:
-        db = sqlite3.connect(path.resolve().as_uri() + "?mode=rw", uri=True, timeout=LEDGER_BUSY_MS / 1000, isolation_level=None)
-    db.execute("PRAGMA busy_timeout=%d" % LEDGER_BUSY_MS)
+        db = sqlite3.connect(path.resolve().as_uri() + "?mode=rw", uri=True, timeout=busy_ms / 1000, isolation_level=None)
+    db.execute("PRAGMA busy_timeout=%d" % busy_ms)
     return db
 
 
 def ledger_rows(path: Path) -> list:
-    """The DB's events in insertion order. Raises LedgerBroken on a damaged file, LedgerBusy on a lock past the timeout."""
+    """The DB's events in insertion order. Raises LedgerBroken on a damaged file, LedgerBusy on a lock past READ_BUSY_MS."""
     if not path.exists():
         return []
     db = None
     try:
-        db = ledger_connect(path, False)
+        db = ledger_connect(path, False, READ_BUSY_MS)
         if not db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='round_event'").fetchone():
             return []
         return [tuple(r) for r in db.execute("SELECT key, counter, event_id FROM round_event ORDER BY rowid")]
@@ -1188,35 +1225,47 @@ def ledger_view(events) -> dict:
     return out
 
 
-def cmd_ledger_get(ctx, a):
+def ledger_get_view(ctx) -> dict:
+    """What `ledger get --json` prints and `feature counters --with-ledger` embeds. Read-only: an event a write would refuse
+    is left out here (the next add keeps it in a rounds.rejected-*.json); only a file that is not JSON of the shape refuses."""
     marks = ledger_marks(ctx)
     if marks:
         raise LedgerBroken("%d unreadable ledger file(s) in .workflow/ (%s): resolve them with the main GD" % (len(marks), ", ".join(m.name for m in marks)))
     events = ledger_rows(ctx.workflow / LEDGER_NAME)
+    refused = 0
     legacy = ctx.workflow / "rounds.json"
     if legacy.exists():  # not migrated yet: read-only, so no event is lost before `ledger migrate`
         try:
-            events += parse_rounds_json(legacy.read_bytes())
+            valid, bad = split_rounds_json(legacy.read_bytes())
         except (ValueError, OSError):
             raise LedgerBroken("rounds.json is unparsable: resolve it, then run ledger migrate") from None
+        events, refused = events + valid, refused + len(bad)
     for f in ledger_files(ctx, "rounds.pending-*.json"):
         try:
-            events += parse_event_list(f.read_bytes())
+            valid, bad = parse_event_list(f.read_bytes())
         except FileNotFoundError:
             continue  # merged by a parallel add
         except (ValueError, OSError):
             raise LedgerBroken("%s is unparsable: the next ledger add renames it" % f.name) from None
-    print(json.dumps(ledger_view(events)))  # ASCII, as counters
+        events, refused = events + valid, refused + len(bad)
+    if refused:
+        print("records: ledger: %d parked event(s) a write refuses are not counted; the next ledger add keeps them in "
+              "a rounds.rejected-*.json" % refused, file=sys.stderr)
+    return ledger_view(events)
+
+
+def cmd_ledger_get(ctx, a):
+    print(json.dumps(ledger_get_view(ctx)))  # ASCII, as counters
     return 0
 
 
-def take_pending(ctx: Ctx) -> tuple[list, list]:
-    """(events of every parsable parked file, those files). An unparsable one is renamed rounds.corrupt-pending-<rest>, kept."""
-    events, files = [], []
+def take_pending(ctx: Ctx) -> tuple[list, list, list]:
+    """(valid events of every parsable parked file, their refused items, those files). An unparsable file is renamed
+    rounds.corrupt-pending-<rest> and kept; a refused event in a parsable one never holds back the others."""
+    events, refused, files = [], [], []
     for f in ledger_files(ctx, "rounds.pending-*.json"):
         try:
-            events += parse_event_list(f.read_bytes())
-            files.append(f)
+            valid, bad = parse_event_list(f.read_bytes())
         except FileNotFoundError:
             continue
         except (ValueError, OSError):
@@ -1224,7 +1273,11 @@ def take_pending(ctx: Ctx) -> tuple[list, list]:
                 f.rename(f.with_name("rounds.corrupt-pending-" + f.name[len("rounds.pending-"):]))
             except OSError:
                 pass
-    return events, files
+            continue
+        events += valid
+        refused += bad
+        files.append(f)
+    return events, refused, files
 
 
 def move_corrupt_ledger(ctx: Ctx, path: Path) -> Path:
@@ -1237,9 +1290,10 @@ def move_corrupt_ledger(ctx: Ctx, path: Path) -> Path:
     return dest
 
 
-def ledger_write(ctx: Ctx, events: list, pre=None) -> int:
+def ledger_write(ctx: Ctx, events: list, pre=None, refused=()) -> int:
     """INSERT OR IGNORE under BEGIN IMMEDIATE, parked files merged inside the same transaction. Returns rows inserted.
-    `pre` runs inside the transaction too and returns more events (migrate's rounds.json)."""
+    `pre` runs inside the transaction too and returns (more events, refused items) (migrate's rounds.json). `refused` (the
+    caller's) and every refused parked item land in one rounds.rejected-*.json after the commit, before the parked files go."""
     ctx.workflow.mkdir(parents=True, exist_ok=True)
     path = ctx.workflow / LEDGER_NAME
     for attempt in (1, 2):
@@ -1250,8 +1304,8 @@ def ledger_write(ctx: Ctx, events: list, pre=None) -> int:
             db.execute(LEDGER_SCHEMA)
             db.execute("BEGIN IMMEDIATE")
             try:
-                parked, files = take_pending(ctx)
-                extra = pre() if pre else []
+                parked, parked_refused, files = take_pending(ctx)
+                extra, extra_refused = pre() if pre else ([], [])
                 ts = journal.fmt_ts(now_utc())
                 n = 0
                 for key, counter, eid in list(events) + extra + parked:
@@ -1261,6 +1315,9 @@ def ledger_write(ctx: Ctx, events: list, pre=None) -> int:
             except BaseException:
                 db.execute("ROLLBACK")
                 raise
+            rejected = list(refused) + extra_refused + parked_refused
+            if rejected:  # a failure here keeps the parked files: the next add commits nothing new and tries again
+                print(save_rejected(ctx, rejected), file=sys.stderr)
             for f in files:
                 try:
                     f.unlink()
@@ -1283,15 +1340,13 @@ def ledger_write(ctx: Ctx, events: list, pre=None) -> int:
 
 
 def cmd_ledger_add(ctx, a):
+    """Each event on its own: the valid ones are recorded, the refused ones kept in a rounds.rejected-*.json (exit 4)."""
     ctx.require_writable()
     data = journal.read_stdin_json(True, list)
-    try:
-        events = [ledger_event(e) for e in data]
-    except ValueError as ex:
-        raise Refused("ledger add: %s" % ex) from None
-    n = ledger_write(ctx, events)
+    events, refused = split_events(data)
+    n = ledger_write(ctx, events, refused=refused)
     print("ledger: %d new" % n)
-    return 0
+    return EXIT_LEDGER_PARTIAL if refused else 0
 
 
 def cmd_ledger_migrate(ctx, a):
@@ -1306,13 +1361,13 @@ def ledger_migrate(ctx) -> str:
 
     def read_legacy():
         if not legacy.exists():
-            return []
+            return [], []
         try:
-            events = parse_rounds_json(legacy.read_bytes())
+            events, refused = split_rounds_json(legacy.read_bytes())
         except (ValueError, OSError) as ex:
             raise Refused("rounds.json is unparsable (%s): left in place, fix it by hand, then rerun" % type(ex).__name__) from None
         seen.update(found=True, events=len(events))
-        return events
+        return events, refused
 
     n = ledger_write(ctx, [], pre=read_legacy)
     if seen["found"]:
@@ -2821,6 +2876,7 @@ def build_parser() -> argparse.ArgumentParser:
             s = sub.add_parser("counters", help="what round-cap.ps1 reads; always JSON")
             s.add_argument("id", metavar="slug")
             s.add_argument("--json", action="store_true", help="accepted for clarity; the output is always JSON")
+            s.add_argument("--with-ledger", dest="with_ledger", action="store_true", help="add the ledger get --json view as \"ledger\"")
     top.add_parser("rebuild", help="rebuild every store's tables from its journal")
     top.add_parser("doctor", help="report journal problems").add_argument("--fix", action="store_true", help="renumber duplicates, repair torn tails")
     s = top.add_parser("sql", help="one read-only SELECT over every table")
@@ -2871,23 +2927,27 @@ def run(argv) -> int:
 
     try:
         a = build_parser().parse_args(argv)
-        if a.area == "ledger":
-            ctx = Ctx(a.root, use_git=False)
-            try:
+        # What round-cap.ps1 runs inside its hook budget: no git (the ledger needs none; a read never writes, so the
+        # worktree check git serves is moot) and a short lock wait. A lock past it fails, and the hook blocks.
+        hook_read = (a.area == "ledger" and a.cmd == "get") or (a.area == "feature" and a.cmd == "counters")
+        ctx = Ctx(a.root, use_git=not (hook_read or a.area == "ledger"))
+        if hook_read:
+            ctx.busy_seconds = READ_BUSY_MS / 1000
+        try:
+            if a.area == "ledger":
                 return LEDGER_HANDLERS[a.cmd](ctx, a)
-            except LedgerBusy:
-                say("ledger busy past %d ms: park the events and retry" % LEDGER_BUSY_MS)
-                return EXIT_BUSY
-            except LedgerBroken as ex:
-                say(ex)
-                return EXIT_LEDGER_CORRUPT
-        ctx = Ctx(a.root)
-        if a.area in STORES:
-            store = STORES[a.area]
-            return STORE_HANDLERS[a.cmd](ctx, store, a)
-        if a.area == "csv":
-            return CSV_HANDLERS[a.cmd](ctx, a)
-        return GLOBAL_HANDLERS[a.area](ctx, a)
+            if a.area in STORES:
+                store = STORES[a.area]
+                return STORE_HANDLERS[a.cmd](ctx, store, a)
+            if a.area == "csv":
+                return CSV_HANDLERS[a.cmd](ctx, a)
+            return GLOBAL_HANDLERS[a.area](ctx, a)
+        except LedgerBusy:
+            say("ledger busy past %d ms: park the events and retry" % (READ_BUSY_MS if hook_read else LEDGER_BUSY_MS))
+            return EXIT_BUSY
+        except LedgerBroken as ex:
+            say(ex)
+            return EXIT_LEDGER_CORRUPT
     except UsageError as ex:
         say(ex)
         return 2
