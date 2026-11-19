@@ -88,6 +88,7 @@ Synthesized from `../scripts/records.py` and `../scripts/journal.py`; commands i
 | `notes.state` | `Open` (default) · `Debt` · `Promoted:<doc>` |
 | `limitations.mirrored` | Set only by `csv mirror` (the `DEBT.csv` id) or `migrate` (`pre-migration` on a closed feature) |
 | every value | One line, 1000 chars; control characters, Vietnamese diacritics and secret shapes refused, PII redacted; fail closed without `mem.py` or its patterns |
+| formula prefix | Refused, never rewritten: a value (as given or after trimming) starting with `=`, `+`, `@`, TAB or CR, or with `-` followed by anything but a space or `-`; `- item`, `--by` and a lone `-` are legal. The refusal names the column and the rule, never the value |
 
 - **File:** a header row, UTF-8 with no BOM, LF, RFC 4180 quoting by Python `csv`; written to a temp file beside it, then `os.replace`. A header-only file is never written.
 - **Feature:** `log`, `tests`, `decisions`, `limitations` need a registry row or `.workflow/features/<slug>.md`; `debt` and `notes` need the registry's `feature_root`, a folder inside the project root.
@@ -100,7 +101,7 @@ Synthesized from `../scripts/records.py` and `../scripts/journal.py`; commands i
 | Header not the table's columns, wrong value count, a line break in a value, a bad id, not UTF-8 | blocking | Reported for a hand fix; the row is written back unchanged |
 | Duplicate id (a union merge of two branches) | duplicate | Later rows renumbered past the high water |
 | BOM, CRLF, blank line, a repeated header row, a header-only or empty file | repairable | Normalized; a file with no rows is deleted |
-| A value a write would refuse, redact or trim | value | Reported for a hand fix |
+| A value a write would refuse, redact or trim, a formula-prefix cell included | value | Reported for a hand fix; `--fix` never rewrites a value |
 
 - **Exit:** 1 while any problem is left, one stderr line each; values are never echoed.
 

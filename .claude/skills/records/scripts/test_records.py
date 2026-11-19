@@ -1290,5 +1290,61 @@ class TestMigrate(MigrateBase):
         self.assertIn("usage", self.no("migrate", code=2).lower())
 
 
+class TestCsvFormulaPrefix(CsvBase):
+    BAD = {"=1+1": "=", "+1": "+", "@SUM(A1)": "@", "\tnote": "a TAB", "\rnote": "a CR", "-1": "- before", "-x(": "- before",
+           "  =trimmed": "="}
+    GOOD = ("- item", "--by main GD", "plain text", "-", "a = b", "--", "e-mail @ desk")
+
+    def test_each_prefix_is_refused_on_add_and_update(self):
+        self.register()
+        rid = self.csv("add", "log", stdin={"agent": "QA", "changed": "first"}).strip()
+        before = self.path("log").read_bytes()
+        for bad, lead in self.BAD.items():
+            with self.subTest(value=bad):
+                err = self.csv_no("add", "log", stdin={"agent": "QA", "changed": bad})
+                self.assertIn("changed: starts with %s" % lead, err)
+                self.assertIn("runs as a formula", err)
+                err = self.csv_no("update", "log", rid, stdin={"changed": bad})
+                self.assertIn("changed: starts with %s" % lead, err)
+                self.assertIn("decision: starts with", self.csv_no("add", "decisions", stdin={"decision": bad}))
+        self.assertEqual(self.path("log").read_bytes(), before)
+        self.assertFalse(self.path("decisions").exists())
+
+    def test_a_long_formula_is_never_echoed(self):
+        self.register()
+        value = '=HYPERLINK("https://example.invalid/' + "x" * 60 + '","open")'
+        err = self.csv_no("add", "notes", stdin={"text": value})
+        self.assertIn("text: starts with =", err)
+        self.assertNotIn("HYPERLINK", err)
+
+    def test_dash_lists_flags_and_plain_text_are_accepted(self):
+        self.register()
+        for good in self.GOOD:
+            with self.subTest(value=good):
+                rid = self.csv("add", "log", stdin={"agent": "QA", "changed": good}).strip()
+                self.csv("update", "log", rid, stdin={"verified": good})
+        self.assertEqual([r["changed"] for r in self.rows("log")], list(self.GOOD))
+
+    def test_doctor_reports_a_planted_cell_and_fix_keeps_it(self):
+        self.register()
+        p = self.path("log")
+        p.parent.mkdir(parents=True, exist_ok=True)
+        body = (b'id,agent,lane,changed,verified,attempts,limitations\n'
+                b'L-001,QA,serial,"=HYPERLINK(""x"")",ok,1/1,\n'
+                b'L-002,QA,,-2+3,,,\n'
+                b'L-003,QA,,- item,--by,,\n')
+        p.write_bytes(b"\xef\xbb\xbf" + body)
+        code, out, err = self.run_cli("csv", "doctor", "log", "--feature", "shop")
+        self.assertEqual(code, 1)
+        self.assertIn("line 2: changed: starts with =", err)
+        self.assertIn("line 3: changed: starts with - before", err)
+        self.assertNotIn("line 4", err)
+        self.assertNotIn("HYPERLINK", err)
+        code, out, err = self.run_cli("csv", "doctor", "log", "--feature", "shop", "--fix")
+        self.assertEqual(code, 1)
+        self.assertIn("line 2: changed: starts with =", err)
+        self.assertEqual(p.read_bytes(), body)  # BOM repaired, the formula cells written back for a hand fix
+
+
 if __name__ == "__main__":
     unittest.main()

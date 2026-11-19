@@ -1329,6 +1329,9 @@ BOM = b"\xef\xbb\xbf"
 DECISION_KINDS = ("decision", "extra-round", "stop-rule", "waiver", "accepted-gap")
 JOURNAL_KINDS = ("extra-round", "stop-rule")  # written by feature extra-round / stop-rule beside their journal event
 RX_NOTE_STATE = re.compile(r"Open|Debt|Promoted:\S.*")
+# A cell a spreadsheet would run as a formula when the CSV is opened: refused, never rewritten. "- item" and "--by" stay.
+RX_FORMULA = re.compile(r"[=+@\t\r]|-[^ -]")
+FORMULA_RULE = "no value starts with = + @ TAB CR, or with - before anything but a space or -"
 
 
 class Table:
@@ -1369,12 +1372,22 @@ def csv_cleaner(ctx) -> journal.Cleaner:
     return journal.Cleaner(ctx, {n: CSV_LIMIT for n in names}, names)  # every value is one line: it renders into a table cell
 
 
+def formula_check(field: str, value: str):
+    """Refuses a value a spreadsheet would run as a formula. Names the column and the rule, never echoes the value."""
+    m = RX_FORMULA.match(value)
+    if m:
+        lead = {"\t": "a TAB", "\r": "a CR", "-": "- before a character other than a space or -"}.get(m.group(0)[0], m.group(0)[0])
+        raise Refused("%s: starts with %s, which a spreadsheet runs as a formula (%s): reword it" % (field, lead, FORMULA_RULE))
+
+
 def csv_value(cleaner, table: Table, field: str, value, required: bool) -> str:
-    """The stored form of one value: enums from their set, the rest through every content rule of the DB stores."""
+    """The stored form of one value: enums from their set, the rest through every content rule of the DB stores
+    and the formula-prefix rule, on the value as given and as stored (clean() trims)."""
     if value is None:
         value = ""
     if not isinstance(value, str):
         raise Refused("%s: must be a string" % field)
+    formula_check(field, value)
     if field in table.enums:
         if value == "":
             if required:
@@ -1388,6 +1401,7 @@ def csv_value(cleaner, table: Table, field: str, value, required: bool) -> str:
         raise Refused("%s: required" % field)
     if not text:
         return ""
+    formula_check(field, text)
     if field == "date":
         try:
             ok = RX_DATE.fullmatch(text) and dt.date.fromisoformat(text)
@@ -1434,7 +1448,9 @@ def csv_row(table: Table, data: dict, cleaner, internal=False, fill_date=True) -
 
 
 def csv_bytes(table: Table, rows) -> bytes:
-    """Header plus rows (dicts or raw lists), LF, UTF-8 with no BOM, RFC 4180 quoting by the csv module."""
+    """Header plus rows (dicts or raw lists), LF, UTF-8 with no BOM, RFC 4180 quoting by the csv module. Every new
+    value passed csv_value, so none is a formula; a planted one in an old row is written back as it is and csv doctor
+    reports it for a hand fix."""
     buf = io.StringIO()
     w = csv.writer(buf, lineterminator="\n")
     w.writerow(table.columns)
