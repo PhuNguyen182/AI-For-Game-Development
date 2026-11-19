@@ -59,8 +59,8 @@ Synthesized from `../scripts/records.py` and `../scripts/journal.py`; commands i
 - **Caps:** review 3, QA 2, rework 6 (S, M) or 8 (L), each plus its extra rounds; a size change moves the rework base.
 - **Unknown slug:** `found:false`, `open:false`, `size:null`, default caps, rework 6, exit 0.
 - **Record:** `- Stop rule: <counter> root-caused <date> · extra dispatch: unused|used` (the last per counter), then one `extra round: <counter> +<n>` per extra round: the lines `round-cap.ps1` matches.
-- **Sources:** `COUNTER_SOURCES` in `records.py`: functions `(ctx, slug)` returning extra-round and stop-rule events beside the journal's; each adds to the cap and the record. Empty: the journal is the only source.
-- **Not a source:** `decisions.csv`. Its `extra-round` and `stop-rule` rows are the readable copy `feature extra-round` and `feature stop-rule` append; a hand-written row changes no cap.
+- **Source:** the `features.jsonl` journal only: its `extra_round` and `stop_rule` events build the caps and the record.
+- **Not a source:** `decisions.csv`. Its `extra-round` and `stop-rule` rows are a readable copy `feature extra-round` and `feature stop-rule` append, never counted; a hand-written row changes no cap.
 - **Used:** file-only rounds here; the hook adds the ledger's count.
 - **`--with-ledger`:** adds `"ledger"`, exactly what `ledger get --json` prints, and exits 3 or 75 as `ledger get` does: `round-cap.ps1`'s dispatch starts one Python, not two.
 - **Hook budget:** `feature counters` and `ledger get` run no git and wait 2000 ms at most on a lock (`READ_BUSY_MS`; every other command 10 s on `records.db`), then exit 1 or 75; `round-cap.ps1` shares 8 s across its calls of one run, 8 s for `ledger add`, inside the 15 s hook timeout.
@@ -127,7 +127,7 @@ Synthesized from `../scripts/records.py` and `../scripts/journal.py`; commands i
 | `.workflow/rounds.json` | `ledger migrate` |
 
 - **Until migrated:** `round-cap.ps1` reads a feature the registry does not hold from its md: `- Status: Open`, `- Size:`, `- Rounds: review n/cap, QA n/cap, rework n/cap`, `## Main GD decisions` (and `## GD decisions`) bullets with `extra round: <counter> +<n>`, and `- Stop rule:` lines.
-- **Feature md rewrite:** the header lines become `- State: records.py feature show <slug>`; each migrated section keeps its heading, gets `- Rows: records.py csv render <table> --feature <slug>`, and keeps its unmigrated lines; every other section, `## Bugs` included, stays as it was; line ends and BOM kept. A file holding the State line is skipped.
+- **Feature md rewrite:** the header lines become `- State: records.py feature show <slug>`; each migrated section keeps its heading, gets `- Rows: records.py csv render <table> --feature <slug>`, and keeps its unmigrated lines; `## Bugs` keeps its heading, its tables are dropped with no CSV (bugs.py holds the data), it gets `- Bugs: bugs.py list --feature <slug>`, and keeps its other lines; every other section stays as it was; line ends and BOM kept. A file holding the State line is skipped.
 - **Renamed:** the other sources become `<name>.migrated-<utc>.md`; `rounds.json` becomes `rounds.migrated-<utc>.json`. Other sections of `framework-backlog.md` stay in the renamed file.
 - **Staging:** every write lands in a temp folder through the root's rules; the cache there is thrown away.
 - **Verification:** each target's `render` is parsed back and must hold every source row's cleaned values; the registry record must equal the header; for an open feature, `feature counters` (used, cap, stopped) must equal what `round-cap.ps1` read from the md.

@@ -724,11 +724,7 @@ def cmd_set_state(ctx, store: Store, a):
 
 # ---------------------------------------------------------------- feature counters
 
-# Each source is f(ctx, slug) -> iterable of {"type": "extra_round"|"stop_rule", "counter", "n"|"extra_dispatch", "date"}.
-# The journal is the only source today: decisions.csv rows are the human-readable copy, never counted.
-COUNTER_SOURCES = []
-
-
+# The features.jsonl journal is the counters' only source: decisions.csv extra-round and stop-rule rows are a readable copy, never counted.
 def journal_counter_events(db, uid: str) -> list:
     out = []
     for ev in db.execute("SELECT * FROM feature_event WHERE uid=? AND type IN ('extra_round','stop_rule') ORDER BY ts, event_uid", (uid,)):
@@ -748,8 +744,8 @@ def record_of(events) -> str:
     return "\n".join([stops[k] for k in sorted(stops)] + extras)
 
 
-def feature_counters(ctx: Ctx, db, slug: str) -> dict:
-    """The one builder of `feature counters`: registry rounds, journal extra rounds and stop rules, then COUNTER_SOURCES."""
+def feature_counters(db, slug: str) -> dict:
+    """The one builder of `feature counters`: registry rounds plus the journal's extra rounds and stop rules."""
     rows = db.execute("SELECT * FROM feature WHERE slug=?", (slug,)).fetchall()
     if not rows:
         return {"slug": slug, "found": False, "open": False, "size": None,
@@ -757,15 +753,9 @@ def feature_counters(ctx: Ctx, db, slug: str) -> dict:
                 "rework": {"used": 0, "cap": REWORK_CAPS["M"]}, "record": ""}
     r = rows[0]
     events = journal_counter_events(db, r["uid"])
-    caps = {c: r["%s_cap" % c] for c in COUNTERS}
-    for source in COUNTER_SOURCES:
-        for e in source(ctx, slug):
-            events.append(e)
-            if e["type"] == "extra_round":
-                caps[e["counter"]] += e["n"]
     out = {"slug": slug, "found": True, "open": r["status"] in STORES["feature"].open_states, "size": r["size"]}
     for c in COUNTERS:
-        out[c] = {"used": r["%s_used" % c], "cap": caps[c]}
+        out[c] = {"used": r["%s_used" % c], "cap": r["%s_cap" % c]}
     out["record"] = record_of(events)
     return out
 
@@ -774,7 +764,7 @@ def cmd_counters(ctx, store, a):
     """--with-ledger adds "ledger", what `ledger get --json` prints: round-cap.ps1's dispatch starts one Python, not two."""
     slug = store.parse_id(a.id)
     db = open_read(ctx, [store])
-    out = feature_counters(ctx, db, slug)
+    out = feature_counters(db, slug)
     if a.with_ledger:
         out["ledger"] = ledger_get_view(ctx)
     print(json.dumps(out))  # ASCII: a console code page cannot mangle what the hook parses
@@ -1983,7 +1973,7 @@ RX_LEAD_DATE = re.compile(r"(\d{4}-\d{2}-\d{2})\s+(.*)")
 RX_ANY_DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
 DECISION_HEADINGS = ("## main gd decisions", "## gd decisions")
 MIGRATED_SECTIONS = {"## log": "log", "## tests": "tests", "## known limitations": "limitations",
-                     "## main gd decisions": "decisions", "## gd decisions": "decisions"}
+                     "## main gd decisions": "decisions", "## gd decisions": "decisions", "## bugs": "bugs"}
 LOG_HEADS = {"agent": "agent", "lane": "lane", "changed": "changed", "verified": "verified"}
 TEST_HEADS = {"criterion": "criterion", "test id": "test_id", "mode": "mode", "owner": "owner", "last result": "last_result"}
 MIGRATE_BY = "migrate"
@@ -2326,6 +2316,7 @@ class Migration:
         # -- sections
         decisions, log_rows, test_rows, limitations, stops = [], [], [], [], []
         rewrite = {}  # heading index -> (table name, kept line indexes)
+        bug_rows = 0
         for h, start, end in sections:
             if h is None:
                 continue
@@ -2349,11 +2340,15 @@ class Migration:
                     else:
                         limitations.append((j, text))
                 rewrite[h] = (name, kept)
-            else:
+            elif name == "bugs":  # a copy of bugs.py data: every table is dropped, no CSV; the pointer line replaces it
+                skip = {k for th, _, trows in tables for k in [th, th + 1] + [j for j, _ in trows]}
+                bug_rows += sum(len(trows) for _, _, trows in tables)
+                rewrite[h] = (name, [i for i in range(start, end) if i not in skip and lines[i].strip()])
+            if name in (None, "bugs"):
                 for j, text in md_bullets(lines, start, end)[0]:
                     if text.startswith("Stop rule:"):  # the hook matched it anywhere: its counter effect moves to the journal
                         stops.append((j, text))
-                        self.report.append("%s:%d: a stop rule line outside the migrated sections: migrated, and left in place" % (rel, j + 1))
+                        self.report.append("%s:%d: a stop rule line outside the decisions and limitations sections: migrated, and left in place" % (rel, j + 1))
         open_feature = fields.get("status") == "Open"
         legacy = legacy_counters(lines, [s for s in sections if s[0] is not None and lines[s[0]].strip().lower() in DECISION_HEADINGS])
         # -- the registry record and its journal events
@@ -2442,10 +2437,11 @@ class Migration:
         self.checks.append(("%s registry" % slug, "registry", slug, None, [(rel, header_lines[0] if header_lines else 0, record)]))
         if legacy["open"]:
             self.counter_checks.append((rel, (rounds_line if rounds_line is not None else size_line or 0), slug, legacy))
-        self.report.append("%s: registry 1 (%s) · decisions %d · log %d · tests %d · limitations %d · journal round %d, extra_round %d, stop_rule %d%s"
+        self.report.append("%s: registry 1 (%s) · decisions %d · log %d · tests %d · limitations %d · journal round %d, extra_round %d, stop_rule %d%s%s"
                            % (rel, record["status"], counts["decisions"], counts["log"], counts["tests"], counts["limitations"], events["round"],
                               events["extra_round"], events["stop_rule"], "" if not any(k for _, k in rewrite.values())
-                              else " · %d other lines kept" % sum(len(k) for _, k in rewrite.values())))
+                              else " · %d other lines kept" % sum(len(k) for _, k in rewrite.values()),
+                              " · bugs table rows dropped %d (bugs.py holds them)" % bug_rows if bug_rows else ""))
 
     # ------------------------------------------------------------ feature-root DEBT.md and NOTES.md
     def feature_roots(self):
@@ -2533,7 +2529,7 @@ class Migration:
                         raise at(rel, j + 1, "verification: the registry record of %s differs from the header" % what)
         db = open_read(self.ctx, [STORES["feature"]])
         for rel, j, slug, legacy in self.counter_checks:
-            new = feature_counters(self.ctx, db, slug)
+            new = feature_counters(db, slug)
             for c in COUNTERS:
                 stopped = re.search(r"(?im)^- Stop rule:.*\b%s\b" % c, new["record"]) is not None
                 have = (new[c]["used"], new[c]["cap"], stopped)
@@ -2710,8 +2706,8 @@ def legacy_counters(lines, decision_sections) -> dict:
 
 
 def rewrite_feature(lines, slug, header_lines, rewrite) -> list:
-    """The header lines become one State line; each migrated section keeps its heading, gets one pointer line, and keeps
-    the lines that were not migrated. Every other line stays as it was."""
+    """The header lines become one State line; each migrated section keeps its heading, gets one pointer line (Bugs: the
+    bugs.py one), and keeps the lines that were not migrated. Every other line stays as it was."""
     out, i, n = [], 0, len(lines)
     heads = sorted(rewrite)
     first_header = header_lines[0] if header_lines else None
@@ -2724,7 +2720,8 @@ def rewrite_feature(lines, slug, header_lines, rewrite) -> list:
         if i in rewrite:
             name, kept = rewrite[i]
             end = next((k for k in range(i + 1, n) if lines[k].startswith("## ")), n)
-            out += [lines[i], "", "- Rows: records.py csv render %s --feature %s" % (name, slug)]
+            pointer = "- Bugs: bugs.py list --feature %s" % slug if name == "bugs" else "- Rows: records.py csv render %s --feature %s" % (name, slug)
+            out += [lines[i], "", pointer]
             if kept:
                 out += [""] + [lines[k] for k in kept]
             if end < n:
