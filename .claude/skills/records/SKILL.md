@@ -81,7 +81,7 @@ user-invocable: false
 - **Columns:** fixed per table (schema.md); every value one line, 1000 chars, through the same content rules as the stores.
 - **Feature root:** `debt` and `notes` need the registry's `feature_root`; with none, the refusal prints the `feature update` command.
 - **Journal-backed rows:** a `decisions` row of kind `extra-round` or `stop-rule` comes only from `feature extra-round` or `feature stop-rule`.
-- **Counters:** the journal alone feeds `feature counters`; a `decisions.csv` row is never counted.
+- **Counters:** the `features.jsonl` journal is the only source of `feature counters`; `decisions.csv` `extra-round` and `stop-rule` rows are a readable copy, never counted.
 
 | Need | Command |
 |---|---|

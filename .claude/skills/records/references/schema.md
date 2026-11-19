@@ -59,8 +59,8 @@ Synthesized from `../scripts/records.py` and `../scripts/journal.py`; commands i
 - **Caps:** review 3, QA 2, rework 6 (S, M) or 8 (L), each plus its extra rounds; a size change moves the rework base.
 - **Unknown slug:** `found:false`, `open:false`, `size:null`, default caps, rework 6, exit 0.
 - **Record:** `- Stop rule: <counter> root-caused <date> · extra dispatch: unused|used` (the last per counter), then one `extra round: <counter> +<n>` per extra round: the lines `round-cap.ps1` matches.
-- **Sources:** `COUNTER_SOURCES` in `records.py`: functions `(ctx, slug)` returning extra-round and stop-rule events beside the journal's; each adds to the cap and the record. Empty: the journal is the only source.
-- **Not a source:** `decisions.csv`. Its `extra-round` and `stop-rule` rows are the readable copy `feature extra-round` and `feature stop-rule` append; a hand-written row changes no cap.
+- **Source:** the `features.jsonl` journal only: its `extra_round` and `stop_rule` events build the caps and the record.
+- **Not a source:** `decisions.csv`. Its `extra-round` and `stop-rule` rows are a readable copy `feature extra-round` and `feature stop-rule` append, never counted; a hand-written row changes no cap.
 - **Used:** file-only rounds here; the hook adds the ledger's count.
 
 ## Stats (`stats`)

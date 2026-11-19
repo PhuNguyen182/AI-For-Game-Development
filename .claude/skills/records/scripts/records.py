@@ -720,11 +720,7 @@ def cmd_set_state(ctx, store: Store, a):
 
 # ---------------------------------------------------------------- feature counters
 
-# Each source is f(ctx, slug) -> iterable of {"type": "extra_round"|"stop_rule", "counter", "n"|"extra_dispatch", "date"}.
-# The journal is the only source today: decisions.csv rows are the human-readable copy, never counted.
-COUNTER_SOURCES = []
-
-
+# The features.jsonl journal is the counters' only source: decisions.csv extra-round and stop-rule rows are a readable copy, never counted.
 def journal_counter_events(db, uid: str) -> list:
     out = []
     for ev in db.execute("SELECT * FROM feature_event WHERE uid=? AND type IN ('extra_round','stop_rule') ORDER BY ts, event_uid", (uid,)):
@@ -744,8 +740,8 @@ def record_of(events) -> str:
     return "\n".join([stops[k] for k in sorted(stops)] + extras)
 
 
-def feature_counters(ctx: Ctx, db, slug: str) -> dict:
-    """The one builder of `feature counters`: registry rounds, journal extra rounds and stop rules, then COUNTER_SOURCES."""
+def feature_counters(db, slug: str) -> dict:
+    """The one builder of `feature counters`: registry rounds plus the journal's extra rounds and stop rules."""
     rows = db.execute("SELECT * FROM feature WHERE slug=?", (slug,)).fetchall()
     if not rows:
         return {"slug": slug, "found": False, "open": False, "size": None,
@@ -753,15 +749,9 @@ def feature_counters(ctx: Ctx, db, slug: str) -> dict:
                 "rework": {"used": 0, "cap": REWORK_CAPS["M"]}, "record": ""}
     r = rows[0]
     events = journal_counter_events(db, r["uid"])
-    caps = {c: r["%s_cap" % c] for c in COUNTERS}
-    for source in COUNTER_SOURCES:
-        for e in source(ctx, slug):
-            events.append(e)
-            if e["type"] == "extra_round":
-                caps[e["counter"]] += e["n"]
     out = {"slug": slug, "found": True, "open": r["status"] in STORES["feature"].open_states, "size": r["size"]}
     for c in COUNTERS:
-        out[c] = {"used": r["%s_used" % c], "cap": caps[c]}
+        out[c] = {"used": r["%s_used" % c], "cap": r["%s_cap" % c]}
     out["record"] = record_of(events)
     return out
 
@@ -769,7 +759,7 @@ def feature_counters(ctx: Ctx, db, slug: str) -> dict:
 def cmd_counters(ctx, store, a):
     slug = store.parse_id(a.id)
     db = open_read(ctx, [store])
-    print(json.dumps(feature_counters(ctx, db, slug)))  # ASCII: a console code page cannot mangle what the hook parses
+    print(json.dumps(feature_counters(db, slug)))  # ASCII: a console code page cannot mangle what the hook parses
     return 0
 
 
@@ -2487,7 +2477,7 @@ class Migration:
                         raise at(rel, j + 1, "verification: the registry record of %s differs from the header" % what)
         db = open_read(self.ctx, [STORES["feature"]])
         for rel, j, slug, legacy in self.counter_checks:
-            new = feature_counters(self.ctx, db, slug)
+            new = feature_counters(db, slug)
             for c in COUNTERS:
                 stopped = re.search(r"(?im)^- Stop rule:.*\b%s\b" % c, new["record"]) is not None
                 have = (new[c]["used"], new[c]["cap"], stopped)

@@ -234,18 +234,6 @@ class TestFeature(Base):
         self.assertEqual(self.counters("small")["rework"]["cap"], 6)
         self.assertIn("not found", self.no("feature", "round", "nope", "qa", "+1", "--note", "n"))
 
-    def test_counter_sources_extend_caps_and_record(self):
-        self.add(size="M")
-
-        def csv_rows(ctx, slug):
-            return [{"type": "extra_round", "counter": "qa", "n": 1, "date": "2026-01-05"},
-                    {"type": "stop_rule", "counter": "rework", "extra_dispatch": "unused", "date": "2026-01-06"}]
-
-        with mock.patch.object(records, "COUNTER_SOURCES", [csv_rows]):
-            c = self.counters()
-        self.assertEqual(c["qa"]["cap"], 3)
-        self.assertEqual(c["record"], "- Stop rule: rework root-caused 2026-01-06 · extra dispatch: unused\nextra round: qa +1")
-
     def test_the_hook_regexes_match_the_record(self):
         import re
         self.add()
