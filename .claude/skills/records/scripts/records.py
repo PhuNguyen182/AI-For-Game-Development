@@ -1375,10 +1375,9 @@ DECISION_KINDS = ("decision", "extra-round", "stop-rule", "waiver", "accepted-ga
 JOURNAL_KINDS = ("extra-round", "stop-rule")  # written by feature extra-round / stop-rule beside their journal event
 RX_NOTE_STATE = re.compile(r"Open|Debt|Promoted:\S.*")
 # A cell a spreadsheet would run as a formula when the CSV is opened: refused, never rewritten. A spreadsheet reads any
-# leading - as a formula, so only two dash shapes stay: "- " and a letter (a bullet) and "--" and a flag name ("--by").
-RX_FORMULA = re.compile(r"[=+@\t\r]|-(?! [^\W\d_]|-[a-z][a-z0-9-]*(?: |\Z))")
-FORMULA_RULE = ('no value starts with = + @ TAB CR, or with - unless it opens "- " and a letter (a bullet) '
-                'or "--" and a lowercase flag name ending at a space or the end (--dry-run) and holds no |')
+# leading - as a formula, whatever follows it, so - is refused like = + @.
+RX_FORMULA = re.compile(r"[=+\-@\t\r]")
+FORMULA_RULE = "no value starts with = + - @ TAB CR"
 
 
 class Table:
@@ -1420,13 +1419,11 @@ def csv_cleaner(ctx) -> journal.Cleaner:
 
 
 def formula_lead(value: str):
-    """What makes a spreadsheet run `value` as a formula, or None. A value led by - (after any spaces) that holds a |
-    is one even in a bullet or flag shape: a DDE payload needs the |."""
+    """The leading character that makes a spreadsheet run `value` as a formula, named for a message, or None. The one
+    entry point for formula_check and mirror_cell."""
     m = RX_FORMULA.match(value)
     if m:
-        return {"\t": "a TAB", "\r": "a CR", "-": "- outside a bullet or a --flag"}.get(m.group(0)[0], m.group(0)[0])
-    if value.lstrip().startswith("-") and "|" in value:
-        return "- and holds a |"
+        return {"\t": "a TAB", "\r": "a CR"}.get(m.group(0), m.group(0))
     return None
 
 

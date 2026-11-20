@@ -80,7 +80,7 @@ user-invocable: false
 | `notes` | `<feature root>/NOTES.csv` | `N-001` |
 
 - **Columns:** fixed per table (schema.md); every value one line, 1000 chars, through the same content rules as the stores.
-- **Formula prefix:** a value starting with `=`, `+`, `@`, TAB or CR, or with `-` unless it opens `- ` and a letter (`- item`) or `--` and a lowercase flag name (`--by`, `--dry-run`) with no `|` anywhere, is refused (a spreadsheet would run it); reword it.
+- **Formula prefix:** a value is refused when it starts with `=`, `+`, `-`, `@`, TAB or CR (as given or trimmed), since a spreadsheet would run it; reword so a word comes first.
 - **Feature root:** `debt` and `notes` need the registry's `feature_root`; with none, the refusal prints the `feature update` command.
 - **Journal-backed rows:** a `decisions` row of kind `extra-round` or `stop-rule` comes only from `feature extra-round` or `feature stop-rule`.
 - **Counters:** the `features.jsonl` journal is the only source of `feature counters`; `decisions.csv` `extra-round` and `stop-rule` rows are a readable copy, never counted.

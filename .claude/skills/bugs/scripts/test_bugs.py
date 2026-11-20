@@ -2924,7 +2924,7 @@ class TestDebtMirror(Base):
         self.assertEqual(self.debt_csv(), expected)
         r = self.records("csv", "doctor", "debt", "--feature", "shop")
         self.assertEqual(r.returncode, 0, r.stderr)
-        self.add(feature="shop", title="- shop tab|ad slot overlap")  # a bullet shape the | rule still refuses
+        self.add(feature="shop", title="- shop tab|ad slot overlap")  # a leading - with a space after it is refused too
         code, out, err = self.run_cli("set-status", "BUG-0005", "Won't fix", "--note", "n", "--by", "main GD", now=T0)
         self.assertEqual(code, 0, err)
         self.assertIn("DEBT-005,%s,accepted-gap,Bug title: - shop tab|ad slot overlap,BUG-0005,main GD,n,Open\n" % day, self.debt_csv())

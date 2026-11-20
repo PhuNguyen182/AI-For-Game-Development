@@ -90,7 +90,7 @@ Synthesized from `../scripts/records.py` and `../scripts/journal.py`; commands i
 | `notes.state` | `Open` (default) · `Debt` · `Promoted:<doc>` |
 | `limitations.mirrored` | Set only by `csv mirror` (the `DEBT.csv` id) or `migrate` (`pre-migration` on a closed feature) |
 | every value | One line, 1000 chars; control characters, Vietnamese diacritics and secret shapes refused, PII redacted; fail closed without `mem.py` or its patterns |
-| formula prefix | Refused, never rewritten: a value (as given or after trimming) starting with `=`, `+`, `@`, TAB or CR, or with `-` in any shape but two: `- ` and a letter (a bullet: `- item`) and `--` and a lowercase flag name (`[a-z][a-z0-9-]*`) ending at a space or the end (`--by main GD`, `--dry-run`), and even those two only with no `|` anywhere (a DDE payload needs it); `-1`, `- 1`, `-- x`, `- a|b`, a lone `-` or `--` are refused. The refusal names the column and the rule, never the value |
+| formula prefix | Refused, never rewritten, when it starts with `=`, `+`, `-`, `@`, TAB or CR (as given or trimmed); reword so a word comes first. The refusal names the column and the rule, never the value |
 
 - **File:** a header row, UTF-8 with no BOM, LF, RFC 4180 quoting by Python `csv`; written to a temp file beside it, then `os.replace`. A header-only file is never written.
 - **Feature:** `log`, `tests`, `decisions`, `limitations` need a registry row or `.workflow/features/<slug>.md`; `debt` and `notes` need the registry's `feature_root`, a folder inside the project root.
