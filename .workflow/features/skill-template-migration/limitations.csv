@@ -1,0 +1,12 @@
+id,date,text,accepted_by,mirrored
+LIM-001,,"**Where gaps live:** this framework repo has no feature-root `DEBT.md`; accepted gaps stay here, open work in `.workflow/framework-backlog.md`.",main GD,pre-migration
+LIM-002,,"**200k window:** computed budget about 3.8k tokens after the raise, so most skills would stay name-only there. Not measured: no 200k model is reachable on this machine (AC3).",main GD,pre-migration
+LIM-003,,**No gate behaviour run:** no baseline scenario proves a gate or process skill still steers correctly after the format change; the comparator checks text only.,main GD,pre-migration
+LIM-004,,**Drop fix scope:** AC2 holds only on a 1M window with this machine's plugin set; a plugin update can re-break it.,main GD,pre-migration
+LIM-005,,"**Moved code:** adapt files stay uncompiled, because this repo has no Unity project.",main GD,pre-migration
+LIM-006,,"**Bodies past 8,000 chars (for GD acceptance at CP4):** `iap-server-receipt-ledger` 8,350 and `firebase-unity-sdk` 8,069: required checks restored, covered by the spec amendment. Outside the amendment: `server-authoritative-validation` 8,035 (a `## Scripts` entry) and `feature` 14,317 (titles and splits; within the about 20,000 chars the installed CLI keeps at compaction, by reading its code).",main GD,pre-migration
+LIM-007,,"**Fix re-read:** the 81 comparator fixes were re-read after commit, not before (D1 closed by `reread-81`). No batch holds its own pass verdict.",main GD,pre-migration
+LIM-008,,**Last verifier fix:** `465c7e3` used up the 4/4 attempts and no reviewer read it; mutant runs prove its boundary.,main GD,pre-migration
+LIM-009,,**`verify.ps1` edges now the promotion ships:** a whole-layer run skips every `.md` under a parent folder named `scripts` or `assets`. In the backlog.,main GD,pre-migration
+LIM-010,,"**Budget cost:** Skills went from 9.9k to 18k tokens per session, about 8.1k more; the GD was told about 7.5k.",main GD,pre-migration
+LIM-011,,"**Other commits on this branch:** `2ffcce1`, `6bd65f4`, `e791c78`, `ff26bda` (Game Engineer output style, README) are the GD's own work, made on purpose (GD's words, translated: ""I did that on purpose""). They go into `develop` with the merge and push; no CP4 question needed.",main GD,pre-migration
