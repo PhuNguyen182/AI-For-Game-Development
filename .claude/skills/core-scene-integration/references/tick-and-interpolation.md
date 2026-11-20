@@ -6,10 +6,10 @@ Sources (below the SKILL.md `Docs:` base unless a full URL): [eo] `manual/script
 
 | Owner | Fact that decides |
 |---|---|
-| VContainer `IFixedTickable.FixedTick()` | Runs "nearly `MonoBehaviour.FixedUpdate()`" [vc]; plain C# class registered with `builder.RegisterEntryPoint<T>()`, Core injected by constructor. Full entry-point order: `vcontainer-dependency-injection` step 8 |
+| VContainer `IFixedTickable.FixedTick()` | Runs "nearly `MonoBehaviour.FixedUpdate()`" [vc]; plain C# class registered with `builder.RegisterEntryPoint<T>()`, Core injected by constructor. Full entry-point order: the VContainer entry-point docs |
 | One driver MonoBehaviour `FixedUpdate` | Fallback without VContainer; put `[DefaultExecutionOrder]` on it so it runs before any script that moves bodies in `FixedUpdate` |
 | Script-stepped physics | `Physics.simulationMode = SimulationMode.Script`, owner calls `Physics.Simulate(step)` [sim]. Use when the tick must own the physics step (rollback, replay, own accumulator). `Simulate` fires contact, trigger and joint callbacks but never calls `FixedUpdate` [sim] |
-| Netcode stack | NGO `NetworkManager.NetworkTickSystem.Tick`, tick rate equal to the fixed rate when physics is involved (`netcode-for-gameobjects` → `transform-latency.md`); NfE prediction group (`netcode-for-entities`). Wired by `netcode-engineer` |
+| Netcode stack | NGO `NetworkManager.NetworkTickSystem.Tick`, tick rate equal to the fixed rate when physics is involved; NfE prediction group. Wired by `netcode-engineer` |
 
 ## Fixed-step facts
 
@@ -37,7 +37,7 @@ Core seam: `public void Tick(int tick, float stepSeconds, PlayerCommand command,
 | Alpha (script physics) | Owner's accumulator remainder ÷ step |
 | Lag | The view trails the newest tick by up to one step; extrapolating instead overshoots on direction changes |
 | Teleport, respawn | A per-entity snap flag skips the lerp for that tick, else the view slides across the map |
-| Rigidbody-driven view | `Rigidbody.interpolation` (`unity-3d-physics`), never a second hand-written lerp on the same Transform |
+| Rigidbody-driven view | `Rigidbody.interpolation`, never a second hand-written lerp on the same Transform |
 | Networked remote entities | Snapshot interpolation belongs to the stack (`NetworkTransform`, NfE interpolated ghosts), not to this pair |
 
 Unverified: order of VContainer `FixedTick` relative to `MonoBehaviour.FixedUpdate` in the same step (VContainer says only "nearly"); whether fixed steps follow `Time.captureDeltaTime` game time exactly (the page does not mention `FixedUpdate`).

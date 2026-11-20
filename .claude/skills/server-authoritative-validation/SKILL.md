@@ -7,7 +7,7 @@ user-invocable: false
 # Server-Authoritative Validation
 
 - **Not for:** anti-cheat posture, detection tiers and bans (`anti-cheat-strategy`).
-- **Not for:** the RPC/command/hub API of each stack (`netcode-for-gameobjects`, `netcode-for-entities`, `magiconion-rpc-networking`, `unity-transport`).
+- **Not for:** the RPC/command/hub API of each stack (vendor docs below, `netcode-engineer`).
 - **Not for:** the rule a check calls (`csharp-engineer`, Core).
 - **Not for:** the sync model behind prediction and reconciliation (`netcode-architecture-decision`).
 - **Not for:** lag-compensation bounds and contract scope (`technical-architect`, Tech Spec).
@@ -33,7 +33,7 @@ user-invocable: false
    - **Proceed only for:** a dedicated server, or a host whose gap the main GD accepted (write it in `Known limitations`).
 2. **List every client→server entry point the change touches:**
    - **NGO:** `[Rpc(SendTo.Server)]`, legacy `[ServerRpc]`, custom messages.
-   - **NGO owner-authority state that bypasses every handler:** per `netcode-for-gameobjects` → `core-architecture.md`.
+   - **NGO owner-authority state that bypasses every handler:** check each against the NGO docs for the installed version.
      - **Variable:** `NetworkVariable` with owner write permission.
      - **Components in owner mode:** `NetworkTransform`/`NetworkRigidbody`/`NetworkAnimator` (`AuthorityMode.Owner` or `OnIsServerAuthoritative()` returning `false`).
      - **Parenting:** `AllowOwnerToParent`.
@@ -51,7 +51,7 @@ user-invocable: false
 5. **Make the decode cost fixed, then bounds-check it:**
    - **NGO decode:** codegen deserializes typed `[Rpc]` parameters before the body runs, so a `string` or array parameter is allocated at a client-chosen size before any limiter or cap can act.
    - **Rpc parameters:** client→server Rpc parameters are fixed-size (`FixedString*Bytes`, fixed-count `INetworkSerializeByMemcpy` structs).
-   - **Variable-length client data:** goes through a named custom message (`netcode-for-gameobjects` → `serialization.md`, `state-sync.md`).
+   - **Variable-length client data:** goes through a named custom message (NGO `CustomMessagingManager`).
    - **Custom message handler:** reads with `TryBeginRead`/`ReadValueSafe` after the limiter.
    - **Variable-length typed parameter that must stay:** `Known limitations`: "decoded before rate limit".
    - **UTP:** check `DataStreamReader.HasFailedReads` after reading.
@@ -78,6 +78,7 @@ user-invocable: false
 - **Swallowed exceptions:** swallow a decode or validation exception and apply the message anyway — fail closed (rule `core.md` Security).
 - **Client-side guards as validation:** count a client-side guard (disabled button, client `IsOwner` check) as validation — a modified client sends the message regardless.
 - **Logging payloads:** log the raw payload, an account id or any player PII on rejection.
+- **Non-crypto RNG:** draw a token, nonce or any security value from `System.Random`, `UnityEngine.Random` or a game RNG — use `RandomNumberGenerator`; token design → `security-reviewer`.
 
 ## Output
 ```

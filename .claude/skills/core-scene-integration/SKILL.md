@@ -10,11 +10,8 @@ user-invocable: false
 - **Not for:** auditing Core for `UnityEngine` or wall-clock leaks (`shared-core-boundary-audit`).
 - **Not for:** float agreement and replay hashing (`core-determinism`).
 - **Not for:** Core tests without a scene (`core-tests-without-unity`).
-- **Not for:** the netcode tick, prediction and remote-entity snapshot interpolation (`netcode-engineer`, `netcode-for-gameobjects`, `netcode-for-entities`).
-- **Not for:** action maps, bindings and Update Mode (`unity-input-system`).
-- **Not for:** Rigidbody and collider setup (`unity-3d-physics`, `unity-2d-physics`).
-- **Not for:** container registration (`vcontainer-dependency-injection`).
-- **Not for:** fanning Core state changes out as events or streams (`messagepipe-event-messaging`, `r3-reactive-extensions`).
+- **Not for:** the netcode tick, prediction and remote-entity snapshot interpolation (`netcode-engineer`).
+- **Not for:** action maps, bindings, Rigidbody and collider setup, container registration, event or stream fan-out (`gameplay-engineer`, package docs).
 - **Not for:** UI binding (`ui-engineer`).
 - **Docs:** https://docs.unity.com/en-us/engine/current/ (Manual `manual/...`, API `script-reference/unityengine/...`; old docs.unity3d.com links redirect here).
   - **Version caveat:** unversioned, tracks the current release; re-check in the project's Editor.

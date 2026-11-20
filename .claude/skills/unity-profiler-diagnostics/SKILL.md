@@ -8,10 +8,7 @@ user-invocable: false
 
 - **Not for:** pass/fail against a budget (`performance-budget-verification`).
 - **Not for:** choosing the fix incl. deep native, GPU and leak work (`unity-performance-engineer`).
-- **Not for:** rendering configuration (`unity-urp-rendering`, `unity-hdrp-rendering`).
-- **Not for:** job scheduling (`unity-job-system-and-burst`).
-- **Not for:** Burst output (`unity-burst-compiler`).
-- **Not for:** Audio module voice/DSP/streaming metrics (`unity-audio-mixer`).
+- **Not for:** rendering configuration, job scheduling, Burst output, Audio module voice/DSP/streaming metrics (`unity-performance-engineer`).
 - **Docs:** https://docs.unity3d.com/Manual/Profiler.html — unversioned (Editor-current).
   - **Memory Profiler:** `.../Packages/com.unity.memoryprofiler@1.1/manual/`; the `@1.1` tracks the package version in `Packages/manifest.json`, not the Editor.
 
@@ -65,7 +62,7 @@ user-invocable: false
 - Finding: <metric, value, unit>
 - Attribution: <system, call, object or material>
 - Before and after: <both figures and how made comparable — or "not applicable">
-- Routed to: <unity-performance-engineer / unity-urp-rendering / not applicable>
+- Routed to: <unity-performance-engineer / technical-artist / not applicable>
 ```
 
 ## Example

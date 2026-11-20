@@ -11,13 +11,10 @@ Source: [Command line arguments](https://docs.unity3d.com/Manual/EditorCommandLi
 | `-quit` | Quits after the commands finish with whatever code; never with `-runTests` |
 | `-projectPath <path>` | Absolute path to the job workspace |
 | `-buildTarget <name>` | Active target before load: `Android`, `iOS`, `StandaloneWindows64`, `StandaloneLinux64`, `StandaloneOSX`, `WebGL` |
-| `-standaloneBuildSubtarget <Player\|Server>` | Dedicated-server subtarget |
 | `-executeMethod <Type.Method>` | Static Editor method after load; a compile error means it never runs |
 | `-logFile <path\|->` | `-` streams to stdout, a path survives workspace cleanup; absent, the per-user default below is used |
 | `-accept-apiupdate` | Runs the API updater non-interactively; without it the run can stall |
 | `-disable-assembly-updater` | Skips updating; use when the pipeline must fail rather than rewrite code |
-| `-silent-crashes` | No crash dialog when the job launches a crashed player |
-| `-stackTraceLogType <type>` | Stack-trace verbosity in the parsed log |
 
 Default log (absent `-logFile`; destroyed with an ephemeral agent, so always pass `-logFile`): Linux `~/.config/unity3d/Editor.log`, macOS `~/Library/Logs/Unity/Editor.log`, Windows `%LOCALAPPDATA%\Unity\Editor\Editor.log`.
 

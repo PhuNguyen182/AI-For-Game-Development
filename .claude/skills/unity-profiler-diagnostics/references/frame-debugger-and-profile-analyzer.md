@@ -2,7 +2,7 @@
 
 Docs: https://docs.unity3d.com/Manual/FrameDebugger.html · https://docs.unity3d.com/Manual/com.unity.performance.profile-analyzer.html
 
-Fixing what either reveals (batching setup, material variants, GPU instancing) is `unity-urp-rendering` / `unity-performance-engineer`.
+Fixing what either reveals (batching setup, material variants, GPU instancing) is `unity-performance-engineer`'s.
 
 ## Frame Debugger
 | Subject | Rule |

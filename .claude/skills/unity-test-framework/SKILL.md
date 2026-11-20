@@ -7,9 +7,9 @@ user-invocable: false
 # Unity Test Framework
 
 - **Not for:** which cases to write (`risk-based-test-planning`).
-- **Not for:** the CI job (`jenkins-pipeline-authoring`).
+- **Not for:** the CI job (`ci-cd-engineer`).
 - **Not for:** the batchmode command line itself (`unity-batchmode-cli`).
-- **Not for:** UI Toolkit element driving (`ui-toolkit`).
+- **Not for:** UI Toolkit element driving (`ui-engineer`).
 - **Not for:** Profiler measurement (`unity-profiler-diagnostics`).
 - **Not for:** plain NUnit (NUnit docs).
 - **Not for:** a `dotnet test` mirror of Core outside the Editor (`core-tests-without-unity`).

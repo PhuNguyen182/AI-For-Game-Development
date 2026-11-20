@@ -19,7 +19,7 @@ user-invocable: false
 3. **Drive the Editor per `unity:unity-cli` → `playmode-verification-loop.md`:** else the configured MCP tools.
    - **Before observing anything:** prove frames advance (`job wait` on `Time.frameCount`).
    - **Why:** a frozen Game view still returns a clean screenshot.
-4. **Send input through the input layer:** a Pipeline input command if `unity command --query input` lists one, else synthesized Input System device state via `script eval` (`unity-input-system`).
+4. **Send input through the input layer:** a Pipeline input command if `unity command --query input` lists one, else synthesized Input System device state via `script eval`.
    - **Calling a game method directly:** skips bindings; label it `Input: bypassed (<method>)`.
    - **Bypassed input:** can never pass a checkpoint about controls or responsiveness.
 5. **Capture on the frame the checkpoint holds:** `job wait` with `on_met.capture`, or pause and `Step()` to that frame.

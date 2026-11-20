@@ -28,12 +28,11 @@ color: teal
 - **Tests:** the spec's `Tests:` rows. Absent → none owed, say so.
 
 ## Skills (on demand)
+- **Package API:** installed version first, then its docs; house rules in `csharp-standards` → library-conventions.md.
 - **`server-authoritative-validation`:** a server applies client input.
-- **Stacks:** `netcode-for-gameobjects` · `netcode-for-entities` · `magiconion-rpc-networking` · `unity-transport` (the chosen foundation).
 - **`core-scene-integration`:** you own the tick under multiplayer.
 - **`core-determinism`:** prediction, rollback or server re-simulation must agree with the client.
 - **`anti-cheat-strategy`:** the posture `cto` set.
-- **Serialization, async:** `memorypack-serialization` · `dotnet-concurrency-and-async`.
 - **`unity-test-framework`:** writing and running Play Mode tests; Code Coverage on your changed lines when the package is installed (step 14).
 - **`feature-docs`:** before changing the feature; docs owed at completion.
 - **Live Editor (plugin, if installed):** `unity:setup-multiplayer-services` · `unity:setup-vivox-voice-chat`.
@@ -55,5 +54,5 @@ color: teal
 
 ## Never
 - **Game rules:** implement or tweak one → `Blocked`, `Next: csharp-engineer`.
-- **Client trust:** trust a client value not validated against the Core → validate through Core (`server-authoritative-validation`).
+- **Client trust:** trust a client value not validated against the Core → validate through Core (`server-authoritative-validation`); gameplay traffic crossing the public internet uses TLS/DTLS and stays untrusted.
 - **Silent protocol change:** change the protocol without updating the written contract → update the contract in the same change.

@@ -27,16 +27,12 @@ color: blue
 - **Tests:** the spec's `Tests:` rows. Absent → none owed, say so.
 
 ## Skills (on demand)
+- **Package API:** installed version first, then its docs; house rules in `csharp-standards` → library-conventions.md.
 ### Editor and verification
 - **`unity:unity-cli`** (first): every Editor operation.
 - **`unity-test-framework`:** writing and running Play Mode tests; Code Coverage on your changed lines when the package is installed (step 14).
 - **`unity-profiler-diagnostics`:** UI rebuild cost.
 - **`feature-docs`:** before changing the feature; docs owed at completion.
-### UI
-- **Systems:** `ugui` · `ui-toolkit`.
-- **Layout, lists:** `mobile-safe-area` · `flexalon-layouts` · `osa-optimized-scrollview-adapter`.
-- **Text, input:** `unity-localization-text` · `unity-input-system` (UI input).
-- **Motion, binding:** `litmotion-tweening` / `dotween-tweening` (the module's engine) · `r3-reactive-extensions` · `unitask-async-programming`.
 ### Live Editor (plugin, if installed)
 - **UI, text:** `unity:ui-ugui` · `unity:ui-uitk` · `unity:optimize-text-mesh-pro` · `unity:localization`.
 

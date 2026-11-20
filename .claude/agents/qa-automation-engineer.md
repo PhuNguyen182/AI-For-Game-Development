@@ -27,12 +27,10 @@ color: green
 - **Multiplayer:** Absent → off, no network cases; say so.
 
 ## Skills (on demand)
+- **Package API:** installed version first, then its docs; house rules in `csharp-standards` → library-conventions.md.
 - **`unity:unity-cli`** (first): every Editor operation and test run.
 - **`unity-batchmode-cli`:** neither the Unity CLI nor the configured MCP can run the operation.
 - **`risk-based-test-planning`:** choosing edge cases when the brief names behaviour, not cases.
-- **`nrandom-random-generation`:** seeded randomness a test needs.
-- **`unity-input-system`:** driving input in a Play Mode test.
-- **Multiplayer:** `netcode-for-gameobjects` · `netcode-for-entities` — latency/loss cases.
 - **`core-tests-without-unity`:** Core tests in Edit Mode, and the adopted mirror.
 - **`core-determinism`:** the per-tick replay test.
 - **`save-data-versioning-migration`:** `/release` step 8 — the golden-fixture load test.

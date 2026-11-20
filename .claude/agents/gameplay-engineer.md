@@ -27,23 +27,15 @@ color: blue
 - **Budget:** the per-platform budget. Absent → current quality settings, say so.
 
 ## Skills (on demand)
+- **Package API:** installed version first, then its docs; house rules in `csharp-standards` → library-conventions.md.
 ### Editor and verification
 - **`unity:unity-cli`** (first): every Editor operation.
 - **`unity-test-framework`:** writing and running Play Mode tests; Code Coverage on your changed lines when the package is installed (step 14).
 - **`playtest-scenario-execution`:** a criterion only a hand-played run can show.
 - **`unity-profiler-diagnostics`:** a number checked against the budget.
 - **`feature-docs`:** before changing the feature; the README at completion.
-### Scene
-- **Input, physics:** `unity-input-system` · `unity-3d-physics` · `unity-2d-physics`.
-- **Animation:** `unity-animation` · `spine-animation` · `litmotion-tweening` / `dotween-tweening` (the module's engine).
-- **Camera, navigation, audio:** `unity-camera-fundamentals` · `unity-cinemachine-authoring` · `unity-navmesh-navigation` · `unity-audio-mixer`.
-- **2D, mesh:** `unity-2d-sprite` · `unity-2d-spriteshape` · `unity-tilemap` · `unity-3d-mesh`.
 ### Architecture
 - **`core-scene-integration`** (first): hooking Core into a scene — tick owner, input commands, read-only views.
-- **DI, events, async:** `vcontainer-dependency-injection` · `messagepipe-event-messaging` · `r3-reactive-extensions` · `unitask-async-programming`.
-- **State, data:** `stateless-state-machines` · `unity-scriptableobject-architecture` · `odin-inspector`.
-- **`unity-addressables`:** loading content.
-- **`memorypack-serialization`:** save hookup.
 ### Live Editor (plugin, if installed)
 - **Navigation, audio:** `unity:initialize-ai-navigation` · `unity:audio-setup-mixers`.
 - **2D:** `unity:sprite-editor` · `unity:manage-sprite-atlas` · `unity:2d-pixel-perfect` · `unity:tilemap-palette-create` · `unity:tilemap-ruletile-createempty` · `unity:sprite-segment-3x3grid`.

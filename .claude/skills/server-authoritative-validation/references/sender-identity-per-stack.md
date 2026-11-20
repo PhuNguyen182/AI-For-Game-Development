@@ -13,11 +13,11 @@ A connection id names a transport slot, not an account. Binding an account to it
 | `CustomMessagingManager.HandleNamedMessageDelegate(ulong senderClientId, FastBufferReader messagePayload)` | Named-message sender [nmd]; the handler reads the payload itself, so the limiter runs before any `TryBeginRead`/`ReadValueSafe` |
 | `InvokePermission` | `Everyone` (default), `Owner`, `Server`; a violation throws [rpc]. Gates only the Rpc's own `NetworkObject` |
 | `NetworkObject.OwnerClientId` | Compare with the sender for the Rpc's own object |
-| `NetworkObjectReference.TryGet(out NetworkObject, NetworkManager = null)` | Resolve a payload reference server-side, then compare its `OwnerClientId`; `false` → reject (`netcode-for-gameobjects` → `serialization.md`) |
+| `NetworkObjectReference.TryGet(out NetworkObject, NetworkManager = null)` | Resolve a payload reference server-side, then compare its `OwnerClientId`; `false` → reject |
 | `NetworkManager.ConnectedClients` | `IReadOnlyDictionary<ulong, NetworkClient>` [nm]; `PlayerObject` gives the sender's avatar |
 | `NetworkManager.ServerClientId` | `const ulong 0`, the server's own id [nm] |
 | `NetworkManager.DisconnectClient(ulong clientId, string reason = null)` | Drops the client; `reason` reaches the client as `DisconnectReason` [nm], so keep it generic |
-| `NetworkConfig.ConnectionData` | Unauthenticated, unencrypted (`netcode-for-gameobjects` Never): never the source of an account binding |
+| `NetworkConfig.ConnectionData` | Unauthenticated, unencrypted: never the source of an account binding |
 
 - **Sample:** [UseItemRpc.cs](../scripts/UseItemRpc.cs) — an `[Rpc(SendTo.Server)]` method taking a trailing `RpcParams rpcParams = default`.
   - **Adapt into:** the `NetworkBehaviour` that owns the Rpc; the file holds the method only.
@@ -29,7 +29,7 @@ A connection id names a transport slot, not an account. Binding an account to it
 | Subject | Fact that decides |
 |---|---|
 | `ReceiveRpcCommandRequest.SourceConnection` | `Entity` of the connection that sent the RPC [rcr]; the only sender source for an `IRpcCommand` |
-| `NetworkId` on the connection entity | Read it from `SourceConnection` to get the sender's id (`netcode-for-entities` → `transport-and-connection.md`) |
+| `NetworkId` on the connection entity | Read it from `SourceConnection` to get the sender's id |
 | `GhostOwner.NetworkId` | The server sets it to the owning client's `NetworkId.Value` [cmd]; compare it with the sender's for any ghost an RPC names |
 | Command data (`IInputComponentData`/`ICommandData`) | Dispatched by `CommandReceiveSystem` to the entity the command belongs to [cmd]; the server sets `CommandTarget` (or `AutoCommandTarget` on an owned ghost), never the client |
 | Command values | "Never overwrite or change the input received by the client" [cmd]: validate the effect inside the simulation via Core, not by editing the buffer |
@@ -52,7 +52,7 @@ A connection id names a transport slot, not an account. Binding an account to it
 
 | Subject | Fact that decides |
 |---|---|
-| `NetworkConnection` from `driver.Accept()` | The sender identity; events per connection via `driver.PopEventForConnection(conn, out DataStreamReader)` (`unity-transport` → `core-driver-lifecycle.md`) |
+| `NetworkConnection` from `driver.Accept()` | The sender identity; events per connection via `driver.PopEventForConnection(conn, out DataStreamReader)` |
 | `DataStreamReader.HasFailedReads` | `true` after a read exceeds capacity; scalar reads past the end return 0 [dsr], so check it before trusting any value |
 | `driver.Disconnect(conn)` | Closes the connection |
 
