@@ -35,7 +35,7 @@ allowed-tools: PowerShell, Bash, Read
 | `checklist.md` | only headings and `- [ ] **<title>:** <text>` lines; linked from its `SKILL.md` |
 | Script files | `.ps1` ASCII only; `.sh` LF only |
 | Skill references | fenced block < 15 lines |
-| References | backticked .claude paths and relative links exist; agents named exist; no retired agents or paths |
+| References | backticked .claude paths and relative links exist; agents named exist; no retired agents or paths; no retired skill name (`$RetiredSkills`, whole token, case-sensitive) |
 | IDs | rules, agents, pipelines: no G/B/I/A/V/EV ids (CP1–CP4 only) |
 | Namespaces | any checked file: no retired namespace scheme |
 | Hook contracts | each file in `$HookContracts` keeps the strings `round-cap.ps1` counts on; each in `$WorkflowContracts` keeps the `roundId` field `/review` reads from `review-gate` |

@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-Checks the .claude/ layer: paths resolve, agent and skill frontmatter, skill references, workflows are JS, skill format, reference fences, checklist files, hook contract strings, no retired IDs, agents, paths or namespaces, table widths.
+Checks the .claude/ layer: paths resolve, agent and skill frontmatter, skill references, workflows are JS, skill format, reference fences, checklist files, hook contract strings, no retired IDs, agents, skills, paths or namespaces, table widths.
 Warn only: size targets (skill description past 120 chars, list item past 200, body past 8,000, agent, rule and CLAUDE.md lengths), an unknown name in an agent, a unity:* plugin skill not installed. All else fails, including a description past 250 chars. Exit 0 = pass (warnings allowed), 1 = failure.
 .PARAMETER File
 Check only this file (used by the PostToolUse hook), plus the owning skill's script-named check for a file under references/. Omit for the whole layer.
@@ -28,6 +28,25 @@ function Rel($p) {
 
 $Budget = @{ ClaudeMd = 30; AlwaysRules = 100; PathRule = 40; Desc = 250; DescTarget = 120; AgentFile = 50; SkillChars = 8000; BulletChars = 200; RefFence = 15 }
 $RetiredAgents = 'unity-engineer', 'assurance-evaluator', 'build-run-engineer', 'build-verification-tester'
+# Vendor-doc skills removed by feature skill-pruning: package API comes from the installed version and its docs
+# (csharp-standards -> library-conventions.md). Matched case-sensitively as a whole skill token, so unity:ui-ugui,
+# uGUI and UI Toolkit do not match.
+$RetiredSkills = @(
+    'csvhelper-csv-data', 'dotnet-concurrency-and-async', 'dotnet-memory-and-collections', 'dotween-tweening', 'litmotion-tweening',
+    'flexalon-layouts', 'magiconion-rpc-networking', 'memorypack-serialization', 'messagepipe-event-messaging', 'nrandom-random-generation',
+    'odin-inspector', 'osa-optimized-scrollview-adapter', 'r3-reactive-extensions', 'stateless-state-machines', 'unitask-async-programming',
+    'vcontainer-dependency-injection', 'zlinq-zero-allocation-linq', 'zstring-zero-allocation-strings', 'spine-animation',
+    'source-generator-authoring', 'roslyn-analyzer-codefix',
+    'unity-2d-physics', 'unity-2d-sprite', 'unity-2d-spriteshape', 'unity-3d-mesh', 'unity-3d-physics', 'unity-addressables',
+    'unity-animation', 'unity-audio-mixer', 'unity-burst-compiler', 'unity-camera-fundamentals', 'unity-cinemachine-authoring',
+    'unity-collections', 'unity-ecs-architecture', 'unity-entities-graphics', 'unity-hdrp-rendering', 'unity-input-system',
+    'unity-job-system-and-burst', 'unity-lighting', 'unity-localization-text', 'unity-mathematics', 'unity-navmesh-navigation',
+    'unity-physics', 'unity-post-processing', 'unity-scriptableobject-architecture', 'unity-tilemap', 'unity-transport',
+    'unity-urp-rendering',
+    'render-pipeline-urp-hdrp', 'shader-authoring', 'compute-shader-vfx', 'vfx-particle-authoring', 'ugui', 'ui-toolkit', 'mobile-safe-area',
+    'netcode-for-entities', 'netcode-for-gameobjects',
+    'firebase-unity-sdk', 'firebase-app-distribution', 'fastlane-mobile-delivery', 'jenkins-pipeline-authoring')
+$RetiredSkillPattern = '(?<![\w:-])(?:' + (($RetiredSkills | ForEach-Object { [regex]::Escape($_) }) -join '|') + ')(?![\w-])'
 $RetiredPaths = '\.claude/(standards|workflows/[a-z-]+\.md|workflows/(references|state|tools)/|rules/(orchestration|task-classification|effort-allocation|execution-loop|security|feature-context-reading|implementation-note|commit-message|language-and-comments|shell-preference|unity-tooling-preference|standards-index)\.md)'
 $IdPattern = '\b(?:G[0-9]{1,2}|B[0-9]{1,2}|I[0-9]{1,2}|A[1-5]|V[1-5]|EV[0-4])\b'
 # Retired namespace scheme: features use path-derived namespaces (naming-convention.md).
@@ -248,6 +267,7 @@ function Test-Paths([string]$path, [string]$text) {
     }
     if ($text -match $RetiredPaths) { Fail "$(Rel $path): references retired path '$($Matches[0])'" }
     foreach ($a in $RetiredAgents) { if ($text -match "\b$a\b") { Fail "$(Rel $path): references retired agent '$a'" } }
+    foreach ($m in @([regex]::Matches($text, $RetiredSkillPattern) | ForEach-Object Value | Select-Object -Unique)) { Fail "$(Rel $path): references retired skill '$m'" }
     # The human role is main GD (route token main-gd); a bare gd route names nobody. %gd is a git format code (BUG-0011).
     if ($text -cmatch '(?m)^.*(?:Next|Routed to)[*_`]*:.*(?<![%\w-])gd\b.*$' -or $text -cmatch '`gd`') { Fail "$(Rel $path): retired route 'gd' (use main-gd): '$($Matches[0].Trim())'" }
     foreach ($m in [regex]::Matches($text, '`([a-z]+(?:-[a-z]+)*-(?:engineer|tester|reviewer|lead|investigator|architect|artist|expert))`')) {

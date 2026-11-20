@@ -2755,6 +2755,13 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     VSkill 'route-main-gd' @('- **Route:** `Next: main-gd`, and git log format `%gd`.')
     Check 'verify: main-gd and %gd are not a retired route' (Verify (VRel 'route-main-gd')).Code 0
     Remove-Item -Recurse -Force (Join-Path $vlSkills 'route-gd'), (Join-Path $vlSkills 'route-main-gd')  # later whole-layer runs count plants exactly
+    # A retired vendor-doc skill (skill-pruning) fails as a whole token; a unity:* plugin skill and prose names pass.
+    VSkill 'retired-skill' @('- **Tweens:** per `dotween-tweening`.')
+    $r = Verify (VRel 'retired-skill')
+    Check 'verify fails per file: a retired skill name' ($r.Code -eq 1 -and $r.Out -match "$(VFail 'retired-skill')references retired skill 'dotween-tweening'") $true
+    VSkill 'plugin-skill-ok' @('- **UI:** `unity:ui-ugui` for uGUI; UI Toolkit stays prose.')
+    Check 'verify: unity:ui-ugui and uGUI are not a retired skill' (Verify (VRel 'plugin-skill-ok')).Code 0
+    Remove-Item -Recurse -Force (Join-Path $vlSkills 'retired-skill'), (Join-Path $vlSkills 'plugin-skill-ok')  # later whole-layer runs count plants exactly
     VSkill 'preloaded-skill' @() 'Foo.Bar and Baz.Qux only.'
     Set-Content (Join-Path $vl '.claude/agents/fixture-agent.md') "---`nname: fixture-agent`ndescription: A fixture.`ntools: Read`nskills:`n  - preloaded-skill`n---`n`n# Fixture"
     Check 'verify: a skill an agent preloads needs no Use trigger' (Verify (VRel 'preloaded-skill')).Code 0
