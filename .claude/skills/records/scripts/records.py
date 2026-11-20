@@ -1374,9 +1374,11 @@ BOM = b"\xef\xbb\xbf"
 DECISION_KINDS = ("decision", "extra-round", "stop-rule", "waiver", "accepted-gap")
 JOURNAL_KINDS = ("extra-round", "stop-rule")  # written by feature extra-round / stop-rule beside their journal event
 RX_NOTE_STATE = re.compile(r"Open|Debt|Promoted:\S.*")
-# A cell a spreadsheet would run as a formula when the CSV is opened: refused, never rewritten. "- item" and "--by" stay.
-RX_FORMULA = re.compile(r"[=+@\t\r]|-[^ -]")
-FORMULA_RULE = "no value starts with = + @ TAB CR, or with - before anything but a space or -"
+# A cell a spreadsheet would run as a formula when the CSV is opened: refused, never rewritten. A spreadsheet reads any
+# leading - as a formula, so only two dash shapes stay: "- " and a letter (a bullet) and "--" and a flag name ("--by").
+RX_FORMULA = re.compile(r"[=+@\t\r]|-(?! [^\W\d_]|-[a-z][a-z0-9-]*(?: |\Z))")
+FORMULA_RULE = ('no value starts with = + @ TAB CR, or with - unless it opens "- " and a letter (a bullet) '
+                'or "--" and a lowercase flag name ending at a space or the end (--dry-run) and holds no |')
 
 
 class Table:
@@ -1417,11 +1419,21 @@ def csv_cleaner(ctx) -> journal.Cleaner:
     return journal.Cleaner(ctx, {n: CSV_LIMIT for n in names}, names)  # every value is one line: it renders into a table cell
 
 
-def formula_check(field: str, value: str):
-    """Refuses a value a spreadsheet would run as a formula. Names the column and the rule, never echoes the value."""
+def formula_lead(value: str):
+    """What makes a spreadsheet run `value` as a formula, or None. A value led by - (after any spaces) that holds a |
+    is one even in a bullet or flag shape: a DDE payload needs the |."""
     m = RX_FORMULA.match(value)
     if m:
-        lead = {"\t": "a TAB", "\r": "a CR", "-": "- before a character other than a space or -"}.get(m.group(0)[0], m.group(0)[0])
+        return {"\t": "a TAB", "\r": "a CR", "-": "- outside a bullet or a --flag"}.get(m.group(0)[0], m.group(0)[0])
+    if value.lstrip().startswith("-") and "|" in value:
+        return "- and holds a |"
+    return None
+
+
+def formula_check(field: str, value: str):
+    """Refuses a value a spreadsheet would run as a formula. Names the column and the rule, never echoes the value."""
+    lead = formula_lead(value)
+    if lead:
         raise Refused("%s: starts with %s, which a spreadsheet runs as a formula (%s): reword it" % (field, lead, FORMULA_RULE))
 
 
@@ -1919,6 +1931,14 @@ def mirror_limitations(ctx, slug: str) -> str:
 MIRRORED_STATUSES = ("Won't fix", "Accepted")
 
 
+def mirror_cell(value, label: str):
+    """A bug's title or note as a DEBT.csv cell. bugs.py keeps no formula rule, so a value the rule refuses (as given
+    or trimmed, like csv_value) goes in behind `label: `, which starts with a letter; any other value is unchanged."""
+    if not isinstance(value, str) or not (formula_lead(value) or formula_lead(value.strip())):
+        return value
+    return "%s: %s" % (label, value)
+
+
 def mirror_bug(ctx, bug_id: str, title: str, feature, by: str, note, date: str) -> str:
     """A bug moved to Won't fix or Accepted becomes debt: a DEBT.csv row in its feature's root when the registry names one,
     else a `debt` record. Idempotent by the bug id: a second terminal-accepted move adds nothing."""
@@ -1937,8 +1957,9 @@ def mirror_bug(ctx, bug_id: str, title: str, feature, by: str, note, date: str) 
         hit = [r["id"] for r in f.rows() if r["source"] == bug_id]
         if hit:
             return "debt mirror: %s is already %s in %s" % (bug_id, hit[0], rel)
-        rid = f.append(csv_row(table, {"date": date, "kind": "accepted-gap", "text": title, "source": bug_id, "accepted_by": by,
-                                       "next_step": note or "", "state": "Open"}, cleaner, internal=True))
+        rid = f.append(csv_row(table, {"date": date, "kind": "accepted-gap", "text": mirror_cell(title, "Bug title"), "source": bug_id,
+                                       "accepted_by": by, "next_step": mirror_cell(note or "", "Note"), "state": "Open"},
+                               cleaner, internal=True))
         return "debt mirror: %s added as %s in %s" % (bug_id, rid, rel)
     store = STORES["debt"]
     found = []

@@ -90,7 +90,7 @@ Synthesized from `../scripts/records.py` and `../scripts/journal.py`; commands i
 | `notes.state` | `Open` (default) · `Debt` · `Promoted:<doc>` |
 | `limitations.mirrored` | Set only by `csv mirror` (the `DEBT.csv` id) or `migrate` (`pre-migration` on a closed feature) |
 | every value | One line, 1000 chars; control characters, Vietnamese diacritics and secret shapes refused, PII redacted; fail closed without `mem.py` or its patterns |
-| formula prefix | Refused, never rewritten: a value (as given or after trimming) starting with `=`, `+`, `@`, TAB or CR, or with `-` followed by anything but a space or `-`; `- item`, `--by` and a lone `-` are legal. The refusal names the column and the rule, never the value |
+| formula prefix | Refused, never rewritten: a value (as given or after trimming) starting with `=`, `+`, `@`, TAB or CR, or with `-` in any shape but two: `- ` and a letter (a bullet: `- item`) and `--` and a lowercase flag name (`[a-z][a-z0-9-]*`) ending at a space or the end (`--by main GD`, `--dry-run`), and even those two only with no `|` anywhere (a DDE payload needs it); `-1`, `- 1`, `-- x`, `- a|b`, a lone `-` or `--` are refused. The refusal names the column and the rule, never the value |
 
 - **File:** a header row, UTF-8 with no BOM, LF, RFC 4180 quoting by Python `csv`; written to a temp file beside it, then `os.replace`. A header-only file is never written.
 - **Feature:** `log`, `tests`, `decisions`, `limitations` need a registry row or `.workflow/features/<slug>.md`; `debt` and `notes` need the registry's `feature_root`, a folder inside the project root.
@@ -110,6 +110,7 @@ Synthesized from `../scripts/records.py` and `../scripts/journal.py`; commands i
 ## Mirrors
 - **`csv mirror --feature <slug>`:** each `limitations.csv` row with `mirrored` empty becomes a `DEBT.csv` row (`kind accepted-gap`, `source` the slug, its date and `accepted_by`), and `mirrored` takes the new id. A `DEBT.csv` row with the same source and text is reused, so a run cut short never copies twice.
 - **Bug mirror:** `bugs.py set-status` into `Won't fix` or `Accepted` calls `mirror_bug` after the move commits. The bug's `feature` is a registry slug with a `feature_root` → a `DEBT.csv` row (`kind accepted-gap`, `source` the bug id, `text` its title, `accepted_by` the move's `--by`, `next_step` its note, the move's date); otherwise a `debt` record with the same values.
+- **Formula-shaped title or note:** `bugs.py` applies no formula-prefix rule, so a title the rule would refuse goes into `DEBT.csv` `text` as `Bug title: <title>` and such a note into `next_step` as `Note: <note>`; any other value is written unchanged. Only this mirror adds a label: a `csv add` or `csv update` value is refused, never rewritten. A `debt` record and `csv mirror` need no label: the `debt` store has no formula rule, and a `limitations.csv` value already passed the same rule when it was written.
 - **Once per bug:** a row or record whose `source` is the bug id already exists → nothing is added.
 - **Failure:** `bugs.py` exits 1 with `bugs: moved, but the debt mirror failed: <cause>; run "<python>" -I "<records.py>" --root "<root>" bug-mirror BUG-####`. `bug-mirror` reads the bug, its last move into that status, and mirrors it; a bug in another status is refused.
 

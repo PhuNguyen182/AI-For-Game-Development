@@ -80,7 +80,7 @@ user-invocable: false
 | `notes` | `<feature root>/NOTES.csv` | `N-001` |
 
 - **Columns:** fixed per table (schema.md); every value one line, 1000 chars, through the same content rules as the stores.
-- **Formula prefix:** a value starting with `=`, `+`, `@`, TAB or CR, or with `-` before anything but a space or `-`, is refused (a spreadsheet would run it); reword it. `- item` and `--by` stay legal.
+- **Formula prefix:** a value starting with `=`, `+`, `@`, TAB or CR, or with `-` unless it opens `- ` and a letter (`- item`) or `--` and a lowercase flag name (`--by`, `--dry-run`) with no `|` anywhere, is refused (a spreadsheet would run it); reword it.
 - **Feature root:** `debt` and `notes` need the registry's `feature_root`; with none, the refusal prints the `feature update` command.
 - **Journal-backed rows:** a `decisions` row of kind `extra-round` or `stop-rule` comes only from `feature extra-round` or `feature stop-rule`.
 - **Counters:** the `features.jsonl` journal is the only source of `feature counters`; `decisions.csv` `extra-round` and `stop-rule` rows are a readable copy, never counted.
@@ -96,7 +96,7 @@ user-invocable: false
 | Closure: unmirrored limitations into the feature root's `DEBT.csv` | `csv mirror --feature <slug>` |
 
 ## Bug debt mirror
-- **Automatic:** a `bugs.py` move to `Won't fix` or `Accepted` appends the debt entry itself: the bug's feature root's `DEBT.csv` when the registry names one, else a `debt` record; once per bug.
+- **Automatic:** a `bugs.py` move to `Won't fix` or `Accepted` appends the debt entry itself: the bug's feature root's `DEBT.csv` when the registry names one, else a `debt` record; once per bug. A formula-shaped title or note lands as `Bug title: …` or `Note: …`.
 - **Repair:** when that mirror fails after the move, `bugs.py` exits 1 and prints `bug-mirror BUG-####`: run that command.
 
 ## Migrate from markdown

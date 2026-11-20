@@ -2897,6 +2897,46 @@ class TestDebtMirror(Base):
         self.assertEqual(r.returncode, 1)
         self.assertIn(b"only a bug in Won't fix or Accepted", r.stderr)
 
+    def test_a_formula_shaped_title_or_note_is_mirrored_behind_a_label(self):
+        """bugs.py has no formula rule; the DEBT.csv cell takes a plain label in front instead of failing the mirror."""
+        self.register(feature_root="Assets/Shop")
+        titles = ("+50 gold not granted after rewarded ad", "-1 HP after revive", "@mention breaks chat", "Shop button stays grey")
+        for t in titles:
+            self.add(feature="shop", title=t)
+        notes = ("next: rework the shop",) * 3 + ("=SUM(A1) shows in the shop total",)
+        for n, note in enumerate(notes, 1):
+            code, out, err = self.run_cli("set-status", "BUG-%04d" % n, "Won't fix", "--note", note, "--by", "main GD", now=T0)
+            self.assertEqual(code, 0, err)
+            self.assertNotIn("mirror failed", err)
+            self.assertIn("debt mirror: BUG-%04d added as DEBT-%03d in Assets/Shop/DEBT.csv" % (n, n), out)
+        day = self.moved_on("BUG-0001")
+        expected = ("id,date,kind,text,source,accepted_by,next_step,state\n"
+                    "DEBT-001,%s,accepted-gap,Bug title: +50 gold not granted after rewarded ad,BUG-0001,main GD,next: rework the shop,Open\n"
+                    "DEBT-002,%s,accepted-gap,Bug title: -1 HP after revive,BUG-0002,main GD,next: rework the shop,Open\n"
+                    "DEBT-003,%s,accepted-gap,Bug title: @mention breaks chat,BUG-0003,main GD,next: rework the shop,Open\n"
+                    "DEBT-004,%s,accepted-gap,Shop button stays grey,BUG-0004,main GD,Note: =SUM(A1) shows in the shop total,Open\n"
+                    % (day, day, day, day))
+        self.assertEqual(self.debt_csv(), expected)
+        for n in range(1, 5):
+            r = self.records("bug-mirror", "BUG-%04d" % n)
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertIn(b"debt mirror: BUG-%04d is already DEBT-%03d" % (n, n), r.stdout)
+        self.assertEqual(self.debt_csv(), expected)
+        r = self.records("csv", "doctor", "debt", "--feature", "shop")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.add(feature="shop", title="- shop tab|ad slot overlap")  # a bullet shape the | rule still refuses
+        code, out, err = self.run_cli("set-status", "BUG-0005", "Won't fix", "--note", "n", "--by", "main GD", now=T0)
+        self.assertEqual(code, 0, err)
+        self.assertIn("DEBT-005,%s,accepted-gap,Bug title: - shop tab|ad slot overlap,BUG-0005,main GD,n,Open\n" % day, self.debt_csv())
+        (self.root / "Assets" / "Shop" / "DEBT.csv").unlink()  # the repair path writes the same labelled cells
+        for n in (2, 4):
+            r = self.records("bug-mirror", "BUG-%04d" % n)
+            self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(self.debt_csv(), "id,date,kind,text,source,accepted_by,next_step,state\n"
+                                          "DEBT-001,%s,accepted-gap,Bug title: -1 HP after revive,BUG-0002,main GD,next: rework the shop,Open\n"
+                                          "DEBT-002,%s,accepted-gap,Shop button stays grey,BUG-0004,main GD,Note: =SUM(A1) shows in the shop total,Open\n"
+                                          % (day, day))
+
     def test_a_missing_records_cli_is_named(self):
         self.add()
         with mock.patch.object(bugs, "RECORDS_PATH", Path(self.tmp) / "gone" / "records.py"):
