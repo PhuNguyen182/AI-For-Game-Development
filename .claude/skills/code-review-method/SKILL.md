@@ -22,7 +22,7 @@ user-invocable: false
 
 ## Order
 1. **Context:** spec → `CONTRACTS.md` → diff (skill `feature-docs`, Review row).
-   - **Deliberate-looking code:** `DECISIONS.md` / `DEBT.md` before flagging code that looks deliberately wrong.
+   - **Deliberate-looking code:** `DECISIONS.md` / `DEBT.csv` before flagging code that looks deliberately wrong.
 2. **Spec drift:** map every acceptance criterion to the code that meets it.
    - **Drift finding:** unmet, partly met, or code doing what no criterion asks → finding.
    - **Spec flaw:** the spec itself wrong → `Needs-decision`, `Next: main-gd`.
@@ -68,7 +68,7 @@ user-invocable: false
 - **Style violations:** a style, layout, naming or comment violation (`code-style-and-layout.md`, `naming-convention.md`, rule `csharp.md` Style and Comments) is **Low**.
 - **Runtime violations:** a standards violation with runtime impact (leak, hot-path allocation, Core leak, non-determinism) takes that impact's severity.
 - **`Request changes`:** any Critical, High or Medium finding.
-- **Re-review verdict:** a Medium/Low on unchanged code is listed for `DEBT.md`, verdict unaffected.
+- **Re-review verdict:** a Medium/Low on unchanged code is listed for `DEBT.csv` (the main session adds the row), verdict unaffected.
 - **`Approve`:** no finding, or Low only.
 - **Low findings:** Low findings are listed; the author fixes them without another review round.
 - **`Needs-decision`:** a placement question (`shared-core-boundary-audit` "needs placement decision", `Next: technical-architect`) or a spec flaw (`Next: main-gd`); list any findings alongside.

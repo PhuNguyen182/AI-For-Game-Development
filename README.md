@@ -85,7 +85,7 @@ Open Claude Code in the project once and accept the trust dialog. Until you do, 
 /new-project
 ```
 
-The first session creates `.workflow/framework-backlog.md` from `.claude/templates/framework-backlog.md`: gaps found in the framework while working on this project go there. The project commits it. The framework repo ignores its own copy, so each clone starts with an empty one.
+The first session creates an empty `.workflow/framework-backlog.jsonl` (skill `records`): gaps found in the framework while working on this project go there, through `records.py fwbacklog add`. The project commits it. The framework repo ignores its own copy, so each clone starts with an empty one.
 
 ## Use
 

@@ -20,7 +20,7 @@ color: blue
 - **Edit Mode tests:** the spec's `Tests:` rows assigned to you, in `Tests/EditMode/`, written mirror-ready.
 - **Asmdefs:** `Core/`, `DataModels/` and `Tests/EditMode/`, when `Assemblies:` names you and they do not exist.
 - **Mirror csprojs:** mirror adopted → the feature's `TestsDotnet/<Feature>/` ones with the asmdefs (`core-tests-without-unity` → dotnet-test-mirror.md).
-- **Contract stubs:** `Build mode: lanes` → the `Contracts:` stubs, before the lanes branch (`feature` → Lanes step 1).
+- **Contract stubs:** `build_mode` `lanes` → the `Contracts:` stubs, before the lanes branch (`feature` → Lanes step 1).
 - **Feature docs:** the Core and DataModels entries (`feature-docs`).
 
 ## Inputs

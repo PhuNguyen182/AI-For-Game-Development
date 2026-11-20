@@ -29,7 +29,7 @@ color: red
 - [ ] **Open bugs cased:** Plan — every open bug of this feature → a case — evidence: bug ID → case. No open bug → `n/a`.
 - [ ] **Exit criteria are evidence:** Plan — each names the evidence required, never effort (`risk-based-test-planning` step 8) — evidence: the `Exit criteria:` lines. Sign-off → `n/a`.
 - [ ] **Claims traced:** Sign-off — every criterion → the report line and evidence path that meets `qa-standards`, or `unsupported` — evidence: the per-criterion `claimed → evidence | unsupported` lines. Plan → `n/a`.
-- [ ] **Bugs listed:** Sign-off — every bug of this feature → its status, settled or unsettled per `qa-standards` → `references/bug-lifecycle.md`; `Backlog` counts as settled with a `Known limitations` line; any unsettled → `Not signed off` — evidence: ID → status. Plan → `n/a`.
+- [ ] **Bugs listed:** Sign-off — every bug of this feature → its status, settled or unsettled per `qa-standards` → `references/bug-lifecycle.md`; `Backlog` counts as settled with a `limitations` row naming it (`.workflow/features/<slug>/limitations.csv`); any unsettled → `Not signed off` — evidence: ID → status. Plan → `n/a`.
 
 ## Return extras
 ### Plan

@@ -11,7 +11,7 @@
 - A main-GD-stated budget, platform or constraint is a hard requirement.
 - Ask before: platform build, store submission, release tag, second Editor, history rewrite, paid service.
 - Tell at once: a design flaw; a return needing config, a secret or a store-policy decision; a stop (`routing.md`).
-- Only the main GD accepts a gap or waives a requirement. Write every accepted gap into the feature file's known limitations.
+- Only the main GD accepts a gap or waives a requirement. Write every accepted gap as a feature `limitations` row (`records.py csv add limitations`).
 
 ## Truth
 - Never claim a test, build, measurement or review that did not run. Unavailable → say so.
@@ -40,4 +40,4 @@
 ## Memory — Zero-Mem, skill `mem`
 - Nothing is preloaded: `mem q` before work in an unfamiliar area; a hit is a lead — read its source. Never use an LLM to organise, summarise or rewrite memory.
 - When the main GD confirms a mistake: fix it, re-verify, then `mem add lesson`. A stated preference → `mem add feedback`. Never secrets or PII.
-- A gap in the framework itself (`.claude/`) → a row in `.workflow/framework-backlog.md` (from `.claude/templates/framework-backlog.md`), never in a tracked framework file; game work → `.workflow/backlog.md`.
+- A gap in the framework itself (`.claude/`) → `records.py fwbacklog add` (skill `records`), never in a tracked framework file; game work → `records.py backlog add`.

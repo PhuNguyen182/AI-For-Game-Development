@@ -21,6 +21,6 @@ argument-hint: "<the capability or decision, as concrete behaviour>"
 
 ## 4. Record
 - **Tech stack:** `docs/tech-stack.md`: the row for the area, with version and the decision's path.
-- **Feature in flight:** → its file's `Main GD decisions`.
+- **Feature in flight:** → `records.py csv add decisions --feature <slug>` (skill `records`).
 - **Standard:** sets a standard → main GD approves (`AskUserQuestion`) → skill `engineering-standard-adr-authoring` writes the ADR in `docs/adr/`.
 - **Report:** the call, why in product terms, reversibility, what would make it stale.

@@ -1,0 +1,11 @@
+id,criterion,test_id,mode,owner,last_result
+T-001,AC1,`run.ps1` heading and BUG-0012 cases; `test_bugs.py` TestGdAttribution(+Edge); bare-GD grep; verify retired-route rule,automated,qa-automation-engineer,"run.ps1 1461/0 x2, test_bugs 275 OK x2, verify OK x2 at a327b4b (attempt-4)"
+T-002,AC2,`test_adv.py` (AdvEdgeTest),automated,qa-automation-engineer,42 OK x2 at a327b4b (attempt-4)
+T-003,AC3,`test_mem.py` (AdvisoryScrubEdgeTest); `run.ps1` pre-commit advisory cases,automated,qa-automation-engineer,"test_mem 63 OK x2, run.ps1 1461/0 x2 at a327b4b (attempt-4)"
+T-004,AC4,`run.ps1` round-cap adviser cases,automated,qa-automation-engineer,run.ps1 1461/0 x2 at a327b4b (attempt-4)
+T-005,AC5,`test_simulate.py` (SimulateEdgeTest); golden SHA-256,automated,qa-automation-engineer,31 OK x2 at a327b4b (attempt-4)
+T-006,AC6,`test_check_pack.py` (PackEdgeTest),automated,qa-automation-engineer,48 OK x2 at a327b4b (attempt-4)
+T-007,AC7,`verify.ps1` base vs HEAD; agent and skill counts,automated,qa-automation-engineer,"OK, 21 warnings, x2 at a327b4b; base comparison at e4a7fae (attempt-1)"
+T-008,AC8,C8 path:line greps,manual,"qa-automation-engineer, qa-lead",supported (qa-lead re-checked at a327b4b)
+T-009,AC9,`.workflow/evidence/game-production-agent/c9-live-report.md`,manual (live),main session,supported
+T-010,AC10,pilot on the test game,manual,main GD,"deferred to the pilot (main GD, 2026-11-06)"

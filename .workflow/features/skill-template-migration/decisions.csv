@@ -1,0 +1,12 @@
+id,date,kind,decision,cost
+D-001,2026-11-02,decision,"Bulk migration of all skills now. Reverses the same-day ""migrate when next touched"" decision and the backlog row that records it.",
+D-002,2026-11-02,decision,CP1: n/a (direction given: apply the template and fix the dropped descriptions).,
+D-003,2026-11-02,decision,"CP2 approved: full migration, serial. Stated cost: roughly millions of tokens and many hours, about 11 writer batches each with an independent comparator. No new `checklist.md`; authors only propose them for the backlog.",
+D-004,2026-11-02,decision,"Budget lever: raise `skillListingBudgetFraction` to about 0.018, final value after M1. Stated cost: about 7.5k more tokens per session than today; the setting also ships to game projects.",
+D-005,2026-11-02,decision,"200k window: accepted, recorded under `Known limitations`.",
+D-006,2026-11-02,decision,"Gate baseline scenarios: skipped, recorded under `Known limitations`.",
+D-007,2026-11-02,decision,"Merge: after everything is fixed, merge `feature/skill-template-migration` into `develop` via `git-expert` (GD's words, translated: ""after everything is fixed, merge into develop""). This answers the CP4 merge question in advance.",
+D-008,2026-11-02,decision,"CP3 and gate offer: scoped re-read of the 81 fixes before merge; review on the code only (`verify.ps1`, `run.ps1`, `settings.json`, moved scripts) with a security scan over the whole diff; QA as qa-lead evidence sign-off.",
+D-009,2026-11-02,decision,"Gaps accepted: 4 bodies past 8,000 chars by name (`feature` 14,317, `iap-server-receipt-ledger` 8,350, `firebase-unity-sdk` 8,069, `server-authoritative-validation` 8,035); AC3 200k row counts waived, not measurable here; the `No envelope` template rule; budget cost about 8.1k tokens per session.",
+D-010,2026-11-02,decision,"CP4: closed. Accepted: `465c7e3` read by no reviewer, proved by mutants; budget 0.02, which moves only the cap. qa-lead signed off in round 2. Merge and push confirmed.",
+D-011,2026-11-02,decision,"Push: after the merge, push `develop` to origin (GD's words, translated: ""push to develop as well""). The feature branch is not pushed.",

@@ -18,7 +18,7 @@ color: green
 ## Inputs
 - **Question and scope:** what to read and why. Absent → `Blocked`.
 - **Brief markers:** per `advisory-protocol`. Absent `Data-Period:` → treat as `none`.
-- **Project context:** `CLAUDE.md`, the GDD, backlog, `DEBT.md`. A missing GDD is a finding, not a block.
+- **Project context:** `CLAUDE.md`, the GDD, the backlog and debt (`records.py ... render` output in the brief; no shell, so never run it), each feature root's `DEBT.csv`. A missing GDD is a finding, not a block.
 
 ## Skills (on demand)
 - **`source-credibility-grading`:** before any benchmark enters a return.

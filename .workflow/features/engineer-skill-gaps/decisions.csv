@@ -1,0 +1,10 @@
+id,date,kind,decision,cost
+D-001,2026-10-29,decision,Scope: all 8 skills in this round.,
+D-002,2026-10-29,decision,"Server-side code: vendor-neutral procedure in SKILL.md; one reference per vendor (Firebase Functions/Firestore, UGS Cloud Code/Economy/Cloud Save).",
+D-003,2026-10-29,decision,"Firebase Unity SDK skill: setup (EDM4U, `CheckAndFixDependenciesAsync`, config files) + Analytics, Remote Config, Crashlytics, Auth. Firestore/Functions live in the backend skills.",
+D-004,2026-10-29,decision,"Firebase config files (security-reviewer, Firebase docs fetched by the main session): client-safe when the API key is restricted to Firebase APIs; Gemini/billable-API keys and service-account files stay secret. `secret-and-supply-chain-scan` steps 3–4 updated; `core.md` unchanged (its vendor-documented rule already covers it).",
+D-005,2026-10-29,decision,"Gates: review yes, QA yes.",
+D-006,2026-10-29,decision,"CP4: closed; GD accepted gaps 1–4 below (no runtime run, Unverified vendor facts, post-review fixes security-checked only, listed limitations).",
+D-007,2026-10-29,decision,BUG-0001: remove the optional Firebase-before-consent path (GD).,
+D-008,2026-10-29,decision,"Kept removals from the audit (review round 1 asked why): `zstring-zero-allocation-strings` off csharp-engineer's list — display-string building is Client work, Core builds no strings per tick; `unity:setup-multiplayer-services` off backend-engineer's list — it covers Sessions/Lobby/Relay (netcode), not Cloud Save/Economy.",
+D-009,2026-10-29,decision,"CP2 approved: 10 skills per the spec, with the architect's assumptions (IAP without subscriptions, no RTL, no fixed-point library named).",

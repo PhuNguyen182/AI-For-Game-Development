@@ -30,7 +30,8 @@ user-invocable: false
 - **Check first:** `search` before `add`. A terminal match moves to `Reopen`; a `Backlog` match takes evidence with `update`, as it cannot reach `Reopen`; a `Duplicate` hit: follow `duplicate_of`.
 - **Evidence on a match:** `update` with a `note` alone. The `evidence` field is replaced by an `update`, never appended.
 - **Main GD only:** moves to `Backlog`, `Won't fix`, `Accepted`, from `Backlog` to `Request`, and `delete`: pass `--by "main GD"` on the main GD's order only.
-- **Mirror:** `Won't fix` and `Accepted` also go to `DEBT.md`: the feature root's, or `.workflow/DEBT.md` for a bug with no feature.
+- **Mirror:** `Won't fix` and `Accepted` append the debt entry themselves: the feature root's `DEBT.csv`, or a `debt` record in `.workflow/debt.jsonl` for a bug with no feature (skill `records`).
+  - **Failed mirror:** exits 1 after the move, naming `records.py … bug-mirror BUG-####`: run it.
 
 ## Write
 | Need | Command |

@@ -52,9 +52,11 @@ Assets/_Project/Scripts/Shared/Server/          _Project.Scripts.Shared.Server  
 - **Bug journal:** per skill `bugs`:
   - **`.gitignore` addition:** `.gitignore` += `.workflow/bugs.db*`.
   - **`.gitattributes` addition:** `.gitattributes` += `.workflow/bugs.jsonl text eol=lf merge=union`.
-- **Framework block:** delete the copied `.gitignore`'s `Framework repo only` block, down to its end marker: the project commits its traces and its framework backlog.
-- **Framework backlog source:** `.workflow/framework-backlog.md` comes from `.claude/templates/framework-backlog.md` (the session-start hook creates it; copy the template if absent).
-- **Framework backlog commit:** `.workflow/framework-backlog.md` is committed with the project.
+- **Workflow records:** per skill `records`:
+  - **`.gitignore` additions:** `.gitignore` += `.workflow/records.db*`, `.workflow/ledger.db*`, `.workflow/ledger.corrupt-*.db*`.
+  - **`.gitattributes` additions:** `text eol=lf merge=union` for each records journal and CSV: the framework `.gitattributes`' `Workflow records` block.
+- **Framework block:** delete the copied `.gitignore`'s `Framework repo only` block, down to its end marker: the project commits its traces and its framework backlog journal.
+- **Framework backlog:** `.workflow/framework-backlog.jsonl` starts empty (step 7; the session-start hook creates it when missing) and is committed with the project.
 
 ## 6. Perf budget — `AskUserQuestion`, recommended first
 | Profile | Recommended default |
@@ -68,6 +70,7 @@ Assets/_Project/Scripts/Shared/Server/          _Project.Scripts.Shared.Server  
 
 ## 7. State
 - **Workflow state:** create `.workflow/features/` and an empty `.workflow/bugs.jsonl`: `/release` reads a missing journal as a broken setup.
+  - **Records journals:** empty `.workflow/backlog.jsonl`, `debt.jsonl`, `features.jsonl`, `framework-backlog.jsonl` (skill `records`).
 - **Staging:** stage nothing yet: step 9 asks once for the bootstrap commit (`.workflow/`, `.memory/`, the setup).
 - **Code search:** `CLAUDE.md` → Code search: `xerj prefix <kebab project name>` when `xerj` is installed, else `Grep`.
 - **Tech stack:** create `docs/tech-stack.md` from `references/tech-stack-template.md`, filled from `Packages/manifest.json`, `ProjectSettings/` and the answers above.

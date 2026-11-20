@@ -11,7 +11,8 @@ argument-hint: "[scope or milestone]"
 
 ## 1. Prepare
 - **Thread:** a kebab-case `Advisory-Thread:`, e.g. `milestone-2-exit`.
-- **Inputs:** `CLAUDE.md`, the GDD, `.workflow/backlog.md`, `DEBT.md`, known limitations in open feature files.
+- **Inputs:** `CLAUDE.md`, the GDD, `records.py backlog render`, `debt render`, each feature root's `DEBT.csv`, `csv render limitations --feature <slug>` per open feature.
+  - **Render output:** goes in the brief: advisers have no shell.
 - **Data pack:** a pack under `.memory/advisory/data/` → `check_pack.py` first; failed → name the problems and stop using that pack. None → `Data-Period: none`.
 - **Past advice:** `adv q "<scope words>"`, and bring earlier decisions into the brief by id.
 
@@ -39,4 +40,4 @@ argument-hint: "[scope or milestone]"
 ## 6. Close
 - **Decisions:** `adv decide <id> accepted|rejected|deferred --by 'main GD' --note <why>` for each finding the main GD ruled on.
 - **Usefulness:** the main GD marks findings `adv useful <id> yes|no`; under half of an adviser's findings in a run marked useful → revise that adviser's method skill before the next run.
-- **Backlog:** accepted items → `technical-architect` (Size mode), its brief carrying the thread's `Advisory-Thread:` line and naming findings by `adv:<id>` → `.workflow/backlog.md` rows citing `adv:<id>`, no observed figure.
+- **Backlog:** accepted items → `technical-architect` (Size mode), its brief carrying the thread's `Advisory-Thread:` line and naming findings by `adv:<id>` → `records.py backlog add` rows, each citing `adv:<id>` in its `note`, no observed figure.

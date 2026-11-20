@@ -951,13 +951,23 @@ function ConvertTo-NativeArg([string]$Arg) {
 # A Process, not &: & decodes stdout with the console code page while bugs.py writes UTF-8, [Console]::OutputEncoding
 # throws in a hook with no console, and Windows PowerShell wraps a native command's stderr lines as errors.
 function Invoke-Bugs([string]$Root, [string[]]$BugsArgs, [int]$TimeoutMs = 10000) {
+    return Invoke-SkillScript $Root '.claude/skills/bugs/scripts/bugs.py' $BugsArgs $TimeoutMs
+}
+
+# Runs records.py the same way, with $Stdin (UTF-8, no BOM) as its standard input: the ledger takes its events there.
+# $Root follows the Get-BugsRoot rule, as for bugs.py: records.py applies the same rule to --root itself.
+function Invoke-Records([string]$Root, [string[]]$RecordsArgs, [int]$TimeoutMs = 10000, [string]$Stdin = '') {
+    return Invoke-SkillScript $Root '.claude/skills/records/scripts/records.py' $RecordsArgs $TimeoutMs $Stdin
+}
+
+function Invoke-SkillScript([string]$Root, [string]$Rel, [string[]]$ScriptArgs, [int]$TimeoutMs, [string]$Stdin = '') {
     function Result([string]$State, $Code, [string]$Out, [string]$Err) { [pscustomobject]@{ State = $State; Code = $Code; Out = $Out; Err = $Err } }
     # @() because PowerShell unrolls a one-element array on return.
     $py = @(Resolve-Python $Root | Where-Object { $_ })
     if (-not $py.Count) { return Result 'NoPython' $null '' 'no Python 3.10+ with SQLite FTS5 found' }
-    $script = Join-Path $Root '.claude/skills/bugs/scripts/bugs.py'
+    $script = Join-Path $Root $Rel
     if (-not (Test-Path -LiteralPath $script)) { return Result 'Failed' $null '' "$script is missing" }
-    $words = @($py | Select-Object -Skip 1) + @('-I', $script, '--root', $Root) + @($BugsArgs)
+    $words = @($py | Select-Object -Skip 1) + @('-I', $script, '--root', $Root) + @($ScriptArgs)
     $utf8 = New-Object Text.UTF8Encoding $false
     $psi = New-Object Diagnostics.ProcessStartInfo
     $psi.FileName = $py[0]
@@ -971,10 +981,12 @@ function Invoke-Bugs([string]$Root, [string[]]$BugsArgs, [int]$TimeoutMs = 10000
     $psi.StandardErrorEncoding = $utf8
     try {
         $p = [Diagnostics.Process]::Start($psi)
-        $p.StandardInput.Close()
         # Both pipes drain at once: a full one would stall the child.
         $outRead = $p.StandardOutput.ReadToEndAsync()
         $errRead = $p.StandardError.ReadToEndAsync()
+        # Bytes on the base stream: Windows PowerShell has no StandardInputEncoding, and its default would write a BOM or ?.
+        if ($Stdin) { $bytes = $utf8.GetBytes($Stdin); $p.StandardInput.BaseStream.Write($bytes, 0, $bytes.Length) }
+        $p.StandardInput.Close()
         if (-not $p.WaitForExit($TimeoutMs)) {
             # A killed write is healed by the next command's hash check. Kill($true) does not exist on Windows PowerShell.
             try { $p.Kill($true) } catch { try { $p.Kill() } catch {} }
