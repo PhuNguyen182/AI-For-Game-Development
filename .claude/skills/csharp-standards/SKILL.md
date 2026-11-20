@@ -7,6 +7,7 @@ user-invocable: false
 # C# standards
 
 - **Package API:** installed version first (`Packages/manifest.json`, `packages-lock.json`, `Library/PackageCache/` read only, never in evidence), then that version's docs; `unity:*` skill if any.
+- **Library choice:** which library a project uses lives in its `docs/tech-stack.md`.
 - **Rule:** rule `csharp.md` binds every `.cs` change.
 - **Writers:** writers open a reference only when the rule leaves a question open.
 - **Asset names:** specs use them too: Prefab `Category_Name` · `Scene_` · `SO_` · `Mat_` · `Tex_` · `Anim_` · Animator `AC_` · `Shader_` · `VFX_` · asmdef = its root namespace.
