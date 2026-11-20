@@ -4,6 +4,8 @@ Sources (below the SKILL.md `Docs:` bases): NGO [rpc] `manual/advanced-topics/me
 
 A connection id names a transport slot, not an account. Binding an account to it needs a server-verified credential; token design is `security-reviewer`'s.
 
+A client certificate shipped in the build (mTLS) is not a player credential; the account comes from a verified auth token.
+
 ## Netcode for GameObjects 2.x
 
 | Subject | Fact that decides |
@@ -17,7 +19,7 @@ A connection id names a transport slot, not an account. Binding an account to it
 | `NetworkManager.ConnectedClients` | `IReadOnlyDictionary<ulong, NetworkClient>` [nm]; `PlayerObject` gives the sender's avatar |
 | `NetworkManager.ServerClientId` | `const ulong 0`, the server's own id [nm] |
 | `NetworkManager.DisconnectClient(ulong clientId, string reason = null)` | Drops the client; `reason` reaches the client as `DisconnectReason` [nm], so keep it generic |
-| `NetworkConfig.ConnectionData` | Unauthenticated, unencrypted: never the source of an account binding |
+| `NetworkConfig.ConnectionData` | Unauthenticated, unencrypted: carries no secret and is never the source of an account binding |
 
 - **Sample:** [UseItemRpc.cs](../scripts/UseItemRpc.cs) — an `[Rpc(SendTo.Server)]` method taking a trailing `RpcParams rpcParams = default`.
   - **Adapt into:** the `NetworkBehaviour` that owns the Rpc; the file holds the method only.

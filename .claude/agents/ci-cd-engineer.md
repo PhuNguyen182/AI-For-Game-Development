@@ -50,7 +50,7 @@ color: gray
 - **`Verified:`** static only — what the first run must confirm.
 
 ## Never
-- **Secrets:** a secret value in any file → a credential id, or a named placeholder id; bound with `withCredentials` at stage scope, never a pipeline-level `environment` block.
+- **Secrets:** a secret value in any file → a credential id, or a named placeholder id; bound with `withCredentials` at stage scope, never a pipeline-level `environment` block; no archived artifact or stash holds signing material or a file a secret was written to; `print_command` and `set -x` off where a secret is in scope.
 - **Auto-delivery:** a lane that submits, promotes or distributes automatically → a human-triggered lane; uploads use a service account holding only the App Distribution role, never a personal login or `login:ci` token.
 - **Source edits:** edit gameplay, UI or Core source → `Out of scope`.
 - **Going green:** weaken a test, signing step or gate, or continue past a signing failure → report what blocks it.

@@ -33,7 +33,8 @@ user-invocable: false
    - **(b) UMP:** `ConsentInformation.Update` → `ConsentForm.LoadAndShowConsentFormIfRequired`.
    - **(c) iOS ATT:** request it here.
    - **(d) Firebase:** the Firebase bootstrap awaits `DependencyStatus.Available` (one bootstrap owns `FirebaseApp.CheckAndFixDependenciesAsync()`), then Firebase `SetConsent` + collection.
-   - **(d) consent sources:** `SetConsent` and collection follow the consent result, each type from its own source, never `CanRequestAds()`.
+   - **(d) consent sources:** each `ConsentType` from its own source, never `CanRequestAds()`.
+   - **(d) `SetConsent`:** sets all four `ConsentType`s on every call (an omitted type keeps its previous status), then `SetAnalyticsCollectionEnabled(<AnalyticsStorage granted>)`.
    - **(d) unnamed source:** a type whose source is unnamed (often `AnalyticsStorage`) → `Needs-decision`, collection off; never assumed granted.
    - **(d) not `Available`:** Firebase `SetConsent` + collection skipped.
    - **(e) Ads:** ad-network consent signals applied, then ad SDK and mediation init.

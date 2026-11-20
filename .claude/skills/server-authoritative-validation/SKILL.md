@@ -78,7 +78,6 @@ user-invocable: false
 - **Swallowed exceptions:** swallow a decode or validation exception and apply the message anyway — fail closed (rule `core.md` Security).
 - **Client-side guards as validation:** count a client-side guard (disabled button, client `IsOwner` check) as validation — a modified client sends the message regardless.
 - **Logging payloads:** log the raw payload, an account id or any player PII on rejection.
-- **Non-crypto RNG:** draw a token, nonce or any security value from `System.Random`, `UnityEngine.Random` or a game RNG — use `RandomNumberGenerator`; token design → `security-reviewer`.
 
 ## Output
 ```

@@ -2,14 +2,14 @@
 
 Synthesized from project decisions; adds to rule `csharp.md`. Library choice: `docs/tech-stack.md`.
 
-- **API detail:** installed version first (`Packages/manifest.json`, `packages-lock.json`, `Library/PackageCache/` read only, never in evidence, `core.md`), then its docs; `unity:*` skill if any.
+- **API detail:** per `csharp-standards` SKILL.md → Package API (installed version first, then its docs).
 - **Unpublished values:** a member, default or number the docs omit comes from the Inspector or source, or is reported unknown; never invented.
 - **Adoption:** a new library, DOTS/ECS or a project-wide standard is `cto`'s call (`/decide`); a skill or package at hand never decides it.
 - **Assumed cause:** a symptom with several causes → name the assumed layer before editing a shared asset.
 
 ## Core boundary
 - **Client-only:** tweening, UniTask, R3, DI, Odin, Spine, layout adapters, Addressables, SDKs, SOs and their attributes stay out of Core; Core exposes plain events.
-- **Core-safe:** MemoryPack, ZLinq, ZString and NRandom may enter Core; their Unity add-ons stay in Client.
+- **Core-safe:** MemoryPack (trusted data only), ZLinq, ZString and NRandom may enter Core; their Unity add-ons stay in Client.
 - **Rule leaks:** callbacks, Animation Events, shaders, GPU results and nav agents report or render; Core decides, raising a threshold crossing once, never a per-frame value.
 - **Synchronous Core:** Core rules and server-validated state graphs stay synchronous and tick-driven; a Core wait is an interface the Client drives.
 - **State machines:** externalise snapshotted state; none on per-entity hot paths; a transition whose legality is a design question → `Needs-decision`, `Next: main-gd`.
@@ -62,7 +62,8 @@ Synthesized from project decisions; adds to rule `csharp.md`. Library choice: `d
 
 ## DOTS/Jobs/Burst
 - **Managed by default:** native containers only where data crosses a job, Burst or ECS; ECS systems call Core; no extra Worlds without a reason.
-- **Burst:** never alone; the attribute is not evidence, the Burst Inspector is; server-evaluated maths stays `Strict`, `Fast` only for presentation.
+- **Burst:** never alone; the Burst Inspector is evidence, the attribute is not.
+- **Burst float mode:** server-evaluated maths stays `Deterministic` or `Strict` (tolerance unstated → `Strict`, flagged); `Fast` only for presentation.
 - **Parallel work:** only provably independent iterations; parallel and ECB writes take a deterministic order.
 - **Safety checks:** disabled only on a measurement naming them as the cost; an Editor-clean run never proves safety.
 - **Mathematics:** `Unity.Mathematics` alone never fixes determinism; `float3` casing is no naming violation.

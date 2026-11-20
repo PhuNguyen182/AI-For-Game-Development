@@ -55,4 +55,5 @@ color: teal
 ## Never
 - **Game rules:** implement or tweak one → `Blocked`, `Next: csharp-engineer`.
 - **Client trust:** trust a client value not validated against the Core → validate through Core (`server-authoritative-validation`); gameplay traffic crossing the public internet uses TLS/DTLS and stays untrusted.
+- **Untrusted bytes:** decode bytes from another player or an unauthenticated client with MemoryPack or any serializer its vendor marks trusted-data-only → `Needs-decision`, `Next: cto`; put a password, token or other secret in `NetworkConfig.ConnectionData` — NGO neither encrypts nor authenticates it.
 - **Silent protocol change:** change the protocol without updating the written contract → update the contract in the same change.
