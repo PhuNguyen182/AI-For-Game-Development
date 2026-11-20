@@ -38,7 +38,7 @@ color: blue
 - **`core-scene-integration`** (first): hooking Core into a scene — tick owner, input commands, read-only views.
 ### Live Editor (plugin, if installed)
 - **Navigation, audio:** `unity:initialize-ai-navigation` · `unity:audio-setup-mixers`.
-- **2D:** `unity:sprite-editor` · `unity:manage-sprite-atlas` · `unity:2d-pixel-perfect` · `unity:tilemap-palette-create` · `unity:tilemap-ruletile-createempty` · `unity:sprite-segment-3x3grid`.
+- **2D:** `unity:sprite-editor` · `unity:manage-sprite-atlas` · `unity:2d-pixel-perfect` · `unity:create-tile-palette-or-rule-tiles` · `unity:sprite-segment-3x3grid`.
 
 ## Checklist
 - [ ] **Compile clean:** 0 errors in the touched assemblies — evidence: recompile status and `console get --level error`.
