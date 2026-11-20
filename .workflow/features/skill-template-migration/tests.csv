@@ -1,0 +1,13 @@
+id,criterion,test_id,mode,owner,last_result
+T-001,AC1,Whole-layer verify counts,shell,"T2, main session","Pass: no over-120, banned-phrase or no-`Use` line"
+T-002,AC2,"`claude -p /context`, 1M window",shell,main session,"Pass: budget 0.02; 201/201 rows at 0.019, which is 95% of it; `final/runs-head.md`, `final/reads.md`"
+T-003,AC3,`/context` on a 200k model,manual,main session,"Not run: `claude-sonnet-5-5` and `claude-haiku-5-5` both report a 1M window on this machine, so no 200k session was reachable"
+T-004,AC4,Whole-layer verify counts,shell,"T3, T4, main session",Partly: all 0 except `body > 8000` on 4 skills
+T-005,AC5,Fence check plus block diff,shell + manual,comparators,Pass: 25 files with `Unverified:` headers; fence check now fails
+T-006,AC6,Anchor walk,manual,"comparators, CP3",Pass: 341/341 by reading
+T-007,AC7,`token-survival.ps1` plus reports,shell + manual,"comparators, re-read","317 misses equal the sum of the batch reports; `reread-81/comparison.md` read all 81, 6 fixed; last 8 lines in `final/reads.md`"
+T-008,AC8,`ask-check.ps1`,shell + manual,main session,"Pass: 40 hits, 38 allowlisted, 2 resolved, 0 open"
+T-009,AC9,Section walk,manual,"comparators, CP3","Pass: 109 with `## Steps`, 15 pipeline, standard or method"
+T-010,AC10,`run.ps1` fixtures,shell,"T5, main session",Pass: 533 total on pwsh and 5.1
+T-011,AC11,"`run.ps1`, `test_mem.py`, verify",shell,main session,Partly: all pass; `body > 8000` remains on 4 skills
+T-012,AC12,Docs list,manual,CP3,Pass; memory note goes in the closure commit

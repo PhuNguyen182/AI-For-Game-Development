@@ -1,0 +1,7 @@
+id,criterion,test_id,mode,owner,last_result
+T-001,"1-6, 9 (parser)",`.claude/skills/bugs/scripts/test_bugs.py`,"Python unittest, temp repos",T1 author,"309 OK at `da07194`, QA E7"
+T-002,7,`.claude/hooks/tests/run.ps1`,"pwsh 7, 5.1",T2 author,"At `da07194`: pwsh 1361 pass, main session; 5.1 1356 pass, QA E7; 0 fail, 0 skip"
+T-003,8,`verify.ps1` whole layer,pwsh,T3 author,"Exit 0, 21 warnings at `da07194`, main session and QA E7"
+T-004,10,`framework-sync.ps1` on temp repos and suite rows,pwsh 7,T3 author,"Passed at `da07194`, QA E7"
+T-005,9 (real data),C15,"Main checkout, after merge",Main session,"Passed, journal sha equals QA's copy"
+T-006,7 (live),one `claude -p`,"Temp project, bug at cap",Main session,At-cap warning delivered

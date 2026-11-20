@@ -6,17 +6,17 @@ argument-hint: "<platforms> [--dry-run]"
 
 # /release
 
-- **Invocation:** invoking `/release` is the GD's build request for the platforms named.
+- **Invocation:** invoking `/release` is the main GD's build request for the platforms named.
 - **`--dry-run`:** no tag, push or upload, and no writes — step 2 reports the next version instead of setting it, and step 4's bug status moves are reported, not written.
 - **Dry-run brief:** step 4's brief states each deferred bug's repro steps in plain words, with no `Verify:` line; the run reports that outcome, not a `Repro:` line, and the hook charges nothing.
 - **Attempts:** unsized: 2 attempts per dispatch.
 - **Risk flag:** risk flag is always set.
 
-## Gate — all must pass, or the GD accepts the gap by name
+## Gate — all must pass, or the main GD accepts the gap by name
 | # | Step | Owner | Pass |
 |---|---|---|---|
 | 0 | Content | main session | Release content committed; every feature in it closed at CP4 |
-| 0b | Unchecked work | main session | Every feature in `<last tag>..HEAD` whose file says "not reviewed" or "not QA'd", every `Accepted` High or Highest bug (`bugs.py list --status Accepted --priority High --priority Highest`, plus `.workflow/DEBT.md` and each feature root's `DEBT.md`: purge can remove an old one from the DB), every commit outside a closed feature (S work, no-feature `/fix`) — each listed as a named gap |
+| 0b | Unchecked work | main session | Every feature in `<last tag>..HEAD` whose limitations say "not reviewed" or "not QA'd" (`records.py csv list limitations --feature <slug>`; a legacy file: its text), every `Accepted` High or Highest bug (`bugs.py list --status Accepted --priority High --priority Highest`, plus `records.py debt list --open` and each feature root's `DEBT.csv`: purge can remove an old one from the DB), every commit outside a closed feature (S work, no-feature `/fix`) — each listed as a named gap |
 | 1 | Open bugs | main session | No High or Highest unsettled, `Backlog` included (`bugs.py list --open --priority High --priority Highest`), except a `Resolved` bug noted `awaits device verification` (`/fix` step 6; read it with `show`; it counts only on the bug's latest move to `Resolved`), left for step 4 — re-checked after step 4 |
 | 2 | Version bump | main session | `bundleVersion` + build number / version code incremented |
 | 3 | Build per platform | `build-release-engineer` | Release config, IL2CPP, artifact exists |
@@ -32,7 +32,7 @@ argument-hint: "<platforms> [--dry-run]"
 
 - **Serial steps:** steps 3–8 hold the Editor or the device: run them serially.
 - **Parallel steps:** 9, 10, 11 are read-only and run in parallel with anything.
-- **Review status:** review status comes from each feature file (row 0b), never assumed.
+- **Review status:** review status comes from each feature's limitations (row 0b), never assumed.
 - **Release diff:** the release diff gets the security scan (11, brief `Target: <last tag>..HEAD`), not a second `/review`.
 - **Crash bugs:** a `Resolved` crash bug awaiting a device build is verified by step 4's device run.
 - **Bug queries:** rows 0b and 1, per skill `bugs`. No `.workflow/bugs.jsonl` → say so; not a pass. Python absent or a CLI error → not a pass.
@@ -50,9 +50,9 @@ argument-hint: "<platforms> [--dry-run]"
 ## Finish — `AskUserQuestion`
 - **Tag, push, submit:** none of them runs before this `AskUserQuestion`.
 - **Show:** the gate table with results.
-- **Journal:** row 4 moved a status → add "journal uncommitted": `.workflow/bugs.jsonl`, and `.workflow/DEBT.md` when this run wrote it, wait for the GD's commit order, and a tag omits those moves until then.
-- **Options:** tag + push (recommended only when every row passes or the GD accepted each gap by name in this run; never in a dry run) / fix failures first / stop.
+- **Journal:** row 4 moved a status → add "journal uncommitted": `.workflow/bugs.jsonl`, and `.workflow/debt.jsonl` when this run wrote it, wait for the main GD's commit order, and a tag omits those moves until then.
+- **Options:** tag + push (recommended only when every row passes or the main GD accepted each gap by name in this run; never in a dry run) / fix failures first / stop.
 - **Fix failures first:** each failed row goes to its route (`/fix`, `/review`, the owning agent), then re-run only the failed rows.
   - **Round count:** +1 `release` round, cap 2, recorded as `- Release rounds: n/2` in `.workflow/release-<version>.md`, then the stop rule.
 - **Release file:** `.workflow/release-<version>.md` is the gate table with results, written at every Finish; not in a dry run.
-- **Store upload:** store upload or submission is always a separate, explicit GD request.
+- **Store upload:** store upload or submission is always a separate, explicit main GD request.

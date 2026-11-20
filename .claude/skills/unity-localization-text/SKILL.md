@@ -26,8 +26,8 @@ user-invocable: false
    - **`com.unity.localization` 1.5.x in `Packages/packages-lock.json`:** this skill.
    - **Unity 6.7+ built-in Localization Runtime:** read its manual before applying any name here, per [string-tables-and-smart-strings.md](references/string-tables-and-smart-strings.md).
    - **Package absent:** install and settings per `unity:localization` §0–1.
-2. **Locale list unstated:** `Blocked` naming the locale list (`Next: gd`).
-   - **Why:** it decides scripts, fonts and atlas memory; the GD names the shipped locales.
+2. **Locale list unstated:** `Blocked` naming the locale list (`Next: main-gd`).
+   - **Why:** it decides scripts, fonts and atlas memory; the main GD names the shipped locales.
 3. **Keep text out of Core:** Core emits ids, enums and counts; Client code maps them to table entries (`csharp.md` → Boundaries).
    - **Criterion:** no table key, `LocalizedString` or player-facing literal in Core.
 4. **Every player-facing string comes from a String Table:**
@@ -35,7 +35,7 @@ user-invocable: false
    - **UI Toolkit:** a `LocalizedString` binding.
    - **Code-composed text:** a `LocalizedString` with Smart arguments — never concatenated localized fragments (word order differs per language).
    - **Literals:** find them with the `unity:localization` §6 scan.
-   - **Criterion:** every site found is converted or listed as GD-accepted; debug-only text is exempt.
+   - **Criterion:** every site found is converted or listed as main-GD-accepted; debug-only text is exempt.
 5. **Await `LocalizationSettings.InitializationOperation` before the first code read:** and check it succeeded.
    - **Components:** wait on their own; scripts do not.
    - **Async read:** prefer it; WebGL has no `WaitForCompletion`. Per [string-tables-and-smart-strings.md](references/string-tables-and-smart-strings.md).

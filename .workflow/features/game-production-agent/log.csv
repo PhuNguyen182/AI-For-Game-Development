@@ -1,0 +1,9 @@
+id,agent,lane,changed,verified,attempts,limitations
+L-001,main session (T1 rename),serial,"92 files, role term and machine tokens; `round-cap.ps1` reads both headings",Hooks 1340 PASS; `test_bugs.py` 269 OK after 2 fixture fixes; `test_mem.py` OK; verify OK,1/4,Commit made on the feature branch
+L-002,"main session (T2-T4 store, capture, guards)",serial,"`adv.py`, `advisory-capture.ps1`, `mem.py` scrub, `pre-commit.ps1`, `round-cap.ps1` exemption, ignore rules",See `Tests`,2/4,"Attempt 1: suite failed 5 capture checks, the test helper's project dir"
+L-003,main session + spike (T5),serial,none,"Live: `general-purpose` with a thread marker, `SendMessage` follow-up kept context, SubagentStop fired on it, trace held no return text. Found a duplicate store of one return; ingest now idempotent. Live `product-owner` return stored, `rounds` 0, `adv lint` OK",1/4,Spike rows deleted; smoke row still in the local store
+L-004,main session (T6-T8),serial,"3 agents, 7 skills, `simulate.py`, `check_pack.py`, `routing.md`, `core.md`, `/feature`, `/plan-game`, `/new-project`, `CLAUDE.md`, `README.md`",See `Tests`; verify OK,1/4,Workflows themselves unrun: AC10
+L-005,main session (review round 1 fixes),serial,"19 files, `08731dc`",Suites green; round 2 failed: check_pack repeated cause,1/1,Stop rule 1
+L-006,main session (review round 2 fixes),serial,"`734bbf1`, check_pack default-deny redesign","Suites green; round 3: security Clear, code High",1/1,Stop rule 2
+L-007,main session (review round 3 fixes),serial,"`3f38e29`, tests first (21 failed on 734bbf1)",Round 4 extra: Approve + Clear,1/1,Extra round on the main GD's order
+L-008,"main session (round 4 Lows, CP3 D1)",serial,"check_pack non-ASCII words, adv git env, `/design`/`/monet` usefulness, spec catch-up","New tests failed on 3f38e29, pass now",1/1,Lows not re-reviewed by rule

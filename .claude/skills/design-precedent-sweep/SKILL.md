@@ -8,8 +8,8 @@ user-invocable: false
 
 - **Not for:** finding a package, technique or service to adopt (`technology-scouting-sweep`).
 - **Not for:** grading a source (`source-credibility-grading`).
-- **Not for:** attacking the option the GD picks (`critic`).
-- **Not for:** deciding (GD; `cto` for a technology foundation).
+- **Not for:** attacking the option the main GD picks (`critic`).
+- **Not for:** deciding (main GD; `cto` for a technology foundation).
 - **Docs:** GDC Vault https://gdcvault.com, Game Developer postmortems https://www.gamedeveloper.com.
 
 ## Steps
@@ -33,7 +33,7 @@ user-invocable: false
 9. **List options alphabetically by mechanism:** say the order is not a ranking.
 
 ## Never
-- **Ranking:** ranking, scoring, recommending or calling an option "best" or "standard" — the choice is the GD's.
+- **Ranking:** ranking, scoring, recommending or calling an option "best" or "standard" — the choice is the main GD's.
 - **Unopened source:** citing a talk or postmortem whose page you did not open, or attributing a mechanism its developers did not describe.
 - **Package search:** turning the sweep into a package search; a package found on the way goes under `Leads`, unscreened.
 

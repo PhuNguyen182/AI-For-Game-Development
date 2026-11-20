@@ -19,7 +19,7 @@ user-invocable: false
 - **Report coverage:** every report has `Not covered:` — never "none" unless exhaustive.
 - **Coverage owners:** name the owner agent of each gap.
 - **Never:** weaken an assertion to go green, report the best run, call an Editor run a device run, infer an unobserved result, reuse an old result, count a skipped check as passed.
-- **Coverage figure:** proves only that lines ran; never cite it for a behaviour claim, or set a target the GD did not state.
+- **Coverage figure:** proves only that lines ran; never cite it for a behaviour claim, or set a target the main GD did not state.
 - **Missing input:** `Blocked` on a missing budget, clause or target is correct. A guessed input is not.
 - **Other gates:** consume other gates' verdicts; never re-run their checks.
 
@@ -37,7 +37,7 @@ user-invocable: false
 - **Severity rule:** one severity per finding; impact if shipped, never cost to fix.
 - **Filed bug priority:** a finding keeps its Severity; a filed bug maps Critical → Highest and the rest by name.
 - **Defect:** code ≠ spec → owner.
-- **Design flaw:** spec itself wrong, including a spec assumption that contradicts an acceptance criterion (the criterion wins) → GD immediately, never downgraded.
+- **Design flaw:** spec itself wrong, including a spec assumption that contradicts an acceptance criterion (the criterion wins) → main GD immediately, never downgraded.
 - **As designed:** report it as such.
 - **Fix code:** no fix code in a finding; name the change if obvious.
 

@@ -1,6 +1,6 @@
 ---
 name: plan-game
-description: "GDD to production backlog: milestones, S/M/L features, risk flags, .workflow/backlog.md. Use to plan production."
+description: "GDD to production backlog: milestones, S/M/L features, risk flags, the records backlog. Use to plan production."
 argument-hint: "<GDD path or text>"
 ---
 
@@ -8,7 +8,7 @@ argument-hint: "<GDD path or text>"
 
 ## 1. Read
 - **Sources:** the GDD and `CLAUDE.md` (profile, platforms, multiplayer).
-- **Unclear basics:** unclear core loop, target session length or monetisation → one `AskUserQuestion` (≤4 questions).
+- **Unclear basics:** unclear core loop, target session length or monetisation → one `AskUserQuestion` (≤4 questions), offering `/design` or `/monet` to settle it.
 
 ## 2. Milestones
 - **Default order:** **Prototype** → **Vertical slice** → **Content** → **Soft launch** → **Launch**.
@@ -21,12 +21,17 @@ argument-hint: "<GDD path or text>"
 - **Per feature:** name · milestone · size S/M/L · risk flag · depends on · first agent.
 - **Order:** core systems first in each milestone.
 
-## 4. Write `.workflow/backlog.md`
-```
-| # | Feature | Milestone | Size | Risk | Depends on | Status |
-|---|---|---|---|---|---|---|
-```
-- **Status values:** todo | in progress (`/feature <slug>`) | done | dropped.
+## 3b. Order and bar — `product-owner`
+- **Brief:** the feature list, GDD, `Workflow: /plan-game`, `Advisory-Thread: plan-<milestone>`.
+- **Returns:** a proposed order within each milestone, and each milestone's "finished" bar (`product-quality-bar`).
+- **Effect:** advice only; core systems still come first, and the main GD approves at step 5.
+
+## 4. Write the backlog — `records.py backlog` (skill `records`)
+- **Per feature, in plan order:** `records.py backlog add`, stdin `{"feature", "milestone", "size", "risk", "depends_on"}`; it prints `BL-####`.
+  - **Numbers:** the id's number is the plan's `#`; `depends_on` lists those numbers.
+- **Check first:** `backlog search "<feature>"` before each `add`; a re-plan updates the row (`backlog update <BL-id>`).
+- **Status values:** todo | in progress (`/feature <slug>`) | done | dropped (`backlog set-state <BL-id> "<status>" --note N`).
+- **View:** `records.py backlog render` prints the `| # | Feature | Milestone | Size | Risk | Depends on | Status |` table for step 5.
 
 ## 5. Approve — `AskUserQuestion`
 - **Options:** Approve / reorder (which) / cut scope (which).

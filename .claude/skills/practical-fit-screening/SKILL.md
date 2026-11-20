@@ -27,7 +27,7 @@ user-invocable: false
 3. **Licence:** read the repository's own LICENSE file only (identifier: https://spdx.org/licenses); Asset Store: the licence named on the package page.
    - **Pass:** MIT, Apache-2.0, BSD, Unlicense.
    - **Block:** GPL/AGPL block shipped game code.
-   - **GD acceptance:** Asset Store EULA, source-available or any non-commercial clause need the GD's explicit acceptance.
+   - **Main GD acceptance:** Asset Store EULA, source-available or any non-commercial clause need the main GD's explicit acceptance.
 4. **Scripting backend, not just platform:** IL2CPP AOT-compiles and strips.
    - **Fails on device:** `System.Reflection.Emit`, runtime code generation and unconstrained generic virtual calls pass in the Editor and fail on device.
    - **Mono-only:** means PC-only.
@@ -42,7 +42,7 @@ user-invocable: false
    - **Vendor health:** long-term vendor health is `tech-vendor-dependency-risk-assessment`, not this gate.
 9. **Soft criteria for survivors only:** maintenance and bus factor, adoption, integration effort, documentation, removal path.
    - **Exit cost:** Low (hidden behind an interface) / Medium / High (its types appear in gameplay signatures).
-10. **Gate needs a build, a device or a GD decision → `UNKNOWN` with the exact question:** build or device to `rd-engineer`, licence or pricing to the GD (`Needs GD`).
+10. **Gate needs a build, a device or a main GD decision → `UNKNOWN` with the exact question:** build or device to `rd-engineer`, licence or pricing to the main GD (`Needs main GD`).
     - **Guessing:** never guess a pass.
 11. **Verdict per gate:** state every gate's verdict, passes included.
 
@@ -67,4 +67,4 @@ user-invocable: false
 ```
 
 ## Example
-- **"It is GPL but only used internally in the Editor":** declined as an assumption — whether the tool ships in the build decides it; gate stays BLOCKED pending the GD's explicit acceptance.
+- **"It is GPL but only used internally in the Editor":** declined as an assumption — whether the tool ships in the build decides it; gate stays BLOCKED pending the main GD's explicit acceptance.

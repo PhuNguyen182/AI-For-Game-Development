@@ -29,7 +29,7 @@ user-invocable: false
 1. **Decide whether the current format has shipped:** any build that wrote it reached a device outside the team (store, TestFlight, external testers).
    - **Not shipped:** change the DTO in place, no step.
    - **Shipped:** steps 3–10 apply.
-   - **Unknown:** `Needs-decision` to the GD; a wrong "no" corrupts live saves.
+   - **Unknown:** `Needs-decision` to the main GD; a wrong "no" corrupts live saves.
 2. **Put every save behind the fixed envelope:** per [version-envelope-and-chain.md](references/version-envelope-and-chain.md).
    - **Header:** hand-written (magic, envelope version, schema version, save counter, payload length, SHA-256 over header and payload).
    - **Payload:** in the project's serializer, deserialized only into the frozen `SaveV{N}` type the header selects.
@@ -45,7 +45,7 @@ user-invocable: false
 5. **Classify before deserializing:** per the load table in [version-envelope-and-chain.md](references/version-envelope-and-chain.md).
    - **Schema newer than the build:** refuse — no overwrite, no save, no cloud upload this session; tell the player to update.
    - **Corrupt:** restore from backup, else surface it; never fall through to a new game.
-   - **Below `MinSupportedVersion`:** `Needs-decision` to the GD.
+   - **Below `MinSupportedVersion`:** `Needs-decision` to the main GD.
 6. **Migrate with the original kept:** each stage below, in order.
    - **Backup first:** copy the untouched bytes to the per-version backup.
    - **Migrate in memory:** validate the result at the boundary (`csharp.md`).

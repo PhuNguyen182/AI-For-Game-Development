@@ -115,7 +115,7 @@ class MemTest(unittest.TestCase):
         return t
 
     def test_layers_indexed_and_excludes_respected(self):
-        write(self.root, ".memory/notes/feedback/ask-gd.md", note("ask-gd", "Ask the GD via multiple choice"))
+        write(self.root, ".memory/notes/feedback/ask-gd.md", note("ask-gd", "Ask the main GD via multiple choice"))
         code, out = run(self.root, "stats")
         self.assertIn("M 1 notes", out)
         _, out = run(self.root, "q", "Third-party readme")
@@ -233,6 +233,125 @@ class MemTest(unittest.TestCase):
         self.assertEqual(run(self.root, "capture", "--transcript", str(t), "--session", session)[0], 0)
         out = list((self.root / ".memory/traces").rglob("*-%s.jsonl" % session[:8]))
         return out[0] if out else None
+
+    # ---- advice stays off git: traces are committed in game projects
+    FIGURE = "D7 11.2% [measured: retention.csv, 2026-10, 1.4.0]"
+    FIGURE_BARE = "ARPDAU 0.083"
+
+    @staticmethod
+    def assistant(*blocks, ts="2026-10-28T02:00:01Z"):
+        return {"type": "assistant", "timestamp": ts, "message": {"content": list(blocks)}}
+
+    @staticmethod
+    def agent_use(uid, agent, prompt):
+        return {"type": "tool_use", "id": uid, "name": "Agent", "input": {"subagent_type": agent, "description": "read", "prompt": prompt}}
+
+    @staticmethod
+    def tool_result(uid, text):
+        return {"type": "user", "timestamp": "2026-10-28T02:00:02Z", "message": {"content": [{"type": "tool_result", "tool_use_id": uid, "content": text}]}}
+
+    def test_adviser_brief_and_return_leave_a_pointer(self):
+        out = self.capture_lines([
+            self.assistant(self.agent_use("a1", "monetization-designer", "Read the economy. " + self.FIGURE_BARE)),
+            self.tool_result("a1", "Status: Done\nAdvisory-Return: v1\n### F1 [High] x\n" + self.FIGURE_BARE),
+        ], session="adv00001-1")
+        text = out.read_text(encoding="utf-8")
+        self.assertNotIn(self.FIGURE_BARE, text)
+        self.assertEqual(text.count(mem.ADVISORY_POINTER), 2)
+
+    def test_a_background_adviser_return_leaves_a_pointer(self):
+        out = self.capture_lines([
+            self.assistant(self.agent_use("a2", "product-owner", "Read.")),
+            self.tool_result("a2", "Async agent launched successfully.\nagentId: abc123"),
+            self.user('<agent-message from="abc123">No marker here, ' + self.FIGURE_BARE + "</agent-message>"),
+            {"type": "attachment", "timestamp": "2026-10-28T02:00:03Z", "attachment": {"type": "queued_command", "prompt":
+                "<task-notification><tool-use-id>a2</tool-use-id><summary>done</summary><result>" + self.FIGURE_BARE + "</result></task-notification>"}},
+        ], session="adv00002-1")
+        self.assertNotIn(self.FIGURE_BARE, out.read_text(encoding="utf-8"))
+
+    def test_any_agent_with_a_thread_marker_leaves_a_pointer(self):
+        out = self.capture_lines([
+            self.assistant(self.agent_use("a3", "critic", "Advisory-Thread: pricing\nAttack this. " + self.FIGURE_BARE)),
+            self.tool_result("a3", "Attacked. " + self.FIGURE_BARE),
+        ], session="adv00003-1")
+        self.assertNotIn(self.FIGURE_BARE, out.read_text(encoding="utf-8"))
+
+    def test_a_return_with_the_marker_leaves_a_pointer_with_no_known_agent(self):
+        out = self.capture_lines([self.user('<agent-message from="unknown">Advisory-Return: v1\n' + self.FIGURE_BARE + "</agent-message>")],
+                                 session="adv00004-1")
+        self.assertNotIn(self.FIGURE_BARE, out.read_text(encoding="utf-8"))
+
+    def test_marked_assistant_text_leaves_a_pointer_and_the_rest_stays(self):
+        out = self.capture_lines([self.assistant({"type": "text", "text":
+            "Before.\n<!-- advisory:begin -->\n" + self.FIGURE_BARE + "\n<!-- advisory:end -->\nAfter."})], session="adv00005-1")
+        text = out.read_text(encoding="utf-8")
+        self.assertNotIn(self.FIGURE_BARE, text)
+        self.assertIn("Before.", text)
+        self.assertIn("After.", text)
+        self.assertIn(mem.ADVISORY_POINTER, text)
+
+    def test_an_unterminated_marker_strips_to_the_end_of_the_turn(self):
+        out = self.capture_lines([self.assistant({"type": "text", "text": "Before.\n<!-- advisory:begin -->\n" + self.FIGURE_BARE})], session="adv00006-1")
+        text = out.read_text(encoding="utf-8")
+        self.assertNotIn(self.FIGURE_BARE, text)
+        self.assertIn("Before.", text)
+
+    def test_a_marker_quoted_in_prose_strips_nothing(self):
+        out = self.capture_lines([self.assistant({"type": "text", "text": "Use `<!-- advisory:begin -->` here. " + self.FIGURE_BARE})], session="adv00007-1")
+        self.assertIn(self.FIGURE_BARE, out.read_text(encoding="utf-8"))
+
+    def test_a_labelled_line_without_markers_leaves_a_pointer(self):
+        out = self.capture_lines([self.assistant({"type": "text", "text": "Keep this.\n" + self.FIGURE})], session="adv00008-1")
+        text = out.read_text(encoding="utf-8")
+        self.assertNotIn("11.2%", text)
+        self.assertIn("Keep this.", text)
+
+    def test_a_labelled_answer_leaves_a_pointer(self):
+        out = self.capture_lines([
+            self.assistant({"type": "tool_use", "id": "q9", "name": "AskUserQuestion", "input": {"questions": []}}),
+            self.tool_result("q9", "User answered: " + self.FIGURE),
+        ], session="adv00009-1")
+        self.assertNotIn("11.2%", out.read_text(encoding="utf-8"))
+
+    def test_a_foreground_adviser_continued_by_message_leaves_a_pointer(self):
+        out = self.capture_lines([
+            self.assistant(self.agent_use("f1", "game-designer", "Read the loop.")),
+            self.tool_result("f1", "Status: Done\nAdvisory-Return: v1\n\nagentId: fg1 (use SendMessage to continue)"),
+            self.user('<agent-message from="fg1">Plain follow-up, ' + self.FIGURE_BARE + "</agent-message>"),
+        ], session="adv00011-1")
+        self.assertNotIn(self.FIGURE_BARE, out.read_text(encoding="utf-8"))
+
+    def test_a_follow_up_notification_under_the_message_id_leaves_a_pointer(self):
+        out = self.capture_lines([
+            self.assistant(self.agent_use("a5", "critic", "Advisory-Thread: pricing\nAttack.")),
+            self.tool_result("a5", "Async agent launched successfully.\nagentId: bg5"),
+            self.assistant({"type": "tool_use", "id": "s5", "name": "SendMessage", "input": {"to": "bg5", "message": "again"}}),
+            {"type": "attachment", "timestamp": "2026-10-28T02:00:04Z", "attachment": {"type": "queued_command", "prompt":
+                "<task-notification><task-id>other</task-id><tool-use-id>s5</tool-use-id><summary>done</summary><result>Bare "
+                + self.FIGURE_BARE + "</result></task-notification>"}},
+        ], session="adv00012-1")
+        self.assertNotIn(self.FIGURE_BARE, out.read_text(encoding="utf-8"))
+
+    def test_a_notification_naming_an_adviser_task_leaves_a_pointer(self):
+        out = self.capture_lines([
+            self.assistant(self.agent_use("a6", "product-owner", "Read.")),
+            self.tool_result("a6", "Async agent launched successfully.\nagentId: bg6"),
+            {"type": "attachment", "timestamp": "2026-10-28T02:00:04Z", "attachment": {"type": "queued_command", "prompt":
+                "<task-notification><task-id>bg6</task-id><tool-use-id>unknown</tool-use-id><summary>done</summary><result>"
+                + self.FIGURE_BARE + "</result></task-notification>"}},
+        ], session="adv00013-1")
+        self.assertNotIn(self.FIGURE_BARE, out.read_text(encoding="utf-8"))
+
+    def test_other_agents_keep_their_text(self):
+        out = self.capture_lines([
+            self.assistant(self.agent_use("a4", "ui-engineer", "Fix the HUD bar.")),
+            self.tool_result("a4", "Status: Done, HUD bound."),
+        ], session="adv00010-1")
+        text = out.read_text(encoding="utf-8")
+        self.assertIn("Fix the HUD bar.", text)
+        self.assertIn("HUD bound", text)
+        self.assertNotIn(mem.ADVISORY_POINTER, text)
+        self.assertNotIn('"advisory"', text)
 
     @staticmethod
     def user(text, ts="2026-10-28T02:00:00.123Z"):
@@ -455,6 +574,146 @@ class MemTest(unittest.TestCase):
         self.assertIn("M 2 notes", out)
         self.assertIn("T 1 turns", out)
         self.assertIn("m:lesson/from-a", run(b, "q", "alpha")[1])
+
+
+class AdvisoryScrubEdgeTest(unittest.TestCase):
+    """QA edge cases (game-production-agent, qa-lead plan C2). The helpers are the MemTest ones, without its tests."""
+    setUp = MemTest.setUp
+    tearDown = MemTest.tearDown
+    capture_lines = MemTest.capture_lines
+    assistant = staticmethod(MemTest.assistant)
+    agent_use = staticmethod(MemTest.agent_use)
+    tool_result = staticmethod(MemTest.tool_result)
+    user = staticmethod(MemTest.user)
+    BEGIN, END = "<!-- advisory:begin -->", "<!-- advisory:end -->"
+    FIG = "ARPDAU 0.083"
+    FIG2 = "CPI 1.77"
+
+    def text_of(self, out):
+        return out.read_text(encoding="utf-8")
+
+    def say(self, text, session):
+        return self.text_of(self.capture_lines([self.assistant({"type": "text", "text": text})], session=session))
+
+    def test_two_closed_blocks_in_one_turn_both_leave_a_pointer_and_the_text_between_stays(self):
+        text = self.say("a\n%s\n%s\n%s\nmid\n%s\n%s\n%s\nz" % (self.BEGIN, self.FIG, self.END, self.BEGIN, self.FIG2, self.END), "edge0001-1")
+        self.assertNotIn(self.FIG, text)
+        self.assertNotIn(self.FIG2, text)
+        self.assertEqual(text.count(mem.ADVISORY_POINTER), 2)
+        self.assertIn("mid", text)
+        self.assertIn("z", text)
+
+    def test_a_begin_inside_a_block_does_not_let_the_first_figures_out(self):
+        # begin, begin, end: everything from the first begin to the first end is replaced. (Nesting depth is not tracked:
+        # text after that end stays, which is reported as an observation, not asserted.)
+        text = self.say("Before\n%s\n%s\n%s\n%s\n%s\nAfter" % (self.BEGIN, self.FIG, self.BEGIN, self.FIG2, self.END), "edge0002-1")
+        self.assertNotIn(self.FIG, text)
+        self.assertNotIn(self.FIG2, text)
+        self.assertIn("Before", text)
+        self.assertIn("After", text)
+
+    def test_an_end_marker_with_no_begin_neither_crashes_capture_nor_swallows_the_turn(self):
+        out = self.capture_lines([self.assistant({"type": "text", "text": "Keep this.\n%s\nand this." % self.END})], session="edge0003-1")
+        text = self.text_of(out)
+        self.assertIn("Keep this.", text)
+        self.assertIn("and this.", text)
+
+    def test_an_indented_marker_and_one_with_trailing_blanks_still_strip(self):
+        text = self.say("x\n   %s   \n%s\n\t%s\t\nTailKept" % (self.BEGIN, self.FIG, self.END), "edge0004-1")
+        self.assertNotIn(self.FIG, text)
+        self.assertIn("TailKept", text)  # the text after the end marker survives
+        self.assertEqual(text.count(mem.ADVISORY_POINTER), 1)
+
+    def test_markers_with_windows_line_endings_still_strip(self):
+        # BUG-0009 (AC3): RX_ADVISORY_BLOCK once ended in [ \t]*$, and in multiline mode $ stops before \n only, so a "\r"
+        # after the marker stopped the match and CRLF text kept its figure in a committed trace.
+        crlf = "Before\n%s\n%s\n%s\nAfter" % (self.BEGIN, self.FIG, self.END)
+        text = self.say(crlf.replace("\n", "\r\n"), "edge0005-1")
+        self.assertNotIn(self.FIG, text)
+        self.assertIn("After", text)
+        self.assertEqual(text.count(mem.ADVISORY_POINTER), 1)
+
+    def test_an_unterminated_begin_with_windows_line_endings_still_strips(self):
+        # Same cause (BUG-0009), for the unterminated form.
+        crlf = "Before\n%s\n%s" % (self.BEGIN, self.FIG)
+        text = self.say(crlf.replace("\n", "\r\n"), "edge0006-1")
+        self.assertNotIn(self.FIG, text)
+        self.assertIn("Before", text)
+
+    def test_an_adviser_return_given_as_a_list_of_text_blocks_leaves_one_pointer_per_turn(self):
+        blocks = [{"type": "text", "text": "Status: Done " + self.FIG}, {"type": "text", "text": "more " + self.FIG2}]
+        out = self.capture_lines([
+            self.assistant(self.agent_use("e1", "product-owner", "Read the economy. " + self.FIG)),
+            {"type": "user", "timestamp": "2026-10-28T02:00:02Z", "message": {"content": [{"type": "tool_result", "tool_use_id": "e1", "content": blocks}]}},
+        ], session="edge0007-1")
+        text = self.text_of(out)
+        self.assertNotIn(self.FIG, text)
+        self.assertNotIn(self.FIG2, text)
+        self.assertEqual(text.count(mem.ADVISORY_POINTER), 2)
+
+    def test_a_marked_block_inside_another_agents_list_result_strips_and_the_rest_stays(self):
+        blocks = [{"type": "text", "text": "Done\n%s\n%s\n%s\nok" % (self.BEGIN, self.FIG, self.END)}]
+        out = self.capture_lines([
+            self.assistant(self.agent_use("e2", "ui-engineer", "Fix the HUD.")),
+            {"type": "user", "timestamp": "2026-10-28T02:00:02Z", "message": {"content": [{"type": "tool_result", "tool_use_id": "e2", "content": blocks}]}},
+        ], session="edge0008-1")
+        text = self.text_of(out)
+        self.assertNotIn(self.FIG, text)
+        self.assertIn("Done", text)
+        self.assertIn("ok", text)
+
+    def test_a_marked_block_in_a_list_answer_strips(self):
+        blocks = [{"type": "text", "text": "User said\n%s\n%s\n%s" % (self.BEGIN, self.FIG, self.END)}]
+        out = self.capture_lines([
+            self.assistant({"type": "tool_use", "id": "e3", "name": "AskUserQuestion", "input": {"questions": []}}),
+            {"type": "user", "timestamp": "2026-10-28T02:00:02Z", "message": {"content": [{"type": "tool_result", "tool_use_id": "e3", "content": blocks}]}},
+        ], session="edge0009-1")
+        self.assertNotIn(self.FIG, self.text_of(out))
+
+    def test_a_marker_inside_an_ordinary_tool_result_is_never_captured(self):
+        out = self.capture_lines([
+            self.assistant({"type": "tool_use", "id": "e4", "name": "Bash", "input": {"command": "cat plan.md"}}),
+            self.tool_result("e4", "%s\n%s\n%s" % (self.BEGIN, self.FIG, self.END)),
+            self.assistant({"type": "text", "text": "Read it."}),
+        ], session="edge0010-1")
+        self.assertNotIn(self.FIG, self.text_of(out))
+
+    def test_assistant_text_given_as_a_plain_string_is_not_captured(self):
+        # The parser takes assistant content only as a list of blocks, so a string-form turn cannot reach a trace.
+        out = self.capture_lines([{"type": "assistant", "timestamp": "2026-10-28T02:00:01Z", "message": {"content": "plain " + self.FIG}},
+                                  self.assistant({"type": "text", "text": "kept"})], session="edge0011-1")
+        text = self.text_of(out)
+        self.assertNotIn(self.FIG, text)
+        self.assertIn("kept", text)
+
+    def test_the_exact_label_is_replaced_whole_line_wherever_it_sits_in_the_line(self):
+        text = self.say("Keep.\nStart of line D7 11.2%% [measured: r.csv, 2026-10, 1.4.0] end of line %s\nKeep too." % self.FIG, "edge0012-1")
+        self.assertNotIn("11.2%", text)
+        self.assertNotIn(self.FIG, text)
+        self.assertIn("Keep.", text)
+        self.assertIn("Keep too.", text)
+
+    def test_no_figure_survives_anywhere_under_the_memory_folder(self):
+        # The fixture holds one known figure in every place a capture reads; the check reads the bytes of every file
+        # capture wrote (traces, state), not just the trace the assertions above look at.
+        fig = "ARPDAU 0.0831"
+        labelled = "D7 11.27%% [measured: retention.csv, 2026-10, 1.4.0] %s" % fig
+        self.capture_lines([
+            self.assistant(self.agent_use("g1", "monetization-designer", "Read. " + fig)),
+            self.tool_result("g1", "Status: Done\nAdvisory-Return: v1\n### F1 [High] x\n" + fig),
+            self.assistant({"type": "text", "text": "Before.\n%s\n%s\n%s\nAfter." % (self.BEGIN, fig, self.END)}),
+            self.assistant({"type": "text", "text": "Plain.\n" + labelled}),
+            self.assistant({"type": "tool_use", "id": "g2", "name": "AskUserQuestion", "input": {"questions": []}}),
+            self.tool_result("g2", "User answered: " + labelled),
+            self.assistant({"type": "text", "text": "Tail."}),
+        ], session="edge0013-1")
+        files = [p for p in (self.root / ".memory").rglob("*") if p.is_file()]
+        self.assertTrue(any(p.suffix == ".jsonl" for p in files), files)
+        for p in files:
+            data = p.read_bytes().decode("utf-8", "replace")
+            self.assertNotIn(fig, data, p.name)
+            self.assertNotIn("0.0831", data, p.name)
+            self.assertNotIn("11.27", data, p.name)
 
 
 CSC = Path(os.environ.get("WINDIR", "")) / "Microsoft.NET" / "Framework64" / "v4.0.30319" / "csc.exe"

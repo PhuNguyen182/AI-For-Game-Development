@@ -18,7 +18,7 @@ user-invocable: false
 - **[bugs.py](scripts/bugs.py):** run `<python> -I "${CLAUDE_SKILL_DIR}/scripts/bugs.py" --root <project root> <cmd>` → the commands below.
 
 ## Writing rules
-- **English only:** translate the GD's or QA's words before filing. The CLI catches diacritics, not Vietnamese typed without them.
+- **English only:** translate the main GD's or QA's words before filing. The CLI catches diacritics, not Vietnamese typed without them.
 - **Localized text:** cite a localized string under test by its table key, not its text.
 - **One line:** `title`, `description`, `feature`, `owner`, `regression_test`, notes and `--by` hold no line break.
 - **Short:** title names the system and the defect; description says what breaks, where, and the impact. No prose.
@@ -29,8 +29,9 @@ user-invocable: false
 - **Secrets and PII:** secret shapes are refused and PII is redacted on every write. A refusal never truncates: fix the text.
 - **Check first:** `search` before `add`. A terminal match moves to `Reopen`; a `Backlog` match takes evidence with `update`, as it cannot reach `Reopen`; a `Duplicate` hit: follow `duplicate_of`.
 - **Evidence on a match:** `update` with a `note` alone. The `evidence` field is replaced by an `update`, never appended.
-- **GD only:** moves to `Backlog`, `Won't fix`, `Accepted`, from `Backlog` to `Request`, and `delete`: pass `--by GD` on the GD's order only.
-- **Mirror:** `Won't fix` and `Accepted` also go to `DEBT.md`: the feature root's, or `.workflow/DEBT.md` for a bug with no feature.
+- **Main GD only:** moves to `Backlog`, `Won't fix`, `Accepted`, from `Backlog` to `Request`, and `delete`: pass `--by "main GD"` on the main GD's order only.
+- **Mirror:** `Won't fix` and `Accepted` append the debt entry themselves: the feature root's `DEBT.csv`, or a `debt` record in `.workflow/debt.jsonl` for a bug with no feature (skill `records`).
+  - **Failed mirror:** exits 1 after the move, naming `records.py … bug-mirror BUG-####`: run it.
 
 ## Write
 | Need | Command |
@@ -39,9 +40,9 @@ user-invocable: false
 | Change fields, or a `note` alone to record evidence | `update <id> [--by W]`, stdin: any of those fields |
 | Move status | `set-status <id> "<status>" --note N [--by W] [--duplicate-of BUG-####]`; stdin `{"note": ...}` can replace `--note` |
 | Used round; `+n` is 1 to 100 per call | `round <id> fix\|review +1 --note N` |
-| GD's extra round, raises the cap; `+n` is 1 to 100 per call | `extra-round <id> fix\|review +n --note N` |
+| main GD's extra round, raises the cap; `+n` is 1 to 100 per call | `extra-round <id> fix\|review +n --note N` |
 | Stop rule fired or spent | `stop-rule <id> fix\|review --extra-dispatch unused\|used` |
-| Drop a bug on the GD's order | `delete <id> --by GD` |
+| Drop a bug on the main GD's order | `delete <id> --by "main GD"` |
 | Purge past the window | `purge [--dry-run]`; session start runs `purge --auto` |
 
 ## Query

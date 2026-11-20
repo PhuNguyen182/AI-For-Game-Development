@@ -1,0 +1,14 @@
+id,date,text,accepted_by,mirrored
+LIM-001,,"(CP4, GD-accepted) No skill was run on a Unity Editor, build, device, live backend or store sandbox; closing this needs a real project (backlog pilot).",main GD,pre-migration
+LIM-002,,"(CP4, GD-accepted) Vendor facts still Unverified, each marked `Unverified:` in its reference: voidedReason/voidedSource enums, NGO InvokePermission enforcement side, Apple library verification of signedTransactionInfo, ConsentType casing, `com.unity.external-dependency-manager` id, native Crashlytics/Analytics off keys under the Unity SDK.",main GD,pre-migration
+LIM-003,,"(CP4, GD-accepted) Fixes made after review round 3 (R3-1, BUG-0001..0005, OBS-1) were security re-checked and QA-read, not code-reviewed again.",main GD,pre-migration
+LIM-004,,Crashlytics withdrawal takes effect next launch (Analytics and ad networks stop in-session).,main GD,pre-migration
+LIM-005,,Whether an Apple Family-Shared transaction carries the purchaser's originalTransactionId is Unverified; the ledger rule holds either way.,main GD,pre-migration
+LIM-006,,"UGS refund race (security latent, Low): redeem and void can interleave so a grant stands without a reversal; the orphan alert still fires for manual reconciliation. Fix trigger: real refund volume on UGS (one conditional Cloud Save write, or re-check orphans after mapping).",main GD,pre-migration
+LIM-007,,"UGS custom reversal is non-atomic: a stale `pending` decrement is reconciled by hand, never auto-retried.",main GD,pre-migration
+LIM-008,,"R3-1 fix written by the main session from the reviewer's text and confirmed by reading, not by a fresh review round.",main GD,pre-migration
+LIM-009,,"Firebase App Check client wiring has no skill: the IAP Functions sample enforces App Check, so a Unity client needs App Check integration written per vendor docs.",main GD,pre-migration
+LIM-010,,Crashlytics/Analytics first-launch opt-in depends on native off keys whose effect under the Unity SDK is Unverified; skills route the unconfirmed case to `Needs-decision`.,main GD,pre-migration
+LIM-011,,"IAP skill excludes subscriptions (renewal, grace period, RTDN) — GD-accepted at CP2.",main GD,pre-migration
+LIM-012,,Localization skill excludes RTL scripts — GD-accepted at CP2.,main GD,pre-migration
+LIM-013,,Skills are written against vendor docs; no Unity project or backend runs them in this round.,main GD,pre-migration

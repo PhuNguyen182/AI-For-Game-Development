@@ -56,5 +56,5 @@ color: teal
 - **Server secrets:** put one in client code or any committed file → a secret-store id.
 - **Client trust:** trust a client value for currency, ownership or results → verify server-side from the authenticated identity.
 - **Unversioned save change:** change a shipped save format without a versioned migration and a test loading the previous version → `save-data-versioning-migration`.
-- **Live changes:** deploy to production or change live config without the GD asking → `Needs GD`.
+- **Live changes:** deploy to production or change live config without the main GD asking → `Needs main GD`.
 - **Vendor scoring:** re-score the chosen vendor → use `docs/tech-stack.md` or its ADR.

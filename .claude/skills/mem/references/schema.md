@@ -4,6 +4,7 @@ Synthesized from `../scripts/mem.py`; paths in `../SKILL.md` → Layers.
 
 ## Files (committed)
 - Trace line: `{n, ts, role, agent?, text, tools?, files?}`; `n` = transcript turn, while an id's `#<line>` = file line. Roles: `user` · `assistant` · `brief` (Agent prompt) · `agent` (agent return, task notification) · `answer` (AskUserQuestion result).
+- Capture replaces with a pointer: adviser briefs and returns, any agent whose brief has `Advisory-Thread:` or whose return has `Advisory-Return:`, text between advisory marker lines, and lines holding a `[measured:` label (user turns excepted).
 - Capture drops: tool output, thinking, compaction summaries, sidechains, harness tags (`system-reminder`, `ide_*`, `bash-stdout`), files outside the repo, the second copy of a queued command.
 - Text: the project root → `<root>`, the home folder → `~`, emails and `.claude/hooks/secret-patterns.txt` matches → `[REDACTED:<kind>]` (a private key with its whole body). Turns over 20000 chars are truncated. No patterns file → nothing is captured.
 - Append-only past the highest `n`: a hand edit or deletion of an earlier line is kept.
@@ -31,4 +32,4 @@ File paths (generic names like `SKILL.md` keep the parent folder) · PascalCase 
 3. Reciprocal-rank fusion (k = 60) x layer prior M 1.3 · K 1.0 · T 0.8 x trace half-life 90 days.
 4. Calibration: one copy per content hash, at most 2 turns per session and 3 chunks per file, output cut at `--budget` characters.
 
-Tests: `python -I .claude/skills/mem/scripts/test_mem.py`.
+Tests: `python -I .claude/skills/mem/scripts/test_mem.py`, `python -I .claude/skills/mem/scripts/test_adv.py`.

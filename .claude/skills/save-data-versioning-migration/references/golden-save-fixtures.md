@@ -44,4 +44,4 @@ Synthesized from `release` step 8 (owner `qa-automation-engineer`: "Previous rel
 | Command | The project's test command from `CLAUDE.md`, Edit Mode, filtered to the save fixture tests (`-testFilter`, `unity-test-framework`) |
 | Pass | Every fixture from `MinSupportedVersion` through the previous release's schema version migrates to current; result XML attached |
 | Gap | The previous release shipped without a fixture → step 8 is not passed until one is generated from that release's tag; state it, never substitute a fresh-code fixture |
-| Device | The fixture suite proves code paths, not the file swap on device; the interrupted-write check on a device runs only on the GD's request via `build-release-engineer` |
+| Device | The fixture suite proves code paths, not the file swap on device; the interrupted-write check on a device runs only on the main GD's request via `build-release-engineer` |

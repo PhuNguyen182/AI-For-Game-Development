@@ -33,7 +33,7 @@ user-invocable: false
 7. **Price player trust:** a ring-0 driver asks every player to install it; reputational and review-bombing exposure exists whether or not it works.
 8. **Require an owner for bans and appeals before any detection tier:** a false ban with no appeal path costs more retention than the cheating; unowned means not shippable.
 9. **Score survivors with `tco-reversibility-scoring`:** kernel-level is Low reversibility (removal after a cheating wave reads as surrender).
-10. **Frame platform, vendor-cost and player-trust consequences for the GD:** record the posture via `engineering-standard-adr-authoring`.
+10. **Frame platform, vendor-cost and player-trust consequences for the main GD:** record the posture via `engineering-standard-adr-authoring`.
 11. **Platform commitments, competitive stakes or economy design open → `Needs-decision` naming them:** mark the tier provisional on the missing input.
 
 ## Never
@@ -54,7 +54,7 @@ user-invocable: false
 - Ban/appeal owner: <who> | unowned — not shippable
 - TCO / Reversibility: <score>
 - Decision: <tier> — <stakes and constraints tie>
-- Needs GD decision: yes/no — <trade-off>
+- Needs main GD decision: yes/no — <trade-off>
 - Routed to: <...>
 ```
 

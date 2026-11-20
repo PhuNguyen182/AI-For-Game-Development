@@ -1,7 +1,7 @@
 # PreToolUse Bash|PowerShell on any `git`: block what the settings.json globs cannot pin down, read through quoting,
 # sh/bash/pwsh -c wrappers and aliases (Get-GitCalls in common.ps1).
 #   reset --hard, clean -f, checkout/switch -f, switch --discard-changes, read-tree -u --reset
-#                                       destroy uncommitted or untracked work no anchor holds (radius 3: the GD runs them)
+#                                       destroy uncommitted or untracked work no anchor holds (radius 3: the main GD runs them)
 #   push forms Find-PushRadius3 names   radius 3; a push or commit through an alias is refused so the scan hooks see it spelled out
 #   grep -O                             runs a program from an otherwise read-only command
 #   --output                            writes an arbitrary file from diff/log/show
@@ -65,6 +65,6 @@ foreach ($g in (Get-GitCalls ([string]$in.tool_input.command) $cwd)) {
         }
     }
     if (-not $why -and (Test-Long $longs 'output' 3)) { $why = "git $($g.Verb) --output (writes a file)" }
-    if ($why) { Block "Blocked: $why. The GD runs it: put the exact command under ``Needs GD`` (skill git-safety-anchor)." }
+    if ($why) { Block "Blocked: $why. The main GD runs it: put the exact command under ``Needs main GD`` (skill git-safety-anchor)." }
 }
 exit 0

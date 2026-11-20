@@ -58,8 +58,8 @@ user-invocable: false
 - **Discovery-time data:** build parameter data at discovery time — use static data.
 - **`TestRunnerApi` instance members:** write new tooling on them — flagged for obsolescence.
 - **Scene-search calls in test code:** treat `Find*` as test-only; do not copy them into production code (banned by `csharp-standards`).
-- **Players and Editors:** build a platform Player or open extra Editor instances — hand to `build-release-engineer` on the GD's explicit request.
-- **Coverage as a verdict:** cite a coverage figure as proof of behaviour, set a target the GD did not state, or report a Player figure — it shows lines executed in the Editor.
+- **Players and Editors:** build a platform Player or open extra Editor instances — hand to `build-release-engineer` on the main GD's explicit request.
+- **Coverage as a verdict:** cite a coverage figure as proof of behaviour, set a target the main GD did not state, or report a Player figure — it shows lines executed in the Editor.
 
 ## Output
 ```

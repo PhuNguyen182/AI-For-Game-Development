@@ -69,6 +69,6 @@ Rules:
 Format:
 
 ```
-Limits
+Limitations
 - [L|M|S] <limit> — impact: <what it affects>. Fix later: <specific next step>.
 ```

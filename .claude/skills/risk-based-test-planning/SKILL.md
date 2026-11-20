@@ -25,7 +25,7 @@ user-invocable: false
    - **Dropped cases:** record every case the ranking dropped, with reason.
 7. **Assign each case to the agent whose scope contains it:**
    - **Deterministic rule logic and latency/loss cases:** `qa-automation-engineer`.
-   - **GDD scenarios and feel:** `playtest-tester` (multi-client: MPPM, GD-approved).
+   - **GDD scenarios and feel:** `playtest-tester` (multi-client: MPPM, main-GD-approved).
    - **Budgets:** `performance-qa-engineer`.
    - **Real-artifact behaviour:** `build-release-engineer`.
    - **Unowned case:** a gap.

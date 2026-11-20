@@ -16,6 +16,6 @@ $hits = Find-Secrets (($parts | Where-Object { $_ }) -join "`n")
 if ($hits.Count -gt 0) {
     Block ("Blocked: secret-shaped value in $path`n  " + ($hits -join "`n  ") +
         "`nReference a credential id or secret store instead (rule core.md -> Security). " +
-        "If it is a vendor-documented public id, ask the GD to write it.")
+        "If it is a vendor-documented public id, ask the main GD to write it.")
 }
 exit 0

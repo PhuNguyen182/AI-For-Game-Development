@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
-import hashlib
 import importlib.util
 import json
 import os
@@ -16,9 +15,32 @@ import re
 import sqlite3
 import subprocess
 import sys
-import unicodedata
 import uuid
 from pathlib import Path
+
+
+def _load_journal():
+    """The shared engine, records/scripts/journal.py, by path: -I removes the script dir from sys.path, hence importlib."""
+    path = Path(__file__).resolve().parents[2] / "records" / "scripts" / "journal.py"
+    name = "records_journal"
+    module = sys.modules.get(name)
+    if module is not None and Path(getattr(module, "__file__", "")).resolve() == path:
+        return module
+    if not path.exists():
+        sys.stderr.write("bugs: %s is missing: the shared journal engine (skill records)\n" % path)
+        raise SystemExit(1)
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    keep, sys.dont_write_bytecode = sys.dont_write_bytecode, True
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.dont_write_bytecode = keep
+    sys.modules[name] = module
+    return module
+
+
+journal = _load_journal()
 
 SCHEMA_VERSION = 2
 STATUSES = ("Request", "Processing", "Resolved", "Review", "Complete", "Reopen", "Backlog", "Won't fix", "Accepted", "As designed", "Duplicate")
@@ -28,12 +50,12 @@ PRIORITIES = ("Low", "Medium", "High", "Highest")
 DEFAULT_CAPS = {"fix": 2, "review": 3}
 WINDOW = dt.timedelta(days=90)
 SQL_SECONDS = 10
-MAX_COUNT = 100  # one round or extra-round call; replay refuses more, so a counter's total stays a small integer
-REFUSAL_LINE = 500
-VALUE_MARK = "\ue000"  # brackets a caller's value inside refusal text; refusal_text() is the only reader
-RX_SHOWN = re.compile("%s.*?%s" % (VALUE_MARK, VALUE_MARK), re.S)
+MAX_COUNT = journal.MAX_COUNT  # one round or extra-round call; replay refuses more, so a counter's total stays a small integer
+REFUSAL_LINE = journal.REFUSAL_LINE
+VALUE_MARK = journal.VALUE_MARK  # brackets a caller's value inside refusal text; refusal_text() is the only reader
+RX_SHOWN = journal.RX_SHOWN
 
-# Moves anyone with the writer's role may make; GD-only moves and "any open" moves are in move_rule().
+# Moves anyone with the writer's role may make; main-GD-only moves and "any open" moves are in move_rule().
 PLAIN_MOVES = {"Request": ("Processing",), "Reopen": ("Processing",), "Processing": ("Request", "Resolved"),
                "Resolved": ("Review",), "Review": ("Complete", "Reopen", "Resolved")}
 
@@ -48,13 +70,9 @@ DEFAULT_BY = "main session"
 
 EVENT_TYPES = ("create", "update", "status", "round", "extra_round", "stop_rule", "renumber", "tombstone")
 RX_ID = re.compile(r"BUG-(\d{4,})")
-RX_TS = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z")
-RX_BREAK = re.compile("[\r\n\v\f\x85  ]")
-RX_CONTROL = re.compile("[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f  ]")
-VI_LETTERS = "àáảãạăằắẳẵặâầấẩẫậđèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵ"
-RX_VIETNAMESE = re.compile("[%s%s]" % (VI_LETTERS, VI_LETTERS.upper()))
-UID_NAMESPACE = uuid.UUID("6f1f3b52-8a44-5c0e-9b7d-2e0c4a7d1b90")
-GIT_ENV = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR", "GIT_PREFIX", "GIT_OBJECT_DIRECTORY")
+RX_TS, RX_BREAK, RX_CONTROL = journal.RX_TS, journal.RX_BREAK, journal.RX_CONTROL
+VI_LETTERS, RX_VIETNAMESE = journal.VI_LETTERS, journal.RX_VIETNAMESE
+UID_NAMESPACE, GIT_ENV = journal.UID_NAMESPACE, journal.GIT_ENV
 
 SCHEMA = (
     "CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT NOT NULL)",
@@ -82,29 +100,8 @@ SCHEMA = (
 )
 
 
-class Refused(Exception):
-    """A rule said no: the message names the rule, the process exits non-zero."""
-
-
-class Corrupt(Exception):
-    """The journal cannot be replayed. Fails closed: the hook blocks on it."""
-
-
-class UsageError(Refused):
-    """argparse's complaint, which quotes the argument. Refused here so it leaves through the one exit in main()."""
-
-
-class Parser(argparse.ArgumentParser):
-    def error(self, message):
-        self.print_usage(sys.stderr)
-        raise UsageError("bad arguments: %s" % shown(message, 300))
-
-    def parse_args(self, args=None, namespace=None):
-        """Counted, never quoted: with a leading -, a pasted key is no longer the shape redaction looks for."""
-        parsed, unrecognized = self.parse_known_args(args, namespace)
-        if unrecognized:
-            self.error("%d unrecognized argument(s)" % len(unrecognized))
-        return parsed
+# The engine's names, re-exported: callers and tests reach them through this module.
+Refused, Corrupt, UsageError, Parser = journal.Refused, journal.Corrupt, journal.UsageError, journal.Parser
 
 
 def _after_append():
@@ -130,41 +127,14 @@ def move_rule(frm: str, to: str) -> str | None:
 
 # ---------------------------------------------------------------- time and ids
 
-def fmt_ts(d: dt.datetime) -> str:
-    return d.strftime("%Y-%m-%dT%H:%M:%S.") + "%03dZ" % (d.microsecond // 1000)
-
-
-def parse_ts(s: str) -> dt.datetime:
-    return dt.datetime.strptime(s, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=dt.timezone.utc)
-
-
-def now_utc() -> dt.datetime:
-    override = os.environ.get("BUGS_NOW")  # test-only clock
-    if not override:
-        return dt.datetime.now(dt.timezone.utc)
-    return parse_ts(override if "." in override else override[:-1] + ".000Z")
-
-
-def next_ts(last: str | None) -> str:
-    now = now_utc()
-    if last:
-        now = max(now, parse_ts(last) + dt.timedelta(milliseconds=1))
-    return fmt_ts(now)
+fmt_ts, parse_ts, now_utc, next_ts = journal.fmt_ts, journal.parse_ts, journal.now_utc, journal.next_ts
 
 
 def fmt_id(num: int) -> str:
     return "BUG-%04d" % num
 
 
-def shown(value, limit=40) -> str:
-    """A caller's or a file's value inside refusal text. A long one is never echoed, not cut: the scan at the exit
-    could miss a secret cut in half."""
-    text = str(value).replace(VALUE_MARK, "")
-    return VALUE_MARK + (text if len(text) <= limit else "<%d chars>" % len(text)) + VALUE_MARK
-
-
-def shown_all(values) -> str:
-    return ", ".join(shown(v) for v in values)
+shown, shown_all = journal.shown, journal.shown_all
 
 
 def parse_id(text: str) -> int:
@@ -174,110 +144,21 @@ def parse_id(text: str) -> int:
     return int(m.group(1))
 
 
-def stable_uid(name: str) -> str:
-    return str(uuid.uuid5(UID_NAMESPACE, name))
+stable_uid = journal.stable_uid
 
 
 # ---------------------------------------------------------------- content rules
 
-def check_english(field: str, text: str):
-    m = RX_VIETNAMESE.search(unicodedata.normalize("NFC", text))
-    if m:
-        raise Refused("%s: Vietnamese diacritics ('%s'): the database is English only, translate first" % (field, m.group(0)))
+check_english = journal.check_english
+MEM_API = journal.MEM_API
+mem_module, loaded_patterns = journal.mem_module, journal.loaded_patterns
 
 
-_mem = None
-MEM_API = ("load_secret_patterns", "redact", "redact_pii", "RX_PEM_BLOCK")
-
-
-def mem_module():
-    """mem.py owns the secret patterns and PII rules. -I removes the script dir from sys.path, hence importlib."""
-    global _mem
-    if _mem is None:
-        path = Path(__file__).resolve().parents[2] / "mem" / "scripts" / "mem.py"
-        if not path.exists():
-            raise Refused("write refused: %s is missing, so secret shapes cannot be checked" % path)
-        spec = importlib.util.spec_from_file_location("bugs_mem", path)
-        module = importlib.util.module_from_spec(spec)
-        keep, sys.dont_write_bytecode = sys.dont_write_bytecode, True
-        try:
-            spec.loader.exec_module(module)
-            for name in MEM_API:
-                getattr(module, name)
-        except KeyboardInterrupt:
-            raise
-        except BaseException as ex:  # whatever the fault in that file, a SyntaxError or a sys.exit too: it leaves through main()
-            raise Refused("write refused: %s cannot be loaded (%s), so secret shapes cannot be checked" % (path, type(ex).__name__)) from None
-        finally:
-            sys.dont_write_bytecode = keep
-        _mem = module
-    return _mem
-
-
-def loaded_patterns(mem, root) -> list:
-    """The one loading point. A list of (name, compiled regex) or it raises: an empty generator is truthy, and a one-shot
-    iterator would scan only the first field."""
-    patterns = list(mem.load_secret_patterns(root))
-    if not patterns:
-        raise ValueError("the list is empty")
-    for name, rx in patterns:
-        if not isinstance(name, str) or not isinstance(rx, re.Pattern):
-            raise TypeError("not a (name, compiled regex) pair")
-    return patterns
-
-
-class Cleaner:
+class Cleaner(journal.Cleaner):
     """Applies every content rule to text about to be written. A missing pattern file refuses here, before any write."""
 
     def __init__(self, ctx):
-        self.mem = mem_module()
-        try:
-            self.patterns = loaded_patterns(self.mem, ctx.root)
-        except KeyboardInterrupt:
-            raise
-        except BaseException as ex:  # a missing or malformed file, or a fault in mem.py's own code
-            raise Refused("write refused: secret patterns cannot be loaded (%s: %s)" % (type(ex).__name__, ex)) from None
-        self.redacted = []
-
-    def clean(self, field: str, value) -> str:
-        if not isinstance(value, str):
-            raise Refused("%s: must be a string" % field)
-        text = value.strip()
-        if field in ONE_LINE:
-            if RX_BREAK.search(text):
-                raise Refused("%s: must be one line" % field)
-        else:
-            text = text.replace("\r\n", "\n").replace("\r", "\n")
-        if RX_CONTROL.search(text):
-            raise Refused("%s: control character" % field)
-        check_english(field, text)
-        try:
-            hits = [name for name, rx in self.patterns if rx.search(text)]
-            if self.mem.RX_PEM_BLOCK.search(text) and "private key" not in hits:
-                hits.append("private key")
-            stored = "" if hits else self.mem.redact_pii(text)
-            if not isinstance(stored, str):
-                raise TypeError("redact_pii returned %s" % type(stored).__name__)
-        except KeyboardInterrupt:
-            raise
-        except BaseException as ex:  # a fault in mem.py's own code; its type only, as its message can hold the value
-            raise Refused("write refused: %s cannot be checked for secrets and PII (%s)" % (field, type(ex).__name__)) from None
-        if hits:
-            raise Refused("refused: secret-shaped value in %s (%s)" % (field, ", ".join(hits)))
-        if stored != text:
-            self.redacted.append(field)
-        limit = LIMITS[field]
-        if len(stored) > limit:
-            raise Refused("%s: %d chars, limit %d" % (field, len(stored), limit))
-        return stored
-
-    def required(self, field: str, value) -> str:
-        if value is None:
-            raise Refused("%s: required" % field)
-        text = self.clean(field, value)
-        if not text:
-            raise Refused("%s: required" % field)
-        return text
+        super().__init__(ctx, LIMITS, ONE_LINE)
 
     def priority(self, value) -> str:
         if value is None or value == "":
@@ -286,169 +167,39 @@ class Cleaner:
             raise Refused("priority: must be one of %s (Critical maps to Highest)" % ", ".join(PRIORITIES))
         return value
 
-    def report(self):
-        if self.redacted:
-            print("redacted PII in: %s" % ", ".join(sorted(set(self.redacted))), file=sys.stderr)
 
-
-def read_stdin_json(required: bool):
-    stream = getattr(sys.stdin, "buffer", None)
-    if sys.stdin is None or stream is None or sys.stdin.isatty():
-        raw = b""
-    else:
-        raw = stream.read()
-    if not raw.strip():
-        if required:
-            raise Refused("expected a JSON object on stdin")
-        return {}
-    try:
-        data = json.loads(raw.decode("utf-8-sig"))
-    except UnicodeDecodeError as ex:
-        raise Refused("stdin is not UTF-8 JSON: %s" % ex) from None
-    except ValueError as ex:
-        raise Refused("stdin is not valid JSON: %s" % ex) from None
-    if not isinstance(data, dict):
-        raise Refused("expected a JSON object on stdin")
-    return data
-
-
-def by_of(cleaner: Cleaner, a) -> str:
-    if a.by is None:
-        return DEFAULT_BY
-    if a.by != "GD" and a.by.strip() == "GD":  # clean() trims, which would store a padded form as the GD's attribution
-        raise Refused("by: must be exactly GD, with no padding")
-    return cleaner.required("by", a.by)
-
-
-def note_of(cleaner: Cleaner, a, required: bool, allowed=("note",)) -> tuple[str | None, dict]:
-    """--note, else the JSON on stdin. Returns the cleaned note and the rest of the JSON."""
-    data = {} if a.note is not None else read_stdin_json(False)
-    unknown = sorted(set(data) - set(allowed))
-    if unknown:
-        raise Refused("unknown field: %s" % shown_all(unknown))
-    raw = a.note if a.note is not None else data.get("note")
-    note = cleaner.clean("note", raw) if raw is not None else None
-    if required and not note:
-        raise Refused("note: required (--note, or {\"note\": ...} on stdin): who, what, the evidence reference")
-    return note or None, data
-
-
-def parse_count(text: str) -> int:
-    m = re.fullmatch(r"\+(\d{1,3})", text)
-    n = int(m.group(1)) if m else 0
-    if not 1 <= n <= MAX_COUNT:
-        raise Refused("bad count '%s': expected +n with n from 1 to %d" % (shown(text), MAX_COUNT))
-    return n
+read_stdin_json, by_of, note_of, parse_count = journal.read_stdin_json, journal.by_of, journal.note_of, journal.parse_count
 
 
 # ---------------------------------------------------------------- paths and git
 
-def git_exe() -> str:
-    """git's full path from PATH alone. On Windows CreateProcess tries the current folder before PATH, and so does shutil.which,
-    so a bare "git" would run a git.exe in the folder a session starts in. A relative PATH entry names that folder too. None: the
-    FileNotFoundError subprocess raises for a missing program."""
-    names = ("git.exe", "git.cmd", "git.bat") if os.name == "nt" else ("git",)
-    for folder in os.environ.get("PATH", "").split(os.pathsep):
-        folder = folder.strip().strip('"')
-        if not os.path.isabs(folder):
-            continue
-        for name in names:
-            path = os.path.join(folder, name)
-            if os.path.isfile(path) and os.access(path, os.X_OK):
-                return path
-    raise FileNotFoundError("git is not on PATH")
-
-
-def run_git(cwd: Path, *args) -> tuple[int, str]:
-    env = {k: v for k, v in os.environ.items() if k not in GIT_ENV}
-    r = subprocess.run([git_exe(), "-C", str(cwd)] + list(args), capture_output=True, env=env, timeout=30)
-    return r.returncode, r.stdout.decode("utf-8", "replace").strip()
+git_exe, run_git = journal.git_exe, journal.run_git
 
 
 def main_checkout(root: Path) -> tuple[Path, Path | None, bool]:
-    """(the checkout holding the journal, its git dir, whether root is a linked worktree). The rule of Get-BugsRoot in
-    hooks/common.ps1, kept the same in effect: hooks/tests/run.ps1 drives both over the same layouts. Only the root's own .git
-    counts, since git itself walks up to any link planted above. A link that leads nowhere refuses, read or write."""
-    link = root / ".git"
-    if not link.is_file():
-        return root, link if link.is_dir() else None, False
-    m = re.search(r"(?m)^gitdir:\s*(.+?)\s*$", link.read_text(encoding="utf-8-sig", errors="replace"))
-    if not m:
-        raise Refused("%s names no gitdir, so the main checkout's bug journal cannot be found" % shown(link, 200))
-    git_dir = Path(os.path.normpath(root / m.group(1)))
-    if not git_dir.is_dir():
-        raise Refused("%s, named by %s, does not exist" % (shown(git_dir, 200), shown(link, 200)))
-    common_file = git_dir / "commondir"
-    if not common_file.is_file():
-        if (git_dir / "objects").is_dir():  # a full git dir: a submodule or --separate-git-dir
-            return root, git_dir, False
-        raise Refused("%s is missing and %s holds no objects, so the main checkout's bug journal cannot be found" % (shown(common_file, 200), shown(git_dir, 200)))
-    common = Path(os.path.normpath(git_dir / common_file.read_text(encoding="utf-8-sig", errors="replace").strip()))
-    if common.name != ".git":
-        raise Refused("%s is no checkout's .git, so the bug journal cannot be found" % shown(common, 200))
-    if not common.is_dir():
-        raise Refused("%s, named by %s, does not exist" % (shown(common, 200), shown(common_file, 200)))
-    return common.parent.resolve(), common, True
+    return journal.main_checkout(root, "bug journal")
 
 
-class Ctx:
+class Ctx(journal.Ctx):
     """The root per main_checkout: a linked worktree reads the main checkout's data, a root with no .git has no git context."""
 
     def __init__(self, arg: str | None):
-        given = Path(arg).resolve() if arg else Path(__file__).resolve().parents[4]
-        if not given.is_dir():
-            raise Refused("root %s is not a directory" % shown(given, 200))
-        self.root, self.git_dir, self.linked = main_checkout(given)
-        self.git_failed = False
-        if self.git_dir is None:
-            return
-        try:
-            code, out = run_git(given, "rev-parse", "--git-common-dir")
-        except (OSError, subprocess.SubprocessError):
-            code, out = 1, ""
-        # Git is missing, refuses, or walked past a .git it will not read to a repo above: cannot rule out a linked worktree.
-        if code or (given / out).resolve() != self.git_dir.resolve():
-            self.git_failed, self.git_dir = True, None
+        super().__init__(arg, "bugs.jsonl", "bugs.db", Path(__file__).resolve().parents[4], label="bug journal")
 
-    @property
-    def workflow(self) -> Path:
-        return self.root / ".workflow"
-
-    @property
-    def journal(self) -> Path:
-        return self.workflow / "bugs.jsonl"
-
-    @property
-    def db_path(self) -> Path:
-        return self.workflow / "bugs.db"
-
-    def require_writable(self):
-        if self.linked:
-            raise Refused("writes from a linked worktree are refused: run from the main checkout %s" % self.root)
-        if self.git_failed:
-            raise Refused("git failed in %s: cannot rule out a linked worktree, write refused" % self.root)
+    def run_git(self, cwd: Path, *args) -> tuple[int, str]:
+        return run_git(cwd, *args)  # this module's name, so a patch of bugs.run_git reaches the check
 
 
 def read_journal(ctx: Ctx) -> bytes:
-    try:
-        return ctx.journal.read_bytes()
-    except FileNotFoundError:
-        return b""
+    return journal.read_journal(ctx.journal)
 
 
-def sha(raw: bytes) -> str:
-    return hashlib.sha256(raw).hexdigest()
+sha = journal.sha
 
 
 # ---------------------------------------------------------------- journal parsing and replay
 
-def need(cond: bool, msg: str):
-    if not cond:
-        raise ValueError(msg)
-
-
-def is_count(v) -> bool:
-    return isinstance(v, int) and not isinstance(v, bool) and v >= 1
+need, is_count = journal.need, journal.is_count
 
 
 def check_fields(data: dict, allowed):
@@ -499,39 +250,15 @@ def check_event(ev):
         need(is_count(data.get("id")), "bad tombstone")
 
 
-class Parsed:
-    def __init__(self):
-        self.events, self.errors, self.torn = [], [], False
+Parsed = journal.Parsed
 
 
 def parse_journal(raw: bytes) -> Parsed:
     """A final line with no newline that is not JSON is a torn write: skipped here, removed by the next write."""
-    out = Parsed()
-    lines = raw.split(b"\n")
-    tail = lines.pop()
-    for i, line in enumerate(lines + [tail], 1):
-        if not line.strip():
-            continue
-        is_tail = i == len(lines) + 1
-        try:
-            ev = json.loads(line.decode("utf-8"))
-        except ValueError as ex:  # JSONDecodeError and UnicodeDecodeError are both ValueError
-            if is_tail:
-                out.torn = True
-            else:
-                out.errors.append("line %d: %s" % (i, type(ex).__name__))
-            continue
-        try:
-            check_event(ev)
-        except (ValueError, TypeError) as ex:  # TypeError: an unhashable value where a name belongs
-            out.errors.append("line %d: %s" % (i, ex))
-            continue
-        out.events.append(ev)
-    return out
+    return journal.parse_journal(raw, check_event)
 
 
-def canon(ev: dict) -> str:
-    return json.dumps(ev, sort_keys=True, ensure_ascii=False)
+canon = journal.canon
 
 
 def high_water_of(events) -> int:
@@ -547,92 +274,29 @@ def high_water_of(events) -> int:
 
 def replay_order(events) -> list:
     """Sort by (ts, event_uid), one copy per event_uid, tombstoned uids dropped, creates first."""
-    best = {}
-    for ev in events:
-        key = (ev["ts"], canon(ev))
-        if ev["event_uid"] not in best or key < best[ev["event_uid"]][0]:
-            best[ev["event_uid"]] = (key, ev)
-    unique = [v[1] for v in best.values()]
-    dead = {ev["bug_uid"] for ev in unique if ev["type"] == "tombstone"}
-    live = [ev for ev in unique if ev["type"] != "tombstone" and ev["bug_uid"] not in dead]
-    live.sort(key=lambda ev: (ev["ts"], ev["event_uid"]))
-    creates = [ev for ev in live if ev["type"] == "create"]
-    uids = [ev["bug_uid"] for ev in creates]
-    if len(set(uids)) != len(uids):
-        raise Corrupt("corrupt journal: two create lines for one bug_uid")
-    known = set(uids)
-    for ev in live:
-        if ev["bug_uid"] not in known:
-            raise Corrupt("corrupt journal: %s line for a bug_uid with no create: %s" % (ev["type"], shown(ev["event_uid"])))
-    return creates + [ev for ev in live if ev["type"] != "create"]
+    return journal.replay_order(events, "bug_uid")
 
 
 # ---------------------------------------------------------------- database
 
-_connections = []  # closed by main()
-
-
-def connect(target: str, **kw) -> sqlite3.Connection:
-    db = sqlite3.connect(target, timeout=10, isolation_level=None, **kw)
-    db.row_factory = sqlite3.Row
-    _connections.append(db)
-    return db
+_connections = journal._connections  # one list with the engine's: closed by main()
+connect = journal.connect
 
 
 def create_schema(db):
-    db.execute("BEGIN IMMEDIATE")
-    try:
-        if db.execute("PRAGMA user_version").fetchone()[0] == 0:
-            for stmt in SCHEMA:
-                db.execute(stmt)
-            db.execute("PRAGMA user_version=%d" % SCHEMA_VERSION)
-        db.execute("COMMIT")
-    except BaseException:
-        db.execute("ROLLBACK")
-        raise
+    journal.create_schema(db, SCHEMA, SCHEMA_VERSION)
 
 
 def remove_db(ctx: Ctx):
-    for db in list(_connections):
-        db.close()
-        _connections.remove(db)
-    for f in ctx.workflow.glob("bugs.db*"):
-        f.unlink()
+    journal.remove_db(ctx)
 
 
 def open_db(ctx: Ctx, create=False) -> sqlite3.Connection:
     """No journal, no DB, not a create: an empty in-memory store, so reads return nothing and create nothing."""
-    if not create and not ctx.db_path.exists() and not ctx.journal.exists():
-        db = connect(":memory:")
-        create_schema(db)
-        return db
-    ctx.workflow.mkdir(parents=True, exist_ok=True)
-    for _ in range(2):
-        try:
-            db = connect(str(ctx.db_path))
-            version = db.execute("PRAGMA user_version").fetchone()[0]
-            if version not in (0, SCHEMA_VERSION):
-                raise sqlite3.DatabaseError("schema version %d" % version)
-            if version == 0:  # a read must not take the write lock when the schema is already there
-                create_schema(db)
-            db.execute("SELECT 1 FROM meta LIMIT 1").fetchall()
-            return db
-        except sqlite3.OperationalError as ex:
-            if "lock" in str(ex):
-                raise
-            remove_db(ctx)  # the DB is a cache: a damaged one is rebuilt from the journal
-        except sqlite3.DatabaseError:
-            remove_db(ctx)
-    raise RuntimeError("cannot open %s" % ctx.db_path)
+    return journal.open_db(ctx, SCHEMA, SCHEMA_VERSION, create=create)
 
 
-def get_meta(db, key: str) -> str | None:
-    row = db.execute("SELECT value FROM meta WHERE key=?", (key,)).fetchone()
-    return row[0] if row else None
-
-
-def set_meta(db, key: str, value):
-    db.execute("INSERT OR REPLACE INTO meta(key, value) VALUES(?, ?)", (key, str(value)))
+get_meta, set_meta = journal.get_meta, journal.set_meta
 
 
 def apply_event(db, ev: dict):
@@ -757,87 +421,62 @@ def live_bug(db, bug_id: str):
 
 # ---------------------------------------------------------------- the write path
 
-def encode_line(ev: dict) -> bytes:
-    return json.dumps(ev, ensure_ascii=False, separators=(",", ":")).encode("utf-8") + b"\n"
-
-
-def split_tail(raw: bytes) -> tuple[bytes, bytes]:
-    cut = raw.rfind(b"\n") + 1
-    return raw[:cut], raw[cut:]
-
-
-def repaired(raw: bytes) -> bytes:
-    """A final line with no newline: a whole event gets its newline, a torn fragment goes."""
-    body, tail = split_tail(raw)
-    if not tail.strip():
-        return body
-    try:
-        json.loads(tail.decode("utf-8"))
-    except ValueError:
-        return body
-    return body + tail + b"\n"
+encode_line, split_tail, repaired = journal.encode_line, journal.split_tail, journal.repaired
 
 
 def append_lines(ctx: Ctx, lines: list) -> bytes:
     """LF only, UTF-8, no BOM, whatever the platform. Returns the journal's new bytes."""
-    raw = read_journal(ctx)
-    fixed = repaired(raw)
-    if len(fixed) < len(raw):  # never rewrite the good lines: only the fragment goes
-        with open(ctx.journal, "r+b") as f:
-            f.truncate(len(fixed))
-    blob = (b"\n" if len(fixed) > len(raw) else b"") + b"".join(lines)
-    with open(ctx.journal, "ab") as f:
-        f.write(blob)
-        f.flush()
-        os.fsync(f.fileno())
-    return (raw if len(fixed) > len(raw) else fixed) + blob
+    return journal.append_lines(ctx.journal, lines)
 
 
 def replace_journal(ctx: Ctx, raw: bytes):
-    tmp = ctx.workflow / "bugs.db.jsonl.tmp"  # the bugs.db* ignore rule covers a leftover
-    with open(tmp, "wb") as f:
-        f.write(raw)
-        f.flush()
-        os.fsync(f.fileno())
-    os.replace(tmp, ctx.journal)
+    journal.replace_journal(ctx.journal, ctx.workflow / "bugs.db.jsonl.tmp", raw)  # the bugs.db* ignore rule covers a leftover
 
 
-class Writer:
+class Writer(journal.Writer):
     """BEGIN IMMEDIATE, hash check, rebuild if different, the command validates, apply, append, commit.
-    A crash after the append is healed by the next command's hash mismatch."""
+    A crash after the append is healed by the next command's hash mismatch. Each hook goes through this module's names,
+    so a test patch of bugs.append_lines or bugs._after_append reaches the write path."""
 
-    def __init__(self, ctx: Ctx, create=False):
-        self.ctx, self.create, self.lines = ctx, create, []
-        self.rewritten = None
+    uid_key = "bug_uid"
 
-    def __enter__(self):
+    def check_writable(self):
         self.ctx.require_writable()
         Cleaner(self.ctx)  # every write, text-free ones too: a missing pattern file refuses here (schema.md, Fail closed)
-        self.db = open_db(self.ctx, create=self.create)
-        self.db.execute("BEGIN IMMEDIATE")
-        try:
-            raw = read_journal(self.ctx)
-            if get_meta(self.db, "journal_hash") != sha(raw):
-                rebuild_tables(self.db, raw)
-            self.last_ts = get_meta(self.db, "last_ts") or None
-            self.top = high_water(self.db)
-        except BaseException:
-            self.db.execute("ROLLBACK")
-            raise
-        return self
 
-    def emit(self, etype: str, uid: str, data: dict, by=None, note=None, event_uid=None) -> dict:
-        ev = {"event_uid": event_uid or str(uuid.uuid4()), "bug_uid": uid, "ts": next_ts(self.last_ts), "type": etype, "data": data}
-        if by is not None:
-            ev["by"] = by
-        if note is not None:
-            ev["note"] = note
+    def open_db(self):
+        return open_db(self.ctx, create=self.create)
+
+    def read(self) -> bytes:
+        return read_journal(self.ctx)
+
+    def append(self, lines) -> bytes:
+        return append_lines(self.ctx, lines)
+
+    def after_append(self):
+        _after_append()
+
+    def stored_hash(self):
+        return get_meta(self.db, "journal_hash")
+
+    def rebuild(self, raw: bytes):
+        rebuild_tables(self.db, raw)
+
+    def load_state(self):
+        self.last_ts = get_meta(self.db, "last_ts") or None
+        self.top = high_water(self.db)
+
+    def save_state(self, new: bytes):
+        set_meta(self.db, "journal_hash", sha(new))
+        set_meta(self.db, "high_water", self.top)
+        set_meta(self.db, "last_ts", self.last_ts or "")
+
+    def apply(self, ev: dict):
         apply_event(self.db, ev)
-        sync_fts(self.db, uid)
-        self.lines.append(encode_line(ev))
-        self.last_ts = max(self.last_ts or "", ev["ts"])
-        self.top = max(self.top, high_water_of([ev]))
-        return ev
+        sync_fts(self.db, ev["bug_uid"])
+
+    def high_water_of(self, events) -> int:
+        return high_water_of(events)
 
     def rewrite(self, drop: set, tombstones=()):
         """Drops the lines of `drop` and of every tombstoned uid, repairs the tail, appends tombstones. Atomic replace."""
@@ -861,23 +500,6 @@ class Writer:
         rebuild_tables(self.db, new)
         self.last_ts = get_meta(self.db, "last_ts") or None
         self.top = high_water(self.db)
-
-    def __exit__(self, exc_type, exc, tb):
-        if exc_type is not None:
-            self.db.execute("ROLLBACK")
-            return False
-        try:
-            if self.lines:
-                new = append_lines(self.ctx, self.lines)
-                _after_append()
-                set_meta(self.db, "journal_hash", sha(new))
-                set_meta(self.db, "high_water", self.top)
-                set_meta(self.db, "last_ts", self.last_ts or "")
-            self.db.execute("COMMIT")
-        except BaseException:
-            self.db.execute("ROLLBACK")
-            raise
-        return False
 
 
 # ---------------------------------------------------------------- write commands
@@ -953,8 +575,8 @@ def cmd_set_status(ctx, a):
         rule = move_rule(row["status"], a.status)
         if rule is None:
             raise Refused("%s: %s -> %s is not in the state machine (references/schema.md)" % (a.id, row["status"], a.status))
-        if rule == "gd" and by != "GD":
-            raise Refused("%s: %s -> %s is GD only (state machine in references/schema.md): pass --by GD on the GD's order" % (a.id, row["status"], a.status))
+        if rule == "gd" and by != "main GD":
+            raise Refused("%s: %s -> %s is main GD only (state machine in references/schema.md): pass --by 'main GD' on the main GD's order" % (a.id, row["status"], a.status))
         payload = {"from": row["status"], "to": a.status}
         if a.status == "Duplicate":
             if not dup:
@@ -965,10 +587,35 @@ def cmd_set_status(ctx, a):
             if target > w.top:
                 raise Refused("duplicate_of: %s not found" % dup)
             payload["duplicate_of"] = fmt_id(target)
-        w.emit("status", row["uid"], payload, by=by, note=note)
+        ev = w.emit("status", row["uid"], payload, by=by, note=note)
     cleaner.report()
     print("%s %s -> %s" % (a.id, row["status"], a.status))
+    if a.status in MIRRORED:
+        mirror_debt(ctx, row, by, note, ev["ts"])
     return 0
+
+
+MIRRORED = ("Won't fix", "Accepted")  # a bug the main GD leaves unfixed is debt: records.py mirrors it, no hand step
+RECORDS_PATH = Path(__file__).resolve().parents[2] / "records" / "scripts" / "records.py"
+
+
+def _load_records():
+    """records.py, by path like the engine: its mirror_bug writes the feature root's DEBT.csv or a debt record."""
+    return journal.load_by_path("bugs_records", RECORDS_PATH, " (skill records)")
+
+
+def mirror_debt(ctx: Ctx, row, by: str, note, ts: str):
+    """After the move committed. A failure here cannot undo the move, so it names the one command that finishes the job."""
+    command = '"%s" -I "%s" --root "%s" bug-mirror %s' % (sys.executable, RECORDS_PATH, ctx.root, row["id"])
+    try:
+        records = _load_records()
+        print(records.mirror_bug(records.Ctx(str(ctx.root)), row["id"], row["title"], row["feature"], by, note, ts[:10]))
+    except KeyboardInterrupt:
+        raise
+    except (Refused, Corrupt) as ex:
+        raise Refused("moved, but the debt mirror failed: %s; run %s" % (ex, command)) from None
+    except (Exception, SystemExit) as ex:  # whatever broke in the other CLI, the move stands and the repair is named
+        raise Refused("moved, but the debt mirror failed: %s: %s; run %s" % (type(ex).__name__, shown(ex, 200), command)) from None
 
 
 def counter_write(ctx, a, etype):
@@ -1012,8 +659,8 @@ def cmd_stop_rule(ctx, a):
 def cmd_delete(ctx, a):
     ctx.require_writable()
     parse_id(a.id)
-    if a.by != "GD":
-        raise Refused("delete is GD only: pass --by GD on the GD's order")
+    if a.by != "main GD":
+        raise Refused("delete is main GD only: pass --by 'main GD' on the main GD's order")
     with Writer(ctx) as w:
         row = live_bug(w.db, a.id)
         w.rewrite({row["uid"]}, [(parse_id(row["id"]), row["uid"])])
@@ -1148,65 +795,11 @@ def cmd_search(ctx, a):
     return 0
 
 
-def sql_authorizer(action, arg1, arg2, dbname, trigger):
-    """Second wall behind mode=ro: mode=ro alone still allows temp tables and VACUUM INTO."""
-    if action in (sqlite3.SQLITE_SELECT, sqlite3.SQLITE_READ, getattr(sqlite3, "SQLITE_RECURSIVE", 33)):
-        return sqlite3.SQLITE_OK
-    if action == sqlite3.SQLITE_FUNCTION:
-        return sqlite3.SQLITE_DENY if (arg2 or "").lower() in ("load_extension", "fts3_tokenizer") else sqlite3.SQLITE_OK
-    if action == sqlite3.SQLITE_PRAGMA and (arg1 or "").lower() == "data_version":  # FTS5 reads it on every MATCH
-        return sqlite3.SQLITE_OK
-    return sqlite3.SQLITE_DENY
-
-
-def strip_sql_comments(text: str) -> str:
-    return re.sub(r"--[^\n]*|/\*.*?(?:\*/|$)", " ", text, flags=re.S).strip()
-
-
-def sql_cell(value):
-    return "x'%s'" % value.hex() if isinstance(value, bytes) else value  # a BLOB prints as its SQL literal
+sql_authorizer, strip_sql_comments, sql_cell = journal.sql_authorizer, journal.strip_sql_comments, journal.sql_cell
 
 
 def cmd_sql(ctx, a):
-    query = strip_sql_comments(a.query)
-    first = re.match(r"[A-Za-z]+", query)
-    if not first or first.group(0).upper() not in ("SELECT", "WITH", "VALUES"):
-        raise Refused("sql is read-only: only SELECT, WITH and VALUES")
-    db = open_read(ctx)
-    if ctx.db_path.exists():
-        db.close()
-        db = connect(ctx.db_path.resolve().as_uri() + "?mode=ro", uri=True)
-    db.execute("PRAGMA query_only=ON")
-    db.set_authorizer(sql_authorizer)
-    deadline = dt.datetime.now() + dt.timedelta(seconds=SQL_SECONDS)
-    expired = []
-
-    def past_deadline():
-        if dt.datetime.now() > deadline:
-            expired.append(True)
-        return bool(expired)
-
-    db.set_progress_handler(past_deadline, 100000)
-    try:
-        cur = db.execute(a.query)
-        rows = cur.fetchmany(1001)
-    except (sqlite3.Error, sqlite3.Warning) as ex:
-        # A Ctrl+C lands in the handler, and SQLite reports it as this error with the deadline not reached.
-        if not expired and isinstance(ex, sqlite3.OperationalError) and str(ex) == "interrupted":
-            raise KeyboardInterrupt from None
-        raise Refused("sql refused: %s" % shown(ex, 200)) from None  # SQLite quotes the query
-    names = [c[0] for c in cur.description or ()]
-    more = len(rows) > 1000
-    rows = rows[:1000]
-    if a.json:
-        print(json.dumps([dict(zip(names, map(sql_cell, tuple(r)))) for r in rows], ensure_ascii=False, indent=1))
-    else:
-        print("\t".join(names))
-        for r in rows:
-            print("\t".join("" if v is None else str(sql_cell(v)).replace("\n", "\\n") for v in tuple(r)))
-    if more:
-        print("(first 1000 rows)", file=sys.stderr)
-    return 0
+    return journal.run_sql(a.query, a.json, lambda: open_read(ctx), ctx.db_path, SQL_SECONDS)
 
 
 def cmd_stats(ctx, a):
@@ -1376,7 +969,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     def write_cmd(name, help_text):
         sp = sub.add_parser(name, help=help_text)
-        sp.add_argument("--by", help="who writes; GD-only moves need exactly GD (default: %s)" % DEFAULT_BY)
+        sp.add_argument("--by", help="who writes; main-GD-only moves need exactly main GD (default: %s)" % DEFAULT_BY)
         return sp
 
     write_cmd("add", "file a bug: JSON fields on stdin; prints its id")
@@ -1386,7 +979,7 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("status")
     s.add_argument("--note")
     s.add_argument("--duplicate-of", dest="duplicate_of")
-    for name, text in (("round", "add used rounds to a counter"), ("extra-round", "raise a counter's cap on the GD's order")):
+    for name, text in (("round", "add used rounds to a counter"), ("extra-round", "raise a counter's cap on the main GD's order")):
         s = write_cmd(name, text)
         s.add_argument("id")
         s.add_argument("counter", choices=counter_choices)
@@ -1397,7 +990,7 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("counter", choices=counter_choices)
     s.add_argument("--extra-dispatch", dest="extra_dispatch", required=True, choices=("unused", "used"))
     s.add_argument("--note")
-    write_cmd("delete", "GD order only: drop a bug, keep a tombstone").add_argument("id")
+    write_cmd("delete", "main GD order only: drop a bug, keep a tombstone").add_argument("id")
     s = sub.add_parser("show", help="one record with its events")
     s.add_argument("id")
     s.add_argument("--json", action="store_true")
@@ -1432,27 +1025,13 @@ HANDLERS = {"add": cmd_add, "update": cmd_update, "set-status": cmd_set_status, 
 
 def given_root(argv) -> Path:
     """--root as typed, for the pattern lookup when the arguments themselves did not parse."""
-    words = sys.argv[1:] if argv is None else list(argv)
-    for i, word in enumerate(words):
-        if word == "--root" and i + 1 < len(words):
-            return Path(words[i + 1])
-        if word.startswith("--root="):
-            return Path(word[len("--root="):])
-    return Path(__file__).resolve().parents[4]
+    return journal.given_root(argv, Path(__file__).resolve().parents[4])
 
 
 def refusal_text(text: str, argv) -> str:
     """The only way refusal text reaches stderr. Everything passes the same secret and PII redaction as a write, because
     an ID, a status or a JSON key can be a pasted secret. Nothing to scan with: the values stay out."""
-    try:
-        mem = mem_module()
-        patterns = loaded_patterns(mem, given_root(argv))
-        lines = mem.redact_pii(mem.redact(text.replace(VALUE_MARK, ""), patterns)).split("\n")
-    except KeyboardInterrupt:
-        raise
-    except BaseException:  # it is already reporting an error, whatever broke the module, the file or a redaction: it must not raise
-        lines = RX_SHOWN.sub("<hidden: secret patterns unavailable>", text).split("\n")
-    return "\n".join(line[:REFUSAL_LINE] for line in lines)
+    return journal.refusal_text(text, given_root(argv))
 
 
 def main(argv=None) -> int:

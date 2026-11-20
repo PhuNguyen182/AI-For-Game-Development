@@ -50,7 +50,7 @@ user-invocable: false
 - **State changes:** running anything that changes repo state, installs, or sends data; only search and read.
 - **Running binaries:** decompiling, executing or "testing" a suspicious binary.
 - **Scope excuses:** accepting "it only has read access to a public bucket" as clearing a key; scope is credential config, not the committed string. Report Critical, route rotation to `cto`.
-- **Unconfirmed rotation:** rotating a key, revoking a certificate or rewriting history without the GD's explicit confirmation in the current conversation.
+- **Unconfirmed rotation:** rotating a key, revoking a certificate or rewriting history without the main GD's explicit confirmation in the current conversation.
 
 ## Output
 ```

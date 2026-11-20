@@ -117,7 +117,13 @@ __pycache__/
 .workflow/rounds.json
 .workflow/rounds.pending-*.json
 .workflow/rounds.corrupt-*.json
+.workflow/rounds.rejected-*.json
+.workflow/rounds.migrated-*.json
 .workflow/bugs.db*
+# Workflow records (skill records): the cache, the local round ledger and a ledger moved aside. The journals are tracked.
+.workflow/records.db*
+.workflow/ledger.db*
+.workflow/ledger.corrupt-*.db*
 
 # Signing material and credentials never enter git; the pre-commit and pre-push hooks refuse them too
 # (rule core.md -> Security). Reference a credential id or a secret store instead.
@@ -149,11 +155,15 @@ id_rsa*
 # Zero-Mem: derived index and per-machine state (the files under .memory/ are the record)
 .memory/.index/
 .memory/.state/
+# Advice and data packs hold observed revenue and retention figures: never in git (skill advisory-protocol).
+.memory/advisory/
 # --- Framework repo only: /new-project deletes this block, down to its end marker, in a game project. ---
 # The framework repo's sessions are framework development, not project memory, so traces stay local here.
 # mem.py still indexes them from disk.
 .memory/traces/
-# Each clone keeps its own framework backlog, created from .claude/templates/framework-backlog.md by the
-# session-start hook; a game project commits its copy.
+# Each clone keeps its own framework backlog journal, created empty by the session-start hook (skill records); a game
+# project commits its copy. The .md lines cover a clone not yet migrated and the copy migrate renames.
 /.workflow/framework-backlog.md
+/.workflow/framework-backlog.jsonl
+/.workflow/framework-backlog.migrated-*.md
 # --- end framework repo only ---

@@ -1,6 +1,6 @@
 # AI-For-Game-Development
 
-A Claude Code setup for making Unity games. You direct as the Game Designer; agents write the code, review it and test it.
+A Claude Code setup for making Unity games. You direct as the main GD: advisers challenge your design, product and monetisation choices, and agents write the code, review it and test it.
 
 ## Requirements
 
@@ -85,13 +85,16 @@ Open Claude Code in the project once and accept the trust dialog. Until you do, 
 /new-project
 ```
 
-The first session creates `.workflow/framework-backlog.md` from `.claude/templates/framework-backlog.md`: gaps found in the framework while working on this project go there. The project commits it. The framework repo ignores its own copy, so each clone starts with an empty one.
+The first session creates an empty `.workflow/framework-backlog.jsonl` (skill `records`): gaps found in the framework while working on this project go there, through `records.py fwbacklog add`. The project commits it. The framework repo ignores its own copy, so each clone starts with an empty one.
 
 ## Use
 
 | You want | Type |
 |---|---|
 | Plan the game from a GDD | `/plan-game <gdd>` |
+| Settle an undecided design | `/design <problem>` |
+| Work on ads, IAP, pricing, economy or revenue | `/monet <question>` |
+| Check product health at a milestone | `/product-review [scope]` |
 | Build a feature | `/feature <what you want>` |
 | Fix a bug | `/fix <bug>` |
 | Review code | `/review <path>` |
@@ -102,6 +105,8 @@ The first session creates `.workflow/framework-backlog.md` from `.claude/templat
 For anything else, just ask in plain words. It does not have to be in English.
 
 The framework sizes each request and runs the right agents. It asks before it makes a decision that is yours, and it never commits or pushes unless you ask. Progress is saved in `.workflow/`, so a new session picks up where the last one stopped.
+
+Advice from `product-owner`, `game-designer` and `monetization-designer` is kept in a local SQLite store, `.memory/advisory/`, and never enters git. It is not shared between machines: back it up with `adv.py export` (skill `mem`). Those three advise and never block; every decision stays yours.
 
 ## Output style: Game Engineer
 

@@ -690,6 +690,26 @@ def clean_prompt(text: str) -> str:
 RX_HANDBACK = re.compile(r"\[Subagent hand-back\].*?The report follows:[ \t]*\n", re.S)
 
 
+# Advice and observed figures stay off git (skill advisory-protocol): game projects commit their traces.
+ADVISERS = ("product-owner", "game-designer", "monetization-designer")
+ADVISORY_POINTER = "[advisory: adv q]"
+RX_ADVISORY_THREAD = re.compile(r"(?im)^[\s*_>-]*Advisory-Thread[*_]*:")
+RX_ADVISORY_RETURN = re.compile(r"(?m)^[\s*_>-]*Advisory-Return[*_]*:")
+RX_ADVISORY_BLOCK = re.compile(r"(?ms)^[ \t]*<!-- advisory:begin -->[ \t]*\r?$.*?(?:^[ \t]*<!-- advisory:end -->[ \t]*\r?$|\Z)")  # \r?: CRLF text (BUG-0009)
+RX_MEASURED_LINE = re.compile(r"(?m)^.*\[measured:.*$")
+
+
+def scrub_advisory(turn: dict) -> dict:
+    """A deterministic pointer in place of advice: adviser briefs and returns whole, marked blocks and labelled lines elsewhere."""
+    advisory = turn.pop("advisory", False)
+    if advisory or (turn["role"] == "agent" and RX_ADVISORY_RETURN.search(turn["text"])):
+        turn["text"] = ADVISORY_POINTER
+    elif turn["role"] != "user":
+        text = RX_ADVISORY_BLOCK.sub(ADVISORY_POINTER, turn["text"])
+        turn["text"] = RX_MEASURED_LINE.sub(ADVISORY_POINTER, text)
+    return turn
+
+
 def unwrap_agent(text: str) -> str:
     """An agent's own report, without the harness's hand-back preamble, notes and indentation."""
     text = re.sub(r"<tools-used-before-summary>.*?</tools-used-before-summary>", "", text, flags=re.S)
@@ -734,14 +754,16 @@ def parse_transcript(root: Path, transcript: Path) -> list[dict]:
 
     queued = set()  # queued commands not yet seen delivered
     agent_ids = {}  # agentId from a launch receipt -> agent type
+    advisory_uses, advisory_ids = set(), set()  # tool_use ids and agentIds whose text stays off git
 
     def user_text(raw: str, ts: str, is_queued=False):
-        agent = None
+        agent, advisory = None, False
         if "<agent-message" in raw:  # a subagent's report handed back into the main session
             m = re.search(r'<agent-message from="([^"]*)">(.*?)</agent-message>', raw, re.S)
             if not m:
                 return
             role, text, agent = "agent", unwrap_agent(m.group(2)), agent_ids.get(m.group(1))
+            advisory = m.group(1) in advisory_ids
         elif "<task-notification>" in raw:
             summ = re.search(r"<summary>(.*?)</summary>", raw, re.S)
             res = re.search(r"<result>(.*?)</result>", raw, re.S)
@@ -750,6 +772,8 @@ def parse_transcript(root: Path, transcript: Path) -> list[dict]:
             use = re.search(r"<tool-use-id>(.*?)</tool-use-id>", raw)
             kind = special.get(use.group(1).strip()) if use else None
             agent = kind[1] if kind and kind[0] == "agent" else None
+            task = re.search(r"<task-id>(.*?)</task-id>", raw)
+            advisory = (bool(use) and use.group(1).strip() in advisory_uses) or (bool(task) and task.group(1).strip() in advisory_ids)
             role, text = "agent", ((summ.group(1).strip() + "\n\n") if summ else "") + unwrap_agent(res.group(1))
         else:
             role, text = "user", clean_prompt(raw)
@@ -768,6 +792,8 @@ def parse_transcript(root: Path, transcript: Path) -> list[dict]:
         turn = {"role": role, "ts": ts, "text": text}
         if agent:
             turn["agent"] = agent
+        if advisory:
+            turn["advisory"] = True
         turns.append(turn)
 
     with open(transcript, encoding="utf-8", errors="replace") as f:
@@ -811,10 +837,15 @@ def parse_transcript(root: Path, transcript: Path) -> list[dict]:
                             flush()
                             agent = inp.get("subagent_type") or "general-purpose"
                             special[b.get("id")] = ("agent", agent)
-                            turns.append({"role": "brief", "ts": ts, "agent": agent,
+                            advisory = agent in ADVISERS or bool(RX_ADVISORY_THREAD.search(str(inp.get("prompt", ""))))
+                            if advisory:
+                                advisory_uses.add(b.get("id"))
+                            turns.append({"role": "brief", "ts": ts, "agent": agent, "advisory": advisory,
                                           "text": (inp.get("description", "") + "\n\n" + inp.get("prompt", "")).strip()})
                         elif name == "AskUserQuestion":
                             special[b.get("id")] = ("answer", None)
+                        elif name == "SendMessage" and str(inp.get("to", "")).strip() in advisory_ids:
+                            advisory_uses.add(b.get("id"))  # a follow-up's notification carries this call's id
             elif e.get("type") == "user":
                 if isinstance(content, str):
                     blocks = [{"type": "text", "text": content}]
@@ -828,16 +859,21 @@ def parse_transcript(root: Path, transcript: Path) -> list[dict]:
                         if not kind:
                             continue
                         text = block_text(b.get("content")).strip()
+                        if b.get("tool_use_id") in advisory_uses:
+                            for rid in re.findall(r"agentId:\s*([\w-]+)", text):  # foreground results name it too
+                                advisory_ids.add(rid)
                         if kind[0] == "agent" and text.startswith("Async agent launched"):
                             rid = re.search(r"agentId:\s*([\w-]+)", text)
                             if rid:
                                 agent_ids[rid.group(1)] = kind[1]
+                                if b.get("tool_use_id") in advisory_uses:
+                                    advisory_ids.add(rid.group(1))
                             continue  # launch receipt; the result arrives later as a message or notification
                         if kind[0] == "agent":
                             text = unwrap_agent(text)
                         flush()
-                        turns.append({"role": "agent" if kind[0] == "agent" else "answer", "ts": ts,
-                                      "agent": kind[1], "text": text})
+                        turns.append({"role": "agent" if kind[0] == "agent" else "answer", "ts": ts, "agent": kind[1],
+                                      "advisory": b.get("tool_use_id") in advisory_uses, "text": text})
                     elif b.get("type") == "text":
                         user_text(b.get("text", ""), ts)
             elif e.get("type") == "attachment" and isinstance(e.get("attachment"), dict):
@@ -846,7 +882,7 @@ def parse_transcript(root: Path, transcript: Path) -> list[dict]:
                 if a.get("type") == "queued_command" and isinstance(a.get("prompt"), str):
                     user_text(a["prompt"], ts, is_queued=True)
     flush()
-    return turns
+    return [scrub_advisory(t) for t in turns]
 
 
 def capture(root: Path, transcript: str, session: str) -> int:

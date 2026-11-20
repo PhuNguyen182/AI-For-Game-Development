@@ -153,6 +153,9 @@ class Base(unittest.TestCase):
         scripts = base / ".claude" / "skills" / "bugs" / "scripts"
         scripts.mkdir(parents=True)
         shutil.copy(HERE / "bugs.py", scripts / "bugs.py")
+        engine = base / ".claude" / "skills" / "records" / "scripts"  # the shared journal engine bugs.py loads by path
+        engine.mkdir(parents=True)
+        shutil.copy(SKILL_DIR.parent / "records" / "scripts" / "journal.py", engine / "journal.py")
         if with_mem:
             m = base / ".claude" / "skills" / "mem" / "scripts"
             m.mkdir(parents=True)
@@ -289,7 +292,7 @@ class TestCrud(Base):
         self.assertIn("not found", self.no("show", "BUG-0007"))
         self.add()
         self.add()
-        self.ok("delete", "BUG-0001", "--by", "GD")
+        self.ok("delete", "BUG-0001", "--by", "main GD")
         self.assertIn("purged", self.ok("show", "BUG-0001"))
 
     def test_bad_id_format_refused(self):
@@ -340,13 +343,13 @@ class TestCrud(Base):
 
     def test_delete_needs_the_gd(self):
         self.add()
-        self.assertIn("GD", self.no("delete", "BUG-0001"))
-        self.assertIn("GD", self.no("delete", "BUG-0001", "--by", "main session"))
+        self.assertIn("main GD", self.no("delete", "BUG-0001"))
+        self.assertIn("main GD", self.no("delete", "BUG-0001", "--by", "main session"))
         self.assertEqual(self.show("BUG-0001")["id"], "BUG-0001")
 
     def test_delete_leaves_only_a_text_free_tombstone_and_never_reuses_the_id(self):
         self.add(title="Sensitive words here")
-        self.ok("delete", "BUG-0001", "--by", "GD")
+        self.ok("delete", "BUG-0001", "--by", "main GD")
         raw = self.journal.read_text(encoding="utf-8")
         self.assertNotIn("Sensitive", raw)
         self.assertEqual([e["type"] for e in self.lines()], ["tombstone"])
@@ -459,25 +462,25 @@ class TestTransitions(Base):
                     self.assertEqual(code, 0, err)
                     self.assertEqual(self.show(bug_id)["status"], to)
                     continue
-                self.assertNotEqual(code, 0, "%s -> %s must be refused without the GD" % (frm, to))
+                self.assertNotEqual(code, 0, "%s -> %s must be refused without the main GD" % (frm, to))
                 self.assertEqual(self.journal.read_bytes(), before)
                 self.assertEqual(self.show(bug_id)["status"], frm)
                 if (frm, to) in GD_MOVES:
-                    self.assertIn("GD only", err)
+                    self.assertIn("main GD only", err)
                     self.assertIn("state machine", err)
-                    code, _, err = self.attempt(bug_id, to, "--by", "GD")
+                    code, _, err = self.attempt(bug_id, to, "--by", "main GD")
                     self.assertEqual(code, 0, err)
                     self.assertEqual(self.show(bug_id)["status"], to)
                 else:
-                    code, _, _ = self.attempt(bug_id, to, "--by", "GD")
-                    self.assertNotEqual(code, 0, "the GD cannot force an illegal move %s -> %s" % (frm, to))
+                    code, _, _ = self.attempt(bug_id, to, "--by", "main GD")
+                    self.assertNotEqual(code, 0, "the main GD cannot force an illegal move %s -> %s" % (frm, to))
                     self.assertEqual(self.show(bug_id)["status"], frm)
 
     def test_gd_attribution_is_exact(self):
         self.add()
-        for by in ("gd", "G.D.", "GD please", "main session"):
-            self.assertIn("GD only", self.no("set-status", "BUG-0001", "Backlog", "--note", "x", "--by", by))
-        self.ok("set-status", "BUG-0001", "Backlog", "--note", "x", "--by", "GD")
+        for by in ("GD", "gd", "G.D.", "main GD please", "main session"):
+            self.assertIn("main GD only", self.no("set-status", "BUG-0001", "Backlog", "--note", "x", "--by", by))
+        self.ok("set-status", "BUG-0001", "Backlog", "--note", "x", "--by", "main GD")
 
     def test_unknown_status_refused(self):
         self.add()
@@ -509,7 +512,7 @@ class TestTransitions(Base):
         self.add()  # the Duplicate target
         for status in TERMINAL[1:]:
             bug_id = self.add()
-            self.status(bug_id, status, by="GD", now="2030-02-02T02:02:02Z")
+            self.status(bug_id, status, by="main GD", now="2030-02-02T02:02:02Z")
             b = self.show(bug_id)
             self.assertTrue(b["closed_at"].startswith("2030-02-02"), status)
             self.status(bug_id, "Reopen")
@@ -550,7 +553,7 @@ class TestCounters(Base):
 
     def test_purged_id_is_found_false_exit_zero(self):
         self.add()
-        self.ok("delete", "BUG-0001", "--by", "GD")
+        self.ok("delete", "BUG-0001", "--by", "main GD")
         self.assertFalse(self.counters("BUG-0001")["found"])
 
     def test_settled_covers_backlog_and_the_terminal_five(self):
@@ -561,7 +564,7 @@ class TestCounters(Base):
             self.assertTrue(bugs.is_settled(status), status)
         bug_id = self.add()
         self.assertFalse(self.counters(bug_id)["settled"])
-        self.status(bug_id, "Backlog", by="GD")
+        self.status(bug_id, "Backlog", by="main GD")
         c = self.counters(bug_id)
         self.assertTrue(c["settled"])
         self.assertEqual(c["status"], "Backlog")
@@ -588,8 +591,8 @@ class TestCounters(Base):
 
     def test_extra_round_raises_the_cap_and_writes_the_old_line_shape(self):
         self.add()
-        self.ok("extra-round", "BUG-0001", "fix", "+2", "--note", "GD ordered more rounds")
-        self.ok("extra-round", "BUG-0001", "review", "+1", "--note", "GD ordered more")
+        self.ok("extra-round", "BUG-0001", "fix", "+2", "--note", "main GD ordered more rounds")
+        self.ok("extra-round", "BUG-0001", "review", "+1", "--note", "main GD ordered more")
         c = self.counters("BUG-0001")
         self.assertEqual(c["fix"]["cap"], 4)
         self.assertEqual(c["review"]["cap"], 4)
@@ -637,7 +640,7 @@ class TestCounters(Base):
         self.add(priority="Low")
         bid = self.add(priority="High")
         done = self.add(priority="Highest")
-        self.status(bid, "Backlog", by="GD")
+        self.status(bid, "Backlog", by="main GD")
         self.status(done, "As designed")
         self.assertEqual(self.ok("stats").strip(), "Bugs: 4 open (3 High+)")
 
@@ -762,7 +765,7 @@ class TestReplay(Base):
             evs.append(event("status", uid, {"to": "Processing"}, stamp(i, 2)))
             evs.append(event("round", uid, {"counter": "fix", "n": 1}, stamp(i, 3), note="round"))
             evs.append(event("status", uid, {"to": "Request"}, stamp(i, 4)))
-        evs.append(event("extra_round", "b1", {"counter": "fix", "n": 2}, stamp(9), note="GD"))
+        evs.append(event("extra_round", "b1", {"counter": "fix", "n": 2}, stamp(9), note="main GD"))
         evs.append(event("status", "b2", {"to": "Complete"}, stamp(9, 1)))
         evs.append(event("status", "b2", {"to": "Reopen"}, stamp(9, 2)))
         evs.append(event("status", "b3", {"to": "Complete"}, stamp(9, 3)))
@@ -1017,7 +1020,7 @@ class TestDuplicateIds(Base):
                             (["round", "BUG-0001", "fix", "+1", "--note", "x"], None),
                             (["extra-round", "BUG-0001", "fix", "+1", "--note", "x"], None),
                             (["stop-rule", "BUG-0001", "fix", "--extra-dispatch", "used"], None),
-                            (["delete", "BUG-0001", "--by", "GD"], None)):
+                            (["delete", "BUG-0001", "--by", "main GD"], None)):
             self.assertIn("duplicate", self.no(*args, stdin=stdin))
 
     def test_other_ids_stay_writable_and_new_ids_clear_the_high_water(self):
@@ -1670,7 +1673,7 @@ class TestWorktree(GitBase):
         calls = [(["add"], fields()), (["update", "BUG-0001"], {"priority": "Low"}),
                  (["set-status", "BUG-0001", "Processing", "--note", "n"], None), (["round", "BUG-0001", "fix", "+1", "--note", "n"], None),
                  (["extra-round", "BUG-0001", "fix", "+1", "--note", "n"], None), (["stop-rule", "BUG-0001", "fix", "--extra-dispatch", "used"], None),
-                 (["delete", "BUG-0001", "--by", "GD"], None), (["purge"], None), (["doctor", "--fix"], None)]
+                 (["delete", "BUG-0001", "--by", "main GD"], None), (["purge"], None), (["doctor", "--fix"], None)]
         for argv, stdin in calls:
             with self.subTest(argv):
                 self.assertIn("worktree", self.no(*argv, stdin=stdin, root=self.wt))
@@ -1813,7 +1816,7 @@ class TestRefusalsAreRedacted(Base):
         yield ["set-status", "BUG-0001", "Duplicate"], {"note": "n", "duplicate_of": value}
         yield ["round", "BUG-0001", "fix", value, "--note", "n"], None
         yield ["extra-round", "BUG-0001", "fix", value, "--note", "n"], None
-        yield ["delete", value, "--by", "GD"], None
+        yield ["delete", value, "--by", "main GD"], None
         yield ["add"], dict(fields(), **{value: "x"})
         yield ["update", "BUG-0001"], {value: "x"}
         yield ["set-status", "BUG-0001", "Processing"], {"note": "n", value: "x"}
@@ -1945,7 +1948,7 @@ class TestEveryWriteNeedsThePatterns(Base):
 
     def test_delete(self):
         self.add()
-        self.assert_refused("delete", "BUG-0001", "--by", "GD")
+        self.assert_refused("delete", "BUG-0001", "--by", "main GD")
 
     def test_every_other_write_gives_a_clean_refusal_too(self):
         self.add()
@@ -2226,6 +2229,9 @@ class TestRootRule(GitBase):
             scripts = folder / ".claude" / "skills" / "bugs" / "scripts"
             scripts.mkdir(parents=True)
             shutil.copy(HERE / "bugs.py", scripts / "bugs.py")
+            engine = folder / ".claude" / "skills" / "records" / "scripts"  # the shared journal engine bugs.py loads by path
+            engine.mkdir(parents=True)
+            shutil.copy(SKILL_DIR.parent / "records" / "scripts" / "journal.py", engine / "journal.py")
             with self.subTest(folder.name):
                 r = subprocess.run([sys.executable, "-I", str(scripts / "bugs.py"), "stats"], input=b"", capture_output=True, cwd=self.tmp)
                 self.assertEqual(r.returncode, 0, r.stderr)
@@ -2327,7 +2333,7 @@ class TestTombstoneReplay(Base):
 
     def test_delete_then_add_is_no_duplicate(self):
         self.add()
-        self.ok("delete", "BUG-0001", "--by", "GD")
+        self.ok("delete", "BUG-0001", "--by", "main GD")
         self.assertEqual(self.add(), "BUG-0002")
         self.ok("doctor")
 
@@ -2369,19 +2375,19 @@ class TestRoundCount(Base):
 
 
 class TestGdAttribution(Base):
-    """DEF-E1-05: exactly GD on every path; whitespace variants are refused, as delete does."""
+    """DEF-E1-05: exactly main GD on every path; whitespace variants are refused, as delete does."""
 
-    VARIANTS = ("GD ", " GD", "\tGD", "GD\t", " GD ", "GD ")
+    VARIANTS = ("main GD ", " main GD", "\tmain GD", "main GD\t", " main GD ", "main GD ")
 
     def test_set_status_refuses_a_padded_gd(self):
         self.add()
         before = self.journal.read_bytes()
         for by in self.VARIANTS:
             with self.subTest(by=by):
-                self.assertIn("exactly GD", self.no("set-status", "BUG-0001", "Backlog", "--note", "n", "--by", by))
+                self.assertIn("exactly main GD", self.no("set-status", "BUG-0001", "Backlog", "--note", "n", "--by", by))
                 self.assertEqual(self.show("BUG-0001")["status"], "Request")
         self.assertEqual(self.journal.read_bytes(), before)
-        self.ok("set-status", "BUG-0001", "Backlog", "--note", "n", "--by", "GD")
+        self.ok("set-status", "BUG-0001", "Backlog", "--note", "n", "--by", "main GD")
 
     def test_every_other_path_refuses_it_too(self):
         self.add()
@@ -2549,15 +2555,15 @@ class TestDocContracts(unittest.TestCase):
                 self.assertIn("`show`", line)
                 self.assertIn("latest move to `Resolved`", line)
 
-    def test_uncommitted_reports_name_the_no_feature_debt_file(self):
+    def test_uncommitted_reports_name_the_no_feature_debt_journal(self):
         for name, text in (("fix", self.fix), ("qa", self.qa), ("release", self.release)):
             line = next(x for x in text.split("\n") if "journal uncommitted" in x and "`.workflow/bugs.jsonl`" in x)
             with self.subTest(name):
-                self.assertIn("`.workflow/DEBT.md`", line)
+                self.assertIn("`.workflow/debt.jsonl`", line)
 
-    def test_known_debt_is_read_from_the_no_feature_file_too(self):
+    def test_known_debt_is_read_from_the_no_feature_store_too(self):
         line = next(x for x in self.feature_docs.split("\n") if x.startswith("- **Before filing a bug"))
-        self.assertIn("`.workflow/DEBT.md`", line)
+        self.assertIn("`records.py debt list --open`", line)
 
     def test_the_eol_check_is_documented(self):
         line = next(x for x in self.schema.split("\n") if x.startswith("- **Attributes:**"))
@@ -2637,11 +2643,11 @@ class TestDocContracts(unittest.TestCase):
         self.assertIn("`evidence` field is replaced", line)
 
     def test_e3_07_a_no_feature_mirror_has_a_home_and_row_0b_reads_it(self):
-        self.assertIn(".workflow/DEBT.md", self.line(self.skill, "**Mirror:**"))
-        self.assertIn(".workflow/DEBT.md", self.line(self.release, "| 0b |"))
-        self.assertIn(".workflow/DEBT.md", self.line(self.lifecycle, "**Won't fix**"))
-        self.assertIn(".workflow/DEBT.md", self.line(self.fix, "**No feature:** `AskUserQuestion`"))
-        self.assertIn(".workflow/DEBT.md", self.line(self.fix, "**Cannot reproduce:**"))
+        self.assertIn(".workflow/debt.jsonl", self.line(self.skill, "**Mirror:**"))
+        self.assertIn("records.py debt list --open", self.line(self.release, "| 0b |"))
+        self.assertIn(".workflow/debt.jsonl", self.line(self.lifecycle, "**Won't fix**"))
+        self.assertIn(".workflow/debt.jsonl", self.line(self.fix, "**No feature:** `AskUserQuestion`"))
+        self.assertIn(".workflow/debt.jsonl", self.line(self.fix, "**Cannot reproduce:**"))
 
     def test_e3_09_qa_plan_command_has_its_filters(self):
         self.assertIn("`bugs.py list --feature <slug> --open`", self.line(self.qa, "**Brief:** `Feature:"))
@@ -2652,7 +2658,7 @@ class TestDocContracts(unittest.TestCase):
     def test_e3_11_routing_names_the_bug_record_beside_the_state_file(self):
         line = self.line(self.routing, "The state file")
         self.assertIn("bug record", line)
-        self.assertIn("used = file or database + hook", line)
+        self.assertIn("used = registry or bug database + hook", line)
 
     def test_e3_12_the_device_exception_has_a_marker(self):
         marker = "awaits device verification"
@@ -2672,7 +2678,7 @@ class TestDocContracts(unittest.TestCase):
         line = self.line(self.schema, "**Refusal text:**")
         self.assertNotIn("over 40 chars is not echoed", line)
         self.assertIn("redaction always runs", line)
-        source = (HERE / "bugs.py").read_text(encoding="utf-8")
+        source = (HERE / "bugs.py").read_text(encoding="utf-8") + (SKILL_DIR.parent / "records" / "scripts" / "journal.py").read_text(encoding="utf-8")
         self.assertIn("def shown(value, limit=40)", source)
         for limit, call in ((200, "shown(ex, 200)"), (200, "shown(given, 200)"), (300, "shown(message, 300)")):
             self.assertIn(call, source)
@@ -2741,6 +2747,205 @@ class TestPlantedGit(unittest.TestCase):
         with mock.patch.dict(os.environ, {"PATH": str(self.tmp)}):
             with self.assertRaises(FileNotFoundError):
                 bugs.git_exe()
+
+
+class TestGdAttributionEdge(Base):
+    """QA edge cases (game-production-agent, qa-lead plan C6): the retired bare role GD, and the journals that still hold it."""
+
+    OLD_NAMES = ("GD", "gd", "Main GD", "main gd", "MAIN GD", "the GD", "main-GD", "main  GD")
+
+    def test_a_main_gd_only_move_refuses_the_retired_and_near_names(self):
+        self.add()
+        before = self.journal.read_bytes()
+        for by in self.OLD_NAMES:
+            with self.subTest(by=by):
+                self.assertIn("main GD", self.no("set-status", "BUG-0001", "Backlog", "--note", "n", "--by", by))
+                self.assertEqual(self.show("BUG-0001")["status"], "Request")
+        self.assertEqual(self.journal.read_bytes(), before)
+
+    def test_delete_refuses_the_retired_and_near_names_and_keeps_the_bug(self):
+        self.add()
+        before = self.journal.read_bytes()
+        for by in self.OLD_NAMES:
+            with self.subTest(by=by):
+                self.assertIn("main GD only", self.no("delete", "BUG-0001", "--by", by))
+        self.assertEqual(self.journal.read_bytes(), before)
+        self.assertEqual(self.show("BUG-0001")["status"], "Request")
+
+    def test_a_main_gd_only_move_without_by_is_refused(self):
+        self.add()
+        self.assertIn("main GD", self.no("set-status", "BUG-0001", "Backlog", "--note", "n"))
+        self.assertIn("main GD only", self.no("delete", "BUG-0001"))
+
+    def test_exactly_main_gd_is_accepted_for_every_main_gd_only_move(self):
+        self.add()
+        self.ok("set-status", "BUG-0001", "Backlog", "--note", "n", "--by", "main GD")
+        self.ok("set-status", "BUG-0001", "Request", "--note", "n", "--by", "main GD")
+        self.ok("set-status", "BUG-0001", "Won't fix", "--note", "n", "--by", "main GD")
+        self.assertEqual(self.show("BUG-0001")["events"][-1]["by"], "main GD")
+        self.ok("delete", "BUG-0001", "--by", "main GD")
+        second = self.add()  # Accepted is the fourth main-GD-only move (bugs.py:124)
+        self.ok("set-status", second, "Accepted", "--note", "n", "--by", "main GD")
+        self.assertEqual(self.show(second)["status"], "Accepted")
+        self.assertEqual(self.show(second)["events"][-1]["by"], "main GD")
+
+    def test_an_old_journal_row_attributed_to_gd_still_replays_and_is_kept_verbatim(self):
+        self.seed(create("a", 1, stamp(1)), event("status", "a", {"from": "Request", "to": "Backlog"}, stamp(2), by="GD", note="parked"),
+                  event("extra_round", "a", {"counter": "fix", "n": 1}, stamp(3), by="GD", note="GD order"))
+        raw = self.journal.read_bytes()
+        bug = self.show("BUG-0001")
+        self.assertEqual(bug["status"], "Backlog")
+        self.assertEqual([e["by"] for e in bug["events"]][-2:], ["GD", "GD"])
+        self.assertEqual(self.counters("BUG-0001")["fix"], {"used": 0, "cap": 3})
+        self.assertEqual(self.ok("doctor"), "doctor: clean\n")
+        self.assertIn("rebuilt: 1 bugs,", self.ok("rebuild"))
+        self.assertEqual(self.journal.read_bytes(), raw)
+
+    def test_a_bug_parked_by_an_old_gd_row_moves_on_only_by_the_main_gd(self):
+        self.seed(create("a", 1, stamp(1)), event("status", "a", {"from": "Request", "to": "Backlog"}, stamp(2), by="GD"))
+        self.assertIn("main GD only", self.no("set-status", "BUG-0001", "Request", "--note", "n", "--by", "GD"))
+        self.assertEqual(self.show("BUG-0001")["status"], "Backlog")  # the refused move changed nothing
+        self.ok("set-status", "BUG-0001", "Request", "--note", "n", "--by", "main GD")
+        self.assertEqual(self.show("BUG-0001")["status"], "Request")
+
+
+RECORDS = SKILL_DIR.parent / "records" / "scripts" / "records.py"
+
+
+class TestDebtMirror(Base):
+    """Won't fix and Accepted append the debt entry themselves: the feature root's DEBT.csv, else a debt record."""
+
+    def records(self, *argv, stdin=b""):
+        data = stdin if isinstance(stdin, bytes) else json.dumps(stdin).encode("utf-8")
+        return subprocess.run([sys.executable, "-I", str(RECORDS), "--root", str(self.root)] + list(argv), input=data, capture_output=True)
+
+    def register(self, slug="shop", **over):
+        r = self.records("feature", "add", stdin=dict({"slug": slug, "size": "M"}, **over))
+        self.assertEqual(r.returncode, 0, r.stderr)
+
+    def move(self, bug_id, to, note="next: rework the shop"):
+        return self.ok("set-status", bug_id, to, "--note", note, "--by", "main GD", now=T0)
+
+    def moved_on(self, bug_id):
+        """The mirror's date: the day of the status event (real clock here: the bug was filed on it)."""
+        return self.show(bug_id)["events"][-1]["ts"][:10]
+
+    def debt_csv(self):
+        return (self.root / "Assets" / "Shop" / "DEBT.csv").read_text(encoding="utf-8")
+
+    def debt_store(self):
+        r = self.records("debt", "list", "--json")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        return json.loads(r.stdout)
+
+    def test_a_feature_with_a_root_gets_a_debt_csv_row_once(self):
+        self.register(feature_root="Assets/Shop")
+        self.add(feature="shop")
+        self.assertIn("debt mirror: BUG-0001 added as DEBT-001 in Assets/Shop/DEBT.csv", self.move("BUG-0001", "Won't fix"))
+        self.assertEqual(self.debt_csv(), "id,date,kind,text,source,accepted_by,next_step,state\n"
+                                          "DEBT-001,%s,accepted-gap,Save slot overwrite drops coins,BUG-0001,main GD,next: rework the shop,Open\n"
+                                          % self.moved_on("BUG-0001"))
+        self.status("BUG-0001", "Reopen")
+        self.assertIn("debt mirror: BUG-0001 is already DEBT-001", self.move("BUG-0001", "Accepted"))
+        self.assertEqual(self.debt_csv().count("BUG-0001"), 1)
+        self.assertFalse((self.root / ".workflow" / "debt.jsonl").exists())
+
+    def test_no_feature_root_records_a_debt_store_entry_once(self):
+        self.add()
+        self.add(feature="Free text feature name")
+        self.register("plain")
+        self.add(feature="plain")
+        self.assertIn("added as DEBT-0001 (.workflow/debt.jsonl)", self.move("BUG-0001", "Accepted", note="accepted at CP4"))
+        self.assertIn("added as DEBT-0002", self.move("BUG-0002", "Won't fix"))
+        self.assertIn("added as DEBT-0003", self.move("BUG-0003", "Won't fix"))
+        rows = self.debt_store()
+        self.assertEqual([(r["id"], r["source"], r["text"], r["accepted_by"], r["next_step"], r["date"], r["state"]) for r in rows][0],
+                         ("DEBT-0001", "BUG-0001", "Save slot overwrite drops coins", "main GD", "accepted at CP4", self.moved_on("BUG-0001"), "Open"))
+        self.assertEqual([r["source"] for r in rows], ["BUG-0001", "BUG-0002", "BUG-0003"])
+        self.status("BUG-0001", "Reopen")
+        self.assertIn("debt mirror: BUG-0001 is already DEBT-0001", self.move("BUG-0001", "Won't fix"))
+        self.assertEqual(len(self.debt_store()), 3)
+
+    def test_other_terminal_moves_add_no_debt(self):
+        self.add()
+        out = self.status("BUG-0001", "As designed")
+        self.assertNotIn("debt mirror", out)
+        self.assertFalse((self.root / ".workflow" / "debt.jsonl").exists())
+
+    def test_a_failed_mirror_keeps_the_move_and_names_the_repair(self):
+        self.register(feature_root="Assets/Shop")
+        self.add(feature="shop")
+        broken = self.root / "Assets" / "Shop" / "DEBT.csv"
+        broken.parent.mkdir(parents=True)
+        broken.write_text("id,text\nDEBT-001,x\n", encoding="utf-8")
+        code, out, err = self.run_cli("set-status", "BUG-0001", "Won't fix", "--note", "n", "--by", "main GD", now=T0)
+        self.assertEqual(code, 1)
+        self.assertIn("BUG-0001 Request -> Won't fix", out)
+        self.assertTrue(err.startswith("bugs: moved, but the debt mirror failed: "), err)
+        self.assertIn("header is", err)
+        self.assertIn('records.py" --root "%s" bug-mirror BUG-0001' % self.root.resolve(), err)
+        self.assertEqual(self.show("BUG-0001")["status"], "Won't fix")
+        broken.unlink()
+        r = self.records("bug-mirror", "BUG-0001")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn(b"debt mirror: BUG-0001 added as DEBT-001 in Assets/Shop/DEBT.csv", r.stdout)
+        self.assertIn("next_step,state\nDEBT-001,%s,accepted-gap,Save slot overwrite drops coins,BUG-0001,main GD,n,Open\n" % self.moved_on("BUG-0001"),
+                      self.debt_csv())
+        self.assertIn(b"is already DEBT-001", self.records("bug-mirror", "BUG-0001").stdout)
+        self.add()
+        r = self.records("bug-mirror", "BUG-0002")
+        self.assertEqual(r.returncode, 1)
+        self.assertIn(b"only a bug in Won't fix or Accepted", r.stderr)
+
+    def test_a_formula_shaped_title_or_note_is_mirrored_behind_a_label(self):
+        """bugs.py has no formula rule; the DEBT.csv cell takes a plain label in front instead of failing the mirror."""
+        self.register(feature_root="Assets/Shop")
+        titles = ("+50 gold not granted after rewarded ad", "-1 HP after revive", "@mention breaks chat", "Shop button stays grey")
+        for t in titles:
+            self.add(feature="shop", title=t)
+        notes = ("next: rework the shop",) * 3 + ("=SUM(A1) shows in the shop total",)
+        for n, note in enumerate(notes, 1):
+            code, out, err = self.run_cli("set-status", "BUG-%04d" % n, "Won't fix", "--note", note, "--by", "main GD", now=T0)
+            self.assertEqual(code, 0, err)
+            self.assertNotIn("mirror failed", err)
+            self.assertIn("debt mirror: BUG-%04d added as DEBT-%03d in Assets/Shop/DEBT.csv" % (n, n), out)
+        day = self.moved_on("BUG-0001")
+        expected = ("id,date,kind,text,source,accepted_by,next_step,state\n"
+                    "DEBT-001,%s,accepted-gap,Bug title: +50 gold not granted after rewarded ad,BUG-0001,main GD,next: rework the shop,Open\n"
+                    "DEBT-002,%s,accepted-gap,Bug title: -1 HP after revive,BUG-0002,main GD,next: rework the shop,Open\n"
+                    "DEBT-003,%s,accepted-gap,Bug title: @mention breaks chat,BUG-0003,main GD,next: rework the shop,Open\n"
+                    "DEBT-004,%s,accepted-gap,Shop button stays grey,BUG-0004,main GD,Note: =SUM(A1) shows in the shop total,Open\n"
+                    % (day, day, day, day))
+        self.assertEqual(self.debt_csv(), expected)
+        for n in range(1, 5):
+            r = self.records("bug-mirror", "BUG-%04d" % n)
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertIn(b"debt mirror: BUG-%04d is already DEBT-%03d" % (n, n), r.stdout)
+        self.assertEqual(self.debt_csv(), expected)
+        r = self.records("csv", "doctor", "debt", "--feature", "shop")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.add(feature="shop", title="- shop tab|ad slot overlap")  # a leading - with a space after it is refused too
+        code, out, err = self.run_cli("set-status", "BUG-0005", "Won't fix", "--note", "n", "--by", "main GD", now=T0)
+        self.assertEqual(code, 0, err)
+        self.assertIn("DEBT-005,%s,accepted-gap,Bug title: - shop tab|ad slot overlap,BUG-0005,main GD,n,Open\n" % day, self.debt_csv())
+        (self.root / "Assets" / "Shop" / "DEBT.csv").unlink()  # the repair path writes the same labelled cells
+        for n in (2, 4):
+            r = self.records("bug-mirror", "BUG-%04d" % n)
+            self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(self.debt_csv(), "id,date,kind,text,source,accepted_by,next_step,state\n"
+                                          "DEBT-001,%s,accepted-gap,Bug title: -1 HP after revive,BUG-0002,main GD,next: rework the shop,Open\n"
+                                          "DEBT-002,%s,accepted-gap,Shop button stays grey,BUG-0004,main GD,Note: =SUM(A1) shows in the shop total,Open\n"
+                                          % (day, day))
+
+    def test_a_missing_records_cli_is_named(self):
+        self.add()
+        with mock.patch.object(bugs, "RECORDS_PATH", Path(self.tmp) / "gone" / "records.py"):
+            code, out, err = self.run_cli("set-status", "BUG-0001", "Accepted", "--note", "n", "--by", "main GD")
+        self.assertEqual(code, 1)
+        self.assertIn("bugs: moved, but the debt mirror failed: ", err)
+        self.assertIn("is missing (skill records)", err)
+        self.assertIn("bug-mirror BUG-0001", err)
+        self.assertEqual(self.show("BUG-0001")["status"], "Accepted")
 
 
 if __name__ == "__main__":

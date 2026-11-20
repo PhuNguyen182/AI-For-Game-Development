@@ -25,7 +25,7 @@ user-invocable: false
 ## Steps
 1. **Gate on decisions already made:** backend in `docs/tech-stack.md` or its ADR, ledger authority per `ad-mediation-monetization-platform` step 5.
    - **Absent:** `Blocked` (backend-engineer Inputs).
-   - **Subscription product in the request:** `Needs-decision` to the GD; out of this skill's scope.
+   - **Subscription product in the request:** `Needs-decision` to the main GD; out of this skill's scope.
 2. **Fix the contract: the client sends store proof, nothing else:**
    - **Proof:** the Android purchase token (product id only as a lookup hint), the iOS signed transaction or transaction id, plus its authenticated session.
    - **Grant source:** product, quantity and grant come from the store response and the server catalog.
@@ -53,7 +53,7 @@ user-invocable: false
    - **Retry:** the step 8 scheduled poll is the reconciler that retries every `granted` entry not yet finished; the ledger already blocks a second grant.
 7. **Client confirms only after the server's ack:** Unity IAP `ConfirmPurchase` only on `granted` or `already granted`.
    - **Retryable error:** the order stays pending and the store re-delivers it on next launch.
-   - **Final rejection:** no confirm; whether to refund explicitly (Play `orders.refund`) is a money decision → `Needs-decision` to the GD.
+   - **Final rejection:** no confirm; whether to refund explicitly (Play `orders.refund`) is a money decision → `Needs-decision` to the main GD.
 8. **Reverse grants per void event:** verify the notification's signature or push identity first, failing closed.
    - **Sources:** per platform reference: Play scheduled Voided Purchases poll (plus RTDN when reversal must beat it); Apple v2 `REFUND`, `REFUND_REVERSED` reinstates.
    - **Event entry:** one per event on the grant key's id, so partial refunds each land once.
@@ -61,7 +61,7 @@ user-invocable: false
    - **Original entry:** keeps a running `reversedQuantity`, never deleted.
    - **`PURCHASED` refund or void with no grant entry:** store it as an orphan, alert, and write a tombstone under `<store>:<id>` so a later grant of that proof fails.
    - **Family exception:** a `FAMILY_SHARED` event or Apple `REVOKE` reverses only a `FAMILY_SHARED` entry of the identified player, never a `PURCHASED` one; none → alert only, no tombstone.
-   - **Consumable already spent:** negative balance, debt or flag only → `Needs-decision` to the GD.
+   - **Consumable already spent:** negative balance, debt or flag only → `Needs-decision` to the main GD.
    - **Reversal write:** per the backend reference.
    - **UGS:** a reversal's decrement is not atomic with its event entry; stale `pending` events alert and are reconciled by hand, never auto-retried; report it in `Limitations`.
 9. **Credentials by secret-store id only:** Play service account, App Store Connect API key.
@@ -88,7 +88,7 @@ user-invocable: false
 - Atomic grant: <Firestore transaction | Economy redeem | Needs-decision>
 - Store finish: server consume/acknowledge <...>; client confirm after ack
 - Store finish retry: <scheduled job, cadence, `finished: false` query>
-- Refund path: <voided poll cadence | RTDN | App Store v2 REFUND>; event keys <...>; orphan alert <where> — spent-consumable policy <GD decision>
+- Refund path: <voided poll cadence | RTDN | App Store v2 REFUND>; event keys <...>; orphan alert <where> — spent-consumable policy <main GD decision>
 - Config required: <secret-store ids, never values>
 ```
 

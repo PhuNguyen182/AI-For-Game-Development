@@ -8,7 +8,7 @@ argument-hint: "<project path, or 'new'>"
 
 ## 1. Identity — one `AskUserQuestion` call (≤4 questions)
 - **Questions:** Profile · platforms · multiplayer · render pipeline.
-- **Answers:** write them into `CLAUDE.md`, plus its 3-line Summary from the GDD or the GD's pitch.
+- **Answers:** write them into `CLAUDE.md`, plus its 3-line Summary from the GDD or the main GD's pitch.
 - **Unity version:** from `ProjectSettings/ProjectVersion.txt`.
 
 ## 2. Project
@@ -45,34 +45,37 @@ Assets/_Project/Scripts/Shared/Server/          _Project.Scripts.Shared.Server  
 - **Raw-dump globs:** keep the framework `.gitignore`'s `.workflow/evidence/**` raw-dump globs (`*.ips`, `*.crash`, `*.txt`).
 - **Both glob sets:** the signing and raw-dump globs sit outside the `Framework repo only` block and must stay in every game project.
 - **Memory and search:** per skills `mem`, `code-search`:
-  - **`.gitignore` additions:** `.gitignore` += `.memory/.index/`, `.memory/.state/`.
+  - **`.gitignore` additions:** `.gitignore` += `.memory/.index/`, `.memory/.state/`, `.memory/advisory/` (advice and data packs, skill `advisory-protocol`).
   - **`.gitattributes` addition:** `.gitattributes` += `.memory/traces/** text eol=lf linguist-generated` (never `-diff`: the pre-commit secret scan reads diffs).
   - **Copied files:** copy `.xerjignore` and `.memory/sources.txt` from the framework root.
   - **Notes:** `.memory/notes/` starts empty.
 - **Bug journal:** per skill `bugs`:
   - **`.gitignore` addition:** `.gitignore` += `.workflow/bugs.db*`.
   - **`.gitattributes` addition:** `.gitattributes` += `.workflow/bugs.jsonl text eol=lf merge=union`.
-- **Framework block:** delete the copied `.gitignore`'s `Framework repo only` block, down to its end marker: the project commits its traces and its framework backlog.
-- **Framework backlog source:** `.workflow/framework-backlog.md` comes from `.claude/templates/framework-backlog.md` (the session-start hook creates it; copy the template if absent).
-- **Framework backlog commit:** `.workflow/framework-backlog.md` is committed with the project.
+- **Workflow records:** per skill `records`:
+  - **`.gitignore` additions:** `.gitignore` += `.workflow/records.db*`, `.workflow/ledger.db*`, `.workflow/ledger.corrupt-*.db*`.
+  - **`.gitattributes` additions:** `text eol=lf merge=union` for each records journal and CSV: the framework `.gitattributes`' `Workflow records` block.
+- **Framework block:** delete the copied `.gitignore`'s `Framework repo only` block, down to its end marker: the project commits its traces and its framework backlog journal.
+- **Framework backlog:** `.workflow/framework-backlog.jsonl` starts empty (step 7; the session-start hook creates it when missing) and is committed with the project.
 
 ## 6. Perf budget — `AskUserQuestion`, recommended first
 | Profile | Recommended default |
 |---|---|
 | hyper-casual | 60 fps (16.6 ms) on Android low-end · 0 B GC/frame steady state · ≤ 100 draw calls · ≤ 500 MB RAM · ≤ 150 MB install |
 | mid-core | 30–60 fps on Android mid + oldest supported iOS · 0 B GC/frame steady state · ≤ 200 draw calls · ≤ 1 GB RAM |
-| hard-core | GD-defined per tier |
+| hard-core | main-GD-defined per tier |
 
 - **Answer:** write the answer into `CLAUDE.md` → Perf budget, every metric with its unit and tier.
 - **Left-out metric:** a metric left out gets no verdict from `performance-qa-engineer`.
 
 ## 7. State
 - **Workflow state:** create `.workflow/features/` and an empty `.workflow/bugs.jsonl`: `/release` reads a missing journal as a broken setup.
+  - **Records journals:** empty `.workflow/backlog.jsonl`, `debt.jsonl`, `features.jsonl`, `framework-backlog.jsonl` (skill `records`).
 - **Staging:** stage nothing yet: step 9 asks once for the bootstrap commit (`.workflow/`, `.memory/`, the setup).
 - **Code search:** `CLAUDE.md` → Code search: `xerj prefix <kebab project name>` when `xerj` is installed, else `Grep`.
 - **Tech stack:** create `docs/tech-stack.md` from `references/tech-stack-template.md`, filled from `Packages/manifest.json`, `ProjectSettings/` and the answers above.
 
-## 8. CI — only if the GD wants it now
+## 8. CI — only if the main GD wants it now
 - **Pipeline:** `ci-cd-engineer`: build + test pipeline for the build targets, manual trigger.
 
 ## 9. Report

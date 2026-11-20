@@ -10,7 +10,7 @@ allowed-tools: Read, Grep, Glob, Edit
 - **Input:** `$ARGUMENTS`: optional priority areas; else resolve everything conflicted.
 - **Precondition:** requires unmerged paths (`git diff --name-only --diff-filter=U` non-empty); none → stop and say so.
 - **Report, dispatched agent:** the `agent-protocol` envelope.
-- **Report, main session:** to the GD in Vietnamese.
+- **Report, main session:** to the main GD in Vietnamese.
 
 ## Steps
 1. **Context:**

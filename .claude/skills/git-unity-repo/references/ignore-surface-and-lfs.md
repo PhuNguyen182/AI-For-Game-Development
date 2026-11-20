@@ -67,7 +67,7 @@ Size: the hook also sends any other file over 5 MB to LFS, except text Unity YAM
 | `lockable` on an attribute line | git-lfs checks matching files out read-only until locked, so an edit without a lock is visible at once |
 | `git lfs lock <path>` / `git lfs unlock <path>` | Takes or releases the server-side lock; needs host support for the LFS locking API |
 | `git lfs locks` | Lists who holds what. With lock verification on (`lfs.<url>.locksverify`), the LFS pre-push hook refuses a push that changes a file another user has locked |
-| `git lfs unlock --force <path>` | Breaks another person's lock: GD-only, never on an agent's initiative |
+| `git lfs unlock --force <path>` | Breaks another person's lock: main-GD-only, never on an agent's initiative |
 
 ## Pointer symptom
 

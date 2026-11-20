@@ -29,7 +29,7 @@ user-invocable: false
 7. **Include the recurring per-release cost:** every patch multiplies across build targets, QA device matrix, store submissions, and on console a certification pass.
    - **Omission:** most often omitted; often exceeds the one-time cost within a year of live operation.
 8. **Score with `tco-reversibility-scoring`:** usually Medium-to-High reversibility; Low whenever step 3 found a forced foundational change, since that outlives the platform.
-9. **Give the GD cost, timeline and risk in product terms and leave the decision to them:** committing a platform is a GDD-level commitment.
+9. **Give the main GD cost, timeline and risk in product terms and leave the decision to them:** committing a platform is a GDD-level commitment.
 10. **Hardware baseline, storefront or launch window unstated → `Needs-decision` naming it:** mark the affected bucket provisional, do not guess.
 
 ## Never
@@ -48,7 +48,7 @@ user-invocable: false
 - TCO / Reversibility: <score>
 - Provisional buckets: none | <bucket> pending <input>
 - Verdict: viable as estimated | viable only after reopening <decision> | not viable within <constraint>
-- Decision owner: GD — trade-off: <cost and timeline vs reach>
+- Decision owner: main GD — trade-off: <cost and timeline vs reach>
 - Routed to: <...>
 ```
 

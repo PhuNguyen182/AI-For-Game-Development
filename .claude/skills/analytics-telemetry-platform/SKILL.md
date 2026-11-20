@@ -7,7 +7,7 @@ user-invocable: false
 # Analytics / Telemetry Platform
 
 - **Not for:** event instrumentation (`sdk-platform-engineer`).
-- **Not for:** choosing metrics or reading results (GD with `researcher`).
+- **Not for:** choosing metrics or reading results (main GD with `researcher`).
 - **Not for:** production crash triage (`crash-anr-investigator`).
 - **Not for:** scoring rubric (`tco-reversibility-scoring`).
 - **Not for:** player-data persistence (`backend-build-vs-buy`).

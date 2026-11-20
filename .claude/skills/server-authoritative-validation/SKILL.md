@@ -30,7 +30,7 @@ user-invocable: false
    - **Listen-server host:** its own input is the server and cannot be validated.
    - **NGO Distributed Authority:** no server decides owner-simulated state.
    - **Either case:** report the gap as `Needs-decision`, routed to `anti-cheat-strategy` via `cto`.
-   - **Proceed only for:** a dedicated server, or a host whose gap the GD accepted (write it in `Known limitations`).
+   - **Proceed only for:** a dedicated server, or a host whose gap the main GD accepted (write it in `Known limitations`).
 2. **List every client→server entry point the change touches:**
    - **NGO:** `[Rpc(SendTo.Server)]`, legacy `[ServerRpc]`, custom messages.
    - **NGO owner-authority state that bypasses every handler:** per `netcode-for-gameobjects` → `core-architecture.md`.
@@ -82,7 +82,7 @@ user-invocable: false
 ## Output
 ```
 ## Server-Authoritative Validation — <feature / entry points>
-- Authority: dedicated server | host (host input unvalidated — GD-accepted) | none → Needs-decision
+- Authority: dedicated server | host (host input unvalidated — main-GD-accepted) | none → Needs-decision
 - Entry points: <handler — stack member> per entry point
 - Sender identity: <member per stack>; payload identity fields: none
 - Ownership: <referenced entity → owner compared to sender>

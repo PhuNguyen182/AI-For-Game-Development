@@ -25,6 +25,8 @@
 | Save / offline | local only / cloud · offline-capable yes / no |
 | Localization | EN only / list of languages |
 | GDD path | `docs/gdd.md` |
+| KPI targets per milestone (D1/D7/D30, ARPDAU, crash-free) | — or unset |
+| Data pack | `.memory/advisory/data/<period>/` — or none |
 | Unity CLI editor alias | |
 | Build targets | |
 | Test command | |

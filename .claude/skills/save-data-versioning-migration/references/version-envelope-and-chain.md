@@ -30,7 +30,7 @@ Run in this order; the first match decides. File presence (first two rows) is ch
 | 4 | Envelope version > known | `TooNew` | Checked before length and hash: a newer envelope may lay them out differently |
 | 5 | Length field ≠ remaining bytes, or hash mismatch | `Corrupt` | As row 3 |
 | 6 | Schema version > `CurrentSchemaVersion` | `TooNew` | Refuse: read-only session, saving and cloud upload disabled, prompt to update |
-| 7 | Schema version < `MinSupportedVersion` | `Unsupported` | Refuse; dropping support is a GD decision, never a code default |
+| 7 | Schema version < `MinSupportedVersion` | `Unsupported` | Refuse; dropping support is a main GD decision, never a code default |
 | 8 | Schema version < `CurrentSchemaVersion` | `NeedsMigration` | Backup, run the chain, validate, write, reload |
 | 9 | Equal | `Current` | Deserialize, validate at the boundary (`csharp.md`) |
 

@@ -44,7 +44,7 @@ Only when the project resolves `com.unity.testtools.codecoverage`; flags, the tw
 - Both modes inside one `lock`; wipe the coverage output first, `dontClear` accumulates across runs.
 - `archiveArtifacts artifacts: 'CodeCoverage/Report/**', allowEmptyArchive: false`: with the package installed, a missing report fails the run.
 - The report holds source and absolute machine paths: keep it an internal artifact, never on a tester-facing channel.
-- A threshold gate only when the GD or `docs/tech-stack.md` states one; never invent a percentage.
+- A threshold gate only when the main GD or `docs/tech-stack.md` states one; never invent a percentage.
 - `generateAdditionalReports` adds Cobertura and LCOV for a coverage publisher; check the controller's plugins first.
 - Plain test stage stays: coverage is Debug-compiled and instrumented, so it never replaces the run of record.
 

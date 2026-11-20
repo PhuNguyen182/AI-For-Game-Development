@@ -4,7 +4,7 @@ Docs: https://git-scm.com/docs/git-<subcommand> (stash, reset, update-ref, rebas
 
 `<utc>` = anchor timestamp as `YYYYMMDDTHHMMSSZ` (no `:`, which a ref name cannot hold); `<sha>` = value `git rev-parse` returned before the operation.
 
-Undos never use a form the hooks block. `reset --keep <ref>` moves branch, index and working tree like `--hard` but refuses instead of overwriting an uncommitted change; after an operation that left the tree clean it is the same reset. Refused, or the row says GD-run → the undo is the exact command under `Needs GD`, for the GD to run.
+Undos never use a form the hooks block. `reset --keep <ref>` moves branch, index and working tree like `--hard` but refuses instead of overwriting an uncommitted change; after an operation that left the tree clean it is the same reset. Refused, or the row says main-GD-run → the undo is the exact command under `Needs main GD`, for the main GD to run.
 
 ## Primitives
 | Primitive | Use |
@@ -35,7 +35,7 @@ Undos never use a form the hooks block. `reset --keep <ref>` moves branch, index
 | `commit` | record `git rev-parse HEAD` as `<sha>` | `git reset --soft <sha>` (the commit's changes return to the index) |
 | `reset --soft` (moves branch ref only) | tag `backup/reset-<utc>` at `HEAD` | `git reset --soft backup/reset-<utc>` |
 | `reset --mixed` (branch ref + index; working tree untouched) | tag, plus `stash create` if anything staged | `git reset backup/reset-<utc>`; if anything was staged, then `git read-tree <stash-sha>^2` (the stash's index commit restores the staged state exactly) |
-| `reset --hard` (GD-run; ref, index, working tree; may overwrite untracked files) | tag **and** `stash create` | `git reset --keep backup/reset-<utc>`, then `git stash apply --index <stash-sha>` |
+| `reset --hard` (main-GD-run; ref, index, working tree; may overwrite untracked files) | tag **and** `stash create` | `git reset --keep backup/reset-<utc>`, then `git stash apply --index <stash-sha>` |
 | `rebase <upstream>` | tag `backup/rebase-<utc>`; with `--update-refs` or `rebase.updateRefs=true`, also one tag per other branch in the range (it moves them too) | `git reset --keep backup/rebase-<utc>`, plus `git update-ref refs/heads/<b> backup/rebase-<utc>-<b>` per moved branch |
 | `rebase --onto <newbase> <upstream> <branch>` (moves `<branch>` only; other branches in the range keep old commits, so a `HEAD` anchor covers the wrong ref) | one tag `backup/rebase-onto-<utc>-<ref>` per ref `git for-each-ref` shows in the range | `git update-ref refs/heads/<branch> backup/rebase-onto-<utc>-<branch>` |
 | `merge <ref>` / `pull` | tag `backup/merge-<utc>`, plus `stash create` if dirty | `git reset --keep backup/merge-<utc>` |
@@ -59,6 +59,6 @@ Undos never use a form the hooks block. `reset --keep <ref>` moves branch, index
 | `tag -d <t>` | record `git rev-parse refs/tags/<t>` as `<sha>` | `git update-ref refs/tags/<t> <sha>` (restores the exact ref value, annotated or not) |
 | `fetch --prune` (deletes remote-tracking refs and their reflogs, the usual trace of a force-pushed tip) | tag `backup/prune-<utc>-<b>` per ref `git fetch --prune --dry-run` lists | `git update-ref refs/remotes/<remote>/<b> backup/prune-<utc>-<b>` |
 | `push <remote> <b>` | record the live value: `git ls-remote <remote> refs/heads/<b>` | none itself safe; moving the ref back is the force-push row |
-| `push --force` (GD-run; discards commits only that ref named, including ones another clone fetched) | tag `backup/push-force-<utc>` at the `git ls-remote` sha, fetched first so the object exists here | GD-run: `git push --force-with-lease=refs/heads/<b>:<new-sha> <remote> backup/push-force-<utc>:refs/heads/<b>` — restores the remote ref only, never another clone's state |
-| `filter-repo` (rewrites every commit; refuses outside a fresh clone unless `--force`; auto-shrinks, removing old cruft) | separate `git clone --mirror` before the run; an in-repo tag is not dependable across a repack/prune | GD-run: push the old refs back from the untouched clone, or re-clone from it. A purge's untouched clone still holds the purged value: delete it once the GD accepts the purge |
+| `push --force` (main-GD-run; discards commits only that ref named, including ones another clone fetched) | tag `backup/push-force-<utc>` at the `git ls-remote` sha, fetched first so the object exists here | main-GD-run: `git push --force-with-lease=refs/heads/<b>:<new-sha> <remote> backup/push-force-<utc>:refs/heads/<b>` — restores the remote ref only, never another clone's state |
+| `filter-repo` (rewrites every commit; refuses outside a fresh clone unless `--force`; auto-shrinks, removing old cruft) | separate `git clone --mirror` before the run; an in-repo tag is not dependable across a repack/prune | main-GD-run: push the old refs back from the untouched clone, or re-clone from it. A purge's untouched clone still holds the purged value: delete it once the main GD accepts the purge |
 | `filter-branch` (originals kept under `refs/original/`; a second run overwrites them) | still tag each affected ref | `git update-ref refs/heads/<b> refs/original/refs/heads/<b>` |

@@ -47,23 +47,34 @@ $HookContracts = @{
     '.claude/skills/code-review-method/SKILL.md' = @('`Request changes`')
     # Brief marker lines and state lines the hook parses.
     '.claude/skills/review/SKILL.md'                        = @('`Round: <n>`', '`Mode: audit`', '`Mode: workflow`', '`Tree: <sha>`', '`Previous tree: <sha>`', '`Target: <path or base>`', '`Bug: BUG-####`',
-        '`Feature: .workflow/features/<slug>.md`', '`Verdict:`', '`Request changes`', '`Blocked`', '`.workflow/rounds.json`', '`feature:<slug>`', '`bug:<id>`', '`target:<path>`', '`Rounds:`', '`bugs.py counters <id>`', '`bugs.py round <id> review +1 --note <why>`', 'round-<n>-')
+        '`Feature: .workflow/features/<slug>.md`', '`Verdict:`', '`Request changes`', '`Blocked`', '`records.py ledger get --json`', '`feature:<slug>`', '`bug:<id>`', '`target:<path>`', '`records.py feature counters <slug> --json`', '`records.py feature round <slug> review +1 --note <why>`', '`bugs.py counters <id>`', '`bugs.py round <id> review +1 --note <why>`', 'round-<n>-', '`target:<first 200 chars>#<16 hex>`')
     '.claude/skills/qa/SKILL.md'                            = @('`Mode: test-code`', '`Verify: BUG-####`', '`Feature: .workflow/features/<slug>.md`', '`Not signed off`')
     '.claude/skills/fix/SKILL.md'                           = @('`Bug: BUG-####`', '`Verify: BUG-####`', '`Feature: .workflow/features/<slug>.md`', '`round <id> review +1 --note <why>`', '`round <id> fix +1 --note <why>`', '**Still broken while `Resolved`:**', '**Checks passed:**', '`extra-round <id> fix|review +n --note <the order>`', '`stop-rule <id> fix|review --extra-dispatch unused`', '`Repro:`', '`reproduces`')
     '.claude/skills/feature/SKILL.md'                       = @('`Feature: .workflow/features/<slug>.md`')
     '.claude/skills/release/SKILL.md'                       = @('`Target: ', '`Verify: BUG-####`')
-    '.claude/skills/feature/references/feature-template.md' = @('- Status: Open', '- Size:', '- Rounds:', '## GD decisions', '- Stop rule:')
+    # The State line: records.py migrate skips a file holding it, and session-start counts a '- Status:' file as un-migrated.
+    '.claude/skills/feature/references/feature-template.md' = @('- State: records.py feature show <slug>', '- Rows: records.py csv render decisions --feature <slug>')
     '.claude/skills/bugs/SKILL.md'                          = @('`Bug: BUG-####`', '`Verify: BUG-####`', '`counters <id> --json`', '`round <id> fix\|review +1 --note N`', '`extra-round <id> fix\|review +n --note N`', '`stop-rule <id> fix\|review --extra-dispatch unused\|used`')
     '.claude/skills/qa-standards/references/bug-lifecycle.md' = @('Settled: Complete, Won''t fix, Accepted, As designed, Duplicate')
     '.claude/skills/qa-standards/SKILL.md'                  = @('**Critical**', '**High**', '**Medium**')
-    '.claude/rules/routing.md'                              = @('extra round')
+    '.claude/rules/routing.md'                              = @('`records.py feature extra-round <slug> <counter> +n --note <the order> --by "main GD"`', '`records.py feature stop-rule <slug> <counter> --extra-dispatch unused`')
+    # records.py commands and output shapes round-cap.ps1 and session-start.ps1 read, and the commands their messages name.
+    '.claude/skills/records/SKILL.md'                       = @('`feature counters <slug> --json`', '`feature counters <slug> --json --with-ledger`', '`ledger get --json`', '`ledger add --json`', '`stats --json`', '`feature extra-round <slug> <counter> +n --note N --by "main GD"`', '`feature stop-rule <slug> <counter> --extra-dispatch unused\|used`', '`migrate --from-md --dry-run`')
+    '.claude/skills/records/references/schema.md'           = @('`- Stop rule: <counter> root-caused <date>', '`extra round: <counter> +<n>`', '`{"<key>": {"<counter>": ["<id>", ...]}}`', '`[{"key","counter","id"}]`', '`{"line": "<that line>", "open_features": [{"slug", "cp", "next_step"}]}`', '| 3 | `ledger get`', '| 75 | `ledger add` or `migrate`', '| 4 | `ledger add`', '`rounds.pending-*.json`', '`rounds.rejected-<utc>-<8 hex>.json`', '`ledger.corrupt-<utc>.db`', '`--with-ledger`', '`target:<its first 200 chars>#<first 16 hex of the SHA-256 of the whole lower-cased line, UTF-8>`',
+        # The un-migrated feature md round-cap.ps1 still reads.
+        '`- Status: Open`', '`- Size:`', '`- Rounds: review n/cap, QA n/cap, rework n/cap`', '`## Main GD decisions`', '`- Stop rule:` lines')
+    # Strings adv.py, advisory-capture.ps1, mem.py and pre-commit.ps1 read.
+    '.claude/skills/mem/scripts/mem.py'                     = @('ADVISERS = ("product-owner", "game-designer", "monetization-designer")')
+    '.claude/hooks/common.ps1'                              = @("`$AdvisoryAgents = 'product-owner', 'game-designer', 'monetization-designer'")
+    '.claude/skills/advisory-protocol/SKILL.md'             = @('Advisory-Return: v1', '### F<n>', '`Advisory-Thread:`', '`Data-Period:`', '<!-- advisory:begin -->', '<!-- advisory:end -->', '[measured:')
     # Marker literals the workflows emit and round-cap.ps1 reads.
     '.claude/workflows/review-gate.js'                      = @("lines.push('Mode: workflow')", 'lines.push(`Round: ${round}`)', 'lines.push(`Tree: ${scope.tree}`)')
     '.claude/workflows/project-audit.js'                    = @('const AUDIT = ''Mode: audit\n''', '`${AUDIT}Audit ${at(m.path)}', '`${AUDIT}Scan the repository')
 }
-# The result field /review records from workflow review-gate. No hook reads it: only these two files depend on it.
+# The result field /review records from workflow review-gate, and the ledger command it records a Target round with.
+# No hook reads the field: only these two files depend on it.
 $WorkflowContracts = @{
-    '.claude/skills/review/SKILL.md'   = @('`roundId`')
+    '.claude/skills/review/SKILL.md'   = @('`roundId`', '`records.py ledger add --json`')
     '.claude/workflows/review-gate.js' = @('roundId: round')
 }
 
@@ -237,6 +248,8 @@ function Test-Paths([string]$path, [string]$text) {
     }
     if ($text -match $RetiredPaths) { Fail "$(Rel $path): references retired path '$($Matches[0])'" }
     foreach ($a in $RetiredAgents) { if ($text -match "\b$a\b") { Fail "$(Rel $path): references retired agent '$a'" } }
+    # The human role is main GD (route token main-gd); a bare gd route names nobody. %gd is a git format code (BUG-0011).
+    if ($text -cmatch '(?m)^.*(?:Next|Routed to)[*_`]*:.*(?<![%\w-])gd\b.*$' -or $text -cmatch '`gd`') { Fail "$(Rel $path): retired route 'gd' (use main-gd): '$($Matches[0].Trim())'" }
     foreach ($m in [regex]::Matches($text, '`([a-z]+(?:-[a-z]+)*-(?:engineer|tester|reviewer|lead|investigator|architect|artist|expert))`')) {
         if ($agents -notcontains $m.Groups[1].Value) { Fail "$(Rel $path): agent '$($m.Groups[1].Value)' does not exist" }
     }

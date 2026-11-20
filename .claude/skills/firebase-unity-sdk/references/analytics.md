@@ -41,7 +41,7 @@ Sources: [a] `/analytics/unity/start` (below the SKILL.md `Docs:` base), [b] htt
 | `AdUserData` | TCF Purpose 1 (and Purpose 7 on web tags only) | [e] |
 | `AdPersonalization` | TCF Purposes 3 and 4 | Either denied → `ad_personalization` denied [e] |
 | `AnalyticsStorage` | No TCF purpose maps to it in Google's table [e]; the project names its source (a CMP custom purpose, or a stated TCF purpose combination) | Unnamed → `Needs-decision`, collection stays off |
-| Outside TCF regions | No CMP signal; the GD-stated default for the jurisdiction (`consent-att-init-order` step 1) | Never inferred from silence |
+| Outside TCF regions | No CMP signal; the main-GD-stated default for the jurisdiction (`consent-att-init-order` step 1) | Never inferred from silence |
 
 **Caveat:** Google accepts only TCF strings implemented to TCF policy and its EU User Consent Policy [e]; a CMP that is not Google-certified does not count.
 

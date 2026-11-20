@@ -10,7 +10,7 @@ allowed-tools: PowerShell, Read, Grep, Glob, Bash, Skill
 - **Not for:** sign-off (`qa-lead`), test code (`qa-automation-engineer`), the play session (`playtest-tester`), correctness pass (`code-reviewer`), code risk review (`/review-code-risks`).
 - **Input:** `$ARGUMENTS`: code paths, optionally `--spec <path>`.
 - **Scope:** static test design only.
-- **Final report:** to the GD in Vietnamese, excerpts and line numbers verbatim.
+- **Final report:** to the main GD in Vietnamese, excerpts and line numbers verbatim.
 
 ## Steps
 1. **Sources:** use these in order, stating which were available:

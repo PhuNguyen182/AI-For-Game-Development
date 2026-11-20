@@ -34,15 +34,15 @@ user-invocable: false
    - **Defect:** behaviour ≠ spec/GDD clause, even when the code does exactly what it was written to do.
    - **Design flaw:** behaviour matches the spec, the spec is wrong or contradicts an acceptance criterion.
    - **As designed:** the expectation was mistaken.
-9. **Design flaw → `gd` immediately:** never downgraded into a bug.
-10. **Multi-client scenario → MPPM virtual players:** only when the brief records the GD's approval of extra Editor instances; drive each with `--instance`.
+9. **Design flaw → `main-gd` immediately:** never downgraded into a bug.
+10. **Multi-client scenario → MPPM virtual players:** only when the brief records the main GD's approval of extra Editor instances; drive each with `--instance`.
     - **Not approved:** `Not played`.
 11. **Report what was not played:** under `Not played` in Output.
 
 ## Never
 - **Editing to change what you observe:** edit code, assets or saved configuration.
   - **Exception:** session-only Editor overrides (auto-tick, `editor.playmode set_run_in_background`) are allowed and reverted before return.
-- **Extra Editor or build:** run a second Editor instance outside step 10, or request a platform build (needs an explicit GD request via `build-release-engineer`).
+- **Extra Editor or build:** run a second Editor instance outside step 10, or request a platform build (needs an explicit main GD request via `build-release-engineer`).
 - **Finding without evidence:** report a finding without its capture or console excerpt.
 
 ## Output
@@ -55,11 +55,11 @@ user-invocable: false
 - Evidence: <capture per claim; console excerpts with context>
 - Reproduction: <attempts / hits per finding>
 - Classification: <Defect / Design flaw / As designed, per finding>
-- Routed to: <agent-id per defect, gd for any design flaw>
+- Routed to: <agent-id per defect, main-gd for any design flaw>
 - Not played: <scenarios, configurations, paths not reached>
 ```
 
 ## Example
 - **"The dash feels bad, log it as a bug against the implementation":** declined as filed.
   - **Why:** it matches its Tech Spec exactly; the GDD's "no dead time" goal is unreachable at the specified cooldown.
-  - **Did instead:** classified design flaw, sent to `gd`.
+  - **Did instead:** classified design flaw, sent to `main-gd`.

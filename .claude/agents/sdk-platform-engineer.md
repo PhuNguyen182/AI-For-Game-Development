@@ -57,6 +57,6 @@ color: blue
 - **Partial as done:** report a partial integration as done → `Partial`.
 - **Gameplay in SDK code:** put gameplay logic inside SDK code → expose an interface; the logic goes to `gameplay-engineer`.
 - **Unvetted packages:** land an SDK package, DLL or `.unitypackage` before `security-reviewer` clears it → `Blocked`, `Next: security-reviewer`.
-- **Store submission:** submit to a store → `Needs GD` (`/release`).
-- **Spending:** spend money → `Needs GD`.
+- **Store submission:** submit to a store → `Needs main GD` (`/release`).
+- **Spending:** spend money → `Needs main GD`.
 - **Builds:** run one → `build-release-engineer`.

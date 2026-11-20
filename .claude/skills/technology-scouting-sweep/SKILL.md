@@ -46,7 +46,7 @@ user-invocable: false
 
 ## Never
 - **Scope widening:** widening the sweep into adjacent capabilities nobody asked about.
-- **Adoption:** installing, adding or modifying anything found; adoption needs an explicit GD request routed to the owning implementation role.
+- **Adoption:** installing, adding or modifying anything found; adoption needs an explicit main GD request routed to the owning implementation role.
 
 ## Output
 ```

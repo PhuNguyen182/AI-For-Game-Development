@@ -78,7 +78,7 @@ user-invocable: false                  # domain or method skill; omit for a /com
 - **`References`, `Scripts`, `Never`, `Example`:** only when non-empty.
 - **`Output`:** decision fields only.
 - **Envelope fields:** status, verification and limitations go in the `agent-protocol` envelope, never in `Output`.
-- **No envelope:** a report the main session gives the GD has no envelope; its `Output` may keep a `Status:` line.
+- **No envelope:** a report the main session gives the main GD has no envelope; its `Output` may keep a `Status:` line.
 - **Examples:** only for a case the steps do not make obvious, usually a declined wrong suggestion; 0–2, one line each.
 
 ## Say each fact once

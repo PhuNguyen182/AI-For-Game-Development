@@ -39,7 +39,7 @@ function Save($holds) {
 function Refuse {
     Block ("Unity Editor is held by another Claude session ($($lock.session), agents: $($lock.holds -join ', '), since $($lock.since)). " +
         'One Editor, one holder (rule core.md). Wait for it to finish. If that session is gone: confirm with ' +
-        '"unity command editor status" (allowed while locked), then ask the GD before deleting .workflow/editor.lock.')
+        '"unity command editor status" (allowed while locked), then ask the main GD before deleting .workflow/editor.lock.')
 }
 
 # True when $path sits in a linked git worktree other than the project's own checkout (a /feature lane A agent).
@@ -123,7 +123,7 @@ switch ($Mode) {
             Block ('No Unity CLI or MCP call from a worktree: it would drive the main checkout''s Editor while lane B holds it. ' +
                 'Verify with dotnet build / dotnet test on the mirror (/feature step 4, Lanes).')
         }
-        # Read-only status is always allowed: it is how a stale lock is confirmed before the GD deletes it.
+        # Read-only status is always allowed: it is how a stale lock is confirmed before the main GD deletes it.
         $statusOnly = '^\s*(cd\s+\S+\s*&&\s*)?unity\s+(status|pipeline\s+list|command\s+editor\s+status)\b[^;&|]*$'
         if ([string]$in.tool_input.command -match $statusOnly) { exit 0 }
         if ($foreign) { Refuse }

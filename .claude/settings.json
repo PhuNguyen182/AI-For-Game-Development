@@ -541,6 +541,20 @@
             "shell": "powershell",
             "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/round-cap.ps1\" -Mode edit; exit $LASTEXITCODE",
             "timeout": 15
+          },
+          {
+            "type": "command",
+            "if": "Bash(*records.py*)",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/round-cap.ps1\" -Mode edit; exit $LASTEXITCODE",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "if": "PowerShell(*records.py*)",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/round-cap.ps1\" -Mode edit; exit $LASTEXITCODE",
+            "timeout": 15
           }
         ]
       }
@@ -558,6 +572,12 @@
             "type": "command",
             "shell": "powershell",
             "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/round-cap.ps1\" -Mode count; exit $LASTEXITCODE",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/advisory-capture.ps1\"; exit $LASTEXITCODE",
             "timeout": 15
           }
         ]

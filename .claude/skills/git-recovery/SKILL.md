@@ -6,7 +6,7 @@ user-invocable: false
 
 # Git Recovery
 
-- **Not for:** anchoring before a command (`git-safety-anchor`), attributing a change to a commit (`git-forensics`), deciding a published-history rewrite (`cto` plans it; the GD authorises the run).
+- **Not for:** anchoring before a command (`git-safety-anchor`), attributing a change to a commit (`git-forensics`), deciding a published-history rewrite (`cto` plans it; the main GD authorises the run).
 - **Not for:** scenes, `.meta`/GUIDs, LFS tracking choice and the pointer-vs-content checkout check (`git-unity-repo`); this skill repairs LFS objects missing or corrupt in the store.
 - **Docs:** https://git-scm.com/docs — unversioned, so check `git --version` before trusting a flag.
 - **Docs (LFS):** https://github.com/git-lfs/git-lfs/tree/main/docs — `main` branch; a flag there may be missing from the installed `git-lfs`.
@@ -37,7 +37,7 @@ user-invocable: false
 8. **Repair the narrowest broken layer:** index, object store, submodule or LFS, per [index-object-and-submodule-repair.md](references/index-object-and-submodule-repair.md).
    - **No re-clone:** never re-clone for index or work-tree damage; a clone lacks unpushed branches, stashes, every reflog, local config, hooks, worktrees and uncommitted work-tree changes.
 9. **Rewrite only on explicit request:** confirmed for that specific operation (and each `push --force` publishing it) in this conversation, never inferred from an earlier approval.
-   - **Dispatched:** the GD's words quoted verbatim in the brief.
+   - **Dispatched:** the main GD's words quoted verbatim in the brief.
    - **Radius:** the blast radius `git-safety-anchor` assigned, per [history-surgery.md](references/history-surgery.md).
 10. **Verify against the stated intent:** compare resulting shas and branch positions to it and report both; an error that stopped is not a success. Commit messages per `git-commit`.
 

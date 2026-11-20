@@ -110,7 +110,7 @@ function Get-GitWords([string]$Rest) {
     return $words
 }
 
-# Force, delete, mirror, prune, all-tags and anchor-tag pushes are blast radius 3: the GD runs them. A glob deny
+# Force, delete, mirror, prune, all-tags and anchor-tag pushes are blast radius 3: the main GD runs them. A glob deny
 # misses combined short flags (-uf), unique long-option prefixes (--mirr) and +/: refspecs, so read the arguments.
 $script:PushRadius3 = 'force', 'force-with-lease', 'force-if-includes', 'mirror', 'delete', 'prune', 'tags', 'receive-pack', 'exec'
 function Find-PushRadius3([string]$Globals, [string]$Rest) {
@@ -185,6 +185,24 @@ function Find-AddedSecrets([string]$Diff) {
     return $problems
 }
 
+# Advice and observed figures stay off git (skill advisory-protocol). A labelled figure or a marker line is proof that one
+# escaped. Only the framework files that define or test those strings are exempt, by exact path.
+$script:AdvisoryLeakExempt = '^\.claude/(skills/advisory-protocol/SKILL\.md|skills/mem/references/schema\.md|skills/mem/scripts/(mem|adv|test_mem|test_adv)\.py|skills/verify-layer/scripts/verify\.ps1|hooks/common\.ps1|hooks/tests/run\.ps1)$'
+function Find-AdvisoryLeaks([string]$Diff) {
+    $problems = @()
+    foreach ($section in [regex]::Split($Diff, '(?m)^\+\+\+ b/')) {
+        $nl = $section.IndexOf("`n")
+        if ($nl -lt 0) { continue }
+        $file = $section.Substring(0, $nl).TrimEnd("`r")
+        if ($file -cmatch $script:AdvisoryLeakExempt) { continue }
+        $added = [regex]::Replace($section.Substring($nl + 1), '(?m)^(?:[^+\n].*)?(?:\n|$)', '')
+        $added = [regex]::Replace($added, '(?m)^\+', '')
+        if ($added -match '\[measured:') { $problems += "observed figure in ${file}: a [measured: ...] label; keep it in the advisory store and cite adv:<id>" }
+        if ($added -match '(?m)^\s*<!-- advisory:(begin|end) -->\s*$') { $problems += "advisory marker in ${file}: advice stays in the advisory store" }
+    }
+    return $problems
+}
+
 # A git diff/log command's whole output as one string. git writes it to a temp file (--output): PowerShell reads
 # native output one line at a time, which alone takes seconds on a multi-megabyte scene.
 # core.quotepath=off: a non-ASCII name stays `+++ b/<name>`, not a quoted header the per-file split would miss.
@@ -200,7 +218,7 @@ function Get-GitDiffText([string]$Root, [string[]]$GitArgs) {
 
 # Files that never enter git whatever their content: keystores, certificates and provisioning profiles, .env files,
 # SSH keys, the UPM registry auth file, service-account JSON (rule core.md -> Security). Case-insensitive.
-# Templates are allowed (GD decision): .env.example / .env.sample / .env.template and public keys (*.pub); their content
+# Templates are allowed (main GD decision): .env.example / .env.sample / .env.template and public keys (*.pub); their content
 # is still secret-scanned like any file.
 $script:SecretPathRegex = '(?i)\.(?:keystore|jks|p12|pfx|p8|pem|mobileprovision)$|(?:^|/)\.env(?:$|\.(?!(?:example|sample|template)$))|(?:^|/)id_rsa(?![^/]*\.pub$)|\.upmconfig\.toml$|service[-_]?account[^/]*\.json$'
 # Under .workflow/evidence/ only reports and screenshots are committed: raw logcat, syslog and crash dumps carry
@@ -878,6 +896,40 @@ function Resolve-Python([string]$Root) {
     return $null
 }
 
+# The advisers (skill advisory-protocol): read-only, so round caps and gates never apply to them.
+$AdvisoryAgents = 'product-owner', 'game-designer', 'monetization-designer'
+$AdvisoryThreadPattern = '(?im)^[\s*_>-]*Advisory-Thread[*_]*:'
+
+# SubagentStop: the brief (first user line of the agent's transcript) and its return. The report may arrive through the
+# SubagentHandback tool instead of the closing text. A continued agent holds earlier rounds too: the handback is read only
+# after the last prompt (a user line with text, not a tool result), so an old round's report never joins a new one.
+function Read-SubagentExchange($HookInput) {
+    $brief = ''
+    $ret = [string](First $HookInput.last_assistant_message '')
+    $tp = [string]$HookInput.agent_transcript_path
+    if ($tp -and (Test-Path -LiteralPath $tp)) {
+        $lines = @(Get-Content -LiteralPath $tp -Encoding UTF8)
+        $lastPrompt = -1
+        for ($i = 0; $i -lt $lines.Count; $i++) {
+            if ($lines[$i] -notmatch '"type"\s*:\s*"user"') { continue }
+            try { $o = $lines[$i] | ConvertFrom-Json } catch { continue }
+            if ($o.type -ne 'user') { continue }
+            $c = $o.message.content
+            $text = if ($c -is [string]) { $c } else { (@($c) | Where-Object { $_.type -eq 'text' } | ForEach-Object { $_.text }) -join "`n" }
+            if (-not $text) { continue }
+            if ($lastPrompt -lt 0) { $brief = $text }
+            $lastPrompt = $i
+        }
+        for ($i = $lines.Count - 1; $i -gt $lastPrompt; $i--) {
+            if ($lines[$i] -notmatch 'SubagentHandback') { continue }
+            try { $o = $lines[$i] | ConvertFrom-Json } catch { continue }
+            $h = @($o.message.content) | Where-Object { $_.type -eq 'tool_use' -and $_.name -eq 'SubagentHandback' } | Select-Object -Last 1
+            if ($h) { $ret = [string]$h.input.message + "`n" + $ret; break }
+        }
+    }
+    return [pscustomobject]@{ Brief = $brief; Return = $ret }
+}
+
 # Runs mem.py with the resolved Python; returns its stdout lines, or $null without Python.
 function Invoke-Mem([string]$Root, [string[]]$MemArgs) {
     # @() because PowerShell unrolls a one-element array on return.
@@ -899,13 +951,23 @@ function ConvertTo-NativeArg([string]$Arg) {
 # A Process, not &: & decodes stdout with the console code page while bugs.py writes UTF-8, [Console]::OutputEncoding
 # throws in a hook with no console, and Windows PowerShell wraps a native command's stderr lines as errors.
 function Invoke-Bugs([string]$Root, [string[]]$BugsArgs, [int]$TimeoutMs = 10000) {
+    return Invoke-SkillScript $Root '.claude/skills/bugs/scripts/bugs.py' $BugsArgs $TimeoutMs
+}
+
+# Runs records.py the same way, with $Stdin (UTF-8, no BOM) as its standard input: the ledger takes its events there.
+# $Root follows the Get-BugsRoot rule, as for bugs.py: records.py applies the same rule to --root itself.
+function Invoke-Records([string]$Root, [string[]]$RecordsArgs, [int]$TimeoutMs = 10000, [string]$Stdin = '') {
+    return Invoke-SkillScript $Root '.claude/skills/records/scripts/records.py' $RecordsArgs $TimeoutMs $Stdin
+}
+
+function Invoke-SkillScript([string]$Root, [string]$Rel, [string[]]$ScriptArgs, [int]$TimeoutMs, [string]$Stdin = '') {
     function Result([string]$State, $Code, [string]$Out, [string]$Err) { [pscustomobject]@{ State = $State; Code = $Code; Out = $Out; Err = $Err } }
     # @() because PowerShell unrolls a one-element array on return.
     $py = @(Resolve-Python $Root | Where-Object { $_ })
     if (-not $py.Count) { return Result 'NoPython' $null '' 'no Python 3.10+ with SQLite FTS5 found' }
-    $script = Join-Path $Root '.claude/skills/bugs/scripts/bugs.py'
+    $script = Join-Path $Root $Rel
     if (-not (Test-Path -LiteralPath $script)) { return Result 'Failed' $null '' "$script is missing" }
-    $words = @($py | Select-Object -Skip 1) + @('-I', $script, '--root', $Root) + @($BugsArgs)
+    $words = @($py | Select-Object -Skip 1) + @('-I', $script, '--root', $Root) + @($ScriptArgs)
     $utf8 = New-Object Text.UTF8Encoding $false
     $psi = New-Object Diagnostics.ProcessStartInfo
     $psi.FileName = $py[0]
@@ -919,10 +981,12 @@ function Invoke-Bugs([string]$Root, [string[]]$BugsArgs, [int]$TimeoutMs = 10000
     $psi.StandardErrorEncoding = $utf8
     try {
         $p = [Diagnostics.Process]::Start($psi)
-        $p.StandardInput.Close()
         # Both pipes drain at once: a full one would stall the child.
         $outRead = $p.StandardOutput.ReadToEndAsync()
         $errRead = $p.StandardError.ReadToEndAsync()
+        # Bytes on the base stream: Windows PowerShell has no StandardInputEncoding, and its default would write a BOM or ?.
+        if ($Stdin) { $bytes = $utf8.GetBytes($Stdin); $p.StandardInput.BaseStream.Write($bytes, 0, $bytes.Length) }
+        $p.StandardInput.Close()
         if (-not $p.WaitForExit($TimeoutMs)) {
             # A killed write is healed by the next command's hash check. Kill($true) does not exist on Windows PowerShell.
             try { $p.Kill($true) } catch { try { $p.Kill() } catch {} }
@@ -945,7 +1009,7 @@ function Get-XerjState([string]$Root) {
         try { $c = Get-Content -LiteralPath $cache -Raw | ConvertFrom-Json; if ($c.state -ne 'up' -and $now - [long]$c.at -lt 300) { return [string]$c.state } } catch {}
     }
     $state = 'none'
-    # Loopback only (GD decision): a remote node would receive the agents' queries, so it counts as no XERJ.
+    # Loopback only (main GD decision): a remote node would receive the agents' queries, so it counts as no XERJ.
     if (-not (Test-LoopbackUrl $env:XERJ_URL)) { return 'none' }
     if (Get-Command xerj -CommandType Application -ErrorAction SilentlyContinue) {
         $state = 'down'

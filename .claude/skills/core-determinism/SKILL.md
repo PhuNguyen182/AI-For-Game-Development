@@ -53,7 +53,7 @@ user-invocable: false
 6. **Prove it with a per-tick state-hash replay test:** per [replay-test.md](references/replay-test.md).
    - **Replay test:** same seed + recorded inputs, two fresh runs, bit-exact hash per tick, failure names the first diverging tick.
    - **Cross-machine work:** also compares against a committed golden hash list, in every runner the project has (`core-tests-without-unity`).
-   - **Player runs on target devices:** belong to `build-release-engineer` on the GD's request.
+   - **Player runs on target devices:** belong to `build-release-engineer` on the main GD's request.
    - **Until a Player run happens:** "cross-platform" is a known limitation, not a claim.
 7. **Fill `Determinism:` in the return:** from the Output below (csharp-engineer Return extras).
 

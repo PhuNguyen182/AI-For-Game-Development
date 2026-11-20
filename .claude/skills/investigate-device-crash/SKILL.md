@@ -11,7 +11,7 @@ allowed-tools: PowerShell, Bash, Read, Grep, Glob, Skill
 - **Scope:** live-device only.
 - **Input:** `$ARGUMENTS`: optional `[android|ios] [package-or-bundle-id]`.
 - **Missing argument:** infer what is missing; still ambiguous → `AskUserQuestion`.
-- **Final report:** to the GD in Vietnamese, evidence verbatim.
+- **Final report:** to the main GD in Vietnamese, evidence verbatim.
 - **Device hold:** one physical device project-wide (`core.md`).
 
 ## Steps
@@ -22,7 +22,7 @@ allowed-tools: PowerShell, Bash, Read, Grep, Glob, Skill
 2. **App:** `$2` is the package/bundle id.
    - **Else, Android:** `adb shell dumpsys window | grep mCurrentFocus`.
    - **Fallback, either platform:** `applicationIdentifier` in `ProjectSettings/ProjectSettings.asset` (suggestion only).
-   - **Ambiguous or fallback:** confirm with the GD via `AskUserQuestion` before pulling logs.
+   - **Ambiguous or fallback:** confirm with the main GD via `AskUserQuestion` before pulling logs.
 3. **Evidence:** collect per platform:
    - **Android source:** logcat is primary; do not assume root for `/data/anr/traces.txt`.
    - **Android commands:** filtered to the package:
