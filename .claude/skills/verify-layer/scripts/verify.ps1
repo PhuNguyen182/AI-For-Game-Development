@@ -30,7 +30,8 @@ $Budget = @{ ClaudeMd = 30; AlwaysRules = 100; PathRule = 40; Desc = 250; DescTa
 $RetiredAgents = 'unity-engineer', 'assurance-evaluator', 'build-run-engineer', 'build-verification-tester'
 # Vendor-doc skills removed by feature skill-pruning: package API comes from the installed version and its docs
 # (csharp-standards -> library-conventions.md). Matched case-sensitively as a whole skill token, so unity:ui-ugui,
-# uGUI and UI Toolkit do not match.
+# com.unity.ugui, uGUI and UI Toolkit do not match. Read in every text file of the layer, scripts/ included; this
+# script and the hook suite, which plants the names, are exempt.
 $RetiredSkills = @(
     'csvhelper-csv-data', 'dotnet-concurrency-and-async', 'dotnet-memory-and-collections', 'dotween-tweening', 'litmotion-tweening',
     'flexalon-layouts', 'magiconion-rpc-networking', 'memorypack-serialization', 'messagepipe-event-messaging', 'nrandom-random-generation',
@@ -46,7 +47,8 @@ $RetiredSkills = @(
     'render-pipeline-urp-hdrp', 'shader-authoring', 'compute-shader-vfx', 'vfx-particle-authoring', 'ugui', 'ui-toolkit', 'mobile-safe-area',
     'netcode-for-entities', 'netcode-for-gameobjects',
     'firebase-unity-sdk', 'firebase-app-distribution', 'fastlane-mobile-delivery', 'jenkins-pipeline-authoring')
-$RetiredSkillPattern = '(?<![\w:-])(?:' + (($RetiredSkills | ForEach-Object { [regex]::Escape($_) }) -join '|') + ')(?![\w-])'
+$RetiredSkillPattern = '(?<![\w:.-])(?:' + (($RetiredSkills | ForEach-Object { [regex]::Escape($_) }) -join '|') + ')(?![\w-])'
+$RetiredSkillExempt = '.claude/skills/verify-layer/scripts/verify.ps1', '.claude/hooks/tests/run.ps1'
 $RetiredPaths = '\.claude/(standards|workflows/[a-z-]+\.md|workflows/(references|state|tools)/|rules/(orchestration|task-classification|effort-allocation|execution-loop|security|feature-context-reading|implementation-note|commit-message|language-and-comments|shell-preference|unity-tooling-preference|standards-index)\.md)'
 $IdPattern = '\b(?:G[0-9]{1,2}|B[0-9]{1,2}|I[0-9]{1,2}|A[1-5]|V[1-5]|EV[0-4])\b'
 # Retired namespace scheme: features use path-derived namespaces (naming-convention.md).
@@ -267,12 +269,21 @@ function Test-Paths([string]$path, [string]$text) {
     }
     if ($text -match $RetiredPaths) { Fail "$(Rel $path): references retired path '$($Matches[0])'" }
     foreach ($a in $RetiredAgents) { if ($text -match "\b$a\b") { Fail "$(Rel $path): references retired agent '$a'" } }
-    foreach ($m in @([regex]::Matches($text, $RetiredSkillPattern) | ForEach-Object Value | Select-Object -Unique)) { Fail "$(Rel $path): references retired skill '$m'" }
     # The human role is main GD (route token main-gd); a bare gd route names nobody. %gd is a git format code (BUG-0011).
     if ($text -cmatch '(?m)^.*(?:Next|Routed to)[*_`]*:.*(?<![%\w-])gd\b.*$' -or $text -cmatch '`gd`') { Fail "$(Rel $path): retired route 'gd' (use main-gd): '$($Matches[0].Trim())'" }
     foreach ($m in [regex]::Matches($text, '`([a-z]+(?:-[a-z]+)*-(?:engineer|tester|reviewer|lead|investigator|architect|artist|expert))`')) {
         if ($agents -notcontains $m.Groups[1].Value) { Fail "$(Rel $path): agent '$($m.Groups[1].Value)' does not exist" }
     }
+}
+
+# Any extension: a file holding a NUL byte is binary (.pyc) and skipped.
+function Test-RetiredSkills([string]$path) {
+    $rel = Rel $path
+    if ($RetiredSkillExempt -contains $rel) { return }
+    $bytes = [IO.File]::ReadAllBytes($path)
+    if ([Array]::IndexOf($bytes, [byte]0) -ge 0) { return }
+    $text = [Text.Encoding]::UTF8.GetString($bytes)
+    foreach ($m in @([regex]::Matches($text, $RetiredSkillPattern) | ForEach-Object Value | Select-Object -Unique)) { Fail "${rel}: references retired skill '$m'" }
 }
 
 function Test-Contracts([string]$rel, [string]$text) {
@@ -287,6 +298,7 @@ function Test-Contracts([string]$rel, [string]$text) {
 function Test-File([string]$path) {
     if (-not (Test-Path $path -PathType Leaf)) { return }
     $rel = Rel $path
+    Test-RetiredSkills $path
     if ([IO.File]::ReadAllText($path) -cmatch $RetiredNamespace) { Fail "${rel}: references retired namespace '$($Matches[0])'" }
     if ($rel -match '^\.claude/workflows/') {
         if ($path -notlike '*.js') { Fail "${rel}: .claude/workflows/ holds only .js workflow scripts" }
@@ -359,12 +371,15 @@ if ($File) {
     if ((Rel $p) -match '^\.claude/skills/([^/]+)/references/') { Test-ScriptsNamed (Join-Path $claude "skills/$($Matches[1])") }
 } else {
     # Relative to this layer's root: a parent folder named scripts or assets must not hide every .md.
-    $files = @(Get-ChildItem $claude -Recurse -File | Where-Object { $r = Rel $_.FullName; $r -notmatch '/(scripts|assets)/' -and $_.Extension -in '.md', '.js' -or $r -match '/workflows/' -or $_.Extension -in '.ps1', '.py', '.sh' } |
-        # Agent worktrees (/feature lane A, isolation: "worktree") are checkouts of the layer, not part of it.
-        # Relative to this layer's root: a layer that itself sits in a worktree is still verified.
-        Where-Object { (Rel $_.FullName) -notmatch '^\.claude/worktrees/' })
+    # Agent worktrees (/feature lane A, isolation: "worktree") are checkouts of the layer, not part of it.
+    # Relative to this layer's root: a layer that itself sits in a worktree is still verified.
+    $all = @(Get-ChildItem $claude -Recurse -File | Where-Object { (Rel $_.FullName) -notmatch '^\.claude/worktrees/' })
+    $files = @($all | Where-Object { $r = Rel $_.FullName; $r -notmatch '/(scripts|assets)/' -and $_.Extension -in '.md', '.js' -or $r -match '/workflows/' -or $_.Extension -in '.ps1', '.py', '.sh' })
     $files += Get-Item (Join-Path $root 'CLAUDE.md'), (Join-Path $root 'README.md') -ErrorAction SilentlyContinue
     foreach ($f in $files) { Test-File $f.FullName }
+    # Test-File skips the rest (scripts/*.cs, assets/, data files); the retired-skill check still reads them.
+    $checked = @{}; foreach ($f in $files) { $checked[$f.FullName] = $true }
+    foreach ($f in $all) { if (-not $checked[$f.FullName]) { Test-RetiredSkills $f.FullName } }
 
     $always = 0
     foreach ($r in Get-ChildItem (Join-Path $claude 'rules') -Filter *.md) {

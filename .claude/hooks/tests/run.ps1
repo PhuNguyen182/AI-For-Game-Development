@@ -2762,6 +2762,22 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     VSkill 'plugin-skill-ok' @('- **UI:** `unity:ui-ugui` for uGUI; UI Toolkit stays prose.')
     Check 'verify: unity:ui-ugui and uGUI are not a retired skill' (Verify (VRel 'plugin-skill-ok')).Code 0
     Remove-Item -Recurse -Force (Join-Path $vlSkills 'retired-skill'), (Join-Path $vlSkills 'plugin-skill-ok')  # later whole-layer runs count plants exactly
+    # The guard reads every text file a run visits: skill scripts/ and workflows too. A package id is no skill name.
+    VSkill 'retired-in-cs' @('- **Sample:** [Sample.cs](scripts/Sample.cs).')
+    Set-Content (Join-Path $vlSkills 'retired-in-cs/scripts/Sample.cs') '// Adapted from unity-addressables.'
+    $csFail = "FAIL  \.claude/skills/retired-in-cs/scripts/Sample\.cs: references retired skill 'unity-addressables'"
+    $r = Verify '.claude/skills/retired-in-cs/scripts/Sample.cs'
+    Check 'verify fails per file: a retired skill name in a skill scripts/*.cs' ($r.Code -eq 1 -and $r.Out -match $csFail) $true
+    $r = Verify
+    Check 'verify fails on a whole-layer run: a retired skill name in a skill scripts/*.cs' ($r.Code -eq 1 -and $r.Out -match $csFail) $true
+    $vlFlows = Join-Path $vl '.claude/workflows'
+    New-Item -ItemType Directory -Force $vlFlows | Out-Null
+    Set-Content (Join-Path $vlFlows 'retired.js') "export const meta = { name: 'retired' }`n// per netcode-for-gameobjects"
+    $r = Verify '.claude/workflows/retired.js'
+    Check 'verify fails per file: a retired skill name in a workflow .js' ($r.Code -eq 1 -and $r.Out -match "FAIL  \.claude/workflows/retired\.js: references retired skill 'netcode-for-gameobjects'") $true
+    VSkill 'package-id-ok' @('- **Package:** https://docs.unity3d.com/Packages/com.unity.ugui@2.0/manual/ for `com.unity.ugui`.')
+    Check 'verify: the package id com.unity.ugui is not the retired skill ugui' (Verify (VRel 'package-id-ok')).Code 0
+    Remove-Item -Recurse -Force (Join-Path $vlSkills 'retired-in-cs'), (Join-Path $vlSkills 'package-id-ok'), $vlFlows  # later whole-layer runs count plants exactly
     VSkill 'preloaded-skill' @() 'Foo.Bar and Baz.Qux only.'
     Set-Content (Join-Path $vl '.claude/agents/fixture-agent.md') "---`nname: fixture-agent`ndescription: A fixture.`ntools: Read`nskills:`n  - preloaded-skill`n---`n`n# Fixture"
     Check 'verify: a skill an agent preloads needs no Use trigger' (Verify (VRel 'preloaded-skill')).Code 0
