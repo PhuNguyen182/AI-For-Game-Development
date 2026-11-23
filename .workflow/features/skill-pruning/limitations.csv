@@ -1,0 +1,8 @@
+id,date,text,accepted_by,mirrored
+LIM-001,2026-11-20,"Hook suite test session-start Records line can time out at the 3 s records.py stats bound under load. Not a feature gap: moved to the framework backlog, main GD did not accept it here.",,
+LIM-002,2026-11-20,"Dropped house rules: OSA only past a screen or two of items; new text is TMP; zero-alloc library only at a Profiler-blamed site; R3 states resume vs terminate on error; unclear ECS shared-vs-per-entity value is per-entity, flagged; unstated DOTS body type is static, flagged; NfE corrections budgeted, host migration experimental; Jenkins shared library only for a second pipeline; compute fallback decided up front, validated at about 100 elements; MaterialPropertyBlock vs SRP-batch conflict measured; every non-trivial AudioSource through a mixer group; Addressables lifetime scope decided first.",main GD,
+LIM-003,2026-11-20,"Retired-skill guard skips files containing a NUL byte, so UTF-16 text files are not checked.",main GD,
+LIM-004,2026-11-20,"Gate-tooling trims were conservative: 4 catalogue lines cut, no reference file removed, because every file mixes policy with catalogue.",main GD,
+LIM-005,2026-11-20,"consent-att-init-order and server-authoritative-validation SKILL bodies exceed the 8,000-char soft target (both already over before; consent grew with the inlined rules).",main GD,
+LIM-006,2026-11-23,framework-sync prunes only folders its own removals empty; a folder already empty before the run stays.,main GD,
+LIM-007,2026-11-23,"No migration note ships with the release (D-015): downstream teams learn the skill retirement from the sync report alone, and a project file naming a retired skill fails verify without naming its replacement.",main GD,
