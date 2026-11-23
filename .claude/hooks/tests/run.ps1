@@ -2904,6 +2904,21 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     Check 'verify: a retired skill name in the framework-sync backup does not fail a whole-layer run' ($r.Code -eq 0 -and $r.Out -cnotmatch 'WARN|FAIL') $true
     $r = Verify '.claude/.framework-backup/20260101T000000Z/.claude/skills/x/SKILL.md'
     Check 'verify: ... and -File on it passes with no check' ($r.Code -eq 0 -and $r.Out -cnotmatch 'WARN|FAIL') $true
+    # Only the real top-level .claude/.framework-backup/ is exempt (FW-0052): a '..' path out of it, a lookalike folder
+    # and a nested .framework-backup are the layer.
+    VSkill 'backup-dotdot' @('- **Tweens:** per `dotween-tweening`.')
+    $r = Verify '.claude/.framework-backup/../skills/backup-dotdot/SKILL.md'
+    Check 'verify fails per file: a retired skill name in a file reached by .. out of the backup' ($r.Code -eq 1 -and $r.Out -match "$(VFail 'backup-dotdot')references retired skill 'dotween-tweening'") $true
+    Check 'verify-on-edit blocks an edit given as a .. path out of the backup' (VerifyEdit (Join-Path $vl '.claude/.framework-backup/../skills/backup-dotdot/SKILL.md')) 2
+    Check 'verify-on-edit blocks an edit given as a .. path out of an agent worktree' (VerifyEdit (Join-Path $vl '.claude/worktrees/../skills/backup-dotdot/SKILL.md')) 2
+    Remove-Item -Recurse -Force (Join-Path $vlSkills 'backup-dotdot')
+    New-Item -ItemType Directory -Force (Join-Path $vl '.claude/.framework-backup-old'), (Join-Path $vlSkills 'backup-nested/.framework-backup') | Out-Null
+    Set-Content (Join-Path $vl '.claude/.framework-backup-old/y.md') "- **Tweens:** per ``dotween-tweening``."
+    Set-Content (Join-Path $vlSkills 'backup-nested/.framework-backup/y.md') "- **Tweens:** per ``dotween-tweening``."
+    $r = Verify
+    Check 'verify fails a whole-layer run: a retired skill name in a lookalike .framework-backup-old folder' ($r.Code -eq 1 -and $r.Out -match "FAIL  \.claude/\.framework-backup-old/y\.md: references retired skill 'dotween-tweening'") $true
+    Check 'verify fails a whole-layer run: a retired skill name in a nested .framework-backup folder' ($r.Code -eq 1 -and $r.Out -match "FAIL  \.claude/skills/backup-nested/\.framework-backup/y\.md: references retired skill 'dotween-tweening'") $true
+    Remove-Item -Recurse -Force (Join-Path $vl '.claude/.framework-backup-old'), (Join-Path $vlSkills 'backup-nested')
     Remove-Item -Recurse -Force $vlBackup  # later whole-layer runs count plants exactly
     VSkill 'trigger-field' @() 'Foo.Bar and Baz.Qux only.'
     $f = Join-Path $vlSkills 'trigger-field/SKILL.md'

@@ -370,6 +370,8 @@ function Test-File([string]$path) {
 $NotLayer = '^\.claude/(worktrees|\.framework-backup)/'
 if ($File) {
     $p = if ([IO.Path]::IsPathRooted($File)) { $File } else { Join-Path $root $File }
+    # Resolved before any Rel-based decision: '.claude/.framework-backup/../agents/x.md' is the agent file, not the backup.
+    $p = [IO.Path]::GetFullPath($p)
     if ((Rel $p) -match '^\.claude/\.framework-backup/') { Write-Output 'verify-layer: OK (0 warning(s))'; exit 0 }
     Test-File $p
     if ((Rel $p) -match '^\.claude/skills/([^/]+)/references/') { Test-ScriptsNamed (Join-Path $claude "skills/$($Matches[1])") }
