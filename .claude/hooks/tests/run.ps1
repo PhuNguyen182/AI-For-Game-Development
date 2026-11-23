@@ -2690,19 +2690,116 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
         Check 'framework-sync: a dry run keeps a folder the same update adds a file to' ($o -match 'removed  \.claude/skills/old/a\.md' -and $o -notmatch 'skills/old/ \(empty folder\)') $true
         $o = SyncUpdate
         Check 'framework-sync: ... and so does the update, with the added file' ((Test-Path (Join-Path $t.Path '.claude/skills/old/b.md')) -and -not (Test-Path (Join-Path $t.Path '.claude/skills/old/a.md')) -and $o -notmatch 'skills/old/ \(empty folder\)') $true
-        # A case-only rename deletes nothing where the file system folds case: both spellings are one file.
+        # Case-only renames. Two target paths are one file exactly when the target's file system treats them as one.
+        # Rename by git mv through a temporary name: a case-folding checkout sees no change in a direct one.
+        function CaseMv([string]$From, [string]$To) {
+            git -C $syncSrc mv ".claude/$From" ".claude/$To-tmp" 2>&1 | Out-Null
+            git -C $syncSrc mv ".claude/$To-tmp" ".claude/$To" 2>&1 | Out-Null
+        }
+        function SyncWrite([string]$Root, [string]$Rel, [string]$Text) { [IO.File]::WriteAllText((Join-Path $Root $Rel), $Text) }
+        function SyncRead([string]$Rel) { [IO.File]::ReadAllText((Join-Path $t.Path $Rel)) }
+        # framework-sync's hash of an LF text file; uppercase hex, as the manifest holds it.
+        function SyncHash([string]$Text) { [BitConverter]::ToString([Security.Cryptography.SHA256]::Create().ComputeHash([Text.Encoding]::UTF8.GetBytes($Text))) -replace '-' }
+        # The manifest's file entries as exact 'key=hash' strings; read as text, since Windows PowerShell has no -AsHashtable.
+        function SyncKeys([string]$Like) {
+            $j = [IO.File]::ReadAllText((Join-Path $t.Path '.claude/.framework-manifest.json'))
+            @([regex]::Matches($j, '"(\.claude/[^"]+)":\s*"([0-9A-Fa-f]{64})"') | ForEach-Object { "$($_.Groups[1].Value)=$($_.Groups[2].Value)" } | Where-Object { $_ -ilike "$Like=*" })
+        }
+        function SyncLines([string]$Out) { @($Out -split "`n" | Where-Object { $_ -match '^\s*(removed  |retired but|CONFLICT )' }) -join "`n" }
+        $oldRel = '.claude/skills/Foo/SKILL.md'; $newRel = '.claude/skills/foo/SKILL.md'
+        $oldText = "skills/Foo/SKILL.md`n"; $v2 = "v2`n"; $v3 = "v3`n"; $mine = "mine`n"
         $syncSrc = SyncSource 'SyncSourceCase' @('skills/Foo/SKILL.md')
         $t = SyncTarget 'case' $null $null
-        git -C $syncSrc mv .claude/skills/Foo .claude/skills/foo-tmp 2>&1 | Out-Null
-        git -C $syncSrc mv .claude/skills/foo-tmp .claude/skills/foo 2>&1 | Out-Null
-        $caseFile = Join-Path $t.Path '.claude/skills/foo/SKILL.md'
-        if (-not (Test-Path -LiteralPath (Join-Path $t.Path '.CLAUDE/SKILLS/FOO/SKILL.MD'))) { Write-Output 'SKIP  framework-sync: a case-only rename (case-sensitive file system)' }
+        CaseMv 'skills/Foo' 'skills/foo'
+        $caseFile = Join-Path $t.Path $newRel
+        if (-not (Test-Path -LiteralPath (Join-Path $t.Path '.CLAUDE/SKILLS/FOO/SKILL.MD'))) { Write-Output 'SKIP  framework-sync: case-only renames where case folds (this file system is case-sensitive)' }
         else {
-            Check 'framework-sync: the fixture renamed Foo to foo by case only' ([string](git -C $syncSrc ls-files -- .claude/skills)) '.claude/skills/foo/SKILL.md'
+            # H1: renamed only.
+            Check 'framework-sync: the fixture renamed Foo to foo by case only' ([string](git -C $syncSrc ls-files -- .claude/skills)) $newRel
             $o = SyncUpdate
-            Check 'framework-sync: a case-only rename keeps the file and its folder' ((Test-Path -LiteralPath $caseFile) -and [IO.File]::ReadAllText($caseFile) -eq "skills/Foo/SKILL.md`n" -and $o -notmatch '(?im)^\s*removed  \.claude/skills/') $true
+            Check 'framework-sync: a case-only rename keeps the file and its folder' ((Test-Path -LiteralPath $caseFile) -and [IO.File]::ReadAllText($caseFile) -eq $oldText -and $o -notmatch '(?im)^\s*removed  \.claude/skills/') $true
+            Check 'framework-sync: ... its manifest holds one key, the new spelling, with the source hash' ((SyncKeys $newRel) -join ',') "$newRel=$(SyncHash $oldText)"
             $o = SyncUpdate
             Check 'framework-sync: ... and the next update has nothing to remove' ((Test-Path -LiteralPath $caseFile) -and $o -match 'removed 0 \|' -and $o -notmatch '(?m)^\s*removed  ') $true
+            # H2: renamed and edited by the framework, target unedited: an update from the old spelling's baseline.
+            $syncSrc = SyncSource 'SyncSourceCaseEdit' @('skills/Foo/SKILL.md')
+            $t = SyncTarget 'case-edit' $null $null
+            CaseMv 'skills/Foo' 'skills/foo'; SyncWrite $syncSrc $newRel $v2
+            $o = SyncUpdate
+            $bak = @(Get-ChildItem (Join-Path $t.Path '.claude/.framework-backup') -Recurse -File -ErrorAction SilentlyContinue | Where-Object Name -eq 'SKILL.md')
+            Check 'framework-sync: a case-only rename the framework also edited updates an unedited target' ($o -match "updated  $([regex]::Escape($newRel))" -and $o -match 'conflicts 0' -and (SyncRead $newRel) -eq $v2 -and -not (Test-Path -LiteralPath "$caseFile.framework-new")) $true
+            Check 'framework-sync: ... backing up the old version' ($bak.Count -eq 1 -and [IO.File]::ReadAllText($bak[0].FullName) -eq $oldText) $true
+            $o = SyncUpdate
+            Check 'framework-sync: ... and the next update has nothing to do' ($o -match 'updated 0 \| unchanged 2 \| kept local edits 0 \| removed 0 \| conflicts 0') $true
+            # H3: renamed and edited by the framework, target edited too: a conflict against the old baseline.
+            $syncSrc = SyncSource 'SyncSourceCaseConflict' @('skills/Foo/SKILL.md')
+            $t = SyncTarget 'case-conflict' $null $null
+            SyncWrite $t.Path $oldRel $mine
+            CaseMv 'skills/Foo' 'skills/foo'; SyncWrite $syncSrc $newRel $v2
+            $o = SyncUpdate
+            Check 'framework-sync: a case-only rename edited on both sides is a conflict with the old baseline' ($o -match "CONFLICT $([regex]::Escape($newRel))" -and (SyncRead "$newRel.framework-new") -eq $v2 -and (SyncRead $newRel) -eq $mine -and ((SyncKeys $newRel) -join ',') -ceq "$newRel=$(SyncHash $oldText)") $true
+            SyncWrite $t.Path $newRel $v2
+            $o = SyncUpdate
+            Check 'framework-sync: ... resolved to the new content, the next update clears it' ($o -match 'unchanged 2 \|' -and $o -match 'conflicts 0' -and -not (Test-Path -LiteralPath "$caseFile.framework-new")) $true
+            # H4: renamed only, target edited: a kept local edit.
+            $syncSrc = SyncSource 'SyncSourceCaseKept' @('skills/Foo/SKILL.md')
+            $t = SyncTarget 'case-kept' $null $null
+            SyncWrite $t.Path $oldRel $mine
+            CaseMv 'skills/Foo' 'skills/foo'
+            $o = SyncUpdate
+            Check 'framework-sync: a case-only rename of a locally edited file keeps the edit and the old baseline' ($o -match 'kept local edits 1 \|' -and $o -match 'conflicts 0' -and $o -notmatch '(?m)^\s*removed  ' -and (SyncRead $newRel) -eq $mine -and ((SyncKeys $newRel) -join ',') -ceq "$newRel=$(SyncHash $oldText)") $true
+            # H5: the on-disk name keeps its old case; a later retirement still reports the folder in a dry run.
+            $syncSrc = SyncSource 'SyncSourceCaseFile' @('skills/Foo/A.md')
+            $t = SyncTarget 'case-file' $null $null
+            CaseMv 'skills/Foo/A.md' 'skills/Foo/a.md'
+            $o = SyncUpdate
+            git -C $syncSrc rm -q -r -f .claude/skills/Foo 2>&1 | Out-Null
+            $dry = SyncLines (SyncUpdate @('-DryRun'))
+            $real = SyncLines (SyncUpdate)
+            Check 'framework-sync: after a case-only file rename, a dry run reports what the update removes' ($dry -ceq $real -and $real -match 'removed  \.claude/skills/Foo/ \(empty folder\)' -and -not (Test-Path -LiteralPath (Join-Path $t.Path '.claude/skills/Foo'))) $true
+            # H6: a manifest holding both spellings (written where case does not fold) loads without a throw.
+            $syncSrc = SyncSource 'SyncSourceCaseCollide' @('skills/foo/SKILL.md')
+            $t = SyncTarget 'case-collide' $null $null
+            $mf = Join-Path $t.Path '.claude/.framework-manifest.json'
+            [IO.File]::WriteAllText($mf, ([IO.File]::ReadAllText($mf).Replace("`"$newRel`": `"", "`"$oldRel`": `"$('0' * 64)`",`n    `"$newRel`": `"")))
+            Check 'framework-sync: the fixture manifest holds both spellings' ((SyncKeys $newRel).Count) 2
+            SyncWrite $syncSrc $newRel $v2
+            $o = SyncUpdate
+            Check 'framework-sync: a manifest key colliding by case: the source spelling''s baseline wins' ($LASTEXITCODE -eq 0 -and $o -match 'updated 1 \|' -and $o -match 'removed 0 \| conflicts 0' -and (SyncRead $newRel) -eq $v2 -and ((SyncKeys $newRel) -join ',') -ceq "$newRel=$(SyncHash $v2)") $true
+        }
+        # Where case does not fold, Foo/ and foo/ are two folders: a Windows folder made case-sensitive stands in for Linux.
+        function SyncTargetCs([string]$Name) {
+            $p = Join-Path $tmp "sync-$Name"
+            New-Item -ItemType Directory -Force $p | Out-Null
+            $why = ''
+            if (Get-Command fsutil -CommandType Application -ErrorAction SilentlyContinue) { $why = (fsutil file setCaseSensitiveInfo $p enable 2>&1) -join ' ' }
+            [IO.File]::WriteAllText((Join-Path $p 'cs-probe'), '')
+            $folds = Test-Path -LiteralPath (Join-Path $p 'CS-PROBE')
+            Remove-Item -LiteralPath (Join-Path $p 'cs-probe')
+            if ($folds) { return "this file system folds case and the folder could not be made case-sensitive: $why" }
+            New-Repo $p
+            $o = & $pwsh -NoProfile -NonInteractive -File $syncTool -Mode Install -SourceRoot $syncSrc -Target $p 2>&1
+            @{ Path = $p; Code = $LASTEXITCODE; Out = (Join-Output $o) }
+        }
+        $syncSrc = SyncSource 'SyncSourceCs' @('skills/Foo/SKILL.md')
+        $t = SyncTargetCs 'cs-rename'
+        if ($t -is [string]) { Write-Output "SKIP  framework-sync: case-only renames where case does not fold ($t)" }
+        else {
+            # H7: renamed only: the old spelling is another file, retired with its folder.
+            CaseMv 'skills/Foo' 'skills/foo'
+            $dryOut = SyncUpdate @('-DryRun'); $o = SyncUpdate
+            Check 'framework-sync: where case does not fold, a case-only rename retires the old file and folder' ($o -match 'added 1 \|' -and $o -match "removed  $([regex]::Escape($oldRel)) \(retired" -and $o -match 'removed  \.claude/skills/Foo/ \(empty folder\)' -and (SyncRead $newRel) -eq $oldText -and -not (Test-Path -LiteralPath (Join-Path $t.Path '.claude/skills/Foo'))) $true
+            Check 'framework-sync: ... and the dry run reports the same' ((SyncLines $dryOut) -ceq (SyncLines $o) -and $dryOut -match 'added 1 \|') $true
+            # H8: renamed and edited by the framework, old file edited locally: both stay, each with its own baseline.
+            $syncSrc = SyncSource 'SyncSourceCsKept' @('skills/Foo/SKILL.md')
+            $t = SyncTargetCs 'cs-kept'
+            SyncWrite $t.Path $oldRel $mine
+            CaseMv 'skills/Foo' 'skills/foo'; SyncWrite $syncSrc $newRel $v2
+            $o = SyncUpdate
+            Check 'framework-sync: ... an edited old spelling is kept beside the new one, each with its own baseline' ($o -match "retired but locally edited, kept: $([regex]::Escape($oldRel))" -and (SyncRead $oldRel) -eq $mine -and (SyncRead $newRel) -eq $v2 -and (SyncKeys $newRel).Count -eq 2 -and (SyncKeys $newRel) -ccontains "$oldRel=$(SyncHash $oldText)" -and (SyncKeys $newRel) -ccontains "$newRel=$(SyncHash $v2)") $true
+            SyncWrite $syncSrc $newRel $v3
+            $o = SyncUpdate
+            Check 'framework-sync: ... and a later framework edit to the new spelling is an update, not a conflict' ($o -match "updated  $([regex]::Escape($newRel))" -and $o -cnotmatch 'CONFLICT' -and $o -match 'conflicts 0' -and (SyncRead $newRel) -eq $v3 -and (SyncRead $oldRel) -eq $mine) $true
         }
         $syncSrc = $savedSrc
         # The framework's own .gitignore and .gitattributes: the records lines reach a target, the framework-only block does not.
