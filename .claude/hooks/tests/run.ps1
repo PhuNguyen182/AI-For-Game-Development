@@ -2650,6 +2650,26 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
         Check 'framework-sync: a dry run on a fresh target has no false warning and writes nothing' ($t.Code -eq 0 -and $t.Out -notmatch '(?i)warning' -and -not (Test-Path (Join-Path $t.Path '.gitattributes'))) $true
         $t = SyncTarget 'dry-ignored' $null ".workflow/`n" @('-DryRun')
         Check 'framework-sync: a dry run still warns about an ignored journal' ($t.Out -match 'ignored') $true
+        # A retired skill's folders go with its files; a folder still holding a project file stays.
+        $savedSrc = $syncSrc
+        $syncSrc = Join-Path $tmp 'SyncSourceRetire'
+        New-Repo $syncSrc
+        foreach ($f in 'settings.json', 'x.md', 'skills/old/SKILL.md', 'skills/old/references/r.md', 'skills/kept/SKILL.md') {
+            New-Item -ItemType Directory -Force (Split-Path (Join-Path $syncSrc ".claude/$f")) | Out-Null
+            [IO.File]::WriteAllText((Join-Path $syncSrc ".claude/$f"), $(if ($f -eq 'settings.json') { '{}' } else { "$f`n" }))
+        }
+        git -C $syncSrc add .claude 2>&1 | Out-Null
+        $t = SyncTarget 'retire' $null $null
+        [IO.File]::WriteAllText((Join-Path $t.Path '.claude/skills/kept/notes.md'), "mine`n")
+        # -f: the fixture never commits, and git rm refuses a file whose only version is staged.
+        git -C $syncSrc rm -q -r -f .claude/skills 2>&1 | Out-Null
+        function SyncUpdate([string[]]$Extra = @()) { Join-Output (& $pwsh -NoProfile -NonInteractive -File $syncTool -Mode Update -SourceRoot $syncSrc -Target $t.Path @Extra 2>&1) }
+        $o = SyncUpdate @('-DryRun')
+        Check 'framework-sync: a dry run reports the folders a retirement empties, and keeps them' ($o -match 'removed  \.claude/skills/old/references/ \(empty folder\)' -and $o -match 'removed  \.claude/skills/old/ \(empty folder\)' -and $o -notmatch 'skills/kept/ \(' -and (Test-Path (Join-Path $t.Path '.claude/skills/old/references/r.md'))) $true
+        $o = SyncUpdate
+        Check 'framework-sync: an update removes the folders a retirement empties' ($o -match 'removed  \.claude/skills/old/ \(empty folder\)' -and -not (Test-Path (Join-Path $t.Path '.claude/skills/old'))) $true
+        Check 'framework-sync: ... and keeps one holding a project file, its parents and .claude/' ((Test-Path (Join-Path $t.Path '.claude/skills/kept/notes.md')) -and -not (Test-Path (Join-Path $t.Path '.claude/skills/kept/SKILL.md')) -and $o -notmatch '\.claude/skills/ \(' -and (Test-Path (Join-Path $t.Path '.claude/x.md'))) $true
+        $syncSrc = $savedSrc
         # The framework's own .gitignore and .gitattributes: the records lines reach a target, the framework-only block does not.
         $savedSrc = $syncSrc
         $syncSrc = Join-Path $tmp 'SyncSourceReal'
@@ -2744,6 +2764,15 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     Check 'verify: a CRLF copy of it passes per file with no output line' ($r.Code -eq 0 -and $r.Out -cnotmatch 'WARN|FAIL') $true
     $r = Verify
     Check 'verify: ... and on a whole-layer run' ($r.Code -eq 0 -and $r.Out -cnotmatch 'WARN|FAIL' -and $r.Out -match 'verify-layer: OK \(0 warning\(s\)\)') $true
+    # framework-sync.ps1 backs replaced and retired files up under .claude/.framework-backup/: old copies, not the layer.
+    $vlBackup = Join-Path $vl '.claude/.framework-backup'
+    New-Item -ItemType Directory -Force (Join-Path $vlBackup '20260101T000000Z/.claude/skills/x') | Out-Null
+    Set-Content (Join-Path $vlBackup '20260101T000000Z/.claude/skills/x/SKILL.md') "---`nname: y`n---`n`n- **Tweens:** per ``dotween-tweening``."
+    $r = Verify
+    Check 'verify: a retired skill name in the framework-sync backup does not fail a whole-layer run' ($r.Code -eq 0 -and $r.Out -cnotmatch 'WARN|FAIL') $true
+    $r = Verify '.claude/.framework-backup/20260101T000000Z/.claude/skills/x/SKILL.md'
+    Check 'verify: ... and -File on it passes with no check' ($r.Code -eq 0 -and $r.Out -cnotmatch 'WARN|FAIL') $true
+    Remove-Item -Recurse -Force $vlBackup  # later whole-layer runs count plants exactly
     VSkill 'trigger-field' @() 'Foo.Bar and Baz.Qux only.'
     $f = Join-Path $vlSkills 'trigger-field/SKILL.md'
     Set-Content $f ((Get-Content $f -Raw) -replace 'user-invocable: false', "when_to_use: `"checking the fixture`"`nuser-invocable: false")

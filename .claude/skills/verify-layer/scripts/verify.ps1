@@ -365,15 +365,18 @@ function Test-File([string]$path) {
     elseif ($rel -eq 'CLAUDE.md' -and $lines.Count -gt $Budget.ClaudeMd) { Warn "${rel}: $($lines.Count) lines > $($Budget.ClaudeMd) recommended" }
 }
 
+# Not part of the layer. Agent worktrees (/feature lane A, isolation: "worktree") are checkouts of it; the backup
+# framework-sync.ps1 keeps of replaced and retired files holds old copies that name retired skills by design.
+$NotLayer = '^\.claude/(worktrees|\.framework-backup)/'
 if ($File) {
     $p = if ([IO.Path]::IsPathRooted($File)) { $File } else { Join-Path $root $File }
+    if ((Rel $p) -match '^\.claude/\.framework-backup/') { Write-Output 'verify-layer: OK (0 warning(s))'; exit 0 }
     Test-File $p
     if ((Rel $p) -match '^\.claude/skills/([^/]+)/references/') { Test-ScriptsNamed (Join-Path $claude "skills/$($Matches[1])") }
 } else {
     # Relative to this layer's root: a parent folder named scripts or assets must not hide every .md.
-    # Agent worktrees (/feature lane A, isolation: "worktree") are checkouts of the layer, not part of it.
     # Relative to this layer's root: a layer that itself sits in a worktree is still verified.
-    $all = @(Get-ChildItem $claude -Recurse -File | Where-Object { (Rel $_.FullName) -notmatch '^\.claude/worktrees/' })
+    $all = @(Get-ChildItem $claude -Recurse -File | Where-Object { (Rel $_.FullName) -notmatch $NotLayer })
     $files = @($all | Where-Object { $r = Rel $_.FullName; $r -notmatch '/(scripts|assets)/' -and $_.Extension -in '.md', '.js' -or $r -match '/workflows/' -or $_.Extension -in '.ps1', '.py', '.sh' })
     $files += Get-Item (Join-Path $root 'CLAUDE.md'), (Join-Path $root 'README.md') -ErrorAction SilentlyContinue
     foreach ($f in $files) { Test-File $f.FullName }

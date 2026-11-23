@@ -249,6 +249,32 @@ foreach ($rel in @($recorded.Keys)) {
     else { $obsoleteKept.Add($rel); $newRecorded[$rel] = $recorded[$rel] }
 }
 
+# Folders those removals emptied, deepest first. Only an ancestor of a removed file, strictly inside .claude/; any entry
+# left in it (an untracked or locally added file, a folder this pass keeps) keeps it. A dry run reports the same set:
+# there a removed file still exists, so it counts as gone. Names compare ordinally: a spelling mismatch keeps the folder.
+$removedDirs = [System.Collections.Generic.List[string]]::new()
+$removedSet = [System.Collections.Generic.HashSet[string]]::new([string[]]@($removed), [StringComparer]::Ordinal)
+$dirSet = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+foreach ($rel in $removed) {
+    $d = $rel.Substring(0, $rel.LastIndexOf('/'))
+    while ($d.StartsWith('.claude/', [StringComparison]::Ordinal)) { [void]$dirSet.Add($d); $d = $d.Substring(0, $d.LastIndexOf('/')) }
+}
+$goneDirs = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+foreach ($d in @($dirSet | Sort-Object { ($_ -split '/').Count } -Descending)) {
+    $abs = Join-Path $Target $d
+    if (-not (Test-Path -LiteralPath $abs -PathType Container)) { continue }
+    $busy = $false
+    foreach ($e in [IO.Directory]::EnumerateFileSystemEntries($abs)) {
+        $eRel = "$d/" + [IO.Path]::GetFileName($e)
+        $gone = if ([IO.Directory]::Exists($e)) { $goneDirs.Contains($eRel) } else { $DryRun -and $removedSet.Contains($eRel) }
+        if (-not $gone) { $busy = $true; break }
+    }
+    if ($busy) { continue }
+    # Non-recursive: a folder that is not empty after all stays instead of losing what it holds.
+    if (-not $DryRun) { try { [IO.Directory]::Delete($abs, $false) } catch { continue } }
+    [void]$goneDirs.Add($d); $removedDirs.Add($d)
+}
+
 # ---------- settings.json (merged) ----------
 $settingsNote = ''
 $srcSettingsPath = Join-Path $SourceRoot '.claude/settings.json'
@@ -351,6 +377,7 @@ if ($seeded.Count) { Write-Host "  created (project-owned): $($seeded -join ', '
 if ($seedKept.Count) { Write-Host "  kept your existing: $($seedKept -join ', ')" }
 foreach ($x in $updated) { Write-Host "  updated  $x" }
 foreach ($x in $removed) { Write-Host "  removed  $x (retired by the framework)" }
+foreach ($x in $removedDirs) { Write-Host "  removed  $x/ (empty folder)" }
 foreach ($x in $obsoleteKept) { Write-Host "  retired but locally edited, kept: $x" }
 foreach ($x in $conflicts) { Write-Host "  CONFLICT $x -> new version in $x.framework-new" }
 if ($conflicts.Count) {
