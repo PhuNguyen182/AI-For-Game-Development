@@ -17,7 +17,7 @@ Implementing any mitigation belongs to `gameplay-engineer`.
 
 | Cause | Fix lives with |
 |---|---|
-| Synchronous asset/scene load on main thread (the blocking-completion pattern `unity-addressables` warns against) | `gameplay-engineer` |
+| Synchronous asset/scene load on main thread (blocking completion such as Addressables `WaitForCompletion`) | `gameplay-engineer` |
 | Disk or network on main thread; duration device-dependent, so reproduces on lower tiers [d] | `gameplay-engineer` |
 | Lock held across a long operation; both stacks look idle | `csharp-engineer` or `gameplay-engineer` by layer |
 | Sustained frame cost, no single long call: a profiling question first (`unity-profiler-diagnostics`) | `gameplay-engineer` |

@@ -22,8 +22,6 @@ color: green
 
 ## Skills (on demand)
 - **`unity:unity-cli`** (first): every Editor operation; Play Mode per `playmode-verification-loop.md`.
-- **`unity-input-system`:** synthesized device state for the input layer.
-- **Multiplayer:** `netcode-for-gameobjects` · `netcode-for-entities` — an approved MPPM scenario.
 
 ## Checklist
 - [ ] **Checkpoints first:** the GDD passage as numbered observable checkpoints before Play Mode — evidence: the `Intent:` list.

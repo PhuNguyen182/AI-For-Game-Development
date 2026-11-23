@@ -8,7 +8,6 @@ Unreturned activations exhaust the seat pool over days; the first symptom is an 
 - `unityhub --headless editors --installed`: list, so a warm agent skips the install.
 - `unityhub --headless install --version <v> --changeset <c>`: changeset (from `m_EditorVersionWithRevision`) is required for any non-latest version.
 - `unityhub --headless install-modules --version <v> --module <m> --childModules`: add a platform module and its dependencies.
-- Module ids: `android`, `ios`, `windows-mono`, `mac-mono`, `linux-mono`, `webgl`; Android also needs JDK, SDK and NDK child modules. Confirm ids against the Hub on the agent; they change more than the command shape.
 - Linux AppImage: `./UnityHub.AppImage --headless …`, same arguments.
 
 ## Licence routes

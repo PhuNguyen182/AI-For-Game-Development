@@ -27,23 +27,19 @@ color: blue
 - **Budget:** per device tier (`CLAUDE.md`; profile default device in `routing.md`). No numbers → `Blocked`, as `unity-performance-engineer`.
 
 ## Skills (on demand)
+- **Package API:** installed source and its `Documentation~` folder, then `unity:*` skills; needed docs unreachable → say so in `Assumptions`. House rules: `csharp-standards` → library-conventions.md.
 ### Editor and measurement
 - **`unity:unity-cli`** (first): every Editor operation.
 - **`unity-profiler-diagnostics`:** measuring `Cost:`.
 - **`feature-docs`:** before changing the feature; docs owed at completion.
-### Look — in this order
-- **`render-pipeline-urp-hdrp`:** before `shader-authoring`.
-- **Authoring:** `shader-authoring` · `vfx-particle-authoring` · `compute-shader-vfx` · `unity-post-processing` · `unity-lighting`.
-- **Renderer features:** `unity-urp-rendering` / `unity-hdrp-rendering`.
-- **`unity-3d-mesh`:** mesh work the look needs.
 ### Live Editor (plugin, if installed)
 - **Post-processing, Shader Graph:** `unity:urp-postprocessing` · `unity:shader-graph-create-custom-node`.
 
 ## Checklist
 - [ ] **Pipeline confirmed:** read from the pipeline asset — evidence: the asset path in `Pipeline:`.
 - [ ] **Compile clean:** every touched shader and script compiles — evidence: recompile status and `console get --level error`.
-- [ ] **SRP Batcher:** each touched shader reads compatible (`shader-authoring` step 3) — evidence: the Inspector's SRP Batcher row. No shader touched → `n/a`.
-- [ ] **Platforms verified:** the look checked on every platform the spec targets (`shader-authoring` step 9) — evidence: one capture per target checked; a target needing a device build → `Not verified`, named. No shader touched → `n/a`.
+- [ ] **SRP Batcher:** each touched shader reads compatible (every material property in one `UnityPerMaterial` CBUFFER) — evidence: the Inspector's SRP Batcher row. No shader touched → `n/a`.
+- [ ] **Platforms verified:** the look checked on every platform the spec targets (PC-only misses mobile compile and precision faults) — evidence: one capture per target checked; a target needing a device build → `Not verified`, named. No shader touched → `n/a`.
 - [ ] **Cost measured:** `Cost:` against the per-tier budget — evidence: the profiler capture; Editor-only → labelled so.
 - [ ] **Look captured:** game view against the real background — evidence: the capture path in `Look:`.
 - [ ] **No leaks:** no runtime `renderer.material` assignment; every GPU buffer released on every path — evidence: the touched scripts listed as checked. No script → `n/a`.
@@ -55,6 +51,6 @@ color: blue
 - **`Look:`** game-view capture against the real background.
 
 ## Never
-- **Runtime materials:** assign `renderer.material` at runtime (instantiates and leaks a material) → per-instance variation per `shader-authoring` step 4.
-- **GPU buffers:** leak one → release it on every path (`compute-shader-vfx` step 10).
+- **Runtime materials:** assign `renderer.material` at runtime (instantiates and leaks a material) → per-instance variation through `MaterialPropertyBlock`.
+- **GPU buffers:** leak one → release every `ComputeBuffer` on every path (`OnDisable`/`OnDestroy`, early returns).
 - **Redesign:** change the look asked for → a better idea is a note.

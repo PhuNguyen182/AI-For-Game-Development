@@ -36,7 +36,7 @@ Run in this order; the first match decides. File presence (first two rows) is ch
 
 **Caveat:** a `TooNew` main file is never replaced by a backup restore, a migration or a new game — it is a newer build's valid save. Backup restore is for `Corrupt` only.
 
-**Caveat:** a successful deserialize proves the bytes parsed, not that values are in range (`memorypack-serialization` step 9). Validate after the last step, before the runtime model sees the data.
+**Caveat:** a successful deserialize proves the bytes parsed, not that values are in range. Validate after the last step, before the runtime model sees the data.
 
 ## Chain contract
 
@@ -44,7 +44,7 @@ Sample: [SaveMigration.cs](../scripts/SaveMigration.cs) (`ISaveMigration`, `Save
 
 | Rule | Fact that decides |
 |---|---|
-| One frozen DTO per schema version | `SaveV1` … `SaveV{N}` in `_Project.Scripts.Save.DataModels.Versions`; the runtime model maps from the newest DTO only. A DTO is never a gameplay class (`memorypack-serialization` Never) |
+| One frozen DTO per schema version | `SaveV1` … `SaveV{N}` in `_Project.Scripts.Save.DataModels.Versions`; the runtime model maps from the newest DTO only. A DTO is never a gameplay class |
 | Deserialize once, serialize once | Bytes → `SaveV{stored}` → steps in memory → `SaveV{current}` → bytes; no intermediate bytes between steps |
 | Steps are pure | Same input, same output; a default that depends on game rules calls the Core rule, never re-implements it |
 | Chain built at startup and in a test | The constructor throws on a gap or duplicate, so a missing step fails the Edit Mode run, not a player's load |

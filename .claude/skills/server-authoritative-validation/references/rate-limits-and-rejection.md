@@ -7,15 +7,15 @@ Synthesized from the stack pages listed in [sender-identity-per-stack.md](sender
 | Subject | Fact that decides |
 |---|---|
 | Unit | Messages per second per connection per entry point, plus a burst capacity; one token bucket per (connection, entry point) |
-| Continuous input | One per tick: NGO `NetworkConfig.TickRate` (default 30 Hz, `netcode-for-gameobjects` → `transform-latency.md`) |
-| NfE commands | Each packet resends older ticks redundantly (`netcode-for-entities` → `rpcs-and-commands.md`): count distinct ticks, never packets |
+| Continuous input | One per tick: NGO `NetworkConfig.TickRate` (default 30 Hz) |
+| NfE commands | Each packet resends older ticks redundantly: count distinct ticks, never packets |
 | Discrete actions | GDD maximum rate of the action (fire rate, cast rate); the Core cooldown still decides legality, the bucket only bounds cost |
 | Burst | ≥ rate × worst expected jitter (s) + 1: evenly sent messages arrive clumped after a stall |
 | Clock | Server tick count, not wall time: deterministic and testable; the limiter lives in `<Feature>/Server` code |
 | Lifetime | Bucket created on connect, removed on disconnect; a missing bucket rejects (fail closed) |
 | MagicOnion | Hub instance is per connection: keep the bucket in a hub field and no shared dictionary or lock is needed |
 | Placement | First line of the handler, before the Core call and before any read the handler controls; a reject must cost O(1). NGO typed `[Rpc]` parameters are decoded by codegen before the body, so only fixed-size parameters keep that decode bounded; variable-length data uses a named custom message read after the limiter |
-| Out of scope | Packet floods that never reach a handler (transport, relay, hosting DDoS protection): `unity-transport`, `backend-engineer` |
+| Out of scope | Packet floods that never reach a handler (transport, relay, hosting DDoS protection): `netcode-engineer`, `backend-engineer` |
 
 - **Sample:** [ConnectionRateLimiter.cs](../scripts/ConnectionRateLimiter.cs) — `ConnectionRateLimiter<TKey>` with `Add`, `Remove` and `TryConsume(connection, serverTick)`.
   - **Adapt into:** `Assets/_Project/Scripts/Networking/Server/ConnectionRateLimiter.cs`.

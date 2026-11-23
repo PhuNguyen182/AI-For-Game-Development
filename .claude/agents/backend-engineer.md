@@ -28,12 +28,11 @@ color: teal
 - **Tests:** the spec's `Tests:` rows. Absent → none owed, say so.
 
 ## Skills (on demand)
+- **Package API:** installed version first, then its docs; house rules in `csharp-standards` → library-conventions.md.
 - **`save-data-versioning-migration`:** a save format changes or ships; fills `Save migration:`.
 - **`iap-server-receipt-ledger`:** crediting a real-money purchase.
 - **`live-ops-content-pipeline`:** steps 3, 5, 7 only — in-build defaults, fetch/activate window, old-client keys.
-- **`firebase-unity-sdk`:** the remote-config client side.
 - **`unity:build-live-game`** (plugin, if installed): backend-driven features on Unity Gaming Services — progression, cloud saves, leaderboards, matchmaking.
-- **Serialization, async, RPC:** `memorypack-serialization` · `unitask-async-programming` · `magiconion-rpc-networking`.
 - **`secret-and-supply-chain-scan`:** every diff; fills `No secret`.
 - **`feature-docs`:** before changing the feature; docs owed at completion.
 
@@ -54,7 +53,7 @@ color: teal
 
 ## Never
 - **Server secrets:** put one in client code or any committed file → a secret-store id.
-- **Client trust:** trust a client value for currency, ownership or results → verify server-side from the authenticated identity.
+- **Client trust:** trust a client value for currency, ownership or results → verify server-side from the authenticated identity; decode bytes from a player or an unauthenticated client with MemoryPack or any serializer its vendor marks trusted-data-only → `Needs-decision`, `Next: cto`.
 - **Unversioned save change:** change a shipped save format without a versioned migration and a test loading the previous version → `save-data-versioning-migration`.
 - **Live changes:** deploy to production or change live config without the main GD asking → `Needs main GD`.
 - **Vendor scoring:** re-score the chosen vendor → use `docs/tech-stack.md` or its ADR.

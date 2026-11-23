@@ -9,7 +9,6 @@ The entry point sets what this run builds and how it is versioned; permanent set
 - `summary.result`: `Succeeded` / `Failed` / `Cancelled` / `Unknown`, the run's verdict.
 - `summary.totalErrors`, `totalWarnings`: gate on and log.
 - `summary.outputPath`, `totalSize`: report the real artifact and size.
-- `steps`: per-step timings for slow-build work.
 
 ## `BuildPlayerOptions`
 | Field | Set to |
@@ -25,7 +24,7 @@ Never set `AutoRunPlayer` or `ShowBuiltPlayer` headless.
 
 ## Platform switches
 - `EditorUserBuildSettings.buildAppBundle`: `true` gives `.aab`, `false` `.apk`; a store upload needs the bundle.
-- `exportAsGoogleAndroidProject`: Gradle project instead of an artifact, for Gradle control or external signing (`fastlane-mobile-delivery`).
+- `exportAsGoogleAndroidProject`: Gradle project instead of an artifact, for Gradle control or external signing (`ci-cd-engineer`).
 - `androidCreateSymbols`: native symbol package for later crash reporting.
 - iOS output is always an Xcode project, never an `.ipa`.
 

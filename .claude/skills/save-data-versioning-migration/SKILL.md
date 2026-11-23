@@ -6,7 +6,7 @@ user-invocable: false
 
 # Save Data Versioning and Migration
 
-- **Not for:** serializer attributes and version-tolerant layout (`memorypack-serialization`).
+- **Not for:** serializer attributes and version-tolerant layout (the serializer's docs, `csharp-standards` → library-conventions.md).
 - **Not for:** cloud-save vendor choice (`backend-build-vs-buy`).
 - **Not for:** save tampering and cheat posture (`anti-cheat-strategy`).
 - **Not for:** purchase and currency records held server-side (`iap-server-receipt-ledger`).
@@ -36,7 +36,7 @@ user-invocable: false
    - **Untrusted input:** local and cloud bytes (`core.md` Security).
    - **Done when:** the header parses without knowing the payload schema.
 3. **Change a shipped shape only through a successor type:** add `SaveV{N+1}`, bump `CurrentSchemaVersion`, add one step `V{N}ToV{N+1}`.
-   - **Frozen:** `SaveV{N}` and every shipped step stay byte-for-byte (agrees with `memorypack-serialization` step 11).
+   - **Frozen:** `SaveV{N}` and every shipped step stay byte-for-byte; whether live saves exist unstated → `Blocked` naming it.
    - **A defect in a shipped step:** gets a new repair step; players already ran the broken one, so editing it splits the population.
 4. **Write each step as a pure function in `_Project.Scripts.Save.Core`:** `SaveV{N}` in, `SaveV{N+1}` out.
    - **Banned in a step:** I/O, clock, `UnityEngine` or unseeded RNG.

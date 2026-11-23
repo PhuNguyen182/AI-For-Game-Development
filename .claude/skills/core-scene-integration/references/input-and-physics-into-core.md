@@ -1,6 +1,6 @@
 # Input and Physics into Core
 
-Sources (below the SKILL.md `Docs:` base): [fu] `script-reference/unityengine/monobehaviour/fixedupdate`, [eo] `manual/scripting/managing-update-order/execution-order`, [sim] `script-reference/unityengine/physics/simulate`, [rcc] `script-reference/unityengine/physics/reusecollisioncallbacks`. Input System Update Modes: `unity-input-system` → `migration-and-settings.md`.
+Sources (below the SKILL.md `Docs:` base): [fu] `script-reference/unityengine/monobehaviour/fixedupdate`, [eo] `manual/scripting/managing-update-order/execution-order`, [sim] `script-reference/unityengine/physics/simulate`, [rcc] `script-reference/unityengine/physics/reusecollisioncallbacks`. Input System Update Modes: the installed Input System package docs.
 
 ## Input → per-tick command struct
 
@@ -9,7 +9,7 @@ Sources (below the SKILL.md `Docs:` base): [fu] `script-reference/unityengine/mo
 | Command struct | A plain `DataModels` struct: axes as numbers, buttons as a flags enum; no `InputAction`, no `Vector2`. The same struct is what a replay records and what netcode later sends |
 | Dynamic Update Mode (default) + tick in `FixedUpdate` | Reading `WasPressedThisFrame()` inside the tick fires twice in a frame with two fixed steps and never in a frame with zero [fu]: latch instead |
 | Latch | Frame loop ORs press edges into the pending command and overwrites held axes with the latest value; the tick takes the command and clears the edges |
-| Latency | VContainer runs `IFixedTickable` before `ITickable` in a frame (`vcontainer-dependency-injection` step 8), so a press latched in frame N reaches the tick of frame N+1 or later: one frame, accepted |
+| Latency | VContainer runs `IFixedTickable` before `ITickable` in a frame, so a press latched in frame N reaches the tick of frame N+1 or later: one frame, accepted |
 | Fixed Update Mode | Input events process per fixed step, so the tick may read actions directly; then never also read them in `Update` |
 | Manual Update Mode | The owner calls `InputSystem.Update()` itself: replay or a test harness owning the clock |
 | Camera look | Stays per-frame on the view side unless it decides an outcome; an aim direction that decides a hit enters the command at the fire tick |
@@ -20,9 +20,9 @@ Sample: [CommandSampler.cs](../scripts/CommandSampler.cs) (latches per frame; `M
 
 | Subject | Fact that decides |
 |---|---|
-| Core-owned quantity | Core computes it; the owner applies it to a kinematic body with `MovePosition`/`MoveRotation` (`unity-3d-physics` step 3). Never read the Transform back as truth |
+| Core-owned quantity | Core computes it; the owner applies it to a kinematic body with `MovePosition`/`MoveRotation`. Never read the Transform back as truth |
 | Physics-owned quantity | A simulated body decides it; the owner reads it after the step and passes it to Core as a value. Core never writes it |
-| Queries a rule needs | The owner runs the raycast or overlap before the Core tick with the non-allocating APIs (`unity-3d-physics`) and converts each hit to a Core struct (entity id, distance, point) |
+| Queries a rule needs | The owner runs the raycast or overlap before the Core tick with the non-allocating APIs and converts each hit to a Core struct (entity id, distance, point) |
 | Contacts | `OnCollision*`/`OnTrigger*` fire during the physics step after `FixedUpdate` [eo], or inside `Physics.Simulate` in Script mode [sim]: append to a preallocated buffer, Core reads it on the next tick, then it is cleared |
 | `Collision` instance | With `Physics.reuseCollisionCallbacks` on, one `Collision` object is reused for every callback [rcc]: copy the needed values inside the callback, never store the reference |
 | Entity identity | A client component or map holds the Core entity id per collider; Core never sees `Collider` or `GameObject` |

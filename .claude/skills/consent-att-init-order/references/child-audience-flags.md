@@ -60,6 +60,6 @@ MobileAds.SetRequestConfiguration(new RequestConfiguration
 | 1.3 Kids Category | No third-party analytics or advertising; limited exception for services collecting no IDFA or identifiable child data |
 | 5.1.4 | Same for apps primarily for kids; privacy policy and compliance with children's privacy statutes |
 
-**Caveat:** a Kids Category app normally ships no ATT prompt and no ad SDK; Firebase Analytics there must collect no IDFA (`firebase-unity-sdk` → `analytics.md`).
+**Caveat:** a Kids Category app normally ships no ATT prompt and no ad SDK; Firebase Analytics there must collect no IDFA.
 
 Unverified: the plugin version that marked TFCD/TFUA deprecated; the age-of-consent threshold per EEA country (legal input, not SDK fact); whether Firebase Analytics qualifies under Guideline 1.3's limited exception.

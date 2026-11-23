@@ -1,6 +1,6 @@
 # Golden Save Fixtures
 
-Synthesized from `release` step 8 (owner `qa-automation-engineer`: "Previous release's save loads in this build's code"), `new-project` step 4 (test assembly layout), `core-tests-without-unity` step 3 (fixtures as C# data, no Unity APIs in Core tests), `memorypack-serialization` step 11 and rule `core.md` Security. Test mechanics: `unity-test-framework`.
+Synthesized from `release` step 8 (owner `qa-automation-engineer`: "Previous release's save loads in this build's code"), `new-project` step 4 (test assembly layout), `core-tests-without-unity` step 3 (fixtures as C# data, no Unity APIs in Core tests) and rule `core.md` Security. Test mechanics: `unity-test-framework`.
 
 ## What a fixture is
 

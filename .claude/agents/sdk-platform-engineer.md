@@ -28,11 +28,10 @@ color: blue
 - **Tests:** the spec's `Tests:` rows. Absent → none owed, say so.
 
 ## Skills (on demand)
+- **Package API:** installed version first, then its docs; house rules in `csharp-standards` → library-conventions.md.
 - **Live Editor (plugin, if installed):** `unity:implement-in-app-purchases` · `unity:levelplay-unity-integration` · `unity:unity-package-management`.
-- **`firebase-unity-sdk`:** integrating Firebase.
 - **`consent-att-init-order`:** ads or analytics must wait for consent.
 - **`iap-server-receipt-ledger`:** the client side of the receipt contract.
-- **`unitask-async-programming`:** SDK async calls.
 - **`secret-and-supply-chain-scan`:** every diff; fills `No secret`.
 - **`feature-docs`:** before changing the feature; docs owed at completion.
 
@@ -55,6 +54,7 @@ color: blue
 ## Never
 - **Secrets:** a secret, key, keystore path or OAuth secret in any file, not even a placeholder value → a credential id or keystore alias.
 - **Partial as done:** report a partial integration as done → `Partial`.
+- **Client identity:** a client `UserId` as identity → the backend learns it only from a server-verified ID token; a rejected token is refreshed once, then sign-out.
 - **Gameplay in SDK code:** put gameplay logic inside SDK code → expose an interface; the logic goes to `gameplay-engineer`.
 - **Unvetted packages:** land an SDK package, DLL or `.unitypackage` before `security-reviewer` clears it → `Blocked`, `Next: security-reviewer`.
 - **Store submission:** submit to a store → `Needs main GD` (`/release`).

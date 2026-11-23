@@ -2175,6 +2175,42 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
         $r = Invoke-HookUtf8 $g @{ tool_name = 'Bash'; cwd = $gfClean; tool_input = @{ command = 'git commit -m x && bash -c "git push"' } }
         Check "gate form, wrapper after the call, ${g}: git commit -m x && bash -c `"git push`"" ($r.Code -eq 2 -and $r.Out -match $gfRefuse) $true
     }
+    # git's dashed program (git-commit, git-push): a call wherever it may run; a text tool's pattern, or a folder in a path, is text.
+    foreach ($g in $gfGates) {
+        $n = $g[1] -replace ' .*$', ''
+        foreach ($row in @(@('PowerShell', "Select-String -Path .claude/skills/verify-layer/scripts/verify.ps1 -Pattern 'git-$n' | ForEach-Object Line"),
+                @('PowerShell', "pwsh -NoProfile -File .claude/skills/verify-layer/scripts/verify.ps1 -File .claude/skills/git-$n/SKILL.md"),
+                @('Bash', "pwsh -NoProfile -File .claude/skills/verify-layer/scripts/verify.ps1 -File .claude/skills/git-$n/SKILL.md"),
+                @('PowerShell', "(Get-Content .claude/rules/core.md)[36]; Select-String -Path .claude/rules/core.md -Pattern 'git-$n'"),
+                @('PowerShell', "Get-Content .claude/skills/git-$n/SKILL.md"), @('PowerShell', "Get-Content .claude\skills\git-$n\SKILL.md"),
+                @('PowerShell', "Get-ChildItem .claude/skills/git-$n"), @('Bash', "ls .claude/skills/git-$n"), @('Bash', "grep -rn git-$n .claude"),
+                @('Bash', "LC_ALL=C grep -rn git-$n .claude"), @('Bash', "cat .claude/skills/git-$n/x.md"), @('Bash', "rg 'git-$n' .claude"))) {
+            $r = Invoke-HookUtf8 $g[0] @{ tool_name = $row[0]; cwd = $gfApp; tool_input = @{ command = $row[1] } }
+            Check "gate form, dashed name as text, $($g[0]), $($row[0]): $($row[1])" $r.Code 0
+        }
+        foreach ($row in @(@('Bash', "/usr/lib/git-core/git-$n -m x"), @('Bash', "git-$n -m x"), @('PowerShell', "git-$n -m x"),
+                @('Bash', "timeout 60 git-$n -m x"), @('Bash', "timeout -s KILL 60 git-$n -m x"), @('Bash', "env A=1 git-$n -m x"), @('Bash', "A=1 git-$n -m x"),
+                @('PowerShell', "& 'C:/Program Files/Git/mingw64/libexec/git-core/git-$n.exe' -m x"), @('Bash', "xargs git-$n"), @('Bash', "echo x | xargs git-$n"),
+                @('Bash', "sudo -u root git-$n -m x"), @('Bash', "winpty git-$n -m x"), @('Bash', "find . -exec git-$n -m x \;"), @('Bash', "rg --pre git-$n x ."),
+                @('Bash', "/usr/bin/grep git-$n x"), @('Bash', "if git-$n -m x; then echo ok; fi"), @('Bash', "{ git-$n -m x; }"), @('Bash', "! git-$n -m x"),
+                @('PowerShell', "ForEach-Object { git-$n -m x }"), @('PowerShell', "Invoke-Command -ScriptBlock { git-$n -m x }"),
+                @('PowerShell', "Select-String -Path x -Pattern (git-$n -m x)"), @('Bash', "grep x `$(git-$n -m x)"), @('Bash', "grep -rn git-$n .claude && git-$n -m x"),
+                @('Bash', "grep git-$n x | sh"), @('Bash', "bash -c 'git-$n -m x'"), @('Bash', "bash -c 'git-$n\`n -m x'"), @('Bash', "bash -c `"git $n -m x`""),
+                @('PowerShell', "pwsh -Command `"git $n -m x`""), @('Bash', "bash -c `"git $n -m x`" .claude/skills/git-$n/x"))) {
+            $r = Invoke-HookUtf8 $g[0] @{ tool_name = $row[0]; cwd = $gfApp; tool_input = @{ command = $row[1] } }
+            Check "gate form, dashed name as a call, $($g[0]), $($row[0]): $($row[1] -replace "`n", ' ')" ($r.Code -eq 2 -and $r.Out -match $gfRefuse) $true
+        }
+        foreach ($t in $gfBoth) {
+            foreach ($c in @("git $($g[1])", "git $($g[1]) && cat .claude/skills/git-$n/SKILL.md")) {
+                $r = Invoke-HookUtf8 $g[0] @{ tool_name = $t; cwd = $gfApp; tool_input = @{ command = $c } }
+                Check "gate form, dashed name as text, $($g[0]), ${t}: $c is still scanned" ($r.Code -eq 2 -and $r.Out -match $g[2]) $true
+            }
+        }
+    }
+    foreach ($t in $gfBoth) {
+        $r = Invoke-HookUtf8 'pre-commit.ps1' @{ tool_name = $t; cwd = $gfApp; tool_input = @{ command = 'git commit -F .claude/skills/git-commit/msg.txt' } }
+        Check "gate form, dashed name as text, ${t}: git commit -F .claude/skills/git-commit/msg.txt is still scanned" ($r.Code -eq 2 -and $r.Out -match 'secret in Key\.txt') $true
+    }
     # A staging option in any abbreviation git takes, as the full spelling is.
     foreach ($o in '--pathspec-fr=list.txt', '--pathspec-from-file=list.txt', '--inter', '--patc', '--inc', '--o', '--al', '--all', '--only') {
         $r = Invoke-HookUtf8 'pre-commit.ps1' @{ tool_name = 'Bash'; cwd = $gfClean; tool_input = @{ command = "git commit $o -m x" } }
@@ -2650,6 +2686,158 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
         Check 'framework-sync: a dry run on a fresh target has no false warning and writes nothing' ($t.Code -eq 0 -and $t.Out -notmatch '(?i)warning' -and -not (Test-Path (Join-Path $t.Path '.gitattributes'))) $true
         $t = SyncTarget 'dry-ignored' $null ".workflow/`n" @('-DryRun')
         Check 'framework-sync: a dry run still warns about an ignored journal' ($t.Out -match 'ignored') $true
+        # A retired skill's folders go with its files; a folder still holding a project file stays.
+        $savedSrc = $syncSrc
+        $syncSrc = Join-Path $tmp 'SyncSourceRetire'
+        New-Repo $syncSrc
+        foreach ($f in 'settings.json', 'x.md', 'skills/old/SKILL.md', 'skills/old/references/r.md', 'skills/kept/SKILL.md') {
+            New-Item -ItemType Directory -Force (Split-Path (Join-Path $syncSrc ".claude/$f")) | Out-Null
+            [IO.File]::WriteAllText((Join-Path $syncSrc ".claude/$f"), $(if ($f -eq 'settings.json') { '{}' } else { "$f`n" }))
+        }
+        git -C $syncSrc add .claude 2>&1 | Out-Null
+        $t = SyncTarget 'retire' $null $null
+        [IO.File]::WriteAllText((Join-Path $t.Path '.claude/skills/kept/notes.md'), "mine`n")
+        # -f: the fixture never commits, and git rm refuses a file whose only version is staged.
+        git -C $syncSrc rm -q -r -f .claude/skills 2>&1 | Out-Null
+        function SyncUpdate([string[]]$Extra = @()) { Join-Output (& $pwsh -NoProfile -NonInteractive -File $syncTool -Mode Update -SourceRoot $syncSrc -Target $t.Path @Extra 2>&1) }
+        $o = SyncUpdate @('-DryRun')
+        Check 'framework-sync: a dry run reports the folders a retirement empties, and keeps them' ($o -match 'removed  \.claude/skills/old/references/ \(empty folder\)' -and $o -match 'removed  \.claude/skills/old/ \(empty folder\)' -and $o -notmatch 'skills/kept/ \(' -and (Test-Path (Join-Path $t.Path '.claude/skills/old/references/r.md'))) $true
+        $o = SyncUpdate
+        Check 'framework-sync: an update removes the folders a retirement empties' ($o -match 'removed  \.claude/skills/old/ \(empty folder\)' -and -not (Test-Path (Join-Path $t.Path '.claude/skills/old'))) $true
+        Check 'framework-sync: ... and keeps one holding a project file, its parents and .claude/' ((Test-Path (Join-Path $t.Path '.claude/skills/kept/notes.md')) -and -not (Test-Path (Join-Path $t.Path '.claude/skills/kept/SKILL.md')) -and $o -notmatch '\.claude/skills/ \(' -and (Test-Path (Join-Path $t.Path '.claude/x.md'))) $true
+        function SyncSource([string]$Name, [string[]]$Files) {
+            $src = Join-Path $tmp $Name
+            New-Repo $src
+            foreach ($f in @('settings.json', 'x.md') + $Files) {
+                New-Item -ItemType Directory -Force (Split-Path (Join-Path $src ".claude/$f")) | Out-Null
+                [IO.File]::WriteAllText((Join-Path $src ".claude/$f"), $(if ($f -eq 'settings.json') { '{}' } else { "$f`n" }))
+            }
+            git -C $src add .claude 2>&1 | Out-Null
+            $src
+        }
+        # A retired file's folder that the same update gives a new file stays, in a dry run too: a dry run writes no added file.
+        $syncSrc = SyncSource 'SyncSourceSwap' @('skills/old/a.md')
+        $t = SyncTarget 'swap' $null $null
+        git -C $syncSrc rm -q -f .claude/skills/old/a.md 2>&1 | Out-Null
+        New-Item -ItemType Directory -Force (Join-Path $syncSrc '.claude/skills/old') | Out-Null  # git rm took the emptied folder
+        [IO.File]::WriteAllText((Join-Path $syncSrc '.claude/skills/old/b.md'), "b`n")
+        git -C $syncSrc add .claude 2>&1 | Out-Null
+        $o = SyncUpdate @('-DryRun')
+        Check 'framework-sync: a dry run keeps a folder the same update adds a file to' ($o -match 'removed  \.claude/skills/old/a\.md' -and $o -notmatch 'skills/old/ \(empty folder\)') $true
+        $o = SyncUpdate
+        Check 'framework-sync: ... and so does the update, with the added file' ((Test-Path (Join-Path $t.Path '.claude/skills/old/b.md')) -and -not (Test-Path (Join-Path $t.Path '.claude/skills/old/a.md')) -and $o -notmatch 'skills/old/ \(empty folder\)') $true
+        # Case-only renames. Two target paths are one file exactly when the target's file system treats them as one.
+        # Rename by git mv through a temporary name: a case-folding checkout sees no change in a direct one.
+        function CaseMv([string]$From, [string]$To) {
+            git -C $syncSrc mv ".claude/$From" ".claude/$To-tmp" 2>&1 | Out-Null
+            git -C $syncSrc mv ".claude/$To-tmp" ".claude/$To" 2>&1 | Out-Null
+        }
+        function SyncWrite([string]$Root, [string]$Rel, [string]$Text) { [IO.File]::WriteAllText((Join-Path $Root $Rel), $Text) }
+        function SyncRead([string]$Rel) { [IO.File]::ReadAllText((Join-Path $t.Path $Rel)) }
+        # framework-sync's hash of an LF text file; uppercase hex, as the manifest holds it.
+        function SyncHash([string]$Text) { [BitConverter]::ToString([Security.Cryptography.SHA256]::Create().ComputeHash([Text.Encoding]::UTF8.GetBytes($Text))) -replace '-' }
+        # The manifest's file entries as exact 'key=hash' strings; read as text, since Windows PowerShell has no -AsHashtable.
+        function SyncKeys([string]$Like) {
+            $j = [IO.File]::ReadAllText((Join-Path $t.Path '.claude/.framework-manifest.json'))
+            @([regex]::Matches($j, '"(\.claude/[^"]+)":\s*"([0-9A-Fa-f]{64})"') | ForEach-Object { "$($_.Groups[1].Value)=$($_.Groups[2].Value)" } | Where-Object { $_ -ilike "$Like=*" })
+        }
+        function SyncLines([string]$Out) { @($Out -split "`n" | Where-Object { $_ -match '^\s*(removed  |retired but|CONFLICT )' }) -join "`n" }
+        $oldRel = '.claude/skills/Foo/SKILL.md'; $newRel = '.claude/skills/foo/SKILL.md'
+        $oldText = "skills/Foo/SKILL.md`n"; $v2 = "v2`n"; $v3 = "v3`n"; $mine = "mine`n"
+        $syncSrc = SyncSource 'SyncSourceCase' @('skills/Foo/SKILL.md')
+        $t = SyncTarget 'case' $null $null
+        CaseMv 'skills/Foo' 'skills/foo'
+        $caseFile = Join-Path $t.Path $newRel
+        if (-not (Test-Path -LiteralPath (Join-Path $t.Path '.CLAUDE/SKILLS/FOO/SKILL.MD'))) { Write-Output 'SKIP  framework-sync: case-only renames where case folds (this file system is case-sensitive)' }
+        else {
+            # H1: renamed only.
+            Check 'framework-sync: the fixture renamed Foo to foo by case only' ([string](git -C $syncSrc ls-files -- .claude/skills)) $newRel
+            $o = SyncUpdate
+            Check 'framework-sync: a case-only rename keeps the file and its folder' ((Test-Path -LiteralPath $caseFile) -and [IO.File]::ReadAllText($caseFile) -eq $oldText -and $o -notmatch '(?im)^\s*removed  \.claude/skills/') $true
+            Check 'framework-sync: ... its manifest holds one key, the new spelling, with the source hash' (((SyncKeys $newRel) -join ',') -ceq "$newRel=$(SyncHash $oldText)") $true
+            $o = SyncUpdate
+            Check 'framework-sync: ... and the next update has nothing to remove' ((Test-Path -LiteralPath $caseFile) -and $o -match 'removed 0 \|' -and $o -notmatch '(?m)^\s*removed  ') $true
+            # H2: renamed and edited by the framework, target unedited: an update from the old spelling's baseline.
+            $syncSrc = SyncSource 'SyncSourceCaseEdit' @('skills/Foo/SKILL.md')
+            $t = SyncTarget 'case-edit' $null $null
+            CaseMv 'skills/Foo' 'skills/foo'; SyncWrite $syncSrc $newRel $v2
+            $o = SyncUpdate
+            $bak = @(Get-ChildItem (Join-Path $t.Path '.claude/.framework-backup') -Recurse -File -ErrorAction SilentlyContinue | Where-Object Name -eq 'SKILL.md')
+            Check 'framework-sync: a case-only rename the framework also edited updates an unedited target' ($o -match "updated  $([regex]::Escape($newRel))" -and $o -match 'conflicts 0' -and (SyncRead $newRel) -eq $v2 -and -not (Test-Path -LiteralPath "$caseFile.framework-new")) $true
+            Check 'framework-sync: ... backing up the old version' ($bak.Count -eq 1 -and [IO.File]::ReadAllText($bak[0].FullName) -eq $oldText) $true
+            $o = SyncUpdate
+            Check 'framework-sync: ... and the next update has nothing to do' ($o -match 'updated 0 \| unchanged 2 \| kept local edits 0 \| removed 0 \| conflicts 0') $true
+            # H3: renamed and edited by the framework, target edited too: a conflict against the old baseline.
+            $syncSrc = SyncSource 'SyncSourceCaseConflict' @('skills/Foo/SKILL.md')
+            $t = SyncTarget 'case-conflict' $null $null
+            SyncWrite $t.Path $oldRel $mine
+            CaseMv 'skills/Foo' 'skills/foo'; SyncWrite $syncSrc $newRel $v2
+            $o = SyncUpdate
+            Check 'framework-sync: a case-only rename edited on both sides is a conflict with the old baseline' ($o -match "CONFLICT $([regex]::Escape($newRel))" -and (SyncRead "$newRel.framework-new") -eq $v2 -and (SyncRead $newRel) -eq $mine -and ((SyncKeys $newRel) -join ',') -ceq "$newRel=$(SyncHash $oldText)") $true
+            SyncWrite $t.Path $newRel $v2
+            $o = SyncUpdate
+            Check 'framework-sync: ... resolved to the new content, the next update clears it' ($o -match 'unchanged 2 \|' -and $o -match 'conflicts 0' -and -not (Test-Path -LiteralPath "$caseFile.framework-new")) $true
+            # H4: renamed only, target edited: a kept local edit.
+            $syncSrc = SyncSource 'SyncSourceCaseKept' @('skills/Foo/SKILL.md')
+            $t = SyncTarget 'case-kept' $null $null
+            SyncWrite $t.Path $oldRel $mine
+            CaseMv 'skills/Foo' 'skills/foo'
+            $o = SyncUpdate
+            Check 'framework-sync: a case-only rename of a locally edited file keeps the edit and the old baseline' ($o -match 'kept local edits 1 \|' -and $o -match 'conflicts 0' -and $o -notmatch '(?m)^\s*removed  ' -and (SyncRead $newRel) -eq $mine -and ((SyncKeys $newRel) -join ',') -ceq "$newRel=$(SyncHash $oldText)") $true
+            # H5: the on-disk name keeps its old case; a later retirement still reports the folder in a dry run.
+            $syncSrc = SyncSource 'SyncSourceCaseFile' @('skills/Foo/A.md')
+            $t = SyncTarget 'case-file' $null $null
+            CaseMv 'skills/Foo/A.md' 'skills/Foo/a.md'
+            $o = SyncUpdate
+            git -C $syncSrc rm -q -r -f .claude/skills/Foo 2>&1 | Out-Null
+            $dry = SyncLines (SyncUpdate @('-DryRun'))
+            $real = SyncLines (SyncUpdate)
+            Check 'framework-sync: after a case-only file rename, a dry run reports what the update removes' ($dry -ceq $real -and $real -match 'removed  \.claude/skills/Foo/ \(empty folder\)' -and -not (Test-Path -LiteralPath (Join-Path $t.Path '.claude/skills/Foo'))) $true
+            # H6: a manifest holding both spellings (written where case does not fold) loads without a throw.
+            $syncSrc = SyncSource 'SyncSourceCaseCollide' @('skills/foo/SKILL.md')
+            $t = SyncTarget 'case-collide' $null $null
+            $mf = Join-Path $t.Path '.claude/.framework-manifest.json'
+            [IO.File]::WriteAllText($mf, ([IO.File]::ReadAllText($mf).Replace("`"$newRel`": `"", "`"$oldRel`": `"$('0' * 64)`",`n    `"$newRel`": `"")))
+            Check 'framework-sync: the fixture manifest holds both spellings' ((SyncKeys $newRel).Count) 2
+            SyncWrite $syncSrc $newRel $v2
+            $o = SyncUpdate
+            Check 'framework-sync: a manifest key colliding by case: the source spelling''s baseline wins' ($LASTEXITCODE -eq 0 -and $o -match 'updated 1 \|' -and $o -match 'removed 0 \| conflicts 0' -and (SyncRead $newRel) -eq $v2 -and ((SyncKeys $newRel) -join ',') -ceq "$newRel=$(SyncHash $v2)") $true
+        }
+        # Where case does not fold, Foo/ and foo/ are two folders: a Windows folder made case-sensitive stands in for Linux.
+        function SyncTargetCs([string]$Name) {
+            $p = Join-Path $tmp "sync-$Name"
+            New-Item -ItemType Directory -Force $p | Out-Null
+            $why = ''
+            if (Get-Command fsutil -CommandType Application -ErrorAction SilentlyContinue) { $why = (fsutil file setCaseSensitiveInfo $p enable 2>&1) -join ' ' }
+            [IO.File]::WriteAllText((Join-Path $p 'cs-probe'), '')
+            $folds = Test-Path -LiteralPath (Join-Path $p 'CS-PROBE')
+            Remove-Item -LiteralPath (Join-Path $p 'cs-probe')
+            if ($folds) { return "this file system folds case and the folder could not be made case-sensitive: $why" }
+            New-Repo $p
+            $o = & $pwsh -NoProfile -NonInteractive -File $syncTool -Mode Install -SourceRoot $syncSrc -Target $p 2>&1
+            @{ Path = $p; Code = $LASTEXITCODE; Out = (Join-Output $o) }
+        }
+        $syncSrc = SyncSource 'SyncSourceCs' @('skills/Foo/SKILL.md')
+        $t = SyncTargetCs 'cs-rename'
+        if ($t -is [string]) { Write-Output "SKIP  framework-sync: case-only renames where case does not fold ($t)" }
+        else {
+            # H7: renamed only: the old spelling is another file, retired with its folder.
+            CaseMv 'skills/Foo' 'skills/foo'
+            $dryOut = SyncUpdate @('-DryRun'); $o = SyncUpdate
+            Check 'framework-sync: where case does not fold, a case-only rename retires the old file and folder' ($o -match 'added 1 \|' -and $o -match "removed  $([regex]::Escape($oldRel)) \(retired" -and $o -match 'removed  \.claude/skills/Foo/ \(empty folder\)' -and (SyncRead $newRel) -eq $oldText -and -not (Test-Path -LiteralPath (Join-Path $t.Path '.claude/skills/Foo'))) $true
+            Check 'framework-sync: ... and the dry run reports the same' ((SyncLines $dryOut) -ceq (SyncLines $o) -and $dryOut -match 'added 1 \|') $true
+            # H8: renamed and edited by the framework, old file edited locally: both stay, each with its own baseline.
+            $syncSrc = SyncSource 'SyncSourceCsKept' @('skills/Foo/SKILL.md')
+            $t = SyncTargetCs 'cs-kept'
+            SyncWrite $t.Path $oldRel $mine
+            CaseMv 'skills/Foo' 'skills/foo'; SyncWrite $syncSrc $newRel $v2
+            $o = SyncUpdate
+            Check 'framework-sync: ... an edited old spelling is kept beside the new one, each with its own baseline' ($o -match "retired but locally edited, kept: $([regex]::Escape($oldRel))" -and (SyncRead $oldRel) -eq $mine -and (SyncRead $newRel) -eq $v2 -and (SyncKeys $newRel).Count -eq 2 -and (SyncKeys $newRel) -ccontains "$oldRel=$(SyncHash $oldText)" -and (SyncKeys $newRel) -ccontains "$newRel=$(SyncHash $v2)") $true
+            SyncWrite $syncSrc $newRel $v3
+            $o = SyncUpdate
+            Check 'framework-sync: ... and a later framework edit to the new spelling is an update, not a conflict' ($o -match "updated  $([regex]::Escape($newRel))" -and $o -cnotmatch 'CONFLICT' -and $o -match 'conflicts 0' -and (SyncRead $newRel) -eq $v3 -and (SyncRead $oldRel) -eq $mine) $true
+        }
+        $syncSrc = $savedSrc
         # The framework's own .gitignore and .gitattributes: the records lines reach a target, the framework-only block does not.
         $savedSrc = $syncSrc
         $syncSrc = Join-Path $tmp 'SyncSourceReal'
@@ -2744,6 +2932,30 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     Check 'verify: a CRLF copy of it passes per file with no output line' ($r.Code -eq 0 -and $r.Out -cnotmatch 'WARN|FAIL') $true
     $r = Verify
     Check 'verify: ... and on a whole-layer run' ($r.Code -eq 0 -and $r.Out -cnotmatch 'WARN|FAIL' -and $r.Out -match 'verify-layer: OK \(0 warning\(s\)\)') $true
+    # framework-sync.ps1 backs replaced and retired files up under .claude/.framework-backup/: old copies, not the layer.
+    $vlBackup = Join-Path $vl '.claude/.framework-backup'
+    New-Item -ItemType Directory -Force (Join-Path $vlBackup '20260101T000000Z/.claude/skills/x') | Out-Null
+    Set-Content (Join-Path $vlBackup '20260101T000000Z/.claude/skills/x/SKILL.md') "---`nname: y`n---`n`n- **Tweens:** per ``dotween-tweening``."
+    $r = Verify
+    Check 'verify: a retired skill name in the framework-sync backup does not fail a whole-layer run' ($r.Code -eq 0 -and $r.Out -cnotmatch 'WARN|FAIL') $true
+    $r = Verify '.claude/.framework-backup/20260101T000000Z/.claude/skills/x/SKILL.md'
+    Check 'verify: ... and -File on it passes with no check' ($r.Code -eq 0 -and $r.Out -cnotmatch 'WARN|FAIL') $true
+    # Only the real top-level .claude/.framework-backup/ is exempt (FW-0052): a '..' path out of it, a lookalike folder
+    # and a nested .framework-backup are the layer.
+    VSkill 'backup-dotdot' @('- **Tweens:** per `dotween-tweening`.')
+    $r = Verify '.claude/.framework-backup/../skills/backup-dotdot/SKILL.md'
+    Check 'verify fails per file: a retired skill name in a file reached by .. out of the backup' ($r.Code -eq 1 -and $r.Out -match "$(VFail 'backup-dotdot')references retired skill 'dotween-tweening'") $true
+    Check 'verify-on-edit blocks an edit given as a .. path out of the backup' (VerifyEdit (Join-Path $vl '.claude/.framework-backup/../skills/backup-dotdot/SKILL.md')) 2
+    Check 'verify-on-edit blocks an edit given as a .. path out of an agent worktree' (VerifyEdit (Join-Path $vl '.claude/worktrees/../skills/backup-dotdot/SKILL.md')) 2
+    Remove-Item -Recurse -Force (Join-Path $vlSkills 'backup-dotdot')
+    New-Item -ItemType Directory -Force (Join-Path $vl '.claude/.framework-backup-old'), (Join-Path $vlSkills 'backup-nested/.framework-backup') | Out-Null
+    Set-Content (Join-Path $vl '.claude/.framework-backup-old/y.md') "- **Tweens:** per ``dotween-tweening``."
+    Set-Content (Join-Path $vlSkills 'backup-nested/.framework-backup/y.md') "- **Tweens:** per ``dotween-tweening``."
+    $r = Verify
+    Check 'verify fails a whole-layer run: a retired skill name in a lookalike .framework-backup-old folder' ($r.Code -eq 1 -and $r.Out -match "FAIL  \.claude/\.framework-backup-old/y\.md: references retired skill 'dotween-tweening'") $true
+    Check 'verify fails a whole-layer run: a retired skill name in a nested .framework-backup folder' ($r.Code -eq 1 -and $r.Out -match "FAIL  \.claude/skills/backup-nested/\.framework-backup/y\.md: references retired skill 'dotween-tweening'") $true
+    Remove-Item -Recurse -Force (Join-Path $vl '.claude/.framework-backup-old'), (Join-Path $vlSkills 'backup-nested')
+    Remove-Item -Recurse -Force $vlBackup  # later whole-layer runs count plants exactly
     VSkill 'trigger-field' @() 'Foo.Bar and Baz.Qux only.'
     $f = Join-Path $vlSkills 'trigger-field/SKILL.md'
     Set-Content $f ((Get-Content $f -Raw) -replace 'user-invocable: false', "when_to_use: `"checking the fixture`"`nuser-invocable: false")
@@ -2755,6 +2967,29 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
     VSkill 'route-main-gd' @('- **Route:** `Next: main-gd`, and git log format `%gd`.')
     Check 'verify: main-gd and %gd are not a retired route' (Verify (VRel 'route-main-gd')).Code 0
     Remove-Item -Recurse -Force (Join-Path $vlSkills 'route-gd'), (Join-Path $vlSkills 'route-main-gd')  # later whole-layer runs count plants exactly
+    # A retired vendor-doc skill (skill-pruning) fails as a whole token; a unity:* plugin skill and prose names pass.
+    VSkill 'retired-skill' @('- **Tweens:** per `dotween-tweening`.')
+    $r = Verify (VRel 'retired-skill')
+    Check 'verify fails per file: a retired skill name' ($r.Code -eq 1 -and $r.Out -match "$(VFail 'retired-skill')references retired skill 'dotween-tweening'") $true
+    VSkill 'plugin-skill-ok' @('- **UI:** `unity:ui-ugui` for uGUI; UI Toolkit stays prose.')
+    Check 'verify: unity:ui-ugui and uGUI are not a retired skill' (Verify (VRel 'plugin-skill-ok')).Code 0
+    Remove-Item -Recurse -Force (Join-Path $vlSkills 'retired-skill'), (Join-Path $vlSkills 'plugin-skill-ok')  # later whole-layer runs count plants exactly
+    # The guard reads every text file a run visits: skill scripts/ and workflows too. A package id is no skill name.
+    VSkill 'retired-in-cs' @('- **Sample:** [Sample.cs](scripts/Sample.cs).')
+    Set-Content (Join-Path $vlSkills 'retired-in-cs/scripts/Sample.cs') '// Adapted from unity-addressables.'
+    $csFail = "FAIL  \.claude/skills/retired-in-cs/scripts/Sample\.cs: references retired skill 'unity-addressables'"
+    $r = Verify '.claude/skills/retired-in-cs/scripts/Sample.cs'
+    Check 'verify fails per file: a retired skill name in a skill scripts/*.cs' ($r.Code -eq 1 -and $r.Out -match $csFail) $true
+    $r = Verify
+    Check 'verify fails on a whole-layer run: a retired skill name in a skill scripts/*.cs' ($r.Code -eq 1 -and $r.Out -match $csFail) $true
+    $vlFlows = Join-Path $vl '.claude/workflows'
+    New-Item -ItemType Directory -Force $vlFlows | Out-Null
+    Set-Content (Join-Path $vlFlows 'retired.js') "export const meta = { name: 'retired' }`n// per netcode-for-gameobjects"
+    $r = Verify '.claude/workflows/retired.js'
+    Check 'verify fails per file: a retired skill name in a workflow .js' ($r.Code -eq 1 -and $r.Out -match "FAIL  \.claude/workflows/retired\.js: references retired skill 'netcode-for-gameobjects'") $true
+    VSkill 'package-id-ok' @('- **Package:** https://docs.unity3d.com/Packages/com.unity.ugui@2.0/manual/ for `com.unity.ugui`.')
+    Check 'verify: the package id com.unity.ugui is not the retired skill ugui' (Verify (VRel 'package-id-ok')).Code 0
+    Remove-Item -Recurse -Force (Join-Path $vlSkills 'retired-in-cs'), (Join-Path $vlSkills 'package-id-ok'), $vlFlows  # later whole-layer runs count plants exactly
     VSkill 'preloaded-skill' @() 'Foo.Bar and Baz.Qux only.'
     Set-Content (Join-Path $vl '.claude/agents/fixture-agent.md') "---`nname: fixture-agent`ndescription: A fixture.`ntools: Read`nskills:`n  - preloaded-skill`n---`n`n# Fixture"
     Check 'verify: a skill an agent preloads needs no Use trigger' (Verify (VRel 'preloaded-skill')).Code 0

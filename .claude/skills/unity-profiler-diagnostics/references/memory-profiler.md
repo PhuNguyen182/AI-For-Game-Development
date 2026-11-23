@@ -2,7 +2,7 @@
 
 Docs: https://docs.unity3d.com/Packages/com.unity.memoryprofiler@1.1/manual/memory-profiler-introduction.html (`@1.1` = installed package version) · https://docs.unity3d.com/Manual/ProfilerMemory.html
 
-Establishes leak vs Unity holding pages it already took. The fix belongs to `unity-performance-engineer`; Addressables handle discipline to `unity-addressables`.
+Establishes leak vs Unity holding pages it already took. The fix, Addressables handle discipline included, belongs to `unity-performance-engineer`.
 
 ## Totals
 | Term | Meaning |
