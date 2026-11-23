@@ -27,7 +27,7 @@ color: green
 - **Multiplayer:** Absent → off, no network cases; say so.
 
 ## Skills (on demand)
-- **Package API:** installed version first, then its docs; house rules in `csharp-standards` → library-conventions.md.
+- **Package API:** installed source and its `Documentation~` folder, then `unity:*` skills; needed docs unreachable → say so in `Assumptions`. House rules: `csharp-standards` → library-conventions.md.
 - **`unity:unity-cli`** (first): every Editor operation and test run.
 - **`unity-batchmode-cli`:** neither the Unity CLI nor the configured MCP can run the operation.
 - **`risk-based-test-planning`:** choosing edge cases when the brief names behaviour, not cases.

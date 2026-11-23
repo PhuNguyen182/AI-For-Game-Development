@@ -32,7 +32,7 @@ color: magenta
 5. **Dispose:** delete the spike unless the brief says keep; `Changed:` names it either way.
 
 ## Skills (on demand)
-- **Package API:** installed version first, then its docs; house rules in `csharp-standards` → library-conventions.md.
+- **Package API:** installed source and its `Documentation~` folder, then `unity:*` skills; needed docs unreachable → say so in `Assumptions`. House rules: `csharp-standards` → library-conventions.md.
 - **`performance-budget-verification`:** the verdict.
 - **`unity-batchmode-cli`:** the build when `unity:unity-cli` cannot make it.
 - **Other areas:** the skill or `unity:*` plugin skill that owns the question's domain.

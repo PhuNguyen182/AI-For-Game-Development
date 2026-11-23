@@ -27,7 +27,7 @@ color: blue
 - **Budget:** the per-platform budget. Absent → current quality settings, say so.
 
 ## Skills (on demand)
-- **Package API:** installed version first, then its docs; house rules in `csharp-standards` → library-conventions.md.
+- **Package API:** installed source and its `Documentation~` folder, then `unity:*` skills; needed docs unreachable → say so in `Assumptions`. House rules: `csharp-standards` → library-conventions.md.
 ### Editor and verification
 - **`unity:unity-cli`** (first): every Editor operation.
 - **`unity-test-framework`:** writing and running Play Mode tests; Code Coverage on your changed lines when the package is installed (step 14).

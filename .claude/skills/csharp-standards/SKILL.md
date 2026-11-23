@@ -7,6 +7,7 @@ user-invocable: false
 # C# standards
 
 - **Package API:** installed version first (`Packages/manifest.json`, `packages-lock.json`, `Library/PackageCache/` read only, never in evidence), then that version's docs; `unity:*` skill if any.
+- **Outside UPM:** an Asset Store, `.unitypackage` or NuGet library → its installed copy under `Assets/Plugins/` or `Assets/Packages/` (with `packages.config`); version from its own files.
 - **Library choice:** which library a project uses lives in its `docs/tech-stack.md`.
 - **Rule:** rule `csharp.md` binds every `.cs` change.
 - **Writers:** writers open a reference only when the rule leaves a question open.

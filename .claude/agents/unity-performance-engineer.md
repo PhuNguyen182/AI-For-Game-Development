@@ -27,7 +27,7 @@ color: blue
 - **Budget:** per device tier (profile default in `routing.md`). Absent → `Blocked`.
 
 ## Skills (on demand)
-- **Package API:** installed version first, then its docs; house rules in `csharp-standards` → library-conventions.md.
+- **Package API:** installed source and its `Documentation~` folder, then `unity:*` skills; needed docs unreachable → say so in `Assumptions`. House rules: `csharp-standards` → library-conventions.md.
 ### Editor and verdict
 - **`unity:unity-cli`** (first): every Editor operation.
 - **`performance-budget-verification`:** the verdict.

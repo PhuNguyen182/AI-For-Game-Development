@@ -27,7 +27,7 @@ color: blue
 - **Budget:** per device tier (`CLAUDE.md`; profile default device in `routing.md`). No numbers → `Blocked`, as `unity-performance-engineer`.
 
 ## Skills (on demand)
-- **Package API:** installed version first, then its docs; house rules in `csharp-standards` → library-conventions.md.
+- **Package API:** installed source and its `Documentation~` folder, then `unity:*` skills; needed docs unreachable → say so in `Assumptions`. House rules: `csharp-standards` → library-conventions.md.
 ### Editor and measurement
 - **`unity:unity-cli`** (first): every Editor operation.
 - **`unity-profiler-diagnostics`:** measuring `Cost:`.
