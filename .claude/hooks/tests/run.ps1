@@ -2718,7 +2718,7 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
             Check 'framework-sync: the fixture renamed Foo to foo by case only' ([string](git -C $syncSrc ls-files -- .claude/skills)) $newRel
             $o = SyncUpdate
             Check 'framework-sync: a case-only rename keeps the file and its folder' ((Test-Path -LiteralPath $caseFile) -and [IO.File]::ReadAllText($caseFile) -eq $oldText -and $o -notmatch '(?im)^\s*removed  \.claude/skills/') $true
-            Check 'framework-sync: ... its manifest holds one key, the new spelling, with the source hash' ((SyncKeys $newRel) -join ',') "$newRel=$(SyncHash $oldText)"
+            Check 'framework-sync: ... its manifest holds one key, the new spelling, with the source hash' (((SyncKeys $newRel) -join ',') -ceq "$newRel=$(SyncHash $oldText)") $true
             $o = SyncUpdate
             Check 'framework-sync: ... and the next update has nothing to remove' ((Test-Path -LiteralPath $caseFile) -and $o -match 'removed 0 \|' -and $o -notmatch '(?m)^\s*removed  ') $true
             # H2: renamed and edited by the framework, target unedited: an update from the old spelling's baseline.
