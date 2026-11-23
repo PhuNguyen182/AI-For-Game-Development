@@ -205,6 +205,10 @@ foreach ($f in (git -c core.quotepath=off -C $SourceRoot ls-files -- .claude)) {
 }
 if ($srcRels.Count -eq 0) { throw "No .claude/ files found in source $SourceRoot" }
 $srcSet = [System.Collections.Generic.HashSet[string]]::new([string[]]$srcRels)
+# A case-only rename (skills/Foo/ -> skills/foo/) leaves the recorded spelling outside $srcSet. Where the target's file
+# system folds case (Windows, default macOS) both spellings are one file, and retiring the old one would delete it.
+$srcSetCi = [System.Collections.Generic.HashSet[string]]::new([string[]]$srcRels, [StringComparer]::OrdinalIgnoreCase)
+$caseFolds = Test-Path -LiteralPath (Join-Path $Target $ManifestRel.ToUpperInvariant())
 
 foreach ($rel in $srcRels) {
     $from = Join-Path $SourceRoot $rel
@@ -239,6 +243,8 @@ foreach ($rel in $srcRels) {
 # Files the framework retired since the last sync.
 foreach ($rel in @($recorded.Keys)) {
     if ($srcSet.Contains($rel) -or $rel -notlike '.claude/*') { continue }
+    # Renamed by case only: the source spelling already holds this file and its manifest entry. Drop this entry only.
+    if ($caseFolds -and $srcSetCi.Contains($rel)) { continue }
     $to = Join-Path $Target $rel
     if (-not (Test-Path -LiteralPath $to -PathType Leaf)) { continue }
     if ((Get-NormHash $to) -eq $recorded[$rel]) {
@@ -249,18 +255,24 @@ foreach ($rel in @($recorded.Keys)) {
     else { $obsoleteKept.Add($rel); $newRecorded[$rel] = $recorded[$rel] }
 }
 
-# Folders those removals emptied, deepest first. Only an ancestor of a removed file, strictly inside .claude/; any entry
-# left in it (an untracked or locally added file, a folder this pass keeps) keeps it. A dry run reports the same set:
-# there a removed file still exists, so it counts as gone. Names compare ordinally: a spelling mismatch keeps the folder.
+# Folders those removals emptied, deepest first. Only an ancestor of a removed file, strictly inside .claude/, and never
+# an ancestor of a source file, in any case: after a real run that folder holds the file, though a dry run has not
+# written an added one yet. Any other entry left in it (an untracked or locally added file, a folder this pass keeps)
+# keeps it. A dry run reports the same set: there a removed file still exists, so it counts as gone. Entry names compare
+# ordinally: a spelling mismatch keeps the folder.
+function Add-Ancestors($Set, [string]$Rel) {
+    $d = $Rel.Substring(0, $Rel.LastIndexOf('/'))
+    while ($d.StartsWith('.claude/', [StringComparison]::Ordinal)) { [void]$Set.Add($d); $d = $d.Substring(0, $d.LastIndexOf('/')) }
+}
 $removedDirs = [System.Collections.Generic.List[string]]::new()
 $removedSet = [System.Collections.Generic.HashSet[string]]::new([string[]]@($removed), [StringComparer]::Ordinal)
 $dirSet = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
-foreach ($rel in $removed) {
-    $d = $rel.Substring(0, $rel.LastIndexOf('/'))
-    while ($d.StartsWith('.claude/', [StringComparison]::Ordinal)) { [void]$dirSet.Add($d); $d = $d.Substring(0, $d.LastIndexOf('/')) }
-}
+foreach ($rel in $removed) { Add-Ancestors $dirSet $rel }
+$srcDirs = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+foreach ($rel in $srcRels) { Add-Ancestors $srcDirs $rel }
 $goneDirs = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
 foreach ($d in @($dirSet | Sort-Object { ($_ -split '/').Count } -Descending)) {
+    if ($srcDirs.Contains($d)) { continue }
     $abs = Join-Path $Target $d
     if (-not (Test-Path -LiteralPath $abs -PathType Container)) { continue }
     $busy = $false

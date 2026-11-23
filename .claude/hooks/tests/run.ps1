@@ -2669,6 +2669,41 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
         $o = SyncUpdate
         Check 'framework-sync: an update removes the folders a retirement empties' ($o -match 'removed  \.claude/skills/old/ \(empty folder\)' -and -not (Test-Path (Join-Path $t.Path '.claude/skills/old'))) $true
         Check 'framework-sync: ... and keeps one holding a project file, its parents and .claude/' ((Test-Path (Join-Path $t.Path '.claude/skills/kept/notes.md')) -and -not (Test-Path (Join-Path $t.Path '.claude/skills/kept/SKILL.md')) -and $o -notmatch '\.claude/skills/ \(' -and (Test-Path (Join-Path $t.Path '.claude/x.md'))) $true
+        function SyncSource([string]$Name, [string[]]$Files) {
+            $src = Join-Path $tmp $Name
+            New-Repo $src
+            foreach ($f in @('settings.json', 'x.md') + $Files) {
+                New-Item -ItemType Directory -Force (Split-Path (Join-Path $src ".claude/$f")) | Out-Null
+                [IO.File]::WriteAllText((Join-Path $src ".claude/$f"), $(if ($f -eq 'settings.json') { '{}' } else { "$f`n" }))
+            }
+            git -C $src add .claude 2>&1 | Out-Null
+            $src
+        }
+        # A retired file's folder that the same update gives a new file stays, in a dry run too: a dry run writes no added file.
+        $syncSrc = SyncSource 'SyncSourceSwap' @('skills/old/a.md')
+        $t = SyncTarget 'swap' $null $null
+        git -C $syncSrc rm -q -f .claude/skills/old/a.md 2>&1 | Out-Null
+        New-Item -ItemType Directory -Force (Join-Path $syncSrc '.claude/skills/old') | Out-Null  # git rm took the emptied folder
+        [IO.File]::WriteAllText((Join-Path $syncSrc '.claude/skills/old/b.md'), "b`n")
+        git -C $syncSrc add .claude 2>&1 | Out-Null
+        $o = SyncUpdate @('-DryRun')
+        Check 'framework-sync: a dry run keeps a folder the same update adds a file to' ($o -match 'removed  \.claude/skills/old/a\.md' -and $o -notmatch 'skills/old/ \(empty folder\)') $true
+        $o = SyncUpdate
+        Check 'framework-sync: ... and so does the update, with the added file' ((Test-Path (Join-Path $t.Path '.claude/skills/old/b.md')) -and -not (Test-Path (Join-Path $t.Path '.claude/skills/old/a.md')) -and $o -notmatch 'skills/old/ \(empty folder\)') $true
+        # A case-only rename deletes nothing where the file system folds case: both spellings are one file.
+        $syncSrc = SyncSource 'SyncSourceCase' @('skills/Foo/SKILL.md')
+        $t = SyncTarget 'case' $null $null
+        git -C $syncSrc mv .claude/skills/Foo .claude/skills/foo-tmp 2>&1 | Out-Null
+        git -C $syncSrc mv .claude/skills/foo-tmp .claude/skills/foo 2>&1 | Out-Null
+        $caseFile = Join-Path $t.Path '.claude/skills/foo/SKILL.md'
+        if (-not (Test-Path -LiteralPath (Join-Path $t.Path '.CLAUDE/SKILLS/FOO/SKILL.MD'))) { Write-Output 'SKIP  framework-sync: a case-only rename (case-sensitive file system)' }
+        else {
+            Check 'framework-sync: the fixture renamed Foo to foo by case only' ([string](git -C $syncSrc ls-files -- .claude/skills)) '.claude/skills/foo/SKILL.md'
+            $o = SyncUpdate
+            Check 'framework-sync: a case-only rename keeps the file and its folder' ((Test-Path -LiteralPath $caseFile) -and [IO.File]::ReadAllText($caseFile) -eq "skills/Foo/SKILL.md`n" -and $o -notmatch '(?im)^\s*removed  \.claude/skills/') $true
+            $o = SyncUpdate
+            Check 'framework-sync: ... and the next update has nothing to remove' ((Test-Path -LiteralPath $caseFile) -and $o -match 'removed 0 \|' -and $o -notmatch '(?m)^\s*removed  ') $true
+        }
         $syncSrc = $savedSrc
         # The framework's own .gitignore and .gitattributes: the records lines reach a target, the framework-only block does not.
         $savedSrc = $syncSrc
