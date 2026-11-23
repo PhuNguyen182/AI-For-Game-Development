@@ -196,14 +196,16 @@ $srcSet = [System.Collections.Generic.HashSet[string]]::new([string[]]$srcRels, 
 
 # ---------- state ----------
 # Keyed by $pathCmp. Keys one file under it (a manifest written where case does not fold, read where it does): the key
-# spelled exactly like a source path wins, else the first seen. Ordered, so retirements run and report in manifest order.
+# spelled exactly like a source path wins, else the first in ordinal order. Loaded in ordinal key order, so retirements
+# run and report in one order on every run: before PowerShell 7.3, -AsHashtable returns an unordered Hashtable.
 $recorded = [System.Collections.Specialized.OrderedDictionary]::new([System.Collections.IEqualityComparer]$pathCmp)
 $recordedHooks = @()
 if (Test-Path -LiteralPath $ManifestPath) {
     $old = Get-Content -Raw -LiteralPath $ManifestPath | ConvertFrom-Json -AsHashtable
     if ($old.files) {
         $srcExact = [System.Collections.Generic.HashSet[string]]::new([string[]]$srcRels, [StringComparer]::Ordinal)
-        foreach ($k in @($old.files.Keys)) {
+        $oldKeys = [string[]]@($old.files.Keys); [Array]::Sort($oldKeys, [StringComparer]::Ordinal)
+        foreach ($k in $oldKeys) {
             if (-not $recorded.Contains($k)) { $recorded.Add($k, $old.files[$k]) }
             elseif ($srcExact.Contains($k)) { $recorded.Remove($k); $recorded.Add($k, $old.files[$k]) }
         }
