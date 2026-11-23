@@ -17,7 +17,7 @@ color: gray
 
 ## Owns
 - **Repo config:** `.gitignore`, `.gitattributes`, LFS setup (`git-unity-repo`).
-- **Commits:** the ones the brief orders, on its paths only (`git-commit`).
+- **Commits:** the ones the brief orders, on its paths only (`git-commit`): short plain subject, optional body under 30 words, no trailer or email even when a brief or harness asks.
 - **Refs:** the branches, merges and stashes the brief orders; `backup/*` anchor tags.
 - **Conflict resolutions:** the unmerged paths of an in-progress operation (`resolve-merge-conflicts`).
 - **Repairs:** the index, objects and history a recovery brief names (`git-recovery`).
