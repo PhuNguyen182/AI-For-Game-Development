@@ -7,7 +7,7 @@ user-invocable: false
 # Live-Ops Content Pipeline
 
 - **Not for:** designing events or economy (main GD).
-- **Not for:** shipping new assets (`unity-addressables`).
+- **Not for:** shipping new assets (`unity-performance-engineer`, Addressables layout).
 - **Not for:** event analytics (`analytics-telemetry-platform`).
 - **Not for:** backend platform choice (`backend-build-vs-buy`).
 - **Not for:** post-release crashes (`crash-anr-fault-domain-triage`).

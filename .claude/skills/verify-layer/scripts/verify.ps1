@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-Checks the .claude/ layer: paths resolve, agent and skill frontmatter, skill references, workflows are JS, skill format, reference fences, checklist files, hook contract strings, no retired IDs, agents, paths or namespaces, table widths.
+Checks the .claude/ layer: paths resolve, agent and skill frontmatter, skill references, workflows are JS, skill format, reference fences, checklist files, hook contract strings, no retired IDs, agents, skills, paths or namespaces, table widths.
 Warn only: size targets (skill description past 120 chars, list item past 200, body past 8,000, agent, rule and CLAUDE.md lengths), an unknown name in an agent, a unity:* plugin skill not installed. All else fails, including a description past 250 chars. Exit 0 = pass (warnings allowed), 1 = failure.
 .PARAMETER File
 Check only this file (used by the PostToolUse hook), plus the owning skill's script-named check for a file under references/. Omit for the whole layer.
@@ -28,6 +28,27 @@ function Rel($p) {
 
 $Budget = @{ ClaudeMd = 30; AlwaysRules = 100; PathRule = 40; Desc = 250; DescTarget = 120; AgentFile = 50; SkillChars = 8000; BulletChars = 200; RefFence = 15 }
 $RetiredAgents = 'unity-engineer', 'assurance-evaluator', 'build-run-engineer', 'build-verification-tester'
+# Vendor-doc skills removed by feature skill-pruning: package API comes from the installed version and its docs
+# (csharp-standards -> library-conventions.md). Matched case-sensitively as a whole skill token, so unity:ui-ugui,
+# com.unity.ugui, uGUI and UI Toolkit do not match. Read in every text file of the layer, scripts/ included; this
+# script and the hook suite, which plants the names, are exempt.
+$RetiredSkills = @(
+    'csvhelper-csv-data', 'dotnet-concurrency-and-async', 'dotnet-memory-and-collections', 'dotween-tweening', 'litmotion-tweening',
+    'flexalon-layouts', 'magiconion-rpc-networking', 'memorypack-serialization', 'messagepipe-event-messaging', 'nrandom-random-generation',
+    'odin-inspector', 'osa-optimized-scrollview-adapter', 'r3-reactive-extensions', 'stateless-state-machines', 'unitask-async-programming',
+    'vcontainer-dependency-injection', 'zlinq-zero-allocation-linq', 'zstring-zero-allocation-strings', 'spine-animation',
+    'source-generator-authoring', 'roslyn-analyzer-codefix',
+    'unity-2d-physics', 'unity-2d-sprite', 'unity-2d-spriteshape', 'unity-3d-mesh', 'unity-3d-physics', 'unity-addressables',
+    'unity-animation', 'unity-audio-mixer', 'unity-burst-compiler', 'unity-camera-fundamentals', 'unity-cinemachine-authoring',
+    'unity-collections', 'unity-ecs-architecture', 'unity-entities-graphics', 'unity-hdrp-rendering', 'unity-input-system',
+    'unity-job-system-and-burst', 'unity-lighting', 'unity-localization-text', 'unity-mathematics', 'unity-navmesh-navigation',
+    'unity-physics', 'unity-post-processing', 'unity-scriptableobject-architecture', 'unity-tilemap', 'unity-transport',
+    'unity-urp-rendering',
+    'render-pipeline-urp-hdrp', 'shader-authoring', 'compute-shader-vfx', 'vfx-particle-authoring', 'ugui', 'ui-toolkit', 'mobile-safe-area',
+    'netcode-for-entities', 'netcode-for-gameobjects',
+    'firebase-unity-sdk', 'firebase-app-distribution', 'fastlane-mobile-delivery', 'jenkins-pipeline-authoring')
+$RetiredSkillPattern = '(?<![\w:.-])(?:' + (($RetiredSkills | ForEach-Object { [regex]::Escape($_) }) -join '|') + ')(?![\w-])'
+$RetiredSkillExempt = '.claude/skills/verify-layer/scripts/verify.ps1', '.claude/hooks/tests/run.ps1'
 $RetiredPaths = '\.claude/(standards|workflows/[a-z-]+\.md|workflows/(references|state|tools)/|rules/(orchestration|task-classification|effort-allocation|execution-loop|security|feature-context-reading|implementation-note|commit-message|language-and-comments|shell-preference|unity-tooling-preference|standards-index)\.md)'
 $IdPattern = '\b(?:G[0-9]{1,2}|B[0-9]{1,2}|I[0-9]{1,2}|A[1-5]|V[1-5]|EV[0-4])\b'
 # Retired namespace scheme: features use path-derived namespaces (naming-convention.md).
@@ -255,6 +276,16 @@ function Test-Paths([string]$path, [string]$text) {
     }
 }
 
+# Any extension: a file holding a NUL byte is binary (.pyc) and skipped.
+function Test-RetiredSkills([string]$path) {
+    $rel = Rel $path
+    if ($RetiredSkillExempt -contains $rel) { return }
+    $bytes = [IO.File]::ReadAllBytes($path)
+    if ([Array]::IndexOf($bytes, [byte]0) -ge 0) { return }
+    $text = [Text.Encoding]::UTF8.GetString($bytes)
+    foreach ($m in @([regex]::Matches($text, $RetiredSkillPattern) | ForEach-Object Value | Select-Object -Unique)) { Fail "${rel}: references retired skill '$m'" }
+}
+
 function Test-Contracts([string]$rel, [string]$text) {
     foreach ($s in @($HookContracts[$rel])) {
         if ($s -and -not $text.Contains($s)) { Fail "${rel}: lost '$s', which hooks/round-cap.ps1 counts on - update both together" }
@@ -267,6 +298,7 @@ function Test-Contracts([string]$rel, [string]$text) {
 function Test-File([string]$path) {
     if (-not (Test-Path $path -PathType Leaf)) { return }
     $rel = Rel $path
+    Test-RetiredSkills $path
     if ([IO.File]::ReadAllText($path) -cmatch $RetiredNamespace) { Fail "${rel}: references retired namespace '$($Matches[0])'" }
     if ($rel -match '^\.claude/workflows/') {
         if ($path -notlike '*.js') { Fail "${rel}: .claude/workflows/ holds only .js workflow scripts" }
@@ -333,18 +365,26 @@ function Test-File([string]$path) {
     elseif ($rel -eq 'CLAUDE.md' -and $lines.Count -gt $Budget.ClaudeMd) { Warn "${rel}: $($lines.Count) lines > $($Budget.ClaudeMd) recommended" }
 }
 
+# Not part of the layer. Agent worktrees (/feature lane A, isolation: "worktree") are checkouts of it; the backup
+# framework-sync.ps1 keeps of replaced and retired files holds old copies that name retired skills by design.
+$NotLayer = '^\.claude/(worktrees|\.framework-backup)/'
 if ($File) {
     $p = if ([IO.Path]::IsPathRooted($File)) { $File } else { Join-Path $root $File }
+    # Resolved before any Rel-based decision: '.claude/.framework-backup/../agents/x.md' is the agent file, not the backup.
+    $p = [IO.Path]::GetFullPath($p)
+    if ((Rel $p) -match '^\.claude/\.framework-backup/') { Write-Output 'verify-layer: OK (0 warning(s))'; exit 0 }
     Test-File $p
     if ((Rel $p) -match '^\.claude/skills/([^/]+)/references/') { Test-ScriptsNamed (Join-Path $claude "skills/$($Matches[1])") }
 } else {
     # Relative to this layer's root: a parent folder named scripts or assets must not hide every .md.
-    $files = @(Get-ChildItem $claude -Recurse -File | Where-Object { $r = Rel $_.FullName; $r -notmatch '/(scripts|assets)/' -and $_.Extension -in '.md', '.js' -or $r -match '/workflows/' -or $_.Extension -in '.ps1', '.py', '.sh' } |
-        # Agent worktrees (/feature lane A, isolation: "worktree") are checkouts of the layer, not part of it.
-        # Relative to this layer's root: a layer that itself sits in a worktree is still verified.
-        Where-Object { (Rel $_.FullName) -notmatch '^\.claude/worktrees/' })
+    # Relative to this layer's root: a layer that itself sits in a worktree is still verified.
+    $all = @(Get-ChildItem $claude -Recurse -File | Where-Object { (Rel $_.FullName) -notmatch $NotLayer })
+    $files = @($all | Where-Object { $r = Rel $_.FullName; $r -notmatch '/(scripts|assets)/' -and $_.Extension -in '.md', '.js' -or $r -match '/workflows/' -or $_.Extension -in '.ps1', '.py', '.sh' })
     $files += Get-Item (Join-Path $root 'CLAUDE.md'), (Join-Path $root 'README.md') -ErrorAction SilentlyContinue
     foreach ($f in $files) { Test-File $f.FullName }
+    # Test-File skips the rest (scripts/*.cs, assets/, data files); the retired-skill check still reads them.
+    $checked = @{}; foreach ($f in $files) { $checked[$f.FullName] = $true }
+    foreach ($f in $all) { if (-not $checked[$f.FullName]) { Test-RetiredSkills $f.FullName } }
 
     $always = 0
     foreach ($r in Get-ChildItem (Join-Path $claude 'rules') -Filter *.md) {

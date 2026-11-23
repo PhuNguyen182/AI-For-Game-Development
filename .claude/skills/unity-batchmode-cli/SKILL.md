@@ -6,8 +6,8 @@ user-invocable: false
 
 # Unity Batchmode CLI
 
-- **Not for:** the CI job calling it (`jenkins-pipeline-authoring`), signing and packaging (`fastlane-mobile-delivery`).
-- **Not for:** the Addressables content build the entry point must run before `BuildPlayer` (`unity-addressables`).
+- **Not for:** the CI job calling it, signing and packaging (`ci-cd-engineer`).
+- **Not for:** the Addressables content build the entry point must run before `BuildPlayer` (`unity-performance-engineer`).
 - **Not for:** `-runTests` (`unity-test-framework`), diagnosing a red run (`ci-pipeline-failure-triage`), project player/quality/stripping settings (`gameplay-engineer`).
 - **Unity CLI first:** `unity:unity-cli` is tried first per `core.md`; its no-`-batchmode`/`-quit` rule applies to that CLI only.
 - **Docs:** https://docs.unity3d.com/Manual/EditorCommandLineArguments.html — unversioned root serves the current release.
@@ -34,7 +34,7 @@ user-invocable: false
 9. **Name every assumed input in the output:** editor version, target, artifact path, version scheme; a guessed one builds the wrong thing successfully.
 
 ## Never
-- **Two editors on one project path:** the `Library/` lock; serialisation is the CI job's lock (`jenkins-pipeline-authoring`).
+- **Two editors on one project path:** the `Library/` lock; serialisation is the CI job's named lock (`ci-cd-engineer`).
 - **`-nographics` with GPU work:** baking, some imports; the failure reads as unrelated.
 - **Credentials in scripts:** writing a credential, keystore path or password into a build script or command line; take them from the job's credential binding.
 - **Settings edits to pass:** editing committed project settings to make a build pass; assign only what the run needs.

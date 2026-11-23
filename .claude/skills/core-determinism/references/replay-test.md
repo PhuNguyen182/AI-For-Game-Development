@@ -6,7 +6,7 @@ Synthesized from the rules in [stable-hashing-and-ordering.md](stable-hashing-an
 
 | Seam | Fact that decides |
 |---|---|
-| Constructor takes the seed | RNG built inside from the seed (`nrandom-random-generation`); no ambient generator |
+| Constructor takes the seed | RNG built inside from the seed; no ambient generator |
 | `Tick(tick, stepSeconds, command, contacts)` | One tick per call; the harness passes the tick index and the fixed step, exactly as the tick owner does; never a clock read |
 | `MatchStateHash.Compute(simulation.State)` | Core function: `StableHash` over every outcome-bearing field in a fixed order, entities by id; excludes caches, view state, pooled buffers |
 | Recorded frames | Per tick: the `PlayerCommand` and the contact list Core read, from a fixture or generated from a second, separately seeded RNG |

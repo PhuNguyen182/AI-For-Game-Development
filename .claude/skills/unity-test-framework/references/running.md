@@ -27,7 +27,6 @@ Producing a platform build is `build-release-engineer`'s work on the main GD's e
 Use only for real Editor tooling; the window and command line cover routine runs.
 - Static members: execute a run from `ExecutionSettings`, register callbacks, retrieve the test tree. Instance members are flagged for obsolescence.
 - `Filter`: exact `testNames`, regex `groupNames`, `categoryNames`, `assemblyNames`; fields combine restrictively, and `testMode` must match the assemblies or the run is empty. `ExecutionSettings` carries filters plus target platform and Player-run options.
-- `TestRunSettings` applies temporary settings around a run and reverts them; `Filter`/results use the `AssemblyType`, `RunState`, `TestMode` and `TestStatus` enums.
 - Callbacks:
   - `ICallbacks` (plus error variant for run-level failures): Editor only, adaptor types.
   - `ITestRunCallback` via `[TestRunCallback]`: Editor and built Player, raw NUnit objects. A reporter for device runs must use this one.

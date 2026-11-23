@@ -12,6 +12,7 @@ Full detail: skill `csharp-standards`. Feature docs: skill `feature-docs`.
 - Core assemblies (`Core/`, `DataModels/`): no `UnityEngine`, deterministic — no `UnityEngine.Random` (inject a seeded RNG), no wall-clock time. Client resolves Unity data (raycasts) and passes it in.
 - New feature → `<feature root>/<Feature>/` layout (`CLAUDE.md`, default `Assets/_Project/Scripts/`); folder names PascalCase, no `.`. Namespace = asmdef `rootNamespace` + path relative to its folder; asmdef `name` = `rootNamespace` = folder path. Moving a file updates its namespace in the same change.
 - Validate only at real boundaries: user input, save data, network messages, SDK callbacks, Inspector slots, Unity API returns.
+- Token, nonce or any security value → `RandomNumberGenerator`, never `System.Random`, `UnityEngine.Random` or a game RNG; token design → `security-reviewer`.
 
 ## Style
 - Explicit access modifier on every type and member. `using` outside the namespace. File-scoped namespaces need C# 10 — Unity 6.0 is C# 9, so block-scoped unless the project's compiler is newer.

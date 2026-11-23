@@ -11,7 +11,7 @@ Sources: below the SKILL.md `Docs:` base: [a] `api/system.math.sin` (same remark
 | Same code, Mono Editor vs IL2CPP Player | Unity tracks a Mono/IL2CPP float inconsistency on Apple Silicon [e]; no Unity page guarantees managed float agreement across backends or CPUs | Medium: depends on backend |
 | `(int)` / `(long)` cast of a float in `unchecked` context | NaN, infinity or out-of-range gives "an unspecified value of the destination type" [c]; the value can differ by CPU | High when the range is not proven |
 | `float.Parse`, `ToString()`, `Convert.ToSingle(string)` without `CultureInfo.InvariantCulture` | Current culture decides the decimal separator; a comma-locale device reads balance data differently | High: data, not math |
-| Burst job feeding Core | `FloatMode.Deterministic` covers Burst-compiled code only, 64-bit only, flushes subnormals to zero, NaN bits may differ [d]; it does not make Burst agree with managed code | Settings: `unity-burst-compiler` |
+| Burst job feeding Core | `FloatMode.Deterministic` covers Burst-compiled code only, 64-bit only, flushes subnormals to zero, NaN bits may differ [d]; it does not make Burst agree with managed code | Settings: the installed Burst package docs |
 | Sums over a hash collection or parallel partitions | Float addition is not associative; order changes the result | High: see [stable-hashing-and-ordering.md](stable-hashing-and-ordering.md) |
 
 **Caveat:** a site that only feeds presentation (interpolation, VFX, camera) is out of scope. Classify only what reaches an outcome, a save or a message.

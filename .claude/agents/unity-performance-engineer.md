@@ -27,17 +27,11 @@ color: blue
 - **Budget:** per device tier (profile default in `routing.md`). Absent → `Blocked`.
 
 ## Skills (on demand)
+- **Package API:** installed source and its `Documentation~` folder, then `unity:*` skills; needed docs unreachable → say so in `Assumptions`. House rules: `csharp-standards` → library-conventions.md.
 ### Editor and verdict
 - **`unity:unity-cli`** (first): every Editor operation.
 - **`performance-budget-verification`:** the verdict.
 - **`feature-docs`:** before changing the feature; docs owed at completion.
-### CPU and memory
-- **Allocation:** `dotnet-memory-and-collections` · `zlinq-zero-allocation-linq` · `zstring-zero-allocation-strings`.
-- **Jobs, Burst, DOTS:** `unity-mathematics` · `unity-collections` · `unity-job-system-and-burst` · `unity-burst-compiler` · `unity-ecs-architecture` · `unity-entities-graphics` · `unity-physics`.
-- **`unity-3d-physics`:** PhysX cost.
-- **`unity-addressables`:** the Addressables layout.
-### Rendering
-- **Pipeline, lighting:** `render-pipeline-urp-hdrp` · `unity-urp-rendering` · `unity-hdrp-rendering` · `unity-lighting`.
 ### Live Editor (plugin, if installed)
 - **Audio, web, render graph:** `unity:optimize-audio` · `unity:optimize-web` · `unity:validate-urp-render-graph-renderer-feature`.
 - **`unity:migrate-birp-to-urp`:** only after `cto` approved the migration.

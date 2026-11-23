@@ -8,7 +8,7 @@ user-invocable: false
 
 - **Not for:** choosing the mediation stack and its consent gate (`ad-mediation-monetization-platform` step 8).
 - **Not for:** the analytics vendor (`analytics-telemetry-platform`).
-- **Not for:** Firebase API calls themselves (`firebase-unity-sdk`).
+- **Not for:** Firebase API calls themselves (`sdk-platform-engineer`).
 - **Not for:** the settings screen UI (`ui-engineer`).
 - **Not for:** whether a jurisdiction's law applies (main GD with legal counsel).
 - **Docs:** UMP for Unity https://developers.google.com/admob/unity/privacy — ships in the Google Mobile Ads Unity plugin (`GoogleMobileAds.Ump.Api`).
@@ -32,8 +32,10 @@ user-invocable: false
    - **(a) Audience flags:** audience flags and the ad `RequestConfiguration` set.
    - **(b) UMP:** `ConsentInformation.Update` → `ConsentForm.LoadAndShowConsentFormIfRequired`.
    - **(c) iOS ATT:** request it here.
-   - **(d) Firebase:** the Firebase bootstrap awaits `DependencyStatus.Available` (`firebase-unity-sdk` step 4), then Firebase `SetConsent` + collection.
-   - **(d) consent sources:** the per-type sources in `firebase-unity-sdk` → `analytics.md`, never from `CanRequestAds()`.
+   - **(d) Firebase:** the Firebase bootstrap awaits `DependencyStatus.Available` (one bootstrap owns `FirebaseApp.CheckAndFixDependenciesAsync()`), then Firebase `SetConsent` + collection.
+   - **(d) consent sources:** each `ConsentType` from its own source, never `CanRequestAds()`.
+   - **(d) `SetConsent`:** sets all four `ConsentType`s on every call (an omitted type keeps its previous status), then `SetAnalyticsCollectionEnabled(<AnalyticsStorage granted>)`.
+   - **(d) unnamed source:** a type whose source is unnamed (often `AnalyticsStorage`) → `Needs-decision`, collection off; never assumed granted.
    - **(d) not `Available`:** Firebase `SetConsent` + collection skipped.
    - **(e) Ads:** ad-network consent signals applied, then ad SDK and mediation init.
    - **Returning player:** whose stored consent already allows ads may reach (e) straight from `Update`'s callback; the ad configuration from (a) and the signals in (e) do not depend on Firebase.
@@ -43,8 +45,8 @@ user-invocable: false
    - **Criterion, Firebase:** no Firebase call precedes `Available`.
    - **Criterion, collection:** no analytics or crash collection is enabled before (d).
 4. **Collection defaults off in the build:** native SDKs start at process launch, before any C# runs.
-   - **Analytics:** keys per `firebase-unity-sdk` → `analytics.md`.
-   - **Crashlytics:** keys per `firebase-unity-sdk` → `crashlytics.md`.
+   - **Analytics:** collection off in the build until consent (Android `firebase_analytics_collection_enabled` false, iOS `FIREBASE_ANALYTICS_COLLECTION_ENABLED` NO).
+   - **Crashlytics:** opt-in uses the native off keys (`firebase_crashlytics_collection_enabled`, `FirebaseCrashlyticsCollectionEnabled` false); a device build confirms no report before consent.
    - **Ad SDKs:** each ad SDK's equivalent.
    - **SDK with no build-time off switch:** initializes only at (e).
    - **Crashlytics opt-in required, off keys not confirmed on a device build:** `Needs-decision`, gap in Known limitations.
@@ -63,7 +65,7 @@ user-invocable: false
    - **Trigger:** when `PrivacyOptionsRequirementStatus` is `Required`, a settings control opens `ConsentForm.ShowPrivacyOptionsForm`.
    - **On close:** re-apply step 3(d) Firebase consent and the step 3(e) ad-network consent signals, withdrawal included (Guideline 5.1.1 requires an easy withdrawal path).
    - **Same session:** analytics and ad signals stop.
-   - **Crashlytics withdrawal:** takes effect next launch (`firebase-unity-sdk` → `crashlytics.md`); record it in Known limitations.
+   - **Crashlytics withdrawal:** takes effect next launch; record it in Known limitations.
    - **Jurisdiction requiring an immediate stop:** `Needs-decision`.
    - **Criterion:** reachable from in-game settings without a restart; the control itself goes to `ui-engineer`.
 9. **Verify on a device, never in the Editor:** UMP forms and ATT do not run there, per [google-ump.md](references/google-ump.md).

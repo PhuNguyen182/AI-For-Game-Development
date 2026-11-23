@@ -6,9 +6,8 @@ user-invocable: false
 
 # Core Determinism
 
-- **Not for:** the RNG API and seeding (`nrandom-random-generation`).
 - **Not for:** auditing a diff for violations (`shared-core-boundary-audit`).
-- **Not for:** Burst `FloatMode`/`FloatPrecision` (`unity-burst-compiler`).
+- **Not for:** Burst `FloatMode`/`FloatPrecision` (`unity-performance-engineer`).
 - **Not for:** the sync model — lockstep, rollback, state sync (`netcode-architecture-decision`).
 - **Not for:** save-file checksums (`save-data-versioning-migration`).
 - **Not for:** running Core tests outside the Editor (`core-tests-without-unity`).
@@ -45,7 +44,7 @@ user-invocable: false
 4. **Remove hash and order dependence from every outcome, save and message:** per [stable-hashing-and-ordering.md](references/stable-hashing-and-ordering.md).
    - **Criterion:** each hash-collection iteration and each sort in an outcome path is either order-independent (stated why) or ordered by a total, stable key.
 5. **Close the remaining ambient inputs:** RNG, time, number parsing, string ordering, accumulation order.
-   - **RNG:** per `nrandom-random-generation`.
+   - **RNG:** one generator built from the injected seed; no `UnityEngine.Random`, unseeded `System.Random` or shared ambient instance.
    - **Time:** tick index × fixed step, passed in.
    - **Number parsing and string ordering:** culture-invariant.
    - **Accumulation order:** no order that depends on thread scheduling.

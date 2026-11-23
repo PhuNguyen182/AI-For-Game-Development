@@ -7,7 +7,7 @@ user-invocable: false
 # Secret Exposure Response
 
 - **Not for:** whether a match is a real secret (`security-reviewer`), locating it in history (`git-forensics`), running the rewrite (`git-recovery` via `git-expert`).
-- **Not for:** the working-tree scan (`secret-and-supply-chain-scan`), CI credential wiring (`jenkins-pipeline-authoring`).
+- **Not for:** the working-tree scan (`secret-and-supply-chain-scan`), CI credential wiring (`ci-cd-engineer`).
 - **Owners:** `cto` decides and plans; the main GD acts in vendor consoles; `git-expert` runs any purge.
 - **Values:** no agent ever holds the old or the new value.
 

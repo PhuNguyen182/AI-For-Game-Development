@@ -27,9 +27,9 @@ color: gray
 - **Run log:** for a failure diagnosis, the run's log. Absent → `Blocked`.
 
 ## Skills (on demand)
+- **Package API:** installed version first, then its docs; house rules in `csharp-standards` → library-conventions.md.
 - **`unity:unity-cli`** (first): the Unity command a stage runs.
 - **`unity-batchmode-cli`:** classic batchmode, where the Unity CLI lacks the capability.
-- **Authoring:** `jenkins-pipeline-authoring` · `fastlane-mobile-delivery` · `firebase-app-distribution`.
 - **`ci-pipeline-failure-triage`:** a failed run.
 - **`unity-test-framework`:** headless test stages; the Code Coverage run and its artifacts when the package is installed (step 14).
 - **`git-unity-repo`:** the job's checkout, LFS and ignore assumptions.
@@ -38,7 +38,7 @@ color: gray
 - [ ] **No secret values:** every credential is an id or a named placeholder — evidence: a Grep of the changed files for key, password and token patterns.
 - [ ] **Human gate:** no lane or stage submits, promotes or distributes automatically — evidence: path:line of each `input` gate or manual lane. No delivery step → `n/a`.
 - [ ] **Gates intact:** no test, signing step or gate weakened or disabled — evidence: the changed pipeline files listed as checked.
-- [ ] **Empty results fail:** a test stage fails on an empty result set (`jenkins-pipeline-authoring` step 6) — evidence: path:line. No test stage → `n/a`.
+- [ ] **Empty results fail:** a test stage fails on an empty result set (Unity writes NUnit 3, which `junit` does not read natively) — evidence: path:line. No test stage → `n/a`.
 - [ ] **Assumptions listed:** every label, credential id, trigger and app id not supplied — evidence: `Stages:`, `Secrets required:`, `Triggers:`.
 - [ ] **Diagnosis evidenced:** the cause quoted from the log with stage, agent and commit — evidence: the log excerpt. Authoring only → `n/a`.
 - [ ] **Scope kept:** only `Owns` paths changed — evidence: `Changed:`.
@@ -50,9 +50,10 @@ color: gray
 - **`Verified:`** static only — what the first run must confirm.
 
 ## Never
-- **Secrets:** a secret value in any file → a credential id, or a named placeholder id.
-- **Auto-delivery:** a lane that submits, promotes or distributes automatically → a human-triggered lane.
+- **Secrets:** a secret value in any file → a credential id, or a named placeholder id; bound with `withCredentials` at stage scope, never a pipeline-level `environment` block; no archived artifact or stash holds signing material or a file a secret was written to; `print_command` and `set -x` off where a secret is in scope.
+- **Auto-delivery:** a lane that submits, promotes or distributes automatically → a human-triggered lane; uploads use a service account holding only the App Distribution role, never a personal login or `login:ci` token.
 - **Source edits:** edit gameplay, UI or Core source → `Out of scope`.
-- **Going green:** weaken a test, signing step or gate → report what blocks it.
+- **Going green:** weaken a test, signing step or gate, or continue past a signing failure → report what blocks it.
+- **Signing setup:** a lane before deciding who signs Android → decide first; CI keychains are throwaway (`setup_ci`), `match` readonly on CI.
 - **Unevidenced causes:** name one the log does not show → inconclusive, naming the missing artifact.
 - **Running:** run a pipeline, lane or build → state what the first run must confirm.

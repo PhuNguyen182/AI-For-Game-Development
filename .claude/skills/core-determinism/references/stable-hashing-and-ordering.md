@@ -34,7 +34,7 @@ Sample: [StableHash.cs](../scripts/StableHash.cs) (FNV-1a 64 `Add` overloads for
 | `List<T>.Sort`, `Array.Sort` | "Performs an unstable sort; … if two elements are equal, their order might not be preserved" [f] | Comparer ends with a unique tiebreak (entity id) |
 | `Enumerable.OrderBy` | Stable, but allocates | Not on a per-tick path (`csharp.md` Hot paths) |
 | `string.CompareTo`, `OrderBy(s => s)` default comparer | Culture-sensitive; the device's culture decides the order | `StringComparer.Ordinal` / `string.CompareOrdinal` |
-| Float accumulation over partitions or threads | Addition order follows scheduling | Fixed partition order, integer accumulator, or single-threaded (`dotnet-concurrency-and-async` for the threading itself) |
+| Float accumulation over partitions or threads | Addition order follows scheduling | Fixed partition order, integer accumulator, or single-threaded |
 
 **Caveat:** "it iterates in insertion order on my machine" is an implementation detail with removals and resizes in play; it is not a contract on any runtime.
 

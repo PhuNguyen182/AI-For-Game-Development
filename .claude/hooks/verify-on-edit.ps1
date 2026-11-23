@@ -3,7 +3,10 @@
 
 $in = Read-HookInput
 if (-not $in) { exit 0 }
-$path = [string](First $in.tool_input.file_path '')
+$raw = [string](First $in.tool_input.file_path '')
+if (-not $raw) { exit 0 }
+# Resolved before every match: '.claude/worktrees/../agents/x.md' is the agent file, not a worktree write.
+$path = [IO.Path]::GetFullPath($raw)
 if ($path -notmatch '[\\/]\.claude[\\/]') { exit 0 }
 # A write inside an agent worktree of this layer (/feature lane A) is that checkout's own work, not a change to the
 # layer. Relative to this layer's root, so a layer that itself sits in a worktree is still verified on edit.
@@ -16,6 +19,6 @@ if (-not (Test-Path -LiteralPath $verifier)) { exit 0 }
 
 $out = & $verifier -File $path *>&1
 if ($LASTEXITCODE -ne 0) {
-    Block ("verify-layer failed after editing ${path}:`n" + ($out -join "`n"))
+    Block ("verify-layer failed after editing ${raw}:`n" + ($out -join "`n"))
 }
 exit 0

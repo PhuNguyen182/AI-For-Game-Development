@@ -177,12 +177,39 @@ function Add-MissingFrameworkLines([string]$Path, [string[]]$FwLines) {
     return "$($missing.Count) line(s) appended"
 }
 
+# ---------- framework-owned files ----------
+$srcRels = [System.Collections.Generic.List[string]]::new()
+$excluded = '^\.claude/(settings\.json|settings\.local\.json)$|^\.claude/worktrees/|^\.claude/\.framework-|\.(keystore|jks|p12|pfx|p8|pem|mobileprovision)$|(^|/)\.env(\.|$)'
+foreach ($f in (git -c core.quotepath=off -C $SourceRoot ls-files -- .claude)) {
+    if ($f -match $excluded) { continue }
+    if (Test-Path -LiteralPath (Join-Path $SourceRoot $f) -PathType Leaf) { $srcRels.Add($f) }
+}
+if ($srcRels.Count -eq 0) { throw "No .claude/ files found in source $SourceRoot" }
+
+# Two target paths are the same file exactly when the target's file system treats them as one: Windows and default
+# macOS fold case, Linux does not. One probe, on the first of these the target holds (.git always: checked above), sets
+# the comparer of every collection keyed by a target path. A target mixing both kinds of folder is unsupported.
+$probeRel = @($ManifestRel, '.claude', '.git') | Where-Object { Test-Path -LiteralPath (Join-Path $Target $_) } | Select-Object -First 1
+$caseFolds = Test-Path -LiteralPath (Join-Path $Target $probeRel.ToUpperInvariant())
+$pathCmp = if ($caseFolds) { [StringComparer]::OrdinalIgnoreCase } else { [StringComparer]::Ordinal }
+$srcSet = [System.Collections.Generic.HashSet[string]]::new([string[]]$srcRels, $pathCmp)
+
 # ---------- state ----------
-$recorded = @{}
+# Keyed by $pathCmp. Keys one file under it (a manifest written where case does not fold, read where it does): the key
+# spelled exactly like a source path wins, else the first in ordinal order. Loaded in ordinal key order, so retirements
+# run and report in one order on every run: before PowerShell 7.3, -AsHashtable returns an unordered Hashtable.
+$recorded = [System.Collections.Specialized.OrderedDictionary]::new([System.Collections.IEqualityComparer]$pathCmp)
 $recordedHooks = @()
 if (Test-Path -LiteralPath $ManifestPath) {
     $old = Get-Content -Raw -LiteralPath $ManifestPath | ConvertFrom-Json -AsHashtable
-    if ($old.files) { $recorded = $old.files }
+    if ($old.files) {
+        $srcExact = [System.Collections.Generic.HashSet[string]]::new([string[]]$srcRels, [StringComparer]::Ordinal)
+        $oldKeys = [string[]]@($old.files.Keys); [Array]::Sort($oldKeys, [StringComparer]::Ordinal)
+        foreach ($k in $oldKeys) {
+            if (-not $recorded.Contains($k)) { $recorded.Add($k, $old.files[$k]) }
+            elseif ($srcExact.Contains($k)) { $recorded.Remove($k); $recorded.Add($k, $old.files[$k]) }
+        }
+    }
     if ($old.settingsHooks) { $recordedHooks = @($old.settingsHooks) }
 }
 if ($Mode -eq 'Update' -and -not (Test-Path -LiteralPath $ManifestPath)) { throw "No $ManifestRel in $Target. Run install-framework.ps1 first." }
@@ -194,17 +221,8 @@ $conflicts = [System.Collections.Generic.List[string]]::new()
 $removed = [System.Collections.Generic.List[string]]::new()
 $obsoleteKept = [System.Collections.Generic.List[string]]::new()
 $unchanged = 0
-$newRecorded = [ordered]@{}
-
-# ---------- framework-owned files ----------
-$srcRels = [System.Collections.Generic.List[string]]::new()
-$excluded = '^\.claude/(settings\.json|settings\.local\.json)$|^\.claude/worktrees/|^\.claude/\.framework-|\.(keystore|jks|p12|pfx|p8|pem|mobileprovision)$|(^|/)\.env(\.|$)'
-foreach ($f in (git -c core.quotepath=off -C $SourceRoot ls-files -- .claude)) {
-    if ($f -match $excluded) { continue }
-    if (Test-Path -LiteralPath (Join-Path $SourceRoot $f) -PathType Leaf) { $srcRels.Add($f) }
-}
-if ($srcRels.Count -eq 0) { throw "No .claude/ files found in source $SourceRoot" }
-$srcSet = [System.Collections.Generic.HashSet[string]]::new([string[]]$srcRels)
+# What [ordered]@{} is, with $pathCmp in place of PowerShell's case-insensitive default.
+$newRecorded = [System.Collections.Specialized.OrderedDictionary]::new([System.Collections.IEqualityComparer]$pathCmp)
 
 foreach ($rel in $srcRels) {
     $from = Join-Path $SourceRoot $rel
@@ -237,6 +255,8 @@ foreach ($rel in $srcRels) {
 }
 
 # Files the framework retired since the last sync.
+# $srcSet compares by $pathCmp: where case folds, a case-only rename's old spelling is the source file, not retired.
+# The '.claude/' prefix needs no $pathCmp: every recorded key is a path the framework's own `git ls-files -- .claude` gave.
 foreach ($rel in @($recorded.Keys)) {
     if ($srcSet.Contains($rel) -or $rel -notlike '.claude/*') { continue }
     $to = Join-Path $Target $rel
@@ -247,6 +267,39 @@ foreach ($rel in @($recorded.Keys)) {
         $removed.Add($rel)
     }
     else { $obsoleteKept.Add($rel); $newRecorded[$rel] = $recorded[$rel] }
+}
+
+# Folders those removals emptied, deepest first. Only an ancestor of a removed file, strictly inside .claude/, and never
+# an ancestor of a source file: after a real run that folder holds the file, though a dry run has not written an added
+# one yet. Any other entry left in it (an untracked or locally added file, a folder this pass keeps) keeps it. A dry run
+# reports the same set: there a removed file still exists, so it counts as gone. Paths, and the entry names read from
+# disk, compare by the target file system's rule ($pathCmp).
+function Add-Ancestors($Set, [string]$Rel) {
+    $d = $Rel.Substring(0, $Rel.LastIndexOf('/'))
+    # Ordinal: every path here starts with the '.claude/' that the framework's own `git ls-files -- .claude` spelled.
+    while ($d.StartsWith('.claude/', [StringComparison]::Ordinal)) { [void]$Set.Add($d); $d = $d.Substring(0, $d.LastIndexOf('/')) }
+}
+$removedDirs = [System.Collections.Generic.List[string]]::new()
+$removedSet = [System.Collections.Generic.HashSet[string]]::new([string[]]@($removed), $pathCmp)
+$dirSet = [System.Collections.Generic.HashSet[string]]::new($pathCmp)
+foreach ($rel in $removed) { Add-Ancestors $dirSet $rel }
+$srcDirs = [System.Collections.Generic.HashSet[string]]::new($pathCmp)
+foreach ($rel in $srcRels) { Add-Ancestors $srcDirs $rel }
+$goneDirs = [System.Collections.Generic.HashSet[string]]::new($pathCmp)
+foreach ($d in @($dirSet | Sort-Object { ($_ -split '/').Count } -Descending)) {
+    if ($srcDirs.Contains($d)) { continue }
+    $abs = Join-Path $Target $d
+    if (-not (Test-Path -LiteralPath $abs -PathType Container)) { continue }
+    $busy = $false
+    foreach ($e in [IO.Directory]::EnumerateFileSystemEntries($abs)) {
+        $eRel = "$d/" + [IO.Path]::GetFileName($e)
+        $gone = if ([IO.Directory]::Exists($e)) { $goneDirs.Contains($eRel) } else { $DryRun -and $removedSet.Contains($eRel) }
+        if (-not $gone) { $busy = $true; break }
+    }
+    if ($busy) { continue }
+    # Non-recursive: a folder that is not empty after all stays instead of losing what it holds.
+    if (-not $DryRun) { try { [IO.Directory]::Delete($abs, $false) } catch { continue } }
+    [void]$goneDirs.Add($d); $removedDirs.Add($d)
 }
 
 # ---------- settings.json (merged) ----------
@@ -351,6 +404,7 @@ if ($seeded.Count) { Write-Host "  created (project-owned): $($seeded -join ', '
 if ($seedKept.Count) { Write-Host "  kept your existing: $($seedKept -join ', ')" }
 foreach ($x in $updated) { Write-Host "  updated  $x" }
 foreach ($x in $removed) { Write-Host "  removed  $x (retired by the framework)" }
+foreach ($x in $removedDirs) { Write-Host "  removed  $x/ (empty folder)" }
 foreach ($x in $obsoleteKept) { Write-Host "  retired but locally edited, kept: $x" }
 foreach ($x in $conflicts) { Write-Host "  CONFLICT $x -> new version in $x.framework-new" }
 if ($conflicts.Count) {

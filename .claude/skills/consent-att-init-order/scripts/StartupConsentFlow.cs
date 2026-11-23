@@ -28,11 +28,11 @@ private void OnAttResolved()
 
 private async UniTask ContinueStartupAsync()
 {
-    // Step (d): no Firebase static before the dependency gate (firebase-unity-sdk step 4).
+    // Step (d): no Firebase static before the dependency gate (DependencyStatus.Available).
     bool isFirebaseAvailable = await this._firebaseBootstrap.InitializeAsync(this._lifetimeToken);
     if (isFirebaseAvailable)
     {
-        // Consent types from their own sources (firebase-unity-sdk → analytics.md), never CanRequestAds().
+        // Consent types from their own sources (SKILL.md step 3(d)), never CanRequestAds().
         this.ApplyFirebaseConsent();
     }
 

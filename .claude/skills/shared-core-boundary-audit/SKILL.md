@@ -8,7 +8,7 @@ user-invocable: false
 
 - **Not for:** authoring the rule (`csharp-engineer`).
 - **Not for:** asserting it in tests (`unity-test-framework`).
-- **Not for:** a standing compile-time diagnostic for a recurring violation (`roslyn-analyzer-codefix`).
+- **Not for:** writing a standing compile-time diagnostic for a recurring violation (`csharp-engineer`).
 - **Not for:** secrets (`secret-and-supply-chain-scan`).
 - **Not for:** performance (`unity-profiler-diagnostics`).
 - **Rules:** `csharp.md` Boundaries.
@@ -37,7 +37,7 @@ user-invocable: false
 7. **Open every hit and cite `path:line`:** a match in a comment, string or editor-only assembly is not a violation; dismiss it by name.
    - **`#if UNITY_EDITOR` `UnityEngine` symbol in a Core assembly:** still an asmdef question for `technical-architect`, not a determinism finding.
 8. **Ambiguous placement: report a question:** routed to `technical-architect`; the Tech Spec decides where a decision lives.
-9. **Same mechanically decidable violation across submissions: say so:** that is `roslyn-analyzer-codefix`'s entry condition.
+9. **Same mechanically decidable violation across submissions: say so:** that is the entry condition for a Roslyn analyzer (`csharp-standards` → library-conventions.md, Analyzers).
 
 ## Never
 - **Rewriting code:** this skill reports and routes; it never rewrites code.

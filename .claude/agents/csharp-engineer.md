@@ -30,14 +30,11 @@ color: blue
 - **Tests:** the spec's `Tests:` rows. Absent → none owed, say so.
 
 ## Skills (on demand)
+- **Package API:** installed version first, then its docs; house rules in `csharp-standards` → library-conventions.md.
 - **`core-determinism`:** results must reproduce across machines; fills `Determinism:`.
 - **Tests:** `core-tests-without-unity` · `unity-test-framework` (Code Coverage on your changed lines when the package is installed: step 14).
 - **`feature-docs`:** before changing the feature; the Core and DataModels entries.
 - **`save-data-versioning-migration`:** the Core save model.
-- **Randomness, state:** `nrandom-random-generation` · `stateless-state-machines`.
-- **Data:** `memorypack-serialization` · `csvhelper-csv-data`.
-- **Memory, async:** `dotnet-memory-and-collections` · `zlinq-zero-allocation-linq` · `dotnet-concurrency-and-async`.
-- **Code generation:** `source-generator-authoring` · `roslyn-analyzer-codefix`.
 
 ## Checklist
 - [ ] **Compile clean:** 0 errors in the touched assemblies — evidence: recompile status and `console get --level error`; lane A: `dotnet build` on the mirror.

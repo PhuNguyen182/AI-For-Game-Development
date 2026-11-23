@@ -19,7 +19,7 @@ Sources: [a] `/admob/unity/privacy`, [b] `/admob/unity/privacy/gdpr`, [c] `/admo
 - **Sample:** [StartupConsentFlow.cs](../scripts/StartupConsentFlow.cs) — the callbacks `OnConsentInfoUpdated`, `OnConsentFormDone`, `OnAttResolved`, `ContinueStartupAsync`, `TryStartAds`, `OnPrivacyOptionsClicked` and `OnPrivacyOptionsClosed`.
   - **Adapt into:** the one bootstrap class that owns SKILL.md step 3's sequence, or `Assets/_Project/Scripts/Platform/StartupConsentFlow.cs` when the project has none; the sample holds class members only, and `_firebaseBootstrap`, `_lifetimeToken`, `RequestAttThen`, `ApplyFirebaseConsent`, `ApplyAdConsentSignals`, `InitializeAds` and `OnStartupFailed` are project code.
   - **Guards:** `_isAdsStarted` makes ad start once; `_isAttResolved` is `true` on Android or once the ATT status is no longer not-determined.
-  - **Order:** the `Update` callback runs `TryStartAds`, then loads the form; the form callback requests ATT; ATT resolved continues to the Firebase gate (`firebase-unity-sdk` step 4), then `ApplyFirebaseConsent`, then `TryStartAds` (sub-steps (a), (d), (e) of SKILL.md step 3).
+  - **Order:** the `Update` callback runs `TryStartAds`, then loads the form; the form callback requests ATT; ATT resolved continues to the Firebase gate (`DependencyStatus.Available`), then `ApplyFirebaseConsent`, then `TryStartAds` (sub-steps (a), (d), (e) of SKILL.md step 3).
 
 **Caveat:** on a returning iOS player ATT is already answered, so `_isAttResolved` starts `true` and the post-`Update` check starts ads at once, before Firebase; on a first launch ads wait for the ATT answer, so the first ad request carries the IDFA decision.
 

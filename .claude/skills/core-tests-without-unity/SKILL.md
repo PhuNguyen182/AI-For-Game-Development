@@ -8,7 +8,7 @@ user-invocable: false
 
 - **Not for:** test assembly attributes, Unity comparers and `-runTests` (`unity-test-framework`).
 - **Not for:** which cases to write (`risk-based-test-planning`).
-- **Not for:** the CI stage and report publishing (`jenkins-pipeline-authoring`).
+- **Not for:** the CI stage and report publishing (`ci-cd-engineer`).
 - **Not for:** the replay test itself (`core-determinism`).
 - **Not for:** bootstrapping the asmdefs on a new project (`new-project`).
 - **Not for:** auditing a diff for `UnityEngine` leaks (`shared-core-boundary-audit`).
@@ -53,7 +53,7 @@ user-invocable: false
    - **A disagreement is a defect:** never `[Ignore]` it to go green.
    - **Runtime difference (hashing, culture, float):** `core-determinism`.
    - **Compile difference:** the mirror config, per [dotnet-test-mirror.md](references/dotnet-test-mirror.md).
-8. **Hand the CI wiring to `ci-cd-engineer` (`jenkins-pipeline-authoring`):** the mirror is an extra stage, not a replacement for the Edit Mode run, unless the adopting ADR says so.
+8. **Hand the CI wiring to `ci-cd-engineer`:** the mirror is an extra stage, not a replacement for the Edit Mode run, unless the adopting ADR says so.
    - **Empty result set:** fails the stage.
 
 ## Never
