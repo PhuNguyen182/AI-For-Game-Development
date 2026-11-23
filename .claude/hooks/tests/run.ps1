@@ -2175,6 +2175,42 @@ Bug: bug-1" 'Verdict: Request changes' 'c5' | Out-Null
         $r = Invoke-HookUtf8 $g @{ tool_name = 'Bash'; cwd = $gfClean; tool_input = @{ command = 'git commit -m x && bash -c "git push"' } }
         Check "gate form, wrapper after the call, ${g}: git commit -m x && bash -c `"git push`"" ($r.Code -eq 2 -and $r.Out -match $gfRefuse) $true
     }
+    # git's dashed program (git-commit, git-push): a call wherever it may run; a text tool's pattern, or a folder in a path, is text.
+    foreach ($g in $gfGates) {
+        $n = $g[1] -replace ' .*$', ''
+        foreach ($row in @(@('PowerShell', "Select-String -Path .claude/skills/verify-layer/scripts/verify.ps1 -Pattern 'git-$n' | ForEach-Object Line"),
+                @('PowerShell', "pwsh -NoProfile -File .claude/skills/verify-layer/scripts/verify.ps1 -File .claude/skills/git-$n/SKILL.md"),
+                @('Bash', "pwsh -NoProfile -File .claude/skills/verify-layer/scripts/verify.ps1 -File .claude/skills/git-$n/SKILL.md"),
+                @('PowerShell', "(Get-Content .claude/rules/core.md)[36]; Select-String -Path .claude/rules/core.md -Pattern 'git-$n'"),
+                @('PowerShell', "Get-Content .claude/skills/git-$n/SKILL.md"), @('PowerShell', "Get-Content .claude\skills\git-$n\SKILL.md"),
+                @('PowerShell', "Get-ChildItem .claude/skills/git-$n"), @('Bash', "ls .claude/skills/git-$n"), @('Bash', "grep -rn git-$n .claude"),
+                @('Bash', "LC_ALL=C grep -rn git-$n .claude"), @('Bash', "cat .claude/skills/git-$n/x.md"), @('Bash', "rg 'git-$n' .claude"))) {
+            $r = Invoke-HookUtf8 $g[0] @{ tool_name = $row[0]; cwd = $gfApp; tool_input = @{ command = $row[1] } }
+            Check "gate form, dashed name as text, $($g[0]), $($row[0]): $($row[1])" $r.Code 0
+        }
+        foreach ($row in @(@('Bash', "/usr/lib/git-core/git-$n -m x"), @('Bash', "git-$n -m x"), @('PowerShell', "git-$n -m x"),
+                @('Bash', "timeout 60 git-$n -m x"), @('Bash', "timeout -s KILL 60 git-$n -m x"), @('Bash', "env A=1 git-$n -m x"), @('Bash', "A=1 git-$n -m x"),
+                @('PowerShell', "& 'C:/Program Files/Git/mingw64/libexec/git-core/git-$n.exe' -m x"), @('Bash', "xargs git-$n"), @('Bash', "echo x | xargs git-$n"),
+                @('Bash', "sudo -u root git-$n -m x"), @('Bash', "winpty git-$n -m x"), @('Bash', "find . -exec git-$n -m x \;"), @('Bash', "rg --pre git-$n x ."),
+                @('Bash', "/usr/bin/grep git-$n x"), @('Bash', "if git-$n -m x; then echo ok; fi"), @('Bash', "{ git-$n -m x; }"), @('Bash', "! git-$n -m x"),
+                @('PowerShell', "ForEach-Object { git-$n -m x }"), @('PowerShell', "Invoke-Command -ScriptBlock { git-$n -m x }"),
+                @('PowerShell', "Select-String -Path x -Pattern (git-$n -m x)"), @('Bash', "grep x `$(git-$n -m x)"), @('Bash', "grep -rn git-$n .claude && git-$n -m x"),
+                @('Bash', "grep git-$n x | sh"), @('Bash', "bash -c 'git-$n -m x'"), @('Bash', "bash -c 'git-$n\`n -m x'"), @('Bash', "bash -c `"git $n -m x`""),
+                @('PowerShell', "pwsh -Command `"git $n -m x`""), @('Bash', "bash -c `"git $n -m x`" .claude/skills/git-$n/x"))) {
+            $r = Invoke-HookUtf8 $g[0] @{ tool_name = $row[0]; cwd = $gfApp; tool_input = @{ command = $row[1] } }
+            Check "gate form, dashed name as a call, $($g[0]), $($row[0]): $($row[1] -replace "`n", ' ')" ($r.Code -eq 2 -and $r.Out -match $gfRefuse) $true
+        }
+        foreach ($t in $gfBoth) {
+            foreach ($c in @("git $($g[1])", "git $($g[1]) && cat .claude/skills/git-$n/SKILL.md")) {
+                $r = Invoke-HookUtf8 $g[0] @{ tool_name = $t; cwd = $gfApp; tool_input = @{ command = $c } }
+                Check "gate form, dashed name as text, $($g[0]), ${t}: $c is still scanned" ($r.Code -eq 2 -and $r.Out -match $g[2]) $true
+            }
+        }
+    }
+    foreach ($t in $gfBoth) {
+        $r = Invoke-HookUtf8 'pre-commit.ps1' @{ tool_name = $t; cwd = $gfApp; tool_input = @{ command = 'git commit -F .claude/skills/git-commit/msg.txt' } }
+        Check "gate form, dashed name as text, ${t}: git commit -F .claude/skills/git-commit/msg.txt is still scanned" ($r.Code -eq 2 -and $r.Out -match 'secret in Key\.txt') $true
+    }
     # A staging option in any abbreviation git takes, as the full spelling is.
     foreach ($o in '--pathspec-fr=list.txt', '--pathspec-from-file=list.txt', '--inter', '--patc', '--inc', '--o', '--al', '--all', '--only') {
         $r = Invoke-HookUtf8 'pre-commit.ps1' @{ tool_name = 'Bash'; cwd = $gfClean; tool_input = @{ command = "git commit $o -m x" } }

@@ -625,6 +625,23 @@ function Read-ShellStatements($s, [string]$Close, $Into) {
     $s.Depth--
 }
 
+# Programs that only read or list their arguments and never run one. Named alone (no path), after any leading NAME=VALUE.
+$script:GateTextTools = '(?i)^(?:grep|egrep|fgrep|rg|cat|ls|head|tail|wc|select-string|sls|get-content|gc|get-childitem|gci|dir|get-item|test-path)(?:\.exe)?$'
+
+# True when the words of the statement are arguments of one of the text tools above, so git's dashed program among them is a
+# search pattern or a path (grep -rn git-commit .claude). Any other program may run its argument (timeout, sudo, find -exec,
+# if, a { } block), so a dashed name after it is still a call. rg --pre runs its value.
+function Test-GateTextStatement($Words, [int]$At) {
+    $h = 0
+    while ($h -lt $Words.Count -and -not $Words[$h].Dynamic -and $Words[$h].Value -cmatch '^[A-Za-z_]\w*=') { $h++ }
+    if ($At -le $h) { return $false }
+    $head = $Words[$h]
+    if ($head.Dynamic -or $head.Escaped -or $head.Value -notmatch $script:GateTextTools) { return $false }
+    if (@($Words | Where-Object { $_.Value -ceq '{' -or $_.Value -ceq '}' }).Count) { return $false }
+    if ($Words[$At - 1].Value -ceq '--pre') { return $false }
+    return $true
+}
+
 # The commit or push calls a statement runs: { Index; Verb; VerbAt; Class }, Class 'commit', 'push', or 'any' for a verb the
 # shell fills in. An echo runs nothing; its words are text.
 function Get-StatementCalls($Statement) {
@@ -632,7 +649,9 @@ function Get-StatementCalls($Statement) {
     if ($ws[0].Value -ceq 'echo') { return }
     for ($i = 0; $i -lt $ws.Count; $i++) {
         if ($ws[$i].Value -match '(?i)(?:^|[\\/])git-(commit|push)(?:\.exe)?$') {
-            [pscustomobject]@{ Index = $i; VerbAt = $i; Class = $Matches[1].ToLowerInvariant() }
+            $dashed = $Matches[1].ToLowerInvariant()
+            if (Test-GateTextStatement $ws $i) { continue }
+            [pscustomobject]@{ Index = $i; VerbAt = $i; Class = $dashed }
             continue
         }
         if ($ws[$i].Value -notmatch '(?i)(?:^|[\\/])git(?:\.exe)?$') { continue }
@@ -728,13 +747,17 @@ function Read-GateCommand([string]$Command, [string]$Tool, [string]$Cwd, [string
     # bash -c "git push", and a heredoc or an echo fed to a shell, both hold it where the words of the later statement may not.
     $wrapper ='(?i)(?:^|[\\/])(?:sh|bash|zsh|dash|ksh|pwsh|powershell|cmd|eval|xargs|exec|source|iex|invoke-expression|start-process|saps|start)(?:\.exe)?$'
     $inline = '(?i)(?:^|[\\/])(?:python3?|py|node|perl|ruby)(?:\.exe)?$'
-    if ($Command -match "(?is)\bgit(?:\.exe)?\b.*\b(?:$gateVerb)") {
+    # A folder named git-commit or git-push (.claude/skills/git-commit/SKILL.md) is a path, not the verb, in these two text
+    # tests. A Bash backslash before whitespace is an escape or a line continuation, not a separator, so it ends no folder.
+    $folder = '(?i)\bgit-(?:commit|push)(?=/|\\\S)'
+    $text = $Command -replace $folder, 'git-dir'
+    if ($text -match "(?is)\bgit(?:\.exe)?\b.*\b(?:$gateVerb)") {
         $checked = @($top)
         $topCalls = @($mine | Where-Object { -not $_.Nested })
         if ($topCalls.Count) {
-            $callText = @($top[$topCalls[0].At].Words | ForEach-Object { $_.Value }) -join ' '
+            $callText = (@($top[$topCalls[0].At].Words | ForEach-Object { $_.Value }) -join ' ') -replace $folder, 'git-dir'
             $verbs = '(?i)commit|push|--continue'
-            if ([regex]::Matches($Command, $verbs).Count -le [regex]::Matches($callText, $verbs).Count) { $checked = @($top | Select-Object -First ($topCalls[0].At + 1)) }
+            if ([regex]::Matches($text, $verbs).Count -le [regex]::Matches($callText, $verbs).Count) { $checked = @($top | Select-Object -First ($topCalls[0].At + 1)) }
         }
         foreach ($st in $checked + @($nested)) {
             $sw = @($st.Words)
