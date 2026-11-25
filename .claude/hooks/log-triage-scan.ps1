@@ -1,8 +1,9 @@
 # SubagentStop: secret-shape backstop on a log-triage return (contract C5, feature model-tiers). Deterministic, no LLM.
 # Scans only agent_type 'log-triage' (exact, case-sensitive). The return is the SubagentHandback report plus
-# last_assistant_message after the last prompt (Read-SubagentExchange); with no last_assistant_message, the transcript's
-# last assistant text after the last prompt is added. Every secret-patterns.txt regex runs over it, here, never through
-# Find-Secrets (its hit lines carry a value prefix). Exit 2 sends the agent back with stderr as its instruction.
+# last_assistant_message after the last prompt (Read-SubagentExchange); only when that exchange return is blank (no
+# handback report and last_assistant_message missing, empty or blank) is the transcript's last assistant text after the
+# last prompt added. Every secret-patterns.txt regex runs over it, here, never through Find-Secrets (its hit lines carry
+# a value prefix). Exit 2 sends the agent back with stderr as its instruction.
 # Fail closed:
 # - an unexpected error, no return text, or a missing, empty or malformed patterns file withholds the return: the agent
 #   is told to return only "Status: Blocked / Summary: digest withheld - secret scan unavailable";
@@ -62,7 +63,7 @@ if ($ScanAgents -cnotcontains [string]$in.agent_type) { exit 0 }
 
 # 4. The return.
 $ret = [string](Read-SubagentExchange $in).Return
-if ($null -eq $in.last_assistant_message) {
+if ([string]::IsNullOrWhiteSpace($ret)) {
     $ret = $ret + "`n" + (Get-LastAssistantText ([string]$in.agent_transcript_path))
     if ([string]::IsNullOrWhiteSpace($ret)) { Block "log-triage-scan: scan failed (no return text) - return withheld. $Unavailable" }
 }

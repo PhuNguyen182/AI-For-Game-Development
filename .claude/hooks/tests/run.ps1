@@ -1236,15 +1236,18 @@ exit $LASTEXITCODE
     $fakeBearer = 'Bear' + 'er ' + ('x' * 24)
     $bearerPart = 'x' * 24
     $triageN = 0
-    function TriageStop([string]$Return, [string]$Agent = 'log-triage', [switch]$Guard, [switch]$Handback, [switch]$NoLast, [switch]$NoTranscript, [string]$HookDir = $hooks, [switch]$Production) {
+    # -BlankLast: last_assistant_message is '' and the return sits only in the transcript's last assistant text.
+    # -Narration: an assistant text line after the prompt, before the handback or return line.
+    function TriageStop([string]$Return, [string]$Agent = 'log-triage', [switch]$Guard, [switch]$Handback, [switch]$NoLast, [switch]$BlankLast, [switch]$NoTranscript, [string]$HookDir = $hooks, [switch]$Production, [string]$Narration = '') {
         $script:triageN++
         $t = Join-Path $tmp "triage-$script:triageN.jsonl"
         $lines = @(@{ type = 'user'; message = @{ role = 'user'; content = 'Digest C:/logs/Editor.log' } } | ConvertTo-Json -Depth 5 -Compress)
+        if ($Narration) { $lines += (@{ type = 'assistant'; message = @{ role = 'assistant'; content = @(@{ type = 'text'; text = $Narration }) } } | ConvertTo-Json -Depth 6 -Compress) }
         if ($Handback) { $lines += (@{ type = 'assistant'; message = @{ role = 'assistant'; content = @(@{ type = 'tool_use'; name = 'SubagentHandback'; input = @{ message = $Return } }) } } | ConvertTo-Json -Depth 6 -Compress) }
-        elseif ($NoLast) { $lines += (@{ type = 'assistant'; message = @{ role = 'assistant'; content = @(@{ type = 'text'; text = $Return }) } } | ConvertTo-Json -Depth 6 -Compress) }
+        elseif ($NoLast -or $BlankLast) { $lines += (@{ type = 'assistant'; message = @{ role = 'assistant'; content = @(@{ type = 'text'; text = $Return }) } } | ConvertTo-Json -Depth 6 -Compress) }
         if (-not $NoTranscript) { Set-Content $t $lines -Encoding UTF8 }
         $payload = @{ session_id = 'sess-triage'; agent_type = $Agent; agent_id = "lt$script:triageN"; agent_transcript_path = $t; stop_hook_active = [bool]$Guard }
-        if (-not $NoLast) { $payload.last_assistant_message = $(if ($Handback) { '' } else { $Return }) }
+        if (-not $NoLast) { $payload.last_assistant_message = $(if ($Handback -or $BlankLast) { '' } else { $Return }) }
         if ($Production) { return Invoke-HookUtf8 'log-triage-scan.ps1' $payload -Production }
         $out = ($payload | ConvertTo-Json -Depth 5 -Compress) | & $shell -NoProfile -NonInteractive -File (Join-Path $HookDir 'log-triage-scan.ps1') 2>&1
         return @{ Code = $LASTEXITCODE; Out = (Join-Output $out) }
@@ -1279,6 +1282,7 @@ exit $LASTEXITCODE
         $r = TriageStop $masked -HookDir $ltk
         Check "log-triage-scan H7: patterns file $case withholds a clean return" ($r.Code -eq 2 -and $r.Out.Contains('secret scan unavailable')) $true
         Check "log-triage-scan H7b: patterns file $case passes a withheld form" (TriageStop $formUnavailable -Guard -HookDir $ltk).Code 0
+        Check "log-triage-scan H7c: patterns file $case passes a withheld form handed back after assistant text" (TriageStop $formUnavailable -Handback -Narration 'Writing the digest report now.' -Guard -HookDir $ltk).Code 0
     }
     $r = 'not json' | & $shell -NoProfile -NonInteractive -File (Join-Path $hooks 'log-triage-scan.ps1') 2>&1
     Check 'log-triage-scan H8: unreadable hook input blocks' ($LASTEXITCODE -eq 2 -and (Join-Output $r) -match 'no readable hook input') $true
@@ -1287,6 +1291,10 @@ exit $LASTEXITCODE
     $r = TriageStop "Status: Done`nExcerpt:`n  13: Authorization: $fakeBearer" -NoLast
     Check 'log-triage-scan H10: no last_assistant_message: the transcript''s last assistant text is scanned' ($r.Code -eq 2 -and $r.Out -match 'Bearer token' -and (NoLeak $r $bearerPart)) $true
     Check 'log-triage-scan H10: ... and a clean one passes' (TriageStop $masked -NoLast).Code 0
+    $r = TriageStop "Status: Done`nExcerpt:`n  13: Authorization: $fakeBearer" -BlankLast
+    Check 'log-triage-scan H10b: a blank last_assistant_message: the transcript''s last assistant text is scanned' ($r.Code -eq 2 -and $r.Out -match 'Bearer token' -and (NoLeak $r $bearerPart)) $true
+    $r = TriageStop '' -BlankLast -NoTranscript
+    Check 'log-triage-scan H9b: a blank last_assistant_message and no transcript withholds the return' ($r.Code -eq 2 -and $r.Out.Contains('secret scan unavailable')) $true
     $r = TriageStop $leaky -Production
     Check 'log-triage-scan H11: the production launch blocks a key shape' ($r.Code -eq 2 -and (NoLeak $r $fakeKey)) $true
     # An unexpected error: a transcript path that is a folder fails its read.
