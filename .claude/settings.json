@@ -579,6 +579,12 @@
             "shell": "powershell",
             "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/advisory-capture.ps1\"; exit $LASTEXITCODE",
             "timeout": 15
+          },
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/log-triage-scan.ps1\"; exit $LASTEXITCODE",
+            "timeout": 30
           }
         ]
       }

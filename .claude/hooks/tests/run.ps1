@@ -1229,6 +1229,75 @@ exit $LASTEXITCODE
     finally { $env:CLAUDE_PROJECT_DIR = $savedProjectDir }
     $m5 = AdvCli @('list', '--thread', 'm5')
     Check 'advisory-capture: a continued round stores only its own report' (($m5 -match 'NEWROUND') -and ($m5 -notmatch 'OLDROUND')) $true
+
+    # log-triage-scan: the secret-shape backstop on a log-triage return (spec model-tiers C5, cases H1-H12).
+    # A blocked case's output holds neither the planted value nor its first 6 characters. The Bearer value is checked on
+    # its credential part: its first 6 characters are the scheme word, which the pattern name "Bearer token" carries.
+    $fakeBearer = 'Bear' + 'er ' + ('x' * 24)
+    $bearerPart = 'x' * 24
+    $triageN = 0
+    function TriageStop([string]$Return, [string]$Agent = 'log-triage', [switch]$Guard, [switch]$Handback, [switch]$NoLast, [switch]$NoTranscript, [string]$HookDir = $hooks, [switch]$Production) {
+        $script:triageN++
+        $t = Join-Path $tmp "triage-$script:triageN.jsonl"
+        $lines = @(@{ type = 'user'; message = @{ role = 'user'; content = 'Digest C:/logs/Editor.log' } } | ConvertTo-Json -Depth 5 -Compress)
+        if ($Handback) { $lines += (@{ type = 'assistant'; message = @{ role = 'assistant'; content = @(@{ type = 'tool_use'; name = 'SubagentHandback'; input = @{ message = $Return } }) } } | ConvertTo-Json -Depth 6 -Compress) }
+        elseif ($NoLast) { $lines += (@{ type = 'assistant'; message = @{ role = 'assistant'; content = @(@{ type = 'text'; text = $Return }) } } | ConvertTo-Json -Depth 6 -Compress) }
+        if (-not $NoTranscript) { Set-Content $t $lines -Encoding UTF8 }
+        $payload = @{ session_id = 'sess-triage'; agent_type = $Agent; agent_id = "lt$script:triageN"; agent_transcript_path = $t; stop_hook_active = [bool]$Guard }
+        if (-not $NoLast) { $payload.last_assistant_message = $(if ($Handback) { '' } else { $Return }) }
+        if ($Production) { return Invoke-HookUtf8 'log-triage-scan.ps1' $payload -Production }
+        $out = ($payload | ConvertTo-Json -Depth 5 -Compress) | & $shell -NoProfile -NonInteractive -File (Join-Path $HookDir 'log-triage-scan.ps1') 2>&1
+        return @{ Code = $LASTEXITCODE; Out = (Join-Output $out) }
+    }
+    function NoLeak($Result, [string]$Value) { (-not $Result.Out.Contains($Value)) -and (-not $Result.Out.Contains($Value.Substring(0, 6))) }
+    $leaky = "Status: Done`nSummary: first blocking error at line 12`nExcerpt:`n  12: aws $fakeKey"
+    $formFailed = "Status: Blocked`nSummary: digest withheld - redaction failed"
+    $formUnavailable = "Status: Blocked`nSummary: digest withheld - secret scan unavailable"
+    $r = TriageStop $leaky
+    Check 'log-triage-scan H1: a key shape in the return blocks, naming the pattern' ($r.Code -eq 2 -and $r.Out -match 'AWS access key' -and $r.Out -match 'Mask each match') $true
+    Check 'log-triage-scan H1: ... and holds neither the value nor its first 6 characters' (NoLeak $r $fakeKey) $true
+    $r = TriageStop $leaky -Handback
+    Check 'log-triage-scan H2: a key shape in the SubagentHandback report blocks' ($r.Code -eq 2 -and (NoLeak $r $fakeKey)) $true
+    $r = TriageStop $leaky -Guard
+    Check 'log-triage-scan H3: still secret-shaped with the guard set: the redaction-failed form' ($r.Code -eq 2 -and $r.Out.Contains('digest withheld - redaction failed')) $true
+    Check 'log-triage-scan H3: ... and holds neither the value nor its first 6 characters' (NoLeak $r $fakeKey) $true
+    Check 'log-triage-scan H4: the redaction-failed form passes with the guard set' (TriageStop $formFailed -Guard).Code 0
+    Check 'log-triage-scan H4: the scan-unavailable form passes with the guard set' (TriageStop $formUnavailable -Guard).Code 0
+    $r = TriageStop "$formFailed`n$fakeKey" -Guard
+    Check 'log-triage-scan H4: a withheld form with another line is scanned' ($r.Code -eq 2 -and (NoLeak $r $fakeKey)) $true
+    $masked = "Status: Done`nSummary: first blocking error at line 12`nExcerpt:`n  12: aws <redacted:AWS access key>`n  13: Authorization: Bearer <redacted:Bearer token>`n  14: password=<redacted:credential assignment>`nRedactions: 3 - 3 secret"
+    Check 'log-triage-scan H5: a masked digest passes' (TriageStop $masked).Code 0
+    Check 'log-triage-scan H5: ... and passes with the guard set' (TriageStop $masked -Guard).Code 0
+    Check 'log-triage-scan H6: another agent is not scanned' (TriageStop $leaky -Agent 'ci-cd-engineer').Code 0
+    Check 'log-triage-scan H6: the agent name is case-sensitive' (TriageStop $leaky -Agent 'Log-Triage').Code 0
+    # H7: a copy of the hook beside common.ps1, first with no patterns file, then with a comment-only one.
+    $ltk = Join-Path $tmp 'triagecopy'
+    New-Item -ItemType Directory -Force $ltk | Out-Null
+    Copy-Item (Join-Path $hooks 'common.ps1'), (Join-Path $hooks 'log-triage-scan.ps1') $ltk
+    foreach ($case in 'missing', 'comment-only') {
+        if ($case -eq 'comment-only') { Set-Content (Join-Path $ltk 'secret-patterns.txt') '# only a comment' }
+        $r = TriageStop $masked -HookDir $ltk
+        Check "log-triage-scan H7: patterns file $case withholds a clean return" ($r.Code -eq 2 -and $r.Out.Contains('secret scan unavailable')) $true
+        Check "log-triage-scan H7b: patterns file $case passes a withheld form" (TriageStop $formUnavailable -Guard -HookDir $ltk).Code 0
+    }
+    $r = 'not json' | & $shell -NoProfile -NonInteractive -File (Join-Path $hooks 'log-triage-scan.ps1') 2>&1
+    Check 'log-triage-scan H8: unreadable hook input blocks' ($LASTEXITCODE -eq 2 -and (Join-Output $r) -match 'no readable hook input') $true
+    $r = TriageStop '' -NoLast -NoTranscript
+    Check 'log-triage-scan H9: no last_assistant_message and no transcript withholds the return' ($r.Code -eq 2 -and $r.Out.Contains('secret scan unavailable')) $true
+    $r = TriageStop "Status: Done`nExcerpt:`n  13: Authorization: $fakeBearer" -NoLast
+    Check 'log-triage-scan H10: no last_assistant_message: the transcript''s last assistant text is scanned' ($r.Code -eq 2 -and $r.Out -match 'Bearer token' -and (NoLeak $r $bearerPart)) $true
+    Check 'log-triage-scan H10: ... and a clean one passes' (TriageStop $masked -NoLast).Code 0
+    $r = TriageStop $leaky -Production
+    Check 'log-triage-scan H11: the production launch blocks a key shape' ($r.Code -eq 2 -and (NoLeak $r $fakeKey)) $true
+    # An unexpected error: a transcript path that is a folder fails its read.
+    $dirT = Join-Path $tmp 'triage-dir.jsonl'
+    New-Item -ItemType Directory -Force $dirT | Out-Null
+    $out = (@{ agent_type = 'log-triage'; agent_transcript_path = $dirT; last_assistant_message = $masked } | ConvertTo-Json -Compress) | & $shell -NoProfile -NonInteractive -File (Join-Path $hooks 'log-triage-scan.ps1') 2>&1
+    $r = @{ Code = $LASTEXITCODE; Out = (Join-Output $out) }
+    Check 'log-triage-scan: an unexpected error withholds the return, naming the error type only' ($r.Code -eq 2 -and $r.Out -match 'scan failed \(\w+\)' -and $r.Out.Contains('secret scan unavailable') -and -not $r.Out.Contains('triage-dir')) $true
+    $settingsJson = Get-Content (Join-Path $hooks '../settings.json') -Raw | ConvertFrom-Json
+    $ltHooks = @($settingsJson.hooks.SubagentStop | ForEach-Object { $_.hooks } | Where-Object { [string]$_.command -match 'log-triage-scan\.ps1' })
+    Check 'log-triage-scan H12: SubagentStop registers it once, PowerShell, timeout 30' ($ltHooks.Count -eq 1 -and $ltHooks[0].shell -eq 'powershell' -and $ltHooks[0].timeout -eq 30) $true
     # Where-Object: @($null).Count is 1, which read a missing counter as one event.
     # The hook's own view: records.py ledger get --json (the DB, parked files and an un-migrated rounds.json).
     function LedgerView {
