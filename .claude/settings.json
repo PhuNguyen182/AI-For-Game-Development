@@ -231,6 +231,19 @@
         ]
       },
       {
+        "matcher": "SubagentHandback",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/log-triage-scan.ps1\" -Mode handback; exit $LASTEXITCODE",
+            "timeout": 30,
+            "statusMessage": "Scanning the log-triage handback",
+            "onFailure": "block"
+          }
+        ]
+      },
+      {
         "matcher": "Bash|PowerShell",
         "hooks": [
           {
@@ -583,7 +596,7 @@
           {
             "type": "command",
             "shell": "powershell",
-            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/log-triage-scan.ps1\"; exit $LASTEXITCODE",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/log-triage-scan.ps1\" -Mode stop; exit $LASTEXITCODE",
             "timeout": 30
           }
         ]

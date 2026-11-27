@@ -25,9 +25,9 @@ function Invoke-Hook([string]$Script, [hashtable]$Payload, [string[]]$HookArgs =
 # What Claude Code sends: raw UTF-8 on stdin, whatever the code page. Windows PowerShell's pipe would turn non-ASCII into ?.
 # No CreateNoWindow: the hook keeps this console, and so its code page.
 # -RawBytes: these bytes go on stdin as they are (a BOM, an invalid UTF-8 byte). -WorkDir: the hook process's own folder.
-# -Production: the launch settings.json uses, `& "<hook>"; exit $LASTEXITCODE`, instead of -File.
+# -Production: the launch settings.json uses, `& "<hook>" <HookArgs>; exit $LASTEXITCODE`, instead of -File.
 function Invoke-HookUtf8([string]$Script, [hashtable]$Payload, [string[]]$HookArgs = @(), [byte[]]$RawBytes = $null, [string]$WorkDir = '', [switch]$Production) {
-    $words = if ($Production) { @('-NoProfile', '-NonInteractive', '-Command', "& `"$(Join-Path $hooks $Script)`"; exit `$LASTEXITCODE") }
+    $words = if ($Production) { @('-NoProfile', '-NonInteractive', '-Command', ((@("& `"$(Join-Path $hooks $Script)`"") + @($HookArgs)) -join ' ') + "; exit `$LASTEXITCODE") }
     else { @('-NoProfile', '-NonInteractive', '-File', (Join-Path $hooks $Script)) + @($HookArgs) }
     $psi = New-Object Diagnostics.ProcessStartInfo
     $psi.FileName = $shell
@@ -1248,8 +1248,8 @@ exit $LASTEXITCODE
         if (-not $NoTranscript) { Set-Content $t $lines -Encoding UTF8 }
         $payload = @{ session_id = 'sess-triage'; agent_type = $Agent; agent_id = "lt$script:triageN"; agent_transcript_path = $t; stop_hook_active = [bool]$Guard }
         if (-not $NoLast) { $payload.last_assistant_message = $(if ($Handback -or $BlankLast) { '' } else { $Return }) }
-        if ($Production) { return Invoke-HookUtf8 'log-triage-scan.ps1' $payload -Production }
-        $out = ($payload | ConvertTo-Json -Depth 5 -Compress) | & $shell -NoProfile -NonInteractive -File (Join-Path $HookDir 'log-triage-scan.ps1') 2>&1
+        if ($Production) { return Invoke-HookUtf8 'log-triage-scan.ps1' $payload @('-Mode', 'stop') -Production }
+        $out = ($payload | ConvertTo-Json -Depth 5 -Compress) | & $shell -NoProfile -NonInteractive -File (Join-Path $HookDir 'log-triage-scan.ps1') -Mode stop 2>&1
         return @{ Code = $LASTEXITCODE; Out = (Join-Output $out) }
     }
     function NoLeak($Result, [string]$Value) { (-not $Result.Out.Contains($Value)) -and (-not $Result.Out.Contains($Value.Substring(0, 6))) }
@@ -1284,7 +1284,7 @@ exit $LASTEXITCODE
         Check "log-triage-scan H7b: patterns file $case passes a withheld form" (TriageStop $formUnavailable -Guard -HookDir $ltk).Code 0
         Check "log-triage-scan H7c: patterns file $case passes a withheld form handed back after assistant text" (TriageStop $formUnavailable -Handback -Narration 'Writing the digest report now.' -Guard -HookDir $ltk).Code 0
     }
-    $r = 'not json' | & $shell -NoProfile -NonInteractive -File (Join-Path $hooks 'log-triage-scan.ps1') 2>&1
+    $r = 'not json' | & $shell -NoProfile -NonInteractive -File (Join-Path $hooks 'log-triage-scan.ps1') -Mode stop 2>&1
     Check 'log-triage-scan H8: unreadable hook input blocks' ($LASTEXITCODE -eq 2 -and (Join-Output $r) -match 'no readable hook input') $true
     $r = TriageStop '' -NoLast -NoTranscript
     Check 'log-triage-scan H9: no last_assistant_message and no transcript withholds the return' ($r.Code -eq 2 -and $r.Out.Contains('secret scan unavailable')) $true
@@ -1300,12 +1300,78 @@ exit $LASTEXITCODE
     # An unexpected error: a transcript path that is a folder fails its read.
     $dirT = Join-Path $tmp 'triage-dir.jsonl'
     New-Item -ItemType Directory -Force $dirT | Out-Null
-    $out = (@{ agent_type = 'log-triage'; agent_transcript_path = $dirT; last_assistant_message = $masked } | ConvertTo-Json -Compress) | & $shell -NoProfile -NonInteractive -File (Join-Path $hooks 'log-triage-scan.ps1') 2>&1
+    $out = (@{ agent_type = 'log-triage'; agent_transcript_path = $dirT; last_assistant_message = $masked } | ConvertTo-Json -Compress) | & $shell -NoProfile -NonInteractive -File (Join-Path $hooks 'log-triage-scan.ps1') -Mode stop 2>&1
     $r = @{ Code = $LASTEXITCODE; Out = (Join-Output $out) }
     Check 'log-triage-scan: an unexpected error withholds the return, naming the error type only' ($r.Code -eq 2 -and $r.Out -match 'scan failed \(\w+\)' -and $r.Out.Contains('secret scan unavailable') -and -not $r.Out.Contains('triage-dir')) $true
     $settingsJson = Get-Content (Join-Path $hooks '../settings.json') -Raw | ConvertFrom-Json
     $ltHooks = @($settingsJson.hooks.SubagentStop | ForEach-Object { $_.hooks } | Where-Object { [string]$_.command -match 'log-triage-scan\.ps1' })
-    Check 'log-triage-scan H12: SubagentStop registers it once, PowerShell, timeout 30' ($ltHooks.Count -eq 1 -and $ltHooks[0].shell -eq 'powershell' -and $ltHooks[0].timeout -eq 30) $true
+    Check 'log-triage-scan H12: SubagentStop registers it once with -Mode stop, PowerShell, timeout 30' ($ltHooks.Count -eq 1 -and ([string]$ltHooks[0].command).Contains('-Mode stop') -and $ltHooks[0].shell -eq 'powershell' -and $ltHooks[0].timeout -eq 30) $true
+
+    # log-triage-scan -Mode handback: PreToolUse on SubagentHandback (spec model-tiers change 1 C5, cases P1-P13).
+    # -NoAgent: no agent_type key. -NoToolInput: no tool_input key. -ModeArgs: the script arguments, -Mode handback by default.
+    function TriageHandback([hashtable]$ToolInput, [string]$Agent = 'log-triage', [switch]$NoAgent, [switch]$NoToolInput, [string]$HookDir = $hooks, [string[]]$ModeArgs = @('-Mode', 'handback'), [switch]$Production) {
+        $payload = @{ session_id = 'sess-triage'; hook_event_name = 'PreToolUse'; tool_name = 'SubagentHandback' }
+        if (-not $NoAgent) { $payload.agent_type = $Agent }
+        if (-not $NoToolInput) { $payload.tool_input = $ToolInput }
+        if ($Production) { return Invoke-HookUtf8 'log-triage-scan.ps1' $payload $ModeArgs -Production }
+        $out = ($payload | ConvertTo-Json -Depth 10 -Compress) | & $shell -NoProfile -NonInteractive -File (Join-Path $HookDir 'log-triage-scan.ps1') @ModeArgs 2>&1
+        return @{ Code = $LASTEXITCODE; Out = (Join-Output $out) }
+    }
+    $r = TriageHandback @{ message = $leaky }
+    Check 'log-triage-scan P1: a key shape in the handback message is refused, naming the pattern and both exits' ($r.Code -eq 2 -and $r.Out -match 'AWS access key' -and $r.Out.Contains('Mask each match') -and $r.Out.Contains('SubagentHandback again') -and $r.Out.Contains('digest withheld - redaction failed')) $true
+    Check 'log-triage-scan P1: ... and holds neither the value nor its first 6 characters' (NoLeak $r $fakeKey) $true
+    $r = TriageHandback @{ report = $leaky }
+    Check 'log-triage-scan P2: a key shape in another field name is refused' ($r.Code -eq 2 -and (NoLeak $r $fakeKey)) $true
+    $r = TriageHandback @{ message = $masked; note = "Authorization: $fakeBearer" }
+    Check 'log-triage-scan P3: a Bearer token in a second string field is refused' ($r.Code -eq 2 -and $r.Out -match 'Bearer token' -and (NoLeak $r $bearerPart)) $true
+    Check 'log-triage-scan P4: the redaction-failed form passes' (TriageHandback @{ message = $formFailed }).Code 0
+    Check 'log-triage-scan P4: the scan-unavailable form passes' (TriageHandback @{ message = $formUnavailable }).Code 0
+    $r = TriageHandback @{ message = "$formFailed`n$fakeKey" }
+    Check 'log-triage-scan P4b: a withheld form with a key line is refused' ($r.Code -eq 2 -and (NoLeak $r $fakeKey)) $true
+    Check 'log-triage-scan P5: a masked digest passes' (TriageHandback @{ message = $masked }).Code 0
+    Check 'log-triage-scan P6: another agent is not scanned' (TriageHandback @{ message = $leaky } -Agent 'ci-cd-engineer').Code 0
+    Check 'log-triage-scan P6: the agent name is case-sensitive' (TriageHandback @{ message = $leaky } -Agent 'Log-Triage').Code 0
+    $r = TriageHandback @{ message = $leaky } -NoAgent
+    Check 'log-triage-scan P6b: no agent_type is scanned: a key shape is refused' ($r.Code -eq 2 -and (NoLeak $r $fakeKey)) $true
+    Check 'log-triage-scan P6b: no agent_type: a masked digest passes' (TriageHandback @{ message = $masked } -NoAgent).Code 0
+    $r = TriageHandback @{ message = $leaky } -Agent ''
+    Check 'log-triage-scan P6b: an empty agent_type is scanned' ($r.Code -eq 2 -and (NoLeak $r $fakeKey)) $true
+    $r = TriageHandback @{ message = 'Status: Done'; detail = @{ lines = @(@{ text = "12: aws $fakeKey" }) } }
+    Check 'log-triage-scan handback: a key shape in a nested string leaf is refused' ($r.Code -eq 2 -and $r.Out -match 'AWS access key' -and (NoLeak $r $fakeKey)) $true
+    $r = TriageHandback @{ message = 'Status: Done'; a = @{ b = @{ c = @{ d = @{ e = 'deep' } } } } }
+    Check 'log-triage-scan handback: tool_input nested past depth 5 is withheld' ($r.Code -eq 2 -and $r.Out.Contains('scan failed (InvalidOperationException)') -and $r.Out.Contains('secret scan unavailable')) $true
+    # P7: a copy of the hook beside common.ps1, first with no patterns file, then with a comment-only one.
+    $lthb = Join-Path $tmp 'triagecopy-hb'
+    New-Item -ItemType Directory -Force $lthb | Out-Null
+    Copy-Item (Join-Path $hooks 'common.ps1'), (Join-Path $hooks 'log-triage-scan.ps1') $lthb
+    foreach ($case in 'missing', 'comment-only') {
+        if ($case -eq 'comment-only') { Set-Content (Join-Path $lthb 'secret-patterns.txt') '# only a comment' }
+        $r = TriageHandback @{ message = $masked } -HookDir $lthb
+        Check "log-triage-scan P7: patterns file $case withholds a clean handback" ($r.Code -eq 2 -and $r.Out.Contains('secret scan unavailable') -and $r.Out.Contains('Call SubagentHandback with only these two lines')) $true
+        Check "log-triage-scan P7b: patterns file $case passes the redaction-failed form" (TriageHandback @{ message = $formFailed } -HookDir $lthb).Code 0
+        Check "log-triage-scan P7b: patterns file $case passes the scan-unavailable form" (TriageHandback @{ message = $formUnavailable } -HookDir $lthb).Code 0
+    }
+    $r = 'not json' | & $shell -NoProfile -NonInteractive -File (Join-Path $hooks 'log-triage-scan.ps1') -Mode handback 2>&1
+    Check 'log-triage-scan P8: unreadable hook input refuses the handback' ($LASTEXITCODE -eq 2 -and (Join-Output $r) -match 'no readable hook input') $true
+    $r = TriageHandback @{} -NoToolInput
+    Check 'log-triage-scan P9: no tool_input withholds the handback' ($r.Code -eq 2 -and $r.Out.Contains('secret scan unavailable')) $true
+    $r = TriageHandback @{ message = '   '; note = '' }
+    Check 'log-triage-scan P9: only blank strings withhold the handback' ($r.Code -eq 2 -and $r.Out.Contains('secret scan unavailable')) $true
+    # P10: a pattern that backtracks past the 1 s timeout; the trap names the exception type only.
+    $ltslow = Join-Path $tmp 'triagecopy-slow'
+    New-Item -ItemType Directory -Force $ltslow | Out-Null
+    Copy-Item (Join-Path $hooks 'common.ps1'), (Join-Path $hooks 'log-triage-scan.ps1') $ltslow
+    Set-Content (Join-Path $ltslow 'secret-patterns.txt') ("slow`t" + '(a+)+$')
+    $r = TriageHandback @{ message = ('a' * 40) + '!' } -HookDir $ltslow
+    Check 'log-triage-scan P10: a regex timeout withholds the handback, naming the type only' ($r.Code -eq 2 -and $r.Out.Contains('scan failed (RegexMatchTimeoutException)') -and $r.Out.Contains('secret scan unavailable') -and -not $r.Out.Contains('aaaaaa')) $true
+    $r = TriageHandback @{ message = $leaky } -Production
+    Check 'log-triage-scan P11: the production launch refuses a key shape' ($r.Code -eq 2 -and $r.Out -match 'AWS access key' -and (NoLeak $r $fakeKey)) $true
+    $r = TriageHandback @{ message = $masked } -ModeArgs @()
+    Check 'log-triage-scan P12: no -Mode blocks, nothing scanned' ($r.Code -eq 2 -and $r.Out.Contains('unknown -Mode')) $true
+    $r = TriageHandback @{ message = $masked } -ModeArgs @('-Mode', 'bogus')
+    Check 'log-triage-scan P12: an unknown -Mode blocks, nothing scanned' ($r.Code -eq 2 -and $r.Out.Contains('unknown -Mode')) $true
+    $ltPre = @(foreach ($g in @($settingsJson.hooks.PreToolUse)) { foreach ($h in @($g.hooks)) { if ([string]$h.command -match 'log-triage-scan\.ps1') { [pscustomobject]@{ Matcher = [string]$g.matcher; Hook = $h } } } })
+    Check 'log-triage-scan P13: PreToolUse registers it once on SubagentHandback with -Mode handback, PowerShell, timeout 30, onFailure block' ($ltPre.Count -eq 1 -and $ltPre[0].Matcher -ceq 'SubagentHandback' -and ([string]$ltPre[0].Hook.command).Contains('-Mode handback') -and $ltPre[0].Hook.shell -eq 'powershell' -and $ltPre[0].Hook.timeout -eq 30 -and $ltPre[0].Hook.onFailure -eq 'block') $true
     # Where-Object: @($null).Count is 1, which read a missing counter as one event.
     # The hook's own view: records.py ledger get --json (the DB, parked files and an un-migrated rounds.json).
     function LedgerView {

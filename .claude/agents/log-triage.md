@@ -51,8 +51,8 @@ Not read: <what was not examined, paths masked; truncated / rotated / wrong-run 
 ```
 - **Class:** compile | import | package | licence | test-failed | test-run-missing | il2cpp | gradle | xcode | signing | managed-exception | native-crash | anr | oom | unknown.
 - **Status:** `Done` digest complete · `Partial` truncated, wrong run, or count cap hit (`Not read` says which) · `Blocked`, naming each path (masked): no path given, missing or empty file, refused read (permission denied).
-- **Stop-hook masking:** a log-triage-scan message naming pattern kinds → mask those kinds and return the digest again.
-- **Stop-hook withheld:** a message asking for a withheld form → return exactly its two lines, nothing else (the one exception to the `agent-protocol` envelope):
+- **Hook masking:** a log-triage-scan message refusing a SubagentHandback and naming pattern kinds → mask those kinds and call SubagentHandback again with the digest.
+- **Hook withheld:** a message asking for a withheld form → call SubagentHandback (or return, if the harness has no SubagentHandback) with exactly its two lines, nothing else (the one exception to the `agent-protocol` envelope):
   - redaction failed: line 1 `Status: Blocked`, line 2 `Summary: digest withheld - redaction failed`
   - scan unavailable: line 1 `Status: Blocked`, line 2 `Summary: digest withheld - secret scan unavailable`
 
