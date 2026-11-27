@@ -64,6 +64,8 @@ $HookContracts = @{
     '.claude/agents/qa-lead.md'                = @('Verdict: Signed off | Not signed off')
     '.claude/agents/playtest-tester.md'        = @('Repro: BUG-#### reproduces | gone')
     '.claude/agents/qa-automation-engineer.md' = @('Repro: BUG-#### reproduces | gone')
+    # The withheld forms hooks/log-triage-scan.ps1 lets pass.
+    '.claude/agents/log-triage.md' = @('Summary: digest withheld - redaction failed', 'Summary: digest withheld - secret scan unavailable')
     '.claude/skills/agent-protocol/SKILL.md'   = @('Status: Done | Partial | Blocked | Needs-decision | Failed', 'Repro: BUG-#### reproduces | gone', '`Verify: BUG-####`')
     '.claude/skills/code-review-method/SKILL.md' = @('`Request changes`')
     # Brief marker lines and state lines the hook parses.

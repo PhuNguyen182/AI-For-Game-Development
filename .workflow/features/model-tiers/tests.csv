@@ -1,0 +1,16 @@
+id,criterion,test_id,mode,owner,last_result
+T-001,AC1,verify.ps1 vs baseline,command,main session,"pass at 7a40d8d: verify OK 21 warnings, hook ASCII"
+T-002,AC11,run.ps1 H1-H11 + P1-P12 pwsh + PS 5.1,hook suite,main session,"pass at 7a40d8d: pwsh 1733/0/0, PS 5.1 1728/0/0; H1-H11 (stop) and P1-P12 PASS, 56 log-triage-scan lines per shell"
+T-003,AC12,run.ps1 H12 + P13 + verify HookContracts,hook suite + command,main session,pass at 7a40d8d: P13 and H12 PASS both shells; HookContracts entry present; verify OK
+T-004,AC7,routing.md 58-62 read; git diff -U0 agents,command,main session,pass
+T-005,AC2,trial digests field check,trial dispatch,main session,"pass (attempt 2): digest <= 21 lines, excerpt <= 11 lines, no excerpt line over 300 chars"
+T-006,AC3,fixture vs Select-String,trial dispatch + command,main session,"pass (attempt 2): one count per pattern, matches Select-String"
+T-007,AC4,fixture digest scans + control,trial dispatch + command,main session,pass
+T-008,AC5,"4 real logs, scans + first-hit vs ripgrep",trial dispatch + command,main session,"pass (attempt 2): 4 real logs, username 0, secrets 0, first blocking = ripgrep"
+T-009,AC6,transcript message.model + usage,command,main session,"pass (attempt 2): 7 dispatches on claude-haiku-5-5; line, digest and token counts in attempt-2/trial.md"
+T-010,AC8,Fable ping transcript,trial dispatch + command,main session,pass: claude-fable-5-2
+T-011,AC13,missing + read-denied path,trial dispatch + command,main session,"pass (attempt 2, 2c898cd): missing and read-denied paths Blocked, path masked"
+T-012,AC9,review-gate riskFlag run wf_57b15e76-8ab transcripts,workflow run + command,main session,"pass: riskFlag run code-reviewer claude-fable-5-2, security-reviewer claude-opus-5-5; gates code without riskFlag code-reviewer claude-opus-5-5"
+T-013,AC10,grep C4 pointers; run.ps1 pwsh + PS 5.1; log-triage dispatches not blocked,command,main session,"pass at 7a40d8d: 4/4 C4 pointers; suite pwsh 1733/0, PS 5.1 1728/0; log-triage dispatches unblocked by round-cap"
+T-014,AC14,"Task 0 probe, attempt-4/probe.md",probe dispatch + command,main session,pass: PreToolUse matcher SubagentHandback blocks with exit 2; agent_type present; tool_input.message; settings load mid-session; residue removed
+T-015,AC15,"leak + control dispatch, attempt-4/trial.md",trial dispatch + command,main session,"pass: leak 2 calls, 1 block (AWS access key), delivered masked, no joined value or AKIAIO; control 1 call, 0 blocks"

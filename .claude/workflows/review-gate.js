@@ -24,6 +24,7 @@ export const meta = {
  *   bug?: 'BUG-0007',
  *   target?: '<path or base>',
  *   audit?: true,
+ *   riskFlag?: true,
  *   gates?: ['code' | 'security'],
  *   round?: 2,
  *   previous?: { findings: [...], tree: '<sha>' },
@@ -71,6 +72,9 @@ const range = `--merge-base ${base}`
 // A submission without a spec file is still a submission (a /fix diff, S work):
 // audit mode only when asked.
 const audit = Boolean(args?.audit)
+
+// A risk-flag diff runs the code gate on Fable (routing.md → Dispatch); every other agent keeps its model.
+const riskFlag = Boolean(args?.riskFlag)
 
 // args.gates (e.g. ['security']) re-runs only a gate an incomplete result named,
 // on the same round and tree.
@@ -299,6 +303,7 @@ function runReview(gate, scope) {
     phase: 'Review',
     agentType: gate.agentType,
     schema: FINDINGS_SCHEMA,
+    ...(riskFlag && gate.key === 'code' ? { model: 'fable' } : {}),
   })
 }
 

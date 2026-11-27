@@ -30,6 +30,7 @@ argument-hint: "<diff range, feature slug or path>"
   - **Round args:** pass `args.feature` (or `args.bug` / `args.target`), `args.round`, `args.previous` (`{ findings, tree }`, the last result's `tree`).
   - **Scope args:** pass `args.base` from the feature's `base`, and `args.spec` (the feature file, the bug's Expected, or the S acceptance criteria).
   - **Audit arg:** `args.audit: true` only for an audit.
+  - **Risk-flag arg:** `args.riskFlag: true` when the diff carries the risk flag (`routing.md` → Dispatch).
   - **Hook counting:** its gate briefs carry `Mode: workflow`, so the hook never counts them; it only blocks a launch past the cap.
   - **Recording a failed round:** the main session records each round the verdicts fail (after the skeptic):
     - **Feature:** `records.py feature round <slug> review +1 --note <why>` and `feature round <slug> rework +1 --note <why>`.

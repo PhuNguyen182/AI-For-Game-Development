@@ -15,6 +15,7 @@ argument-hint: "<bug id, or the symptom in the main GD's words>"
 - **Check first:** `bugs.py search "<words>"` before filing.
 - **New bug:** `bugs.py add` prints the next `BUG-####`, status `Request`: title, description, priority, feature slug, repro, expected, actual, evidence, owner.
 - **Existing bug:** a match is evidence on that ID: `update` with a `note` alone adds it; the `evidence` field is replaced by an `update`, never appended.
+- **Evidence:** a log over the `routing.md` threshold → `log-triage` digest; cite the raw path, never paste the log.
 - **Match by status:** a terminal bug → `Reopen`; a `Backlog` bug adds evidence with `update`, as `Backlog` cannot reach `Reopen`; a `Duplicate` hit → follow `duplicate_of`, judge the target.
 - **Reopen by the main GD:** a reopen the main GD reports → `Reopen`, then `round <id> fix +1 --note <why>` (and `records.py feature round <slug> rework +1 --note <why>`).
 - **Still broken while `Resolved`:** the main GD reports it → `Resolved` → `Review` → `Reopen`; a direct `Resolved` → `Reopen` is refused.

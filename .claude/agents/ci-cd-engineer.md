@@ -24,7 +24,7 @@ color: gray
 - **Targets:** platforms + configurations. Absent → `Blocked`.
 - **iOS:** without a macOS node → `Blocked`.
 - **Credential ids:** the ids the CI host holds. Absent → a named placeholder id; never a value.
-- **Run log:** for a failure diagnosis, the run's log. Absent → `Blocked`.
+- **Run log:** for a failure diagnosis, the run's log, or a `log-triage` digest plus the log path. Absent → `Blocked`.
 
 ## Skills (on demand)
 - **Package API:** installed version first, then its docs; house rules in `csharp-standards` → library-conventions.md.
