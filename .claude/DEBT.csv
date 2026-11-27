@@ -1,0 +1,13 @@
+id,date,kind,text,source,accepted_by,next_step,state
+DEBT-001,2026-11-25,limitation,"log-triage-scan.ps1:81 `if IsNullOrWhiteSpace($ret) exit 0` is unreachable after the step-4 change (step 4 leaves $ret non-blank or blocks); spec C5 step 7 ""or R blank"" describes it. Delete the line and the spec words (review round 3 Low).",,,Fixed in 7a40d8d (change 1 task 1): line deleted with the stop-mode step 7 wording,Paid
+DEBT-002,2026-11-25,accepted-gap,Profiler CSV exports are out of log-triage v1 (no shell to aggregate numbers); performance-qa-engineer keeps Profiler captures.,model-tiers,main GD,,Open
+DEBT-003,2026-11-25,accepted-gap,K1: a log-triage-scan hook killed at its 30 s timeout does not block; that return passes unscanned (harness behaviour).,model-tiers,main GD,,Open
+DEBT-004,2026-11-25,accepted-gap,"K2: a model that keeps ignoring the withheld-form instruction loops until max turns or a user interrupt; leaks nothing, costs turns.",model-tiers,main GD,,Open
+DEBT-005,2026-11-25,accepted-gap,"K3: log-triage-scan catches secret shapes only, not PII (email, user path, IP); PII relies on agent redaction and the trial checks.",model-tiers,main GD,,Open
+DEBT-006,2026-11-25,accepted-gap,"SUPERSEDED (2026-11-26, live probe + change 1): log-triage-scan as a SubagentStop hook does not withhold a SubagentHandback report; see K4 and AC14/AC15.",model-tiers,main GD,,Open
+DEBT-007,2026-11-26,accepted-gap,"K1 (amended): a log-triage-scan hook killed at its timeout: the PreToolUse entry has onFailure block, expected to block, not verified live; the SubagentStop entry behaves as LIM-002.",model-tiers,main GD,,Open
+DEBT-008,2026-11-26,accepted-gap,"K2 (amended): the PreToolUse loop guard is stateless; a model that ignores both exits loops to max turns, delivers nothing, costs turns.",model-tiers,main GD,,Open
+DEBT-009,2026-11-26,accepted-gap,"K4: the SubagentStop stop-mode path is shown only by the hook suite, not live; supersedes LIM-005 for that path.",model-tiers,main GD,,Open
+DEBT-010,2026-11-26,accepted-gap,K5: only log-triage handbacks are scanned; another agent quoting a log relies on its own redaction and core.md Security.,model-tiers,main GD,,Open
+DEBT-011,2026-11-27,accepted-gap,"F3: log-triage is verified on Unity Editor, AssetImportWorker and upm logs only; CI console, logcat, Gradle, Xcode, IL2CPP and UTF XML sources are untested (first real use of each is its first trial).",model-tiers,main GD,,Open
+DEBT-012,2026-11-27,accepted-gap,"F5: a log produced inside a subagent (build-release-engineer, qa runs) is read by that agent's own model; subagents have no Agent tool, so only logs the main session holds go through log-triage.",model-tiers,main GD,,Open

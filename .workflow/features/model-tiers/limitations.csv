@@ -1,0 +1,12 @@
+id,date,text,accepted_by,mirrored
+LIM-001,2026-11-25,Profiler CSV exports are out of log-triage v1 (no shell to aggregate numbers); performance-qa-engineer keeps Profiler captures.,main GD,DEBT-002
+LIM-002,2026-11-25,K1: a log-triage-scan hook killed at its 30 s timeout does not block; that return passes unscanned (harness behaviour).,main GD,DEBT-003
+LIM-003,2026-11-25,"K2: a model that keeps ignoring the withheld-form instruction loops until max turns or a user interrupt; leaks nothing, costs turns.",main GD,DEBT-004
+LIM-004,2026-11-25,"K3: log-triage-scan catches secret shapes only, not PII (email, user path, IP); PII relies on agent redaction and the trial checks.",main GD,DEBT-005
+LIM-005,2026-11-25,"SUPERSEDED (2026-11-26, live probe + change 1): log-triage-scan as a SubagentStop hook does not withhold a SubagentHandback report; see K4 and AC14/AC15.",main GD,DEBT-006
+LIM-006,2026-11-26,"K1 (amended): a log-triage-scan hook killed at its timeout: the PreToolUse entry has onFailure block, expected to block, not verified live; the SubagentStop entry behaves as LIM-002.",main GD,DEBT-007
+LIM-007,2026-11-26,"K2 (amended): the PreToolUse loop guard is stateless; a model that ignores both exits loops to max turns, delivers nothing, costs turns.",main GD,DEBT-008
+LIM-008,2026-11-26,"K4: the SubagentStop stop-mode path is shown only by the hook suite, not live; supersedes LIM-005 for that path.",main GD,DEBT-009
+LIM-009,2026-11-26,K5: only log-triage handbacks are scanned; another agent quoting a log relies on its own redaction and core.md Security.,main GD,DEBT-010
+LIM-010,2026-11-27,"F3: log-triage is verified on Unity Editor, AssetImportWorker and upm logs only; CI console, logcat, Gradle, Xcode, IL2CPP and UTF XML sources are untested (first real use of each is its first trial).",main GD,DEBT-011
+LIM-011,2026-11-27,"F5: a log produced inside a subagent (build-release-engineer, qa runs) is read by that agent's own model; subagents have no Agent tool, so only logs the main session holds go through log-triage.",main GD,DEBT-012

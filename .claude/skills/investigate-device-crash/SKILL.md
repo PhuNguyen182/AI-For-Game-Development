@@ -29,6 +29,7 @@ allowed-tools: PowerShell, Bash, Read, Grep, Glob, Skill
      - **Crash buffer:** `adb logcat -d -b crash`.
      - **Fatal exceptions:** `adb logcat -d | grep -A 50 "FATAL EXCEPTION"`.
      - **ANR:** `adb logcat -d | grep -B 5 -A 30 "ANR in <package>"`.
+   - **Full dump:** `adb logcat -d` saved under `.workflow/evidence/<slug>/attempt-<n>/` (raw, gitignored) → `log-triage` digest when the filtered greps find nothing or the dump is the evidence.
    - **iOS commands:** best-effort, no Xcode: `idevicecrashreport -e <dir>`; `idevicesyslog` if reproducible live.
    - **iOS tooling missing:** `libimobiledevice` missing → blocked, never fake iOS coverage from Android tooling.
    - **Nothing found:** say so.
